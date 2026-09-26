@@ -97,6 +97,16 @@ inline bool ArcAdmits(SlotArc arc, float angleFromFront)
     return arc == SlotArc::FrontCone ? degrees <= 30.0f : degrees >= 70.0f;
 }
 
+// A formation point is usable when it is outside every hazard clearance and
+// the cauldron does not stand between it and the boss (checked only while
+// the boss himself is outside the cauldron's radius).
+inline bool FormationPointClear(BossFrame const& frame, Vector3 const& point,
+    std::vector<FormationHazard> const& hazards)
+{
+    return ClearOfHazards(point, hazards)
+        && (!CauldronConstrains(frame.Boss) || CauldronLineClear(point, frame.Boss));
+}
+
 // The clear point nearest to the slot among its arc (alternating sides in
 // stepDeg steps up to maxShiftDeg) and, for ranged slots, the same angles
 // 5 or 10 yards farther out or 5 yards closer in (never closer than 8 yards
@@ -108,7 +118,17 @@ inline std::optional<Vector3> SafeFormationSlot(BossFrame const& frame,
     std::vector<Vector3> const& otherSlots, float spreadYards,
     bool radialShifts)
 {
-    if (ClearOfHazards(slot, hazards))
+    auto spreadOk = [&](Vector3 const& point)
+    {
+        if (spreadYards > 0.0f)
+            for (Vector3 const& other : otherSlots)
+                if (Distance2d(point, other) < spreadYards)
+                    return false;
+        return true;
+    };
+    // The slot itself also keeps the spread: two slots clamped onto the
+    // same point at a room wall must not both be accepted as they are.
+    if (FormationPointClear(frame, slot, hazards) && spreadOk(slot))
         return slot;
     FramePolarCoords const polar = ToFramePolar(frame, slot);
     std::vector<float> radii{ polar.Radius };
@@ -131,13 +151,7 @@ inline std::optional<Vector3> SafeFormationSlot(BossFrame const& frame,
                 if (!ArcAdmits(arc, angle))
                     continue;
                 Vector3 const point = FramePolar(frame, radius, angle);
-                if (!ClearOfHazards(point, hazards))
-                    continue;
-                bool spread = true;
-                if (spreadYards > 0.0f)
-                    for (Vector3 const& other : otherSlots)
-                        spread = spread && Distance2d(point, other) >= spreadYards;
-                if (!spread)
+                if (!FormationPointClear(frame, point, hazards) || !spreadOk(point))
                     continue;
                 float const displacement = Distance2d(point, slot);
                 if (!best || displacement < bestDisplacement)
@@ -155,6 +169,9 @@ inline std::optional<Vector3> SafeFormationSlot(BossFrame const& frame,
 inline bool MeleeRingBlocked(BossFrame const& frame, SlotArc arc,
     std::vector<FormationHazard> const& hazards)
 {
+    // Hazards only: the cauldron shifts melee slots but never holds offense
+    // (a melee player next to the boss keeps attacking when no ring point
+    // has line of sight past the cauldron).
     if (hazards.empty())
         return false;
     for (int step = 0; step < 24; ++step)
@@ -173,8 +190,8 @@ inline bool MeleeRingBlocked(BossFrame const& frame, SlotArc arc,
 // almost every decision (49 phase-two spread moves in 20 s, 36 Blue moves)
 // instead of casting. A ranged player that already stands within
 // RangedHoldYards of its slot, 8 to 30 yards from the boss, inside the arc,
-// clear of every hazard and (spreadYards > 0) apart from every other
-// player keeps its place.
+// clear of every hazard, with the cauldron not between it and the boss and
+// (spreadYards > 0) apart from every other player keeps its place.
 constexpr float RangedHoldYards = 9.0f;
 
 inline bool RangedPlaceAcceptable(BossFrame const& frame, Vector3 const& place,
@@ -186,7 +203,7 @@ inline bool RangedPlaceAcceptable(BossFrame const& frame, Vector3 const& place,
     FramePolarCoords const polar = ToFramePolar(frame, place);
     if (polar.Radius < 8.0f || polar.Radius > 30.0f || !ArcAdmits(arc, polar.Angle))
         return false;
-    if (!hazards.empty() && !ClearOfHazards(place, hazards))
+    if (!FormationPointClear(frame, place, hazards))
         return false;
     if (spreadYards > 0.0f)
         for (Vector3 const& other : otherPlayers)

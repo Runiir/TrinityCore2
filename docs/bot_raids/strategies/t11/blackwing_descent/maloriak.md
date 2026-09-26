@@ -176,7 +176,7 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 
 | Duty | Canonical 10N owner | Rule |
 |---|---|---|
-| Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued |
+| Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued; in phase one holds him at the tank spot (-105.8, -449.0), 36 yd north of the cauldron |
 | Off-tank | Feral (bear) | picks up and taunts loose Aberrations, Prime Subjects and Vile Swills; holds them at an add spot ≥ 20 yd from the boss |
 | Arcane Storm | Retribution (lowest-GUID melee 10 s interrupt) | the owner at the cast; the second short interrupter after 0.8 s of channel; everyone capable after 2 s |
 | Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting. An admitted release is published as an interrupt veto, keyed by map, instance and boss GUID, that the kernel profile resolver honours (in round 3 rotation interrupts cut every release); the legacy SelectCombatSpell and BotController paths do not check it |
@@ -185,7 +185,21 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 | Flash Freeze | ranged damage dealers | break the nearest block; others leave the 5-yard shatter |
 
 Formations are logical anchors for native pathing, computed from the boss and main-tank frame and
-clamped to the room floor:
+clamped to the room floor. Maloriak drinks at the cauldron's north rim at every vial; the cauldron
+blocks line of sight across the back half of the room (round 4: both healers healed nothing for
+60 s from behind it), so the main tank leads him back to the tank spot, and holds it while he is
+passive or out of melee reach instead of chasing him to the rim (but never while he is aggressive on
+someone else: the tank taunts first, Dark Command reaches 30 yd). Every slot, and every ranged place
+a player keeps, must see him past the cauldron (9.5 yd line-of-sight radius around -105.75,
+-485.39, 0.5 yd over the model's half-extent; applied while he is outside it). Shifted ranged slots
+are resolved in group order (40-degree shift, then the whole back arc, then a last-resort point in
+sight 2.5 yd from those already placed) so they keep the 5-yard spread. The cauldron shifts melee
+slots but never holds melee offense; only hazards do.
+
+A raider who dies during the fight stays dead (battle-res eligible) until the encounter resets or
+the raid wipes: the boss row declares `boss_recovery_policy: native_full_wipe_only`. Released
+mid-fight, a ghost would reach the portal while the encounter is in progress and be resurrected
+outside the raid (round 4, `validation_active_instance_drift`).
 
 - pre-pull: the entrance line about 28 yd from the boss, with offense held until the pull tank
   engages. The pull tank waits for the play-mode pull timer, for nobody dead, for everyone at 70%

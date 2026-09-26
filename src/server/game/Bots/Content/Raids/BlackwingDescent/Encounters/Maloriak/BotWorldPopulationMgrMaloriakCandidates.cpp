@@ -243,6 +243,10 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         movement.UtilityScore = plan.Movement->Utility;
         movement.RequiredResources = plan.Movement->Resources();
         movement.ExpiresAtMs = plan.Movement->ExpiresAtMs;
+        // Every proposal, the main tank's hold of its spot included, goes
+        // through the ordinary native request: only a submitted move renews
+        // the mechanic movement lease that keeps combat-range movement from
+        // chasing the boss back to the cauldron.
         movement.Attempt = [this, &context, survival, travel,
             intent = BotNativeAction::WithMovementReason(
                 plan.Movement->Action, plan.Movement->Id.Mechanic)]()

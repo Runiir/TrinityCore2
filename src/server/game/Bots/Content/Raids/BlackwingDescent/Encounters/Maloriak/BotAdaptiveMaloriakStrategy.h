@@ -65,6 +65,10 @@ public:
     static constexpr float RangedSlotTolerance = 4.0f;
     static constexpr float MeleeSlotTolerance = 2.5f;
     static constexpr float StagingTolerance = 3.0f;
+    static constexpr float TankSpotTolerance = 4.0f;
+    // Beyond this the boss is not in melee with his tank (walking back from
+    // the cauldron): the tank holds the spot instead of chasing him.
+    static constexpr float TankHoldReach = 7.0f;
     static constexpr float AddAnchorTolerance = 6.0f;
     // Aberrations leap out of chambers on both side walls, 50+ yards apart.
     static constexpr float LooseAddPickupRange = 90.0f;
@@ -132,7 +136,11 @@ public:
             botRole == "tank");
 
         if (mainTank)
+        {
             SelectMainTank(boss, botGuid, plan);
+            if (!plan.Movement)
+                plan.Movement = ProposeTankSpot(board, observation, *bot);
+        }
         else if (botRole == "tank")
             SelectOffTank(board, observation, *bot, plan);
         else
@@ -671,6 +679,104 @@ private:
         plan.Duty = "phase_two_push_hold";
     }
 
+    // In phase one the main tank walks to MainTankSpot (north of the
+    // cauldron) whenever it is away from it and the spot is clear of hazards;
+    // Maloriak follows his tank after every cauldron visit, so the raid
+    // fights him off the rim. Phase two starts wherever that fight is and
+    // belongs to the Magma Jets sidestep (a return to the spot would cross
+    // the jet line). Hazard moves always come first.
+    //
+    // At the spot the tank keeps proposing it while the boss is passive (at
+    // the cauldron) or out of melee reach: otherwise ordinary combat-range
+    // movement chases him back to the rim once the mechanic lease lapses and
+    // the two owners swap 3-4 times per cauldron visit. At the spot this
+    // resubmits a near-zero native move every tick, which is what keeps the
+    // mechanic movement lease held (a kernel claim alone does not stop the
+    // combat profile's range reconcile).
+    //
+    // An aggressive boss on anyone but the tank is an aggro loss: the tank
+    // must go and taunt (Dark Command reaches 30 yards, SpellRange 4), so it
+    // neither walks to nor holds the spot.
+    static std::optional<BotNativeAction::Candidate> ProposeTankSpot(
+        Blackboard const& board, Maloriak::Observation const& observation,
+        ActorSnapshot const& bot)
+    {
+        ActorSnapshot const& boss = *observation.Boss;
+        if (boss.ReactAggressive && !boss.VictimGuid.IsEmpty()
+            && boss.VictimGuid != bot.Guid)
+            return std::nullopt;
+        bool const atSpot = Maloriak::Distance2d(bot.Position,
+            Maloriak::MainTankSpot) <= TankSpotTolerance;
+        bool const holdSpot = !boss.ReactAggressive
+            || Maloriak::Distance2d(bot.Position, boss.Position)
+                > TankHoldReach;
+        if (observation.CurrentPhase == Maloriak::Phase::PhaseTwo
+            || (atSpot && !holdSpot)
+            || !Maloriak::ClearOfHazards(Maloriak::MainTankSpot,
+                Maloriak::CollectFormationHazards(observation)))
+            return std::nullopt;
+        return BuildMove(board, Maloriak::MainTankSpot, "main_tank_spot",
+            observation.Boss->Guid, BotActionArbitration::Priority::Mechanic,
+            220.0f, false);
+    }
+
+    // Ranged slots are resolved in group order: each keeps the spread from
+    // the already resolved slots before it and from the unshifted ones after
+    // it, so two players never pick the same free point (every bot computes
+    // the same sequence). Passes: the nearest clear point within 40 degrees;
+    // then anywhere on the back arc (220 degrees either way, filtered by the
+    // arc), which a flank slot needs when the fan behind a boss at the
+    // cauldron rim is shadowed; then, as a last resort, a point in sight
+    // kept 2.5 yards only from the slots already resolved. Spread applies to
+    // the back-arc formations; the Red stack is meant to overlap.
+    template <typename SlotFor>
+    static std::optional<Vector3> ResolveRangedSlot(Maloriak::BossFrame const& frame,
+        std::vector<Maloriak::FormationHazard> const& hazards, Maloriak::SlotArc arc,
+        std::size_t groupSize, std::size_t index, bool fanSlot,
+        Vector3 const& destination, SlotFor const& slotFor)
+    {
+        float const spread = arc == Maloriak::SlotArc::Back
+            ? Maloriak::SpreadYards : 0.0f;
+        auto spreadFrom = [spread](Vector3 const& point,
+            std::vector<Vector3> const& others)
+        {
+            for (Vector3 const& other : others)
+                if (Maloriak::Distance2d(point, other) < spread)
+                    return false;
+            return true;
+        };
+        auto shift = [&](Vector3 const& slot, std::vector<Vector3> const& placed,
+            std::vector<Vector3> const& others) -> std::optional<Vector3>
+        {
+            if (Maloriak::FormationPointClear(frame, slot, hazards)
+                && spreadFrom(slot, placed))
+                return slot;
+            std::optional<Vector3> shifted = Maloriak::SafeFormationSlot(frame,
+                slot, arc, 10.0f, 40.0f, hazards, others, spread, true);
+            if (!shifted)
+                shifted = Maloriak::SafeFormationSlot(frame, slot, arc, 10.0f,
+                    220.0f, hazards, others, spread, true);
+            if (!shifted)
+                shifted = Maloriak::SafeFormationSlot(frame, slot, arc, 10.0f,
+                    220.0f, hazards, placed, spread / 2.0f, true);
+            return shifted;
+        };
+        auto othersFor = [&](std::size_t member, std::vector<Vector3> const& placed)
+        {
+            std::vector<Vector3> others = placed;
+            for (std::size_t later = member + 1; later < groupSize; ++later)
+                others.push_back(slotFor(later));
+            return others;
+        };
+        std::vector<Vector3> placed;
+        for (std::size_t member = 0; member < index; ++member)
+            placed.push_back(fanSlot
+                ? shift(slotFor(member), placed, othersFor(member, placed))
+                    .value_or(slotFor(member))
+                : slotFor(member));
+        return shift(destination, placed, othersFor(index, placed));
+    }
+
     // Formation: Red stacks in the Scorching Blast cone except Consuming
     // Flames targets; Blue, Dark and phase two spread behind. Green and the
     // vial transitions leave ordinary combat movement alone. A bot whose
@@ -741,30 +847,41 @@ private:
 
         std::vector<Maloriak::FormationHazard> const hazards =
             Maloriak::CollectFormationHazards(observation);
-        if (!hazards.empty() && !Maloriak::ClearOfHazards(destination, hazards))
+        // Hazards and the cauldron (no line of sight across it) both shift
+        // the slot along its arc.
+        if (melee && !Maloriak::FormationPointClear(frame, destination, hazards))
         {
-            if (melee && Maloriak::MeleeRingBlocked(frame, arc, hazards))
+            // Only hazards hold melee offense; a slot the cauldron shadows
+            // shifts around the ring, and with no ring point in sight the
+            // melee player simply keeps fighting where it is.
+            if (Maloriak::MeleeRingBlocked(frame, arc, hazards))
             {
                 plan.SuppressOffense = true;
                 plan.SuppressReason = "melee_ring_hazard_hold";
                 plan.Duty = "melee_ring_hazard_hold";
                 return std::nullopt;
             }
-            std::vector<Vector3> others;
-            if (!melee)
-                for (std::size_t other = 0; other < group.size(); ++other)
-                    if (other != index)
-                        others.push_back(slotFor(other));
             std::optional<Vector3> const shifted = Maloriak::SafeFormationSlot(
-                frame, destination, arc, melee ? 30.0f : 10.0f,
-                melee ? 180.0f : 40.0f, hazards, others,
-                melee ? 0.0f : Maloriak::SpreadYards, !melee);
+                frame, destination, arc, 30.0f, 180.0f, hazards, {}, 0.0f, false);
+            if (!shifted)
+                return std::nullopt;
+            destination = *shifted;
+        }
+        else if (!melee)
+        {
+            std::optional<Vector3> const shifted = ResolveRangedSlot(frame,
+                hazards, arc, group.size(), index,
+                mechanic != "consuming_flames_leave_cone", destination, slotFor);
             if (!shifted)
                 return std::nullopt;
             destination = *shifted;
         }
         float const tolerance = melee ? MeleeSlotTolerance : RangedSlotTolerance;
-        if (Maloriak::Distance2d(bot.Position, destination) <= tolerance)
+        // A ranged player near its slot but itself behind the cauldron still
+        // steps onto the slot.
+        bool const inSight = melee || !Maloriak::CauldronConstrains(frame.Boss)
+            || Maloriak::CauldronLineClear(bot.Position, frame.Boss);
+        if (inSight && Maloriak::Distance2d(bot.Position, destination) <= tolerance)
             return std::nullopt;
         if (!melee)
         {

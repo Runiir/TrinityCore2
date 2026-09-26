@@ -33,6 +33,50 @@ constexpr float AddAnchorBossClearance = 20.0f;
 // 15 yards of it, so a boss drifting around 20 yards does not flip it.
 constexpr float AddAnchorHysteresis = 5.0f;
 
+// Maloriak's cauldron (gameobject 203306 at -105.75, -485.39; displayId
+// 9554 at scale 0.7314, a model half-extent of 8.93 yards and 8.38 yards
+// tall) blocks line of sight. He drinks at its north rim
+// (CauldronMovePosition -106.68, -475.44) and, left there, fights with the
+// whole back half of the room behind the cauldron (r04: both healers healed
+// nothing for 60 s). Among the r04 lines with both ends outside the
+// footprint, the blocked ones passed at most 8.58 yards from the centre and
+// the clear ones at least 9.02 yards; 9.5 keeps a 0.5-yard margin over the
+// model half-extent.
+constexpr Vector3 CauldronCenter{ -105.75f, -485.39f, 73.0f };
+constexpr float CauldronLosRadius = 9.5f;
+
+// True when the 2D segment from one point to another stays outside the
+// cauldron's line-of-sight radius (the endpoints included). A boss standing
+// inside that radius leaves nothing to choose, so the formation checks apply
+// the cauldron only while he is outside it (CauldronConstrains).
+inline bool CauldronLineClear(Vector3 const& from, Vector3 const& to)
+{
+    float const dx = to.X - from.X;
+    float const dy = to.Y - from.Y;
+    float const lengthSq = dx * dx + dy * dy;
+    float t = 0.0f;
+    if (lengthSq > 0.0f)
+        t = std::clamp(((CauldronCenter.X - from.X) * dx
+            + (CauldronCenter.Y - from.Y) * dy) / lengthSq, 0.0f, 1.0f);
+    float const nearestX = from.X + t * dx - CauldronCenter.X;
+    float const nearestY = from.Y + t * dy - CauldronCenter.Y;
+    return nearestX * nearestX + nearestY * nearestY
+        >= CauldronLosRadius * CauldronLosRadius;
+}
+
+inline bool CauldronConstrains(Vector3 const& boss)
+{
+    float const dx = boss.X - CauldronCenter.X;
+    float const dy = boss.Y - CauldronCenter.Y;
+    return dx * dx + dy * dy >= CauldronLosRadius * CauldronLosRadius;
+}
+
+// The main tank holds Maloriak here, 36 yards north of the cauldron, so
+// after every cauldron visit he follows the tank off the rim and the raid
+// behind him (south) keeps line of sight: the rear ranged slots stay 15
+// yards or more from the cauldron with their lines to him running north.
+constexpr Vector3 MainTankSpot{ -105.8f, -449.0f, RoomFloorZ };
+
 // Red: Scorching Blast is a 60-yard frontal cone (client ConeDegrees 70)
 // split among targets, so the raid stands in front, close to the boss-tank
 // line. Other phases keep the raid behind and to the sides (Engulfing

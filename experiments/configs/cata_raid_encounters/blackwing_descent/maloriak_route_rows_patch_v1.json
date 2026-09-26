@@ -52,7 +52,7 @@
       "cluster_radius_yards": 40.0
     }
   },
-  "unchanged": "bwd.maloriak.encounter (boss row) and every non-Maloriak row.",
+  "unchanged": "Every non-Maloriak row; the Maloriak boss row keeps its coordinates and identity and gains only boss_row_fields.",
   "evidence": {
     "plateau": "round1_two_shard_proof_20260925: heartbeats 1-7 on bwd.maloriak.regroup with validation_route_future_encounter_contamination; the start, regroup and trash anchor were all the Mongrel 250119 spawn, and the patrol leader Slayer 42802 (250117, formation with 250118/250119) was not a pack entry.",
     "geometry": "pinned 669 navmesh (hashes as in tools/raid_program/probe_drudge_navmesh_recovery.py): junction (-110, -335, 67.73) has a floor polygon; elevator -> junction 161.8 yd, closest 36.8 yd to Maimgor 250109; junction -> patrol leader straight 64.8 yd, 34 yd from Maimgor; patrol leader -> Maloriak 186.8 yd via (-64, -320) and the entrance; 40-yd cluster covers patrol waypoints 1-4 (2501170) and stays 55+ yd from Ivoroc 250108."
@@ -61,5 +61,12 @@
     "Rerun the raid_shard_provisioning DVC stage (the c0 plan copies start_position from the template scenario) and rebind the runtime asset closure.",
     "tools/raid_program/capture_environment_validation.py:36 and tests/test_phase1_raid_foundation_capture.py:2980 still describe the old laboratory trash (42803, 250119) for the phase-1 capture route; update them if that route is re-generated.",
     "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json still carries the old Maloriak coordinates (round-1 fixture)."
-  ]
+  ],
+  "boss_row_fields": {
+    "bwd.maloriak.encounter": {
+      "boss_recovery_policy": "native_full_wipe_only"
+    },
+    "rule": "Add these fields to the existing boss row in every scenario above (round 5; applier .git/round5_patches/maloriak/maloriak_boss_recovery_policy.py). Magmaw and Omnotron already declare the policy.",
+    "evidence": "r04 (round4_batch1_20260926): the rogue died at 63 s, released at once (no policy on the boss row), reached the BWD portal as a ghost at 105 s while the encounter was in progress (CANNOT_ENTER_ZONE_IN_COMBAT), was resurrected outside the raid on map 0 by the native area-trigger handler and failed the attempt as validation_active_instance_drift."
+  }
 }

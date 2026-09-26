@@ -229,3 +229,33 @@ def test_every_roster_spec_has_a_raid_prepull_consumable_contract(tmp_path: Path
     )
     result = subprocess.run([str(binary), *sorted(specs)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stdout
+
+
+def test_boss_row_keeps_dead_raiders_in_the_instance() -> None:
+    """Round 5: without a boss recovery policy a raider who died mid-fight
+    released at once; its ghost reached the portal while the encounter was in
+    progress and was resurrected outside the raid (r04 rogue,
+    validation_active_instance_drift). The Maloriak boss row must declare the
+    policy Magmaw and Omnotron use."""
+    patch = load(ENCOUNTERS / "maloriak_route_rows_patch_v1.json")
+    fields = patch["boss_row_fields"]["bwd.maloriak.encounter"]
+    assert fields == {"boss_recovery_policy": "native_full_wipe_only"}
+    assert set(patch["apply_to_scenarios"]) == {
+        "blackwing_descent_10n_maloriak_diagnostic", "blackwing_descent_10n_maloriak_c0_diagnostic",
+        "blackwing_descent_10n", "blackwing_descent_10n_full_c0"}
+    scenarios = load(ROOT / "experiments/configs/validation_scenarios_cata_001.json")
+    policies = []
+
+    def walk(value):
+        if isinstance(value, dict):
+            if value.get("node_id") in ("bwd.magmaw.encounter", "bwd.omnotron.encounter"):
+                policies.append(value.get("boss_recovery_policy"))
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(scenarios)
+    # The policy value is the one the proven Magmaw and Omnotron rows use.
+    assert policies and set(policies) == {fields["boss_recovery_policy"]}

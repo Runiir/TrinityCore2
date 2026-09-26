@@ -269,6 +269,24 @@
         "One Remedy went unpurged (225000 healed); after the runback the eight non-tanks' prepull_stage moves from the lower-wing elevator landing were refused as route_destination_path_control_level_gap (152 entries)."
       ],
       "reliability": "observed_run_evidence"
+    },
+    "run_r04_b1_20260926": {
+      "title": "Round-4 six-shard batch, Maloriak c0 shard (build e2d0568e6960)",
+      "publisher": "repository run evidence",
+      "evidence_dvc": "artifacts/cata_raid_program/round4_batch1_20260926.tar.gz.dvc",
+      "members": [
+        "shards/blackwing_descent_10n_maloriak_c0/combat_log.json",
+        "shards/blackwing_descent_10n_maloriak_c0/terminal_trace_drain.jsonl.gz",
+        "shards/blackwing_descent_10n_maloriak_c0/heartbeat_events.jsonl",
+        "worldserver.console.log (BotWorld validation_cohort_instance_violation line)"
+      ],
+      "accessed": "2026-09-26",
+      "claims": [
+        "Round-4 fixes live: rotation interrupts rejected as encounter_interrupt_vetoed (Kick 18, Mind Freeze 16, Counterspell 14, Rebuke 8); Aberrations released in threes at 45-50 s, 63 s and 88 s; the push hold ran from 30% (72.9 s) to 25% (95.7 s); 9 Aberrations and both Prime Subjects at 25%; Remedy spellstolen by the Mage at 46 s and 93.5 s (no boss heal); Consuming Flames flat 4500 raw; Scorching Blast split among 7; Acid Nova raw 6359-8250.",
+        "Maloriak was fought at the cauldron rim (-106.68, -475.44); gameobject 203306 at (-105.75, -485.39) (displayId 9554, scale 0.7314: model half-extent 8.93 yd, 8.38 yd tall) blocked line of sight: no_line_of_sight outcomes Shaman 234, Ret 198, Disc 54, and both healers healed nothing before 60 s. Among the lines with both ends outside the footprint, blocked ones passed at most 8.58 yd from the centre and clear ones at least 9.02 yd.",
+        "The Rogue (Biting Chill, then Flash Freeze and Shatter, no healing) died at 63.1 s, released at once (the boss row has no boss_recovery_policy), reached the BWD portal on map 0 at 105.4 s during the encounter and was resurrected there by the native area-trigger handler (CANNOT_ENTER_ZONE_IN_COMBAT); the cohort gate failed the attempt as validation_active_instance_drift and suppressed all offense with the boss at 13.4%."
+      ],
+      "reliability": "observed_run_evidence"
     }
   },
   "mode_matrix": {
@@ -1357,6 +1375,23 @@
           "local_cpp:DamageTaken/UpdateAI",
           "run_r03_b1_20260925"
         ]
+      },
+      {
+        "mechanic": "tank_spot_and_line_of_sight",
+        "tactic": "in phase one the main tank walks to (-105.8, -449.0), 36 yd north of the cauldron, and holds it while Maloriak is passive or out of melee reach (never while he is aggressive on someone else: the tank taunts first, Dark Command reaches 30 yd), so he follows it off the cauldron rim after every vial; formation slots and a ranged player's kept place must see him past the cauldron (9.5 yd line-of-sight radius, applied while he is outside it); ranged slots are resolved in group order (40-degree shift, then the whole back arc, then a last-resort point in sight 2.5 yd from the slots already placed), keeping the 5-yd spread; the cauldron shifts melee slots but never holds melee offense",
+        "source_refs": [
+          "run_r04_b1_20260926",
+          "local_cpp:CauldronMovePosition",
+          "current_tdb"
+        ]
+      },
+      {
+        "mechanic": "partial_death_recovery",
+        "tactic": "the boss row declares boss_recovery_policy native_full_wipe_only (as Magmaw and Omnotron): a raider who dies in the fight stays dead, battle-res eligible, until the encounter resets or the raid wipes",
+        "source_refs": [
+          "run_r04_b1_20260926",
+          "local_cpp:DamageTaken/UpdateAI"
+        ]
       }
     ]
   },
@@ -1639,6 +1674,12 @@
       "status": "observed_native_consistent",
       "native": "77987 is an area aura on friends within 10 yd (+10% damage done per nearby caster, multiplicative). With the 18 released Aberrations beside the main tank, Maloriak's Acid Nova ticked 19453 raw = 7500 x 1.1^10 and his melee reached 28217 after attacker bonuses against a published 6088 maximum (about 1.1^16). The script already exempts Flash Freeze and Vile Swill, not Maloriak; the current guide's 'Aberrations kited by a tank away from Maloriak' matches the boss being buffed.",
       "next": "No native change without WCL aura evidence on the boss; the strategy keeps adds at the add spots at least 20 yd from him."
+    },
+    {
+      "key": "cauldron_line_of_sight",
+      "status": "observed_native_consistent",
+      "native": "Maloriak walks to CauldronMovePosition (-106.68, -475.44) at every vial and, left there by his tank, fights at the rim of the cauldron gameobject 203306 (-105.75, -485.39; displayId 9554 at scale 0.7314, half-extent 8.93 yd, 8.38 yd tall), whose model blocks line of sight across the back half of the room (r04, lines with both ends outside the footprint: blocked at most 8.58 yd from the centre, clear at least 9.02 yd).",
+      "next": "Strategy: the main tank holds him at MainTankSpot (-105.8, -449.0) in phase one (and keeps holding it while he is passive or out of melee reach); formation slots and kept ranged places reject any point whose line to him passes within 9.5 yd of the cauldron (0.5 yd over the half-extent), while he himself is outside that radius; the cauldron never holds melee offense."
     }
   ]
 }

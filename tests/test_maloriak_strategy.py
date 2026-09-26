@@ -581,6 +581,362 @@ int main()
         CHECK(Plan(board, HOLY).Movement.has_value());
     }
 
+    // Round 5 (r04): Maloriak fought at the cauldron's north rim and the
+    // raid behind him (south) had no line of sight across the cauldron; both
+    // healers healed nothing for 60 s. The r04 lines with both ends outside
+    // the cauldron footprint: blocked ones passed at most 8.58 yards from its
+    // centre, clear ones at least 9.02 yards.
+    {
+        Vector3 const rim{ -106.678f, -475.444f, 73.46f };
+        for (Vector3 const blocked : { Vector3{ -103.0f, -493.1f, 73.5f }, Vector3{ -115.1f, -491.3f, 73.5f },
+                 Vector3{ -94.0f, -493.2f, 73.5f }, Vector3{ -93.1f, -485.4f, 73.5f },
+                 Vector3{ -98.7f, -484.6f, 74.2f }, Vector3{ -104.3f, -478.0f, 73.5f } })
+            CHECK(!M::CauldronLineClear(blocked, rim));
+        for (Vector3 const clear : { Vector3{ -123.8f, -469.9f, 73.4f }, Vector3{ -123.4f, -482.2f, 73.4f },
+                 Vector3{ -88.7f, -474.8f, 73.4f } })
+            CHECK(M::CauldronLineClear(clear, rim));
+
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        Boss(board).Position = rim;
+        board.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+        // The main tank leads him off the rim to the tank spot.
+        AdaptiveMaloriakPlan const tank = Plan(board, DK);
+        CHECK(tank.Movement && tank.Movement->Id.Mechanic == "main_tank_spot");
+        CHECK(Dist(Destination(tank), M::MainTankSpot) < 0.01f);
+        CHECK(tank.DamageTarget == Boss(board).Guid);
+        // Until he follows, every formation move keeps line of sight.
+        board.Players[HOLY].Position = { -115.1f, -491.3f, 73.5f };
+        board.Players[DISC].Position = { -103.0f, -493.1f, 73.5f };
+        std::vector<Vector3> rangedSpots;
+        for (Slot slot : { HUNTER, MAGE, HOLY, DISC, SHAMAN, LOCK, RET, ROGUE })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            if (plan.Movement)
+                CHECK(M::CauldronLineClear(Destination(plan), rim));
+            if (plan.Movement && slot != RET && slot != ROGUE)
+                rangedSpots.push_back(Destination(plan));
+        }
+        // Shifted ranged slots keep the Blue spread from each other.
+        for (std::size_t left = 0; left < rangedSpots.size(); ++left)
+            for (std::size_t right = left + 1; right < rangedSpots.size(); ++right)
+                CHECK(Dist(rangedSpots[left], rangedSpots[right]) >= 4.99f);
+        CHECK(Plan(board, HOLY).Movement.has_value());
+        CHECK(Plan(board, DISC).Movement.has_value());
+        // At the spot the tank holds it (the same destination) while the
+        // boss is still at the rim or passive at the cauldron, so combat
+        // range movement cannot drag it back (review: 3-4 owner swaps per
+        // visit at the 4-yard tolerance edge); with the boss in melee it
+        // proposes nothing. A hazard on the spot or phase two keeps it where
+        // it is.
+        for (Vector3 const at : { M::MainTankSpot,
+                 Vector3{ M::MainTankSpot.X, M::MainTankSpot.Y - 3.9f, 73.6f } })
+        {
+            board.Players[DK].Position = at;
+            AdaptiveMaloriakPlan const hold = Plan(board, DK);
+            CHECK(hold.Movement && hold.Movement->Id.Mechanic == "main_tank_spot");
+            CHECK(hold.Movement && Dist(Destination(hold), M::MainTankSpot) < 0.01f);
+            Boss(board).ReactAggressive = false;
+            AdaptiveMaloriakPlan const passive = Plan(board, DK);
+            CHECK(passive.Movement && passive.Movement->Id.Mechanic == "main_tank_spot");
+            Boss(board).ReactAggressive = true;
+        }
+        {
+            Blackboard passive = Canonical();
+            passive.Hostiles.front().Auras.push_back({ 78895, passive.Hostiles.front().Guid, 1, 0 });
+            passive.Hostiles.front().Position = rim;
+            passive.Hostiles.front().ReactAggressive = false;
+            passive.Players[DK].Position = M::MainTankSpot;
+            AdaptiveMaloriakPlan const hold = Plan(passive, DK);
+            CHECK(hold.Movement && hold.Movement->Id.Mechanic == "main_tank_spot");
+        }
+        board.Players[DK].Position = M::MainTankSpot;
+        Boss(board).Position = { M::MainTankSpot.X, M::MainTankSpot.Y - 3.5f, 73.6f };
+        CHECK(!Plan(board, DK).Movement);
+        // Delta review: the aggro-loss guard needs an aggressive boss and a
+        // real victim. A passive boss with a stale victim (another player)
+        // and an aggressive boss with no victim both leave the walk to the
+        // spot in place, and neither is a taunt.
+        {
+            Blackboard stale = Canonical();
+            stale.Hostiles.front().Auras.push_back({ 78895, stale.Hostiles.front().Guid, 1, 0 });
+            stale.Hostiles.front().Position = rim;
+            stale.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+            stale.Hostiles.front().ReactAggressive = false;
+            stale.Hostiles.front().VictimGuid = G(HOLY);
+            AdaptiveMaloriakPlan const passive = Plan(stale, DK);
+            CHECK(passive.Movement && passive.Movement->Id.Mechanic == "main_tank_spot");
+            CHECK(passive.TauntTarget.IsEmpty());
+            stale.Hostiles.front().ReactAggressive = true;
+            stale.Hostiles.front().VictimGuid = ObjectGuid();
+            AdaptiveMaloriakPlan const noVictim = Plan(stale, DK);
+            CHECK(noVictim.Movement && noVictim.Movement->Id.Mechanic == "main_tank_spot");
+            CHECK(noVictim.TauntTarget.IsEmpty());
+        }
+        // Re-review: an aggressive boss on a healer 35 yd from the spot is
+        // an aggro loss (Dark Command reaches 30 yd): no walk to or hold of
+        // the spot, from the spot or from anywhere else.
+        {
+            Blackboard loss = Canonical();
+            loss.Hostiles.front().Auras.push_back({ 78895, loss.Hostiles.front().Guid, 1, 0 });
+            loss.Players[HOLY].Position = { M::MainTankSpot.X, M::MainTankSpot.Y - 35.0f, 73.6f };
+            loss.Hostiles.front().Position = { M::MainTankSpot.X, M::MainTankSpot.Y - 32.5f, 73.6f };
+            loss.Hostiles.front().VictimGuid = G(HOLY);
+            for (Vector3 const at : { M::MainTankSpot, Vector3{ -105.8f, -469.0f, 73.5f } })
+            {
+                loss.Players[DK].Position = at;
+                AdaptiveMaloriakPlan const plan = Plan(loss, DK);
+                CHECK(!plan.Movement || plan.Movement->Id.Mechanic != "main_tank_spot");
+                CHECK(plan.DamageTarget == loss.Hostiles.front().Guid);
+            }
+            // Back on the tank, the walk to the spot resumes.
+            loss.Hostiles.front().VictimGuid = G(DK);
+            loss.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+            AdaptiveMaloriakPlan const resumed = Plan(loss, DK);
+            CHECK(resumed.Movement && resumed.Movement->Id.Mechanic == "main_tank_spot");
+        }
+        Boss(board).Position = rim;
+        board.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+        board.Summons.push_back(Add(41576, 950, M::MainTankSpot.X + 3.0f, M::MainTankSpot.Y, true, 100.0f));
+        AdaptiveMaloriakPlan const blockedSpot = Plan(board, DK);
+        CHECK(!blockedSpot.Movement || blockedSpot.Movement->Id.Mechanic != "main_tank_spot");
+        board.Summons.pop_back();
+        Boss(board).HealthPct = 20.0f;
+        Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+        AdaptiveMaloriakPlan const two = Plan(board, DK);
+        CHECK(!two.Movement || two.Movement->Id.Mechanic != "main_tank_spot");
+    }
+
+    // Review major 2: phase two starting at the rim with the tank east-north-
+    // east (a Magma Jets sidestep turns the frame); every ranged player behind
+    // the cauldron gets a move that sees the boss, and the moves keep 2.5 yd.
+    {
+        Blackboard board = Canonical();
+        Vector3 const rim{ -106.678f, -475.444f, 73.46f };
+        Boss(board).Position = rim;
+        Boss(board).HealthPct = 20.0f;
+        Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+        float const ene = 22.5f * 3.14159265f / 180.0f;
+        board.Players[DK].Position = { rim.X + 8.0f * std::cos(ene), rim.Y + 8.0f * std::sin(ene), 73.5f };
+        Slot const ranged[] = { HUNTER, MAGE, HOLY, DISC, SHAMAN, LOCK };
+        float x = -115.0f;
+        for (Slot slot : ranged)
+        {
+            board.Players[slot].Position = { x, -494.0f, 73.5f };
+            CHECK(!M::CauldronLineClear(board.Players[slot].Position, rim));
+            x += 5.0f;
+        }
+        std::vector<Vector3> spots;
+        for (Slot slot : ranged)
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            CHECK(plan.Movement.has_value());
+            if (!plan.Movement)
+                continue;
+            CHECK(plan.Movement->Id.Mechanic == "phase_two_spread");
+            CHECK(M::CauldronLineClear(Destination(plan), rim));
+            spots.push_back(Destination(plan));
+        }
+        for (std::size_t left = 0; left < spots.size(); ++left)
+            for (std::size_t right = left + 1; right < spots.size(); ++right)
+                CHECK(Dist(spots[left], spots[right]) >= 2.49f);
+    }
+
+    // Review major 2 and the room-wall nit: sweeps that need each ranged pass.
+    // (a) boss at (-116, -482) with the tank north: the 220-degree back-arc
+    // pass keeps the full 5-yd spread; (b) boss beside the cauldron at
+    // (-96, -486): only the last-resort pass (2.5 yd from the slots already
+    // placed) finds every player a point in sight; (c) boss in the north-west
+    // corner: fan slots clamped onto the same wall point must not both stand.
+    {
+        struct Case { Vector3 Boss; float TankDeg; bool PhaseTwo; float Spread; };
+        for (Case const& test : { Case{ { -116.0f, -482.0f, 73.5f }, 90.0f, false, 4.99f },
+                 Case{ { -96.0f, -486.0f, 73.5f }, 30.0f, true, 2.49f },
+                 Case{ { -136.0f, -418.0f, 73.5f }, 0.0f, false, 4.99f } })
+        {
+            Blackboard board = Canonical();
+            Boss(board).Position = test.Boss;
+            if (test.PhaseTwo)
+            {
+                Boss(board).HealthPct = 20.0f;
+                Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+            }
+            else
+                Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+            float const tank = test.TankDeg * 3.14159265f / 180.0f;
+            board.Players[DK].Position = { test.Boss.X + 3.0f * std::cos(tank),
+                test.Boss.Y + 3.0f * std::sin(tank), 73.5f };
+            Vector3 park{ -144.0f, -414.0f, 73.6f };
+            for (Vector3 const corner : { Vector3{ -69.0f, -414.0f, 73.6f },
+                     Vector3{ -144.0f, -494.0f, 73.6f }, Vector3{ -69.0f, -494.0f, 73.6f } })
+                if (Dist(corner, test.Boss) > Dist(park, test.Boss))
+                    park = corner;
+            std::vector<Vector3> spots;
+            for (Slot slot : { HUNTER, MAGE, HOLY, DISC, SHAMAN, LOCK })
+                board.Players[slot].Position = park;
+            for (Slot slot : { HUNTER, MAGE, HOLY, DISC, SHAMAN, LOCK })
+            {
+                AdaptiveMaloriakPlan const plan = Plan(board, slot);
+                CHECK(plan.Movement.has_value());
+                if (!plan.Movement)
+                    continue;
+                CHECK(M::CauldronLineClear(Destination(plan), test.Boss));
+                spots.push_back(Destination(plan));
+            }
+            for (std::size_t left = 0; left < spots.size(); ++left)
+                for (std::size_t right = left + 1; right < spots.size(); ++right)
+                    CHECK(Dist(spots[left], spots[right]) >= test.Spread);
+        }
+    }
+
+    // Review minor 5: the cauldron alone never holds melee offense, and a
+    // boss standing inside its radius drops the constraint.
+    {
+        Blackboard board = Canonical();
+        Vector3 const rim{ -106.678f, -475.444f, 73.46f };
+        Boss(board).Auras.push_back({ 78896, Boss(board).Guid, 1, 0 });
+        Boss(board).Position = rim;
+        // Tank on the cauldron side: the whole front cone is shadowed.
+        board.Players[DK].Position = { rim.X + 0.3f, rim.Y - 3.0f, 73.5f };
+        for (Slot slot : { RET, ROGUE })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            CHECK(!plan.SuppressOffense);
+            CHECK(std::string(plan.SuppressReason) != "melee_ring_hazard_hold");
+        }
+        Boss(board).Auras.back() = { 78895, Boss(board).Guid, 1, 0 };
+        for (Slot slot : { RET, ROGUE })
+            CHECK(!Plan(board, slot).SuppressOffense);
+        Vector3 const inside{ M::CauldronCenter.X, M::CauldronCenter.Y + 8.0f, 73.5f };
+        CHECK(!M::CauldronConstrains(inside) && M::CauldronConstrains(rim));
+        M::BossFrame frame;
+        frame.Boss = inside;
+        frame.Ux = 0.0f;
+        frame.Uy = 1.0f;
+        Vector3 const shadowed{ M::CauldronCenter.X, M::CauldronCenter.Y - 12.0f, 73.5f };
+        CHECK(!M::CauldronLineClear(shadowed, inside));
+        CHECK(M::FormationPointClear(frame, shadowed, {}));
+        // A real hazard around the whole ring still holds melee.
+        std::vector<M::FormationHazard> const ring{ { rim, 10.0f } };
+        M::BossFrame atRim;
+        atRim.Boss = rim;
+        CHECK(M::MeleeRingBlocked(atRim, M::SlotArc::Back, ring));
+        CHECK(!M::MeleeRingBlocked(atRim, M::SlotArc::Back, {}));
+        // Facing the cauldron the whole front of the ring is shadowed; with
+        // no hazard (or one far away) that is still no hold.
+        M::BossFrame facingCauldron;
+        facingCauldron.Boss = rim;
+        facingCauldron.Ux = 0.0f;
+        facingCauldron.Uy = -1.0f;
+        CHECK(!M::FormationPointClear(facingCauldron, M::FramePolar(facingCauldron, M::MeleeRingRadius, 0.0f), {}));
+        CHECK(!M::MeleeRingBlocked(facingCauldron, M::SlotArc::FrontCone, {}));
+        std::vector<M::FormationHazard> const far{ { { -70.0f, -420.0f, 73.5f }, 2.0f } };
+        CHECK(!M::MeleeRingBlocked(facingCauldron, M::SlotArc::FrontCone, far));
+    }
+
+    // Review minor 6: a ranged player 6 yd from its clear slot, in the arc and
+    // spread from everyone, but with the cauldron between it and the boss,
+    // does not keep its place.
+    {
+        Blackboard board = Canonical();
+        Vector3 const rim{ -106.678f, -475.444f, 73.46f };
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        Boss(board).Position = rim;
+        board.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+        board.Players[DISC].Position = { -140.0f, -414.0f, 73.6f };
+        AdaptiveMaloriakPlan const far = Plan(board, DISC);
+        CHECK(far.Movement.has_value());
+        Vector3 const slot = Destination(far);
+        CHECK(M::CauldronLineClear(slot, rim));
+        M::BossFrame const frame = M::ResolveFrame(Boss(board), &board.Players[DK]);
+        bool found = false;
+        for (int degrees = 0; degrees < 360 && !found; degrees += 5)
+        {
+            float const radians = float(degrees) * 3.14159265f / 180.0f;
+            Vector3 const place{ slot.X + 6.0f * std::cos(radians), slot.Y + 6.0f * std::sin(radians), 73.5f };
+            M::FramePolarCoords const polar = M::ToFramePolar(frame, place);
+            if (M::CauldronLineClear(place, rim) || polar.Radius < 8.0f || polar.Radius > 30.0f
+                || !M::ArcAdmits(M::SlotArc::Back, polar.Angle))
+                continue;
+            bool spread = true;
+            for (ActorSnapshot const& player : board.Players)
+                if (player.Guid != G(DISC) && Dist(player.Position, place) < 5.0f)
+                    spread = false;
+            if (!spread)
+                continue;
+            found = true;
+            board.Players[DISC].Position = place;
+            CHECK(!M::RangedPlaceAcceptable(frame, place, slot, M::SlotArc::Back, {}, {}, 5.0f));
+            AdaptiveMaloriakPlan const moved = Plan(board, DISC);
+            CHECK(moved.Movement && M::CauldronLineClear(Destination(moved), rim));
+        }
+        CHECK(found);
+    }
+
+    // Re-review (optional): a ranged player within the 4-yd slot tolerance
+    // but itself behind the cauldron still steps onto its slot.
+    {
+        Blackboard board = Canonical();
+        Vector3 const rim{ -106.678f, -475.444f, 73.46f };
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        Boss(board).Position = rim;
+        board.Players[DK].Position = { -105.8f, -469.0f, 73.5f };
+        bool found = false;
+        for (Slot slot : { HUNTER, MAGE, HOLY, DISC, SHAMAN, LOCK })
+        {
+            if (found)
+                break;
+            Vector3 const home = board.Players[slot].Position;
+            board.Players[slot].Position = { -140.0f, -414.0f, 73.6f };
+            AdaptiveMaloriakPlan const far = Plan(board, slot);
+            if (!far.Movement)
+            {
+                board.Players[slot].Position = home;
+                continue;
+            }
+            Vector3 const spot = Destination(far);
+            for (int degrees = 0; degrees < 360 && !found; degrees += 5)
+                for (float radius : { 1.5f, 2.5f, 3.5f })
+                {
+                    float const radians = float(degrees) * 3.14159265f / 180.0f;
+                    Vector3 const place{ spot.X + radius * std::cos(radians),
+                        spot.Y + radius * std::sin(radians), 73.5f };
+                    if (M::CauldronLineClear(place, rim))
+                        continue;
+                    found = true;
+                    board.Players[slot].Position = place;
+                    AdaptiveMaloriakPlan const step = Plan(board, slot);
+                    CHECK(step.Movement.has_value());
+                    CHECK(step.Movement && Dist(Destination(step), spot) < 0.01f);
+                    break;
+                }
+            board.Players[slot].Position = home;
+        }
+        CHECK(found);
+    }
+
+    // Delta review: with the boss himself inside the cauldron's radius the
+    // cauldron is ignored, so a ranged player within the 4-yd tolerance of
+    // its slot stays put even though every line to him counts as blocked.
+    {
+        Blackboard board = Canonical();
+        Vector3 const inside{ M::CauldronCenter.X, M::CauldronCenter.Y + 8.0f, 73.5f };
+        CHECK(!M::CauldronConstrains(inside));
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        Boss(board).Position = inside;
+        board.Players[DK].Position = { inside.X, inside.Y + 3.0f, 73.5f };
+        board.Players[MAGE].Position = { -140.0f, -414.0f, 73.6f };
+        AdaptiveMaloriakPlan const far = Plan(board, MAGE);
+        CHECK(far.Movement.has_value());
+        Vector3 const slot = Destination(far);
+        board.Players[MAGE].Position = { slot.X + 2.0f, slot.Y, slot.Z };
+        // A neighbour 3 yd away: only the tolerance (not the kept-place
+        // check, which requires the 5-yd spread) keeps the mage still.
+        board.Players[HOLY].Position = { slot.X - 1.0f, slot.Y, slot.Z };
+        CHECK(!M::CauldronLineClear(board.Players[MAGE].Position, inside));
+        CHECK(!Plan(board, MAGE).Movement);
+    }
+
     // Travel versus local moves: the staging line and the add spots are in
     // the laboratory; the entrance corridor and the lower-wing elevator
     // landing (where the r03 runback left the raid) are not.
@@ -935,6 +1291,14 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     assert "BotMovementArbitration::Owner::Route" in module
     assert module.count("ClearOwnCastFor(context.Bot, healer,") == 2
     assert '"native_dispel_wait_global_cooldown"' in module
+    # Every plan move, the main tank's hold of its spot included, goes
+    # through the ordinary native request: only a submitted move renews the
+    # mechanic movement lease (a kernel-only hold let the combat profile's
+    # range reconcile chase the boss again; delta review).
+    attempt = module.index("movement.Attempt = [this, &context, survival, travel,")
+    execute = module.index("ExecuteNativeActionIntent(\n                context.State, context.Bot, intent, owner, priority);", attempt)
+    assert "return" not in module[attempt:execute]
+    assert "main_tank_spot_hold" not in module
     # The veto is keyed by map and instance (per-map creature GUIDs).
     assert "BotEncounterInterruptVeto::Set(context.Bot->GetMapId(),\n            context.Bot->GetInstanceId(), plan.Boss.GetRawValue()," in module
     # The push hold stands down after the cap.
