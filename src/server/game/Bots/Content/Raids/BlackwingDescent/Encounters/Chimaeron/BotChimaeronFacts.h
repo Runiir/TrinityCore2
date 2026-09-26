@@ -134,6 +134,17 @@ inline bool IsEngaged(ActorSnapshot const& boss)
     return boss.InCombat || !boss.VictimGuid.IsEmpty();
 }
 
+// The boss sleeps: out of combat with no victim and REACT_PASSIVE. The native
+// script is passive only while asleep (Initialize on spawn and on every
+// Reset); JustEngagedWith and the wake event make him aggressive, and nothing
+// makes him passive again until the next reset. This reads the boss's own
+// state, not the instance-wide IsEncounterInProgress, which another BWD boss
+// in progress on the full route would also set.
+inline bool IsAsleep(ActorSnapshot const& boss)
+{
+    return !IsEngaged(boss) && !boss.ReactAggressive;
+}
+
 inline bool IsMortality(ActorSnapshot const& boss)
 {
     return HasAura(boss, MortalityBossSpell) || HasAura(boss, MortalityBossAltSpell);
@@ -210,12 +221,11 @@ inline Observation ObserveEncounter(Blackboard const& board)
 
     if (wakeNode)
         observation.CurrentPhase = IsEngaged(boss) ? Phase::None : Phase::Prewake;
-    else if (!IsEngaged(boss) && board.NativeBossState == "not_in_progress")
+    else if (IsAsleep(boss))
         // Back asleep at the encounter node: the native reset after a wipe
-        // (instance state NOT_STARTED, REACT_PASSIVE, PHASE_ASLEEP; Finkle
-        // and the Bile-O-Tron respawn 30 s after the evade). Only Finkle's
-        // gossip wakes him; attacking the sleeping boss would start the
-        // fight without Finkle's Mixture.
+        // (REACT_PASSIVE, PHASE_ASLEEP; Finkle and the Bile-O-Tron respawn
+        // 30 s after the evade). Only Finkle's gossip wakes him; attacking
+        // the sleeping boss would start the fight without Finkle's Mixture.
         observation.CurrentPhase = Phase::Prewake;
     else if (IsMortality(boss))
         observation.CurrentPhase = Phase::Mortality;

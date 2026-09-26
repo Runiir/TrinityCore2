@@ -32,6 +32,7 @@
     "state": "no_matched_wcl_reference",
     "reason": "Warcraft Logs extraction blocked by a human-verification gate on 2026-09-25; see the manifest's planned_extraction.",
     "wowsims_fallback_available": [
+      "survival_hunter",
       "fire_mage",
       "retribution_paladin",
       "assassination_rogue",
@@ -39,8 +40,7 @@
     ],
     "no_reference_until_wcl": [
       "blood_death_knight",
-      "feral_druid_tank",
-      "beast_mastery_hunter"
+      "feral_druid_tank"
     ],
     "healers_without_dps_target": [
       "holy_paladin",
@@ -50,7 +50,7 @@
   },
   "declared_gaps": [
     "No matched WCL 10N Chimaeron kill yet: every actor is judged against the WoWSims fallback or has no reference.",
-    "Blood DK, Feral tank and BM Hunter have neither a matched WCL reference nor a verified WoWSims fallback (status no_reference).",
+    "Blood DK and Feral tank have neither a matched WCL reference nor a verified WoWSims fallback (status no_reference). The Survival hunter (canonical since 2026-09-26, replacing Beast Mastery, which had no fallback) has one.",
     "Encounter damage fidelity is open: creature 43296 DamageModifier is the upstream value 1 (see creature_damage_calibration_v1 patch request).",
     "Native 10N health 20,699,972 conflicts with the guide's 25.9M; kill duration comparisons wait for the WCL health derivation.",
     "Phase-two (Mortality) tank deaths are Blizzlike once melee is calibrated; the 0 boss-window death rule may need a Mortality exception, decided with WCL death data.",
@@ -98,7 +98,7 @@
     },
     "11002003": {
       "name": "Bwchinbc",
-      "spec": "beast_mastery_hunter",
+      "spec": "survival_hunter",
       "role": "dps",
       "character_key": "hunter"
     },
@@ -145,7 +145,7 @@
       "character_key": "warlock"
     }
   },
-  "roster_policy": "Canonical composition copy 0 (tools.raid_program.raid_shard_identity: raid 1, 10N, boss 2, copy 0, slots 1-10). Specs follow the composition's Chimaeron spec_selection. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
+  "roster_policy": "Canonical composition copy 0 (tools.raid_program.raid_shard_identity: raid 1, 10N, boss 2, copy 0, slots 1-10). Specs follow the composition's Chimaeron spec_selection; the hunter slot (11002003) is Survival since 2026-09-26, before any c0 label was recorded. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
   "counting_rules": {
     "label": "A label is one build and one batch: run refuses a label that already has kills and runs a pinned copy /tmp/worldserver-<sha12>.",
     "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), is a clear whose post-processing failed (postprocess_error), was recorded without report.json measurement_validity (no_measurement_validity), or has valid_for_dps false (stalled_boss_window).",

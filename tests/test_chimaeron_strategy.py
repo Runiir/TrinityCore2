@@ -76,7 +76,7 @@ constexpr uint32 DK = 11002001, DRUID = 11002002, HUNTER = 11002003, MAGE = 1100
     board.Players = {
         Member(DK, "tank", "blood_death_knight"),
         Member(DRUID, "tank", "feral_druid_tank"),
-        Member(HUNTER, "dps", "beast_mastery_hunter"),
+        Member(HUNTER, "dps", "survival_hunter"),
         Member(MAGE, "dps", "fire_mage"),
         Member(HOLY, "healer", "holy_paladin"),
         Member(RET, "dps", "retribution_paladin"),
@@ -617,6 +617,8 @@ static void TestArbitrationReplayShape()
     boss.Entry = 43296;
     boss.Alive = true;
     boss.HealthPct = 70.0f;
+    // Mid-fight (a Feud outage): in combat and REACT_AGGRESSIVE since the pull.
+    boss.InCombat = boss.ReactAggressive = true;
     boss.Auras.push_back({ C::FeudSpell, ObjectGuid(), 1, 0 });
     board.Hostiles = { boss };
     ActorSnapshot floorTarget = Member(101, "tank", "fire_mage");
@@ -701,16 +703,38 @@ static void TestEncounterReset()
     CHECK(fighting.EncounterPhase == C::Phase::Prewake);
     CHECK(!fighting.SuppressOffense && fighting.DamageTarget.IsEmpty());
 
-    // Without the native reset (instance state still in progress) a boss
-    // sample without combat or victim stays the live encounter.
-    Blackboard sample = Board("bwd.chimaeron.encounter", true);
-    Boss(sample).InCombat = false;
-    Boss(sample).VictimGuid.Clear();
-    CHECK(Plan(sample, HUNTER).EncounterPhase == C::Phase::Mixture);
-    CHECK(Plan(sample, HUNTER).DamageTarget == Boss(sample).Guid);
+    // The asleep check reads the boss's own state, never the instance-wide
+    // encounter flag: another BWD boss in progress on the full route sets
+    // IsEncounterInProgress, and a reset (passive) Chimaeron still sleeps.
+    Blackboard otherBoss = Board("bwd.chimaeron.encounter", false);
+    otherBoss.NativeBossState = "in_progress";
+    CHECK(C::IsAsleep(Boss(otherBoss)));
+    CHECK(Plan(otherBoss, HUNTER).EncounterPhase == C::Phase::Prewake);
+    CHECK(Plan(otherBoss, HUNTER).SuppressReason == "encounter_reset_boss_asleep");
+    CHECK(Plan(otherBoss, HUNTER).DamageTarget.IsEmpty());
+
+    // An aggressive boss is awake even without combat or a victim in this
+    // sample (only a reset makes him passive again), whatever the instance
+    // flag says: he stays the live encounter.
+    for (char const* instanceState : { "in_progress", "not_in_progress" })
+    {
+        Blackboard sample = Board("bwd.chimaeron.encounter", true);
+        sample.NativeBossState = instanceState;
+        Boss(sample).InCombat = false;
+        Boss(sample).VictimGuid.Clear();
+        CHECK(!C::IsAsleep(Boss(sample)));
+        CHECK(Plan(sample, HUNTER).EncounterPhase == C::Phase::Mixture);
+        CHECK(Plan(sample, HUNTER).DamageTarget == Boss(sample).Guid);
+    }
+    // In combat (or holding a victim) is never asleep, passive or not.
+    Blackboard engagedPassive = Board("bwd.chimaeron.encounter", true);
+    Boss(engagedPassive).ReactAggressive = false;
+    CHECK(!C::IsAsleep(Boss(engagedPassive)));
+    Boss(engagedPassive).InCombat = false;
+    CHECK(!C::IsAsleep(Boss(engagedPassive)));
 
     // The re-woken boss is the live encounter again.
-    Boss(board).InCombat = true;
+    Boss(board).InCombat = Boss(board).ReactAggressive = true;
     Boss(board).VictimGuid = G(DK);
     AdaptiveChimaeronPlan const live = Plan(board, HUNTER);
     CHECK(live.EncounterPhase == C::Phase::Mixture);

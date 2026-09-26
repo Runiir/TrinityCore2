@@ -1998,6 +1998,10 @@ int main()
     BotEncounter::ActorSnapshot chimaeronBoss = sourceA;
     chimaeronBoss.Entry = 43296;
     chimaeronBoss.Guid = ObjectGuid(HighGuid::Unit, uint32(43296), uint32(92));
+    // Mid-fight (a Feud outage): in combat and REACT_AGGRESSIVE since the
+    // pull. A passive boss out of combat is the asleep Chimaeron.
+    chimaeronBoss.InCombat = true;
+    chimaeronBoss.ReactAggressive = true;
     chimaeronBoss.Auras.push_back({88872, ObjectGuid{}, 1, 0});
     BotEncounter::ActorSnapshot floorTarget = tankA;
     floorTarget.Health = 9000;
