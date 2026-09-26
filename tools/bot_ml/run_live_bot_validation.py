@@ -61,6 +61,9 @@ try:
     from .live_validation_encounter_rng import attach_encounter_rng
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from .live_validation_terminal_signals import (
+        DEFAULT_MAX_ENCOUNTER_RESETS,
+        ENCOUNTER_RESET_LOOP_COMPLETION_REASON,
+        ENCOUNTER_RESET_LOOP_LABEL,
         HeartbeatSignals,
         drain_terminal_trace,
         is_prepull_failure_label,
@@ -111,6 +114,9 @@ except ImportError:
     from live_validation_encounter_rng import attach_encounter_rng
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from live_validation_terminal_signals import (
+        DEFAULT_MAX_ENCOUNTER_RESETS,
+        ENCOUNTER_RESET_LOOP_COMPLETION_REASON,
+        ENCOUNTER_RESET_LOOP_LABEL,
         HeartbeatSignals,
         drain_terminal_trace,
         is_prepull_failure_label,
@@ -1158,6 +1164,7 @@ def native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]:
         evidence.get("unresolved_route_death_loop_events") or 0
     ) > 0
     repeated_decision_loop = bool(watchdog.get("repeated_decision_loop"))
+    encounter_reset_loop = bool(watchdog.get("encounter_reset_loop"))
     no_progress = bool(watchdog.get("no_progress"))
     native_clear = bool(
         completion_reason == "validation_route_manifest_complete"
@@ -1177,7 +1184,7 @@ def native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]:
     elif death_loop:
         status = "death_loop"
         native_reason = "native_death_loop_guardrail"
-    elif repeated_decision_loop or no_progress:
+    elif repeated_decision_loop or no_progress or encounter_reset_loop:
         status = "stalled"
         native_reason = "native_watchdog_guardrail"
     elif int(report.get("active_bots") or 0) <= 0 and str(
@@ -1213,6 +1220,7 @@ def native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]:
             "death_loop": death_loop,
             "no_progress": no_progress,
             "repeated_decision_loop": repeated_decision_loop,
+            "encounter_reset_loop": encounter_reset_loop,
         },
         "certification_status": "accepted" if certification_accepted else (
             "uncertified" if native_clear else "rejected"
@@ -3894,7 +3902,11 @@ def advance_semantic_liveness(
 
     live_progress = watchdog.get("live_combat_progress")
     live_progress = live_progress if isinstance(live_progress, Mapping) else None
-    if live_combat_progress_advanced(
+    evidence = report.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    # Damage into a pull that reset natively (no wipe) is not progress.
+    encounter_reset_observed = bool(evidence.get("encounter_reset_observed"))
+    if not encounter_reset_observed and live_combat_progress_advanced(
         dict(previous_live_combat_progress) if isinstance(previous_live_combat_progress, Mapping) else None,
         dict(live_progress) if isinstance(live_progress, Mapping) else None,
     ):
@@ -5118,6 +5130,7 @@ def live_evidence(
     near_wipe_death_loop_events = (
         signals.near_wipes.observe(status, kills=kills) if signals is not None else 0
     )
+    encounter_resets = signals.encounter_resets.observe(status) if signals is not None else 0
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     role_assignment_evidence = max(
         int(summary.get("role_assignments") or 0),
@@ -5259,6 +5272,13 @@ def live_evidence(
         "prepull_consumables_failure": prepull_consumables_failure(status),
         "near_wipe_death_loop_events": near_wipe_death_loop_events,
         "near_wipe_death_loop": signals.near_wipes.receipt() if signals is not None else {},
+        "encounter_resets_unexplained": encounter_resets,
+        "encounter_reset_observed": bool(signals is not None and signals.encounter_resets.rose_this_heartbeat),
+        "encounter_reset_loop": bool(signals is not None and signals.encounter_resets.loop),
+        "encounter_reset_loop_receipt": (
+            signals.encounter_resets.receipt()
+            if signals is not None and signals.encounter_resets.enabled else {}
+        ),
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
@@ -5431,6 +5451,8 @@ def validation_failure_labels(
         and int(evidence.get("gear_upgrades") or 0) <= 0
     ):
         labels.append("no_progress_observed")
+    if evidence.get("encounter_reset_loop"):
+        labels.append(ENCOUNTER_RESET_LOOP_LABEL)
     prepull_failure = evidence.get("prepull_consumables_failure")
     if isinstance(prepull_failure, dict) and prepull_failure and not native_clear:
         # Advisory and last: the native pre-pull gate returned Terminal for
@@ -5475,6 +5497,8 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
             int(evidence.get("near_wipe_death_loop_events") or 0),
         ),
         "near_wipe_death_loop_events": int(evidence.get("near_wipe_death_loop_events") or 0),
+        # Never part of progress_total: a reset is not progress.
+        "encounter_resets_unexplained": int(evidence.get("encounter_resets_unexplained") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
         "repath_events": int(evidence.get("repath_events") or 0),
     }
@@ -5544,6 +5568,7 @@ def watchdog_state(
         "semantic_progress_plateau": route_semantic_plateau,
         "repeated_decision_loop": repeated_loop,
         "death_loop": death_loop,
+        "encounter_reset_loop": bool(evidence.get("encounter_reset_loop")),
         "all_dead_wiped": all_dead_wiped,
         "live_combat_progress": evidence.get("live_combat_progress", {}),
         "progress_counters": counters,
@@ -5986,6 +6011,8 @@ def completion_reason(
         return "worldserver_exited_nonzero"
     if all_passed and not failure_labels:
         return "success_predicates_passed"
+    if state.get("encounter_reset_loop"):
+        return ENCOUNTER_RESET_LOOP_COMPLETION_REASON
     if state.get("death_loop"):
         return "death_loop_watchdog"
     if state.get("repeated_decision_loop"):
@@ -6029,6 +6056,7 @@ def final_evidence_rejections(
         "no_progress_watchdog",
         "repeated_decision_watchdog",
         "death_loop_watchdog",
+        ENCOUNTER_RESET_LOOP_COMPLETION_REASON,
         "calibration_pre_scoring_blocker_watchdog",
         "cohort_action_gate_failure_watchdog",
         "encounter_capability_blocker_watchdog",
@@ -6670,6 +6698,7 @@ def run_transport_completion_watchdog(
     light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
     native_readycheck: bool = True,
+    max_encounter_resets: int = DEFAULT_MAX_ENCOUNTER_RESETS,
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
 
@@ -6680,6 +6709,11 @@ def run_transport_completion_watchdog(
     (live_validation_native_readycheck).  The shard coordinator (the raid
     program) relies on the default; bot-live-validate passes its opt-in
     ``--native-readycheck`` flag, which is off by default.
+
+    ``max_encounter_resets`` ends the run as ``encounter_reset_loop_watchdog``
+    after that many native encounter resets on one boss node that no wipe
+    explains (0 disables it).  The shard coordinator relies on the default;
+    bot-live-validate passes ``--max-encounter-resets`` (default 0).
     """
     deadline = (
         None if timeout_sec is None else time.monotonic() + timeout_sec
@@ -6700,6 +6734,7 @@ def run_transport_completion_watchdog(
     # nothing else starts it here (live_validation_native_readycheck).
     readycheck = NativeReadyCheckRequester(expected_cohort_id) if native_readycheck else None
     signals.native_readycheck = readycheck
+    signals.encounter_resets.max_resets = max(0, int(max_encounter_resets))
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
     heartbeat_index = 0
@@ -7114,6 +7149,7 @@ def run_transport_completion_watchdog(
         if report["completion_reason"] in {
             "repeated_decision_watchdog",
             "death_loop_watchdog",
+            ENCOUNTER_RESET_LOOP_COMPLETION_REASON,
         } or (
             report["completion_reason"] == "machine_failure_predicate"
             and not should_defer_active_combat_bot_diagnosis(report)
@@ -7165,12 +7201,15 @@ def run_worldserver_completion_watchdog(
     light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
     native_readycheck: bool = False,
+    max_encounter_resets: int = 0,
 ) -> tuple[str, int, bool, list[str]]:
     """The process-mode completion watchdog (bot-live-validate --transport process).
 
     ``native_readycheck`` is opt-in here (``--native-readycheck``): the
     accepted single-cohort Magmaw target runs through this path, and sending
     the wipe-recovery ready check would re-pull after a full drudge wipe.
+    ``max_encounter_resets`` (``--max-encounter-resets``) is off (0) here for
+    the same reason.
     """
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
@@ -7189,6 +7228,7 @@ def run_worldserver_completion_watchdog(
     signals = HeartbeatSignals()
     readycheck = NativeReadyCheckRequester(expected_cohort_id) if native_readycheck else None
     signals.native_readycheck = readycheck
+    signals.encounter_resets.max_resets = max(0, int(max_encounter_resets))
     terminal_failure = False
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
@@ -7621,6 +7661,7 @@ def run_worldserver_completion_watchdog(
             if report["completion_reason"] in {
                 "repeated_decision_watchdog",
                 "death_loop_watchdog",
+                ENCOUNTER_RESET_LOOP_COMPLETION_REASON,
             } or (
                 report["completion_reason"] == "machine_failure_predicate"
                 and not should_defer_active_combat_bot_diagnosis(report)
@@ -7818,6 +7859,7 @@ def run_soap_completion_watchdog(
         light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
         retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
         native_readycheck=bool(getattr(args, "native_readycheck", False)),
+        max_encounter_resets=int(getattr(args, "max_encounter_resets", 0) or 0),
     )
 
 
@@ -7925,6 +7967,8 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--light-combat-heartbeats")
     if getattr(args, "native_readycheck", False):
         command.append("--native-readycheck")
+    if int(getattr(args, "max_encounter_resets", 0) or 0) > 0:
+        command.extend(["--max-encounter-resets", str(int(args.max_encounter_resets))])
     for route_node in getattr(args, "retain_trace_route_node", None) or []:
         command.extend(["--retain-trace-route-node", str(route_node)])
     if getattr(args, "preserve_worldserver", False):
@@ -8714,6 +8758,7 @@ def run_reusable_validation_session(
                 light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
                 retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
                 native_readycheck=bool(getattr(args, "native_readycheck", False)),
+                max_encounter_resets=int(getattr(args, "max_encounter_resets", 0) or 0),
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
@@ -8924,6 +8969,14 @@ def _main() -> int:
         help="Opt in to the leader's native wipe-recovery ready check (live_validation_native_readycheck): after a "
         "full wipe the cohort re-pulls once its recovery evidence holds. Off by default, so accepted single-cohort "
         "targets keep their protocol; the shard coordinator always sends it.",
+    )
+    parser.add_argument(
+        "--max-encounter-resets",
+        type=int,
+        default=0,
+        help="End the run as encounter_reset_loop_watchdog after this many native encounter resets on one boss node "
+        "that no wipe explains and no boss kill follows. 0 (the default) keeps accepted single-cohort targets "
+        "unchanged; the shard coordinator uses 3.",
     )
     parser.add_argument(
         "--retain-trace-route-node",
@@ -9494,6 +9547,7 @@ def _main() -> int:
                 light_combat_heartbeats=args.light_combat_heartbeats,
                 retain_trace_route_nodes=tuple(args.retain_trace_route_node or ()),
                 native_readycheck=bool(getattr(args, "native_readycheck", False)),
+                max_encounter_resets=int(getattr(args, "max_encounter_resets", 0) or 0),
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():

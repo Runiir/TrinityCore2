@@ -8,11 +8,13 @@
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCrashSideMovement.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianProtectedMovement.h"
 
 #include "ObjectAccessor.h"
 #include "CharmInfo.h"
 #include "DBCStructure.h"
 #include "MotionMaster.h"
+#include "MoveSpline.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -509,6 +511,13 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         // native movement state rather than lease expiry as the heal gate.
         auto activeNativeMovementPath = [this, &context]()
         {
+            // Nefarian's End: a surface leg or escape of the plan, published
+            // as its movement lease (it is admitted outside ActivePathValid).
+            if (BotEncounter::Nefarian::ProtectedMovementActive(
+                    context.State.MovementLease, !context.Bot->movespline->Finalized(),
+                    Cohort().Config.ValidationRouteNodeId,
+                    BotWorldPopulationMgrSpellSemantics::NowMs()))
+                return true;
             if (!context.State.ActivePathValid)
                 return false;
             if (Cohort().Config.ValidationRouteEnable

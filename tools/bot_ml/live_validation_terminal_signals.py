@@ -16,6 +16,15 @@ describes the last window, not the attempt.  One watchdog loop owns one
   resets the count, and so do kills on a non-boss node (recovered trash
   deaths are progress); boss-window near-wipes count, except on the heartbeat
   that carries the boss kill or the manifest completion.
+* ``EncounterResetTracker``: native encounter resets on one boss route node
+  that no wipe explains.  ``raid_runtime.boss_reset_generation`` counts every
+  instance boss state leaving IN_PROGRESS for anything but DONE
+  (BotWorldPopulationMgrValidationCohortRuntime); a native full wipe also
+  resets the boss, and advances ``wipe_generation`` with it.  Resets beyond the
+  wipes on the same node, with no boss kill there, are an evade/reset loop
+  (round-6 Nefarian c0: 26 resets, wipe generation 0, 79 minutes until the
+  emergency cap).  ``max_resets`` of them end the run as
+  ``encounter_reset_loop_watchdog``; 0 disables the tracker.
 * ``drain_terminal_trace``: after a terminal failure, drain the oldest
   pending delta rows (bounded) and capture every bot's newest rows with one
   non-delta tail, so the failing bot's last decisions survive.
@@ -275,12 +284,109 @@ class NearWipeTracker:
         }
 
 
+ENCOUNTER_RESET_LOOP_LABEL = "encounter_reset_loop"
+ENCOUNTER_RESET_LOOP_COMPLETION_REASON = "encounter_reset_loop_watchdog"
+DEFAULT_MAX_ENCOUNTER_RESETS = 3
+
+
+@dataclass
+class EncounterResetTracker:
+    """Count encounter resets no wipe explains, per boss route node."""
+
+    max_resets: int = 0
+    route_node_id: str = ""
+    route_generation: int = 0
+    reset_base: int = 0
+    wipe_base: int = 0
+    resets: int = 0
+    last_raw_resets: int = 0
+    boss_killed: bool = False
+    rose_this_heartbeat: bool = False
+    pending_wipe_reset_at_baseline: bool = False
+    history: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def enabled(self) -> bool:
+        return int(self.max_resets) > 0
+
+    def observe(self, status: Mapping[str, Any]) -> int:
+        """Return the unexplained resets on the current boss node."""
+        self.rose_this_heartbeat = False
+        if not self.enabled:
+            return 0
+        status = _mapping(status)
+        runtime = _mapping(status.get("raid_runtime"))
+        route = _mapping(status.get("validation_route"))
+        node_id = str(route.get("node_id") or "")
+        generation = _int(route.get("generation")) or 0
+        reset_generation = _int(runtime.get("boss_reset_generation"))
+        wipe_generation = _int(runtime.get("wipe_generation")) or 0
+        if (
+            str(runtime.get("instance_kind") or "").lower() != "raid"
+            or str(route.get("kind") or "").lower() != "boss"
+            or not node_id or generation <= 0 or reset_generation is None
+        ):
+            return 0
+        if (node_id, generation) != (self.route_node_id, self.route_generation):
+            # Resets before this node (a trash pack's evade) never count here.
+            self.route_node_id, self.route_generation = node_id, generation
+            self.reset_base, self.wipe_base = reset_generation, wipe_generation
+            if wipe_generation > 0 and reset_generation <= (
+                _int(runtime.get("boss_reset_generation_at_wipe")) or 0
+            ):
+                # The producer advances wipe_generation on the all-dead edge and
+                # boss_reset_generation on a later boss-state sample
+                # (awaiting_native_reset).  The latest wipe's reset has arrived
+                # only once boss_reset_generation > boss_reset_generation_at_wipe;
+                # while it has not, keep that one pairing open so the pending
+                # reset is explained.  Earlier wipes are already accounted.
+                self.wipe_base = wipe_generation - 1
+                self.pending_wipe_reset_at_baseline = True
+            else:
+                self.pending_wipe_reset_at_baseline = False
+            self.resets = self.last_raw_resets = 0
+            self.boss_killed = False
+        self.boss_killed = self.boss_killed or _route_scope_settled(status, node_id, generation)
+        raw = max(0, (reset_generation - self.reset_base) - max(0, wipe_generation - self.wipe_base))
+        if raw > self.last_raw_resets:
+            self.rose_this_heartbeat = True
+            self.history.append({
+                "route_node_id": node_id, "route_generation": generation,
+                "boss_reset_generation": reset_generation, "wipe_generation": wipe_generation,
+                "unexplained_resets": raw,
+            })
+            del self.history[:-NEAR_WIPE_HISTORY_LIMIT]
+        self.last_raw_resets = raw
+        self.resets = 0 if self.boss_killed else raw
+        return self.resets
+
+    @property
+    def loop(self) -> bool:
+        return self.enabled and self.resets >= int(self.max_resets)
+
+    def receipt(self) -> dict[str, Any]:
+        return {
+            "schema": "bot_encounter_reset_loop_v1",
+            "max_resets": int(self.max_resets),
+            "route_node_id": self.route_node_id,
+            "route_generation": self.route_generation,
+            "boss_reset_generation_base": self.reset_base,
+            "wipe_generation_base": self.wipe_base,
+            "pending_wipe_reset_at_baseline": self.pending_wipe_reset_at_baseline,
+            "unexplained_resets": self.resets,
+            "boss_killed": self.boss_killed,
+            "loop": self.loop,
+            "history": list(self.history),
+        }
+
+
 @dataclass
 class HeartbeatSignals:
     """Per-watchdog-loop state threaded through every heartbeat report."""
 
     route_actions: RouteActionLedger = field(default_factory=RouteActionLedger)
     near_wipes: NearWipeTracker = field(default_factory=NearWipeTracker)
+    encounter_resets: EncounterResetTracker = field(default_factory=EncounterResetTracker)
     # The loop's NativeReadyCheckRequester when the ready check is enabled
     # (live_validation_native_readycheck); its receipt joins watchdog_state.
     native_readycheck: Any = None

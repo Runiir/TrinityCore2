@@ -428,5 +428,30 @@
     "guide_reported": "External strategy value; not automatically 4.4.2 truth.",
     "client_reference": "4.4.2.59185 client row (rank 1).",
     "addon_corroborated": "Pinned BigWigs/DBM timer (rank 3)."
+  },
+  "live_findings": {
+    "round6_batch1_first_attempt": {
+      "evidence": "artifacts/cata_raid_program/round6_batch1_20260926.tar.gz shard blackwing_descent_10n_nefarian_c0; combat log reassembled from the console export",
+      "outcome": "reached bwd.nefarian.encounter; about 28 phase-1 attempts, each ending in a dragon evade and respawn (wipe_generation 0); emergency_wall_clock_timeout after 79 minutes",
+      "root_causes": [
+        "native combat range (and route) movement pathed bots off the raised transport over the static navmesh into the magma bowl (8,612 of 11,104 combat range requests below z 5); the dragons followed their victims down",
+        "casters lost line of sight to Onyxia past the pillars, which triggered that range recovery",
+        "slow Onyxia pickup (her first melee on the Feral 34.4 s after her first damage): the warlock landed first and opened on her 1.2 s before any tank; the Feral dropped last, landed behind pillar 0 (7.9 yd from its centre) and its Growl failed on line of sight for 24 s; the lust fallback therefore waited until 38.9 s"
+      ],
+      "fixes": [
+        "PlatformHold with a renewed Mechanic lease on the platform, also as the fallback beside every proposed leg; admitted legs publish their lease (Hazard for survival escapes)",
+        "pillar-sight and range-checked formation spots for ranged and healers (36 yd), the arrival tolerance only while sight and range hold from where the bot stands",
+        "damage dealers hold fire (the Target lane) before the pull and until a tank has Onyxia; her tank walks to a pillar-clear pickup spot within Growl range",
+        "non-tanks keep 4 yd from a dragon's centre (Spell.cpp skips the cone check inside the target's bounding radius, at least 2 yd)",
+        "heal guard (shared patch R7_protected_movement_heal_guard.patch): a protected Nefarian leg or escape allows only instant heals and is never stopped by a hard cast",
+        "route engagement observer for Nefarian (41376 only, never Onyxia), wiring patch R7_nefarian_route_observation.patch",
+        "Onyxia pickup ownership until she targets her tank, bounded across decisions (10 s, 4 rejected spots or ~3 s stalled without sight; then nefarian_pickup_exhausted and the damage dealers start); the Blood DK keeps Onyxia while she lives when the Feral is dead, then tanks Nefarian"
+      ],
+      "open": [
+        "Onyxia held at 1 health with Nefarian landed and engaged (attempts 1-3 and 5-8): no break proven in the native chain (MoveLand, MovementInform, EVENT_LANDED, ACTION_NEFARIAN_LANDED, _allowDeath); the chain is instrumented (NefariansEnd log lines, server.nefarians_end) pending the next live run; the native rule is unchanged",
+        "watchdog counts party damage as progress while the encounter keeps resetting (tools/bot_ml/run_live_bot_validation.py)",
+        "the route drops the Onyxia tank last (it was still on the ledge approach when the node advanced); a Feral-first drop would shorten the pickup further"
+      ]
+    }
   }
 }

@@ -7,6 +7,9 @@
 // ascent and the descent steps are in BotNefarianAscent.h.
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscent.h"
+#include <algorithm>
+#include <initializer_list>
+#include <vector>
 
 namespace BotEncounter::Nefarian
 {
@@ -92,11 +95,91 @@ inline float PhaseThreeWingSign(EncounterView const& view,
     return bestSign;
 }
 
+// Round 7: a caster or healer whose line to its target crosses a pillar
+// (the pillars rise about 10 yards above the raised floor) gets a line of
+// sight failure, and native combat range recovery then walked it off the
+// platform. Formation spots for them keep every line clear of the pillars.
+constexpr float PillarSightRadius = 6.1f; // the skirt at the pillar's base
+
+inline bool PillarSightClear(LocalPoint from, LocalPoint to)
+{
+    LocalPoint const d{ to.X - from.X, to.Y - from.Y };
+    float const length2 = d.X * d.X + d.Y * d.Y;
+    for (LocalPoint const& pillar : PillarCenters)
+    {
+        float t = length2 > 1e-4f
+            ? ((pillar.X - from.X) * d.X + (pillar.Y - from.Y) * d.Y) / length2 : 0.0f;
+        t = std::clamp(t, 0.0f, 1.0f);
+        if (Distance(pillar, { from.X + d.X * t, from.Y + d.Y * t }) < PillarSightRadius)
+            return false;
+    }
+    return true;
+}
+
+// The Onyxia tank's pickup (round 7). Until she attacks it, the pickup owns
+// its movement:
+// - within reach of her (Growl's range, 30, less a margin; melee reach when
+//   Growl is not usable now) with a clear line (the pillar model and, when
+//   observed, the native line of sight): it stands still, so no movement
+//   claims the cast lanes and the taunt (ThreatControl) runs;
+// - otherwise it walks to a safe floor spot within OnyxiaPickupYards of her
+//   with a pillar-clear line, on the side it comes from. A spot the native
+//   line of sight rejected is left for another at least 4 yards away (the
+//   bounded recovery: a finite list of spots).
+// Only once she targets it does it lead her out (PlanTankSpot).
+constexpr float OnyxiaPickupYards = 25.0f;
+constexpr float OnyxiaTauntReachYards = 28.0f; // Growl 30, less a margin
+
+inline SurfaceGoal OnyxiaPickupGoal(MovementContext const& context)
+{
+    LocalPoint const self = BotLocal(context);
+    ActorSnapshot const& onyxiaActor = *context.View.Onyxia;
+    LocalPoint const onyxia = WorldToLocal(onyxiaActor.Position);
+    uint32 const taunt = TauntFor(context.Bot.ClassSpec).SpellId;
+    bool const tauntUsable = taunt
+        && (!context.Facts || context.Facts->SpellUsable(context.Bot.Guid, taunt));
+    float const reach = tauntUsable ? OnyxiaTauntReachYards : OnyxiaMeleeReach - 2.0f;
+    bool const nativeSight = !context.Facts || context.Facts->InSight(onyxiaActor.Guid);
+    PickupState const* memory = context.Facts
+        ? context.Facts->FindPickup(context.Bot.Guid, onyxiaActor.Guid) : nullptr;
+    // The budget spent (PickupMemory): hold and keep trying from here.
+    if (memory && memory->Exhausted)
+        return MakeGoal(context, MovePurpose::TankLead, Surface::Floor, self, 3.0f, true);
+    if (Distance(self, onyxia) <= reach && PillarSightClear(self, onyxia) && nativeSight)
+        return MakeGoal(context, MovePurpose::TankLead, Surface::Floor, self, 3.0f, true);
+    auto rejected = [memory](LocalPoint point)
+    {
+        if (!memory)
+            return false;
+        for (Vector3 const& spot : memory->RejectedSpots)
+            if (Distance(WorldToLocal(spot), point) < 4.0f)
+                return true;
+        return false;
+    };
+    float const bearing = Distance(self, onyxia) < 0.5f ? 0.0f
+        : AngleOf({ self.X - onyxia.X, self.Y - onyxia.Y });
+    float const outer = std::min(OnyxiaPickupYards, reach - 3.0f);
+    for (float radius : { outer, outer - 5.0f, outer - 10.0f })
+        for (float step : { 0.0f, 20.0f, -20.0f, 40.0f, -40.0f, 60.0f, -60.0f, 90.0f, -90.0f })
+        {
+            LocalPoint const point = Offset(onyxia, bearing + DegToRad(step), radius);
+            if ((!nativeSight && Distance(point, self) < 4.0f) || rejected(point))
+                continue;
+            if (FloorPointSafe(context, point, true) && PillarSightClear(point, onyxia))
+                return MakeGoal(context, MovePurpose::TankLead, Surface::Floor, point, 3.0f,
+                    true);
+        }
+    // No spot: hold, and let the taunt try from here.
+    return MakeGoal(context, MovePurpose::TankLead, Surface::Floor, self, 3.0f, true);
+}
+
 inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
 {
-    bool const onyxiaTank = context.Bot.Guid == context.Plan.OnyxiaTank;
-    bool const nefarianTank = context.Bot.Guid == context.Plan.NefarianTank;
-    if (!onyxiaTank && !nefarianTank)
+    // The Onyxia tank now: her tank, or the Blood DK when hers is dead.
+    bool const onyxiaTank = ActsAsOnyxiaTank(context.Board, context.View, context.Plan,
+        context.Bot.Guid);
+    bool const nefarianTank = context.Bot.Guid == context.Plan.NefarianTank && !onyxiaTank;
+    if (!onyxiaTank && !nefarianTank && context.Bot.Guid != context.Plan.WarriorHandler)
         return std::nullopt;
     EncounterView const& view = context.View;
     ArenaLayout const& layout = context.Layout;
@@ -120,6 +203,12 @@ inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
                 return MakeGoal(context, MovePurpose::Stage, Surface::Floor,
                     Offset(WorldToLocal(view.Onyxia->Position),
                         layout.OnyxiaEndAngle, 10.0f), 3.0f, false);
+            // Round 7: pick her up first. Until she attacks her tank, it
+            // walks to where it sees her past the pillars within taunt range
+            // (the first live attempt's Feral landed behind a pillar and its
+            // Growl failed on line of sight for 24 s).
+            if (view.Onyxia->VictimGuid != context.Bot.Guid)
+                return OnyxiaPickupGoal(context);
             return fromSpot(PlanTankSpot(WorldToLocal(view.Onyxia->Position),
                 layout.OnyxiaEndAngle, OnyxiaMeleeReach,
                 view.OnyxiaDischarging()));
@@ -237,6 +326,107 @@ inline uint8 FormationSlot(Blackboard const& board, ObjectGuid guid)
     return slot;
 }
 
+// Heal and spell range is 40 yards; a spot keeps its targets within 36 so a
+// tank's step or a dragon's turn does not put them out of reach.
+constexpr float SightRangeYards = 36.0f;
+
+// Whom a ranged member or healer must see from its spot: its damage target,
+// and for a healer the dragon tanks (`primaryOnly`: the tank of the dragon
+// that fights now - Onyxia's before Nefarian lands, his after she dies).
+inline std::vector<LocalPoint> SightTargets(MovementContext const& context,
+    ObjectGuid damageTarget, bool healer, bool primaryOnly = false)
+{
+    std::vector<LocalPoint> targets;
+    for (ActorSnapshot const* dragon : { context.View.Onyxia, context.View.Nefarian })
+        if (dragon && dragon->Alive && dragon->Guid == damageTarget)
+            targets.push_back(WorldToLocal(dragon->Position));
+    if (!healer)
+        return targets;
+    ObjectGuid const primary = context.View.OnyxiaAlive() ? context.Plan.OnyxiaTank
+        : context.Plan.NefarianTank;
+    for (ObjectGuid tank : { context.Plan.OnyxiaTank, context.Plan.NefarianTank })
+    {
+        if (primaryOnly && tank != primary)
+            continue;
+        if (ActorSnapshot const* actor = context.Board.FindActor(tank);
+            actor && actor->Alive && actor->Guid != context.Bot.Guid)
+            targets.push_back(WorldToLocal(actor->Position));
+    }
+    return targets;
+}
+
+// A spot from which every target is in sight past the pillars and within
+// SightRangeYards.
+inline bool SpotServes(LocalPoint point, std::vector<LocalPoint> const& targets)
+{
+    return std::all_of(targets.begin(), targets.end(), [point](LocalPoint target)
+        {
+            return PillarSightClear(point, target)
+                && Distance(point, target) <= SightRangeYards;
+        });
+}
+
+// The first safe floor spot that serves its targets: rings of 0, 4, 8 and 12
+// yards around `wanted`, then, stepping toward the targets (a tank leading
+// Onyxia out to the ring), rings of 0 and 4 yards every 4 yards.
+inline std::optional<LocalPoint> SightedSpot(MovementContext const& context,
+    LocalPoint wanted, float bearing, std::vector<LocalPoint> const& targets)
+{
+    auto search = [&](LocalPoint centre, std::initializer_list<float> radii)
+        -> std::optional<LocalPoint>
+    {
+        for (float radius : radii)
+            for (float step : { 0.0f, 45.0f, -45.0f, 90.0f, -90.0f, 135.0f, -135.0f, 180.0f })
+            {
+                LocalPoint const point = Offset(centre, bearing + DegToRad(step), radius);
+                if (FloorPointSafe(context, point, false) && SpotServes(point, targets))
+                    return point;
+                if (radius == 0.0f)
+                    break;
+            }
+        return std::nullopt;
+    };
+    if (std::optional<LocalPoint> const near = search(wanted, { 0.0f, 4.0f, 8.0f, 12.0f }))
+        return near;
+    if (targets.empty())
+        return std::nullopt;
+    LocalPoint centroid{ 0.0f, 0.0f };
+    for (LocalPoint target : targets)
+        centroid = { centroid.X + target.X / float(targets.size()),
+            centroid.Y + target.Y / float(targets.size()) };
+    for (float along = 4.0f; along <= 48.0f; along += 4.0f)
+        if (std::optional<LocalPoint> const point =
+                search(StepToward(wanted, centroid, along), { 0.0f, 4.0f }))
+            return point;
+    return std::nullopt;
+}
+
+// The sighted formation goal of a caster or healer: every target first, the
+// fighting dragon's tank alone when the two tanks are too far apart.
+inline std::optional<SurfaceGoal> SightedFormationGoal(MovementContext const& context,
+    LocalPoint wanted, float bearing, ObjectGuid damageTarget, MovePurpose purpose)
+{
+    ActorSnapshot const& bot = context.Bot;
+    bool const healer = IsHealerSpec(bot.ClassSpec, bot.Role);
+    for (bool primaryOnly : { false, true })
+    {
+        if (primaryOnly && !healer)
+            break;
+        std::vector<LocalPoint> const targets = SightTargets(context, damageTarget,
+            healer, primaryOnly);
+        if (std::optional<LocalPoint> const point = SightedSpot(context, wanted, bearing,
+                targets))
+        {
+            SurfaceGoal goal = MakeGoal(context, purpose, Surface::Floor, *point, 3.0f,
+                false);
+            goal.Sight = targets;
+            goal.SightRangeYards = SightRangeYards;
+            return goal;
+        }
+    }
+    return std::nullopt;
+}
+
 inline std::optional<SurfaceGoal> FormationGoal(MovementContext const& context,
     ObjectGuid damageTarget)
 {
@@ -275,11 +465,17 @@ inline std::optional<SurfaceGoal> FormationGoal(MovementContext const& context,
             wanted = Offset(body, AngleOf(toward) + DegToRad(8.0f * (slot % 3)),
                 reach - 8.0f);
         }
-        std::optional<LocalPoint> const safe = SafeNear(context, wanted,
-            AngleOf({ wanted.X - anchor.X, wanted.Y - anchor.Y }), 0.0f,
-            false);
-        std::optional<LocalPoint> const moved = safe ? safe
-            : SafeNear(context, anchor, slotAngle, 7.0f, false);
+        if (!melee && phase != Phase::PreEngage)
+            if (std::optional<SurfaceGoal> const sighted = SightedFormationGoal(context,
+                    wanted, AngleOf({ wanted.X - anchor.X, wanted.Y - anchor.Y }),
+                    damageTarget, MovePurpose::Formation))
+                return sighted;
+        std::optional<LocalPoint> moved;
+        if (!moved)
+            moved = SafeNear(context, wanted,
+                AngleOf({ wanted.X - anchor.X, wanted.Y - anchor.Y }), 0.0f, false);
+        if (!moved)
+            moved = SafeNear(context, anchor, slotAngle, 7.0f, false);
         if (!moved)
             return std::nullopt;
         return MakeGoal(context, phase == Phase::PreEngage ? MovePurpose::Stage
@@ -295,10 +491,15 @@ inline std::optional<SurfaceGoal> FormationGoal(MovementContext const& context,
         : 18.0f + float(slot / 5) * 4.0f;
     LocalPoint const wanted = Offset(Offset(centre, wing, depth),
         wing + Pi / 2.0f, (float(slot % 5) - 2.0f) * 3.0f);
-    std::optional<LocalPoint> const safe = SafeNear(context, wanted, wing, 0.0f,
-        false);
-    std::optional<LocalPoint> const moved = safe ? safe
-        : SafeNear(context, centre, wing, depth, false);
+    if (!melee && !OnPillarStructure(context))
+        if (std::optional<SurfaceGoal> const sighted = SightedFormationGoal(context,
+                wanted, wing, damageTarget, MovePurpose::Formation))
+            return sighted;
+    std::optional<LocalPoint> moved;
+    if (!moved)
+        moved = SafeNear(context, wanted, wing, 0.0f, false);
+    if (!moved)
+        moved = SafeNear(context, centre, wing, depth, false);
     if (!moved)
         return std::nullopt;
     MovePurpose const purpose = OnPillarStructure(context)

@@ -504,6 +504,150 @@ client's jump (`MotionMaster::MoveJumpWithGravity` at 7.95577 yd/s up and the co
 gravity, at most run speed). The descent needs nothing new: T's StepOff, Fall and Land
 already drop from a raised part of the same transport.
 
+## 7a. First live attempt (round 6 batch, analysed in round 7)
+
+Evidence: `artifacts/cata_raid_program/round6_batch1_20260926.tar.gz`, shard
+`blackwing_descent_10n_nefarian_c0`, with the combat log reassembled from the
+console export (2,429 chunks). The run reached `bwd.nefarian.encounter` and
+then spent 79 minutes in phase 1 until `emergency_wall_clock_timeout`.
+
+**What happened**
+- There were about 28 attempts, each 2.5-3 minutes long. Every attempt ended
+  with the dragons evading and respawning: a new Onyxia and Nefarian GUID each
+  time, and `wipe_generation` stayed at 0.
+- Phase 1 never ended. Onyxia took 108.8M damage over the run against 5.58M
+  health. In attempts 1-3 and 5-8 she was pinned at 1 health while Nefarian was
+  landed and fighting: her no-death-before-landing clamp was still active.
+  Later attempts never got her below about 40%.
+- Time Warp was cast once, in attempt 1, 38 s after the pull (Temporal
+  Displacement 80354 at +28 s on the node). That is when Nefarian landed, not
+  about 5 s after the Feral held Onyxia. No lust was cast in later attempts.
+- Deaths recycled through corpse runs: releases, the run back and resurrection.
+  That is why all 10 bots were alive at the end while 9 deaths were counted in
+  the last window.
+
+**Where the damage came from**
+
+| Source | Damage taken |
+|---|---|
+| Bone warrior melee (on all ten) | 85.5M |
+| Onyxia's Shadowflame Breath (on all ten) | 42.8M |
+| Magma 81114 (hunter, mage, shaman, warlock, a Flaming Orb, the Doomguard) | 44.4M |
+| Electrical Overload | 13.8M |
+| Lightning Discharge | 11.5M |
+| Tail Lash | 10.7M |
+| Nefarian's breath | 9.6M |
+| Electrocute | 2.9M |
+
+**Root cause: static navmesh movement under the transport**
+- 11,104 of the movement requests at the node were native combat range
+  (`MoveBotToProfileRange`, CombatRange owner). 8,612 of them targeted points
+  below z 5: the magma bowl (z -1.6) or the liquid surface under the platform
+  (z 2.95-3.5).
+- The first came 5.9 s after the pull. The mage lost line of sight to Onyxia
+  past a pillar, and combat range recovery pathed it off the transport.
+- Route regroups did the same.
+- Only 1,573 of the plan's own legs were walked, and nothing kept the lane
+  between them.
+- Onyxia (straight-line chase) and Nefarian (mmaps chase) followed their
+  victims down, from z 6.5 to 2.95 and -7.3. Pillars and the platform then
+  blocked the rest of the raid's lines of sight. The breath cones and warrior
+  control fell apart, and the dragons evaded when their targets became
+  unreachable.
+
+**Slow Onyxia pickup (the lust decode)**
+- Her first damage came at 1790437213992 ms, but her first melee hit on the Feral
+  only at +34.4 s. The lust fallback waits for a tank to hold her, so Time Warp
+  landed at +38.9 s.
+- The warlock landed first and opened on her 1.2 s before any tank.
+- The Feral dropped last: it was still on the ledge approach when the node
+  advanced. It landed at local (47.6, -3.7), 7.9 yd from pillar 0's centre.
+- Its Growl (6795) and Faerie Fire failed with `native_no_line_of_sight` for 24 s.
+
+**Fixes (round 7, after review)**
+- Platform hold (`PlatformHold`, `nefarian_platform_hold`):
+  - From the pull through phase 3, a bot on the raised platform always carries
+    the hold. When it has no leg, the hold stands alone. Beside a proposed leg it
+    is the fallback: CombatMovement, utility 1. An admitted leg wins; a leg that
+    native admission rejects leaves the lane to the hold.
+  - A diagnostic hold stays visible as `nefarian_platform_hold:<diagnostic>`.
+  - The hold stops the native chase or point path and renews a Mechanic lease.
+  - Every admitted leg of the plan publishes its own lease: Hazard for a
+    survival escape, Mechanic otherwise.
+  - A leg in flight renews the lease without being stopped.
+- Heal guard (shared patch `R7_protected_movement_heal_guard.patch`): while
+  such a lease stands and a spline runs, the heal candidate selects only instant
+  heals, and `TryCastFriendlySpell` refuses a cast-time spell
+  (`protected_movement_active`) instead of stopping the leg or escape. The
+  scope is the Nefarian node (`BotNefarianProtectedMovement.h`).
+- Formation spots for ranged and healers:
+  - Every line to the damage target, and for healers to the dragon tanks, clears
+    the pillars (6.1 yd).
+  - Every target is within 36 yd. A healer falls back to the fighting dragon's
+    tank alone when the two tanks are too far apart. The search steps toward the
+    targets, which covers Onyxia's lead-out to the ring.
+  - The arrival tolerance applies only while sight and range still hold from
+    where the bot actually stands.
+- The pull:
+  - Before the pull, and until a tank has Onyxia, damage dealers hold fire. The
+    suppression also claims the Target lane; heals and consumables go on. If her
+    tank is dead, nobody waits.
+  - Until she attacks her tank, the tank walks to a pillar-clear pickup spot
+    within 25 yd of her (Growl reaches 30) and taunts.
+  - Replay: the Feral from its r06 landing spot sees her after 31 yd, about
+    4.4 s at run speed.
+- Second review:
+  - Pickup ownership: until Onyxia targets her tank, the pickup owns its
+    movement. Within reach (Growl 30 less a margin, or melee reach when Growl is
+    not usable) and in sight, judged by the pillar model and the native line of
+    sight, the tank stands still so the taunt runs. Only once she targets it
+    does it lead her out.
+  - Pickup recovery: a spot the native line of sight rejects is left for
+    another at least 4 yd away, a bounded list.
+  - Replay at 100 ms decisions: from r 27.8 the Feral makes no move and taunts
+    at once; from r 29 it makes one move, then taunts.
+  - Short corrections: a checked leg under NextLeg's 1 yd arrival, when the bot's
+    own spot does not serve (sight, range or a dragon's core).
+  - Dragon core: arrival and holds also require the bot's actual position to be
+    outside it. A non-tank inside a dragon's core walks out whatever the dragon
+    casts.
+  - Pull without the Feral: the Blood DK takes Onyxia (`OnyxiaTankNow`) before
+    and after the pull. With no tank alive the damage dealers do not wait.
+- Delta review:
+  - The Blood DK standing in for a dead Feral (`ActsAsOnyxiaTank`) keeps
+    Onyxia until she dies and holds Nefarian's taunt until then. Once she is
+    dead or gone it is the full Nefarian tank again: tank hold and Nefarian
+    taunt, through his landing and phase 3.
+  - The pickup is bounded across decisions (`BotNefarianPickupMemory.h`, kept
+    by the native observer per tank and Onyxia GUID, so a moving victim never
+    resets it):
+    - spots where the native line of sight failed are never reselected;
+    - the budget is 10 s, or 4 rejected spots, or about 3 s standing still
+      without sight;
+    - once spent, the tank holds with `nefarian_platform_hold:nefarian_pickup_exhausted`
+      and keeps trying from there, and the damage dealers start on Onyxia.
+- Breath: `Spell.cpp` skips the cone check for a target within its own bounding
+  radius (at least 2 yd) of the dragon's centre, so non-tanks keep 4 yd from
+  both dragons.
+- Route engagement observer (`SubmitAdaptiveNefarianRouteObservation`, wiring
+  patch `R7_nefarian_route_observation.patch`): Nefarian (41376) only, landed,
+  in combat, attackable. It records the engagement and nothing else, so his kill
+  is not rejected as `combined_rejected`.
+- Onyxia at 1 health: open. The native chain has no proven missed signal, so the
+  native rule is unchanged. The chain is instrumented under
+  `server.nefarians_end`:
+  - Nefarian's `move_land`, `movement_inform` (type and id), `landed` and
+    `landed_signal` (Onyxia GUID, AI enabled and AI pointer);
+  - Onyxia's `landed_received` (AI pointer and `_allowDeath`) and her
+    `lethal_clamp`.
+
+**Not in these files (reported)**
+- The completion watchdog counts any party damage as progress
+  (`route_party_damage`, `tools/bot_ml/run_live_bot_validation.py`). An
+  encounter that keeps evading and resetting therefore never stalls.
+- The route drops the Onyxia tank last. A Feral-first drop would shorten the
+  pickup further.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). None is

@@ -27,20 +27,52 @@ def _code(path: Path) -> str:
     return re.sub(r"//[^\n]*", "", path.read_text(encoding="utf-8"))
 
 
-def test_stop_clears_native_chase_and_renews_a_hazard_lease() -> None:
+def test_holds_clear_native_chase_and_renew_a_lease() -> None:
     code = _code(CANDIDATES)
-    stop = code[code.index("if (context.AdaptiveNefarianMovementHold == BotEncounter::Nefarian::WarriorStopHold)"):]
-    stop = stop[:stop.index("DecisionKernel.Submit(std::move(stop));")]
-    assert "Uses(\n            BotActionArbitration::Resource::Movement)" in stop
-    assert "Priority::Survival" in stop
-    controlled = stop.index("GetMotionSlot(MOTION_SLOT_CONTROLLED)")
-    for step in ("bot->StopMoving();", "motion->Clear(MOTION_SLOT_ACTIVE);", "motion->MoveIdle();",
-                 "BotMovementArbitration::Apply(context.State.MovementLease,"):
-        assert controlled < stop.index(step), step
-    assert "hold.Owner = BotMovementArbitration::Owner::Hazard;" in stop
-    assert "hold.Priority = BotMovementArbitration::Priority::Hazard;" in stop
-    assert "BuildMovementRequest(bot, hold, context.DecisionNowMs)" in stop
-    assert "hold.X = bot->GetPositionX();" in stop and "hold.Z = bot->GetPositionZ();" in stop
+    renew = code[code.index("auto renewLease = [this, &context]"):]
+    renew = renew[:renew.index("};")]
+    for line in ("lease.X = bot->GetPositionX();", "lease.Z = bot->GetPositionZ();",
+                 "lease.Owner = owner;", "lease.Priority = priority;",
+                 "BotMovementArbitration::Apply(context.State.MovementLease,",
+                 "BuildMovementRequest(bot, lease, context.DecisionNowMs)"):
+        assert line in renew, line
+    block = code[code.index("std::string const& hold = context.AdaptiveNefarianMovementHold;"):]
+    block = block[:block.index("DecisionKernel.Submit(std::move(stop));")]
+    assert "hold == BotEncounter::Nefarian::WarriorStopHold;" in block
+    assert "BotEncounter::Nefarian::IsPlatformHold(hold);" in block
+    assert "hold == BotEncounter::Nefarian::LegInFlightHold;" in block
+    assert "? BotMovementArbitration::Owner::Hazard : BotMovementArbitration::Owner::Mechanic;" in block
+    assert "Priority::Survival" in block
+    assert "bool const stopMoving = warriorStop || platformStop;" in block
+    assert "Uses(\n            BotActionArbitration::Resource::Movement)" in block
+    # Beside a proposed leg the platform hold is the fallback: below every leg.
+    assert "bool const fallback = platformStop && context.AdaptiveNefarianMovement" in block
+    assert ": fallback ? BotActionArbitration::Priority::CombatMovement" in block
+    assert "warriorStop ? 480.0f : fallback ? 1.0f : 250.0f" in block
+    controlled = block.index("GetMotionSlot(MOTION_SLOT_CONTROLLED)")
+    stop = block.index("if (stopMoving)")
+    for step in ("bot->StopMoving();", "motion->Clear(MOTION_SLOT_ACTIVE);", "motion->MoveIdle();"):
+        assert controlled < stop < block.index(step), step
+    assert controlled < block.index("renewLease(owner, priority);")
+
+
+def test_admitted_legs_publish_their_lease() -> None:
+    code = _code(CANDIDATES)
+    leg = code[code.index("if (context.AdaptiveNefarianMovement\n"):]
+    leg = leg[:leg.index("context.State.DecisionKernel.Submit(std::move(movement));")]
+    committed = leg.index("if (outcome.Result == BotActionArbitration::Disposition::Committed)")
+    assert committed < leg.index("renewLease(survival ? BotMovementArbitration::Owner::Hazard")
+    assert ">= uint8(BotActionArbitration::Priority::Survival);" in leg
+
+
+def test_damage_dealers_hold_fire_on_the_target_lane() -> None:
+    code = _code(CANDIDATES)
+    hold = code[code.index("if (suppressReason == BotEncounter::Nefarian::HoldFirePreEngage"):]
+    hold = hold[:hold.index("context.State.DecisionKernel.Submit(std::move(holdFire));")]
+    assert "suppressReason == BotEncounter::Nefarian::HoldFireForOnyxiaTank" in hold
+    assert "Uses(\n                BotActionArbitration::Resource::Target)" in hold
+    assert "Resource::Cast" not in hold and "Resource::GlobalCooldown" not in hold
+    assert "Outcome::Committed(" in hold
 
 
 def test_combat_range_movement_meets_the_lease_before_any_launch() -> None:
@@ -84,6 +116,17 @@ int main()
     formation.MovementOwner = Owner::Mechanic;
     formation.MovementPriority = Priority::Mechanic;
     if (Evaluate(lease, formation, 1000) != Decision::PreserveExisting) return 4;
+    // The platform hold's Mechanic lease also keeps combat range out.
+    Lease platform;
+    Request mechanic = hold;
+    mechanic.MovementOwner = Owner::Mechanic;
+    mechanic.MovementPriority = Priority::Mechanic;
+    Apply(platform, mechanic);
+    if (Evaluate(platform, range, 1000) != Decision::PreserveExisting) return 8;
+    Request routeWalk = range;
+    routeWalk.MovementOwner = Owner::Route;
+    routeWalk.MovementPriority = Priority::Route;
+    if (Evaluate(platform, routeWalk, 1000) != Decision::PreserveExisting) return 9;
     Request renewed = hold;  // the next decision renews it
     renewed.ExpiresAtMs = 2000 + 1500;
     if (Evaluate(lease, renewed, 2000) != Decision::Refresh) return 5;
@@ -106,3 +149,25 @@ int main()
     result = subprocess.run([str(binary)], capture_output=True, text=True)
     assert result.returncode == 0, result.returncode
     assert "lease ok" in result.stdout
+
+
+def test_onyxia_landing_chain_is_instrumented_not_rewritten() -> None:
+    """Round 7 review: the native "no death before Nefarian lands" rule stays
+    as it was (one-shot ACTION_NEFARIAN_LANDED); the chain is instrumented so
+    the next live run shows where it breaks."""
+    script = _code(ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp")
+    onyxia = script[script.index("struct npc_nefarians_end_onyxia"):]
+    damage = onyxia[onyxia.index("void DamageTaken("):]
+    damage = damage[:damage.index("\n    }\n")]
+    assert "if (damage >= me->GetHealth() && !_allowDeath)" in damage
+    assert "damage = me->GetHealth() - 1;" in damage
+    assert "IsEngaged()" not in damage and "IsFlying()" not in damage
+    assert "_allowDeath = true" not in damage
+    assert "NefariansEnd onyxia lethal_clamp" in damage
+    assert "case ACTION_NEFARIAN_LANDED:\n                _allowDeath = true;" in onyxia
+    assert "NefariansEnd onyxia landed_received" in onyxia
+    for marker in ("NefariansEnd nefarian movement_inform", "NefariansEnd nefarian move_land",
+                   "NefariansEnd nefarian landed nefarian", "NefariansEnd nefarian landed_signal"):
+        assert marker in script, marker
+    # printf-style logging (TC_LOG_* here takes %-formats).
+    assert "{}" not in "".join(line for line in script.splitlines() if "NefariansEnd" in line)

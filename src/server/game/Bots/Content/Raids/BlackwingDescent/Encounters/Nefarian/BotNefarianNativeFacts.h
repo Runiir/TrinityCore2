@@ -71,6 +71,19 @@ inline bool RuntimePillarAscentSupported()
     return true;
 }
 
+// The Onyxia tank's pickup across decisions (round 7 review): kept by the
+// native observer (BotNefarianNativeObserver.h) per tank and Onyxia GUID, so
+// neither a new decision nor a moving victim resets it.
+struct PickupState
+{
+    ObjectGuid Tank;
+    ObjectGuid Onyxia;
+    uint64 ElapsedMs = 0;      // since the pickup began (Onyxia on another)
+    uint32 Rejections = 0;     // spots the native line of sight rejected
+    std::vector<Vector3> RejectedSpots;
+    bool Exhausted = false;    // budget spent: nefarian_pickup_exhausted
+};
+
 struct NativeFacts
 {
     std::vector<CastProgress> Casts;
@@ -122,6 +135,22 @@ struct NativeFacts
     bool SpellUsable(ObjectGuid actor, uint32 spellId) const
     {
         return SpellKnown(actor, spellId) && SpellReady(actor, spellId);
+    }
+
+    std::vector<PickupState> Pickups;
+
+    PickupState const* FindPickup(ObjectGuid tank, ObjectGuid onyxia) const
+    {
+        for (PickupState const& pickup : Pickups)
+            if (pickup.Tank == tank && pickup.Onyxia == onyxia)
+                return &pickup;
+        return nullptr;
+    }
+
+    bool PickupExhausted(ObjectGuid tank, ObjectGuid onyxia) const
+    {
+        PickupState const* pickup = FindPickup(tank, onyxia);
+        return pickup && pickup->Exhausted;
     }
 
     MovementState const* FindMotion(ObjectGuid actor) const

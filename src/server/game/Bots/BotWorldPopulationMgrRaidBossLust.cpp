@@ -42,7 +42,9 @@ void BotWorldPopulationMgr::SubmitRaidBossLustCandidate(BotUpdateContext& contex
     uint64 const wipeGeneration = cohort.Raid.WipeGeneration;
     uint64 const routeGeneration = Party().ValidationRouteGeneration;
     BotRaidBossLust::Latch& latch = cohort.Raid.BossLust;
-    BotRaidBossLust::Rebind(latch, attemptId, wipeGeneration, routeGeneration);
+    uint64 const resetGeneration = cohort.Raid.BossResetGeneration;
+    BotRaidBossLust::Rebind(latch, attemptId, wipeGeneration, routeGeneration,
+        resetGeneration);
     if (latch.Submitted)
         return;
 
@@ -51,7 +53,7 @@ void BotWorldPopulationMgr::SubmitRaidBossLustCandidate(BotUpdateContext& contex
         {
             Creature const* creature = ObjectAccessor::GetCreature(*bot, guid);
             return creature && (creature->IsDungeonBoss() || creature->isWorldBoss());
-        });
+        }, &latch);
     BotRaidBossLust::ObserveTankHold(latch, hold.Boss, hold.Tank,
         context.DecisionNowMs);
     if (BotRaidBossLust::BlockedReason(board, latch, context.DecisionNowMs))
@@ -91,7 +93,8 @@ void BotWorldPopulationMgr::SubmitRaidBossLustCandidate(BotUpdateContext& contex
     CohortRuntime* const cohortPtr = &cohort;
     ObjectGuid const bossGuid = hold.Boss;
     BotActionArbitration::Candidate lust;
-    lust.Key = "raid_boss_lust:" + std::to_string(routeGeneration);
+    lust.Key = "raid_boss_lust:" + std::to_string(routeGeneration) + ":"
+        + std::to_string(resetGeneration);
     lust.Source = "raid_boss_lust";
     lust.ActionPriority = BotActionArbitration::Priority::Mechanic;
     lust.UtilityScore = 300.0f;
@@ -103,7 +106,7 @@ void BotWorldPopulationMgr::SubmitRaidBossLustCandidate(BotUpdateContext& contex
     lust.RetryMaxMs = 2000;
     lust.EscalateAfter = 4;
     lust.Attempt = [this, &context, bot, cohortId, cohortPtr, attemptId,
-        wipeGeneration, routeGeneration, bossGuid, spell = *spellId]()
+        wipeGeneration, routeGeneration, resetGeneration, bossGuid, spell = *spellId]()
     {
         if (FindCohort(cohortId) != cohortPtr || context.Bot != bot)
             return BotActionArbitration::Outcome::NotApplicable(
@@ -111,7 +114,8 @@ void BotWorldPopulationMgr::SubmitRaidBossLustCandidate(BotUpdateContext& contex
         BotRaidBossLust::Latch& current = cohortPtr->Raid.BossLust;
         if (current.Submitted || current.AttemptId != attemptId
             || current.WipeGeneration != wipeGeneration
-            || current.RouteGeneration != routeGeneration)
+            || current.RouteGeneration != routeGeneration
+            || current.ResetGeneration != resetGeneration)
             return BotActionArbitration::Outcome::NotApplicable(
                 "raid_boss_lust_latch_moved");
         std::string failureReason;

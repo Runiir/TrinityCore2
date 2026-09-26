@@ -10,6 +10,8 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPickupMemory.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTactics.h"
 #include "GameObject.h"
 #include "Map.h"
 #include "Movement/Spline/MoveSpline.h"
@@ -20,8 +22,24 @@
 #include "SpellInfo.h"
 #include "Transport.h"
 
+#include <mutex>
+
 namespace BotEncounter::Nefarian
 {
+// The pickup memory is shared by every bot of the process (a damage dealer
+// reads its tank's budget); the observer is its only writer.
+inline PickupMemory& SharedPickupMemory()
+{
+    static PickupMemory memory;
+    return memory;
+}
+
+inline std::mutex& SharedPickupMutex()
+{
+    static std::mutex mutex;
+    return mutex;
+}
+
 inline NativeFacts ObserveNativeFacts(Player const* observer,
     Blackboard const& board)
 {
@@ -53,6 +71,41 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
                 if (member->IsInWorld() && observer->GetDistance(member) <= 45.0f
                     && !observer->IsWithinLOSInMap(member))
                     facts.OutOfSight.push_back(player.Guid);
+    // The dragons too (round 7): the Onyxia tank's pickup needs the native
+    // line of sight, not only the pillar model.
+    for (auto const* list : { &board.Hostiles, &board.Summons })
+        for (ActorSnapshot const& actor : *list)
+            if (actor.Entry == OnyxiaEntry || actor.Entry == NefarianEntry)
+                if (Unit const* dragon = ObjectAccessor::GetUnit(*observer, actor.Guid))
+                    if (dragon->IsInWorld() && observer->GetDistance(dragon) <= 60.0f
+                        && !observer->IsWithinLOSInMap(dragon))
+                        facts.OutOfSight.push_back(actor.Guid);
+
+    // The Onyxia pickup's memory: the tank records its own decisions (the
+    // spot, whether it stands still and whether the native line of sight to
+    // Onyxia holds); everyone reads the tank's budget.
+    EncounterView const view = ObserveEncounter(board);
+    if (view.OnyxiaAlive())
+    {
+        DutyPlan const duty = BuildNefarianDutyPlan(board);
+        ObjectGuid const tank = OnyxiaTankNow(board, duty);
+        if (!tank.IsEmpty())
+        {
+            std::lock_guard<std::mutex> lock(SharedPickupMutex());
+            PickupState state;
+            if (tank == observer->GetGUID())
+                state = SharedPickupMemory().Observe(tank, view.Onyxia->Guid,
+                    view.Onyxia->InCombat && view.Onyxia->VictimGuid != tank,
+                    { observer->GetPositionX(), observer->GetPositionY(),
+                        observer->GetPositionZ() },
+                    !observer->movespline->Finalized(), facts.InSight(view.Onyxia->Guid),
+                    board.ObservedAtMs);
+            else
+                state = SharedPickupMemory().Find(tank, view.Onyxia->Guid, board.ObservedAtMs);
+            if (!state.Tank.IsEmpty())
+                facts.Pickups.push_back(state);
+        }
+    }
     for (ActorSnapshot const& player : board.Players)
     {
         Player const* bot = ObjectAccessor::GetPlayer(*observer, player.Guid);

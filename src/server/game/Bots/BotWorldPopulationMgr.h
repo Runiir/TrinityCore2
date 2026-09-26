@@ -324,6 +324,8 @@ private:
     void SubmitAdaptiveChimaeronRouteObservation(BotUpdateContext& context);
     // Content/Raids/BlackwingDescent/Encounters/Atramedes/BotWorldPopulationMgrAtramedesCandidates.cpp
     void SubmitAdaptiveAtramedesRouteObservation(BotUpdateContext& context);
+    // Content/Raids/BlackwingDescent/Encounters/Nefarian/BotWorldPopulationMgrNefarianCandidates.cpp
+    void SubmitAdaptiveNefarianRouteObservation(BotUpdateContext& context);
     void SubmitAdaptiveOmnotronCandidates(BotUpdateContext& context);
     void SubmitAdaptiveOmnotronRouteAuthority(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);

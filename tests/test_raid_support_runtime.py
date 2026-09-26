@@ -364,8 +364,10 @@ static Blackboard Board() {
         Member(10, "dps", "demonology_warlock") };
     ActorSnapshot boss; boss.Guid = ObjectGuid(HighGuid::Unit, uint32(41442), uint32(900));
     boss.Entry = 41442; boss.Alive = true; boss.InCombat = true; boss.VictimGuid = G(1);
+    boss.Attackable = boss.Selectable = true;
     ActorSnapshot add; add.Guid = ObjectGuid(HighGuid::Unit, uint32(41807), uint32(800));
     add.Entry = 41807; add.Alive = true; add.InCombat = true; add.VictimGuid = G(2);
+    add.Attackable = add.Selectable = true;
     board.Hostiles = { boss, add };
     return board;
 }

@@ -39,6 +39,47 @@ constexpr float OnyxiaSwapHealthPct = 12.0f;
 constexpr float NefarianPhaseOneFloorPct = 73.0f;
 constexpr uint32 OnyxiaChargeReturnThreshold = 60;
 
+// Round 7 (the first live attempt's pull): the damage dealers burn Onyxia
+// from the pull, but only once a tank has her (the user's tactic). In r06 the
+// warlock opened on her 1.2 s before any tank and her melee hit damage
+// dealers for 34 s. Held: she attacks a dragon tank, or her tank is dead or
+// missing (nobody left to wait for).
+// Who picks Onyxia up now: her tank, or - if it is dead or missing - the
+// Nefarian tank (the Blood DK), or nobody (then the damage dealers do not
+// wait: nobody is left to wait for).
+inline ObjectGuid OnyxiaTankNow(Blackboard const& board, DutyPlan const& plan)
+{
+    for (ObjectGuid tank : { plan.OnyxiaTank, plan.NefarianTank })
+        if (ActorSnapshot const* actor = tank.IsEmpty() ? nullptr : board.FindActor(tank);
+            actor && actor->Alive)
+            return tank;
+    return ObjectGuid();
+}
+
+// Whether this bot tanks Onyxia now: only while she lives. With the Feral
+// dead the Blood DK keeps her until she dies (the user's tactic burns her
+// first) and holds Nefarian's taunt until then; once she is dead or gone it
+// is the full Nefarian tank again.
+inline bool ActsAsOnyxiaTank(Blackboard const& board, EncounterView const& view,
+    DutyPlan const& plan, ObjectGuid guid)
+{
+    return view.OnyxiaAlive() && !guid.IsEmpty() && guid == OnyxiaTankNow(board, plan);
+}
+
+inline bool OnyxiaHeldByTank(Blackboard const& board, EncounterView const& view,
+    DutyPlan const& plan, NativeFacts const* facts = nullptr)
+{
+    if (!view.OnyxiaAlive())
+        return true;
+    ObjectGuid const victim = view.Onyxia->VictimGuid;
+    if (!victim.IsEmpty() && (victim == plan.OnyxiaTank || victim == plan.NefarianTank))
+        return true;
+    ObjectGuid const tank = OnyxiaTankNow(board, plan);
+    // Nobody left to wait for, or the pickup's budget is spent: the damage
+    // dealers start on her anyway.
+    return tank.IsEmpty() || (facts && facts->PickupExhausted(tank, view.Onyxia->Guid));
+}
+
 inline ObjectGuid PhaseOneDamageTarget(EncounterView const& view,
     PhaseOnePacing pacing = PhaseOnePacing::OnyxiaBurn)
 {

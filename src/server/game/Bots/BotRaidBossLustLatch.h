@@ -16,6 +16,7 @@ struct Latch
     uint64 AttemptId = 0;
     uint64 WipeGeneration = 0;
     uint64 RouteGeneration = 0;
+    uint64 ResetGeneration = 0;
     bool Holding = false;
     ObjectGuid HoldBossGuid;
     ObjectGuid HoldTankGuid;
@@ -25,17 +26,24 @@ struct Latch
     uint32 SubmittedSpellId = 0;
 };
 
-// A new attempt, wipe or route node starts a fresh latch.
+// A new attempt, wipe, route node or encounter reset starts a fresh latch.
+// Round 6 Nefarian re-pulled about 28 times on one node with wipe_generation
+// still 0, so the lust was cast only once. The reset generation is
+// RaidRuntime::BossResetGeneration: it grows whenever a boss state leaves
+// IN_PROGRESS other than to DONE (the native FAIL/reset), once per pull. The
+// owner's 300 s cooldown still gates the next cast (IsReady at submission).
 inline void Rebind(Latch& latch, uint64 attemptId, uint64 wipeGeneration,
-    uint64 routeGeneration)
+    uint64 routeGeneration, uint64 resetGeneration = 0)
 {
     if (latch.AttemptId == attemptId && latch.WipeGeneration == wipeGeneration
-        && latch.RouteGeneration == routeGeneration)
+        && latch.RouteGeneration == routeGeneration
+        && latch.ResetGeneration == resetGeneration)
         return;
     latch = Latch();
     latch.AttemptId = attemptId;
     latch.WipeGeneration = wipeGeneration;
     latch.RouteGeneration = routeGeneration;
+    latch.ResetGeneration = resetGeneration;
 }
 
 // The same boss on the same living tank, observed continuously. Any other

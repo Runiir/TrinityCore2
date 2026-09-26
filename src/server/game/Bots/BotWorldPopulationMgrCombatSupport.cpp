@@ -6,6 +6,7 @@
 #include "Bots/BotHealSelectionDiagnostic.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianProtectedMovement.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -15,6 +16,7 @@
 #include "Group.h"
 #include "LFG.h"
 #include "MotionMaster.h"
+#include "MoveSpline.h"
 #include "Player.h"
 #include "Spell.h"
 #include "SpellHistory.h"
@@ -347,6 +349,15 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
 
     if (spellInfo->CalcCastTime(bot->getLevel()) > 0)
     {
+        // Nefarian's End: a hard cast never stops a protected surface leg or
+        // escape of the plan (its movement lease, Mechanic or above).
+        auto const state = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+            [bot](WorldBotState const& candidate) { return candidate.Guid == bot->GetGUID(); });
+        if (state != Party().Bots.end()
+            && BotEncounter::Nefarian::ProtectedMovementActive(state->MovementLease,
+                !bot->movespline->Finalized(), Cohort().Config.ValidationRouteNodeId,
+                NowMs()))
+            return fail("protected_movement_active");
         bot->StopMoving();
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();

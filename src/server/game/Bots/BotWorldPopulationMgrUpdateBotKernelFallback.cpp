@@ -225,6 +225,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         context.State.DecisionKernel.Submit(std::move(magmawObservation));
         SubmitAdaptiveChimaeronRouteObservation(context);
         SubmitAdaptiveAtramedesRouteObservation(context);
+        SubmitAdaptiveNefarianRouteObservation(context);
         SubmitAdaptiveOmnotronRouteAuthority(context);
 
         auto runRoute = [this, &context, routeAttempt, routeOwnerReason,

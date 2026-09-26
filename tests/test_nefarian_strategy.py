@@ -50,6 +50,7 @@ def _compile_and_run(tmp_path: Path, program: str, sanitize: bool = False) -> st
 
 PRELUDE = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPickupMemory.h"
 #include <cstdio>
 #include <string>
 
@@ -694,7 +695,7 @@ static void TestPlatformMovement()
     Blackboard unobserved = both;
     unobserved.Interactables.clear();
     AdaptiveNefarianPlan const hold = strategy.Propose(unobserved, Bot(4), "dps");
-    CHECK(!hold.Movement && hold.MovementHold == "nefarian_elevator_unobserved",
+    CHECK(!hold.Movement && HoldReason(hold.MovementHold) == "nefarian_elevator_unobserved",
         "an unobserved elevator never falls back to an ordinary move");
 
     Blackboard ground = landing;
@@ -762,7 +763,7 @@ static void TestPlatformMovement()
         FloorLocalZAt(elsewhere), PlatformFrame::RaisedOriginZ) });
     stale.Placements = sliding.Placements;
     AdaptiveNefarianPlan const turned = strategy.Propose(far, Bot(4), "dps", &stale);
-    CHECK(turned.Movement && turned.MovementHold.empty(),
+    CHECK(turned.Movement && (turned.MovementHold.empty() || IsPlatformHold(turned.MovementHold)),
         "a running walk toward another point is relaunched");
 
     // Status and plans agree in every phase (default facts, as the observer
@@ -786,7 +787,7 @@ static void TestPlatformMovement()
 
     Blackboard stunned = ground;
     AddAura(FindPlayer(stunned, 4), 77827);
-    CHECK(strategy.Propose(stunned, Bot(4), "dps").MovementHold == "nefarian_movement_stunned",
+    CHECK(HoldReason(strategy.Propose(stunned, Bot(4), "dps").MovementHold) == "nefarian_movement_stunned",
         "no walk while stunned by Tail Lash");
 }
 
@@ -1639,6 +1640,549 @@ static void TestCorneredHold()
     CHECK(!free.MovementSurface || !free.MovementSurface->WarriorHold, "no cornered goal remains");
 }
 
+// Round 7 (first live attempt): bots on the raised platform are held by the
+// plan whenever it has no leg for them, so native combat range, chase and
+// route walks (static navmesh paths under the transport) cannot take them
+// off it; and casters and healers stand where no pillar blocks their lines.
+static void TestPlatformHold()
+{
+    AdaptiveNefarianStrategy strategy;
+    for (bool landed : { false, true })
+    {
+        Blackboard board = CanonicalBoard();
+        AddDragons(board, landed);
+        for (uint32 member = 1; member <= 10; ++member)
+        {
+            // First decision: where the plan sends it; then standing there.
+            NativeFacts first = StandingFacts(board, member);
+            AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "", &first);
+            if (!plan.MovementSurface || plan.MovementSurface->Target != Surface::Floor)
+                continue;
+            Blackboard arrived = board;
+            PlaceAt(FindPlayer(arrived, member), plan.MovementSurface->Local);
+            NativeFacts standing = StandingFacts(arrived, member);
+            AdaptiveNefarianPlan const held = strategy.Propose(arrived, Bot(member), "", &standing);
+            CHECK(IsPlatformHold(held.MovementHold) || held.MovementHold == WarriorStopHold
+                || held.MovementHold == LegInFlightHold,
+                "a bot on the platform always carries a hold: alone, or beside its leg as the fallback");
+            CHECK(!held.Ascent, "no ascent on the raised platform");
+            // Its own leg running: the lease is kept, the leg is not stopped.
+            if (plan.Movement && plan.MovementLeg)
+            {
+                NativeFacts moving = first;
+                LocalPoint const to = plan.MovementLeg->To;
+                moving.Motion.push_back({ Bot(member), true,
+                    LocalToWorld(to, FloorLocalZAt(to), PlatformFrame::RaisedOriginZ) });
+                AdaptiveNefarianPlan const flight = strategy.Propose(board, Bot(member), "", &moving);
+                CHECK(flight.MovementHold == LegInFlightHold
+                    || (flight.Movement && IsPlatformHold(flight.MovementHold)),
+                    "a running leg of the plan keeps its lease, or a new leg carries the fallback");
+            }
+        }
+    }
+    // Off the platform (no elevator placement, feet in the bowl under it):
+    // not held there.
+    Blackboard below = CanonicalBoard();
+    AddDragons(below, true);
+    FindPlayer(below, 4).Position = LocalToWorld({ -27.0f, 1.3f }, 0.0f, 0.0f);
+    FindPlayer(below, 4).Position.Z = -1.63f;
+    NativeFacts none;
+    AdaptiveNefarianPlan const off = strategy.Propose(below, Bot(4), "dps", &none);
+    CHECK(!IsPlatformHold(off.MovementHold), "a bot off the platform is not held as if on it");
+
+    // Pillar sight: every ranged or healer spot sees its target and, for a
+    // healer, both tanks, past the pillars (the first attempt's mage lost
+    // sight of Onyxia and was walked off the platform).
+    CHECK(!PillarSightClear(Polar(0.0f, 30.0f), Polar(0.0f, 50.0f)), "a pillar blocks that line");
+    CHECK(PillarSightClear(Polar(DegToRad(60.0f), 20.0f), { 0.0f, 0.0f }), "a clear line");
+    int checked = 0;
+    for (int onyxiaDeg = 0; onyxiaDeg < 360; onyxiaDeg += 45)
+    {
+        Blackboard board = CanonicalBoard();
+        AddDragons(board, true);
+        board.Summons[0].Position = LocalToWorld(Polar(DegToRad(float(onyxiaDeg)), 26.0f),
+            FloorLocalZAt(Polar(DegToRad(float(onyxiaDeg)), 26.0f)), PlatformFrame::RaisedOriginZ);
+        for (uint32 member : { 3u, 4u, 5u, 7u, 9u, 10u })
+        {
+            NativeFacts facts = StandingFacts(board, member);
+            AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "", &facts);
+            if (!plan.MovementSurface || plan.MovementSurface->Purpose != MovePurpose::Formation)
+                continue;
+            ActorSnapshot const& bot = FindPlayer(board, member);
+            EncounterView const view = ObserveEncounter(board);
+            DutyPlan const duty = BuildNefarianDutyPlan(board);
+            ArenaLayout const layout = BuildArenaLayout(duty);
+            MovementContext const context{ board, view, duty, layout, bot, &facts };
+            std::vector<LocalPoint> const targets = SightTargets(context, plan.DamageTarget,
+                IsHealerSpec(bot.ClassSpec, bot.Role));
+            bool const clear = std::all_of(targets.begin(), targets.end(), [&](LocalPoint target)
+                { return PillarSightClear(plan.MovementSurface->Local, target); });
+            if (!clear)
+                std::printf("SIGHT blocked onyxia %d member %u\n", onyxiaDeg, member);
+            CHECK(clear, "a ranged or healer spot sees its targets past the pillars");
+            ++checked;
+        }
+    }
+    std::printf("SIGHT checked %d spots\n", checked);
+    CHECK(checked > 20, "the sight fixture covers the ranged and healers");
+}
+
+// Round 7 review and pull analysis.
+// - A proposed leg always carries the platform hold as its fallback.
+// - A caster or healer inside its arrival tolerance but without a clear line
+//   (or out of range) finishes the leg instead of holding.
+// - Healers stand within heal range of the tank that fights now, also while
+//   the Feral leads Onyxia out to the ring.
+// - The pull: damage dealers hold fire until a tank has Onyxia; her tank,
+//   landed behind a pillar (r06), walks to where it sees her and taunts.
+static void TestRoundSevenPositions()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CanonicalBoard();
+    AddDragons(board, true);
+    for (uint32 member = 1; member <= 10; ++member)
+    {
+        NativeFacts facts = StandingFacts(board, member);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "", &facts);
+        if (plan.Movement)
+            CHECK(IsPlatformHold(plan.MovementHold) || plan.MovementHold == WarriorStopHold,
+                "a proposed leg on the platform carries the platform hold as its fallback");
+    }
+
+    int arrivals = 0;
+    int ranged = 0;
+    for (bool landed : { false, true })
+        for (int deg = 0; deg < 360; deg += 30)
+            for (float radius : { 20.0f, 29.0f, 42.0f })
+            {
+                Blackboard b = CanonicalBoard();
+                AddDragons(b, landed);
+                LocalPoint dragon = Polar(DegToRad(float(deg)), radius);
+                PlaceAt(b.Summons[0], dragon);
+                DutyPlan const duty = BuildNefarianDutyPlan(b);
+                ArenaLayout const layout = BuildArenaLayout(duty);
+                if (!landed)
+                {
+                    // Onyxia's lead-out: her tank at r 52 on her end angle.
+                    PlaceAt(FindPlayer(b, 2), Polar(layout.OnyxiaEndAngle, 52.0f));
+                    dragon = Polar(layout.OnyxiaEndAngle, radius);
+                    PlaceAt(b.Summons[0], dragon);
+                }
+                for (uint32 member : { 3u, 4u, 5u, 7u, 9u, 10u })
+                {
+                    NativeFacts f = StandingFacts(b, member);
+                    AdaptiveNefarianPlan const plan = strategy.Propose(b, Bot(member), "", &f);
+                    if (!plan.MovementSurface || plan.MovementSurface->Purpose != MovePurpose::Formation
+                        || plan.MovementSurface->Sight.empty())
+                        continue;
+                    LocalPoint const goal = plan.MovementSurface->Local;
+                    ++ranged;
+                    CHECK(SpotServes(goal, plan.MovementSurface->Sight),
+                        "the spot sees every target within range");
+                    if (IsHealerSpec(FindPlayer(b, member).ClassSpec, FindPlayer(b, member).Role))
+                    {
+                        ObjectGuid const fighting = landed ? duty.NefarianTank : duty.OnyxiaTank;
+                        LocalPoint const tank = WorldToLocal(FindPlayer(b, fighting.GetCounter() - 30500).Position);
+                        if (Distance(goal, tank) > SightRangeYards + 0.01f)
+                            std::printf("RANGE landed %d deg %d r %.0f healer %u goal (%.1f,%.1f) tank (%.1f,%.1f) %.1f\n",
+                                int(landed), deg, radius, member, goal.X, goal.Y, tank.X, tank.Y, Distance(goal, tank));
+                        CHECK(Distance(goal, tank) <= SightRangeYards + 0.01f,
+                            "a healer stands within heal range of the tank that fights now");
+                    }
+                    for (int offset = 0; offset < 360; offset += 45)
+                    {
+                        Blackboard near = b;
+                        LocalPoint const self = Offset(goal, DegToRad(float(offset)), 2.9f);
+                        PlaceAt(FindPlayer(near, member), self);
+                        NativeFacts nf = StandingFacts(near, member);
+                        AdaptiveNefarianPlan const held = strategy.Propose(near, Bot(member), "", &nf);
+                        if (!SpotServes(self, plan.MovementSurface->Sight)
+                            && held.MovementSurface
+                            && Distance(held.MovementSurface->Local, goal) < 0.5f)
+                        {
+                            ++arrivals;
+                            CHECK(held.Movement && held.MovementLeg,
+                                "inside the arrival tolerance with a blocked line it finishes the leg");
+                        }
+                    }
+                }
+            }
+    std::printf("ROUND7 ranged spots %d blocked arrivals %d\n", ranged, arrivals);
+    CHECK(ranged > 50 && arrivals > 0, "the fixture covers casters, healers and blocked arrivals");
+}
+
+// The r06 pull, replayed: the warlock lands first, Onyxia is still
+// feign-dead; the Feral lands behind pillar 0 at (-154.78, -220.95, 8.10).
+static void TestOnyxiaPullReplay()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CanonicalBoard();
+    AddDragons(board, false);
+    ActorSnapshot& onyxia = board.Summons[0];
+    PlaceAt(onyxia, { 0.0f, 0.0f });
+    onyxia.InCombat = false;
+    onyxia.VictimGuid = ObjectGuid();
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    // Before the pull no damage dealer may open on her.
+    for (uint32 member : { 3u, 4u, 6u, 8u, 9u, 10u })
+    {
+        NativeFacts facts = StandingFacts(board, member);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "dps", &facts);
+        CHECK(plan.SuppressOffense && plan.SuppressReason == HoldFirePreEngage
+            && plan.DamageTarget.IsEmpty(), "pre-pull: damage dealers hold fire");
+    }
+    // Pulled by something else (the r06 warlock): still no damage until a
+    // tank has her; healers heal.
+    onyxia.InCombat = true;
+    onyxia.VictimGuid = Bot(10);
+    for (uint32 member : { 3u, 4u, 6u, 8u, 9u, 10u })
+    {
+        NativeFacts facts = StandingFacts(board, member);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "dps", &facts);
+        CHECK(plan.SuppressOffense && plan.SuppressReason == HoldFireForOnyxiaTank
+            && plan.DamageTarget.IsEmpty(), "damage dealers wait for her tank");
+    }
+    // The Feral, landed behind pillar 0, walks to where it sees her.
+    ActorSnapshot& feral = FindPlayer(board, 2);
+    feral.Position = { -154.781f, -220.952f, 8.10035f };
+    LocalPoint self = WorldToLocal(feral.Position);
+    CHECK(!PillarSightClear(self, { 0.0f, 0.0f }), "r06: the Feral landed without sight of Onyxia");
+    float walked = 0.0f;
+    int steps = 0;
+    for (; steps < 20; ++steps)
+    {
+        NativeFacts facts = StandingFacts(board, 2);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(2), "tank", &facts);
+        if (PillarSightClear(self, { 0.0f, 0.0f }) && Distance(self, { 0.0f, 0.0f }) <= OnyxiaTauntReachYards)
+        {
+            bool const taunt = std::any_of(plan.Actions.begin(), plan.Actions.end(),
+                [](BotNativeAction::Candidate const& action)
+                { return action.Id.Mechanic == "onyxia_taunt"; });
+            CHECK(taunt, "in sight and range it taunts her");
+            break;
+        }
+        if (!plan.Movement)
+            std::printf("PULL step %d self (%.1f,%.1f) d %.1f sight %d hold %s goal %d\n", steps, self.X, self.Y,
+                Distance(self, { 0.0f, 0.0f }), int(PillarSightClear(self, { 0.0f, 0.0f })),
+                std::string(plan.MovementHold).c_str(), plan.MovementSurface ? int(plan.MovementSurface->Purpose) : -1);
+        CHECK(plan.Movement && plan.MovementLeg, "until then it walks toward its pickup spot");
+        if (!plan.MovementLeg)
+            break;
+        LocalPoint const next = plan.MovementLeg->To;
+        walked += Distance(self, next);
+        self = next;
+        PlaceAt(feral, self);
+    }
+    std::printf("PULL feral walked %.1f yd in %d legs (about %.1f s at 7 yd/s)\n", walked, steps,
+        walked / 7.0f);
+    CHECK(walked / 7.0f < 6.0f, "the Feral has sight of Onyxia within a few seconds");
+    // Once she attacks her tank the damage dealers burn her.
+    onyxia.VictimGuid = Bot(2);
+    for (uint32 member : { 3u, 4u, 6u, 8u, 9u, 10u })
+    {
+        NativeFacts facts = StandingFacts(board, member);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(member), "dps", &facts);
+        CHECK(plan.DamageTarget == onyxia.Guid && !plan.SuppressOffense,
+            "the tank has her: everyone burns Onyxia");
+    }
+    // Her tank dead: the Blood DK picks her up and the damage dealers wait
+    // for it; with both tanks dead nobody is left to wait for.
+    onyxia.VictimGuid = Bot(10);
+    feral.Alive = false;
+    NativeFacts facts = StandingFacts(board, 4);
+    CHECK(strategy.Propose(board, Bot(4), "dps", &facts).SuppressReason == HoldFireForOnyxiaTank,
+        "with the Feral dead the damage dealers wait for the Blood DK");
+    NativeFacts dkFacts = StandingFacts(board, 1);
+    AdaptiveNefarianPlan const dk = strategy.Propose(board, Bot(1), "tank", &dkFacts);
+    CHECK(dk.DamageTarget == onyxia.Guid, "the Blood DK takes Onyxia");
+    FindPlayer(board, 1).Alive = false;
+    CHECK(strategy.Propose(board, Bot(4), "dps", &facts).DamageTarget == onyxia.Guid,
+        "with both tanks dead the damage dealers do not wait");
+    (void)duty;
+}
+
+// Round 7 review: the pickup keeps its movement until Onyxia targets her
+// tank, and stands still in reach so the taunt runs (100 ms decisions; a
+// proposed leg claims movement, GCD and cast, as in the kernel).
+static int PickupReplay(LocalPoint start, bool nativeBlockedFirst, int& moves, int& decisions)
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CanonicalBoard();
+    AddDragons(board, false);
+    ActorSnapshot& onyxia = board.Summons[0];
+    PlaceAt(onyxia, { 0.0f, 0.0f });
+    onyxia.InCombat = true;
+    onyxia.VictimGuid = Bot(5); // on a healer
+    ActorSnapshot& feral = FindPlayer(board, 2);
+    PlaceAt(feral, start);
+    LocalPoint self = start;
+    std::optional<LocalPoint> running;
+    std::optional<LocalPoint> blocked;
+    moves = 0;
+    for (decisions = 1; decisions <= 100; ++decisions)
+    {
+        NativeFacts facts = StandingFacts(board, 2);
+        if (running)
+            facts.Motion.push_back({ Bot(2), true, LocalToWorld(*running, FloorLocalZAt(*running),
+                PlatformFrame::RaisedOriginZ) });
+        if (nativeBlockedFirst && (!blocked || Distance(self, *blocked) < 4.0f))
+        {
+            if (!blocked)
+                blocked = self;
+            facts.OutOfSight.push_back(onyxia.Guid);
+        }
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(2), "tank", &facts);
+        bool const taunt = std::any_of(plan.Actions.begin(), plan.Actions.end(),
+            [](BotNativeAction::Candidate const& action) { return action.Id.Mechanic == "onyxia_taunt"; });
+        if (plan.Movement && plan.MovementLeg)
+        {
+            if (!running || Distance(*running, plan.MovementLeg->To) > 0.5f)
+                ++moves;
+            running = plan.MovementLeg->To;
+        }
+        else if (taunt && facts.InSight(onyxia.Guid)
+            && PillarSightClear(self, { 0.0f, 0.0f }) && Distance(self, { 0.0f, 0.0f }) <= 30.0f)
+        {
+            onyxia.VictimGuid = Bot(2); // Growl lands
+            return decisions;
+        }
+        if (running)
+        {
+            self = StepToward(self, *running, 0.7f);
+            PlaceAt(feral, self);
+            if (Distance(self, *running) < 0.05f)
+                running.reset();
+        }
+    }
+    return -1;
+}
+
+static void TestPickupArbitration()
+{
+    int moves = 0;
+    int decisions = 0;
+    int const inReach = PickupReplay(Polar(DegToRad(30.0f), 27.8f), false, moves, decisions);
+    std::printf("PICKUP r27.8 taunt at decision %d moves %d\n", inReach, moves);
+    CHECK(inReach == 1 && moves == 0, "in reach and sight: no move, the taunt runs at once");
+    int const outside = PickupReplay(Polar(DegToRad(30.0f), 29.0f), false, moves, decisions);
+    std::printf("PICKUP r29 taunt at decision %d moves %d\n", outside, moves);
+    CHECK(outside > 0 && outside <= 30 && moves == 1, "just outside: one move in, then the taunt");
+    int const behind = PickupReplay(WorldToLocal({ -154.781f, -220.952f, 8.10035f }), false, moves,
+        decisions);
+    std::printf("PICKUP r06 landing taunt at decision %d moves %d\n", behind, moves);
+    CHECK(behind > 0 && behind <= 80 && moves <= 8, "from the r06 landing spot: a few legs around the pillar, then the taunt");
+    int const recovered = PickupReplay(Polar(DegToRad(30.0f), 26.0f), true, moves, decisions);
+    std::printf("PICKUP native blocked taunt at decision %d moves %d\n", recovered, moves);
+    CHECK(recovered > 0 && moves >= 1 && moves <= 3,
+        "a spot the native line of sight rejects is left for another (bounded)");
+}
+
+// Round 7 review: corrections under a yard, a dragon's core, and the pull
+// without the Feral.
+static void TestRoundSevenReview()
+{
+    AdaptiveNefarianStrategy strategy;
+    int corrections = 0;
+    for (bool landed : { false, true })
+        for (int deg = 0; deg < 360; deg += 30)
+            for (float radius : { 20.0f, 29.0f, 42.0f })
+            {
+                Blackboard b = CanonicalBoard();
+                AddDragons(b, landed);
+                PlaceAt(b.Summons[0], Polar(DegToRad(float(deg)), radius));
+                for (uint32 member : { 3u, 4u, 5u, 7u, 9u, 10u })
+                {
+                    NativeFacts f = StandingFacts(b, member);
+                    AdaptiveNefarianPlan const plan = strategy.Propose(b, Bot(member), "", &f);
+                    if (!plan.MovementSurface || plan.MovementSurface->Sight.empty())
+                        continue;
+                    LocalPoint const goal = plan.MovementSurface->Local;
+                    for (float offset : { 0.3f, 0.6f, 0.9f })
+                        for (int bearing = 0; bearing < 360; bearing += 45)
+                        {
+                            LocalPoint const self = Offset(goal, DegToRad(float(bearing)), offset);
+                            if (SpotServes(self, plan.MovementSurface->Sight))
+                                continue;
+                            Blackboard near = b;
+                            PlaceAt(FindPlayer(near, member), self);
+                            NativeFacts nf = StandingFacts(near, member);
+                            AdaptiveNefarianPlan const held = strategy.Propose(near, Bot(member), "", &nf);
+                            if (!held.MovementSurface || Distance(held.MovementSurface->Local, goal) > 0.5f)
+                                continue;
+                            ++corrections;
+                            CHECK(held.Movement && held.MovementLeg,
+                                "a correction under a yard is walked when the spot does not serve");
+                        }
+                }
+            }
+    std::printf("REVIEW short corrections %d\n", corrections);
+    CHECK(corrections > 0, "the short-correction fixture has cases");
+
+    // A non-tank inside a dragon's core (1.5 yd from Nefarian's centre) is
+    // never held there: it leaves, whatever the dragon casts.
+    Blackboard core = CanonicalBoard();
+    AddDragons(core, true);
+    LocalPoint const nefarian = WorldToLocal(core.Summons[1].Position);
+    LocalPoint const inCore = Offset(nefarian, 0.0f, 1.5f);
+    PlaceAt(FindPlayer(core, 4), inCore);
+    NativeFacts coreFacts = StandingFacts(core, 4);
+    AdaptiveNefarianPlan const leave = strategy.Propose(core, Bot(4), "dps", &coreFacts);
+    CHECK(leave.Movement && leave.MovementLeg
+        && Distance(leave.MovementLeg->To, nefarian) > Distance(inCore, nefarian),
+        "a non-tank in a dragon's core walks out of it");
+    CHECK(leave.MovementSurface && Distance(leave.MovementSurface->Local, nefarian)
+        >= DragonCoreClearanceYards, "to a spot outside the core");
+
+    // Pre-pull without the Feral: the Blood DK pulls; with no tank alive the
+    // damage dealers do.
+    for (bool missing : { false, true })
+    {
+        Blackboard pre = CanonicalBoard();
+        AddDragons(pre, false);
+        pre.Summons[0].InCombat = false;
+        pre.Summons[0].VictimGuid = ObjectGuid();
+        if (missing)
+            pre.Players.erase(std::remove_if(pre.Players.begin(), pre.Players.end(),
+                [](ActorSnapshot const& p) { return p.Guid == Bot(2); }), pre.Players.end());
+        else
+            FindPlayer(pre, 2).Alive = false;
+        NativeFacts dkFacts = StandingFacts(pre, 1);
+        AdaptiveNefarianPlan const dk = strategy.Propose(pre, Bot(1), "tank", &dkFacts);
+        CHECK(dk.DamageTarget == pre.Summons[0].Guid && !dk.SuppressOffense,
+            "the Feral dead or missing: the Blood DK pulls Onyxia");
+        NativeFacts dpsFacts = StandingFacts(pre, 4);
+        CHECK(strategy.Propose(pre, Bot(4), "dps", &dpsFacts).SuppressReason == HoldFirePreEngage,
+            "the damage dealers still wait for the pull");
+        FindPlayer(pre, 1).Alive = false;
+        CHECK(strategy.Propose(pre, Bot(4), "dps", &dpsFacts).DamageTarget == pre.Summons[0].Guid,
+            "no tank alive: the damage dealers do not wait (no deadlock)");
+    }
+}
+
+
+
+// Round 7 delta review: the Blood DK standing in for a dead Feral keeps
+// Onyxia until she dies (no Nefarian taunt meanwhile), then is the full
+// Nefarian tank through his landing and phase 3.
+static void TestDeathKnightFallbackDuty()
+{
+    AdaptiveNefarianStrategy strategy;
+    auto taunts = [](AdaptiveNefarianPlan const& plan, char const* mechanic)
+    {
+        return std::any_of(plan.Actions.begin(), plan.Actions.end(),
+            [mechanic](BotNativeAction::Candidate const& action) { return action.Id.Mechanic == mechanic; });
+    };
+    // Both dragons alive, Nefarian landed, the Feral dead: the DK holds Onyxia.
+    Blackboard both = CanonicalBoard();
+    AddDragons(both, true);
+    FindPlayer(both, 2).Alive = false;
+    both.Summons[0].VictimGuid = Bot(4);
+    both.Summons[1].VictimGuid = Bot(6);
+    NativeFacts facts = StandingFacts(both, 1);
+    AdaptiveNefarianPlan const holding = strategy.Propose(both, Bot(1), "tank", &facts);
+    CHECK(holding.DamageTarget == both.Summons[0].Guid, "both alive: the DK fights Onyxia");
+    CHECK(taunts(holding, "onyxia_taunt") && !taunts(holding, "nefarian_taunt"),
+        "both alive: it taunts Onyxia, not Nefarian");
+    CHECK(holding.MovementSurface && holding.MovementSurface->Purpose == MovePurpose::TankLead,
+        "both alive: it picks Onyxia up");
+
+    // Onyxia dead (her corpse gone) and Nefarian on the ground (phase 3):
+    // the DK is the full Nefarian tank again.
+    Blackboard ground = CanonicalBoard();
+    AddDragons(ground, true);
+    FindPlayer(ground, 2).Alive = false;
+    ground.Summons.erase(ground.Summons.begin()); // Onyxia gone
+    ActorSnapshot& nefarian = ground.Summons[0];
+    nefarian.VictimGuid = Bot(6);
+    EncounterView const view = ObserveEncounter(ground);
+    std::printf("DKFALLBACK phase %s\n", std::string(PhaseName(view.CurrentPhase)).c_str());
+    NativeFacts groundFacts = StandingFacts(ground, 1);
+    AdaptiveNefarianPlan const tanking = strategy.Propose(ground, Bot(1), "tank", &groundFacts);
+    CHECK(tanking.MovementSurface && tanking.MovementSurface->Purpose == MovePurpose::TankHold,
+        "Onyxia gone: the DK takes Nefarian's tank hold");
+    CHECK(taunts(tanking, "nefarian_taunt") && !taunts(tanking, "onyxia_taunt"),
+        "Onyxia gone: it taunts Nefarian");
+}
+
+// Round 7 delta review: the pickup is bounded across decisions. With the
+// native line of sight blocked everywhere, and with its legs never admitted,
+// the budget runs out, the tank holds with a typed state, and the damage
+// dealers start on Onyxia; a moving victim never resets the budget.
+static void TestPickupExhaustion()
+{
+    for (bool legsAdmitted : { true, false })
+    {
+        AdaptiveNefarianStrategy strategy;
+        PickupMemory memory;
+        Blackboard board = CanonicalBoard();
+        AddDragons(board, false);
+        ActorSnapshot& onyxia = board.Summons[0];
+        PlaceAt(onyxia, { 0.0f, 0.0f });
+        onyxia.InCombat = true;
+        ActorSnapshot& feral = FindPlayer(board, 2);
+        LocalPoint self = Polar(DegToRad(30.0f), 34.0f);
+        PlaceAt(feral, self);
+        std::optional<LocalPoint> running;
+        int moves = 0;
+        int movesAfter = 0;
+        int exhaustedAt = -1;
+        uint32 const victims[] = { 5u, 7u, 4u, 9u };
+        for (int decision = 0; decision < 1000; ++decision)
+        {
+            board.ObservedAtMs = 1790000000000ull + uint64(decision) * 100;
+            onyxia.VictimGuid = Bot(victims[decision % 4]); // a moving victim
+            NativeFacts facts = StandingFacts(board, 2);
+            facts.OutOfSight.push_back(onyxia.Guid); // the native line of sight always fails
+            if (running)
+                facts.Motion.push_back({ Bot(2), true, LocalToWorld(*running, FloorLocalZAt(*running),
+                    PlatformFrame::RaisedOriginZ) });
+            PickupState const state = memory.Observe(Bot(2), onyxia.Guid, true, feral.Position,
+                running.has_value(), false, board.ObservedAtMs);
+            facts.Pickups.push_back(state);
+            AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(2), "tank", &facts);
+            if (state.Exhausted && exhaustedAt < 0)
+            {
+                exhaustedAt = decision;
+                CHECK(HoldReason(plan.MovementHold) == PickupExhaustedHold && !plan.Movement,
+                    "exhausted: the tank holds with the typed state");
+                NativeFacts dps = StandingFacts(board, 4);
+                dps.Pickups.push_back(memory.Find(Bot(2), onyxia.Guid, board.ObservedAtMs));
+                CHECK(strategy.Propose(board, Bot(4), "dps", &dps).DamageTarget == onyxia.Guid,
+                    "exhausted: the damage dealers start on Onyxia");
+            }
+            if (plan.Movement && plan.MovementLeg)
+            {
+                if (!running || Distance(*running, plan.MovementLeg->To) > 0.5f)
+                {
+                    ++moves;
+                    if (exhaustedAt >= 0)
+                        ++movesAfter;
+                }
+                running = plan.MovementLeg->To;
+            }
+            if (running && legsAdmitted)
+            {
+                self = StepToward(self, *running, 0.7f);
+                PlaceAt(feral, self);
+                if (Distance(self, *running) < 0.05f)
+                    running.reset();
+            }
+            else if (!legsAdmitted)
+                running.reset();
+        }
+        std::printf("EXHAUST admitted %d exhausted at decision %d moves %d\n", int(legsAdmitted),
+            exhaustedAt, moves);
+        CHECK(exhaustedAt >= 0 && exhaustedAt <= int(PickupBudgetMs / 100),
+            "the budget runs out within 10 s whatever the victim does");
+        CHECK(movesAfter == 0, "exhausted: no further pickup moves");
+        CHECK(moves <= (legsAdmitted ? 16 : int(PickupStallDecisions) + 1),
+            "a bounded number of pickup moves");
+        if (!legsAdmitted)
+            CHECK(exhaustedAt <= int(PickupStallDecisions),
+                "legs never admitted and no sight: exhausted after about 3 s");
+    }
+}
+
 // Pillar care: pre-ascent shields and top-ups, then the off-healer on the
 // healerless pillar (coordinator default, pending the user).
 static void TestPillarCare()
@@ -1743,6 +2287,13 @@ int main()
     TestWarriorEscape();
     TestWarriorTemporal();
     TestCorneredHold();
+    TestPlatformHold();
+    TestRoundSevenPositions();
+    TestOnyxiaPullReplay();
+    TestPickupArbitration();
+    TestRoundSevenReview();
+    TestDeathKnightFallbackDuty();
+    TestPickupExhaustion();
     TestPillarCare();
     if (failures)
         std::fprintf(stderr, "%d failure(s)\n", failures);

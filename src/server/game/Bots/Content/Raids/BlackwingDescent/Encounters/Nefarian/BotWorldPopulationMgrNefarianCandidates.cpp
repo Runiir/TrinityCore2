@@ -1,9 +1,11 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 
 #include "CharmInfo.h"
+#include "Creature.h"
 #include "MotionMaster.h"
 #include "MoveSpline.h"
 #include "Pet.h"
@@ -12,6 +14,9 @@
 
 #include <string>
 #include <utility>
+
+using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
 // Kernel submission of the adaptive Nefarian's End strategy's outputs. The
 // strategy (BotAdaptiveNefarianStrategy.h) decides from the encounter
@@ -28,6 +33,25 @@
 //   as a not-applicable reason in the decision trace.
 void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& context)
 {
+    // The movement lease at the bot's own position, renewed by every admitted
+    // leg of the plan and every hold: the movement executor preserves it
+    // against every lower lane (combat range recovery - MoveBotToProfileRange,
+    // CombatRange at Combat priority - chase, formation, healer approach and
+    // route walks), and the heal guard reads it as protected movement.
+    auto renewLease = [this, &context](BotMovementArbitration::Owner owner,
+        BotMovementArbitration::Priority priority)
+    {
+        Player* bot = context.Bot;
+        BotWorldMovement::Intent lease;
+        lease.X = bot->GetPositionX();
+        lease.Y = bot->GetPositionY();
+        lease.Z = bot->GetPositionZ();
+        lease.Owner = owner;
+        lease.Priority = priority;
+        BotMovementArbitration::Apply(context.State.MovementLease,
+            BuildMovementRequest(bot, lease, context.DecisionNowMs));
+    };
+
     if (context.AdaptiveNefarianMovement
         && context.AdaptiveNefarianMovement->ExpiresAtMs > context.DecisionNowMs)
     {
@@ -39,7 +63,11 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
         movement.UtilityScore = proposal.Utility;
         movement.RequiredResources = proposal.Resources();
         movement.ExpiresAtMs = proposal.ExpiresAtMs;
-        movement.Attempt = [this, &context,
+        // An admitted surface leg publishes its lease: Hazard for a survival
+        // escape (fire, breath, warriors), Mechanic for the rest.
+        bool const survival = uint8(proposal.ActionPriority)
+            >= uint8(BotActionArbitration::Priority::Survival);
+        movement.Attempt = [this, &context, renewLease, survival,
             intent = BotNativeAction::WithMovementReason(proposal.Action,
                 proposal.Id.Mechanic)]()
         {
@@ -48,6 +76,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
                 BotMovementArbitration::Priority::Hazard);
             if (outcome.Result == BotActionArbitration::Disposition::Committed)
             {
+                renewLease(survival ? BotMovementArbitration::Owner::Hazard
+                        : BotMovementArbitration::Owner::Mechanic,
+                    survival ? BotMovementArbitration::Priority::Hazard
+                        : BotMovementArbitration::Priority::Mechanic);
                 context.Situation = "adaptive_nefarian";
                 context.Action = "nefarian_mechanic_movement";
                 context.State.LastDecisionHandler = "adaptive_nefarian";
@@ -121,54 +153,96 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
                 : BotActionArbitration::Outcome::Retryable("melee_autoattack_suppression_rejected");
         };
         context.State.DecisionKernel.Submit(std::move(suppress));
+
+        // A damage dealer holding fire before Onyxia is tanked also claims the
+        // Target lane, so no trained damage candidate opens on her (the
+        // suppression above covers only melee swings and the pet). Heals and
+        // consumables claim no Target and go on.
+        if (suppressReason == BotEncounter::Nefarian::HoldFirePreEngage
+            || suppressReason == BotEncounter::Nefarian::HoldFireForOnyxiaTank)
+        {
+            BotActionArbitration::Candidate holdFire;
+            holdFire.Key = "adaptive_nefarian:hold_fire:" + suppressReason;
+            holdFire.Source = "adaptive_nefarian";
+            holdFire.ActionPriority = BotActionArbitration::Priority::Mechanic;
+            holdFire.UtilityScore = 100.0f;
+            holdFire.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::Target);
+            holdFire.Attempt = [suppressReason]()
+            {
+                return BotActionArbitration::Outcome::Committed(
+                    "nefarian_hold_fire_" + suppressReason);
+            };
+            context.State.DecisionKernel.Submit(std::move(holdFire));
+        }
     }
 
-    // A bot leading warriors with no lawful leg (a running walk that would now
-    // take them deeper into Nefarian's front, or no leg at all): hold it. The
-    // hold is renewed every decision while the plan asks for it:
-    // - the autonomous generator of the active slot (a native chase or point
-    //   path) is cleared and the spline stopped, as a client releasing its
-    //   keys; a controlled effect (fear, knockback, jump) is left alone;
-    // - a Hazard movement lease at the bot's own position makes the movement
-    //   executor preserve it against every lower lane, so combat range
-    //   recovery (MoveBotToProfileRange, CombatRange/Combat) cannot move the
-    //   bot in the same tick or before the lease expires.
-    if (context.AdaptiveNefarianMovementHold == BotEncounter::Nefarian::WarriorStopHold)
+    // The movement holds, renewed every decision while the plan asks for
+    // them. Each claims the movement lane and renews a movement lease at the
+    // bot's own position, so the movement executor preserves it against every
+    // lower lane (combat range recovery - MoveBotToProfileRange, CombatRange at
+    // Combat priority - chase, formation and route walks) in the same tick and
+    // until the lease expires; a controlled effect (fear, knockback, jump) is
+    // left alone.
+    // - WarriorStopHold: a bot leading warriors with no lawful leg (a running
+    //   walk that would take them deeper into Nefarian's front, a refused leg,
+    //   the handler cornered). Hazard lease; the native generator of the
+    //   active slot (a chase or point path) is cleared and the spline stopped,
+    //   as a client releasing its keys.
+    // - PlatformHold: a bot on the raised platform with no leg of the plan
+    //   (round 7: static navmesh paths walked bots off the transport into the
+    //   magma bowl under it). Mechanic lease; stopped the same way.
+    // - LegInFlightHold: the plan's own leg is running: Mechanic lease only.
+    std::string const& hold = context.AdaptiveNefarianMovementHold;
+    bool const warriorStop = hold == BotEncounter::Nefarian::WarriorStopHold;
+    bool const platformStop = BotEncounter::Nefarian::IsPlatformHold(hold);
+    bool const legInFlight = hold == BotEncounter::Nefarian::LegInFlightHold;
+    if (warriorStop || platformStop || legInFlight)
     {
+        BotMovementArbitration::Owner const owner = warriorStop
+            ? BotMovementArbitration::Owner::Hazard : BotMovementArbitration::Owner::Mechanic;
+        BotMovementArbitration::Priority const priority = warriorStop
+            ? BotMovementArbitration::Priority::Hazard
+            : BotMovementArbitration::Priority::Mechanic;
+        bool const stopMoving = warriorStop || platformStop;
+        // Beside a proposed leg the platform hold is the fallback: below every
+        // leg (CombatMovement, utility 1), so an admitted leg claims the lane
+        // first and a leg that native admission rejects leaves it to the hold.
+        bool const fallback = platformStop && context.AdaptiveNefarianMovement
+            && context.AdaptiveNefarianMovement->ExpiresAtMs > context.DecisionNowMs;
         BotActionArbitration::Candidate stop;
-        stop.Key = "adaptive_nefarian:" + std::string(BotEncounter::Nefarian::WarriorStopHold);
+        stop.Key = "adaptive_nefarian:" + hold;
         stop.Source = "adaptive_nefarian";
-        stop.ActionPriority = BotActionArbitration::Priority::Survival;
-        stop.UtilityScore = 480.0f;
+        stop.ActionPriority = warriorStop ? BotActionArbitration::Priority::Survival
+            : fallback ? BotActionArbitration::Priority::CombatMovement
+            : BotActionArbitration::Priority::Mechanic;
+        stop.UtilityScore = warriorStop ? 480.0f : fallback ? 1.0f : 250.0f;
         stop.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::Movement);
         stop.ExpiresAtMs = context.DecisionNowMs + 1000;
-        stop.Attempt = [this, &context]()
+        stop.Attempt = [&context, renewLease, owner, priority, stopMoving, hold]()
         {
             Player* bot = context.Bot;
             MotionMaster* motion = bot->GetMotionMaster();
             if (motion->GetMotionSlot(MOTION_SLOT_CONTROLLED))
                 return BotActionArbitration::Outcome::Retryable(
-                    "nefarian_warrior_path_stop_controlled_motion");
-            // As SettleRetainedMagmawFormation retires a native path.
-            if (!bot->movespline->Finalized())
-                bot->StopMoving();
-            motion->Clear(MOTION_SLOT_ACTIVE);
-            motion->MoveIdle();
-            BotWorldMovement::Intent hold;
-            hold.X = bot->GetPositionX();
-            hold.Y = bot->GetPositionY();
-            hold.Z = bot->GetPositionZ();
-            hold.Owner = BotMovementArbitration::Owner::Hazard;
-            hold.Priority = BotMovementArbitration::Priority::Hazard;
-            BotMovementArbitration::Apply(context.State.MovementLease,
-                BuildMovementRequest(bot, hold, context.DecisionNowMs));
-            context.State.ActivePathValid = false;
-            context.State.IsMoving = false;
+                    "nefarian_movement_hold_controlled_motion");
+            if (stopMoving)
+            {
+                // As SettleRetainedMagmawFormation retires a native path.
+                if (!bot->movespline->Finalized())
+                    bot->StopMoving();
+                motion->Clear(MOTION_SLOT_ACTIVE);
+                motion->MoveIdle();
+                context.State.ActivePathValid = false;
+                context.State.IsMoving = false;
+            }
+            renewLease(owner, priority);
             context.Situation = "adaptive_nefarian";
-            context.Action = "nefarian_warrior_path_stop";
+            context.Action = hold;
             context.State.LastDecisionHandler = "adaptive_nefarian";
-            return BotActionArbitration::Outcome::Committed("nefarian_warrior_path_held");
+            return BotActionArbitration::Outcome::Committed(
+                stopMoving ? "nefarian_movement_held" : "nefarian_leg_lease_renewed");
         };
         context.State.DecisionKernel.Submit(std::move(stop));
     }
@@ -194,4 +268,76 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
         };
         context.State.DecisionKernel.Submit(std::move(hold));
     }
+}
+
+// The route's engagement edge for the kill (round 7). The adaptive Nefarian
+// owner replaces the route adapter on the encounter node, so, as Atramedes'
+// and Chimaeron's observers do, it carries RememberValidationRouteBossEngagement:
+// without it the native death callback rejects the kill
+// (gate=combined_rejected), as it did Atramedes' in round 5. Only Nefarian
+// (41376, the route target) registers - never Onyxia (41270): the kill credit
+// is his - and only while he is landed, in combat and attackable. Observation
+// only: it never changes target, focus or movement.
+void BotWorldPopulationMgr::SubmitAdaptiveNefarianRouteObservation(BotUpdateContext& context)
+{
+    auto observe = [this, &context]() -> BotActionArbitration::Outcome
+    {
+        if (!context.AdaptiveNefarianOwnsNode
+            || Cohort().Config.ValidationRouteKind != "boss"
+            || Cohort().Config.ValidationRouteNodeId
+                != BotEncounter::Nefarian::EncounterNodeId)
+            return BotActionArbitration::Outcome::NotApplicable(
+                "nefarian_route_observation_not_owned");
+
+        Unit* target = context.Target;
+        Creature const* creature = target ? target->ToCreature() : nullptr;
+        if (!target || !creature || !target->IsAlive()
+            || creature->GetEntry() != BotEncounter::Nefarian::NefarianEntry
+            || creature->GetEntry() != Cohort().Config.ValidationRouteTargetEntry
+            || !target->IsInCombat()
+            || target->IsFlying()
+            || !context.Bot->IsValidAttackTarget(target)
+            || !IsNativeCombatObserved(context.Bot, target))
+            return BotActionArbitration::Outcome::NotApplicable(
+                "nefarian_route_observation_wait_for_native_combat");
+
+        RememberValidationRouteBossEngagement(creature);
+
+        bool const targetChanged = context.State.LastDecisionTargetGuid != target->GetGUID();
+        bool const firstEngagement = !context.State.WasInCombat;
+        if (!targetChanged && !firstEngagement)
+            return BotActionArbitration::Outcome::NotApplicable(
+                "nefarian_route_observation_already_recorded");
+
+        float const targetHealthPct = UnitHealthPct(target);
+        RecordRouteProgress(context.State, context.Bot, target,
+            "route_target_combat_progress", targetHealthPct, targetHealthPct, 0, 20);
+        Party().ValidationRouteObservedEngagement = true;
+        std::string raw = BuildRawJson(context.Bot, target);
+        std::string semantic = BuildSemanticJson(context.Bot, target, "adaptive_nefarian",
+            &context.Power, context.Stage, context.ChosenActivity.Activity);
+        RecordEvent(context.State, context.Bot, "validation_target_priority", target,
+            "native_combat_observed", raw.c_str(), semantic.c_str(),
+            context.Bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry, 0);
+        RecordEvent(context.State, context.Bot, "boss_action", target,
+            "native_combat_observed", raw.c_str(), semantic.c_str(),
+            context.Bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry, 0);
+        if (firstEngagement)
+            RecordEvent(context.State, context.Bot, "boss_started", target,
+                "native_combat_observed", raw.c_str(), semantic.c_str(),
+                context.Bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry, 0);
+        context.State.WasInCombat = true;
+        return BotActionArbitration::Outcome::NotApplicable(
+            "adaptive_nefarian_route_observation_recorded");
+    };
+
+    BotActionArbitration::Candidate observation;
+    observation.Key = "world.validation_route_nefarian_observation";
+    observation.Source = "validation_route_observer";
+    observation.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    observation.UtilityScore = 0.0f;
+    observation.RequiredResources = BotActionArbitration::Uses(
+        BotActionArbitration::Resource::None);
+    observation.Attempt = std::move(observe);
+    context.State.DecisionKernel.Submit(std::move(observation));
 }

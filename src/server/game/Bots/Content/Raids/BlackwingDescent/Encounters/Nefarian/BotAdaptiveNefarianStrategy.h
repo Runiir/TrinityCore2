@@ -126,17 +126,26 @@ private:
         std::string_view role, Nefarian::NativeFacts const* facts)
     {
         using namespace Nefarian;
-        bool const onyxiaTank = bot.Guid == duty.OnyxiaTank;
-        bool const nefarianTank = bot.Guid == duty.NefarianTank;
-        bool const healer = IsHealer(bot, role) && !onyxiaTank && !nefarianTank;
+        // The Onyxia tank now: hers, or the Blood DK when hers is dead or
+        // missing (round 7: nobody pulled with the Feral dead).
+        ObjectGuid const onyxiaPuller = OnyxiaTankNow(board, duty);
+        bool const onyxiaTank = ActsAsOnyxiaTank(board, view, duty, bot.Guid);
+        bool const nefarianTank = bot.Guid == duty.NefarianTank && !onyxiaTank;
+        bool const healer = IsHealer(bot, role) && bot.Guid != duty.OnyxiaTank
+            && bot.Guid != duty.NefarianTank;
         switch (view.CurrentPhase)
         {
             case Phase::PreEngage:
                 if (onyxiaTank && view.OnyxiaAlive() && view.Onyxia->Attackable
                     && !HasAura(*view.Onyxia, SpellOnyxiaFeignDeath))
                     plan.DamageTarget = view.Onyxia->Guid;
+                else if (!healer && onyxiaPuller.IsEmpty() && view.OnyxiaAlive()
+                    && view.Onyxia->Attackable
+                    && !HasAura(*view.Onyxia, SpellOnyxiaFeignDeath))
+                    // No tank left to pull: nobody to wait for.
+                    plan.DamageTarget = view.Onyxia->Guid;
                 else if (!healer)
-                    Suppress(plan, "nefarian_pre_engage_hold");
+                    Suppress(plan, HoldFirePreEngage);
                 return;
             case Phase::OnyxiaOnly:
             case Phase::BothDragons:
@@ -150,8 +159,13 @@ private:
                         Suppress(plan, "nefarian_airborne_tank_hold");
                 }
                 else if (!healer)
-                    plan.DamageTarget = PhaseOneDamageTarget(view,
-                        PhaseOnePacingFor(facts));
+                {
+                    if (OnyxiaHeldByTank(board, view, duty, facts))
+                        plan.DamageTarget = PhaseOneDamageTarget(view,
+                            PhaseOnePacingFor(facts));
+                    else
+                        Suppress(plan, HoldFireForOnyxiaTank);
+                }
                 return;
             case Phase::PlatformAscent:
             case Phase::PlatformHold:
@@ -311,9 +325,12 @@ private:
                 plan.Actions.push_back(Cast(board, mechanic, subject->Guid,
                     taunt.SpellId, Priority::ThreatControl, 90.0f));
         };
-        if (bot.Guid == duty.OnyxiaTank && view.OnyxiaAlive())
+        bool const holdsOnyxia = ActsAsOnyxiaTank(board, view, duty, bot.Guid);
+        if (holdsOnyxia)
             tauntIfLoose(view.Onyxia, "onyxia_taunt");
-        if (bot.Guid == duty.NefarianTank && view.NefarianLanded())
+        // A Blood DK standing in for the dead Feral keeps Onyxia until she
+        // dies and only then taunts Nefarian.
+        if (bot.Guid == duty.NefarianTank && view.NefarianLanded() && !holdsOnyxia)
             tauntIfLoose(view.Nefarian, "nefarian_taunt");
         if (bot.Guid == duty.WarriorHandler && phase == Phase::NefarianGround)
             if (!plan.DamageTarget.IsEmpty() && plan.DamageTarget
@@ -404,6 +421,55 @@ private:
             && (runningUnsafe || cornered
                 || plan.MovementHold == "nefarian_warrior_path_unsafe"))
             plan.MovementHold = WarriorStopHold;
+        // Round 7 (first live attempt): on the raised platform every step is
+        // this plan's. No native combat range, chase or route walk (static
+        // navmesh paths, which do not know the platform) may walk a bot off
+        // the transport into the magma bowl under it:
+        // - a leg of this plan in flight keeps its lease (LegInFlightHold);
+        // - otherwise the platform hold is always proposed: alone when there
+        //   is no leg (or only a diagnostic hold), and beside a proposed leg
+        //   as the fallback that claims the movement lane when native
+        //   admission rejects the leg. The warrior stop keeps precedence.
+        // The pickup's budget spent: typed, for the trace and the status.
+        if (!plan.Movement && plan.MovementHold.empty() && PickupExhausted(context))
+            plan.MovementHold = PickupExhaustedHold;
+        if (!plan.Ascent && PlatformHoldApplies(context)
+            && plan.MovementHold != WarriorStopHold
+            && plan.MovementHold != LegInFlightHold)
+            plan.MovementHold = PlatformHoldWith(plan.MovementHold);
+    }
+
+    static bool PickupExhausted(Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        return context.Facts && context.View.OnyxiaAlive()
+            && context.View.Onyxia->VictimGuid != context.Bot.Guid
+            && ActsAsOnyxiaTank(context.Board, context.View, context.Plan, context.Bot.Guid)
+            && context.Facts->PickupExhausted(context.Bot.Guid, context.View.Onyxia->Guid);
+    }
+
+    static bool PlatformHoldApplies(Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        // From the pull (the pull itself and the route's walks onto the
+        // platform stay native), through phase 3 on the floor.
+        switch (context.View.CurrentPhase)
+        {
+            case Phase::OnyxiaOnly:
+            case Phase::BothDragons:
+            case Phase::NefarianLanding:
+            case Phase::NefarianGround:
+                break;
+            default:
+                return false;
+        }
+        if (OnPillarStructure(context) || !OnPlatformFloor(context))
+            return false;
+        if (context.Facts)
+            if (FallState const* fall = context.Facts->FindFall(context.Bot.Guid);
+                fall && (fall->Falling || fall->LandingPending))
+                return false;
+        return true;
     }
 
     static bool RunningWalkUnsafe(Nefarian::MovementContext const& context)
@@ -501,8 +567,14 @@ private:
                 return;
             }
         }
+        // Arrived - unless a caster or healer would stand where a pillar
+        // hides a target or a target is out of range, or a non-tank would
+        // stand in a dragon's core: then it finishes the leg.
+        bool const selfServes = goal->Sight.empty() || SpotServes(self, goal->Sight);
+        bool const selfClear = !InDragonCore(context, self);
         if (goal->Target == Surface::Floor
-            && Distance(self, goal->Local) <= goal->ArrivalToleranceYards)
+            && Distance(self, goal->Local) <= goal->ArrivalToleranceYards
+            && selfServes && selfClear)
             return;
         if (!onPillar && !OnPlatformFloor(context))
         {
@@ -529,6 +601,18 @@ private:
         }
         else
             leg = NextLeg(self, goal->Local);
+        // A correction under NextLeg's 1-yard arrival: a checked short leg
+        // when the spot the bot stands on does not serve (sight, range or a
+        // dragon's core).
+        if (!leg && goal->Target == Surface::Floor && (!selfServes || !selfClear)
+            && Distance(self, goal->Local) > 0.05f && SegmentWalkable(self, goal->Local))
+        {
+            PathLeg correction;
+            correction.To = goal->Local;
+            correction.LocalZ = FloorLocalZAt(goal->Local);
+            correction.Kind = "short_correction";
+            leg = correction;
+        }
         if (!leg)
         {
             plan.MovementHold = "nefarian_no_surface_path";

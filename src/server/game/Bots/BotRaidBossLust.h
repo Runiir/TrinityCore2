@@ -61,21 +61,32 @@ struct TankHold
     ObjectGuid Tank;
 };
 
-// The first (GUID order) living, in-combat hostile that the caller's native
-// probe calls a boss and whose victim is a living tank-role raid bot.
+// A living, in-combat, attackable and selectable hostile that the caller's
+// native probe calls a boss and whose victim is a living tank-role raid bot.
+// The hold already being timed (current) wins while it lasts; otherwise the
+// first in GUID order. Generic multi-boss hygiene: a boss that cannot be
+// targeted is no one's tank target, and another boss becoming held does not
+// restart a hold in progress. The lust waits for a living tank to hold a
+// boss: on Nefarian it fires 5 s after a tank takes Onyxia, so a late tank
+// pickup delays it (round 6: Onyxia hit DPS for about 34 s before the Feral
+// held her, and Time Warp landed about 38.9 s in). That is a tank-acquisition
+// matter, not this rule's.
 template <typename BossProbe>
-TankHold FindTankHold(BotEncounter::Blackboard const& board, BossProbe&& isBoss)
+TankHold FindTankHold(BotEncounter::Blackboard const& board, BossProbe&& isBoss,
+    Latch const* current = nullptr)
 {
     std::vector<BotEncounter::ActorSnapshot const*> engaged;
     for (auto const* actors : { &board.Hostiles, &board.Summons })
         for (BotEncounter::ActorSnapshot const& actor : *actors)
-            if (actor.Alive && actor.InCombat && !actor.VictimGuid.IsEmpty())
+            if (actor.Alive && actor.InCombat && actor.Attackable && actor.Selectable
+                && !actor.VictimGuid.IsEmpty())
                 engaged.push_back(&actor);
     std::sort(engaged.begin(), engaged.end(),
         [](BotEncounter::ActorSnapshot const* left, BotEncounter::ActorSnapshot const* right)
         {
             return left->Guid.GetRawValue() < right->Guid.GetRawValue();
         });
+    TankHold first;
     for (BotEncounter::ActorSnapshot const* hostile : engaged)
     {
         auto tank = std::find_if(board.Players.begin(), board.Players.end(),
@@ -84,10 +95,15 @@ TankHold FindTankHold(BotEncounter::Blackboard const& board, BossProbe&& isBoss)
                 return player.Guid == hostile->VictimGuid && player.Alive
                     && player.Role == "tank";
             });
-        if (tank != board.Players.end() && isBoss(hostile->Guid))
+        if (tank == board.Players.end() || !isBoss(hostile->Guid))
+            continue;
+        if (current && current->Holding && current->HoldBossGuid == hostile->Guid
+            && current->HoldTankGuid == tank->Guid)
             return TankHold{ hostile->Guid, tank->Guid };
+        if (first.Boss.IsEmpty())
+            first = TankHold{ hostile->Guid, tank->Guid };
     }
-    return TankHold{};
+    return first;
 }
 
 // The owner's own lust cooldown (300 s) outlives a wipe: Sated, Exhaustion,

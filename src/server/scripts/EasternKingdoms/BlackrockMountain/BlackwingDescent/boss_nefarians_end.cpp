@@ -31,6 +31,7 @@
 #include "SpellMgr.h"
 #include "Transport.h"
 #include "InstanceScript.h"
+#include "Log.h"
 #include "MotionMaster.h"
 #include "TemporarySummon.h"
 #include "Map.h"
@@ -226,6 +227,12 @@ struct boss_nefarians_end : public BossAI
 
     void MovementInform(uint32 type, uint32 id) override
     {
+        // Round 7 instrumentation (landing chain: MoveLand, this inform,
+        // EVENT_LANDED, ACTION_NEFARIAN_LANDED, Onyxia's receipt).
+        if (id == POINT_PREPARE_LANDING || id == POINT_LAND)
+            TC_LOG_INFO("server.nefarians_end", "NefariansEnd nefarian movement_inform nefarian=%s type=%u id=%u phase_one=%d phase_three=%d z=%.3f passenger=%d",
+                me->GetGUID().ToString().c_str(), type, id, int(events.IsInPhase(PHASE_ONE)),
+                int(events.IsInPhase(PHASE_THREE)), me->GetPositionZ(), int(me->GetTransport() != nullptr));
         if (type != POINT_MOTION_TYPE && type != EFFECT_MOTION_TYPE)
             return;
 
@@ -410,9 +417,13 @@ struct boss_nefarians_end : public BossAI
                     }
 
                     me->GetMotionMaster()->MoveLand(POINT_LAND, NefarianElevatorLandPhaseOnePosition);
+                    TC_LOG_INFO("server.nefarians_end", "NefariansEnd nefarian move_land nefarian=%s z=%.3f passenger=%d",
+                        me->GetGUID().ToString().c_str(), me->GetPositionZ(), int(me->GetTransport() != nullptr));
                     break;
                 case EVENT_LANDED:
                     me->SetDisableGravity(false);
+                    TC_LOG_INFO("server.nefarians_end", "NefariansEnd nefarian landed nefarian=%s phase_one=%d phase_three=%d",
+                        me->GetGUID().ToString().c_str(), int(events.IsInPhase(PHASE_ONE)), int(events.IsInPhase(PHASE_THREE)));
 
                     if (events.IsInPhase(PHASE_ONE))
                     {
@@ -420,9 +431,12 @@ struct boss_nefarians_end : public BossAI
                         DoZoneInCombat();
                         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me, FRAME_INDEX_NEFARIAN);
                         events.ScheduleEvent(EVENT_ENGAGE_PLAYERS, 2s, 0, PHASE_ONE);
-                        if (Creature* onyxia = instance->GetCreature(DATA_ONYXIA))
-                            if (onyxia->IsAIEnabled())
-                                onyxia->AI()->DoAction(ACTION_NEFARIAN_LANDED);
+                        Creature* onyxia = instance->GetCreature(DATA_ONYXIA);
+                        TC_LOG_INFO("server.nefarians_end", "NefariansEnd nefarian landed_signal nefarian=%s onyxia=%s ai_enabled=%d ai=%p",
+                            me->GetGUID().ToString().c_str(), onyxia ? onyxia->GetGUID().ToString().c_str() : "none",
+                            int(onyxia && onyxia->IsAIEnabled()), onyxia ? static_cast<void const*>(onyxia->AI()) : nullptr);
+                        if (onyxia && onyxia->IsAIEnabled())
+                            onyxia->AI()->DoAction(ACTION_NEFARIAN_LANDED);
                     }
                     else if (events.IsInPhase(PHASE_THREE))
                         events.ScheduleEvent(EVENT_ENGAGE_PLAYERS, 2s, 0, PHASE_THREE);
@@ -660,7 +674,7 @@ private:
 
 struct npc_nefarians_end_onyxia : public ScriptedAI
 {
-    npc_nefarians_end_onyxia(Creature* creature) : ScriptedAI(creature), _instance(me->GetInstanceScript()), _allowDeath(false), _chargeWarningLevel(0)
+    npc_nefarians_end_onyxia(Creature* creature) : ScriptedAI(creature), _instance(me->GetInstanceScript()), _allowDeath(false), _chargeWarningLevel(0), _lethalClampCount(0)
     {
         me->AddUnitState(UNIT_STATE_IGNORE_PATHFINDING); // Remove this little workarround when mmaps for transports have arrived.
     }
@@ -755,6 +769,8 @@ struct npc_nefarians_end_onyxia : public ScriptedAI
                 break;
             case ACTION_NEFARIAN_LANDED:
                 _allowDeath = true;
+                TC_LOG_INFO("server.nefarians_end", "NefariansEnd onyxia landed_received onyxia=%s ai=%p allow_death=%d health=%u",
+                    me->GetGUID().ToString().c_str(), static_cast<void const*>(this), int(_allowDeath), me->GetHealth());
                 break;
             default:
                 break;
@@ -765,7 +781,14 @@ struct npc_nefarians_end_onyxia : public ScriptedAI
     {
         // Onyxia may not die before Nefarian has landed
         if (damage >= me->GetHealth() && !_allowDeath)
+        {
             damage = me->GetHealth() - 1;
+            // Round 7 instrumentation: the first live bot attempt held her at
+            // 1 health for minutes with Nefarian landed and fighting.
+            if (++_lethalClampCount == 1 || _lethalClampCount % 200 == 0)
+                TC_LOG_INFO("server.nefarians_end", "NefariansEnd onyxia lethal_clamp onyxia=%s ai=%p allow_death=%d clamps=%u",
+                    me->GetGUID().ToString().c_str(), static_cast<void const*>(this), int(_allowDeath), _lethalClampCount);
+        }
     }
 
     void OnSpellCastFinished(SpellInfo const* spell, SpellFinishReason /*reason*/) override
@@ -818,6 +841,7 @@ private:
     InstanceScript* _instance;
     EventMap _events;
     bool _allowDeath;
+    uint32 _lethalClampCount;
     uint8 _chargeWarningLevel;
 };
 }

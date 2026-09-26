@@ -11,6 +11,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianLayout.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTactics.h"
 #include <optional>
+#include <vector>
 
 namespace BotEncounter::Nefarian
 {
@@ -71,6 +72,11 @@ struct SurfaceGoal
     // no lawful kite or pen point): the plan renews the warrior hold every
     // decision while this goal stands, moving or not.
     bool WarriorHold = false;
+    // A caster or healer spot: whom it must see past the pillars, and within
+    // what range (the arrival tolerance applies only while both still hold
+    // from where the bot actually stands).
+    std::vector<LocalPoint> Sight;
+    float SightRangeYards = 0.0f;
 };
 
 struct MovementContext
@@ -157,7 +163,54 @@ constexpr float WarriorFrontMarginDeg = 15.0f;
 constexpr float HandlerKiteTriggerYards = 6.0f;
 // The movement hold that stops a running walk no lawful leg replaces (the
 // submission claims the movement lane and stops the spline).
+constexpr float DragonCoreClearanceYards = 4.0f;
+// The damage dealers' hold fire before Onyxia is tanked (pre-pull and until
+// a tank has her): the suppression also claims the Target lane, so no
+// trained damage opens on her (BotWorldPopulationMgrNefarianCandidates.cpp).
+constexpr std::string_view HoldFirePreEngage = "nefarian_pre_engage_hold";
+constexpr std::string_view HoldFireForOnyxiaTank = "nefarian_wait_for_onyxia_tank";
+// The Onyxia tank's pickup budget is spent (BotNefarianPickupMemory.h).
+constexpr std::string_view PickupExhaustedHold = "nefarian_pickup_exhausted";
 constexpr std::string_view WarriorStopHold = "nefarian_warrior_path_stop";
+// The platform hold (round 7): a bot on the raised platform with no leg of
+// the plan stands where it is, its native generator stopped and a Mechanic
+// movement lease renewed, so native combat range, chase and route movement
+// (static navmesh paths under the transport) cannot walk it off. A leg in
+// flight (nefarian_leg_in_flight) renews the lease without being stopped.
+constexpr std::string_view PlatformHold = "nefarian_platform_hold";
+constexpr std::string_view LegInFlightHold = "nefarian_leg_in_flight";
+
+// A platform hold keeps the diagnostic it replaces visible in the trace:
+// "nefarian_platform_hold:<diagnostic>" (static literals, as every hold is a
+// string_view into static storage).
+inline std::string_view PlatformHoldWith(std::string_view diagnostic)
+{
+    static constexpr std::string_view Composed[] = {
+        "nefarian_platform_hold:nefarian_elevator_unobserved",
+        "nefarian_platform_hold:nefarian_movement_stunned",
+        "nefarian_platform_hold:nefarian_no_surface_path",
+        "nefarian_platform_hold:nefarian_not_on_platform",
+        "nefarian_platform_hold:nefarian_pickup_exhausted",
+    };
+    for (std::string_view composed : Composed)
+        if (composed.substr(PlatformHold.size() + 1) == diagnostic)
+            return composed;
+    return PlatformHold;
+}
+
+inline bool IsPlatformHold(std::string_view hold)
+{
+    return hold.substr(0, PlatformHold.size()) == PlatformHold;
+}
+
+// The diagnostic a hold carries: the hold itself, or what a platform hold
+// replaced.
+inline std::string_view HoldReason(std::string_view hold)
+{
+    if (IsPlatformHold(hold) && hold.size() > PlatformHold.size() + 1)
+        return hold.substr(PlatformHold.size() + 1);
+    return hold;
+}
 constexpr float HandlerKiteReleaseYards = 10.0f; // hysteresis: kiting ends past this
 constexpr float HandlerPenRadius = 24.0f;
 constexpr float WarriorLeadRangeYards = 25.0f;
@@ -262,6 +315,21 @@ inline bool LeadsWarriors(MovementContext const& context)
     return false;
 }
 
+// A non-tank within DragonCoreClearanceYards of a living dragon's centre:
+// Spell.cpp skips the breath's cone check for a target inside its own
+// bounding radius (at least 2 yards), so there the breath hits whatever the
+// dragon's facing.
+inline bool InDragonCore(MovementContext const& context, LocalPoint point)
+{
+    if (context.Plan.IsTank(context.Bot.Guid))
+        return false;
+    for (ActorSnapshot const* dragon : { context.View.Onyxia, context.View.Nefarian })
+        if (dragon && dragon->Alive
+            && Distance(WorldToLocal(dragon->Position), point) < DragonCoreClearanceYards)
+            return true;
+    return false;
+}
+
 // Danger rules at a floor point. Onyxia's flank is only avoided while she is
 // discharging, and her rear is then the intended refuge (the tank turns her).
 inline bool FloorPointSafe(MovementContext const& context, LocalPoint point,
@@ -280,6 +348,13 @@ inline bool FloorPointSafe(MovementContext const& context, LocalPoint point,
             return false;
     if (isTank)
         return true;
+    // Spell.cpp's cone check skips a target within its own bounding radius
+    // (at least 2 yards) of the breathing dragon's centre: non-tanks keep
+    // DragonCoreClearanceYards from both.
+    for (ActorSnapshot const* dragon : { context.View.Onyxia, context.View.Nefarian })
+        if (dragon && dragon->Alive
+            && Distance(WorldToLocal(dragon->Position), point) < DragonCoreClearanceYards)
+            return false;
     if (context.View.OnyxiaAlive() && context.View.Onyxia->InCombat)
     {
         DragonPose const onyxia = PoseOf(*context.View.Onyxia);
@@ -345,6 +420,22 @@ inline std::optional<SurfaceGoal> BreathEscape(MovementContext const& context)
     if (context.Plan.IsTank(context.Bot.Guid))
         return std::nullopt;
     LocalPoint const self = BotLocal(context);
+    // Inside a dragon's core the cone does not protect: leave it whatever the
+    // dragon is casting.
+    for (ActorSnapshot const* dragon : { context.View.Onyxia, context.View.Nefarian })
+    {
+        if (!dragon || !dragon->Alive)
+            continue;
+        LocalPoint const body = WorldToLocal(dragon->Position);
+        if (Distance(body, self) >= DragonCoreClearanceYards)
+            continue;
+        float const away = Distance(body, self) < 0.1f ? AngleOf(self)
+            : AngleOf({ self.X - body.X, self.Y - body.Y });
+        if (std::optional<LocalPoint> const point = SafeNear(context, body, away,
+                DragonCoreClearanceYards + 4.0f, false))
+            return MakeGoal(context, MovePurpose::BreathEscape, Surface::Floor, *point, 1.5f,
+                true);
+    }
     for (ActorSnapshot const* dragon : { context.View.Onyxia,
             context.View.Nefarian })
     {
