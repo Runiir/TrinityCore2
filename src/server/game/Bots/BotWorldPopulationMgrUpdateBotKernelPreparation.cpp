@@ -170,7 +170,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
         // observation. Do not let a vanished Magmaw node retain its previous
         // parasite area/dot authority into a generic profile tick.
         context.State.MagmawParasiteCombat = {};
-        SubmitRaidPrepullConsumableCandidate(context);
+        // A member walking back after a wipe neither eats nor pre-pots on the
+        // way; its consumables wait for the boss node.
+        context.ValidationRecoveryReturning = context.ObserveValidationRecoveryReturn();
+        if (!context.ValidationRecoveryReturning)
+            SubmitRaidPrepullConsumableCandidate(context);
 
         if (std::optional<BotNativeAction::Candidate> combatRes =
                 BuildCombatResNativeActionCandidate(context.State, context.Bot,
@@ -259,6 +263,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         Party().ValidationRouteGeneration };
                     nativeInput.NowMs = context.DecisionNowMs;
                     nativeInput.Tick = blackboard.Revision;
+                    nativeInput.BossResetGeneration = Cohort().Raid.BossResetGeneration;
+                    nativeInput.CompositionRecovery = Cohort().Raid.RaidInstance
+                        && routeNode.CompositionRecovery;
                     nativeInput.CompletionAlreadyRecorded =
                         std::any_of(Party().Bots.begin(), Party().Bots.end(),
                             [this](WorldBotState const& cohortState)

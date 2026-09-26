@@ -11,6 +11,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotSpellQueue.h"
 #include "Bots/BotTypes.h"
+#include "Bots/BotValidationRouteRecoveryReturn.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
@@ -436,6 +437,9 @@ namespace BotWorldPopulationMgrBotState
         uint64 ValidationPrepullSetupGeneration = 0;
         // Dead since, while a gated staging node waits for this member.
         uint64 ValidationPrepullDeadSinceMs = 0;
+        // Post-wipe return to the boss node, armed by a resurrection after a
+        // release (BotValidationRouteRecoveryReturn.h).
+        BotValidationRouteRecoveryReturn::Memory ValidationRecoveryReturn;
         // Per-player observations for typed, ordinary-movement descents. A
         // cohort may advance only after every member independently departs,
         // lands alive and grounded, and proves a native path onward.

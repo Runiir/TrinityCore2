@@ -183,3 +183,52 @@ def test_calibration_and_completion_paths_share_inventory_scanner() -> None:
     assert "CountNativeConsumable" in source(SEMANTIC)
     assert "AppendRaidPrepullConsumablesJson(json);" in source(RUNTIME)
     assert "ReconcileRaidPrepullItemSpellFinished(caster" in source(SEMANTIC)
+
+
+def test_prepull_candidate_stands_down_in_combat_and_during_recovery_rides(
+    tmp_path: Path,
+) -> None:
+    # Round 3 Chimaeron shard: the native wake engaged the raid before the
+    # boss node, so the candidate (priority Mechanic, utility 12, GCD/cast/
+    # target lanes) held every member's cast lanes for the whole fight, then
+    # deferred the recovery ride's surface walk (Mechanic, utility 6) for the
+    # seven non-healers until the shard plateaued.
+    text = source(CORE)
+    contract = source(CONTRACT)
+    assert "inline bool PrepullWindowOpen(bool botInCombat, bool rosterMemberInCombat," in contract
+    submit = text.index("void BotWorldPopulationMgr::SubmitRaidPrepullConsumableCandidate(")
+    window = text.index("PrepullWindowOpen(", submit)
+    candidate = text.index("BotActionArbitration::Candidate candidate;", submit)
+    assert window < candidate
+    gate = text[submit:candidate]
+    assert "context.Bot->IsInCombat(), rosterMemberInCombat, recoveryRideEngaged" in gate
+    assert "if (member->IsInCombat())\n            rosterMemberInCombat = true;" in gate
+    assert ".NativeContract.Recovery)" in gate
+    assert "recoveryRideEngaged = recoveryRideEngaged || transit.Runtime.Started;" in gate
+    assert "if (healer && injuredOutOfCombat)\n        return;" in gate
+
+    replay = tmp_path / "prepull_window_replay.cpp"
+    replay.write_text(
+        r'''
+#include "Bots/BotWorldPopulationMgrRaidConsumables.h"
+#include <cassert>
+
+int main()
+{
+    using BotWorldPopulationMgrRaidConsumables::PrepullWindowOpen;
+    assert(PrepullWindowOpen(false, false, false));
+    // The encounter has started (a native wake, a patrol, the pull itself).
+    assert(!PrepullWindowOpen(true, false, false));
+    assert(!PrepullWindowOpen(false, true, false));
+    // A wipe-recovery ride owns the node.
+    assert(!PrepullWindowOpen(false, false, true));
+}
+''',
+        encoding="utf-8",
+    )
+    binary = tmp_path / "prepull_window_replay"
+    subprocess.run(
+        ["c++", "-std=c++17", "-I", str(ROOT / "src/server/game"), str(replay), "-o", str(binary)],
+        check=True,
+    )
+    subprocess.run([str(binary)], check=True)

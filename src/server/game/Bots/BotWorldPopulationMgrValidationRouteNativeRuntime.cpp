@@ -28,6 +28,21 @@ namespace Facts = BotWorldPopulationMgrValidationRouteNative::Facts;
 
 using OutcomeObserver = std::function<void(BotActionArbitration::Outcome const&)>;
 
+// A cycling platform rests about two seconds at each level. A stage bound to
+// that window (the walk to or onto the car, the step off, board, disembark
+// and leave) and the cast-owning hold of a walk or step in flight win the
+// Mechanic priority on utility over every ordinary Mechanic candidate that
+// would take their lanes. Round 3 Chimaeron shard: the pre-pull consumable
+// hold (Mechanic, utility 12, GCD/cast/target) beat the recovery ride's
+// surface walk (Mechanic, utility 6) at every rest window, so only the three
+// healers it skipped ever rode. Survival stays with the defensives and hazard
+// exits (utility 200-500): only the fall and the landing, which cannot pause
+// mid-air, take Survival, below every one of them.
+constexpr float TransportWindowUtility = 20.0f;
+constexpr BotActionArbitration::Priority TransportFallPriority =
+    BotActionArbitration::Priority::Survival;
+constexpr float TransportFallUtility = 6.0f;
+
 void Submit(Input const& input, Callbacks const& callbacks, std::string const& mechanic,
     ObjectGuid actor, BotActionArbitration::Priority priority, float utility,
     BotNativeAction::Intent intent, std::string actionLabel,
@@ -80,8 +95,11 @@ void SubmitHold(Input const& input, std::string const& reason, bool ownsCasting 
     BotActionArbitration::Candidate candidate;
     candidate.Key = input.Board->CurrentScope.Key() + ":native_route_hold";
     candidate.Source = "native_route_interaction";
-    candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
-    candidate.UtilityScore = ownsCasting ? 6.0f : 1.0f;
+    bool const falling = ownsCasting && reason == "transport_drop_falling";
+    candidate.ActionPriority = falling ? TransportFallPriority
+        : BotActionArbitration::Priority::Mechanic;
+    candidate.UtilityScore = falling ? TransportFallUtility
+        : ownsCasting ? TransportWindowUtility : 1.0f;
     candidate.RequiredResources = ownsCasting
         ? BotActionArbitration::Uses(BotActionArbitration::Resource::Movement,
             BotActionArbitration::Resource::GlobalCooldown, BotActionArbitration::Resource::Cast)
@@ -219,11 +237,12 @@ std::vector<MemberView> MemberViews(Input const& input)
     return views;
 }
 
+// One member's step of an interaction contract: the node's own, or a
+// recovery wake's (each with its own runtime state).
 void RunInteraction(Input const& input, Callbacks const& callbacks,
-    NodeContract& node, OwnerElection const& election)
+    InteractionContract const& contract, NodeRuntime& runtime,
+    OwnerElection const& election)
 {
-    InteractionContract const& contract = node.Interaction;
-    NodeRuntime& runtime = node.Runtime;
     Player* bot = input.Bot;
     uint64 const self = bot->GetGUID().GetRawValue();
     if (!election.Owner)
@@ -648,20 +667,20 @@ void RunTransport(Input const& input, Callbacks const& callbacks,
             break;
         case TransportStep::MoveToBoard:
             Submit(input, callbacks, "transport_board_path", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 4.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 BotNativeAction::Move{ contract.BoardPoint.X, contract.BoardPoint.Y,
                     contract.BoardPoint.Z, "native_transport_board_path" },
                 "native_route_transport_board_path");
             break;
         case TransportStep::Board:
             Submit(input, callbacks, "transport_board", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 BotNativeAction::TransportBoard{ transportGuid, contract.FloorToleranceYards },
                 "native_route_transport_board", countSubmission(true));
             break;
         case TransportStep::MoveToDisembark:
             Submit(input, callbacks, "transport_disembark_path", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 4.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 BotNativeAction::Move{ contract.DisembarkPoint.X,
                     contract.DisembarkPoint.Y, contract.DisembarkPoint.Z,
                     "native_transport_disembark_path" },
@@ -669,7 +688,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks,
             break;
         case TransportStep::Leave:
             Submit(input, callbacks, "transport_leave", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 BotNativeAction::TransportLeave{ transportGuid, contract.FloorToleranceYards },
                 "native_route_transport_leave", countSubmission(false));
             break;
@@ -689,31 +708,31 @@ void RunTransport(Input const& input, Callbacks const& callbacks,
             break;
         case TransportStep::SurfaceWalk:
             Submit(input, callbacks, "transport_surface_walk", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 surfaceMove(SurfaceStage::Walk), "native_route_transport_surface_walk",
                 approachSubmission(decision.Step));
             break;
         case TransportStep::DropStepOff:
             Submit(input, callbacks, "transport_drop_step_off", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 surfaceMove(SurfaceStage::StepOff), "native_route_transport_drop_step_off",
                 approachSubmission(decision.Step));
             break;
         case TransportStep::DropFall:
             Submit(input, callbacks, "transport_drop_fall", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                TransportFallPriority, TransportFallUtility,
                 surfaceMove(SurfaceStage::Fall), "native_route_transport_drop_fall",
                 approachSubmission(decision.Step));
             break;
         case TransportStep::DropLand:
             Submit(input, callbacks, "transport_drop_land", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                TransportFallPriority, TransportFallUtility,
                 surfaceMove(SurfaceStage::Land), "native_route_transport_drop_land",
                 approachSubmission(decision.Step));
             break;
         case TransportStep::DisembarkWalk:
             Submit(input, callbacks, "transport_disembark_walk", transportGuid,
-                BotActionArbitration::Priority::Mechanic, 6.0f,
+                BotActionArbitration::Priority::Mechanic, TransportWindowUtility,
                 surfaceMove(SurfaceStage::Walk, true), "native_route_transport_disembark_walk",
                 approachSubmission(decision.Step));
             break;
@@ -835,9 +854,9 @@ Result Run(Input const& input, Callbacks const& callbacks)
         return result;
 
     NodeContract& node = *input.Node;
-    // A recovery ride owns the node while it runs; a node without contracts
-    // of its own is otherwise left to the ordinary route adapters.
-    if (!node.Recovery.empty())
+    // A recovery ride or wake owns the node while it runs; a node without
+    // contracts of its own is otherwise left to the ordinary route adapters.
+    if (!node.Recovery.empty() || !node.RecoveryInteractions.empty())
     {
         RecoveryOps ops;
         ops.Ride = [&input](Callbacks const& ridden, TransportContract const& ride,
@@ -846,6 +865,13 @@ Result Run(Input const& input, Callbacks const& callbacks)
             RunTransport(input, ridden, ride, rideRuntime, platform);
         };
         ops.Hold = [&input](std::string const& reason) { SubmitHold(input, reason); };
+        ops.Elect = [&input](InteractionContract const& wake)
+        { return ElectOwner(wake, MemberViews(input)); };
+        ops.Interact = [&input](Callbacks const& woken, InteractionContract const& wake,
+            NodeRuntime& wakeRuntime, OwnerElection const& election)
+        {
+            RunInteraction(input, woken, wake, wakeRuntime, election);
+        };
         if (RunRecovery(input, callbacks, node, ops))
         {
             result.OwnsNode = true;
@@ -920,7 +946,7 @@ Result Run(Input const& input, Callbacks const& callbacks)
         RunTransport(input, callbacks, node.Transport, runtime,
             Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
     if (node.Interaction.Declared && !runtime.FailureRecorded)
-        RunInteraction(input, callbacks, node, election);
+        RunInteraction(input, callbacks, node.Interaction, runtime, election);
     return result;
 }
 }

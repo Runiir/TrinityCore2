@@ -66,19 +66,40 @@ void BotWorldPopulationMgr::SubmitRaidPrepullConsumableCandidate(
     // Let trained healing run before preparation owns the healer's cast and
     // target lanes. Non-healers remain held, so no offensive candidate can
     // start the boss while the raid is recovering from the preceding trash.
-    if (roster->second.Role == "healer")
-        for (WorldBotState const& memberState : Party().Bots)
-        {
-            if (raid.RosterByGuid.find(memberState.Guid.GetCounter())
-                    == raid.RosterByGuid.end())
-                continue;
-            Player* member = GetLoadedBot(memberState);
-            if (member && member->IsInWorld() && member->IsAlive()
-                && member->GetMaxHealth()
-                && member->GetHealth() < member->GetMaxHealth()
-                && !member->IsInCombat())
-                return;
-        }
+    bool const healer = roster->second.Role == "healer";
+    bool rosterMemberInCombat = false;
+    bool injuredOutOfCombat = false;
+    for (WorldBotState const& memberState : Party().Bots)
+    {
+        if (raid.RosterByGuid.find(memberState.Guid.GetCounter())
+                == raid.RosterByGuid.end())
+            continue;
+        Player* member = GetLoadedBot(memberState);
+        if (!member || !member->IsInWorld() || !member->IsAlive())
+            continue;
+        if (member->IsInCombat())
+            rosterMemberInCombat = true;
+        else if (member->GetMaxHealth()
+            && member->GetHealth() < member->GetMaxHealth())
+            injuredOutOfCombat = true;
+    }
+    // A wipe-recovery ride (row field recovery_transport) owns the node while
+    // its runtime is started; it resets when every living member has ridden.
+    bool recoveryRideEngaged = false;
+    if (Party().ValidationRouteManifestIndex < Party().ValidationRouteManifest.size())
+        for (BotValidationRouteNative::RecoveryTransit const& transit :
+                Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex]
+                    .NativeContract.Recovery)
+            recoveryRideEngaged = recoveryRideEngaged || transit.Runtime.Started;
+    // Round 3 Chimaeron shard: the native wake engaged the raid before the
+    // boss node, so this candidate held every member's cast lanes for the
+    // whole fight (no heal, no damage), then deferred seven members' recovery
+    // ride surface walks until the shard plateaued.
+    if (!BotWorldPopulationMgrRaidConsumables::PrepullWindowOpen(
+            context.Bot->IsInCombat(), rosterMemberInCombat, recoveryRideEngaged))
+        return;
+    if (healer && injuredOutOfCombat)
+        return;
 
     BotActionArbitration::Candidate candidate;
     candidate.Key = "raid.prepull_consumables:" +
@@ -529,17 +550,30 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::TryRaidPrepullConsumables(
     if (!member.PrepotEligibleAtMs)
         member.PrepotEligibleAtMs = RaidConsumableNowMs();
 
+    // The route row's alternate target entries are the same native encounter
+    // (a council or construct set). Omnotron's pull target is whichever of the
+    // four constructs the controller powered up at random; the other three are
+    // unselectable until the pull, so the credit entry alone would never be a
+    // live pull target three times in four.
+    auto isRouteBossEntry = [this](Unit const* unit)
+    {
+        if (!unit)
+            return false;
+        uint32 const entry = unit->GetEntry();
+        std::vector<uint32> const& alternates =
+            Cohort().Config.ValidationRouteAlternateTargetEntries;
+        return entry == Cohort().Config.ValidationRouteTargetEntry
+            || std::find(alternates.begin(), alternates.end(), entry)
+                != alternates.end();
+    };
     Unit* bossTarget = target;
-    if (!bossTarget || bossTarget->GetEntry()
-            != Cohort().Config.ValidationRouteTargetEntry)
+    if (!isRouteBossEntry(bossTarget))
         if (!Party().ValidationRouteFocusGuid.IsEmpty())
             bossTarget = ObjectAccessor::GetUnit(*bot,
                 Party().ValidationRouteFocusGuid);
-    if (!bossTarget || bossTarget->GetEntry()
-            != Cohort().Config.ValidationRouteTargetEntry)
+    if (!isRouteBossEntry(bossTarget))
         bossTarget = FindBossTarget(bot);
-    if (!bossTarget || !bossTarget->IsAlive()
-        || bossTarget->GetEntry() != Cohort().Config.ValidationRouteTargetEntry)
+    if (!isRouteBossEntry(bossTarget) || !bossTarget->IsAlive())
         return BotActionArbitration::Outcome::Submitted(
             "raid_prepull_wait_boss_target");
     if (bossTarget->IsInCombat() || bot->IsInCombat())

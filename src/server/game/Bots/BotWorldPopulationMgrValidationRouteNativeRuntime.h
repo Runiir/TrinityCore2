@@ -72,6 +72,11 @@ struct Input
     // Cohort observation tick (encounter snapshot revision).
     std::uint64_t Tick = 0;
     bool CompletionAlreadyRecorded = false;
+    // The raid's observed boss reset generation (IN_PROGRESS -> NOT_STARTED or
+    // FAIL), and whether this node is a composition raid row (row field
+    // composition_recovery in a raid instance): a reset then starts a wake.
+    std::uint64_t BossResetGeneration = 0;
+    bool CompositionRecovery = false;
 };
 
 struct Result

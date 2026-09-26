@@ -9,6 +9,10 @@ bool BotWorldPopulationMgr::RunBotDecisionKernel(BotUpdateContext& context)
     context.State.SpellQueue.ReleaseDue(
         BotWorldPopulationMgrSpellSemantics::NowMs());
     PrepareValidationKernel(context);
+    // A member returning after a wipe belongs to the route (its recovery
+    // ride and anchor walk), not to the boss encounter's adaptive plans.
+    if (context.ValidationRecoveryReturning)
+        context.YieldEncounterOwnershipForRecoveryReturn();
     SubmitAdaptiveKernelCandidates(context);
     SubmitValidationKernelFallbackCandidates(context);
 

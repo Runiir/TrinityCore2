@@ -49,6 +49,7 @@ struct PathGenerator {
  inline static bool connected=true,unsafeSecondary=false;
  Player* actor;Movement::PointsArray points;unsigned type=PATHFIND_NORMAL;
  explicit PathGenerator(Player* bot):actor(bot){}
+ void SetUseStraightPath(bool){}
  bool CalculatePath(float x,float y,float z,bool){
   if(calls++==0){points=primary;type=primaryType;}
   else {points={{actor->x,actor->y,actor->z},{x,y,z}};

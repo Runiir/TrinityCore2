@@ -5,8 +5,10 @@
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSpirits.h"
 
 #include "Creature.h"
+#include "ObjectAccessor.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -566,6 +568,21 @@ bool ObjectiveContext::RunTankTrashRecovery(
                 trashThreatControl.AreaTarget =
                     densestHealerClusterTarget;
         }
+        // A spirit pack's kill order (a dying Atramedes spirit hands its
+        // ability to the others). Only when the area target chosen above is
+        // itself held by this tank: a loose spirit on a healer or damage
+        // dealer keeps precedence. Then, while the tank also holds the
+        // ordered spirit, its single-target damage, and with it the
+        // remembered route focus the melee and ranged follow, go there;
+        // area threat still reaches the rest of the pack.
+        if (Cohort().EncounterSnapshot
+            && trashThreatControl.AreaTarget->GetVictim() == bot)
+            if (ObjectGuid const ordered = BotEncounter::Atramedes::Spirits::OrderedKillTarget(
+                    *Cohort().EncounterSnapshot); !ordered.IsEmpty())
+                if (Unit* kill = ObjectAccessor::GetUnit(*bot, ordered); kill
+                    && kill->IsAlive() && kill->GetVictim() == bot
+                    && bot->IsValidAttackTarget(kill))
+                    trashThreatControl.AreaTarget = kill;
         target = trashThreatControl.AreaTarget;
         state.TargetGuid = target->GetGUID();
         Creature const* areaCreature = target->ToCreature();

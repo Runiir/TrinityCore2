@@ -23,6 +23,20 @@ struct Contract
     uint32_t CombatPotionAuraSpellId = 0;
 };
 
+// The pre-pull window is open only before the encounter: this bot and every
+// living roster member are out of combat, and no wipe-recovery ride owns the
+// route node. A native wake (Chimaeron: Finkle Einhorn's gossip) engages the
+// raid before the boss node begins, and a recovery ride splits the raid
+// across a transport. In either case the gate cannot complete, and holding the
+// GCD, cast and target lanes would starve combat healing, damage and the
+// ride's surface walk. The candidate stands down instead; the pull gate stays
+// advisory.
+inline bool PrepullWindowOpen(bool botInCombat, bool rosterMemberInCombat,
+    bool recoveryRideEngaged)
+{
+    return !botInCombat && !rosterMemberInCombat && !recoveryRideEngaged;
+}
+
 inline bool PrepotStageReady(bool magmawOwnsNode, bool suppressOffense,
     std::string_view suppressReason)
 {

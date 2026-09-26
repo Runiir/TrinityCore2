@@ -167,6 +167,16 @@ namespace BotWorldPopulationMgrRouteState
         // Opt-in to the prepull setup gate (row field prepull_setup_gate):
         // composition/canonical scenarios only (BotValidationRoutePrepull.h).
         bool PrepullSetupGate = false;
+        // Opt-in to the composition recovery runtime (row field
+        // composition_recovery, composition/canonical scenarios only): the
+        // post-wipe return walk (BotValidationRouteRecoveryReturn.h) and
+        // corridor legs for long route walks. Raid instances only.
+        bool CompositionRecovery = false;
+        // The boarding-only transport (no ride back) this node lies beyond
+        // (row field recovery_return_blocked_by): a wipe here cannot walk back.
+        std::string RecoveryReturnBlockedBy;
+        // Scope first seen at this node, to tell a wipe here (return memory).
+        BotValidationRouteNative::RuntimeScope RecoveryReturnBaseline;
         float X = 0.0f;
         float Y = 0.0f;
         float Z = 0.0f;

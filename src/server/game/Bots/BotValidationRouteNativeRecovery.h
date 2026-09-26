@@ -8,7 +8,8 @@
 // them there, and no walkable link leads down), the ride runs again as a
 // prefix: board, ride, disembark, walk to its exit point. The node resumes
 // once no living member needs it. The ride itself is the unchanged transport
-// contract, executed by the ordinary transport logic.
+// contract, executed by the ordinary transport logic. Recovery wakes (the
+// second half of this header) redo a boss's waking interaction likewise.
 //
 // Only vertical rides are declared (the transport executor proves its
 // platform animates only vertically), so which end a member is at is which
@@ -150,6 +151,193 @@ inline RecoveryStep DecideRecoveryRide(bool applies, bool engaged, bool needed,
 inline std::string RecoveryFailure(std::string const& transitNodeId, std::string const& reason)
 {
     return std::string(RecoveryFailurePrefix) + transitNodeId
+        + (reason.empty() ? std::string() : ":" + reason);
+}
+
+// ---------------------------------------------------------------------------
+// Recovery wakes (row field recovery_interaction)
+// ---------------------------------------------------------------------------
+// A boss that a native interaction wakes (Chimaeron: Finkle Einhorn's gossip
+// starts the Bile-O-Tron's Finkle's Mixture, then the boss wakes) is asleep
+// again after a wipe resets it, and the interaction's creature respawns. The
+// nodes that wait for the boss declare that interaction (with its observed
+// completion) and redo it as a prefix after the rides: only after a wipe at
+// this node, or on composition raid rows an observed native reset without a
+// wipe (the route's own interaction node woke the boss the first time; an
+// earlier node's wipe never re-wakes it), while the encounter is not engaged,
+// once the whole party is back at the node, until the wake's completion
+// holds. A boss that respawns awake (Atramedes, 30 s after a failed attempt)
+// satisfies its wake's completion and is never re-woken.
+constexpr std::size_t MaxRecoveryInteractions = 2;
+// Every loaded member, alive on the route, within this of the node anchor.
+constexpr float RecoveryAssemblyYards = 40.0f;
+// A wake that waits this long for the party fails the attempt, naming the
+// member holding it; a gap in observation (nobody alive to tick, a native
+// recovery hold) longer than RecoveryPauseMs does not count.
+constexpr std::uint64_t RecoveryAssemblyTimeoutMs = 300000;
+constexpr std::uint64_t RecoveryPauseMs = 10000;
+constexpr char const* RecoveryInteractionFailurePrefix = "route_recovery_requires_interaction:";
+
+// One cohort member as a recovery wake sees it.
+struct RecoveryWakeView
+{
+    std::uint64_t Guid = 0;
+    bool Alive = false;
+    bool OnRouteInstance = false;
+    bool InCombat = false;
+    float DistanceToAnchor = 0.0f;
+};
+
+// The first member keeping the party from assembling, and why: dead,
+// off_route (another map or instance, or mid-teleport) or away.
+struct RecoveryWakeHolder
+{
+    std::uint64_t Guid = 0;
+    char const* Reason = "";
+};
+
+inline RecoveryWakeHolder RecoveryAssemblyHolder(std::vector<RecoveryWakeView> const& members,
+    float radiusYards = RecoveryAssemblyYards)
+{
+    for (RecoveryWakeView const& member : members)
+    {
+        if (!member.Alive)
+            return { member.Guid, "dead" };
+        if (!member.OnRouteInstance)
+            return { member.Guid, "off_route" };
+        if (member.DistanceToAnchor > radiusYards)
+            return { member.Guid, "away" };
+    }
+    return {};
+}
+
+// The wake waits for the whole party: every loaded member alive in the route
+// instance and at the node (a member still running back, or dead, holds it).
+inline bool RecoveryPartyAssembled(std::vector<RecoveryWakeView> const& members,
+    float radiusYards = RecoveryAssemblyYards)
+{
+    return !members.empty() && !RecoveryAssemblyHolder(members, radiusYards).Guid;
+}
+
+// Observe one tick of a wake waiting (or not) for the party; true once it has
+// waited RecoveryAssemblyTimeoutMs of observed time.
+inline bool RecoveryWaitTimedOut(RecoveryWait& wait, bool waiting, std::uint64_t nowMs)
+{
+    if (!waiting)
+    {
+        wait = RecoveryWait();
+        return false;
+    }
+    if (!wait.SinceMs)
+        wait.SinceMs = nowMs;
+    else if (nowMs > wait.SeenMs + RecoveryPauseMs)
+        wait.SinceMs += nowMs - wait.SeenMs;
+    wait.SeenMs = nowMs;
+    return nowMs >= wait.SinceMs + RecoveryAssemblyTimeoutMs;
+}
+
+inline bool RecoveryEncounterEngaged(std::vector<RecoveryWakeView> const& members)
+{
+    for (RecoveryWakeView const& member : members)
+        if (member.Alive && member.OnRouteInstance && member.InCombat)
+            return true;
+    return false;
+}
+
+// Whether a wipe happened while the route was at this node: the scope's wipe
+// generation passed the one first seen here in this attempt and route
+// generation (the baseline is re-taken when either changes).
+inline bool WipedSinceBaseline(RuntimeScope& baseline, RuntimeScope const& scope)
+{
+    if (baseline.AttemptId != scope.AttemptId
+        || baseline.RouteGeneration != scope.RouteGeneration)
+        baseline = scope;
+    return scope.WipeGeneration > baseline.WipeGeneration;
+}
+
+// A trigger counts once it has held this long: Finkle and the Bile-O-Tron
+// respawn 30 s after Chimaeron's evade, and Atramedes himself 30 s after his
+// (his wake's completion then holds and it never runs).
+constexpr std::uint64_t RecoveryWakeSettleMs = 45000;
+
+// What starts a wake at this node: a wipe here (the wipe generation passed the
+// one of the node's baseline) or, where resets trigger (composition raid
+// rows), a native boss reset without a wipe (the raid's IN_PROGRESS ->
+// NOT_STARTED/FAIL generation passed the baseline's). The baseline is the
+// first scope seen here in this attempt and route generation, re-taken when a
+// trigger is consumed (RetireRecoveryTrigger). A raised trigger settles
+// RecoveryWakeSettleMs before it counts.
+enum class RecoveryTrigger : std::uint8_t { None, Settling, Triggered };
+
+inline RecoveryTrigger ObserveRecoveryTrigger(RecoveryBaseline& baseline,
+    RuntimeScope const& scope, std::uint64_t resets, bool resetTriggers, std::uint64_t nowMs)
+{
+    if (baseline.Scope.AttemptId != scope.AttemptId
+        || baseline.Scope.RouteGeneration != scope.RouteGeneration)
+        baseline = RecoveryBaseline{ scope, resets, 0 };
+    bool const raised = scope.WipeGeneration > baseline.Scope.WipeGeneration
+        || (resetTriggers && resets > baseline.Resets);
+    if (!raised)
+        return RecoveryTrigger::None;
+    if (!baseline.TriggeredAtMs)
+        baseline.TriggeredAtMs = nowMs;
+    return nowMs >= baseline.TriggeredAtMs + RecoveryWakeSettleMs
+        ? RecoveryTrigger::Triggered : RecoveryTrigger::Settling;
+}
+
+enum class RecoveryWakeStep : std::uint8_t { Idle, Engage, Wake, Complete };
+
+// An engaged wake runs until its completion holds or the encounter engages
+// (either ends it); an idle one engages only once triggered at this node, out
+// of combat, with the party assembled and the completion not holding.
+inline RecoveryWakeStep DecideRecoveryWake(bool triggered, bool engaged,
+    bool encounterEngaged, bool satisfied, bool assembled)
+{
+    if (engaged)
+        return satisfied || encounterEngaged ? RecoveryWakeStep::Complete
+            : RecoveryWakeStep::Wake;
+    if (!triggered || encounterEngaged || satisfied || !assembled)
+        return RecoveryWakeStep::Idle;
+    return RecoveryWakeStep::Engage;
+}
+
+// How a raised trigger ends, so every wipe or reset at the node settles
+// RecoveryWakeSettleMs of its own (a second Atramedes reset must not ring the
+// bell inside his 30 s respawn: the respawn summons without an existence
+// check). The wake's completion holding once the wake completed or the
+// trigger settled (the wake did its job, or the boss respawned awake)
+// consumes it: the baseline is re-taken at the current scope and resets. The
+// encounter engaging first (a patrol, a fight) restarts the settle, counted
+// again once the fight is over.
+inline void RetireRecoveryTrigger(RecoveryBaseline& baseline, RuntimeScope const& scope,
+    std::uint64_t resets, RecoveryTrigger trigger, RecoveryWakeStep step, bool satisfied,
+    bool encounterEngaged)
+{
+    if (trigger == RecoveryTrigger::None && step != RecoveryWakeStep::Complete)
+        return;
+    if (satisfied && (step == RecoveryWakeStep::Complete || trigger == RecoveryTrigger::Triggered))
+        baseline = RecoveryBaseline{ scope, resets, 0 };
+    else if (encounterEngaged)
+        baseline.TriggeredAtMs = 0;
+}
+
+// A recovery ride engaged on the node holds a member that no longer needs it
+// (at the exit end, off the platform) until the last living rider is down;
+// the ride's own timeout bounds that wait, so the member's return clock
+// pauses meanwhile.
+inline bool RecoveryRideHoldsMember(bool rideEngaged, TransportContract const& ride, float z,
+    bool onTransport)
+{
+    float boardZ = 0.0f;
+    float exitZ = 0.0f;
+    return rideEngaged && !onTransport && RecoveryLevels(ride, boardZ, exitZ)
+        && SideOf(z, boardZ, exitZ) == RecoverySide::Exit;
+}
+
+inline std::string RecoveryInteractionFailure(std::string const& wakeNodeId,
+    std::string const& reason)
+{
+    return std::string(RecoveryInteractionFailurePrefix) + wakeNodeId
         + (reason.empty() ? std::string() : ":" + reason);
 }
 }

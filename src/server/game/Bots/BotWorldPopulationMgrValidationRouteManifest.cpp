@@ -442,21 +442,50 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                 }
             }
         }
-        // A declared area trigger must exist on the route map; never walk
-        // toward an unresolved trigger position.
-        if (node.NativeContract.Interaction.Declared
-            && node.NativeContract.Interaction.Action
-                == BotValidationRouteNative::InteractionAction::AreaTrigger)
+        // Recovery wakes (row field recovery_interaction): the unchanged
+        // interaction and completion contracts of an earlier node that wakes
+        // the boss this node waits for, redone after a wipe resets it.
+        if (std::string const wakeText = ExtractJsonArrayField(routeJson, "recovery_interaction");
+            !wakeText.empty())
         {
-            AreaTriggerEntry const* trigger = sAreaTriggerStore.LookupEntry(
-                node.NativeContract.Interaction.AreaTriggerId);
-            if (!trigger || trigger->ContinentID != node.MapId)
+            NativeRoute::Json wakes;
+            NativeRoute::ParseError error = NativeRoute::ParseArrayText(wakeText, wakes);
+            if (!error)
+                error = NativeRoute::ParseRecoveryInteractions(wakes,
+                    node.NativeContract.RecoveryInteractions);
+            if (!error)
+                for (NativeRoute::RecoveryInteraction const& wake
+                    : node.NativeContract.RecoveryInteractions)
+                    if (wake.NodeId == node.NodeId)
+                        error = NativeRoute::ParseError::Invalid(wake.NodeId + ":self_reference");
+            if (error)
             {
                 Party().ValidationRouteManifestLoadError =
-                    "native_interaction_contract_invalid:area_trigger_not_on_route_map";
+                    std::string(error.Kind == NativeRoute::ParseError::Code::UnknownField
+                        ? "native_recovery_interaction_unknown_field:"
+                        : "native_recovery_interaction_invalid:") + error.Detail;
                 return;
             }
         }
+        // A declared area trigger must exist on the route map; never walk
+        // toward an unresolved trigger position.
+        std::vector<NativeRoute::InteractionContract const*> interactions;
+        if (node.NativeContract.Interaction.Declared)
+            interactions.push_back(&node.NativeContract.Interaction);
+        for (NativeRoute::RecoveryInteraction const& wake : node.NativeContract.RecoveryInteractions)
+            interactions.push_back(&wake.Interaction);
+        for (NativeRoute::InteractionContract const* interaction : interactions)
+            if (interaction->Action == BotValidationRouteNative::InteractionAction::AreaTrigger)
+            {
+                AreaTriggerEntry const* trigger = sAreaTriggerStore.LookupEntry(
+                    interaction->AreaTriggerId);
+                if (!trigger || trigger->ContinentID != node.MapId)
+                {
+                    Party().ValidationRouteManifestLoadError =
+                        "native_interaction_contract_invalid:area_trigger_not_on_route_map";
+                    return;
+                }
+            }
         node.RecoveryEntranceAreaTriggerId = uint32(std::max(0,
             readInt(routeJson, "recovery_entrance_area_trigger_id")));
         node.RecoveryEntranceSourceMapId = uint32(std::max(0,
@@ -494,6 +523,18 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");
         ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);
         ExtractJsonBoolField(routeJson, "prepull_setup_gate", node.PrepullSetupGate);
+        ExtractJsonBoolField(routeJson, "composition_recovery", node.CompositionRecovery);
+        node.RecoveryReturnBlockedBy =
+            ExtractJsonStringField(routeJson, "recovery_return_blocked_by");
+        if (!node.RecoveryReturnBlockedBy.empty()
+            && (!node.CompositionRecovery
+                || !BotValidationRouteNative::ValidNodeId(node.RecoveryReturnBlockedBy)
+                || node.RecoveryReturnBlockedBy == node.NodeId))
+        {
+            Party().ValidationRouteManifestLoadError =
+                "recovery_return_blocked_by_invalid:" + node.RecoveryReturnBlockedBy;
+            return;
+        }
         node.HazardSourceEntry = uint32(std::max(0, readInt(routeJson, "hazard_source_entry")));
         node.HazardDetectionSpellId = uint32(std::max(0, readInt(routeJson, "hazard_detection_spell_id")));
         node.HazardDamageSpellId = uint32(std::max(0, readInt(routeJson, "hazard_damage_spell_id")));

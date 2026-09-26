@@ -1,4 +1,5 @@
 #include "Bots/BotSpellMinimumRange.h"
+#include "Bots/BotEncounterInterruptVeto.h"
 #include "Bots/BotBloodDecisionObservation.h"
 #include "Bots/BotFireCombustionObservation.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
@@ -278,6 +279,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     }
 
     bool const targetActivelyCasting = target->IsNonMeleeSpellCast(false);
+    // Encounter strategies can veto interrupting a cast (Maloriak's admitted
+    // Release Aberrations; r03 cut every release with profile interrupts).
+    bool const targetCastVetoed = targetActivelyCasting
+        && BotEncounterInterruptVeto::IsCurrentCastVetoed(target,
+            CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL);
     BotActionCandidate* best = nullptr;
     BotActionCandidate* bestInterrupt = nullptr;
     BotActionCandidate* bestDensityRecovery = nullptr;
@@ -575,6 +581,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (candidate.Profile.RequiresInterruptibleTarget && !targetActivelyCasting)
         {
             candidate.RejectReason = "target_not_interruptible";
+            continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Interrupt && targetCastVetoed)
+        {
+            candidate.RejectReason = "encounter_interrupt_vetoed";
             continue;
         }
         float manaPct = bot->GetMaxPower(POWER_MANA)

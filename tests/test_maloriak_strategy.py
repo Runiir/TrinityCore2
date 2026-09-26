@@ -971,3 +971,88 @@ def test_raid_prepot_stage_waits_for_the_maloriak_pull_gate() -> None:
     assert "context.AdaptiveMagmawSuppressReason" in wiring
     assert "maloriak->SuppressReason" in wiring
     assert "context.AdaptiveMaloriak.get()" in consumables[:call]
+
+
+VETO_PROGRAM = r'''
+#include "Bots/BotEncounterInterruptVeto.h"
+#include <cassert>
+#include <chrono>
+#include <thread>
+
+namespace V = BotEncounterInterruptVeto;
+
+struct Info { uint32 Id; };
+struct FakeSpell { Info info; Info const* GetSpellInfo() const { return &info; } };
+struct FakeGuid { uint64 raw; uint64 GetRawValue() const { return raw; } };
+struct FakeCaster
+{
+    uint32 map;
+    uint32 instance;
+    FakeGuid guid;
+    FakeSpell spell;
+    int castType;
+    uint32 GetMapId() const { return map; }
+    uint32 GetInstanceId() const { return instance; }
+    FakeGuid GetGUID() const { return guid; }
+    FakeSpell const* GetCurrentSpell(int type) const { return type == castType ? &spell : nullptr; }
+};
+
+int main()
+{
+    assert(!V::IsVetoed(669, 5, 7, 77569));
+    V::Set(669, 5, 7, 77569, true, 60000);
+    assert(V::IsVetoed(669, 5, 7, 77569));
+    assert(!V::IsVetoed(669, 5, 7, 77896) && !V::IsVetoed(669, 5, 8, 77569));
+    // Creature GUIDs are per map: the same GUID in another instance of map
+    // 669 (or another map) is a different caster.
+    assert(!V::IsVetoed(669, 6, 7, 77569) && !V::IsVetoed(670, 5, 7, 77569));
+    V::Set(669, 6, 7, 77569, false);
+    assert(V::IsVetoed(669, 5, 7, 77569));
+    V::Set(669, 5, 7, 77569, false);
+    assert(!V::IsVetoed(669, 5, 7, 77569) && V::Leases.empty());
+    // A lapsed lease is not a veto and is dropped.
+    V::Set(669, 5, 7, 77569, true, 1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    assert(!V::IsVetoed(669, 5, 7, 77569) && V::Leases.empty());
+    // The current generic cast or channel of the caster, in its own instance.
+    FakeCaster caster{ 669, 5, { 7 }, { { 77569 } }, 1 };
+    V::Set(669, 5, 7, 77569, true, 60000);
+    assert(V::IsCurrentCastVetoed(&caster, 1, 2));
+    caster.castType = 2;
+    assert(V::IsCurrentCastVetoed(&caster, 1, 2));
+    caster.castType = 3;
+    assert(!V::IsCurrentCastVetoed(&caster, 1, 2));
+    caster.castType = 1;
+    caster.instance = 6;
+    assert(!V::IsCurrentCastVetoed(&caster, 1, 2));
+    caster.instance = 5;
+    caster.spell.info.Id = 77896;
+    assert(!V::IsCurrentCastVetoed(&caster, 1, 2));
+    assert(!V::IsCurrentCastVetoed<FakeCaster>(nullptr, 1, 2));
+    return 0;
+}
+'''
+
+
+def test_encounter_interrupt_veto_lease_and_resolver_gate(tmp_path: Path) -> None:
+    """Round 4: generic profile interrupts honour an encounter veto (the r03
+    attempt cut every Release Aberrations, so 25% freed all 18 Aberrations).
+    The veto is keyed by map, instance and caster GUID."""
+    source = tmp_path / "interrupt_veto.cpp"
+    binary = tmp_path / "interrupt_veto"
+    source.write_text(VETO_PROGRAM, encoding="utf-8")
+    command = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-pthread"]
+    for include in INCLUDES:
+        command += ["-I", str(ROOT / include)]
+    subprocess.run(command + [str(source), "-o", str(binary)], check=True, cwd=ROOT)
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+    header = (ROOT / "src/server/game/Bots/BotEncounterInterruptVeto.h").read_text(encoding="utf-8")
+    assert "caster->GetMapId(), caster->GetInstanceId()," in header
+    assert "only the kernel profile resolver" in header
+    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    assert '#include "Bots/BotEncounterInterruptVeto.h"' in resolver
+    assert "BotEncounterInterruptVeto::IsCurrentCastVetoed(target," in resolver
+    gate = resolver.index('candidate.RejectReason = "encounter_interrupt_vetoed";')
+    assert "candidate.Category == BotCombatActionCategory::Interrupt && targetCastVetoed" in resolver[gate - 200:gate]
+    assert len(resolver.splitlines()) < 1000

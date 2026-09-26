@@ -3,6 +3,7 @@
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotWorldPopulationMgrConnectedSurfacePath.h"
 #include "Bots/BotWorldPopulationMgrNativePathAdmission.h"
+#include "Bots/BotWorldPopulationMgrNativePathCorridorLeg.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
 #include "Bots/BotWorldPopulationMgrMovementPathSelection.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
@@ -386,6 +387,54 @@ bool BotWorldPopulationMgr::PlanMovementPath(
     {
         localFallbackAttempted = true;
         selectProgressEndpoint(path, "native_partial_path_backoff", 3.0f);
+    }
+
+    // PathGenerator refuses a native walk longer than its smoothed point
+    // capacity (74 points x 4 yd) even when Detour has a connected corridor.
+    // An ordinary route move then walks that corridor in legs: each leg ends
+    // on the corridor's own corner polyline and is admitted only through the
+    // same complete native path proof as every other segment. The next
+    // decision re-plans from the actor's new position.
+    if (!segmentSelected && progressiveStaticRoute && !strictNativeDescent
+        && intent.Owner == BotMovementArbitration::Owner::Route
+        && intent.AllowCorridorLegs
+        && path.GetEndpointResult() == PathEndpointResult::Capacity)
+    {
+        PathGenerator corridor(bot);
+        corridor.SetUseStraightPath(true);
+        bool const corridorOk = corridor.CalculatePath(intent.X, intent.Y,
+            intent.Z, false);
+        G3D::Vector3 legEndpoint;
+        BotWorldMovement::NativePathProofObservation legProof;
+        BotWorldMovement::NativePathControlSequence legControls;
+        auto proveLeg = [&](auto const& candidate,
+            G3D::Vector3& verifiedEndpoint)
+        {
+            G3D::Vector3 const& point = candidate.Position;
+            float const legFloorZ = bot->GetMap()->GetHeight(
+                bot->GetPhaseShift(), point.x, point.y, point.z + 2.0f, true,
+                8.0f);
+            if (legFloorZ <= INVALID_HEIGHT || std::fabs(legFloorZ - point.z)
+                    > BotWorldMovement::NativeFloorTolerance)
+                return false;
+            return completeNativePathToPoint(G3D::Vector3(point.x, point.y,
+                legFloorZ), verifiedEndpoint, legProof, legControls);
+        };
+        if (corridorOk && corridor.HasConnectedPolyCorridor()
+            && BotWorldMovement::NativePathCanProvideProgress(
+                corridor.GetPathType())
+            && BotWorldMovement::SelectNativeCorridorLeg(corridor.GetPath(),
+                G3D::Vector3(bot->GetPositionX(), bot->GetPositionY(),
+                    bot->GetPositionZ()), proveLeg, legEndpoint))
+        {
+            segmentX = legEndpoint.x;
+            segmentY = legEndpoint.y;
+            segmentZ = legEndpoint.z;
+            traversalMode = "native_corridor_leg";
+            nativeProof = legProof;
+            plannerControls = legControls;
+            segmentSelected = true;
+        }
     }
 
     auto selectProgressiveLocalMechanicEndpoint = [&]()

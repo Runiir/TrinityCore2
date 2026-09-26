@@ -750,6 +750,61 @@ inline ParseError ValidateNodeShape(std::string_view kind,
         return ParseError::Invalid("owner_scope_requires_interaction");
     return {};
 }
+
+// ---------------------------------------------------------------------------
+// Recovery wakes
+// ---------------------------------------------------------------------------
+// A row's recovery_interaction: [{"node_id", "interaction", "completion"}] in
+// route order, each the unchanged interaction and completion contracts of an
+// earlier interaction node that wakes the boss this node waits for. They sit
+// under "interaction" and "completion", never "interaction_contract" or
+// "completion_contract", so the row reader never mistakes them for the row's
+// own contracts.
+inline ParseError ParseRecoveryInteractions(Json const& array,
+    std::vector<RecoveryInteraction>& out)
+{
+    out.clear();
+    if (!array.IsArray())
+        return ParseError::Invalid("recovery_interaction_not_array");
+    if (array.Items.empty() || array.Items.size() > MaxRecoveryInteractions)
+        return ParseError::Invalid("recovery_interaction_count");
+    for (Json const& item : array.Items)
+    {
+        if (!item.IsObject())
+            return ParseError::Invalid("recovery_interaction_not_object");
+        for (auto const& [key, value] : item.Members)
+            if (!KnownField(key, { "node_id", "interaction", "completion" }))
+                return ParseError::Unknown("recovery_interaction." + key);
+        Json const* id = item.Find("node_id");
+        Json const* interaction = item.Find("interaction");
+        Json const* completion = item.Find("completion");
+        if (!id || !id->IsString() || !ValidNodeId(id->Text))
+            return ParseError::Invalid("recovery_interaction_node_id");
+        if (!interaction || !completion)
+            return ParseError::Invalid("recovery_interaction_contract_missing");
+        for (RecoveryInteraction const& earlier : out)
+            if (earlier.NodeId == id->Text)
+                return ParseError::Invalid("recovery_interaction_duplicate:" + id->Text);
+        RecoveryInteraction wake;
+        wake.NodeId = id->Text;
+        auto scoped = [](ParseError const& error)
+        {
+            return error.Kind == ParseError::Code::UnknownField
+                ? ParseError::Unknown("recovery_interaction." + error.Detail)
+                : ParseError::Invalid("recovery_interaction:" + error.Detail);
+        };
+        if (ParseError error = ParseInteraction(*interaction, wake.Interaction))
+            return scoped(error);
+        if (ParseError error = ParseCompletion(*completion, wake.Completion))
+            return scoped(error);
+        // The same shape as the interaction node it repeats.
+        if (ParseError error = ValidateNodeShape("interaction", wake.Interaction,
+                wake.Completion, TransportContract()))
+            return scoped(error);
+        out.push_back(std::move(wake));
+    }
+    return {};
+}
 }
 
 #endif

@@ -524,6 +524,13 @@ inline std::vector<std::uint32_t> ObservedCreatureEntries(NodeContract const& no
         && node.Interaction.Target != TargetType::GameObject)
         entries.push_back(node.Interaction.Entry);
     CollectObservedCreatureEntries(node.Completion, entries);
+    // A recovery wake's target and completion creatures too.
+    for (RecoveryInteraction const& wake : node.RecoveryInteractions)
+    {
+        if (wake.Interaction.Entry && wake.Interaction.Target != TargetType::GameObject)
+            entries.push_back(wake.Interaction.Entry);
+        CollectObservedCreatureEntries(wake.Completion, entries);
+    }
     std::sort(entries.begin(), entries.end());
     entries.erase(std::unique(entries.begin(), entries.end()), entries.end());
     entries.erase(std::remove(entries.begin(), entries.end(), 0u), entries.end());

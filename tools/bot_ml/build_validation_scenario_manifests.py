@@ -589,6 +589,73 @@ def recovery_transport(step: dict[str, Any], rides: Sequence[dict[str, Any]]) ->
     return across
 
 
+# Recovery wakes (route row field recovery_interaction, consumed by the native
+# route runtime): a boss that a native interaction wakes (Chimaeron: Finkle
+# Einhorn's gossip) is asleep again after a wipe resets it. The contiguous run
+# of interaction rows right before a boss row is that boss's wake; the rows
+# after the first waking interaction (the wait rows and the boss row) carry
+# the earlier interaction rows' unchanged interaction and completion
+# contracts, which the runtime redoes only after a wipe at that node, once the
+# whole party is back and while the completion does not hold. A boss that
+# respawns awake satisfies its wake's completion and is never re-woken. The
+# contracts sit under "interaction" and "completion": the runtime's row reader
+# finds "interaction_contract" and "completion_contract" by text.
+RECOVERY_MAX_INTERACTIONS = 2  # MaxRecoveryInteractions
+
+
+def recovery_wakes(*routes: Sequence[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Per node ID, the waking interactions it redoes after a wipe (the first
+    route that declares a node wins; pass the scenario's own route first)."""
+    wakes: dict[str, list[dict[str, Any]]] = {}
+    for route in routes:
+        steps = list(route or [])
+        for index, step in enumerate(steps):
+            if step.get("kind") != "boss":
+                continue
+            start = index
+            while start > 0 and steps[start - 1].get("kind") == "interaction":
+                start -= 1
+            chain: list[dict[str, Any]] = []
+            for member in steps[start:index + 1]:
+                node_id = str(member.get("node_id") or "")
+                if chain and node_id and node_id not in wakes:
+                    wakes[node_id] = copy.deepcopy(chain[-RECOVERY_MAX_INTERACTIONS:])
+                interaction = member.get("interaction_contract")
+                completion = member.get("completion_contract")
+                if member is not step and interaction and completion:
+                    chain.append({"node_id": node_id, "interaction": interaction,
+                                  "completion": completion})
+    return wakes
+
+
+def composition_recovery(scenario: dict[str, Any]) -> bool:
+    """Whether a scenario's rows opt into the composition recovery runtime
+    (row field composition_recovery): the post-wipe return walk
+    (BotValidationRouteRecoveryReturn.h) and corridor legs for route walks
+    longer than PathGenerator's point capacity. Composition/canonical
+    scenarios only, like prepull_setup_gate: the accepted Magmaw diagnostic,
+    the legacy shards and full route, and every dungeon keep their rows."""
+    return bool(scenario.get("composition_id"))
+
+
+def recovery_return_blockers(*routes: Sequence[dict[str, Any]]) -> dict[str, str]:
+    """Per node ID, the boarding-only transport row (a transport contract
+    without a ride back, e.g. the Nefarian descent) it lies beyond in route
+    order: a wipe there cannot walk back, and the runtime fails it typed
+    (the first route that declares a node wins)."""
+    blockers: dict[str, str] = {}
+    for route in routes:
+        blocker = ""
+        for step in route or []:
+            node_id = str(step.get("node_id") or "")
+            contract = step.get("transport_contract")
+            if blocker and node_id and node_id not in blockers:
+                blockers[node_id] = blocker
+            if contract and ride_levels(contract) is None:
+                blocker = node_id
+    return blockers
+
+
 def prepull_setup_gate(scenario: dict[str, Any]) -> bool:
     """Whether a scenario's rows opt into the runtime's prepull setup gate
     (BotValidationRoutePrepull.h): composition/canonical scenarios only (a
@@ -923,6 +990,8 @@ def build_manifests(
         scenarios.append(scenario_row)
         parent_route = (configured_by_id.get(diagnostic_metadata["parent_scenario_id"] or "") or {}).get("route") or []
         rides = recovery_rides(route_steps, parent_route)
+        wakes = recovery_wakes(route_steps, parent_route)
+        blockers = recovery_return_blockers(route_steps, parent_route)
 
         for step in route_steps:
             coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
@@ -1129,8 +1198,16 @@ def build_manifests(
             across = recovery_transport(step, rides)
             if across:
                 route["recovery_transport"] = across
+            wake = wakes.get(str(step.get("node_id") or ""))
+            if wake:
+                route["recovery_interaction"] = wake
             if prepull_setup_gate(scenario):
                 route["prepull_setup_gate"] = True
+            if composition_recovery(scenario):
+                route["composition_recovery"] = True
+                blocked_by = blockers.get(str(step.get("node_id") or ""))
+                if blocked_by:
+                    route["recovery_return_blocked_by"] = blocked_by
             patrol_combat_anchor = step.get("patrol_combat_anchor")
             if patrol_combat_anchor:
                 route["patrol_combat_anchor"] = {

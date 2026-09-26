@@ -46,6 +46,9 @@ struct BotWorldPopulationMgr::BotUpdateContext
     bool CanInterleaveHubProfession = false;
     bool ValidationKernelOwnsTick = false;
     uint64 DecisionNowMs = 0;
+    // Resurrected after a release and still walking back to the boss node
+    // (BotValidationRouteRecoveryReturn.h): the route owns this member.
+    bool ValidationRecoveryReturning = false;
     // Adaptive Maloriak proposal (Encounters/Maloriak), read by
     // SubmitMaloriakKernelCandidates; its spot-heal target feeds the shared
     // healer candidate.
@@ -109,6 +112,12 @@ struct BotWorldPopulationMgr::BotUpdateContext
     }
 
     void EnsureProgressionScored();
+    // Post-wipe return to the boss node (BotValidationRouteRecoveryReturn.h,
+    // BotWorldPopulationMgrValidationRouteRecoveryReturn.cpp).
+    void ArmValidationRecoveryReturn();
+    bool ObserveValidationRecoveryReturn();
+    void YieldEncounterOwnershipForRecoveryReturn();
+    ValidationRouteManifestNode* RecoveryReturnNode(bool& eligible) const;
 };
 
 #endif

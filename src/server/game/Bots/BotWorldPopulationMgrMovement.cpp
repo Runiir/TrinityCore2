@@ -108,6 +108,19 @@ bool BotWorldPopulationMgr::MoveBotToPointWithReferenceFloor(
     intent.AllowRecentFailureRetry = Cohort().Config.ValidationRouteEnable;
     intent.AllowNativeLongPath = BotWorldMovement::AllowsNativeLongPath(
         movementOwner, nativeRecoveryEntranceRequired);
+    // Corridor legs: route moves on the active node of a composition raid row
+    // only (row field composition_recovery); every other scenario keeps its
+    // exact planner behaviour.
+    {
+        PartyRuntime const& party = Party();
+        intent.AllowCorridorLegs = movementOwner == BotMovementArbitration::Owner::Route
+            && Cohort().Config.ValidationRouteEnable && Cohort().Raid.RaidInstance
+            && party.ValidationRouteManifestIndex < party.ValidationRouteManifest.size()
+            && party.ValidationRouteManifest[party.ValidationRouteManifestIndex].NodeId
+                == Cohort().Config.ValidationRouteNodeId
+            && party.ValidationRouteManifest[party.ValidationRouteManifestIndex]
+                .CompositionRecovery;
+    }
     intent.NativeRecoveryCrossMapPending =
         nativeRecoveryEntranceRequired
         && state.ValidationCohortLocked

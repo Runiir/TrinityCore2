@@ -385,6 +385,12 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     // worldport as if it were the BWD runback.
     if (context.Bot->IsAlive())
     {
+        // A released member resurrected away from a composition raid row's
+        // boss node walks back under route ownership
+        // (BotValidationRouteRecoveryReturn.h; out of scope it never arms).
+        if (context.State.NativeReleaseRequested
+            && context.State.NativeRecoveryEpisodeStartedMs)
+            context.ArmValidationRecoveryReturn();
         if (context.State.NativeRecoveryGhostFlightEnabled)
         {
             if (context.State.NativeRecoveryGhostGravityDisabled)

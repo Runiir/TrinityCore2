@@ -13,6 +13,8 @@
 // living members are back at the ride's boarding end after a wipe's runback.
 // The ride is the node route runtime's own transport step (RecoveryOps), so
 // boarding, riding and disembarking stay exactly the transport contract's.
+// Recovery wakes (row field recovery_interaction) follow the rides: the
+// route runtime's own interaction step redoes a boss's waking interaction.
 namespace BotWorldPopulationMgrValidationRouteNative
 {
 struct RecoveryOps
@@ -22,9 +24,16 @@ struct RecoveryOps
         BotValidationRouteNative::NodeRuntime&, Facts::TransportTarget const&)> Ride;
     // Keep the member where it is, owning its movement.
     std::function<void(std::string const&)> Hold;
+    // The owner an interaction contract elects among the loaded members.
+    std::function<BotValidationRouteNative::OwnerElection(
+        BotValidationRouteNative::InteractionContract const&)> Elect;
+    // One member's step of an interaction contract with its own runtime state.
+    std::function<void(Callbacks const&, BotValidationRouteNative::InteractionContract const&,
+        BotValidationRouteNative::NodeRuntime&,
+        BotValidationRouteNative::OwnerElection const&)> Interact;
 };
 
-// True while a ride owns the node (or after one failed the attempt).
+// True while a ride or a wake owns the node (or after one failed the attempt).
 bool RunRecovery(Input const& input, Callbacks const& callbacks,
     BotValidationRouteNative::NodeContract& node, RecoveryOps const& ops);
 }

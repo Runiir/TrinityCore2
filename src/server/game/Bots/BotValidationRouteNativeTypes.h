@@ -2,12 +2,10 @@
 #define TRINITY_BOT_VALIDATION_ROUTE_NATIVE_TYPES_H
 
 // Data-only types for native route contracts (interaction, observed
-// completion, transport) and their route-scoped runtime state.
-//
-// This header is included by BotWorldPopulationMgrRouteState.h and therefore
-// by most bot translation units: keep it small and free of logic. Parsing
-// lives in BotValidationRouteNativeContract.h (manifest loader, tests) and
-// decisions in BotValidationRouteNativeLogic.h (route runtime, tests).
+// completion, transport) and their route-scoped runtime state. Included by
+// most bot translation units (via BotWorldPopulationMgrRouteState.h): keep it
+// small and free of logic. Parsing: BotValidationRouteNativeContract.h;
+// decisions: BotValidationRouteNativeLogic.h.
 
 #include <cstdint>
 #include <map>
@@ -124,13 +122,7 @@ struct CompletionContract
     }
 };
 
-struct Point3
-{
-    float X = 0.0f;
-    float Y = 0.0f;
-    float Z = 0.0f;
-    bool Valid = false;
-};
+struct Point3 { float X = 0.0f, Y = 0.0f, Z = 0.0f; bool Valid = false; };
 
 // Lawful final approach onto a transport surface the static navmesh does not
 // reach (BotValidationRouteNativeApproach.h, BotTransportSurfaceMovement).
@@ -187,23 +179,15 @@ struct TransportContract
 // generation; any change resets it.
 struct RuntimeScope
 {
-    std::uint64_t AttemptId = 0;
-    std::uint64_t WipeGeneration = 0;
-    std::uint64_t RouteGeneration = 0;
+    std::uint64_t AttemptId = 0, WipeGeneration = 0, RouteGeneration = 0;
 
     bool operator==(RuntimeScope const& other) const
-    {
-        return AttemptId == other.AttemptId && WipeGeneration == other.WipeGeneration
-            && RouteGeneration == other.RouteGeneration;
-    }
+    { return AttemptId == other.AttemptId && WipeGeneration == other.WipeGeneration
+        && RouteGeneration == other.RouteGeneration; }
     bool operator!=(RuntimeScope const& other) const { return !(*this == other); }
 };
 
-struct AttemptState
-{
-    std::uint64_t LastSubmitAtMs = 0;
-    std::uint32_t Attempts = 0;
-};
+struct AttemptState { std::uint64_t LastSubmitAtMs = 0; std::uint32_t Attempts = 0; };
 
 struct CompletionMemory
 {
@@ -217,11 +201,7 @@ struct CompletionMemory
         return false;
     }
 
-    void Remember(std::string const& key)
-    {
-        if (!Seen(key))
-            ObservedPresent.push_back(key);
-    }
+    void Remember(std::string const& key) { if (!Seen(key)) ObservedPresent.push_back(key); }
 };
 
 struct TransportMemberState
@@ -279,19 +259,37 @@ struct RecoveryTransit
     NodeRuntime Runtime; // started while some member needs the ride
 };
 
+// A wake waiting for the party: since when, last tick seen, who holds it.
+struct RecoveryWait { std::uint64_t SinceMs = 0, SeenMs = 0; std::string Holder; };
+// First scope and boss reset generation seen at the node; when a trigger held.
+struct RecoveryBaseline { RuntimeScope Scope; std::uint64_t Resets = 0, TriggeredAtMs = 0; };
+
+// An earlier node's wake of this node's boss (row field recovery_interaction),
+// redone after a wipe (or an observed reset) at this node puts it back to sleep.
+struct RecoveryInteraction
+{
+    std::string NodeId;
+    InteractionContract Interaction;
+    CompletionContract Completion;
+    RecoveryBaseline Baseline;
+    RecoveryWait Waiting;
+    NodeRuntime Runtime; // started while the wake runs
+};
+
 struct NodeContract
 {
     InteractionContract Interaction;
     CompletionContract Completion;
     TransportContract Transport;
     NodeRuntime Runtime;
-    // Recovery rides, in route order, before this node's own contracts.
+    // Recovery rides, then wakes, in route order, before its own contracts.
     std::vector<RecoveryTransit> Recovery;
+    std::vector<RecoveryInteraction> RecoveryInteractions;
 
     bool Declared() const
     {
         return Interaction.Declared || Completion.Declared || Transport.Declared
-            || !Recovery.empty();
+            || !Recovery.empty() || !RecoveryInteractions.empty();
     }
 };
 }

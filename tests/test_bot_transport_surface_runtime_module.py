@@ -340,9 +340,12 @@ def test_round3_in_flight_approach_owns_casting_and_names_its_refusals() -> None
     # second exhausted the node with no reason in the failure.
     runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
     transport = runtime[runtime.index("void RunTransport("):runtime.index("bool TransportNodeDone(")]
-    # A walk, step or fall in flight also owns the cast lanes, ahead of heals.
+    # A walk, step or fall in flight also owns the cast lanes, ahead of heals
+    # (round 4: a walk or step wins Mechanic on utility; only the fall takes
+    # Survival, below the Survival defensives).
     hold = runtime[runtime.index("void SubmitHold("):runtime.index("void ReleaseOrdinaryPath(")]
-    assert "candidate.UtilityScore = ownsCasting ? 6.0f : 1.0f;" in hold
+    assert ("candidate.UtilityScore = falling ? TransportFallUtility\n"
+            "        : ownsCasting ? TransportWindowUtility : 1.0f;") in hold
     assert "BotActionArbitration::Resource::GlobalCooldown, BotActionArbitration::Resource::Cast)" in hold
     assert "SubmitHold(input, decision.Reason, ApproachHoldOwnsCasting(decision));" in transport
     intent = _code(_source("BotNativeActionIntent.h"))

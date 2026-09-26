@@ -380,13 +380,14 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
     for marker in (
         'RecoveryFailure(transit.NodeId,\n                transport.Fact.Ambiguous ? "transport_ambiguous" : "transport_missing")',
         'RecoveryFailure(transit.NodeId,\n                "native_transport_timeout")',
-        "fail(RecoveryFailure(id, reason));",
+        "fail(failure(id, reason));",
+        "RecoveryCallbacks(callbacks, transit.NodeId, &RecoveryFailure);",
         'record("route_recovery:" + id + ":" + result, target, value, entry);',
         '"route_recovery_engaged:" + transit.NodeId',
         '"route_recovery_complete:" + transit.NodeId',
         'ops.Hold("route_recovery_waiting_for_party");',
         "ops.Ride(ridden, ride, runtime, transport);",
-        "ridden.Complete = nullptr;",
+        "prefixed.Complete = nullptr;",
         "runtime.Enter(input.Scope, input.NowMs);",
         "StaleRiderState(view, state->second, boardZ, exitZ)",
         "RecoveryApplies(ride, input.AnchorZ)",
@@ -412,7 +413,7 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
     contract = _code(_source("BotValidationRouteNativeContract.h"))
     assert 'KnownField(key, { "node_id", "contract" })' in contract
     types = _source("BotValidationRouteNativeTypes.h")
-    assert "|| !Recovery.empty();" in types
+    assert "|| !Recovery.empty() || !RecoveryInteractions.empty();" in types
     assert "std::vector<RecoveryTransit> Recovery;" in types
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
     assert "Bots/BotWorldPopulationMgrValidationRouteNativeRecovery.cpp" in cmake

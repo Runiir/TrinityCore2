@@ -211,6 +211,10 @@ struct Intent
     bool RequireCompletePath = false;
     bool AllowRecentFailureRetry = false;
     bool AllowNativeLongPath = false;
+    // A route walk longer than PathGenerator's point capacity may proceed in
+    // corridor legs (BotWorldPopulationMgrNativePathCorridorLeg.h). Set only
+    // for route moves on composition raid rows (row field composition_recovery).
+    bool AllowCorridorLegs = false;
     bool NativeRecoveryCrossMapPending = false;
     std::optional<HazardEscapeBasis> HazardEscape;
     ValidationRouteDestinationAuthority DestinationAuthority =
