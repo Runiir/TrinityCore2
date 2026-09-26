@@ -5,8 +5,10 @@ Atramedes shards inside the north spirit pack, so both fights started at login. 
 scenario of experiments/configs/validation_scenarios_cata_001.json (legacy, c0 and full rows alike) clear
 of that class of defect:
 
-- anchors: the scenario `start_position`, the position of every `regroup` node, and every node's
-  `patrol_wait_anchor` (a hold point);
+- anchors: the scenario `start_position`, the position of every `regroup` node, every node's
+  `patrol_wait_anchor` (a hold point) and every node's `navigation_anchor` (the staging point the raid
+  walks to before it engages the node: its own targets are that node's fight, so only later nodes
+  count for it, and the node's own fight clears what its pull engages);
 - hostiles: every spawn on the scenario's map of a creature whose entry is a pack or target entry
   (`source_entry`, `pack_target_entries`, `add_target_entries`, `alternate_target_entries`,
   `opener_target_entry`) of the anchor's node or any later node of the scenario, and whose faction
@@ -103,6 +105,8 @@ KNOWN_TRUNCATED_ENTRIES = {
 ENTRY_FIELDS = ("source_entry", "opener_target_entry")
 ENTRY_LIST_FIELDS = ("pack_target_entries", "add_target_entries", "alternate_target_entries")
 HOLD_ANCHOR_FIELDS = ("patrol_wait_anchor",)
+# Anchors of a node that stand before its fight: checked against later nodes only (first index + 1).
+STAGING_ANCHOR_FIELDS = ("navigation_anchor",)
 # Node kinds whose `source_entry` is a creature the raid fights. Interaction, transport and descent
 # nodes name gameobjects, gossip NPCs or scripted event creatures instead.
 FIGHT_KINDS = {"trash", "boss"}
@@ -419,6 +423,9 @@ def scenario_anchors(scenario: Mapping[str, Any]) -> list[tuple[str, int, dict[s
         for field in HOLD_ANCHOR_FIELDS:
             if isinstance(step.get(field), Mapping):
                 anchors.append((anchor_key(node, field), index, dict(step[field])))
+        for field in STAGING_ANCHOR_FIELDS:
+            if isinstance(step.get(field), Mapping):
+                anchors.append((anchor_key(node, field), index + 1, dict(step[field])))
     return anchors
 
 

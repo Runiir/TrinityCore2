@@ -313,12 +313,12 @@
       "pillar_2": [
         "restoration_shaman (healer, backup Wind Shear)",
         "retribution_paladin (Rebuke)",
-        "beast_mastery_hunter"
+        "survival_hunter"
       ],
       "controllers": [
         "holy_paladin Hammer of Justice",
         "retribution_paladin Hammer of Justice",
-        "beast_mastery_hunter Concussive Shot",
+        "survival_hunter Concussive Shot",
         "restoration_shaman Frost Shock",
         "demonology_warlock Curse of Exhaustion",
         "fire_mage Frost Nova"

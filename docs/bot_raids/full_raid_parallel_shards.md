@@ -67,11 +67,21 @@ orchestrator skill are boss-level only.
   catalog wolf (entry 8959, Furious Howl), so no live run had the 4% physical debuff. Survival
   recheck (2026-09-26, all 23 categories of the same file; details in the composition's
   `buff_coverage_declared.survival_recheck`): Survival adds Hunting Party (10% melee and ranged
-  haste), so the shaman's air totem is always Wrath of Air and the two-tank spell-haste gap closes;
-  BM's Ferocious Inspiration duplicated the Retribution Paladin's Communion. With the wolf, the only
-  gaps are 4% physical (every shard) and 30% bleed (Balance shards: Magmaw, Atramedes). A Ravager
-  (non-exotic, Ravage 50518) would close the physical gap; it needs a native Cunning pet fixed point
-  and a Survival reference with that pet before it replaces the wolf.
+  haste); BM's Ferocious Inspiration duplicated the Retribution Paladin's Communion. The runtime air
+  totem is fixed by the shaman's primary tree (`TryEnsureCombatTotems`: Elemental places Wrath of Air,
+  any other tree Windfury), so Hunting Party is the melee haste of the Elemental shards, and the
+  Restoration shards (Feral tank, no Moonkin) have no spell haste. With the wolf:
+
+  | Configuration | Coverage | Missing |
+  | --- | --- | --- |
+  | Balance, Elemental (Magmaw, Atramedes) | 18/20 | 30% bleed, 4% physical |
+  | Feral, Elemental (Omnotron, Maloriak) | 19/20 | 4% physical |
+  | Feral, Restoration (Chimaeron, Nefarian, full raid) | 18/20 | 4% physical, 5% spell haste |
+
+  A Ravager (non-exotic, Ravage 50518) would close the physical gap in every shard; it needs a native
+  Cunning pet fixed point and a Survival reference with that pet before it replaces the wolf. A
+  Restoration shaman placing Wrath of Air (Windfury duplicates Hunting Party) would close the spell
+  haste gap; that runtime totem choice belongs to the class owner.
 
   25-man compositions follow the same method; buffs stack more easily there.
 

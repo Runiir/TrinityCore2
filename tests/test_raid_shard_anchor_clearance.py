@@ -121,7 +121,8 @@ def test_only_hostile_pack_and_target_entries_count(creatures, hostile):
     # Anchors of a node only answer to that node and the ones after it.
     omnotron = _scenario(CONFIG, "blackwing_descent_10n_omnotron_c0_diagnostic")
     anchors = {key: first for key, first, _point in clearance.scenario_anchors(omnotron)}
-    assert anchors == {"start_position": 0, "bwd.omnotron.regroup": 0}
+    # A staging anchor (navigation_anchor) stands before its node's fight: later nodes only.
+    assert anchors == {"start_position": 0, "bwd.omnotron.regroup": 0, "bwd.omnotron.encounter:navigation_anchor": 3}
 
 
 NEFARIAN_C0 = "blackwing_descent_10n_nefarian_c0_diagnostic"
@@ -322,3 +323,31 @@ def test_the_north_patrol_node_keyed_on_its_mongrel_clears_its_slayer(world):
         assert (north["x"], north["y"], north["z"]) == spawns[250120].point
         assert all(clearance.cleared_by(north, spawns[guid], world) for guid in (NORTH_PATROL, 250120, 250121))
         assert not clearance.cleared_by(north, spawns[NORTH_PATROL])  # the entry alone does not cover the Slayer
+
+
+OMNOTRON_C0 = "blackwing_descent_10n_omnotron_c0_diagnostic"
+OMNOTRON_STAGING = {"x": -336.08, "y": -356.46, "z": 213.871, "o": 4.972}
+
+
+def test_every_staging_anchor_is_checked(creatures, hostile, world):
+    """Round 4 review: the Omnotron staging navigation_anchor answers to the anchor rules too."""
+    staged = {(row["id"], key) for row in clearance.scenarios(CONFIG)
+              for key, _first, _point in clearance.scenario_anchors(row) if key.endswith(":navigation_anchor")}
+    assert {(scenario_id, "bwd.omnotron.encounter:navigation_anchor") for scenario_id in (
+        OMNOTRON_C0, "blackwing_descent_10n_omnotron_diagnostic", "blackwing_descent_10n",
+        "blackwing_descent_10n_full_c0")} <= staged
+    assert ("stonecore_5n", "step17:navigation_anchor") in staged
+    encounter = _node(_scenario(CONFIG, OMNOTRON_C0), "bwd.omnotron.encounter")
+    assert encounter["navigation_anchor"] == OMNOTRON_STAGING
+    report = _check(CONFIG, creatures, hostile, world)
+    assert report["all_passed"] and report["anchors_checked"] >= 60
+
+
+def test_a_staging_anchor_on_a_live_hostile_is_refused(creatures, hostile, world):
+    _needs_world(world)
+    config = copy.deepcopy(CONFIG)
+    encounter = _node(_scenario(config, OMNOTRON_C0), "bwd.omnotron.encounter")
+    encounter["navigation_anchor"] = {"x": -17.5573, "y": -224.347, "z": 74.2971, "o": 0.0}  # on Ivoroc
+    found = {(row["anchor"], row["guid"]) for row in _check(config, creatures, hostile, world)["violations"]
+             if row["scenario_id"] == OMNOTRON_C0 and row["rule"] == "non_target_hostile"}
+    assert ("bwd.omnotron.encounter:navigation_anchor", IVOROC) in found

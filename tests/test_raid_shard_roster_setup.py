@@ -168,54 +168,166 @@ def test_every_canonical_spec_knows_its_persistent_self_buff(plan):
     assert {"restoration_shaman", "elemental_shaman", "fire_mage", "demonology_warlock"} <= checked
 
 
-NEFARIAN_CAPABILITIES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
-MALORIAK_CANDIDATES = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/"
-                       "BotWorldPopulationMgrMaloriakCandidates.cpp")
+ENCOUNTERS = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters"
+NEFARIAN_CAPABILITIES = ENCOUNTERS / "Nefarian/BotNefarianCapabilities.h"
+MALORIAK_CANDIDATES = ENCOUNTERS / "Maloriak/BotWorldPopulationMgrMaloriakCandidates.cpp"
+MALORIAK_DUTIES = ENCOUNTERS / "Maloriak/BotMaloriakDuties.h"
+OMNOTRON_CAPABILITIES = ENCOUNTERS / "Omnotron/BotOmnotronCapabilities.h"
+OMNOTRON_CANDIDATES = ENCOUNTERS / "Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp"
+CHIMAERON_DUTIES = ENCOUNTERS / "Chimaeron/BotChimaeronDutyPlan.h"
+CHIMAERON_CANDIDATES = ENCOUNTERS / "Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp"
+ATRAMEDES_MOBILITY = ENCOUNTERS / "Atramedes/BotAtramedesMobility.h"
+ATRAMEDES_ICE_BLOCK = ENCOUNTERS / "Atramedes/BotAtramedesIceBlock.h"
+ATRAMEDES_FACTS = ENCOUNTERS / "Atramedes/BotAtramedesFacts.h"
 # MaloriakRemedyDispelSpells in class order: Spellsteal, Purge, Tranquilizing Shot, Dispel Magic.
 REMEDY_DISPEL_BY_CLASS = {8: 30449, 7: 370, 3: 19801, 5: 527}
+# Omnotron's Soaked In Poison dispel (CanCleansePoison): Cleanse for a paladin, Remove Corruption for a
+# druid that is neither a tank nor Feral.
+POISON_CLEANSE_BY_CLASS = {2: 4987, 11: 2782}
 # Reviewed gaps: Curse of Exhaustion 18223 is an Affliction talent, so a Demonology warlock cannot learn it.
 UNLEARNABLE_DUTY_SPELLS = {("demonology_warlock", 18223)}
 
 
+def function_body(path: Path, signature: str) -> str:
+    source = path.read_text()
+    body = source[source.index(signature):]
+    return body[:body.index("\n}\n")]
+
+
+def constants(*paths: Path) -> dict[str, int]:
+    return {name: int(value) for path in paths
+            for name, value in re.findall(r"constexpr uint32 (\w+) = (\d+);", path.read_text())}
+
+
 def capability_table(function: str) -> list[tuple[str, str, int]]:
     """(match kind, spec or suffix, spell) rows of a Nefarian capability function, in if-chain order."""
-    source = NEFARIAN_CAPABILITIES.read_text()
-    body = source[source.index(f"inline {function}"):]
-    body = body[:body.index("\n}\n")]
+    body = function_body(NEFARIAN_CAPABILITIES, f"inline {function}")
     return [("suffix", suffix, int(spell)) if suffix else ("exact", exact, int(spell))
             for suffix, exact, spell in re.findall(
                 r'if \((?:SpecEndsWith\(spec, "(\w+)"\)|spec == "(\w+)")\)\s*return \{ (\d+),', body)]
 
 
+def omnotron_interrupts() -> list[tuple[str, str, int]]:
+    """Omnotron InterruptFor rows: SpecIs matches a suffix, SpecStarts a prefix."""
+    body = function_body(OMNOTRON_CAPABILITIES, "inline std::optional<InterruptCapability> InterruptFor")
+    return [("suffix" if kind == "SpecIs" else "prefix", value, int(spell)) for kind, value, spell in re.findall(
+        r'if \((SpecIs|SpecStarts)\(classSpec, "(\w+)"\)\)\s*return InterruptCapability\{ (\d+),', body)]
+
+
 def capability_spell(table: list[tuple[str, str, int]], spec: str) -> int | None:
     for kind, value, spell in table:
-        if (kind == "suffix" and spec.endswith(value)) or (kind == "exact" and spec == value):
+        if ((kind == "suffix" and spec.endswith(value)) or (kind == "exact" and spec == value)
+                or (kind == "prefix" and spec.startswith(value))):
             return spell
     return None
 
 
+def spec_list(path: Path, signature: str) -> set[str]:
+    return set(re.findall(r'spec == "(\w+)"', function_body(path, signature)))
+
+
+def lust_owner(bots: list[dict], rank) -> dict | None:
+    ranked = [(rank(bot["class_spec"]), bot["character_guid"], bot) for bot in bots if rank(bot["class_spec"]) is not None]
+    return min(ranked, key=lambda row: row[:2])[2] if ranked else None
+
+
+def encounter_duty_rules() -> dict[str, list]:
+    """Per boss: rules (bot, shard bots) -> requirements, each a set of spells of which one must be known."""
+    nefarian_controls = capability_table("ControlCapability ControlFor")
+    nefarian_interrupts = capability_table("InterruptCapability InterruptFor")
+    assert ("suffix", "hunter", 5116) in nefarian_controls and ("suffix", "priest", 9484) in nefarian_controls
+    dispels = re.search(r"MaloriakRemedyDispelSpells = \{([^}]*)\}", MALORIAK_CANDIDATES.read_text()).group(1)
+    assert [int(value) for value in re.findall(r"(\d+)u", dispels)] == list(REMEDY_DISPEL_BY_CLASS.values())
+    interrupts = omnotron_interrupts()
+    assert ("suffix", "paladin", 96231) in interrupts and ("prefix", "feral_druid", 80965) in interrupts
+    cleanse = function_body(OMNOTRON_CAPABILITIES, "inline bool CanCleansePoison")
+    assert 'SpecIs(classSpec, "paladin")' in cleanse and '!SpecStarts(classSpec, "feral_druid")' in cleanse
+    assert "{ 4987u, 2782u }" in OMNOTRON_CANDIDATES.read_text()
+
+    chimaeron = constants(CHIMAERON_DUTIES)
+    rank_body = function_body(CHIMAERON_DUTIES, "inline int LustRank")
+    mage_rank = int(re.search(r"IsMageSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
+    shaman_rank = int(re.search(r"IsShamanSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
+    mages = spec_list(CHIMAERON_DUTIES, "inline bool IsMageSpec")
+    shamans = spec_list(CHIMAERON_DUTIES, "inline bool IsShamanSpec")
+    assert "IsMageSpec(lust->ClassSpec) ? TimeWarpSpell : BloodlustSpell" in CHIMAERON_DUTIES.read_text()
+    assert "HeroismSpell" in CHIMAERON_CANDIDATES.read_text()  # a shaman owner casts Heroism when it lacks Bloodlust
+    shaman_lust = {chimaeron["BloodlustSpell"], chimaeron["HeroismSpell"]}
+    chimaeron_rank = lambda spec: mage_rank if spec in mages else shaman_rank if spec in shamans else None
+    maloriak_body = function_body(MALORIAK_DUTIES, "inline uint8 LustRankFor")
+    maloriak_ranks = {suffix: int(rank) for suffix, rank in
+                      re.findall(r'EndsWith\(classSpec, "(\w+)"\)\)\s*return (\d+);', maloriak_body)}
+    maloriak_rank = lambda spec: next((rank for suffix, rank in maloriak_ranks.items() if spec.endswith(suffix)), None)
+
+    mobility = constants(ATRAMEDES_MOBILITY, ATRAMEDES_FACTS)
+    forms = {name: form for name, form in re.findall(
+        r"\{ (\w+Spell), Kind::\w+, [^,]+, [^,]+, \d+, \d+, (\w+),", ATRAMEDES_MOBILITY.read_text())}
+    static = function_body(ATRAMEDES_MOBILITY, "inline float StaticCapabilityYards")
+    kite = {word: re.findall(r"yards\((\w+)\)", expression)
+            for word, expression in re.findall(r'if \(has\("(\w+)"\)\)\s*return ([^;]+);', static)}
+    assert kite["rogue"] == ["SprintSpell"] and kite["druid"] == ["DashSpell", "StampedingRoarSpell"]
+    ice_mages = spec_list(ATRAMEDES_ICE_BLOCK, "inline bool IsMageSpec")
+
+    def kite_spells(bot, _bots):
+        if bot["role"] == "tank":
+            return []
+        names = next((names for word, names in kite.items() if word in bot["class_spec"]), [])
+        required = [{mobility[name]} for name in names]
+        required += [{mobility[forms[name]]} for name in names if forms.get(name, "0") != "0"]
+        if bot["class_spec"] in ice_mages:
+            required.append({mobility["IceBlockAura"]})
+        return required
+
+    def lust(rank, spells_for):
+        def rule(bot, bots):
+            owner = lust_owner(bots, rank)
+            return [spells_for(bot["class_spec"])] if owner is bot else []
+        return rule
+
+    return {
+        "nefarian": [
+            lambda bot, _bots: [{capability_spell(nefarian_interrupts, bot["class_spec"])}],
+            lambda bot, _bots: [] if bot["role"] == "tank" else [{capability_spell(nefarian_controls, bot["class_spec"])}]],
+        "maloriak": [
+            lambda bot, _bots: [{REMEDY_DISPEL_BY_CLASS.get(int(bot["class"]))}],
+            lust(maloriak_rank, lambda spec: shaman_lust if spec.endswith("_shaman") else {chimaeron["TimeWarpSpell"]})],
+        "omnotron": [
+            lambda bot, _bots: [{capability_spell(interrupts, bot["class_spec"])}],
+            lambda bot, _bots: [{POISON_CLEANSE_BY_CLASS.get(int(bot["class"]))}]
+            if int(bot["class"]) == 2 or (int(bot["class"]) == 11 and bot["role"] != "tank"
+                                          and not bot["class_spec"].startswith("feral_druid")) else []],
+        "chimaeron": [lust(chimaeron_rank, lambda spec: {chimaeron["TimeWarpSpell"]} if spec in mages else shaman_lust)],
+        "atramedes": [kite_spells],
+    }
+
+
 def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
-    """Round 4: Nefarian controls and Maloriak Remedy dispels named spells no canonical bot knew."""
+    """Round 4: encounter duties named spells no canonical bot knew (Nefarian controls, Maloriak Remedy
+    dispels, the Ret's Omnotron Cleanse; review: Chimaeron's Time Warp owner and Atramedes air mobility).
+
+    Each boss shard answers to its boss's duty tables, read from the C++ sources; the full raid to all.
+    """
     if not (DBC / "SkillLineAbility.dbc").is_file() or not (ROOT / "dataset/world_knowledge/trainers.jsonl").is_file():
         pytest.skip("client DBCs or trainers not hydrated")
     from tools.raid_program.raid_loadout_spells import loadout_known_spells, native_baseline, spell_learn_map
 
-    controls, interrupts = capability_table("ControlCapability ControlFor"), capability_table("InterruptCapability InterruptFor")
-    assert ("suffix", "hunter", 5116) in controls and ("suffix", "priest", 9484) in controls
-    dispels = re.search(r"MaloriakRemedyDispelSpells = \{([^}]*)\}", MALORIAK_CANDIDATES.read_text()).group(1)
-    assert [int(value) for value in re.findall(r"(\d+)u", dispels)] == list(REMEDY_DISPEL_BY_CLASS.values())
-    learn_map, gaps, checked = spell_learn_map(DBC), set(), set()
+    rules = encounter_duty_rules()
+    learn_map, gaps, required_seen = spell_learn_map(DBC), set(), set()
     for shard in plan["shards"]:
+        boss_rules = [rule for boss, boss_rules in rules.items() for rule in boss_rules
+                      if shard["boss_key"] in (boss, "full")]
+        assert boss_rules or shard["boss_key"] == "magmaw", shard["cohort_id"]
         for bot in shard["bots"]:
             spec, known = bot["class_spec"], set(loadout_known_spells(bot, DBC)["known_spell_ids"])
-            required = {capability_spell(interrupts, spec), REMEDY_DISPEL_BY_CLASS.get(int(bot["class"]))}
-            if bot["role"] != "tank":  # the control plan skips tanks
-                required.add(capability_spell(controls, spec))
             baseline = native_baseline(int(bot["class"]), int(bot["race"]), DBC, learn_map)
-            for spell in sorted(required - {None}):
-                if spell not in known:
-                    assert spell not in baseline, (shard["cohort_id"], spec, spell)  # learnable but not provisioned
-                    gaps.add((spec, spell))
-            checked.add(spec)
+            for rule in boss_rules:
+                for alternatives in rule(bot, shard["bots"]):
+                    alternatives = {spell for spell in alternatives if spell}
+                    required_seen |= alternatives
+                    if alternatives and not alternatives & known:
+                        # learnable but not provisioned fails; a spell the class cannot learn is a reviewed gap
+                        assert not alternatives & baseline, (shard["cohort_id"], spec, sorted(alternatives))
+                        gaps.add((spec, min(alternatives)))
     assert gaps == UNLEARNABLE_DUTY_SPELLS
-    assert {"survival_hunter", "fire_mage", "discipline_priest", "retribution_paladin", "restoration_shaman"} <= checked
+    # The review's spells are among the checked ones: Time Warp, Sprint, Dash, Stampeding Roar, Cat Form.
+    assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853} <= required_seen
