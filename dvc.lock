@@ -430,8 +430,8 @@ stages:
     deps:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 1313a643a7be95fd02c3321ffb4cdb98.dir
-      size: 4048458
+      md5: 94a610bb303cbe3a0f87c4ea7b220274.dir
+      size: 4055159
       nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
@@ -447,8 +447,8 @@ stages:
       size: 156525
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 9ab4148d9f924a4d301536ffa93ec3af
-      size: 127472
+      md5: a2cff4e5266f1df5157f91eb7bfe62a7
+      size: 136794
     - path: sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
       hash: md5
       md5: d55ce540c300d77f0ddde75a68ec9cfa
@@ -464,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: de9dbd1d9960ad2ac0b3fb9bab495817.dir
-      size: 1103117
+      md5: c110c79899a2fa1c5ed177315fa4020e.dir
+      size: 1145524
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -1883,8 +1883,8 @@ stages:
       size: 1797
     - path: experiments/configs/raid_compositions
       hash: md5
-      md5: 9e296fb04797080f13e01358b0b5caf0.dir
-      size: 32516
+      md5: 4e8c3610ff99cf4b840142aa55609d73.dir
+      size: 33997
       nfiles: 1
     - path: experiments/configs/raid_prerequisites
       hash: md5
@@ -1897,8 +1897,8 @@ stages:
       size: 27753
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 9ab4148d9f924a4d301536ffa93ec3af
-      size: 127472
+      md5: a2cff4e5266f1df5157f91eb7bfe62a7
+      size: 136794
     - path: experiments/configs/wowsims_cata_dps_reference_requests_v1.json
       hash: md5
       md5: 5297802cf6b3143a77c02fac868b1194
@@ -1986,6 +1986,6 @@ stages:
     outs:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 1313a643a7be95fd02c3321ffb4cdb98.dir
-      size: 4048458
+      md5: 94a610bb303cbe3a0f87c4ea7b220274.dir
+      size: 4055159
       nfiles: 4
