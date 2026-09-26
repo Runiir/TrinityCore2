@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Bots/BotCanonicalRaidScope.h"
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotWorldPopulationMgrGhostFlight.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -7,7 +8,9 @@
 #include "DataStores/DBCStructure.h"
 #include "GameTime.h"
 #include "Group.h"
+#include "InstanceScript.h"
 #include "Map.h"
+#include "MapManager.h"
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
 #include "Pet.h"
@@ -117,6 +120,9 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
     constexpr uint32 MaximumMovementRejections = 5;
     constexpr uint32 MaximumReclaimRejections = 5;
     constexpr float NativeRecoveryDistanceProgressYards = 0.5f;
+    // Longer than any Blackwing Descent enrage: a ghost waiting at the portal
+    // for an in-progress encounter fails closed after this.
+    constexpr uint64 NativeEntranceEncounterWaitMaxMs = 15 * 60 * 1000;
 
     uint64 const nowMs = NowMs();
     uint64 const routeGeneration = Party().ValidationRouteGeneration;
@@ -142,6 +148,7 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
         state.NativeRecoveryReleaseRejectionCount = 0;
         state.NativeRecoveryEntranceUnavailableCount = 0;
         state.NativeRecoveryEntranceRejectionCount = 0;
+        state.NativeRecoveryEntranceWaitStartedMs = 0;
         state.NativeRecoveryReclaimRejectionCount = 0;
         state.NativeRecoveryEntranceRequired = false;
         state.NativeRecoveryEntranceObserved = false;
@@ -477,6 +484,43 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                     return terminal("native_runback_no_progress");
                 return true;
             }
+
+            // While the raid's encounter is in progress the native entrance
+            // refuses the ghost (Map::CannotEnter: CANNOT_ENTER_ZONE_IN_COMBAT)
+            // and the native area-trigger handler revives it outside the raid
+            // instead (reviveAtTrigger): the r04 Maloriak rogue
+            // released at 63 s and was revived at the BWD portal on map 0 at
+            // 105 s (validation_active_instance_drift). An ordinary player
+            // waits at the portal until the fight ends. Canonical raid
+            // shards only: accepted dungeon and legacy scenarios keep their
+            // recovery unchanged.
+            bool const canonicalRaid = Cohort().Raid.RaidInstance
+                && BotCanonicalRaidScope::IsCanonicalCompositionScenario(
+                    Cohort().Config.ValidationRouteScenarioId);
+            Map* originalMap = canonicalRaid
+                ? sMapMgr->FindMap(state.ValidationCohortMapId,
+                    state.ValidationCohortInstanceId)
+                : nullptr;
+            InstanceMap* originalInstance = originalMap && originalMap->IsRaid()
+                ? originalMap->ToInstanceMap() : nullptr;
+            InstanceScript* originalScript = originalInstance
+                ? originalInstance->GetInstanceScript() : nullptr;
+            if (originalScript && originalScript->IsEncounterInProgress())
+            {
+                if (!state.NativeRecoveryEntranceWaitStartedMs)
+                    state.NativeRecoveryEntranceWaitStartedMs = nowMs;
+                if (nowMs - state.NativeRecoveryEntranceWaitStartedMs
+                        >= NativeEntranceEncounterWaitMaxMs)
+                    return terminal("native_entrance_encounter_wait_exhausted");
+                transition("entrance_encounter_wait");
+                // Waiting is not a stalled path: keep the no-progress timer
+                // fed; the bound above ends an endless wait.
+                state.NativeRecoveryEpisodeLastProgressMs = nowMs;
+                result = "native_instance_entrance_encounter_in_progress_wait";
+                state.LastNoProgressReason = result;
+                return true;
+            }
+            state.NativeRecoveryEntranceWaitStartedMs = 0;
 
             transition("entrance_submitted");
             ExecuteNativeActionIntent(state, bot,

@@ -248,6 +248,9 @@ namespace BotWorldPopulationMgrBotState
         uint32 NativeRecoveryReleaseRejectionCount = 0;
         uint32 NativeRecoveryEntranceUnavailableCount = 0;
         uint32 NativeRecoveryEntranceRejectionCount = 0;
+        // First tick a released ghost waited at the raid portal for an
+        // in-progress encounter (0 = not waiting).
+        uint64 NativeRecoveryEntranceWaitStartedMs = 0;
         uint32 NativeRecoveryReclaimRejectionCount = 0;
         bool NativeRecoveryEntranceRequired = false;
         bool NativeRecoveryEntranceObserved = false;

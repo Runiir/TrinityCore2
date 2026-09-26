@@ -442,6 +442,7 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         context.State.NativeRecoveryReleaseRejectionCount = 0;
         context.State.NativeRecoveryEntranceUnavailableCount = 0;
         context.State.NativeRecoveryEntranceRejectionCount = 0;
+        context.State.NativeRecoveryEntranceWaitStartedMs = 0;
         context.State.NativeRecoveryReclaimRejectionCount = 0;
         context.State.NativeRecoveryEntranceRequired = false;
         context.State.NativeRecoveryEntranceObserved = false;

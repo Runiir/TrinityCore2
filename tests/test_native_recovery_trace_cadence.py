@@ -123,6 +123,7 @@ struct WorldBotState
     uint32 NativeRecoveryReleaseRejectionCount = 0;
     uint32 NativeRecoveryEntranceUnavailableCount = 0;
     uint32 NativeRecoveryEntranceRejectionCount = 0;
+    uint64 NativeRecoveryEntranceWaitStartedMs = 0;
     uint32 NativeRecoveryReclaimRejectionCount = 0;
     bool NativeRecoveryEntranceRequired = false;
     bool NativeRecoveryEntranceObserved = false;
@@ -270,6 +271,7 @@ int main()
     fixture.State.NativeRecoveryEpisodeLastProgressMs = 777;
     fixture.State.NativeRecoveryEpisodeDistanceTarget = "entrance";
     fixture.State.NativeRecoveryEpisodeBestDistance = 12.5f;
+    fixture.State.NativeRecoveryEntranceWaitStartedMs = 900;
     for (uint64 tick = 0; tick < 99; ++tick)
         fixture.ObserveRecoveryEpisode(&bot, 1001 + tick, 7, 11, 3, 1);
     assert(fixture.RecoveryStarts.size() == 1);
@@ -279,10 +281,14 @@ int main()
     assert(fixture.State.NativeRecoveryEpisodeLastProgressMs == 777);
     assert(fixture.State.NativeRecoveryEpisodeDistanceTarget == "entrance");
     assert(fixture.State.NativeRecoveryEpisodeBestDistance == 12.5f);
+    // A portal wait belongs to its episode: kept while it matches.
+    assert(fixture.State.NativeRecoveryEntranceWaitStartedMs == 900);
 
     // The first observed identity change opens one new episode, regardless of
     // whether it is attempt, route, wipe, or death scope.
     fixture.ObserveRecoveryEpisode(&bot, 2000, 8, 11, 3, 1);
+    // ... and a new episode resets it.
+    assert(fixture.State.NativeRecoveryEntranceWaitStartedMs == 0);
     fixture.ObserveRecoveryEpisode(&bot, 3000, 8, 12, 3, 1);
     fixture.ObserveRecoveryEpisode(&bot, 4000, 8, 12, 4, 1);
     fixture.ObserveRecoveryEpisode(&bot, 5000, 8, 12, 4, 2);
