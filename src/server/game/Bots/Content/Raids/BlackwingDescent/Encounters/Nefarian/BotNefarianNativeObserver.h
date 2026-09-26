@@ -49,8 +49,9 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
         Player const* bot = ObjectAccessor::GetPlayer(*observer, player.Guid);
         if (!bot || !bot->IsInWorld())
             continue;
-        // Readiness of the spells the duties name: a spell the bot lacks is
-        // not ready; SpellHistory decides the rest.
+        // The spells the duties name: whether the bot knows each one (a spell
+        // it lacks is unknown and not ready) and, if so, whether SpellHistory
+        // has it ready.
         for (uint32 spellId : { InterruptFor(player.ClassSpec).SpellId,
                 ControlFor(player.ClassSpec).SpellId,
                 TauntFor(player.ClassSpec).SpellId })
@@ -62,7 +63,7 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
             bool const known = resolved.Effective
                 && (resolved.Effective != resolved.Requested || bot->HasSpell(spellId));
             facts.Readiness.push_back({ player.Guid, spellId, known
-                && bot->GetSpellHistory()->IsReady(resolved.Effective) });
+                && bot->GetSpellHistory()->IsReady(resolved.Effective), known });
         }
         if (bot->movespline->Initialized() && !bot->movespline->Finalized())
         {

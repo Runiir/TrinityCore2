@@ -122,7 +122,7 @@ std::string ObjectGuid::ToString() const { return std::to_string(GetRawValue());
     board.Players = {
         MakePlayer(1, "tank", "blood_death_knight", { 0.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
         MakePlayer(2, "tank", "feral_druid_tank", { 1.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
-        MakePlayer(3, "dps", "beast_mastery_hunter", { 2.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
+        MakePlayer(3, "dps", "survival_hunter", { 2.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
         MakePlayer(4, "dps", "fire_mage", { 3.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
         MakePlayer(5, "healer", "holy_paladin", { 4.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
         MakePlayer(6, "dps", "retribution_paladin", { 5.0f, 0.0f }, PlatformFrame::FloorLocalZ, originZ),
@@ -247,8 +247,11 @@ static void TestDutyPlan()
         "{\"members\":[30505,30508,30502,30510],\"healer\":30505,\"interrupt\":30508,\"backup\":30505},"
         "{\"members\":[30507,30501,30504],\"healer\":30507,\"interrupt\":30501,\"backup\":30504},"
         "{\"members\":[30509,30506,30503],\"healer\":30509,\"interrupt\":30506,\"backup\":30509}],"
-        "\"controllers\":[30505,30506,30504,30510,30503,30509]}";
+        "\"controllers\":[30505,30506,30504,30503,30509]}";
     CHECK(json == expected, json.c_str());
+    CHECK(std::find(plan.Controllers.begin(), plan.Controllers.end(), Bot(10))
+        == plan.Controllers.end(),
+        "the Demonology warlock is no controller (Curse of Exhaustion is Affliction's)");
 
     ArenaLayout const layout = BuildArenaLayout(plan);
     CHECK(Near(layout.OnyxiaEndAngle, DegToRad(30.0f), 0.01f), "Onyxia's end beside pillar 0");
@@ -368,6 +371,28 @@ static void TestPhaseOneTarget()
     AdaptiveNefarianPlan const healer = strategy.Propose(board, Bot(7), "healer");
     CHECK(healer.OwnsNode && healer.DamageTarget.IsEmpty() && !healer.SuppressOffense,
         "healers keep their native healing");
+
+    // A loose Onyxia is taunted back only by a tank that knows its taunt.
+    Blackboard loose = board;
+    loose.Summons[0].VictimGuid = Bot(5);
+    auto taunts = [](AdaptiveNefarianPlan const& plan)
+    {
+        return std::count_if(plan.Actions.begin(), plan.Actions.end(),
+            [](BotNativeAction::Candidate const& action)
+            {
+                auto const* cast = std::get_if<BotNativeAction::CastSpell>(&action.Action);
+                return cast && cast->SpellId == 6795 && action.Id.Mechanic == "onyxia_taunt";
+            });
+    };
+    CHECK(taunts(strategy.Propose(loose, Bot(2), "tank")) == 1, "the Onyxia tank Growls");
+    NativeFacts growl;
+    growl.Readiness.push_back({ Bot(2), 6795, true, true });
+    CHECK(taunts(strategy.Propose(loose, Bot(2), "tank", &growl)) == 1,
+        "the same with the observer reporting Growl known and ready");
+    NativeFacts noGrowl;
+    noGrowl.Readiness.push_back({ Bot(2), 6795, true, false });
+    CHECK(taunts(strategy.Propose(loose, Bot(2), "tank", &noGrowl)) == 0,
+        "no taunt the tank does not know");
 }
 
 static void TestInterrupts()
@@ -401,6 +426,13 @@ static void TestInterrupts()
     InterruptDecision const replacement = DecideBlastNovaInterrupt(dead, deadView, deadPlan,
         FindPlayer(dead, 4), nullptr);
     CHECK(replacement.SpellId == 2139, "mage interrupts when the death knight is dead");
+
+    NativeFacts noMindFreeze;
+    noMindFreeze.Readiness.push_back({ Bot(1), 47528, true, false });
+    CHECK(DecideBlastNovaInterrupt(board, view, plan, knight, &noMindFreeze).Target.IsEmpty(),
+        "a primary that does not know its interrupt is skipped");
+    CHECK(DecideBlastNovaInterrupt(board, view, plan, mage, &noMindFreeze).SpellId == 2139,
+        "and the backup interrupts at once");
 
     AdaptiveNefarianStrategy strategy;
     AdaptiveNefarianPlan const plan1 = strategy.Propose(board, Bot(1), "tank");
@@ -492,9 +524,38 @@ static void TestBoneWarriorControl()
     CHECK(rooted.SpellId == 122 && rooted.Target == first.Guid, "then the mage's Frost Nova");
     cooldowns.Readiness.push_back({ Bot(4), 122, false });
     ControlDecision const snared = DecideBoneWarriorControl(board, view, plan,
-        FindPlayer(board, 10), &cooldowns);
-    CHECK(snared.SpellId == 18223 && snared.Target == first.Guid,
-        "then the warlock's cooldown-free Curse of Exhaustion");
+        FindPlayer(board, 3), &cooldowns);
+    CHECK(snared.SpellId == 5116 && snared.Target == first.Guid,
+        "then the hunter's Concussive Shot");
+    CHECK(DecideBoneWarriorControl(board, view, plan, FindPlayer(board, 10), &cooldowns)
+        .Target.IsEmpty(), "the Demonology warlock is never handed a control spell");
+
+    // An Affliction warlock's Curse of Exhaustion is the cooldown-free snare,
+    // taken before the snares with a cooldown - but only while the native
+    // observer reports the spell known.
+    Blackboard affliction = board;
+    FindPlayer(affliction, 10).ClassSpec = "affliction_warlock";
+    EncounterView const afflictionView = ObserveEncounter(affliction);
+    DutyPlan const afflictionPlan = BuildNefarianDutyPlan(affliction);
+    CHECK(afflictionPlan.Controllers.size() == 6 && afflictionPlan.Controllers[3] == Bot(10),
+        "the Affliction warlock ranks after the root, before the snares with a cooldown");
+    ControlDecision const cursed = DecideBoneWarriorControl(affliction, afflictionView,
+        afflictionPlan, FindPlayer(affliction, 10), &cooldowns);
+    CHECK(cursed.SpellId == 18223 && cursed.Target == first.Guid,
+        "the Affliction warlock's Curse of Exhaustion");
+    NativeFacts untaught = cooldowns;
+    untaught.Readiness.push_back({ Bot(10), 18223, true, false });
+    CHECK(DecideBoneWarriorControl(affliction, afflictionView, afflictionPlan,
+        FindPlayer(affliction, 10), &untaught).Target.IsEmpty(),
+        "a controller that does not know its spell is skipped");
+    ControlDecision const passed = DecideBoneWarriorControl(affliction, afflictionView,
+        afflictionPlan, FindPlayer(affliction, 3), &untaught);
+    CHECK(passed.SpellId == 5116 && passed.Target == first.Guid,
+        "and the warrior goes to the next controller that knows its spell");
+    CHECK(ControlFor("demonology_warlock").SpellId == 0
+        && ControlFor("destruction_warlock").SpellId == 0
+        && ControlFor("affliction_warlock").SpellId == 18223,
+        "Curse of Exhaustion only for Affliction");
 
     // The chased hunter kites; tanks never kite.
     AdaptiveNefarianStrategy strategy;

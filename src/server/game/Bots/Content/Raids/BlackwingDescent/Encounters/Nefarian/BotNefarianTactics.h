@@ -94,8 +94,9 @@ inline bool InInterruptReach(ActorSnapshot const& member,
 
 // Who interrupts one casting prototype, in order: its pillar's primary and
 // backup, then its other team members, then anyone else in reach, shortest
-// cooldown first. Only members that can reach it now and whose interrupt is
-// ready (NativeFacts; unknown counts as ready) are listed.
+// cooldown first. Only members that can reach it now and that know their
+// interrupt and have it ready (NativeFacts; no entry counts as both) are
+// listed.
 inline std::vector<ActorSnapshot const*> BlastNovaInterrupters(
     Blackboard const& board, DutyPlan const& plan,
     ActorSnapshot const& prototype, NativeFacts const* facts = nullptr)
@@ -105,7 +106,7 @@ inline std::vector<ActorSnapshot const*> BlastNovaInterrupters(
     auto add = [&order, &prototype, facts](ActorSnapshot const* member)
     {
         if (member && InInterruptReach(*member, prototype)
-            && (!facts || facts->SpellReady(member->Guid,
+            && (!facts || facts->SpellUsable(member->Guid,
                 InterruptFor(member->ClassSpec).SpellId))
             && std::find(order.begin(), order.end(), member) == order.end())
             order.push_back(member);
@@ -230,12 +231,13 @@ inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
 }
 
 // Exactly one bot acts on a warrior per snapshot: the shackler on its
-// candidate, otherwise the first living controller that is in range and whose
-// control spell is ready (NativeFacts; unknown counts as ready), rotating from
-// controller i mod C for warrior i. A controller on cooldown is skipped, so a
-// 60 s Hammer of Justice hands the warrior to the next controller.  Nobody
-// controls a held warrior, and nobody damages the shackler's candidate
-// (Shackle Undead breaks on damage).
+// candidate, otherwise the first living controller that is in range, knows its
+// control spell and has it ready (NativeFacts; no entry counts as both),
+// rotating from controller i mod C for warrior i. A controller on cooldown or
+// without the spell is skipped, so a 60 s Hammer of Justice hands the warrior
+// to the next controller, and a controller is never named for a spell it
+// cannot cast. Nobody controls a held warrior, and nobody damages the
+// shackler's candidate (Shackle Undead breaks on damage).
 inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
     EncounterView const& view, DutyPlan const& plan, ActorSnapshot const& bot,
     NativeFacts const* facts = nullptr)
@@ -252,7 +254,7 @@ inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
         return decision;
     auto ready = [facts](ActorSnapshot const& member)
     {
-        return !facts || facts->SpellReady(member.Guid,
+        return !facts || facts->SpellUsable(member.Guid,
             ControlFor(member.ClassSpec).SpellId);
     };
     ActorSnapshot const* shackle = ShackleCandidate(board, active, plan);

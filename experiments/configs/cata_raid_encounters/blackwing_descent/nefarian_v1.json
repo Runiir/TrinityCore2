@@ -295,7 +295,7 @@
   ],
   "strategy": {
     "implementation": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
-    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank; pillar teams = one healer each, then a <=13 s interrupter where the healer has none, then balanced head count and damage dealers; primary interrupter = shortest cooldown non-healer, backup = next; shackler = first living priest; controllers = other living non-tanks with a stun, snare or root.",
+    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank; pillar teams = one healer each, then a <=13 s interrupter where the healer has none, then balanced head count and damage dealers; primary interrupter = shortest cooldown non-healer, backup = next; shackler = first living priest; controllers = other living non-tanks whose spec can learn a stun, snare or root (BotNefarianCapabilities.h, checked against Talent.dbc/SkillLineAbility.dbc by tests/test_nefarian_capabilities.py: Curse of Exhaustion is an Affliction talent, so Demonology and Destruction warlocks control nothing), ordered stuns, roots, cooldown-free snares, snares with a cooldown.",
     "canonical_10n_plan": {
       "nefarian_tank": "blood_death_knight",
       "onyxia_tank": "feral_druid_tank",
@@ -315,20 +315,21 @@
         "retribution_paladin (Rebuke)",
         "survival_hunter"
       ],
+      "shackler": "discipline_priest Shackle Undead",
       "controllers": [
         "holy_paladin Hammer of Justice",
         "retribution_paladin Hammer of Justice",
+        "fire_mage Frost Nova",
         "survival_hunter Concussive Shot",
-        "restoration_shaman Frost Shock",
-        "demonology_warlock Curse of Exhaustion",
-        "fire_mage Frost Nova"
-      ]
+        "restoration_shaman Frost Shock"
+      ],
+      "no_control": "demonology_warlock (Curse of Exhaustion is an Affliction talent; Shadowfury is Destruction's and ground-targeted; fears, Death Coil and Seduction hit immune mechanics); the two tanks hold the dragons."
     },
     "phase_1_damage": "Onyxia until 12%, then Nefarian down to 73% while Onyxia's charge is below 60 (two Electrocutes, +34 charge natively), then finish Onyxia.",
     "movement_interface": "SurfaceGoal (BotNefarianMovement.h) reached in legs of at most 9.5 yd (BotNefarianPath.h: the whole floor inside r 57 is walkable; every leg ends at the model floor height of its end, FloorLocalZAt, with a 0.6 yd tolerance; a leg over a ramp crease is capped at 6 yd; legs keep 7 yd from every pillar centre, through one or two waypoints on r 27 or r 50 when the straight segment does not; every simulated and planner-coverage leg is verified against the sampled model by tests/test_nefarian_movement.py), each submitted as BotNativeAction::TransportSurfaceMove Walk with EndOnTransport (BotNefarianSurfaceIntent.h); never an ordinary Move on the platform. Typed holds: nefarian_elevator_unobserved, nefarian_not_on_platform, nefarian_movement_stunned, nefarian_no_surface_path, nefarian_leg_in_flight.",
     "phase_2_without_ascent": "Typed capability blocker pillar_ascent_unsupported on every plan, in the decision trace and in the nefarian_duty_plan status; teams hold the pillar feet (local r 26). Patch W1 ends the diagnostic run at the first heartbeat with the blocker (encounter_capability_blocker_watchdog), keeping phase 1 evidence.",
     "phase_1_tanking": "Pull: the tank stands on the ring at r 52 on a radially clear heading at the dragon's end; the chasing dragon stops at its reach, about r 29-31. Hold: once the dragon is at r >= 27.5 within 15 degrees of its end, the tank stands 7 yd from it, tangential and 25 degrees outward, so it only turns. Opposite ends are then >= 53 yd apart; the chase-model test settles them 62 yd apart.",
-    "bone_warrior_control": "One controller acts per warrior per decision: the first in rotation that is in range and whose control spell is ready (SpellHistory via BotNefarianNativeObserver.h), ordered stuns, roots, cooldown-free snares, then snares with a cooldown; the shackler holds one warrior."
+    "bone_warrior_control": "One controller acts per warrior per decision: the first in rotation that is in range, knows its control spell and has it ready (Player::HasSpell and SpellHistory via BotNefarianNativeObserver.h: NativeFacts::SpellKnown/SpellReady), ordered stuns, roots, cooldown-free snares, then snares with a cooldown; the shackler holds one warrior. Interrupts and taunts are named only for a bot that knows the spell the same way, so no duty names a spell its bot cannot cast."
   },
   "acceptance_observations": [
     "Every bot is a passenger of GO 207834 before Onyxia's start-fight pulse (no bot pulls from the ledge).",

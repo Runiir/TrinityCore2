@@ -268,7 +268,8 @@ private:
         auto tauntIfLoose = [&](ActorSnapshot const* subject,
             std::string_view mechanic)
         {
-            if (taunt.Known() && subject && subject->Alive && subject->InCombat
+            if (taunt.Known() && (!facts || facts->SpellUsable(bot.Guid, taunt.SpellId))
+                && subject && subject->Alive && subject->InCombat
                 && !subject->VictimGuid.IsEmpty()
                 && subject->VictimGuid != bot.Guid)
                 plan.Actions.push_back(Cast(board, mechanic, subject->Guid,

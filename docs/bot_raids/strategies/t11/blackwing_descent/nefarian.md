@@ -217,15 +217,22 @@ DPS. Roster GUIDs 11005001-11005010.
   - The shackler holds the most empowered free warrior with Shackle Undead, one at a
     time.
   - Exactly one controller acts on a warrior per decision: the first in rotation that
-    is in range and whose control spell is ready (the native observer reads
-    `SpellHistory`). A 60 s Hammer of Justice on cooldown hands the warrior to the next
-    controller, down to the cooldown-free Curse of Exhaustion. Nobody reapplies over a
-    held warrior or damages the shackler's candidate:
+    is in range, knows its control spell and has it ready. The native observer reads
+    `Player::HasSpell` and `SpellHistory`. A 60 s Hammer of Justice on cooldown hands
+    the warrior to the next controller. Nobody reapplies over a held warrior or damages
+    the shackler's candidate. The canonical order:
     - Hammer of Justice: Holy and Ret;
-    - Concussive Shot: Hunter;
-    - Frost Shock: Shaman;
-    - Curse of Exhaustion: Warlock;
-    - Frost Nova: Mage.
+    - Frost Nova: Mage;
+    - Concussive Shot: Survival Hunter;
+    - Frost Shock: Shaman.
+  - Controllers come from what the spec can learn, not only the class. Curse of
+    Exhaustion is an Affliction talent (Talent.dbc). An Affliction warlock would be the
+    cooldown-free snare after the root. The canonical Demonology warlock controls
+    nothing: Shadowfury is Destruction's and ground-targeted, and fears, Death Coil and
+    Seduction hit mechanics the warriors are immune to.
+  - `tests/test_nefarian_capabilities.py` checks every spec's interrupt, taunt and
+    control against Talent.dbc and SkillLineAbility.dbc. No duty is handed to a bot the
+    observer reports without the spell.
   - A non-tank chased by an unheld warrior kites around a ring.
   - In phase 3 the free Feral tank taunts loose warriors and keeps them in a pen on the
     wing away from the raid.

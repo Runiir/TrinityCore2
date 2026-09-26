@@ -200,8 +200,10 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
     }
 
     // Bone warrior control: one living shackler, then every other living
-    // non-tank with a stun, snare or root, in ControlPreference order (stuns,
-    // roots, cooldown-free snares, then snares with a cooldown).
+    // non-tank whose spec can learn a stun, snare or root (ControlFor), in
+    // ControlPreference order (stuns, roots, cooldown-free snares, then snares
+    // with a cooldown). Whether each one knows its spell and has it ready is
+    // decided per decision from NativeFacts (DecideBoneWarriorControl).
     for (ActorSnapshot const* member : members)
     {
         if (!member->Alive || plan.IsTank(member->Guid))

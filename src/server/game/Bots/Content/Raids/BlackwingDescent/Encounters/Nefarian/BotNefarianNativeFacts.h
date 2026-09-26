@@ -32,13 +32,15 @@ struct TransportPlacement
     Vector3 Offset; // transport-local position (GetTransOffsetX/Y/Z)
 };
 
-// A known spell that is ready now (SpellHistory::IsReady); a spell the bot
-// lacks is recorded as not ready.
+// Whether the bot knows a duty spell (Player::HasSpell, through
+// BotSpellResolution) and whether it is ready now (SpellHistory::IsReady); a
+// spell the bot lacks is recorded as unknown and not ready.
 struct SpellReadiness
 {
     ObjectGuid Actor;
     uint32 SpellId = 0;
     bool Ready = true;
+    bool Known = true;
 };
 
 // The bot's own movement: whether a spline is running and where it ends
@@ -70,13 +72,28 @@ struct NativeFacts
     std::vector<SpellReadiness> Readiness;
     std::vector<MovementState> Motion;
 
-    // Unknown readiness counts as ready: native submission stays the judge.
+    // A spell without an entry counts as known and ready: native submission
+    // stays the judge.
+    bool SpellKnown(ObjectGuid actor, uint32 spellId) const
+    {
+        for (SpellReadiness const& entry : Readiness)
+            if (entry.Actor == actor && entry.SpellId == spellId)
+                return entry.Known;
+        return true;
+    }
+
     bool SpellReady(ObjectGuid actor, uint32 spellId) const
     {
         for (SpellReadiness const& entry : Readiness)
             if (entry.Actor == actor && entry.SpellId == spellId)
                 return entry.Ready;
         return true;
+    }
+
+    // What every duty asks before naming a spell: known and ready.
+    bool SpellUsable(ObjectGuid actor, uint32 spellId) const
+    {
+        return SpellKnown(actor, spellId) && SpellReady(actor, spellId);
     }
 
     MovementState const* FindMotion(ObjectGuid actor) const

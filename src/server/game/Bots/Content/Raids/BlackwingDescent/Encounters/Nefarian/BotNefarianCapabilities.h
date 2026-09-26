@@ -3,9 +3,16 @@
 
 // Class/spec capabilities Nefarian duties are chosen by. Spell identities and
 // cooldowns are the 4.3.4 client rows this server loads (SpellCooldowns.dbc
-// category or recovery time). Native legality stays with the executor: a
-// candidate names a spell, and ExecuteNativeActionIntent refuses an unknown
-// spell, a spell on cooldown or an invalid target.
+// category or recovery time). Every entry is learnable by the spec it is keyed
+// on: a class spell (SkillLineAbility.dbc class mask) for any spec of that
+// class, a talent (Talent.dbc) only for its own tree, so Silencing Shot is
+// Marksmanship's, Silence Shadow's and Curse of Exhaustion Affliction's
+// (tests/test_nefarian_capabilities.py checks every spec against the DBCs).
+// At run time the native observer also reports whether each bot knows the
+// spell (NativeFacts::SpellKnown), and a duty is never handed to a bot that
+// does not. Native legality stays with the executor: a candidate names a
+// spell, and ExecuteNativeActionIntent refuses an unknown spell, a spell on
+// cooldown or an invalid target.
 
 #include "Define.h"
 #include <string_view>
@@ -118,7 +125,10 @@ inline ControlCapability ControlFor(std::string_view spec)
         return { 5116, ControlKind::Snare, 40.0f, false, 5000 };     // Concussive Shot
     if (SpecEndsWith(spec, "shaman"))
         return { 8056, ControlKind::Snare, 25.0f, false, 6000 };     // Frost Shock
-    if (SpecEndsWith(spec, "warlock"))
+    // Curse of Exhaustion is an Affliction talent. Demonology and Destruction
+    // have no bone-warrior control this table can name (Shadowfury is
+    // ground-targeted; fears, Death Coil and Seduction are immune mechanics).
+    if (spec == "affliction_warlock")
         return { 18223, ControlKind::Snare, 40.0f, false, 0 };       // Curse of Exhaustion
     if (SpecEndsWith(spec, "death_knight"))
         return { 45524, ControlKind::Snare, 20.0f, false, 0 };       // Chains of Ice
