@@ -715,10 +715,23 @@ Root causes found so far:
 | Shard | Root cause | Fix (owner) |
 |---|---|---|
 | Atramedes | The instance script summons Atramedes (bell, or after a wipe). The strategy looked only in the hostile list, never in `Summons`, so the plan never took over. The raid stood on the bell point for 35 s; Sonic Breath raised all ten to 100 Sound and Devastation wiped them | AT 60c3df86ab (search `Summons`, then hostiles; own the node only while Atramedes is engaged) |
-| Atramedes | Recovery: the walk back met a live patrol more than 100 yd from the anchor and stood for 10 min; the return never armed; a bell rung within 30 s of a wipe would summon a second Atramedes | T (in progress) |
-| Nefarian | A lower-wing recovery ride engaged at the descent without a wipe | T (in progress) |
-| Maloriak | `validation_active_instance_drift` | MA (in progress) |
-| All | Worldserver segfault on `.botauto stop` | crash investigation (in progress) |
+| Atramedes | Recovery: the walk back met a live patrol more than 100 yd from the anchor and stood for 10 min; the return never armed (the runback worldport cleared the release flag first); a bell rung within 30 s of a wipe would summon a second Atramedes | T c3e8ebf78e (return trash admission, release evidence from the landing, the bell `ready` gate) |
+| Nefarian | A lower-wing recovery ride engaged at the descent without a wipe: the Ret paladin's ledge-drop fall counted as in flight for the ride | T c3e8ebf78e (in flight only during the ride's own approach; boarding end needs a release this attempt) |
+| Maloriak | `validation_active_instance_drift`: the rogue died mid-fight, released (no boss recovery policy) and was revived outside at the portal. Separately, the cauldron blocked healer line of sight for 60 s | M c159e0db6d (`native_full_wipe_only` on four boss rows), MA b3a3093a7a (portal wait), MA 756b91ac11 (tank spot, line-of-sight formation) |
+| All | Worldserver segfault on `.botauto stop`: the priest's cancelled Heal read its freed target (the paladin, already logged out) | 92959fc7e5 (targets by GUID, gdb capture), bf4848f02b, 82c45eb7d8 |
+| Healers | Route holds interrupted every cast each tick: 860 of 953 Atramedes heals cancelled | T c3e8ebf78e (holds interrupt only offensive casts on composition rows) |
+
+Also in round 5:
+- **Buffs** (C, canonical raids):
+  - Faerie Fire upkeep;
+  - Fortitude recast;
+  - Blessing of Might instead of Kings under a Mark druid;
+  - Devotion and Retribution Aura;
+  - a Bloodlust fallback on bosses without their own lust duty;
+  - one combat-res eligibility rule that never counts a tank.
+- **Roster** (M): Rebirth, Fortitude, Faerie Fire, Retribution Aura, and a Ravager pet for +4% physical damage taken.
+- **Route** (M): Ivoroc and the north patrol merged into `bwd.lower_hall.central_hall`, and the full routes clear Pyrecraw right after it. Accepted gap: a recovery walk after a wipe at the central hall passes 19.7 yd from Pyrecraw's spawn, and the future-target guard protects him there. Trash wipes are rare.
+- **Communion:** its +3% never applies in this core (63531 is never cast), so that category stays missing.
 
 Class patches from C, reviewed and committed in 38f4b5770f:
 - the combat resolver split into an admission module;
@@ -737,6 +750,32 @@ Two follow-ups from the review:
   cache and remote match its lock. It was not reproduced: its tool starts a worldserver,
   and a rerun would overwrite the accepted Phase 4 bundle. The raid program's own stages
   are current.
+
+## Round 5 results (2026-09-26)
+
+- **Commits:** integration c159e0db6d and 756b91ac11, DVC febcba0ed6, build 24efb927.
+  Evidence: `round5_batch1_20260926.tar.gz` (aa0888e076). Both runs used `--gdb-backtrace`.
+- **Magmaw smoke:** native clear in 90 s at 313k raid DPS, with one death. The Survival
+  hunter did 43.5k with the Ravager.
+- **Six-shard batch:** three native clears again. The final stop ran cleanly under gdb:
+  exit 0, no crash.
+
+  | Shard | Result |
+  |---|---|
+  | Magmaw | clear (94 s, 300k) |
+  | Omnotron | clear |
+  | Chimaeron | clear (130 s) |
+  | Atramedes | bell rung and intro done; at the encounter node the tank looped on `search_validation_route_target` for 650 s with no fight (0 deaths) |
+  | Maloriak | engaged, 2 wipes (20 deaths), then a progress plateau; no instance drift |
+  | Nefarian | no false ride; failed at the descent: `native_ledge_drop_landing_height_mismatch` (hunter 11005003) |
+
+- **Buffs live:**
+  - Faerie Fire (debuff 91565 on Magmaw; the Feral version on Chimaeron);
+  - Fortitude and Mark of the Wild on the raid;
+  - Kings gone;
+  - the lust fallback fired on Omnotron.
+  - **Not live:** Blessing of Might never applied (no 79101/79102), so the raid had no
+    blessing at all. That is a round-6 item for C.
 
 ## Round 3 candidates (from the round 2 reviews)
 
