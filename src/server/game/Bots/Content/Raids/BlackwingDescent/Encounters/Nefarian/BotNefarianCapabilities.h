@@ -139,18 +139,49 @@ inline ControlCapability ControlFor(std::string_view spec)
     return {};
 }
 
-// Controller preference: a ready stun first (it also stops Empower stacks),
-// then a root, then snares that can be reapplied at once, then snares with a
-// cooldown. Lower is better.
-inline int ControlPreference(ControlCapability const& control)
+// Nature's Grasp 16689, the warrior handler's root (user raid experience
+// 2026-09-26: the Feral druid kites the bone warriors and roots them with it).
+// A baseline druid spell (SkillLineAbility.dbc skill line 574, class mask
+// 1024, no talent), usable in bear, cat and moonkin form (SpellShapeshift 162,
+// mask 0x40000091), 3 charges for 45 s, 60 s cooldown: an enemy that strikes
+// the druid is rooted by Entangling Roots 19975 for 27 s. Bone warriors are
+// not immune to roots.
+constexpr uint32 SpellNaturesGrasp = 16689;
+constexpr uint32 SpellNaturesGraspRoot = 19975;
+
+inline uint32 WarriorRootFor(std::string_view spec)
 {
-    switch (control.Kind)
-    {
-        case ControlKind::Stun: return 0;
-        case ControlKind::Root: return 1;
-        case ControlKind::Snare: return control.CooldownMs == 0 ? 2 : 3;
-        default: return 9;
-    }
+    return SpecEndsWith(spec, "druid") || SpecEndsWith(spec, "druid_tank")
+        ? SpellNaturesGrasp : 0;
+}
+
+// Off-heal for a pillar team without a healer (coordinator default, pending
+// the user's answer): a hybrid DPS casts its native single-target heal on its
+// team. Healing Surge 8004 is in the Elemental and Enhancement action
+// profiles; Flash of Light 19750 is a baseline paladin spell. Healing Rain is
+// ground-targeted and not named here.
+inline uint32 OffHealFor(std::string_view spec)
+{
+    if (spec == "elemental_shaman" || spec == "enhancement_shaman")
+        return 8004;  // Healing Surge
+    if (spec == "retribution_paladin")
+        return 19750; // Flash of Light
+    return 0;
+}
+
+// Before the floor goes under, the healers shield and top up everyone:
+// Power Word: Shield 17 (both priest healers), Flash of Light 19750 (Holy).
+constexpr uint32 SpellPowerWordShield = 17;
+constexpr uint32 SpellWeakenedSoul = 6788;
+
+inline uint32 PreAscentShieldFor(std::string_view spec)
+{
+    return spec == "discipline_priest" || spec == "holy_priest" ? SpellPowerWordShield : 0;
+}
+
+inline uint32 PreAscentTopUpFor(std::string_view spec)
+{
+    return spec == "holy_paladin" ? 19750u : 0u;
 }
 
 inline bool IsHealerSpec(std::string_view spec, std::string_view role)

@@ -69,6 +69,10 @@ int main()
         std::printf("CAP %s interrupt %u\n", spec, InterruptFor(spec).SpellId);
         std::printf("CAP %s control %u\n", spec, ControlFor(spec).SpellId);
         std::printf("CAP %s taunt %u\n", spec, TauntFor(spec).SpellId);
+        std::printf("CAP %s warrior_root %u\n", spec, WarriorRootFor(spec));
+        std::printf("CAP %s off_heal %u\n", spec, OffHealFor(spec));
+        std::printf("CAP %s pre_ascent %u\n", spec,
+            PreAscentShieldFor(spec) ? PreAscentShieldFor(spec) : PreAscentTopUpFor(spec));
     }
     Blackboard const board = CanonicalBoard();
     DutyPlan const plan = BuildNefarianDutyPlan(board);
@@ -77,12 +81,9 @@ int main()
     if (ActorSnapshot const* shackler = board.FindActor(plan.Shackler))
         std::printf("SHACKLER %s %u\n", std::string(shackler->ClassSpec).c_str(),
             ControlFor(shackler->ClassSpec).SpellId);
-    for (ObjectGuid guid : plan.Controllers)
-    {
-        ActorSnapshot const* member = board.FindActor(guid);
-        std::printf("CONTROLLER %s %u\n", std::string(member->ClassSpec).c_str(),
-            ControlFor(member->ClassSpec).SpellId);
-    }
+    if (ActorSnapshot const* handler = board.FindActor(plan.WarriorHandler))
+        std::printf("HANDLER %s %u\n", std::string(handler->ClassSpec).c_str(),
+            WarriorRootFor(handler->ClassSpec));
     return 0;
 }
 '''
@@ -134,7 +135,7 @@ def test_every_duty_spell_is_learnable_by_its_spec(tmp_path_factory) -> None:
         class_masks[row[2]] = class_masks.get(row[2], 0) | mask
 
     rows = _lines(tmp_path_factory, "CAP")
-    assert len(rows) == 3 * len(SPECS)
+    assert len(rows) == 6 * len(SPECS)
     named = 0
     for spec, duty, spell_text in rows:
         spell = int(spell_text)
@@ -158,18 +159,70 @@ def test_every_duty_spell_is_learnable_by_its_spec(tmp_path_factory) -> None:
     assert by_spec[("survival_hunter", "interrupt")] == 0
     assert by_spec[("shadow_priest", "interrupt")] == 15487
     assert by_spec[("discipline_priest", "interrupt")] == 0
+    for spec in ("feral_druid_tank", "feral_druid", "balance_druid", "restoration_druid"):
+        assert by_spec[(spec, "warrior_root")] == 16689
+    assert sum(1 for (spec, duty), spell in by_spec.items()
+               if duty == "warrior_root" and spell) == 4
+    assert by_spec[("elemental_shaman", "off_heal")] == 8004
+    assert by_spec[("retribution_paladin", "off_heal")] == 19750
+    assert by_spec[("discipline_priest", "pre_ascent")] == 17
+    assert by_spec[("holy_paladin", "pre_ascent")] == 19750
 
 
-def test_contract_controller_table_matches_the_canonical_plan(tmp_path_factory) -> None:
+def test_natures_grasp_works_in_bear_form() -> None:
+    """Nature's Grasp is castable by the Feral tank in Bear Form: the
+    SpellShapeshift row of 16689 allows forms 1 (cat), 5 (bear), 8 (dire
+    bear) and 31 (moonkin); it has 3 charges, 45 s and a 60 s cooldown, and
+    each charge roots with Entangling Roots 19975 (aura 26, 27 s)."""
+    if not (DBC / "Spell.dbc").is_file():
+        pytest.skip("data/dbc is local-only")
+    spells = {row[0]: row for row in _records("Spell.dbc")}
+    shapeshift = {row[0]: row for row in _records("SpellShapeshift.dbc")}
+    options = {row[0]: row for row in _records("SpellAuraOptions.dbc")}
+    cooldowns = {row[0]: row for row in _records("SpellCooldowns.dbc")}
+    grasp = spells[16689]
+    mask = shapeshift[grasp[44]][3]  # ShapeshiftMask[0]
+    bear_form = 5
+    assert mask & (1 << (bear_form - 1)), hex(mask)
+    assert options[grasp[32]][3] == 3  # ProcCharges
+    assert cooldowns[grasp[37]][1] == 60000  # CategoryRecoveryTime (SpellCooldowns 1034)
+    effects = [row for row in _records("SpellEffect.dbc") if row[24] in (16689, 19975)]
+    assert any(row[24] == 16689 and row[3] == 42 and row[21] == 19975 for row in effects)
+    assert any(row[24] == 19975 and row[3] == 26 for row in effects)
+
+
+def test_contract_warrior_duties_match_the_canonical_plan(tmp_path_factory) -> None:
     roster = sorted(member["spec"] for member in json.loads(
         TARGET.read_text(encoding="utf-8"))["roster"].values())
     board = sorted(spec for (spec,) in _lines(tmp_path_factory, "ROSTER"))
     assert board == roster, "the test board is the raid target's canonical roster"
+    roles = sorted(member["role"] for member in json.loads(
+        TARGET.read_text(encoding="utf-8"))["roster"].values())
+    assert roles.count("tank") == 2 and roles.count("healer") == 2 and roles.count("dps") == 6
 
     plan = json.loads(CONTRACT.read_text(encoding="utf-8"))["strategy"]["canonical_10n_plan"]
-    controllers = [f"{spec} {SPELL_NAMES[int(spell)]}"
-                   for spec, spell in _lines(tmp_path_factory, "CONTROLLER")]
-    assert plan["controllers"] == controllers
     (shackler,) = _lines(tmp_path_factory, "SHACKLER")
     assert plan["shackler"] == f"{shackler[0]} {SPELL_NAMES[int(shackler[1])]}"
-    assert all("warlock" not in entry for entry in controllers)
+    (handler,) = _lines(tmp_path_factory, "HANDLER")
+    assert plan["warrior_handler"] == f"{handler[0]} Nature's Grasp"
+    assert int(handler[1]) == 16689
+    assert "controllers" not in plan
+
+
+COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json"
+
+
+def test_composition_provides_the_nefarian_requirements() -> None:
+    """M's composition data must give the Nefarian shard the user's comp (the
+    shaman Elemental) and the druid Nature's Grasp. Until patch
+    .git/round6_patches/nefarian/M2 is applied this reports the gap."""
+    composition = json.loads(COMPOSITION.read_text(encoding="utf-8"))
+    boss = next(row for row in composition["bosses"] if row["boss_key"] == "nefarian")
+    druid = next(row for row in composition["characters"] if row["character_key"] == "druid")
+    known = set(druid.get("spells") or [])
+    for spells in (druid.get("group_spells") or {}).values():
+        known |= set(spells)
+    if boss["spec_selection"].get("shaman") != "elemental_shaman" or 16689 not in known:
+        pytest.skip("pending M data change (patch M2): Nefarian shaman elemental_shaman "
+                    "and druid Nature's Grasp 16689")
+    assert boss["spec_selection"] == {"druid": "feral_druid_tank", "shaman": "elemental_shaman"}

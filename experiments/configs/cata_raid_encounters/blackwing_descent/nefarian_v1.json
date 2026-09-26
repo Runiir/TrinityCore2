@@ -295,52 +295,56 @@
   ],
   "strategy": {
     "implementation": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
-    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank; pillar teams = one healer each, then a <=13 s interrupter where the healer has none, then balanced head count and damage dealers; primary interrupter = shortest cooldown non-healer, backup = next; shackler = first living priest; controllers = other living non-tanks whose spec can learn a stun, snare or root (BotNefarianCapabilities.h, checked against Talent.dbc/SkillLineAbility.dbc by tests/test_nefarian_capabilities.py: Curse of Exhaustion is an Affliction talent, so Demonology and Destruction warlocks control nothing), ordered stuns, roots, cooldown-free snares, snares with a cooldown.",
+    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank, also the bone-warrior handler; pillar teams = one healer each (two healers: the Nefarian tank takes the pillar without one), then a <=13 s interrupter where the team has none, then balanced head count and damage dealers; primary interrupter = shortest cooldown, backup = next; shackler = first living non-tank with Shackle Undead (backup control only). Teams are built from the whole roster (dead members included), so a death never reshuffles them; live duties (tanks, handler, interrupters, off-healer, shackler) skip the dead.",
     "canonical_10n_plan": {
       "nefarian_tank": "blood_death_knight",
       "onyxia_tank": "feral_druid_tank",
       "pillar_0": [
         "holy_paladin (healer, backup Rebuke)",
         "assassination_rogue (Kick)",
-        "feral_druid_tank",
-        "demonology_warlock"
+        "fire_mage"
       ],
       "pillar_1": [
         "discipline_priest (healer, Shackle Undead)",
-        "blood_death_knight (Mind Freeze)",
-        "fire_mage (backup Counterspell)"
+        "retribution_paladin (Rebuke)",
+        "feral_druid_tank (backup Skull Bash)",
+        "demonology_warlock"
       ],
       "pillar_2": [
-        "restoration_shaman (healer, backup Wind Shear)",
-        "retribution_paladin (Rebuke)",
+        "blood_death_knight (no healer; Mind Freeze)",
+        "elemental_shaman (off-healer, backup Wind Shear)",
         "survival_hunter"
       ],
       "shackler": "discipline_priest Shackle Undead",
-      "controllers": [
-        "holy_paladin Hammer of Justice",
-        "retribution_paladin Hammer of Justice",
-        "fire_mage Frost Nova",
-        "survival_hunter Concussive Shot",
-        "restoration_shaman Frost Shock"
-      ],
-      "no_control": "demonology_warlock (Curse of Exhaustion is an Affliction talent; Shadowfury is Destruction's and ground-targeted; fears, Death Coil and Seduction hit immune mechanics); the two tanks hold the dragons."
+      "warrior_handler": "feral_druid_tank Nature's Grasp"
     },
-    "phase_1_damage": "Onyxia until 12%, then Nefarian down to 73% while Onyxia's charge is below 60 (two Electrocutes, +34 charge natively), then finish Onyxia.",
-    "movement_interface": "SurfaceGoal (BotNefarianMovement.h) reached in legs of at most 9.5 yd (BotNefarianPath.h: the whole floor inside r 57 is walkable; every leg ends at the model floor height of its end, FloorLocalZAt, with a 0.6 yd tolerance; a leg over a ramp crease is capped at 6 yd; legs keep 7 yd from every pillar centre, through one or two waypoints on r 27 or r 50 when the straight segment does not; every simulated and planner-coverage leg is verified against the sampled model by tests/test_nefarian_movement.py), each submitted as BotNativeAction::TransportSurfaceMove Walk with EndOnTransport (BotNefarianSurfaceIntent.h); never an ordinary Move on the platform. Typed holds: nefarian_elevator_unobserved, nefarian_not_on_platform, nefarian_movement_stunned, nefarian_no_surface_path, nefarian_leg_in_flight.",
-    "phase_2_without_ascent": "Typed capability blocker pillar_ascent_unsupported on every plan, in the decision trace and in the nefarian_duty_plan status; teams hold the pillar feet (local r 26). Patch W1 ends the diagnostic run at the first heartbeat with the blocker (encounter_capability_blocker_watchdog), keeping phase 1 evidence.",
+    "phase_1_damage": "Normal: everyone burns Onyxia from the pull; the canonical boss-lust fallback (BotRaidBossLust.h) casts the mage's Time Warp about 5 s after the Feral holds Onyxia (Onyxia is a boss mob, type_flags 0x4, so Creature::isWorldBoss admits her). Heroic fallback: Onyxia until 12%, then Nefarian down to 73% while Onyxia's charge is below 60 (two Electrocutes, +34 charge natively), then finish Onyxia.",
+    "movement_interface": "SurfaceGoal (BotNefarianMovement.h) reached in legs of at most 9.5 yd (BotNefarianPath.h: the whole floor inside r 57 is walkable; every leg ends at the model floor height of its end, FloorLocalZAt, with a 0.6 yd tolerance; a leg over a ramp crease is capped at 6 yd; legs keep 7 yd from every pillar centre, through one or two waypoints on r 27 or r 50 when the straight segment does not; every simulated and planner-coverage leg is verified against the sampled model by tests/test_nefarian_movement.py), each submitted as BotNativeAction::TransportSurfaceMove Walk with EndOnTransport (BotNefarianSurfaceIntent.h); never an ordinary Move on the platform. Phase 2 steps: Float, Swim, Hop, Board (BotNefarianAscent.h); phase 3 descent: Walk, StepOff, Fall, Land. Typed holds: nefarian_elevator_unobserved, nefarian_not_on_platform, nefarian_movement_stunned, nefarian_no_surface_path, nefarian_leg_in_flight, nefarian_magma_rising, nefarian_wading_until_float_depth, nefarian_float_hold_for_pillar, nefarian_descent_wait_for_raised_floor.",
     "phase_1_tanking": "Pull: the tank stands on the ring at r 52 on a radially clear heading at the dragon's end; the chasing dragon stops at its reach, about r 29-31. Hold: once the dragon is at r >= 27.5 within 15 degrees of its end, the tank stands 7 yd from it, tangential and 25 degrees outward, so it only turns. Opposite ends are then >= 53 yd apart; the chase-model test settles them 62 yd apart.",
-    "bone_warrior_control": "One controller acts per warrior per decision: the first in rotation that is in range, knows its control spell and has it ready (Player::HasSpell and SpellHistory via BotNefarianNativeObserver.h: NativeFacts::SpellKnown/SpellReady), ordered stuns, roots, cooldown-free snares, then snares with a cooldown; the shackler holds one warrior. Interrupts and taunts are named only for a bot that knows the spell the same way, so no duty names a spell its bot cannot cast."
+    "bone_warrior_control": "The Feral handler (free once Onyxia is dead) taunts loose warriors, casts Nature's Grasp 16689 (3 charges, roots 27 s on melee hit) when one attacks it, and kites them around a pen 24 yd out on Nefarian's far flank. Any bot leading warriors (the handler once Nefarian is down, or a bot an unheld warrior attacks) takes only destinations and legs whose whole straight path stays at least 15 degrees outside his breath cone and off his tail: fire and breath escapes, kites and the pen alike. Rooted (19975, 339), stunned or shackled warriors are held and never damaged. Shackle Undead backs up on the most empowered warrior not on the handler. Interrupts, taunts and controls are named only for a bot that knows the spell (NativeFacts::SpellKnown/SpellReady).",
+    "user_tactics": {
+      "source": "user raid experience 2026-09-26 (authoritative: user tactics outrank guides and inference)",
+      "composition": "2 tanks (Blood DK, Feral), 2 healers (Holy Paladin, Discipline Priest), 6 DPS; the shaman stays Elemental.",
+      "phase_1": "Bloodlust and burn Onyxia from the pull, before Nefarian lands; no Electrocute pacing. The user expects this may not hold on heroic or with lower gear: heroic keeps the Electrocute budget (PhaseOnePacingFor).",
+      "phase_2": "Swim in the magma as it rises beside your pillar; once the pillar top is level with the surface, hop onto it and damage the prototype there.",
+      "bone_warriors": "The Feral druid kites them, rooting them with Nature's Grasp as much as possible; with enough Onyxia-phase damage there are few. They must never get in front of Nefarian: his breath wakes them, refills their energy and buffs them (confirmed by the user).",
+      "conflicts": "Replaces the guide-derived Electrocute pacing (Wowhead, Icy Veins) in 10N, the three-healer composition, the stun/root/snare controller rotation, and the round-2 pillar_ascent_unsupported blocker."
+    },
+    "phase_2_ascent": "BotNefarianAscent.h and BotNefarianMagma.h, data nefarian_magma_v1.json: walk to the pillar foot (9.5 yd, slot heading) while the floor keeps still; the magma (world 2.7713) covers the ring 5.5 s after the platform starts down; at 1.2 yd depth Float (stop standing on the platform like a client that starts swimming), Swim to the station 6.7 yd from the pillar centre at the float depth, hold; at the lowered stop the top is 0.286 above the surface: Hop (the client jump, 7.95577 yd/s up, at most run speed, checked as the exact MoveSpline MoveJumpWithGravity runs: duration from the 3D segment, the ballistic air time rounded down) onto the rim just above the waterline, Board, walk up to the slot on the flat top (3.0 yd). About 8 s in the magma: 8 ticks = 47,000 fire before resistance (5000 + 250 k per tick). Float, Swim and Hop are package T stages requested in patch N1; without them the plan carries the typed blocker pillar_ascent_unsupported (W1 watchdog terminal). A late swimmer when the floor rises meets it and rides up 0.25 yd/s slower than it, boarding within a band about 2 s long.",
+    "phase_3_descent": "Once the floor is back at the raised stop and before Nefarian lands (Shadow of Cowardice 79355 punishes passengers above local 9.5 every 2 s): walk to the rim (5.0 yd), StepOff past the wall, Fall 7-8 yd onto the skirt or ring (below the 14.57 yd fall-damage threshold), Land; package T's existing stages.",
+    "healerless_pillar": "Coordinator default pending the user's answer and the live run: the Elemental shaman off-heals pillar 2 with Healing Surge 8004 (in its action profile) on the lowest teammate it can reach (40 yd, line of sight) under 90%, after its Blast Nova interrupt; before the floor goes under the Disc priest shields everyone and the Holy paladin tops up anyone under 95%, pillar 2 first. Resource-limited model (tests/test_nefarian_phase_two_survival.py, nefarian_phase_two_survival_v1.json: finite mana, 1.5 s casts landing at completion and never across a swim or hop, the Barrage landing after its 2 s cast and a 1.73 s missile flight from Nefarian's phase 2 lift-off position, realised preparation, phase 2 lasting until the last prototype dies; interrupts not modelled): a pillar-2 death before phase 2 ends in 44% of trials (mean phase 52 s), 13% with 1.25x and 2% with 1.5x raid DPS. Alternatives: a pure burn pillar 2 (option A) 100%, a tank pillar 92%; option B (a healer reaching two pillars) is geometrically impossible (nearest pillar tops 62.5 yd apart, heals reach 40). This is not a native estimate: single-assumption changes move the default from about 4% to 75%. The live run decides pillar-2 viability."
   },
   "acceptance_observations": [
     "Every bot is a passenger of GO 207834 before Onyxia's start-fight pulse (no bot pulls from the ledge).",
+    "The lust (Time Warp 80353) lands within about 5 s of the Feral holding Onyxia; every DPS damages Onyxia until she dies.",
     "Dragon separation stays above 50 yd after Nefarian lands (no Children of Deathwing 78619/78620 uptime on either dragon beyond the lead-out).",
     "No non-tank is hit by Shadowflame Breath; Lightning Discharge 77943 lands only during the tank's discharge turn window, if at all.",
-    "Two Electrocutes in phase 1 and Onyxia's charge below 100 at her death.",
-    "Every bot reaches its pillar top before the floor submerges; no Magma 81114/81118 damage beyond the ascent.",
+    "Onyxia's charge stays below 100 at her death.",
+    "Phase 2: every bot floats, swims to its station and hops onto its pillar at the lowered stop; Magma 81114 ticks per bot about 8 (47k), none after the hop.",
     "Every Blast Nova 80734 cast is interrupted (SPELL_INTERRUPT events; no 80735 ticks).",
     "No bot damages Nefarian during phase 2 (no Electrocute during phase 2).",
-    "Every bot leaves its pillar before Nefarian lands (no Shadow of Cowardice 79353).",
-    "Bone warriors spend their active time controlled (Shackle/stun/root/snare auras) and no bone warrior is hit by Breath while active.",
+    "Every bot leaves its pillar before Nefarian lands (no Shadow of Cowardice 79353) and takes no fall damage.",
+    "No active bone warrior stands in Nefarian's front cone; no warrior is hit by Shadowflame Breath; the Feral casts Nature's Grasp when warriors reach it.",
     "No bot takes Shadowblaze 81007 damage for more than one tick.",
     "Native clear: boss state done, encounter credit, 0 boss-window deaths."
   ],
@@ -415,7 +419,7 @@
     "blast_nova_and_barrage_cadence",
     "shadowblaze_spark_schedule_and_spread",
     "hail_of_bones_warrior_count_and_lifetime",
-    "pillar_access_and_magma_geometry",
+    "heroic_onyxia_burn_and_magma",
     "heroic_dominion_cinders_and_phase_two_end"
   ],
   "status_labels": {

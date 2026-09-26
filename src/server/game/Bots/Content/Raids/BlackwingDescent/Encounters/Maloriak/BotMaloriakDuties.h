@@ -240,53 +240,60 @@ inline std::vector<ObjectGuid> ArcaneStormInterrupters(
     return assigned;
 }
 
-// Release Aberrations interrupts use the second and third short
-// interrupters, so the Arcane Storm owner keeps its cooldown for the next
-// storm (the native timers are 15.5-17 s and 17-18 s apart). With a single
-// short interrupter the long pool takes the release; the storm owner never
-// does, because the storm has no other reliable interrupter. When the storm
-// owner comes from the long pool (no short interrupter), the next long one
-// takes the release.
-inline std::vector<ObjectGuid> ReleaseInterrupters(InterruptPools const& pools)
-{
-    std::vector<ObjectGuid> assigned;
-    if (pools.Short.size() >= 3)
-        assigned = { pools.Short[1], pools.Short[2] };
-    else if (pools.Short.size() == 2)
-        assigned = { pools.Short[1] };
-    else if (pools.Short.size() == 1)
-    {
-        if (!pools.Long.empty())
-            assigned = { pools.Long.front() };
-    }
-    else if (pools.Long.size() >= 2)
-        assigned = { pools.Long[1] };
-    return assigned;
-}
-
-// Icy Veins (Cataclysm Classic, 2024-07-29): interrupt Release Aberrations
-// when enough adds are up, ideally dealing with nine at a time; interrupt the
-// first release of a heroic Dark phase (Vile Swills up). The remaining
-// reserve is released at 25% anyway, so a release is admitted by default.
-constexpr std::size_t ReleaseInterruptActiveThreshold = 6;
-
-// Shared by the strategy (blackboard counts) and the dispatch, which
-// revalidates with native counts right before spending an interrupt.
-inline bool ReleaseAdmittedCounts(std::size_t loose, std::size_t reserve,
-    bool darkPhaseWithSwills)
-{
-    if (!reserve)
-        return true;
-    if (darkPhaseWithSwills)
-        return false;
-    return loose < ReleaseInterruptActiveThreshold;
-}
-
+// User tactic (user raid experience 2026-09-26, authoritative): Release
+// Aberrations is never interrupted. Every release goes through and each pack
+// of 3 is killed as it comes (ideally in the Green slime window), so the
+// chambers are empty before 25%. The dispatch vetoes generic rotation
+// interrupts of every release in phase one. This replaces Icy Veins' advice
+// to interrupt releases when enough adds are up and the 2012 guide's
+// "interrupt the first Release" (ledger: guide conflict).
 inline bool ReleaseAdmitted(Observation const& observation)
 {
-    return ReleaseAdmittedCounts(observation.ActiveAberrations.size(),
-        observation.ReserveAberrations,
-        observation.CurrentPhase == Phase::Black && !observation.VileSwills.empty());
+    return observation.CurrentPhase != Phase::PhaseTwo;
+}
+
+// The switch at 30% (same source): if Aberrations are left at 30%, in the
+// chambers (counted from the native sleeping, unselectable chamber creatures)
+// or loose, every damage dealer stops damaging Maloriak and kills them one
+// at a time until none is left, so phase two starts with only the two Prime
+// Subjects. The Blood DK main tank keeps full damage (Death Strike), and
+// Remedy is left on the boss so his self-heal offsets the tank's damage.
+// The switch is a cohort latch (BotMaloriakLatches.h).
+constexpr float AddSwitchHealthPct = 30.0f;
+
+// Threat onto the Feral off-tank for each release (same source): the
+// hunter's Misdirection and the rogue's Tricks of the Trade. Frost Shock is
+// the shaman's slow on a loose Aberration (no slow totem: Earthbind would
+// replace the earth-slot buff totem).
+constexpr uint32 MisdirectionSpell = 34477;
+constexpr uint32 TricksOfTheTradeSpell = 57934;
+constexpr uint32 FrostShockSpell = 8056;
+
+inline uint32 ThreatRedirectSpellFor(std::string_view classSpec)
+{
+    if (EndsWith(classSpec, "_hunter"))
+        return MisdirectionSpell;
+    if (EndsWith(classSpec, "_rogue"))
+        return TricksOfTheTradeSpell;
+    return 0;
+}
+
+// Hunter traps for the off-tank's kite, placed at the hunter's feet as a
+// player without Trap Launcher does, for an Aberration running at the
+// hunter: Freeze Trap only on one nobody is damaging (damage breaks it),
+// Ice Trap (a slowing ground effect) otherwise.
+constexpr uint32 FreezeTrapSpell = 1499;
+constexpr uint32 IceTrapSpell = 13809;
+constexpr float TrapTriggerYards = 15.0f;
+
+inline bool LaysTraps(std::string_view classSpec)
+{
+    return EndsWith(classSpec, "_hunter");
+}
+
+inline bool SlowsAberrations(std::string_view classSpec)
+{
+    return EndsWith(classSpec, "_shaman");
 }
 
 // Remedy (10 s self heal, magic) is removed at once: the first dispeller
@@ -361,22 +368,12 @@ inline bool OwnCastYieldsToDuty(bool healer, bool castIsHelpful,
         || lowestAllyHealthPct >= HealerKeepsHealBelowPct;
 }
 
-// Defensive cap on the phase-two push hold. The hold normally ends when the
-// tanks push the boss to 25% or the chambers empty; the cap bounds it when
-// they cannot. startedAtMs is the dispatch's per-boss latch (0 = closed).
-constexpr uint64 PhaseTwoPushHoldCapMs = 90000;
-
-inline bool PushHoldWithinCap(uint64& startedAtMs, bool window, uint64 nowMs)
-{
-    if (!window)
-    {
-        startedAtMs = 0;
-        return false;
-    }
-    if (!startedAtMs)
-        startedAtMs = std::max<uint64>(nowMs, 1);
-    return nowMs < startedAtMs + PhaseTwoPushHoldCapMs;
-}
+// Bound on the add switch. It normally ends when the chambers are empty and
+// the loose Aberrations are dead (six releases 17-18 s apart, about 110 s
+// from the first); if the reserve stops draining, the cap leaves the
+// phase-two burn well inside the guides' 6-7 minute enrage (the native
+// script has none). The dispatch logs it when it fires.
+constexpr uint64 AddSwitchCapMs = 180000;
 
 inline bool Contains(std::vector<ObjectGuid> const& guids, ObjectGuid guid)
 {

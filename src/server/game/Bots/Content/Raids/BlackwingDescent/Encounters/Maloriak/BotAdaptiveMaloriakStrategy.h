@@ -3,9 +3,13 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotEncounterLatches.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakAddControl.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakDuties.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormationPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakGeometry.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakLatches.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPlan.h"
 
 #include <algorithm>
@@ -34,20 +38,12 @@ public:
     static constexpr uint32 PrimeSubjectEntry = Maloriak::PrimeSubjectEntry;
     static constexpr uint32 AbsoluteZeroEntry = Maloriak::AbsoluteZeroEntry;
 
-    // Aberrations are burned in the Green slime window (+100% damage taken),
-    // when six or more are loose, or before the 25% release of the reserve.
-    static constexpr std::size_t OverflowBurnCount = 6;
-    static constexpr float CleanupBeforePhaseTwoPct = 30.0f;
-    // Pacing: at 25% Release All Minions frees the whole reserve plus two
-    // Prime Subjects, so below 30% damage dealers and healers hold the boss
-    // while more than one release (3 Aberrations) is still in the chambers,
-    // killing each released batch instead. A living tank is required and
-    // tanks keep attacking, so the hold covers about 5% of the boss at tank
-    // damage; the dispatch caps it at Maloriak::PhaseTwoPushHoldCapMs. It
-    // cannot drain the reserve to 3: at the r03 raid damage about 6-9
-    // Aberrations plus both Prime Subjects still come at 25% (r03 got all 18
-    // after 80 s and wiped to them).
-    static constexpr std::size_t PhaseTwoReserveCap = 3;
+    // User tactic (user raid experience 2026-09-26): every release goes
+    // through and each Aberration is killed as it comes, one at a time
+    // (Maloriak::BurnFocus), with no wait for the Green slime window. If
+    // Aberrations are left at 30%, the latched add switch
+    // (BotMaloriakLatches.h) keeps every damage dealer off the boss until
+    // they are all dead.
 
     // Hazard radii come from client rows (BotMaloriakFormation.h): Absolute
     // Zero trigger 3 yd and explosion 5 yd, Magma Jets fire 3 yd, Shatter
@@ -62,8 +58,6 @@ public:
     static constexpr float BitingChillExit = 8.0f;
     static constexpr float MagmaJetsSidestep = 8.0f;
 
-    static constexpr float RangedSlotTolerance = 4.0f;
-    static constexpr float MeleeSlotTolerance = 2.5f;
     static constexpr float StagingTolerance = 3.0f;
     static constexpr float TankSpotTolerance = 4.0f;
     // Beyond this the boss is not in melee with his tank (walking back from
@@ -80,12 +74,11 @@ public:
     // Pull gates: everyone alive, recovered and on the entrance line.
     static constexpr float PrepullHealthPct = 70.0f;
     static constexpr float PrepullStagedYards = 15.0f;
-    // With Green (the slime window) this close, loose Aberrations wait for it.
-    static constexpr uint32 GreenImminentMs = 15000;
-    static constexpr std::size_t OverflowBurnCountBeforeGreen = 9;
 
+    // latches: the cohort's published latch view (BotMaloriakLatches.h);
+    // without it the add switch is this snapshot's unlatched condition.
     AdaptiveMaloriakPlan Propose(Blackboard const& board, ObjectGuid botGuid,
-        std::string_view role) const
+        std::string_view role, EncounterLatchView const* latches = nullptr) const
     {
         AdaptiveMaloriakPlan plan;
         if (board.Route.NodeId != Maloriak::EncounterNode)
@@ -99,17 +92,18 @@ public:
         ActorSnapshot const& boss = *observation.Boss;
         plan.OwnsNode = true;
         plan.Boss = boss.Guid;
-        plan.ReleaseAdmitted = observation.CurrentPhase != Maloriak::Phase::PhaseTwo
-            && Maloriak::ReleaseAdmitted(observation);
+        plan.ReleaseAdmitted = Maloriak::ReleaseAdmitted(observation);
         plan.Phase = Maloriak::PhaseName(observation.CurrentPhase);
         std::string_view const botRole = bot->Role.empty()
             ? role : std::string_view(bot->Role);
         Maloriak::TankDuties const tanks = Maloriak::ResolveTanks(board);
-        plan.PushHoldWindow = observation.Engaged
-            && observation.CurrentPhase != Maloriak::Phase::PhaseTwo
-            && boss.HealthPct <= CleanupBeforePhaseTwoPct
-            && observation.ReserveAberrations > PhaseTwoReserveCap
-            && !tanks.MainTank.IsEmpty();
+        Maloriak::AddSwitchState const addSwitch =
+            Maloriak::ResolveAddSwitch(board, observation, latches);
+        plan.AddSwitchWindow = addSwitch.Active;
+        plan.AddSwitchCapReleased = addSwitch.CapReleased;
+        // The Blood DK main tank keeps full damage through the switch (Death
+        // Strike keeps him alive); everyone else is off the boss.
+        plan.AddSwitchRestricts = plan.AddSwitchWindow && botGuid != tanks.MainTank;
 
         if (observation.CurrentPhase == Maloriak::Phase::Prepull)
         {
@@ -123,7 +117,10 @@ public:
         }
 
         AssignInterrupt(board, observation, botGuid, plan);
-        AssignDispel(board, observation, botGuid, plan);
+        if (!plan.AddSwitchWindow)
+            AssignDispel(board, observation, botGuid, plan);
+        Maloriak::AddControl const control =
+            Maloriak::ResolveAddControl(board, observation, tanks.OffTank);
         plan.LustWindow = observation.CurrentPhase == Maloriak::Phase::PhaseTwo
             && Maloriak::ResolveLustOwner(board) == botGuid;
         if (botRole == "healer")
@@ -142,14 +139,17 @@ public:
                 plan.Movement = ProposeTankSpot(board, observation, *bot);
         }
         else if (botRole == "tank")
-            SelectOffTank(board, observation, *bot, plan);
+            SelectOffTank(board, observation, control, *bot, plan);
         else
         {
-            SelectDamageTarget(observation, *bot, botRole, plan);
+            SelectDamageTarget(observation, control, *bot, botRole, plan);
             if (!plan.Movement)
-                plan.Movement = ProposeFormation(board, observation, *bot,
-                    botRole, frame, plan);
+                plan.Movement = ProposeKiteTrapPost(board, observation, control, *bot);
+            if (!plan.Movement)
+                plan.Movement = Maloriak::ProposeFormation(board, observation, *bot,
+                    botRole, frame, plan, ResolveFanBias(observation, control, frame));
         }
+        AssignAddControl(control, *bot, tanks, plan);
         return plan;
     }
 
@@ -159,43 +159,8 @@ private:
         BotActionArbitration::Priority priority, float utility,
         bool preemptCasting)
     {
-        BotNativeAction::Candidate candidate;
-        candidate.Id.ScopeKey = board.CurrentScope.Key();
-        candidate.Id.Strategy = std::string(Maloriak::StrategyName);
-        candidate.Id.Mechanic = std::string(mechanic);
-        candidate.Id.Actor = actor;
-        candidate.Id.EventGeneration = board.Revision;
-        candidate.ActionPriority = priority;
-        candidate.Utility = utility;
-        candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-        candidate.Action = BotNativeAction::Move{ point.X, point.Y, point.Z,
-            mechanic, preemptCasting };
-        return candidate;
-    }
-
-    static std::vector<ActorSnapshot const*> SortedGroup(Blackboard const& board,
-        bool melee)
-    {
-        std::vector<ActorSnapshot const*> group;
-        for (ActorSnapshot const& player : board.Players)
-            if (player.Alive && player.Role != "tank"
-                && (player.Role == "dps" && Maloriak::IsMeleeSpec(player.ClassSpec)) == melee)
-                group.push_back(&player);
-        std::sort(group.begin(), group.end(), [](ActorSnapshot const* left,
-            ActorSnapshot const* right)
-        {
-            return left->Guid.GetRawValue() < right->Guid.GetRawValue();
-        });
-        return group;
-    }
-
-    static std::size_t IndexIn(std::vector<ActorSnapshot const*> const& group,
-        ObjectGuid guid)
-    {
-        for (std::size_t index = 0; index < group.size(); ++index)
-            if (group[index]->Guid == guid)
-                return index;
-        return group.size();
+        return Maloriak::BuildMove(board, point, mechanic, actor, priority,
+            utility, preemptCasting);
     }
 
     // Everyone but the pull tank holds offense and forms on the entrance
@@ -244,7 +209,7 @@ private:
         plan.Duty = "prepull_stage";
         Vector3 const destination = botRole == "tank"
             ? Maloriak::AddAnchorFor(boss.Position, &bot.Position)
-            : Maloriak::StagingSlot(IndexIn(staged, bot.Guid), staged.size());
+            : Maloriak::StagingSlot(Maloriak::IndexIn(staged, bot.Guid), staged.size());
         if (Maloriak::Distance2d(bot.Position, destination) > StagingTolerance)
             plan.Movement = BuildMove(board, destination, "prepull_stage",
                 boss.Guid, BotActionArbitration::Priority::Mechanic, 250.0f, false);
@@ -276,28 +241,106 @@ private:
         Maloriak::Observation const& observation, ObjectGuid botGuid,
         AdaptiveMaloriakPlan& plan)
     {
-        if (!observation.ArcaneStormInterruptible
-            && !(observation.ReleaseInterruptible && !Maloriak::ReleaseAdmitted(observation)))
+        // Arcane Storm only: Release Aberrations is never interrupted.
+        if (!observation.ArcaneStormInterruptible)
             return;
         Maloriak::InterruptPools const pools =
             Maloriak::ResolveInterruptPools(board, *observation.Boss);
-        if (observation.ArcaneStormInterruptible)
-        {
-            if (Maloriak::Contains(Maloriak::ArcaneStormInterrupters(pools,
-                    observation.ArcaneStormElapsedMs), botGuid))
-            {
-                plan.InterruptTarget = observation.Boss->Guid;
-                plan.InterruptSpellId = Maloriak::ArcaneStormSpell;
-                plan.InterruptLane = "arcane_storm";
-            }
-            return;
-        }
-        if (Maloriak::Contains(Maloriak::ReleaseInterrupters(pools), botGuid))
+        if (Maloriak::Contains(Maloriak::ArcaneStormInterrupters(pools,
+                observation.ArcaneStormElapsedMs), botGuid))
         {
             plan.InterruptTarget = observation.Boss->Guid;
-            plan.InterruptSpellId = Maloriak::ReleaseAberrationsSpell;
-            plan.InterruptLane = "release_aberrations_quota";
+            plan.InterruptSpellId = Maloriak::ArcaneStormSpell;
+            plan.InterruptLane = "arcane_storm";
         }
+    }
+
+    // Threat, traps and slows around the Feral off-tank (user tactic):
+    //  - Misdirection (hunter) and Tricks of the Trade (rogue) go on the
+    //    off-tank only while the bot's own next target is a loose Aberration,
+    //    so the redirected attacks land on an add, never on Maloriak;
+    //  - the hunter lays Freeze Trap for an unhit Aberration running at it
+    //    and Ice Trap otherwise, or for the kited pack at its loop corner;
+    //  - the shaman Frost Shocks a loose Aberration, else one of the kited
+    //    pack, never a frozen or freeze-reserved one; no slow totem
+    //    (Earthbind would replace the earth-slot buff totem);
+    //  - the off-tank keeps Nature's Grasp up while it holds Aberrations.
+    static void AssignAddControl(Maloriak::AddControl const& control,
+        ActorSnapshot const& bot, Maloriak::TankDuties const& tanks,
+        AdaptiveMaloriakPlan& plan)
+    {
+        if (plan.Phase == Maloriak::PhaseName(Maloriak::Phase::PhaseTwo)
+            || tanks.OffTank.IsEmpty())
+            return;
+        if (bot.Guid == tanks.OffTank)
+        {
+            plan.NaturesGrasp = !control.Pack.empty()
+                && !Maloriak::HasAura(bot, Maloriak::NaturesGraspSpell);
+            return;
+        }
+        if (uint32 const redirect = Maloriak::ThreatRedirectSpellFor(bot.ClassSpec))
+            for (ActorSnapshot const* add : control.Loose)
+                if (add->Guid == plan.DamageTarget)
+                {
+                    plan.ThreatRedirectTarget = tanks.OffTank;
+                    plan.ThreatRedirectSpellId = redirect;
+                }
+        if (bot.Guid == control.Hunter && control.TrapPoint)
+        {
+            ActorSnapshot const* trapped = control.FreezeTarget
+                ? control.FreezeTarget : control.IceTrapTarget;
+            plan.TrapTarget = trapped->Guid;
+            plan.TrapSpellId = control.FreezeTarget
+                ? Maloriak::FreezeTrapSpell : Maloriak::IceTrapSpell;
+            plan.TrapPoint = *control.TrapPoint;
+        }
+        if (Maloriak::SlowsAberrations(bot.ClassSpec) && control.SlowTarget)
+            plan.SlowTarget = control.SlowTarget->Guid;
+    }
+
+    // The hunter's post at the kite loop's trap corner for the kited pack's
+    // Ice Trap (outside Red, where the cone stack comes first): it walks
+    // there, then holds the post (an explicit hold, so formation movement
+    // does not pull it back while the trap is placed or on cooldown) as long
+    // as the kite needs a trap. A Biting Chill target keeps its isolation.
+    static std::optional<BotNativeAction::Candidate> ProposeKiteTrapPost(
+        Blackboard const& board, Maloriak::Observation const& observation,
+        Maloriak::AddControl const& control, ActorSnapshot const& bot)
+    {
+        if (!control.KiteTrap || bot.Guid != control.Hunter || !control.TrapPoint
+            || !observation.Boss->ReactAggressive
+            || Maloriak::HasAura(bot, Maloriak::BitingChillSpell))
+            return std::nullopt;
+        // It holds where it stands only while that spot itself keeps the
+        // spread and chill clearance the corner was chosen with; otherwise it
+        // steps onto the validated corner.
+        bool const atPost = Maloriak::Distance2d(bot.Position, *control.TrapPoint)
+            <= Maloriak::KiteTrapTolerance
+            && Maloriak::TrapPostPositionClear(board, bot.Position, bot.Guid);
+        return BuildMove(board, atPost ? bot.Position : *control.TrapPoint,
+            atPost ? "hunter_kite_trap_post_hold" : "hunter_kite_trap_corner",
+            observation.Boss->Guid, BotActionArbitration::Priority::Mechanic, 180.0f, false);
+    }
+
+    // The ranged fan leans to the side of the kite the off-tank is actually
+    // on (Maloriak::OccupiedKite), or of where it holds when it cannot reach
+    // a loop, while Aberrations are up in phase one (Maloriak::FanBias); the
+    // Frost Shock owner takes its flank.
+    static Maloriak::FanBias ResolveFanBias(Maloriak::Observation const& observation,
+        Maloriak::AddControl const& control, Maloriak::BossFrame const& frame)
+    {
+        Maloriak::FanBias bias;
+        if ((control.Loose.empty() && control.Pack.empty())
+            || observation.CurrentPhase == Maloriak::Phase::PhaseTwo
+            || control.OffTank.IsEmpty())
+            return bias;
+        Maloriak::KiteGeometry const kite = Maloriak::OccupiedKite(observation,
+            control.OffTankPosition, control.Pack);
+        Vector3 const anchor = kite.Waypoints.empty() ? control.OffTankPosition : kite.Center;
+        bias.Active = true;
+        bias.Side = Maloriak::ToFramePolar(frame, anchor).Angle >= 0.0f ? 1.0f : -1.0f;
+        bias.FlankOwner = control.SlowOwner;
+        return bias;
     }
 
     static void AssignDispel(Blackboard const& board,
@@ -517,23 +560,43 @@ private:
     }
 
     // The off-tank collects released Aberrations, Prime Subjects and heroic
-    // Vile Swills and holds them at an add spot away from Maloriak (Growth
-    // Catalyst reaches 10 yards). Without adds it waits at that spot while
-    // chamber creatures remain, otherwise it helps on the boss.
+    // Vile Swills (Maloriak::ResolveAddControl picks the pickup; a frozen
+    // Aberration is left asleep). Holding Aberrations in phase one it kites
+    // them round a flank loop away from Maloriak (Growth Catalyst reaches 10
+    // yards), paced so the pack stays together (Maloriak::KiteStep). Without
+    // adds it waits at the add spot while chamber creatures remain,
+    // otherwise it helps on the boss.
     static void SelectOffTank(Blackboard const& board,
-        Maloriak::Observation const& observation, ActorSnapshot const& bot,
-        AdaptiveMaloriakPlan& plan)
+        Maloriak::Observation const& observation, Maloriak::AddControl const& control,
+        ActorSnapshot const& bot, AdaptiveMaloriakPlan& plan)
     {
-        std::vector<ActorSnapshot const*> adds;
+        std::vector<ActorSnapshot const*> held;
         for (ActorSnapshot const* aberration : observation.ActiveAberrations)
-            if (aberration->Attackable)
-                adds.push_back(aberration);
+            if (aberration->Attackable && aberration->VictimGuid == bot.Guid)
+                held.push_back(aberration);
         for (ActorSnapshot const* subject : observation.PrimeSubjects)
-            if (subject->Attackable)
-                adds.push_back(subject);
-        adds.insert(adds.end(), observation.VileSwills.begin(),
-            observation.VileSwills.end());
-        if (adds.empty())
+            if (subject->Attackable && subject->VictimGuid == bot.Guid)
+                held.push_back(subject);
+        ActorSnapshot const* pickup = control.OffTankPickup;
+        for (ActorSnapshot const* swill : observation.VileSwills)
+        {
+            if (swill->VictimGuid == bot.Guid)
+                held.push_back(swill);
+            else if (!pickup && Maloriak::Distance2d(bot.Position, swill->Position)
+                    <= LooseAddPickupRange)
+                pickup = swill;
+        }
+        if (pickup)
+        {
+            plan.DamageTarget = pickup->Guid;
+            plan.Duty = "off_tank_pickup";
+            // Adds must not stay on healers, damage dealers or the boss tank
+            // (Growth Catalyst would buff Maloriak).
+            if (!pickup->VictimGuid.IsEmpty())
+                plan.TauntTarget = pickup->Guid;
+            return;
+        }
+        if (held.empty())
         {
             // Released Aberrations run to their first target; an off-tank
             // waiting at the add spot keeps them (and Growth Catalyst) away
@@ -559,36 +622,8 @@ private:
             return;
         }
 
-        auto victimIsSquishy = [&board](ActorSnapshot const& add)
-        {
-            ActorSnapshot const* victim = Maloriak::FindPlayer(board, add.VictimGuid);
-            return victim && victim->Role != "tank";
-        };
-        ActorSnapshot const* loose = nullptr;
-        auto looseRank = [&](ActorSnapshot const& add)
-        {
-            return std::make_tuple(add.Entry == Maloriak::PrimeSubjectEntry ? 0 : 1,
-                victimIsSquishy(add) ? 0 : 1,
-                Maloriak::Distance2d(bot.Position, add.Position), add.Guid.GetRawValue());
-        };
-        for (ActorSnapshot const* add : adds)
-            if (add->VictimGuid != bot.Guid
-                && Maloriak::Distance2d(bot.Position, add->Position) <= LooseAddPickupRange
-                && (!loose || looseRank(*add) < looseRank(*loose)))
-                loose = add;
-        if (loose)
-        {
-            plan.DamageTarget = loose->Guid;
-            plan.Duty = "off_tank_pickup";
-            // Adds must not stay on healers, damage dealers or the boss tank
-            // (Growth Catalyst would buff Maloriak).
-            if (!loose->VictimGuid.IsEmpty())
-                plan.TauntTarget = loose->Guid;
-            return;
-        }
-
         ActorSnapshot const* focus = nullptr;
-        for (ActorSnapshot const* add : adds)
+        for (ActorSnapshot const* add : held)
             if (!focus || std::make_tuple(add->Entry == Maloriak::PrimeSubjectEntry,
                     add->HealthPct, add->Guid.GetRawValue())
                 < std::make_tuple(focus->Entry == Maloriak::PrimeSubjectEntry,
@@ -596,10 +631,26 @@ private:
                 focus = add;
         plan.DamageTarget = focus->Guid;
         plan.Duty = "off_tank_hold";
+        if (plan.Movement)
+            return;
+        if (!control.Pack.empty() && observation.CurrentPhase != Maloriak::Phase::PhaseTwo)
+        {
+            plan.Duty = "off_tank_kite";
+            Maloriak::KiteDecision const step = Maloriak::KiteStep(
+                Maloriak::ResolveKite(observation, bot.Position), bot.Position,
+                control.Pack, observation.Boss->Position,
+                Maloriak::CollectFormationHazards(observation));
+            // A hold is an explicit, renewed move to where the off-tank
+            // stands: it keeps the mechanic movement lease, so combat range
+            // movement does not chase a straggler back.
+            plan.Movement = BuildMove(board, step.Move ? step.Destination : bot.Position,
+                step.Move ? "off_tank_kite" : "off_tank_kite_hold", focus->Guid,
+                BotActionArbitration::Priority::Mechanic, 260.0f, false);
+            return;
+        }
         Vector3 const anchor = Maloriak::AddAnchorFor(observation.Boss->Position,
             &bot.Position);
-        if (!plan.Movement
-            && Maloriak::Distance2d(bot.Position, anchor) > AddAnchorTolerance)
+        if (Maloriak::Distance2d(bot.Position, anchor) > AddAnchorTolerance)
             plan.Movement = BuildMove(board, anchor, "off_tank_add_anchor",
                 focus->Guid, BotActionArbitration::Priority::Mechanic, 260.0f, false);
     }
@@ -616,14 +667,14 @@ private:
     }
 
     static void SelectDamageTarget(Maloriak::Observation const& observation,
-        ActorSnapshot const& bot, std::string_view botRole,
-        AdaptiveMaloriakPlan& plan)
+        Maloriak::AddControl const& control, ActorSnapshot const& bot,
+        std::string_view botRole, AdaptiveMaloriakPlan& plan)
     {
         plan.DamageTarget = observation.Boss->Guid;
         plan.Duty = botRole == "healer" ? "healer" : "boss_damage";
         if (botRole != "dps")
         {
-            HoldPhaseTwoPush(observation, plan);
+            WaitForAdds(plan);
             return;
         }
         if (Maloriak::IsRangedDamageSpec(bot.ClassSpec, botRole)
@@ -641,42 +692,29 @@ private:
             plan.Duty = "vile_swill_burn";
             return;
         }
-        std::size_t const attackable = observation.AttackableAberrationCount();
-        if (!attackable)
+        // Every Aberration is killed as it comes, one at a time, with no
+        // wait for the Green slime window (user tactic).
+        if (!control.Focus)
         {
-            HoldPhaseTwoPush(observation, plan);
+            WaitForAdds(plan);
             return;
         }
-        bool const greenImminent = observation.NextGreenVialMs
-            && *observation.NextGreenVialMs <= GreenImminentMs;
-        std::size_t const overflow = greenImminent
-            ? OverflowBurnCountBeforeGreen : OverflowBurnCount;
-        if (!observation.SlimeWindow && attackable < overflow
-            && observation.Boss->HealthPct > CleanupBeforePhaseTwoPct)
-            return;
-        ActorSnapshot const* weakest = nullptr;
-        for (ActorSnapshot const* aberration : observation.ActiveAberrations)
-            if (aberration->Attackable && (!weakest
-                || std::make_pair(aberration->HealthPct, aberration->Guid.GetRawValue())
-                    < std::make_pair(weakest->HealthPct, weakest->Guid.GetRawValue())))
-                weakest = aberration;
-        plan.DamageTarget = weakest->Guid;
+        plan.DamageTarget = control.Focus->Guid;
         plan.Duty = observation.SlimeWindow ? "aberration_slime_burn"
             : "aberration_burn";
     }
 
-    // Inside the push-hold window (below 30% in phase one, more than
-    // PhaseTwoReserveCap Aberrations in the chambers, a living tank), boss
-    // damage waits. The boss stays the formation target; the suppression only
-    // clears the offensive target, and the dispatch drops it after the cap.
-    static void HoldPhaseTwoPush(Maloriak::Observation const& observation,
-        AdaptiveMaloriakPlan& plan)
+    // Inside the add switch with no loose Aberration to kill (the next
+    // release is still in the chambers), damage dealers and healers wait off
+    // the boss. The boss stays the formation target; the suppression only
+    // clears the offensive target.
+    static void WaitForAdds(AdaptiveMaloriakPlan& plan)
     {
-        if (!plan.PushHoldWindow || plan.DamageTarget != observation.Boss->Guid)
+        if (!plan.AddSwitchWindow)
             return;
         plan.SuppressOffense = true;
-        plan.SuppressReason = "phase_two_push_hold";
-        plan.Duty = "phase_two_push_hold";
+        plan.SuppressReason = "add_switch_wait";
+        plan.Duty = "add_switch_wait";
     }
 
     // In phase one the main tank walks to MainTankSpot (north of the
@@ -720,183 +758,6 @@ private:
             220.0f, false);
     }
 
-    // Ranged slots are resolved in group order: each keeps the spread from
-    // the already resolved slots before it and from the unshifted ones after
-    // it, so two players never pick the same free point (every bot computes
-    // the same sequence). Passes: the nearest clear point within 40 degrees;
-    // then anywhere on the back arc (220 degrees either way, filtered by the
-    // arc), which a flank slot needs when the fan behind a boss at the
-    // cauldron rim is shadowed; then, as a last resort, a point in sight
-    // kept 2.5 yards only from the slots already resolved. Spread applies to
-    // the back-arc formations; the Red stack is meant to overlap.
-    template <typename SlotFor>
-    static std::optional<Vector3> ResolveRangedSlot(Maloriak::BossFrame const& frame,
-        std::vector<Maloriak::FormationHazard> const& hazards, Maloriak::SlotArc arc,
-        std::size_t groupSize, std::size_t index, bool fanSlot,
-        Vector3 const& destination, SlotFor const& slotFor)
-    {
-        float const spread = arc == Maloriak::SlotArc::Back
-            ? Maloriak::SpreadYards : 0.0f;
-        auto spreadFrom = [spread](Vector3 const& point,
-            std::vector<Vector3> const& others)
-        {
-            for (Vector3 const& other : others)
-                if (Maloriak::Distance2d(point, other) < spread)
-                    return false;
-            return true;
-        };
-        auto shift = [&](Vector3 const& slot, std::vector<Vector3> const& placed,
-            std::vector<Vector3> const& others) -> std::optional<Vector3>
-        {
-            if (Maloriak::FormationPointClear(frame, slot, hazards)
-                && spreadFrom(slot, placed))
-                return slot;
-            std::optional<Vector3> shifted = Maloriak::SafeFormationSlot(frame,
-                slot, arc, 10.0f, 40.0f, hazards, others, spread, true);
-            if (!shifted)
-                shifted = Maloriak::SafeFormationSlot(frame, slot, arc, 10.0f,
-                    220.0f, hazards, others, spread, true);
-            if (!shifted)
-                shifted = Maloriak::SafeFormationSlot(frame, slot, arc, 10.0f,
-                    220.0f, hazards, placed, spread / 2.0f, true);
-            return shifted;
-        };
-        auto othersFor = [&](std::size_t member, std::vector<Vector3> const& placed)
-        {
-            std::vector<Vector3> others = placed;
-            for (std::size_t later = member + 1; later < groupSize; ++later)
-                others.push_back(slotFor(later));
-            return others;
-        };
-        std::vector<Vector3> placed;
-        for (std::size_t member = 0; member < index; ++member)
-            placed.push_back(fanSlot
-                ? shift(slotFor(member), placed, othersFor(member, placed))
-                    .value_or(slotFor(member))
-                : slotFor(member));
-        return shift(destination, placed, othersFor(index, placed));
-    }
-
-    // Formation: Red stacks in the Scorching Blast cone except Consuming
-    // Flames targets; Blue, Dark and phase two spread behind. Green and the
-    // vial transitions leave ordinary combat movement alone. A bot whose
-    // target is not the boss (adds, ice blocks) keeps native combat movement.
-    // Slots inside a hazard clearance (Absolute Zero, jet fire, ice block)
-    // shift along their arc; melee with no clear ring point hold offense
-    // instead of chasing back into the hazard.
-    static std::optional<BotNativeAction::Candidate> ProposeFormation(
-        Blackboard const& board, Maloriak::Observation const& observation,
-        ActorSnapshot const& bot, std::string_view botRole,
-        Maloriak::BossFrame const& frame, AdaptiveMaloriakPlan& plan)
-    {
-        // A passive boss is walking to the cauldron or changing phase: its
-        // facing points at the cauldron, not at the tank, so no formation.
-        if (plan.DamageTarget != observation.Boss->Guid
-            || !observation.Boss->ReactAggressive)
-            return std::nullopt;
-        // A chilled player keeps the position its isolation gave it.
-        if (Maloriak::HasAura(bot, Maloriak::BitingChillSpell))
-            return std::nullopt;
-        bool const melee = botRole == "dps" && Maloriak::IsMeleeSpec(bot.ClassSpec);
-        std::vector<ActorSnapshot const*> const group = SortedGroup(board, melee);
-        std::size_t const index = IndexIn(group, bot.Guid);
-        if (index == group.size())
-            return std::nullopt;
-        auto slotFor = [&](std::size_t slotIndex) -> Vector3
-        {
-            switch (observation.CurrentPhase)
-            {
-                case Maloriak::Phase::Red:
-                    return melee ? Maloriak::FrontMeleeSlot(frame, slotIndex)
-                        : Maloriak::FrontStackSlot(frame, slotIndex);
-                default:
-                    return melee ? Maloriak::BackMeleeSlot(frame, slotIndex)
-                        : Maloriak::BackRangedSlot(frame, slotIndex, group.size());
-            }
-        };
-        Vector3 destination;
-        std::string_view mechanic;
-        Maloriak::SlotArc arc = Maloriak::SlotArc::Back;
-        switch (observation.CurrentPhase)
-        {
-            case Maloriak::Phase::Red:
-                if (Maloriak::HasAnyAura(bot, Maloriak::ConsumingFlamesSpells))
-                {
-                    destination = Maloriak::BehindSlot(frame, melee);
-                    mechanic = "consuming_flames_leave_cone";
-                }
-                else
-                {
-                    destination = slotFor(index);
-                    mechanic = "red_cone_stack";
-                    arc = Maloriak::SlotArc::FrontCone;
-                }
-                break;
-            case Maloriak::Phase::Blue:
-            case Maloriak::Phase::Black:
-            case Maloriak::Phase::PhaseTwo:
-                destination = slotFor(index);
-                mechanic = observation.CurrentPhase == Maloriak::Phase::Blue
-                    ? "blue_spread"
-                    : observation.CurrentPhase == Maloriak::Phase::Black
-                        ? "dark_spread" : "phase_two_spread";
-                break;
-            default:
-                return std::nullopt;
-        }
-
-        std::vector<Maloriak::FormationHazard> const hazards =
-            Maloriak::CollectFormationHazards(observation);
-        // Hazards and the cauldron (no line of sight across it) both shift
-        // the slot along its arc.
-        if (melee && !Maloriak::FormationPointClear(frame, destination, hazards))
-        {
-            // Only hazards hold melee offense; a slot the cauldron shadows
-            // shifts around the ring, and with no ring point in sight the
-            // melee player simply keeps fighting where it is.
-            if (Maloriak::MeleeRingBlocked(frame, arc, hazards))
-            {
-                plan.SuppressOffense = true;
-                plan.SuppressReason = "melee_ring_hazard_hold";
-                plan.Duty = "melee_ring_hazard_hold";
-                return std::nullopt;
-            }
-            std::optional<Vector3> const shifted = Maloriak::SafeFormationSlot(
-                frame, destination, arc, 30.0f, 180.0f, hazards, {}, 0.0f, false);
-            if (!shifted)
-                return std::nullopt;
-            destination = *shifted;
-        }
-        else if (!melee)
-        {
-            std::optional<Vector3> const shifted = ResolveRangedSlot(frame,
-                hazards, arc, group.size(), index,
-                mechanic != "consuming_flames_leave_cone", destination, slotFor);
-            if (!shifted)
-                return std::nullopt;
-            destination = *shifted;
-        }
-        float const tolerance = melee ? MeleeSlotTolerance : RangedSlotTolerance;
-        // A ranged player near its slot but itself behind the cauldron still
-        // steps onto the slot.
-        bool const inSight = melee || !Maloriak::CauldronConstrains(frame.Boss)
-            || Maloriak::CauldronLineClear(bot.Position, frame.Boss);
-        if (inSight && Maloriak::Distance2d(bot.Position, destination) <= tolerance)
-            return std::nullopt;
-        if (!melee)
-        {
-            std::vector<Vector3> neighbours;
-            for (ActorSnapshot const& player : board.Players)
-                if (player.Alive && player.Guid != bot.Guid)
-                    neighbours.push_back(player.Position);
-            if (Maloriak::RangedPlaceAcceptable(frame, bot.Position, destination,
-                    arc, hazards, neighbours,
-                    arc == Maloriak::SlotArc::Back ? Maloriak::SpreadYards : 0.0f))
-                return std::nullopt;
-        }
-        return BuildMove(board, destination, mechanic, observation.Boss->Guid,
-            BotActionArbitration::Priority::Mechanic, 200.0f, false);
-    }
 };
 }
 

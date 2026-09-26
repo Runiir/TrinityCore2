@@ -4,6 +4,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirActions.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesArenaFloor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSpirits.h"
 #include <optional>
@@ -149,8 +150,7 @@ public:
         if (move)
             plan.Movement = MakeCandidate(board, move->Mechanic, facts.Boss->Guid,
                 move->ActionPriority, move->Utility,
-                BotNativeAction::Move(move->Destination.X, move->Destination.Y,
-                    move->Destination.Z, move->Mechanic, move->PreemptCasting));
+                FloorMove(*move));
         return plan;
     }
 
@@ -212,12 +212,20 @@ public:
             plan.Movement = MakeCandidate(board, move->Mechanic,
                 target ? target->Guid : pack.Engaged.front()->Guid,
                 move->ActionPriority, move->Utility,
-                BotNativeAction::Move(move->Destination.X, move->Destination.Y,
-                    move->Destination.Z, move->Mechanic, move->PreemptCasting));
+                FloorMove(*move));
         return plan;
     }
 
 private:
+    // The native move to a plan destination, at the hall's floor height
+    // (BotAtramedesArenaFloor.h): the arena is a bowl, not the flat z the
+    // geometry works in.
+    static BotNativeAction::Move FloorMove(Atramedes::MoveProposal const& move)
+    {
+        Vector3 const at = Atramedes::ArenaFloor::OnFloor(move.Destination);
+        return BotNativeAction::Move(at.X, at.Y, at.Z, move.Mechanic, move.PreemptCasting);
+    }
+
     static std::string_view DutyName(Atramedes::Facts const& facts,
         Atramedes::DutyPlan const& duties, ObjectGuid guid, bool tank, bool melee)
     {

@@ -322,12 +322,15 @@ private:
     void SubmitMagmawMangleDefensiveCandidate(BotUpdateContext& context);
     void SubmitAdaptiveChimaeronCandidates(BotUpdateContext& context);
     void SubmitAdaptiveChimaeronRouteObservation(BotUpdateContext& context);
+    // Content/Raids/BlackwingDescent/Encounters/Atramedes/BotWorldPopulationMgrAtramedesCandidates.cpp
+    void SubmitAdaptiveAtramedesRouteObservation(BotUpdateContext& context);
     void SubmitAdaptiveOmnotronCandidates(BotUpdateContext& context);
     void SubmitAdaptiveOmnotronRouteAuthority(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
     void SubmitAdaptiveTankSwapCandidate(BotUpdateContext& context);
     void SubmitAfflictionPetAttackCandidate(BotUpdateContext& context);
     void SubmitMaloriakKernelCandidates(BotUpdateContext& context);
+    void SubmitMaloriakRouteAuthority(BotUpdateContext& context);
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
     bool RunLegacyBotDecision(BotUpdateContext& context);
     bool RunBotDecisionKernel(BotUpdateContext& context);

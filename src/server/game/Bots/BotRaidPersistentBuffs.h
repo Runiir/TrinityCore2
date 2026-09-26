@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <string>
 #include <vector>
 
 // Round 5, canonical-composition raids only (BotCanonicalRaidScope.h): raid
@@ -93,6 +94,98 @@ bool ReadinessOwnedByContract(bool canonicalRaid, uint32 spellId,
     if (spellId == PowerWordFortitude)
         return true;
     return spellId == BlessingOfKings && markOfTheWildInGroup();
+}
+
+// A raid-wide row is kept for the raid, not only for its caster. Round 5 ran
+// its rows on the caster's own aura alone: a member that died and came back
+// while the caster lived (a combat res, a slower ghost run) stayed without
+// the buff. The characters database saved at the round 5 clears shows both
+// Retribution paladins without Fortitude, one also without Mark of the Wild,
+// while their casters and the other nine carried them.
+inline constexpr uint32 RaidWideRowSpells[] =
+    { MarkOfTheWild, BlessingOfKings, 19740, PowerWordFortitude, 1459 };
+// The raid auras reach 100 yd around the caster (SpellRadius 12) and need
+// line of sight (none ignores it); a member inside 90 yd and in sight is one
+// the re-cast certainly reaches.
+inline constexpr float RaidCoverageRangeYards = 90.0f;
+// A member the aura still cannot reach (a vehicle seat, an immunity) re-opens
+// the row at most once per window, never on every tick.
+inline constexpr uint64 RaidCoverageRetryMs = 30000;
+
+inline bool IsRaidWideRow(uint32 spellId)
+{
+    for (uint32 raidWide : RaidWideRowSpells)
+        if (raidWide == spellId)
+            return true;
+    return false;
+}
+
+inline bool IsBlessingRow(uint32 spellId)
+{
+    return spellId == BlessingOfKings || spellId == BlessingOfMight.SpellId;
+}
+
+// Blessing coverage has one owner, the lowest-GUID living paladin of the
+// group, so two paladins never re-bless the raid for the same member. The
+// paladins' own-aura rows are unchanged (each still blesses when it lacks
+// the blessing itself).
+template <typename PlayerT>
+bool OwnsBlessingCoverage(PlayerT* bot)
+{
+    auto* group = bot->GetGroup();
+    if (!group)
+        return true;
+    for (auto* itr = group->GetFirstMember(); itr; itr = itr->next())
+        if (auto* member = itr->GetSource(); member && member != bot
+            && member->IsAlive() && member->getClass() == CLASS_PALADIN
+            && member->GetGUID() < bot->GetGUID())
+            return false;
+    return true;
+}
+
+// True when the row needs no cast for the raid. Otherwise (false) it opens a
+// retry window and lets persistent setup re-cast the row now; the caster's
+// own aura check is the caller's. The row holds when:
+//   * it is not raid-wide;
+//   * the caster is in combat, except Fortitude (health after a combat res):
+//     no GCD or mana is spent re-buffing mid-fight otherwise;
+//   * it is a blessing and another paladin owns blessing coverage;
+//   * every living group member on the caster's map within
+//     RaidCoverageRangeYards and in its line of sight carries the aura or its
+//     alternate;
+//   * its window is still open, or the caster cannot cast it now (casting, on
+//     the GCD or cooldown, a form that forbids it: castReadyNow). The window
+//     is opened only for a cast that can start on this tick, so a busy caster
+//     does not spend it.
+template <typename PlayerT, typename RetryMap, typename CastReadyProbe>
+bool RaidCoverageHolds(PlayerT* bot, SelfBuff const& buff, RetryMap& retryUntilMs,
+    uint64 nowMs, CastReadyProbe&& castReadyNow)
+{
+    if (!bot || !IsRaidWideRow(buff.SpellId))
+        return true;
+    if (bot->IsInCombat() && buff.SpellId != PowerWordFortitude)
+        return true;
+    if (IsBlessingRow(buff.SpellId) && !OwnsBlessingCoverage(bot))
+        return true;
+    auto* group = bot->GetGroup();
+    if (!group)
+        return true;
+    bool missing = false;
+    for (auto* itr = group->GetFirstMember(); itr && !missing; itr = itr->next())
+        if (auto* member = itr->GetSource(); member && member != bot
+            && member->IsAlive() && member->IsInMap(bot)
+            && bot->GetExactDist(member) <= RaidCoverageRangeYards
+            && bot->IsWithinLOSInMap(member)
+            && !member->HasAura(buff.AuraId)
+            && !(buff.AlternateAuraId && member->HasAura(buff.AlternateAuraId)))
+            missing = true;
+    if (!missing)
+        return true;
+    auto& retryUntil = retryUntilMs[std::string("raid_buff_coverage:") + std::to_string(buff.SpellId)];
+    if (retryUntil > nowMs || !castReadyNow())
+        return true;
+    retryUntil = nowMs + RaidCoverageRetryMs;
+    return false;
 }
 
 // Another group member is a druid that knows Mark of the Wild; its own

@@ -2,6 +2,7 @@
 #define TRINITY_BOT_ATRAMEDES_AIR_ACTIONS_H
 
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesArenaFloor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMovementPolicy.h"
 #include <optional>
 #include <string_view>
@@ -41,9 +42,10 @@ inline std::optional<BotNativeAction::Intent> LeapAway(Facts const& facts,
     if (!next)
         return std::nullopt;
     BotNativeAction::DirectionalMobility mobility;
-    mobility.X = next->X;
-    mobility.Y = next->Y;
-    mobility.Z = ArenaCenter.Z;
+    Vector3 const at = ArenaFloor::OnFloor(*next);
+    mobility.X = at.X;
+    mobility.Y = at.Y;
+    mobility.Z = at.Z;
     mobility.SpellId = leap.SpellId;
     mobility.Facing = leap.Type == Mobility::Kind::LeapBack
         ? BotNativeAction::DirectionalMobilityFacing::Backward

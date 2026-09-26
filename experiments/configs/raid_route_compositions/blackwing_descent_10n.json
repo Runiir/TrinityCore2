@@ -74,31 +74,19 @@
       "id": "lower_hall",
       "source_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
       "node_ids": ["bwd.lower_hall.central_hall"],
-      "reason": "Full raid only: the raid crosses the central hall from Maloriak to Atramedes and Chimaeron. Ivoroc (guid 250108) hovers above the Orb and the north patrol (guid 250116 with Mongrels 250120/250121) ping-pongs to 8 yd of him, and every walk from the laboratory passes under him (the hall floor is a 36 yd corridor there), so both are one node (bwd.lower_hall.central_hall, round 5), cleared as soon as Maloriak is dead (the laboratory patrol already dies at bwd.maloriak.lab_trash). The node is keyed on Mongrel 250120 (entry 46083): a later node naming the Slayer entry 42802 made the runtime future-encounter guard freeze the laboratory patrol's Slayer; the formation pulls the north Slayer with its Mongrels. The row is the Nefarian shard's own, so the Nefarian node set later emits it as a duplicate; that shard keeps its junction, lab_trash, hall, Orb order."
+      "reason": "Full raid only: the raid crosses the central hall from Maloriak to Atramedes and Chimaeron. Ivoroc (guid 250108) hovers above the Orb and the north patrol (guid 250116 with Mongrels 250120/250121) ping-pongs to 8 yd of him, and every walk from the laboratory passes under him (the hall floor is a 36 yd corridor there), so both are one node (bwd.lower_hall.central_hall, round 5), cleared as soon as Maloriak is dead (the laboratory patrol already dies at bwd.maloriak.lab_trash). The node is keyed on Mongrel 250120 (entry 46083): a later node naming the Slayer entry 42802 made the runtime future-encounter guard freeze the laboratory patrol's Slayer; the formation pulls the north Slayer with its Mongrels. The row is the Nefarian shard's own, so the Nefarian node set later emits it as a duplicate; that shard keeps its junction, lab_trash, hall, Pyrecraw, Maimgor, Orb order."
     },
     {
       "id": "north_corridor",
-      "reason": "Full raid only (round 5), cleared right after the central hall and before the raid enters the Atramedes wing. Pyrecraw (guid 250107, entry 42764) is a hovering elite drake: spawn z 77.68 over the corridor floor 66.9, 10 yd random movement, 16.5 yd 3D reach. The Atramedes-to-Chimaeron walk passes 16 yd from his spawn and the Chimaeron-to-Orb walk 12.4 yd (Detour paths, navmesh 669), and no node cleared him, so he joined whatever fight walked past (r04 Atramedes recovery walk). Once a later node names him, the future-target guard (IsImmediateNextValidationRouteEncounterMember) protects him on every earlier trash node, and the recovery walk from the elevator into the Atramedes wing passes 19.7 yd from his spawn; clearing him here leaves only the Maloriak nodes and the central hall before him. Their walks (Detour, the entry and upper wing, the elevator, the laboratory and the laboratory to the hall) stay at least 109 yd from anywhere in his wander, and a recovery walk from the elevator to the Maloriak nodes at least 133 yd; the one exception is a recovery walk from the elevator to the central hall, which comes through his corridor 19.7 yd from his spawn (12.3 yd from the edge of his wander), so a wipe at the hall can still pull him while he is guarded. The boss shards start past him or never walk there, so they have no node.",
-      "rows": [
-        {
-          "node_id": "bwd.north_corridor.pyrecraw",
-          "kind": "trash",
-          "node_kind": "trash_cluster",
-          "label": "Pyrecraw, the drake hovering over the corridor from the central hall to Chimaeron",
-          "x": -110.549,
-          "y": -134.064,
-          "z": 66.9059,
-          "o": 1.53,
-          "source_entry": 42764,
-          "source_guid": "250107",
-          "source_table": "world.creature",
-          "source_sql": "world.creature",
-          "pack_target_entries": [42764],
-          "completion_policy": "cluster_clear_after_pull",
-          "cluster_radius_yards": 30.0,
-          "placement_note": "The anchor is the corridor floor directly under his spawn (Detour poly height 66.906): 10.8 yd below the spawn and at most 14.7 yd from anywhere in his 10 yd wander, so the raid arriving here is inside his 16.5 yd reach and he comes down to engage, as Ivoroc does at the central hall; if he has not engaged, the route-target approach walks the raid under him. The 30 yd radius holds his wander and a tanked fight; the nearest other hostiles, the north patrol's spawns 48 to 54 yd away, die at bwd.lower_hall.central_hall. Detour paths are complete from the central hall and on to the Atramedes wing (north spirits), and pass no other live pack. The reviewer's candidates (-108.1, -148.1, 66.6), where r04 pulled him, and the path point (-95.4, -121.5, 67.0) are 18.0 and 22.4 yd from his spawn, outside his reach unless he wanders toward them."
-        }
-      ]
+      "source_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "node_ids": ["bwd.north_corridor.pyrecraw"],
+      "reason": "Full raid only (round 5), cleared right after the central hall and before the raid enters the Atramedes wing. Pyrecraw (guid 250107, entry 42764) is a hovering elite drake: spawn z 77.68 over the corridor floor 66.9, 10 yd random movement, 16.5 yd 3D reach. The Atramedes-to-Chimaeron walk passes 16 yd from his spawn and the Chimaeron-to-Orb walk 12.4 yd (Detour paths, navmesh 669), and no node cleared him, so he joined whatever fight walked past (r04 Atramedes recovery walk). Once a later node names him, the future-target guard (IsImmediateNextValidationRouteEncounterMember) protects him on every earlier trash node, and the recovery walk from the elevator into the Atramedes wing passes 19.7 yd from his spawn; clearing him here leaves only the Maloriak nodes and the central hall before him. Their walks (Detour, the entry and upper wing, the elevator, the laboratory and the laboratory to the hall) stay at least 109 yd from anywhere in his wander, and a recovery walk from the elevator to the Maloriak nodes at least 133 yd; the one exception is a recovery walk from the elevator to the central hall, which comes through his corridor 19.7 yd from his spawn (12.3 yd from the edge of his wander), so a wipe at the hall can still pull him while he is guarded. The row is the Nefarian shard's own (round 6: in r05 its descent approach from the central hall ran through his corridor, 20.5 yd from his spawn, and he engaged the hunter at the descent), so the Nefarian node set later emits it as a duplicate. The other boss shards never walk within his reach: the Chimaeron shard's walks stay 145 yd away."
+    },
+    {
+      "id": "south_corridor",
+      "source_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "node_ids": ["bwd.south_corridor.maimgor"],
+      "reason": "Round 6: Maimgor (guid 250109, entry 42768) is a static hovering elite drake (MovementType 0, spawndist 0; z 74.93 over the corridor floor 67.5, 16.5 yd 3D reach) over the corridor from the laboratory junction toward the Nefarian descent. Detour has two near-equal descent approaches from the central hall area: from the hall anchor it runs through Pyrecraw's corridor (r05 Nefarian c0 took it and Pyrecraw engaged the hunter at the descent), from the Orb point it runs west along Maimgor's corridor 8.6 yd from him. He is cleared right after Pyrecraw, so every later walk, the Orb gossip, Nefarian's intro and either descent approach happen with both drakes dead; in the full raid that is before the Atramedes wing. The row is the Nefarian shard's own, so the Nefarian node set later emits it as a duplicate."
     },
     {
       "id": "atramedes",

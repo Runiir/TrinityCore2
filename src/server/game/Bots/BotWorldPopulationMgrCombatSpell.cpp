@@ -3,6 +3,7 @@
 #include "Bots/BotCombatMaskEvaluation.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotEncounterCooldownHold.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
@@ -165,6 +166,14 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
                 cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))
         {
             candidate.RejectReason = reservationReason;
+            continue;
+        }
+        // An encounter's hold on offensive cooldowns (BotEncounterCooldownHold.h).
+        if (char const* holdReason = BotEncounterCooldownHold::ReservationReason(
+                bot->GetGUID().GetRawValue(),
+                { candidate.Category, candidate.Profile.MechanicTags }))
+        {
+            candidate.RejectReason = holdReason;
             continue;
         }
         if (candidate.Category == BotCombatActionCategory::Defensive)

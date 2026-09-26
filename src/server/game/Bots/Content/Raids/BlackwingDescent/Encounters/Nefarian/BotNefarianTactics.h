@@ -14,19 +14,39 @@
 
 namespace BotEncounter::Nefarian
 {
-// Phase 1 Electrocute budget (Wowhead and Icy Veins): bring Onyxia low, move
-// damage to Nefarian for two Electrocutes, then finish Onyxia before her
-// charge nears overload. Each Electrocute adds 17 charge natively
-// (boss_nefarians_end.cpp EVENT_ELECTROCUTE); guides report 25.
+// Phase 1 (user raid experience 2026-09-26): Bloodlust and burn Onyxia from
+// the pull, before Nefarian lands; that skips most of phase 1. The raid lust
+// is the canonical boss-lust fallback (BotRaidBossLust.h): Onyxia is a boss
+// mob (type_flags 0x4, Creature::isWorldBoss), so the lust owner casts about
+// 5 s after her tank holds her.
+// Heroic keeps the old Electrocute budget as a fallback (the user expects the
+// Onyxia burn may not hold there): Onyxia low, then Nefarian for two
+// Electrocutes (each adds 17 charge natively, boss_nefarians_end.cpp
+// EVENT_ELECTROCUTE), then finish Onyxia before her charge nears overload.
+enum class PhaseOnePacing : uint8
+{
+    OnyxiaBurn,
+    ElectrocuteBudget
+};
+
+inline PhaseOnePacing PhaseOnePacingFor(NativeFacts const* facts)
+{
+    return facts && facts->Heroic ? PhaseOnePacing::ElectrocuteBudget
+        : PhaseOnePacing::OnyxiaBurn;
+}
+
 constexpr float OnyxiaSwapHealthPct = 12.0f;
 constexpr float NefarianPhaseOneFloorPct = 73.0f;
 constexpr uint32 OnyxiaChargeReturnThreshold = 60;
 
-inline ObjectGuid PhaseOneDamageTarget(EncounterView const& view)
+inline ObjectGuid PhaseOneDamageTarget(EncounterView const& view,
+    PhaseOnePacing pacing = PhaseOnePacing::OnyxiaBurn)
 {
     if (!view.OnyxiaAlive())
         return ObjectGuid();
     ActorSnapshot const& onyxia = *view.Onyxia;
+    if (pacing == PhaseOnePacing::OnyxiaBurn)
+        return onyxia.Guid;
     bool const nefarianOpen = view.NefarianLanded()
         && view.Nefarian->HealthPct > NefarianPhaseOneFloorPct;
     bool const chargeSafe = onyxia.AlternatePower < OnyxiaChargeReturnThreshold;
@@ -207,14 +227,25 @@ inline uint8 EmpowerStacks(ActorSnapshot const& warrior)
     return 0;
 }
 
-// The warrior the shackler would hold now: the most empowered free warrior in
-// its range, and none while a shackle is already held (one at a time).
+// Bone warriors (user raid experience 2026-09-26): the warrior handler (the
+// Feral Onyxia tank, free once Onyxia is dead) kites them and roots them with
+// Nature's Grasp, always away from Nefarian's front: his Shadowflame Breath
+// wakes a collapsed warrior, refills its energy and buffs it
+// (spell_nefarians_end_shadowflame_breath). Shackle Undead stays as cheap
+// backup control: the shackler holds the most empowered active warrior that
+// is not on the handler, one at a time. The old stun/root/snare rotation is
+// gone; the Onyxia burn leaves few active warriors.
+// The warrior the shackler reserves: none while it is dead or cannot cast
+// Shackle Undead now (unknown or not ready), so the handler takes that
+// warrior instead of leaving it to nobody.
 inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
-    std::vector<ActorSnapshot const*> const& active, DutyPlan const& plan)
+    std::vector<ActorSnapshot const*> const& active, DutyPlan const& plan,
+    NativeFacts const* facts = nullptr)
 {
     ActorSnapshot const* shackler = plan.Shackler.IsEmpty() ? nullptr
         : board.FindActor(plan.Shackler);
-    if (!shackler || !shackler->Alive)
+    if (!shackler || !shackler->Alive
+        || (facts && !facts->SpellUsable(shackler->Guid, SpellShackleUndead)))
         return nullptr;
     if (std::any_of(active.begin(), active.end(), [](ActorSnapshot const* warrior)
         {
@@ -224,88 +255,147 @@ inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
     ActorSnapshot const* best = nullptr;
     for (ActorSnapshot const* warrior : active)
         if (!IsBoneWarriorControlled(*warrior)
+            && !HasAura(*warrior, SpellNaturesGraspRoot)
+            && (plan.WarriorHandler.IsEmpty()
+                || warrior->VictimGuid != plan.WarriorHandler)
             && InControlRange(*shackler, *warrior)
             && (!best || EmpowerStacks(*warrior) > EmpowerStacks(*best)))
             best = warrior;
     return best;
 }
 
-// Exactly one bot acts on a warrior per snapshot: the shackler on its
-// candidate, otherwise the first living controller that is in range, knows its
-// control spell and has it ready (NativeFacts; no entry counts as both),
-// rotating from controller i mod C for warrior i. A controller on cooldown or
-// without the spell is skipped, so a 60 s Hammer of Justice hands the warrior
-// to the next controller, and a controller is never named for a spell it
-// cannot cast. Nobody controls a held warrior, and nobody damages the
-// shackler's candidate (Shackle Undead breaks on damage).
-inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
+inline ControlDecision DecideShackle(Blackboard const& board,
     EncounterView const& view, DutyPlan const& plan, ActorSnapshot const& bot,
     NativeFacts const* facts = nullptr)
 {
     ControlDecision decision;
+    if (bot.Guid != plan.Shackler)
+        return decision;
     std::vector<ActorSnapshot const*> active;
     for (ActorSnapshot const* warrior : view.BoneWarriors)
         if (IsActiveBoneWarrior(*warrior))
             active.push_back(warrior);
-    if (active.empty())
+    ActorSnapshot const* shackle = ShackleCandidate(board, active, plan, facts);
+    if (!shackle)
         return decision;
-    ControlCapability const control = ControlFor(bot.ClassSpec);
-    if (!control.Known())
-        return decision;
-    auto ready = [facts](ActorSnapshot const& member)
-    {
-        return !facts || facts->SpellUsable(member.Guid,
-            ControlFor(member.ClassSpec).SpellId);
-    };
-    ActorSnapshot const* shackle = ShackleCandidate(board, active, plan);
-
-    if (bot.Guid == plan.Shackler)
-    {
-        if (shackle && ready(bot))
-        {
-            decision.Target = shackle->Guid;
-            decision.SpellId = control.SpellId;
-            decision.Reason = "bone_warrior_shackle";
-        }
-        return decision;
-    }
-
-    auto const self = std::find(plan.Controllers.begin(),
-        plan.Controllers.end(), bot.Guid);
-    if (self == plan.Controllers.end())
-        return decision;
-    std::size_t const index = std::size_t(self - plan.Controllers.begin());
-    std::size_t const controllers = plan.Controllers.size();
-    for (std::size_t warrior = 0; warrior < active.size(); ++warrior)
-    {
-        ActorSnapshot const& target = *active[warrior];
-        if (&target == shackle || IsBoneWarriorControlled(target))
-            continue;
-        std::size_t designated = controllers;
-        for (std::size_t step = 0; step < controllers; ++step)
-        {
-            std::size_t const candidate = (warrior + step) % controllers;
-            ActorSnapshot const* member = board.FindActor(
-                plan.Controllers[candidate]);
-            if (member && InControlRange(*member, target) && ready(*member))
-            {
-                designated = candidate;
-                break;
-            }
-        }
-        if (designated != index)
-            continue;
-        decision.Target = target.Guid;
-        decision.SpellId = control.SpellId;
-        decision.Reason = control.Kind == ControlKind::Stun
-            ? "bone_warrior_stun" : control.Kind == ControlKind::Root
-            ? "bone_warrior_root" : "bone_warrior_snare";
-        return decision;
-    }
+    decision.Target = shackle->Guid;
+    decision.SpellId = SpellShackleUndead;
+    decision.Reason = "bone_warrior_shackle";
     return decision;
 }
 
-// An active warrior chasing this bot, if any is within the kite trigger.
+// The handler's Nature's Grasp: once an active warrior that attacks it is
+// close, and the handler knows the spell, has it ready and is not carrying it.
+constexpr float NaturesGraspTriggerYards = 12.0f;
+
+inline bool DecideNaturesGrasp(EncounterView const& view, DutyPlan const& plan,
+    ActorSnapshot const& bot, NativeFacts const* facts)
+{
+    uint32 const spell = WarriorRootFor(bot.ClassSpec);
+    if (!spell || bot.Guid != plan.WarriorHandler || !bot.Alive
+        || HasAura(bot, spell)
+        || (facts && !facts->SpellUsable(bot.Guid, spell)))
+        return false;
+    return std::any_of(view.BoneWarriors.begin(), view.BoneWarriors.end(),
+        [&bot](ActorSnapshot const* warrior)
+        {
+            return IsActiveBoneWarrior(*warrior) && warrior->VictimGuid == bot.Guid
+                && Distance3(warrior->Position, bot.Position) <= NaturesGraspTriggerYards;
+        });
+}
+
+struct HealDecision
+{
+    ObjectGuid Target;
+    uint32 SpellId = 0;
+    std::string_view Reason;
+};
+
+// A team without a healer is healed by its off-healer: the lowest living
+// member of the team under OffHealThresholdPct, with the off-healer's native
+// heal. Interrupts come first (the strategy asks this only when no interrupt
+// is due).
+constexpr float OffHealThresholdPct = 90.0f;
+constexpr float OffHealRangeYards = 40.0f; // Healing Surge, Flash of Light (SpellRange 5)
+
+inline HealDecision DecideOffHeal(Blackboard const& board, EncounterView const& view,
+    DutyPlan const& plan, ActorSnapshot const& bot, NativeFacts const* facts)
+{
+    HealDecision decision;
+    int const pillar = plan.PillarOf(bot.Guid);
+    if (!PhaseWantsPillar(view.CurrentPhase) || pillar < 0 || !bot.Alive
+        || plan.Pillars[pillar].OffHealer != bot.Guid)
+        return decision;
+    uint32 const spell = OffHealFor(bot.ClassSpec);
+    if (!spell || (facts && !facts->SpellUsable(bot.Guid, spell)))
+        return decision;
+    // Only teammates the heal can reach now (range and line of sight) are
+    // ranked, so one out of reach never blocks the others.
+    ActorSnapshot const* lowest = nullptr;
+    for (ObjectGuid guid : plan.Pillars[pillar].Members)
+        if (ActorSnapshot const* member = board.FindActor(guid))
+            if (member->Alive && member->HealthPct < OffHealThresholdPct
+                && Distance3(member->Position, bot.Position) <= OffHealRangeYards
+                && (!facts || facts->InSight(member->Guid))
+                && (!lowest || member->HealthPct < lowest->HealthPct))
+                lowest = member;
+    if (!lowest)
+        return decision;
+    decision.Target = lowest->Guid;
+    decision.SpellId = spell;
+    decision.Reason = "pillar_off_heal";
+    return decision;
+}
+
+// Before the magma reaches the floor (Onyxia dead, the ring not yet under):
+// the priest shields everyone without a shield or Weakened Soul, the team
+// without a healer first; the Holy paladin tops up the lowest member under
+// 95%, the same team first.
+constexpr float PreAscentRangeYards = 40.0f;
+constexpr float PreAscentTopUpPct = 95.0f;
+
+inline HealDecision DecidePreAscentCare(Blackboard const& board, EncounterView const& view,
+    DutyPlan const& plan, ActorSnapshot const& bot, NativeFacts const* facts)
+{
+    HealDecision decision;
+    if (view.CurrentPhase != Phase::PlatformAscent || !bot.Alive
+        || view.Elevator.State == ElevatorState::Lowered)
+        return decision;
+    uint32 const shield = PreAscentShieldFor(bot.ClassSpec);
+    uint32 const topUp = PreAscentTopUpFor(bot.ClassSpec);
+    uint32 const spell = shield ? shield : topUp;
+    if (!spell || (facts && !facts->SpellUsable(bot.Guid, spell)))
+        return decision;
+    auto unhealed = [&plan](ObjectGuid guid)
+    {
+        int const pillar = plan.PillarOf(guid);
+        return pillar >= 0 && plan.Pillars[pillar].Healer.IsEmpty();
+    };
+    ActorSnapshot const* best = nullptr;
+    for (ActorSnapshot const& member : board.Players)
+    {
+        if (!member.Alive || Distance3(member.Position, bot.Position) > PreAscentRangeYards
+            || (facts && !facts->InSight(member.Guid)))
+            continue;
+        if (shield ? HasAnyAura(member, { SpellPowerWordShield, SpellWeakenedSoul })
+                : member.HealthPct >= PreAscentTopUpPct)
+            continue;
+        if (!best || unhealed(member.Guid) > unhealed(best->Guid)
+            || (unhealed(member.Guid) == unhealed(best->Guid)
+                && member.HealthPct < best->HealthPct))
+            best = &member;
+    }
+    if (!best)
+        return decision;
+    decision.Target = best->Guid;
+    decision.SpellId = spell;
+    decision.Reason = shield ? "pre_ascent_shield" : "pre_ascent_top_up";
+    return decision;
+}
+
+// The nearest active, unheld warrior chasing this bot within the kite
+// trigger. A held one (rooted, stunned, shackled) chases nobody, and must not
+// mask an unheld one behind it.
 inline ActorSnapshot const* ChasingBoneWarrior(EncounterView const& view,
     ActorSnapshot const& bot, float triggerYards = 14.0f)
 {
@@ -313,7 +403,8 @@ inline ActorSnapshot const* ChasingBoneWarrior(EncounterView const& view,
     float nearestDistance = triggerYards;
     for (ActorSnapshot const* warrior : view.BoneWarriors)
     {
-        if (!IsActiveBoneWarrior(*warrior) || warrior->VictimGuid != bot.Guid)
+        if (!IsActiveBoneWarrior(*warrior) || warrior->VictimGuid != bot.Guid
+            || IsBoneWarriorHeld(*warrior))
             continue;
         float const distance = Distance3(warrior->Position, bot.Position);
         if (distance < nearestDistance)

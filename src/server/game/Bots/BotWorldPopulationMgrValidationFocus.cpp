@@ -720,7 +720,16 @@ BotWorldPopulationMgr::ResolveValidationRouteAnchor(
     bool routeHasCurrentGenerationLivePackAuthority =
         Cohort().Config.ValidationRouteKind != "boss"
         && persistedPackHasLiveMembers();
-    bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
+    // A composition recovery return (BotValidationRouteRecoveryReturn) walks
+    // the member back to the boss node's anchor on this route anchor and
+    // hands it to the encounter plan within 35 yards. A remembered safe
+    // position would stop it short and hold the encounter until the watchdog:
+    // r05 Maloriak, after the second wipe every member had two deaths near
+    // the node, the tank walked to a safe memory 79 yards out and the raid
+    // never re-pulled. The return only arms at composition raid boss nodes.
+    bool const recoveryReturnPending = state.ValidationRecoveryReturn.Pending;
+    bool repeatedDeathNearRoute = !recoveryReturnPending
+        && state.LastDeathMapId == routeAnchorMapId
         && Distance2d(state.LastDeathX, state.LastDeathY, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY) <= 70.0f
         && state.RecentDeathCount >= 2;
     bool partialWipeRetreatRendezvous =
@@ -735,6 +744,14 @@ BotWorldPopulationMgr::ResolveValidationRouteAnchor(
         && state.ValidationRouteAnchorOverrideReason
             == "validation_route_safe_memory_after_death_loop"
         && routeHasCurrentGenerationLivePackAuthority)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
+    if (state.ValidationRouteAnchorOverrideValid && recoveryReturnPending
+        && state.ValidationRouteAnchorOverrideReason
+            == "validation_route_safe_memory_after_death_loop")
     {
         state.ValidationRouteAnchorOverrideValid = false;
         state.ValidationRouteAnchorOverrideUntilMs = 0;

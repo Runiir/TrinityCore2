@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCalibrationSummonObservation.h"
 #include "Bots/BotNativeCombatStatsObservation.h"
+#include "Bots/BotRaidBuffObservation.h"
 #include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 
 #include "CellImpl.h"
@@ -517,6 +518,9 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
                 return true;
         return false;
     };
+    bool const isPaladin = bot && bot->getClass() == CLASS_PALADIN;
+    auto hasAura = [bot](uint32 auraId) { return bot && bot->HasAura(auraId); };
+    auto hasOwnAura = [bot](uint32 auraId) { return bot && bot->HasAura(auraId, bot->GetGUID()); };
 
     std::ostringstream json;
     json << "{\"diagnosis_code\":\"" << JsonEscape(diagnosis.DiagnosisCode) << "\""
@@ -693,8 +697,12 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"hunter_pet_revive_attempt_count\",\"value\":" << state.HunterPetReviveAttemptCount << "},"
          << "{\"name\":\"paladin_righteous_fury_ready\",\"value\":" << (paladinReady({ 25780 }) ? "true" : "false") << "},"
          << "{\"name\":\"paladin_seal_ready\",\"value\":" << (paladinReady({ 31801 }) ? "true" : "false") << "},"
-         << "{\"name\":\"paladin_aura_ready\",\"value\":" << (paladinReady({ 465 }) ? "true" : "false") << "},"
-         << "{\"name\":\"paladin_blessing_ready\",\"value\":" << (paladinReady({ 20217, 1126 }) ? "true" : "false") << "},"
+         // The applied auras, never the dummy spells that cast them
+         // (BotRaidBuffObservation.h): the paladin's own aura, a blessing
+         // from any paladin, and every tracked raid buff on this bot.
+         << "{\"name\":\"paladin_aura_ready\",\"value\":" << (isPaladin && BotRaidBuffObservation::AnyOf(BotRaidBuffObservation::PaladinAuras, hasOwnAura) ? "true" : "false") << "},"
+         << "{\"name\":\"paladin_blessing_ready\",\"value\":" << (isPaladin && BotRaidBuffObservation::AnyOf(BotRaidBuffObservation::BlessingAuras, hasAura) ? "true" : "false") << "},"
+         << "{\"name\":\"raid_buff_auras\",\"value\":" << BotRaidBuffObservation::Json(hasAura) << "},"
          << "{\"name\":\"paladin_divine_plea_ready\",\"value\":" << (paladinReady({ 54428 }) ? "true" : "false") << "}"
          << "]"
          << ",\"server_vehicle_exit_landing\":"

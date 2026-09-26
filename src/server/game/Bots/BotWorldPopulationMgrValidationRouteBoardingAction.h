@@ -63,6 +63,13 @@ bool NativeFallLandingPending(Player const* bot);
 // the handler actually applied the report.
 bool ReportStandingPosition(Player* bot);
 bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs);
+// A swimmer's client reports at the bot's current position:
+// MSG_MOVE_START_SWIM (swimming, no transport block: a passenger that swims
+// off its platform) or MSG_MOVE_STOP_SWIM (standing; with `transport` the
+// report carries its transport block at the bot's offset, so the handler
+// takes it aboard, as a client that climbs out onto a platform). Always at
+// the bot's actual position. False unless the handler applied the report.
+bool ReportSwimState(Player* bot, bool swimming, GameObject const* transport);
 
 BotActionArbitration::Outcome EnterVehicle(Player* bot,
     BotNativeAction::VehicleEnter const& action);

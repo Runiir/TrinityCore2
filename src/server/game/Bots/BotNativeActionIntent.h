@@ -145,9 +145,18 @@ struct TransportLeave { ObjectGuid Transport; float FloorToleranceYards = 0.5f; 
 // and dynamic geometry and the platform's model, then submits only an
 // ordinary point spline, MotionMaster::MoveFall or the client's own position
 // and landing reports; it never relocates a unit or changes its height.
+// A platform sinking into liquid (Nefarian's End phase 2) adds the swimmer's
+// stages (BotTransportLiquidMovement::Execute): Float (a passenger whose feet
+// are FloatDepthYards under the liquid surface stops standing on the platform
+// and starts swimming: the client's MSG_MOVE_START_SWIM report at its current
+// position), Swim (a straight swim spline to X/Y/Z inside the liquid), Hop
+// (the client's jump from the liquid onto the platform's surface at X/Y/Z:
+// MotionMaster::MoveJumpWithGravity at the client's jump speed and gravity)
+// and Emerge (a swimmer standing on the platform's surface reports standing
+// on it: MSG_MOVE_STOP_SWIM with the platform's transport block).
 struct TransportSurfaceMove
 {
-    enum class Stage : uint8 { Walk, StepOff, Fall, Land };
+    enum class Stage : uint8 { Walk, StepOff, Fall, Land, Float, Swim, Hop, Emerge };
     ObjectGuid Transport;
     Stage Kind = Stage::Walk;
     // Walk destination or step-off point.
@@ -162,6 +171,10 @@ struct TransportSurfaceMove
     float LandingToleranceYards = 1.0f;
     bool LandOnTransport = true;
     float MinHealthAfterFallPct = 0.2f;
+    // Float: the liquid depth over the feet at which the member swims.
+    float FloatDepthYards = 1.2f;
+    // Swim: at most this speed (0: the native swim speed).
+    float SwimSpeedYardsPerSecond = 0.0f;
 };
 
 using Intent = std::variant<CastSpell, Move, DirectionalMobility,

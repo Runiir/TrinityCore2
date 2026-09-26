@@ -58,7 +58,8 @@ def test_per_boss_spec_selection_is_explicit_provisional_and_sets_role_counts():
         "chimaeron": ("feral_druid_tank", "restoration_shaman", {"tank": 2, "healer": 3, "dps": 5}),
         "atramedes": ("balance_druid", "elemental_shaman", {"tank": 1, "healer": 2, "dps": 7}),
         "maloriak": ("feral_druid_tank", "elemental_shaman", {"tank": 2, "healer": 2, "dps": 6}),
-        "nefarian": ("feral_druid_tank", "restoration_shaman", {"tank": 2, "healer": 3, "dps": 5}),
+        # Round 6, the user's Nefarian composition: 2 tanks, 2 healers, 6 DPS (the shaman stays Elemental).
+        "nefarian": ("feral_druid_tank", "elemental_shaman", {"tank": 2, "healer": 2, "dps": 6}),
     }
     for boss in composition["bosses"]:
         druid, shaman, counts = expected[boss["boss_key"]]

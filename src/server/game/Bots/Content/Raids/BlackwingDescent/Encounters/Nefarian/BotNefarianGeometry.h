@@ -36,7 +36,6 @@ constexpr float RingLocalZ = 1.439f;
 constexpr float RampEndRadius = RampStartRadius
     + (RingLocalZ - FloorFlatLocalZ) / RampSlope;
 constexpr float OuterFloorLimit = 57.0f;
-constexpr float PillarBaseRadius = 26.0f;
 constexpr float PillarKeepOutRadius = 9.0f;
 constexpr float PillarPathClearance = 7.0f;
 
@@ -132,6 +131,14 @@ inline float FloorLocalZAt(LocalPoint point)
     return FloorFlatLocalZ + (radius - RampStartRadius) * RampSlope;
 }
 
+// How much the floor rises per yard outward at a point: the ramp's slope
+// between its ends, 0 on the flat centre and the flat ring.
+inline float FloorSlopeOutward(LocalPoint point)
+{
+    float const radius = Length(point);
+    return radius > RampStartRadius && radius < RampEndRadius ? RampSlope : 0.0f;
+}
+
 // Absolute angle (0..pi) between an actor's facing and the direction from it
 // to a point. 0 is straight ahead, pi straight behind.
 inline float OffFacing(LocalPoint origin, float facing, LocalPoint point)
@@ -216,27 +223,54 @@ inline LocalPoint SnapToStandingArea(LocalPoint point)
     return snapped;
 }
 
-// Pillar standing slots: the prototype stands on the pillar centre, so slots
-// sit a few yards toward the arena centre where every member stays inside the
-// prototype's 7.2-yard melee reach and on the pillar top.
-inline LocalPoint PillarSlot(uint8 pillar, uint8 slot)
+// Pillar slots. Each team member owns one heading around its pillar, spread
+// across the pillar's arena side. On that heading it waits on the floor at
+// the pillar's foot (PillarFootRadius), floats beside the wall at its swim
+// station (BotNefarianMagma.h) and lands on the flat pillar top at
+// PillarSlotRadius, inside the prototype's 7.2-yard melee reach (the
+// prototype stands on the centre).
+constexpr float PillarSlotRadius = 3.0f;
+constexpr float PillarFootRadius = 9.5f;
+inline constexpr float PillarSlotHeadingDeg[6] = { -12.5f, 12.5f, -37.5f,
+    37.5f, -62.5f, 62.5f };
+
+inline float PillarSlotHeading(uint8 pillar, uint8 slot)
 {
-    LocalPoint const centre = PillarCenters[pillar % 3];
-    float const inward = AngleOf(centre) + Pi;
-    static constexpr float Lateral[4] = { 0.0f, 2.2f, -2.2f, 0.0f };
-    static constexpr float Depth[4] = { 3.0f, 3.2f, 3.2f, 1.6f };
-    uint8 const index = slot % 4;
-    LocalPoint const base = Offset(centre, inward, Depth[index]);
-    return Offset(base, inward + Pi / 2.0f, Lateral[index]);
+    float const inward = AngleOf(PillarCenters[pillar % 3]) + Pi;
+    return NormalizeSigned(inward + DegToRad(PillarSlotHeadingDeg[slot % 6]));
 }
 
-// Floor spot at the foot of a pillar, on the arena side.
+// A point on a slot's heading at `radius` yards from the pillar centre.
+inline LocalPoint PillarRadial(uint8 pillar, uint8 slot, float radius)
+{
+    return Offset(PillarCenters[pillar % 3], PillarSlotHeading(pillar, slot),
+        radius);
+}
+
+inline LocalPoint PillarSlot(uint8 pillar, uint8 slot)
+{
+    return PillarRadial(pillar, slot, PillarSlotRadius);
+}
+
+// Floor spot at the foot of a pillar, on the slot's heading, outside the
+// standing keep-out.
 inline LocalPoint PillarBase(uint8 pillar, uint8 slot)
 {
-    float const angle = AngleOf(PillarCenters[pillar % 3]);
-    float const lateral = (float(slot % 4) - 1.5f) * 2.5f;
-    return Offset(Polar(angle, PillarBaseRadius), angle + Pi / 2.0f,
-        lateral);
+    return PillarRadial(pillar, slot, PillarFootRadius);
+}
+
+// The pillar whose centre is nearest, and the distance to it.
+inline int NearestPillar(LocalPoint point, float& distance)
+{
+    int best = 0;
+    distance = Distance(point, PillarCenters[0]);
+    for (int pillar = 1; pillar < 3; ++pillar)
+        if (float const d = Distance(point, PillarCenters[pillar]); d < distance)
+        {
+            best = pillar;
+            distance = d;
+        }
+    return best;
 }
 }
 

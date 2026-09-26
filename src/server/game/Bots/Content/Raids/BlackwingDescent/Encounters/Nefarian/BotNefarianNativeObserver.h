@@ -6,10 +6,12 @@
 // changes them.
 
 #include "Bots/BotSpellResolution.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeFacts.h"
 #include "GameObject.h"
+#include "Map.h"
 #include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -44,6 +46,13 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
                 spell->GetCastTime(), spell->GetRemainingCastTime() });
         }
 
+    facts.Heroic = observer->GetMap() && observer->GetMap()->IsHeroic();
+    for (ActorSnapshot const& player : board.Players)
+        if (player.Guid != observer->GetGUID())
+            if (Player const* member = ObjectAccessor::GetPlayer(*observer, player.Guid))
+                if (member->IsInWorld() && observer->GetDistance(member) <= 45.0f
+                    && !observer->IsWithinLOSInMap(member))
+                    facts.OutOfSight.push_back(player.Guid);
     for (ActorSnapshot const& player : board.Players)
     {
         Player const* bot = ObjectAccessor::GetPlayer(*observer, player.Guid);
@@ -54,7 +63,9 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
         // has it ready.
         for (uint32 spellId : { InterruptFor(player.ClassSpec).SpellId,
                 ControlFor(player.ClassSpec).SpellId,
-                TauntFor(player.ClassSpec).SpellId })
+                TauntFor(player.ClassSpec).SpellId,
+                WarriorRootFor(player.ClassSpec), OffHealFor(player.ClassSpec),
+                PreAscentShieldFor(player.ClassSpec), PreAscentTopUpFor(player.ClassSpec) })
         {
             if (!spellId)
                 continue;
@@ -65,6 +76,10 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
             facts.Readiness.push_back({ player.Guid, spellId, known
                 && bot->GetSpellHistory()->IsReady(resolved.Effective), known });
         }
+        bool const falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);
+        bool const landing = BotValidationRouteBoardingAction::NativeFallLandingPending(bot);
+        if (falling || landing)
+            facts.Falls.push_back({ player.Guid, falling, landing });
         if (bot->movespline->Initialized() && !bot->movespline->Finalized())
         {
             G3D::Vector3 end = bot->movespline->FinalDestination();

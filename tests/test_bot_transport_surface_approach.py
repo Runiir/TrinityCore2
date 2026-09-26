@@ -231,16 +231,26 @@ int main()
     CHECK(footprint == "ledge_drop_step_off_footprint_supported" && StepOffCandidateAdvances(footprint));
     std::string const overFloor = reason([](LedgeDropProbe& p) { p.Step = Samples({ 's', 's', 's', 's' }); });
     CHECK(overFloor == "ledge_drop_step_off_over_floor" && StepOffCandidateAdvances(overFloor));
-    // Everything else is final.
-    CHECK(reason([](LedgeDropProbe& p) { p.Step = Samples({ 's', '-', 's', '-' }); }) == "ledge_drop_step_profile_not_a_ledge");
-    CHECK(reason([](LedgeDropProbe& p) { p.Step = Samples({ '-', '-', '-' }); }) == "ledge_drop_edge_unsupported");
-    CHECK(reason([](LedgeDropProbe& p) { p.StepCollisionFree = false; }) == "ledge_drop_step_blocked");
-    CHECK(reason([](LedgeDropProbe& p) { p.StepLengthYards = 4.5f; }) == "ledge_drop_step_length_invalid");
-    CHECK(reason([](LedgeDropProbe& p) { p.LandingFound = false; }) == "ledge_drop_landing_missing");
+    // The step itself is final.
+    std::string const profile = reason([](LedgeDropProbe& p) { p.Step = Samples({ 's', '-', 's', '-' }); });
+    CHECK(profile == "ledge_drop_step_profile_not_a_ledge" && !StepOffCandidateAdvances(profile));
+    std::string const edge = reason([](LedgeDropProbe& p) { p.Step = Samples({ '-', '-', '-' }); });
+    CHECK(edge == "ledge_drop_edge_unsupported" && !StepOffCandidateAdvances(edge));
+    std::string const blocked = reason([](LedgeDropProbe& p) { p.StepCollisionFree = false; });
+    CHECK(blocked == "ledge_drop_step_blocked" && !StepOffCandidateAdvances(blocked));
+    std::string const length = reason([](LedgeDropProbe& p) { p.StepLengthYards = 4.5f; });
+    CHECK(length == "ledge_drop_step_length_invalid" && !StepOffCandidateAdvances(length));
+    // A landing the native fall would not make on the declared floor moves to
+    // the next candidate (the fall's own floor query may see it further out).
+    std::string const missing = reason([](LedgeDropProbe& p) { p.LandingFound = false; });
+    CHECK(missing == "ledge_drop_landing_missing" && StepOffCandidateAdvances(missing));
     // Lowered platform: the fall would miss the declared floor (and land in the lava).
-    CHECK(reason([](LedgeDropProbe& p) { p.LandingZ = -5.4f; }) == "ledge_drop_landing_height_mismatch");
-    CHECK(reason([](LedgeDropProbe& p) { p.LandingInLiquid = true; }) == "ledge_drop_lands_in_liquid");
-    CHECK(reason([](LedgeDropProbe& p) { p.LandingOnTransport = false; }) == "ledge_drop_landing_surface_mismatch");
+    std::string const lowered = reason([](LedgeDropProbe& p) { p.LandingZ = -5.4f; });
+    CHECK(lowered == "ledge_drop_landing_height_mismatch" && StepOffCandidateAdvances(lowered));
+    std::string const liquid = reason([](LedgeDropProbe& p) { p.LandingInLiquid = true; });
+    CHECK(liquid == "ledge_drop_lands_in_liquid" && StepOffCandidateAdvances(liquid));
+    std::string const surface = reason([](LedgeDropProbe& p) { p.LandingOnTransport = false; });
+    CHECK(surface == "ledge_drop_landing_surface_mismatch" && StepOffCandidateAdvances(surface));
     // A sloped or stepped lip is native pathing's, never a level walk in the
     // air above it (final, not a reason to walk further out).
     std::string const slope = reason([](LedgeDropProbe& p) { p.Step[6].ShallowFloorBelow = true; });
@@ -254,11 +264,70 @@ int main()
     CHECK(ValidateLedgeDrop(onGround, ground).Reason == "ledge_drop_landing_surface_mismatch");
     ground.LandingOnStatic = true;
     CHECK(ValidateLedgeDrop(onGround, ground).Ok);
-    CHECK(reason([](LedgeDropProbe& p) { p.LandingZ = 39.0f; }) == "ledge_drop_too_shallow");
+    // A floor within a walkable step-down and the health margin are final.
+    std::string const shallow = reason([](LedgeDropProbe& p) { p.LandingZ = 39.0f; });
+    CHECK(shallow == "ledge_drop_too_shallow" && !StepOffCandidateAdvances(shallow));
     // Health after the native fall damage must keep the declared margin.
-    CHECK(reason([](LedgeDropProbe& p) { p.HealthPct = 0.54f; }) == "ledge_drop_health_margin_low");
+    std::string const health = reason([](LedgeDropProbe& p) { p.HealthPct = 0.54f; });
+    CHECK(health == "ledge_drop_health_margin_low" && !StepOffCandidateAdvances(health));
     CHECK(reason([](LedgeDropProbe& p) { p.HealthPct = 0.56f; }) == "ledge_drop_verified");
-    CHECK(!StepOffCandidateAdvances("ledge_drop_landing_height_mismatch"));
+    // One landing rule for the probe before the step and the fall after it.
+    CHECK(FallLandsOnDeclaredFloor(true, 8.519f, drop.LandingZ, drop.LandingToleranceYards));
+    CHECK(FallLandsOnDeclaredFloor(true, 9.5f, drop.LandingZ, drop.LandingToleranceYards));
+    CHECK(!FallLandsOnDeclaredFloor(true, 9.52f, drop.LandingZ, drop.LandingToleranceYards));
+    CHECK(!FallLandsOnDeclaredFloor(true, -1.632f, drop.LandingZ, drop.LandingToleranceYards));
+    CHECK(!FallLandsOnDeclaredFloor(false, 8.51f, drop.LandingZ, drop.LandingToleranceYards));
+    for (float landing : { -19.7f, -1.632f, 7.4f, 7.6f, 8.51f, 9.4f, 9.6f, 20.0f })
+        CHECK((reason([landing](LedgeDropProbe& p) { p.LandingZ = landing; }) == "ledge_drop_verified")
+            == FallLandsOnDeclaredFloor(true, landing, drop.LandingZ, drop.LandingToleranceYards));
+
+    // The search: the first admitted candidate, a final rejection, or once
+    // MaxStepOffYards is spent the first candidate past the lip.
+    std::vector<float> probed;
+    auto search = [&](auto verdictAt)
+    {
+        probed.clear();
+        return ChooseStepOff(drop, [&](float step)
+        {
+            probed.push_back(step);
+            LedgeDropProbe probe = NefarianProbe();
+            verdictAt(step, probe);
+            return probe;
+        });
+    };
+    StepOffChoice choice = search([](float step, LedgeDropProbe& p) { if (step < 1.7f) p.FootprintSupported = 2; });
+    CHECK(choice.Verdict.Ok && std::fabs(choice.StepYards - 1.75f) < 1e-4f && probed.size() == 7);
+    choice = search([](float step, LedgeDropProbe& p) { if (step < 1.7f) p.FootprintSupported = 2; else p.StepCollisionFree = false; });
+    CHECK(choice.Verdict.Reason == "ledge_drop_step_blocked" && probed.size() == 7);
+    choice = search([](float, LedgeDropProbe& p) { p.LandingZ = -5.4f; });
+    CHECK(choice.Verdict.Reason == "ledge_drop_landing_height_mismatch" && probed.size() == 16
+        && std::fabs(probed.back() - MaxStepOffYards) < 1e-4f && std::fabs(choice.StepYards - 0.25f) < 1e-4f);
+    // Past the lip at 1.75 yd over the underside, then no floor at all: the
+    // first footprint-clear candidate's rejection, not the 4 yd one's.
+    choice = search([](float step, LedgeDropProbe& p)
+    {
+        if (step < 1.7f)
+            p.FootprintSupported = 2;
+        else if (step < 1.8f)
+            p.LandingZ = -1.632f;
+        else
+            p.LandingFound = false;
+    });
+    CHECK(choice.Verdict.Reason == "ledge_drop_landing_height_mismatch" && probed.size() == 16
+        && std::fabs(choice.StepYards - 1.75f) < 1e-4f);
+    // Never past the lip: the last candidate's rejection.
+    choice = search([](float, LedgeDropProbe& p) { p.FootprintSupported = 1; });
+    CHECK(choice.Verdict.Reason == "ledge_drop_step_off_footprint_supported" && probed.size() == 16
+        && std::fabs(choice.StepYards - MaxStepOffYards) < 1e-4f);
+    // A final rejection after a landing rejection still ends the search.
+    choice = search([](float step, LedgeDropProbe& p)
+    {
+        if (step < 1.8f)
+            p.LandingZ = -1.632f;
+        else
+            p.StepCollisionFree = false;
+    });
+    CHECK(choice.Verdict.Reason == "ledge_drop_step_blocked" && probed.size() == 8);
     return failures ? 1 : 0;
 }
 ''')
@@ -1092,3 +1161,210 @@ def test_patched_scenario_rows_parse_as_approach_contracts(tmp_path: Path) -> No
     assert len(body) >= 3
     _compile_and_run(tmp_path, PRELUDE + "int main()\n{\n" + "\n".join(body)
                      + "\n    return failures ? 1 : 0;\n}\n")
+
+
+def test_nefarian_round5_member_off_the_line_steps_on_to_a_proven_landing(tmp_path: Path) -> None:
+    """Round 5 live evidence (blackwing_descent_10n_nefarian_c0, bot
+    11005003, survival hunter): its walk from the north-west was stopped
+    0.4 yd short of the approach start (transport_approach_start_settle) at
+    (-159.033, -224.298, 41.104). Its first footprint-clear candidate toward
+    the step-off point, (-157.048, -224.541), lies north of the platform's
+    axis, where the floor query MoveFall uses (Map::GetHeight: the first hit
+    through the platform model) returns the model's underside, -1.632, not
+    the ring top at 8.5 (tests/test_nefarian_ledge_drop_floor_query.py). That
+    landing_height_mismatch was final; counted five times, it exhausted the
+    node. The nine others stood exactly on the start, fell at (-157.05,
+    -224.62) and landed at 8.519. The lip below is the client's static
+    geometry (data/vmaps): a shallow V with its apex on the declared line.
+    Between the lip and the chosen point a step cut short stands over that
+    underside; ExecuteFall re-proves the landing there and refuses (counted)
+    instead of falling through the platform."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+#include <algorithm>
+
+// The orb-ledge floor (41.104) ends at x -157.615 on the declared line and
+// 0.215 yd further back per yard off it.
+static float LipX(float y) { return -157.615f - 0.215f * std::fabs(y + 224.62f); }
+static bool LedgeFloor(float x, float y) { return x < LipX(y); }
+// The first-hit floor below the lip: the ring top south of the platform's
+// axis, the model's underside north of it (local y below +3.4e-5; origin
+// (-107.213, -224.62), rotated by pi with quaternion w 1.26759e-06).
+static float FirstHitLanding(float x, float y)
+{
+    float const localY = -2.0f * 1.26759e-06f * (x + 107.213f) - (y + 224.62f);
+    return localY < 3.4e-5f ? -1.632f : 8.5f;
+}
+
+struct Member { float X, Y, Z; };
+
+// ProbeLedgeDrop over that geometry: the level step, the footprint and the
+// landing MoveFall would make from the candidate.
+static LedgeDropProbe ProbeAt(Member const& from, float x, float y)
+{
+    LedgeDropProbe probe;
+    float const length = std::hypot(x - from.X, y - from.Y);
+    int const steps = std::max(1, int(std::ceil(length / SurfaceSampleStepYards)));
+    for (int i = 0; i <= steps; ++i)
+    {
+        float const t = float(i) / float(steps);
+        SurfaceSample sample;
+        sample.Along = length * t;
+        sample.StaticFloor = LedgeFloor(from.X + (x - from.X) * t, from.Y + (y - from.Y) * t);
+        probe.Step.push_back(sample);
+    }
+    probe.StepLengthYards = length;
+    probe.StepZ = from.Z;
+    probe.StepCollisionFree = true;
+    for (int i = -1; i < 8; ++i)
+    {
+        float const angle = float(i) * 3.14159265f / 4.0f;
+        float const px = x + (i < 0 ? 0.0f : PlayerBoundingRadiusYards * std::cos(angle));
+        float const py = y + (i < 0 ? 0.0f : PlayerBoundingRadiusYards * std::sin(angle));
+        if (LedgeFloor(px, py))
+            ++probe.FootprintSupported;
+    }
+    probe.LandingFound = true;
+    probe.LandingZ = FirstHitLanding(x, y);
+    // The underside is the platform's own model too: only its height tells.
+    probe.LandingOnTransport = true;
+    probe.HealthPct = 1.0f;
+    probe.PredictedDamagePct = NativeFallDamageFraction(from.Z - probe.LandingZ, 0.0f, 1.0f, false);
+    return probe;
+}
+
+// ExecuteStepOff's search, toward the declared step-off point.
+static StepOffChoice Choose(ApproachContract const& drop, Member const& m, float& x, float& y)
+{
+    float hx = drop.StepOffPoint.X - m.X;
+    float hy = drop.StepOffPoint.Y - m.Y;
+    float const declared = std::hypot(hx, hy);
+    hx /= declared;
+    hy /= declared;
+    StepOffChoice const choice = ChooseStepOff(drop,
+        [&](float step) { return ProbeAt(m, m.X + hx * step, m.Y + hy * step); });
+    x = m.X + hx * choice.StepYards;
+    y = m.Y + hy * choice.StepYards;
+    return choice;
+}
+
+int main()
+{
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    ApproachContract const& drop = platform.Approach;
+    float const startTolerance = std::min(platform.ArrivalToleranceYards, ApproachStartToleranceYards);
+    float x = 0.0f;
+    float y = 0.0f;
+
+    // The nine on the start point: unchanged, the fall starts 1.75 yd out.
+    Member const onStart{ -158.8f, -224.62f, 41.104f };
+    StepOffChoice choice = Choose(drop, onStart, x, y);
+    CHECK(choice.Verdict.Ok && std::fabs(choice.StepYards - 1.75f) < 1e-4f);
+    CHECK(std::fabs(x + 157.05f) < 1e-3f && std::fabs(y + 224.62f) < 1e-3f);
+    CHECK(FirstHitLanding(x, y) == 8.5f);
+
+    // The hunter, settled 0.4 yd north-west of the start: admitted by the
+    // barrier, and its first footprint-clear candidate is r05's rejection.
+    Member const hunter{ -159.033f, -224.298f, 41.104f };
+    CHECK(DistanceToApproachLine(drop.StartPoint, drop.StepOffPoint, hunter.X, hunter.Y, hunter.Z)
+        <= startTolerance);
+    float hx = drop.StepOffPoint.X - hunter.X;
+    float hy = drop.StepOffPoint.Y - hunter.Y;
+    float const norm = std::hypot(hx, hy);
+    hx /= norm;
+    hy /= norm;
+    CHECK(ValidateLedgeDrop(drop, ProbeAt(hunter, hunter.X + hx * 1.75f, hunter.Y + hy * 1.75f)).Reason
+        == "ledge_drop_step_off_footprint_supported");
+    CHECK(ValidateLedgeDrop(drop, ProbeAt(hunter, hunter.X + hx * 2.0f, hunter.Y + hy * 2.0f)).Reason
+        == "ledge_drop_landing_height_mismatch");
+    // The search now walks on to the first proven landing, just past the
+    // declared step-off point and inside the approach corridor.
+    choice = Choose(drop, hunter, x, y);
+    CHECK(choice.Verdict.Ok && std::fabs(choice.StepYards - 2.75f) < 1e-4f);
+    CHECK(std::fabs(x + 156.303f) < 2e-3f && std::fabs(y + 224.632f) < 2e-3f);
+    CHECK(FirstHitLanding(x, y) == 8.5f);
+    CHECK(OnApproachCorridor(drop.StartPoint, drop.StepOffPoint, x, y, ApproachCorridorYards,
+        MaxStepOffYards + ApproachStartToleranceYards));
+
+    // Cut short over the void before the chosen point (a root, a stun), the
+    // hunter stands where MoveFall's query finds the underside: ExecuteFall
+    // re-proves the landing where the fall would start and refuses there.
+    auto refusedStretch = [&](Member const& m, float chosenStep)
+    {
+        float dx = drop.StepOffPoint.X - m.X;
+        float dy = drop.StepOffPoint.Y - m.Y;
+        float const length = std::hypot(dx, dy);
+        dx /= length;
+        dy /= length;
+        float first = -1.0f;
+        float last = -1.0f;
+        for (int i = 1; float(i) * 0.05f <= chosenStep + 1e-4f; ++i)
+        {
+            float const step = std::min(float(i) * 0.05f, chosenStep);
+            float const px = m.X + dx * step;
+            float const py = m.Y + dy * step;
+            if (LedgeFloor(px, py))
+                continue; // still over the ledge: the drop re-plans and steps off again
+            if (!FallLandsOnDeclaredFloor(true, FirstHitLanding(px, py), drop.LandingZ,
+                    drop.LandingToleranceYards))
+            {
+                if (first < 0.0f)
+                    first = step;
+                last = step;
+            }
+        }
+        return first < 0.0f ? 0.0f : last - first + 0.05f;
+    };
+    // From where its centre leaves the lip (1.4 yd) to the axis (2.65 yd).
+    float const hunterStretch = refusedStretch(hunter, choice.StepYards);
+    CHECK(hunterStretch > 1.2f && hunterStretch < 1.4f);
+    CHECK(FallLandsOnDeclaredFloor(true, FirstHitLanding(x, y), drop.LandingZ, drop.LandingToleranceYards));
+    // The member stays where it stopped: each refusal counts once per
+    // window, and the node fails typed with the fall's reason, never a fall
+    // through the platform.
+    TransportMemberState cut;
+    cut.Approach = ApproachPhase::SteppingOff;
+    TransportMemberObservation air;
+    air.Alive = true; air.TransportPresent = true; air.ReadyToBoard = true;
+    air.RestRemainingMs = UnboundedRestMs; air.CohortAtApproachStart = true;
+    TransportDecision d;
+    std::uint64_t now = 0;
+    for (; now <= 30000; now += 100)
+    {
+        air.NowMs = now;
+        d = DecideTransportStep(platform, air, cut);
+        if (d.Step != TransportStep::DropFall)
+            break;
+        CountRejectedSubmission(cut, now, "native_ledge_drop_fall_landing_mismatch");
+    }
+    CHECK(d.Step == TransportStep::Fail && d.Reason == "transport_submissions_exhausted");
+    CHECK(cut.LastRejection == "native_ledge_drop_fall_landing_mismatch");
+    CHECK(cut.Approach == ApproachPhase::SteppingOff);
+    CHECK(now >= std::uint64_t(platform.MaxSubmissions - 1) * SubmissionRejectionWindowMs);
+
+    // Every member the barrier admits (on the ledge floor, within the start
+    // tolerance of the declared line) finds a proven landing on the ring top;
+    // a cut step refuses over at most the stretch before its chosen point.
+    int admitted = 0;
+    float longestStretch = 0.0f;
+    for (int row = 0; row <= 40; ++row)
+        for (int column = 0; column <= 46; ++column)
+        {
+            Member const m{ -159.9f + 0.05f * float(column), -225.62f + 0.05f * float(row), 41.104f };
+            if (!LedgeFloor(m.X, m.Y)
+                || DistanceToApproachLine(drop.StartPoint, drop.StepOffPoint, m.X, m.Y, m.Z) > startTolerance)
+                continue;
+            ++admitted;
+            choice = Choose(drop, m, x, y);
+            CHECK(choice.Verdict.Ok && choice.StepYards <= MaxStepOffYards + 1e-3f);
+            CHECK(FirstHitLanding(x, y) == 8.5f);
+            longestStretch = std::max(longestStretch, refusedStretch(m, choice.StepYards));
+        }
+    CHECK(admitted > 300);
+    CHECK(longestStretch > hunterStretch && longestStretch < 2.0f);
+    // On the declared line nothing is refused: the nine fall as before.
+    CHECK(refusedStretch(onStart, 1.75f) == 0.0f);
+    std::printf("%d %.2f %.2f\n", admitted, hunterStretch, longestStretch);
+    return failures ? 1 : 0;
+}
+""")

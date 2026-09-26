@@ -93,22 +93,30 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert "LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing" in sweep
 
     step = _function(executor, "Outcome ExecuteStepOff(")
-    # The lip, landing, liquid and health are proven before the standing
-    # report (Player::m_lastFallZ) and only then does the level step start.
-    assert step.index("ValidateLedgeDrop(") < step.index("ReportStandingPosition(bot)") \
+    # The lip, landing, liquid and health are proven (Route::ChooseStepOff
+    # runs ValidateLedgeDrop on every candidate) before the standing report
+    # (Player::m_lastFallZ), and only then does the level step start.
+    assert step.index("Route::ChooseStepOff(drop,") < step.index("ReportStandingPosition(bot)") \
         < step.index("LaunchCheckedLine(bot, chosen);")
     assert '"native_ledge_drop_position_report_not_applied"' in step
-    assert "StepOffCandidateAdvances(verdict.Reason)" in step
+    assert "if (!choice.Verdict.Ok)" in step
+    approach = _code(_source("BotValidationRouteNativeApproach.h"))
+    choose = _function(approach, "StepOffChoice ChooseStepOff(")
+    assert "choice.Verdict = ValidateLedgeDrop(contract, probeAt(step));" in choose
+    assert "if (choice.Verdict.Ok || !StepOffCandidateAdvances(choice.Verdict.Reason))" in choose
+    assert "step <= MaxStepOffYards + 1e-3f" in choose
     # A passenger may drop only from this transport (a pillar top) and the
     # platform keeps still for the step, the native fall and the boarding.
     assert '"native_ledge_drop_on_other_transport"' in step
-    assert step.index("ValidateLedgeDrop(") < step.index("TransportStationaryMs(transport)") \
+    assert step.index("Route::ChooseStepOff(drop,") < step.index("TransportStationaryMs(transport)") \
         < step.index("ReportStandingPosition(bot)")
     assert "Route::NativeFallTimeMs(fromZ - action.LandingZ)" in step
-    # First footprint-clear point along the declared heading, level at the
-    # member's own feet (no height is chosen for it).
-    assert "G3D::Vector3 const candidate(fromX + headingX * step, fromY + headingY * step, fromZ);" in step
-    assert "step <= Route::MaxStepOffYards + 1e-3f" in step
+    # First footprint-clear point with a proven landing along the declared
+    # heading, level at the member's own feet (no height is chosen for it);
+    # the step goes exactly to the candidate that was probed.
+    assert "return G3D::Vector3(fromX + headingX * step, fromY + headingY * step, fromZ);" in step
+    assert "return ProbeLedgeDrop(bot, transport, candidateAt(step), action.FloorToleranceYards);" in step
+    assert "G3D::Vector3 const chosen = candidateAt(choice.StepYards);" in step
     drop = _function(executor, "Route::LedgeDropProbe ProbeLedgeDrop(")
     # Exactly MoveFall's landing query: WorldObject::GetMapHeight with
     # MAX_FALL_DISTANCE from the step-off point.
@@ -126,6 +134,17 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert fall.index("Clear(MOTION_SLOT_ACTIVE)") < fall.index("ReportStandingPosition(bot)") \
         < fall.index("LaunchNativeFall(bot, false)")
     assert '"native_ledge_drop_fall_waiting_for_motion"' in fall
+    # The landing is proven again where the fall starts (a step cut short or
+    # displaced over the void), with MoveFall's own query, before anything
+    # is cleared or reported; a mismatch is a counted refusal, never a fall.
+    assert "float const floor = bot->GetMapHeight(bot->GetPositionX(), bot->GetPositionY(),\n" \
+        "        bot->GetPositionZ(), true, MAX_FALL_DISTANCE);" in fall
+    assert fall.index("Route::FallLandsOnDeclaredFloor(floor > INVALID_HEIGHT, floor, action.LandingZ,") \
+        < fall.index("Clear(MOTION_SLOT_ACTIVE)")
+    assert 'Outcome::Retryable("native_ledge_drop_fall_landing_mismatch")' in fall
+    approach = _code(_source("BotValidationRouteNativeApproach.h"))
+    assert "!FallLandsOnDeclaredFloor(true, probe.LandingZ, contract.LandingZ," in \
+        _function(approach, "inline ApproachVerdict ValidateLedgeDrop(")
     launch = _function(executor, "Outcome LaunchNativeFall(")
     assert "bot->GetMotionMaster()->MoveFall();" in launch
     assert "MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE" in launch
@@ -149,7 +168,7 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert settle.index("init.Launch();") < settle.index("bot->StopMoving();")
     # Gravity never waits for the transport: Fall resolves no transport.
     execute = _function(executor, "BotActionArbitration::Outcome Execute(")
-    assert execute.index("Stage::Fall)\n        return ExecuteFall(bot);") < execute.index("ResolveTransport(")
+    assert execute.index("Stage::Fall)\n        return ExecuteFall(bot, action);") < execute.index("ResolveTransport(")
     # Walks and step-offs only on a platform that moves vertically.
     assert '"native_surface_move_transport_not_vertical"' in execute
 
@@ -319,7 +338,7 @@ def test_intent_and_dispatch_wiring_patch_applied() -> None:
     applies them, and the new executor does not compile without P1."""
     intents = _source("BotNativeActionIntent.h")
     native = _source("BotWorldPopulationMgrNativeAction.cpp")
-    assert "struct TransportSurfaceMove\n{\n    enum class Stage : uint8 { Walk, StepOff, Fall, Land };" in intents
+    assert "struct TransportSurfaceMove\n{\n    enum class Stage : uint8 { Walk, StepOff, Fall, Land, Float, Swim, Hop, Emerge };" in intents
     assert "TransportBoard, TransportLeave, TransportSurfaceMove>;" in intents
     # Every stage claims the cast lanes (round 3): Walk and StepOff abandon a
     # movement-preventing cast, and no cast-time spell may stop a fall.

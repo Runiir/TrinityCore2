@@ -8,10 +8,12 @@
 // into one plan per bot and decision slice. It submits typed native requests
 // only: no teleport, aura, damage or forced target is ever produced.
 //
-// The existing dispatch reads OwnsNode, DamageTarget, InterruptTarget and
-// Movement: one TransportSurfaceMove Walk leg of at most 9.5 yards on the
-// platform (BotNefarianPath.h). Actions, SuppressOffense, Blocked and
-// MovementHold need the dispatch patches in .git/round2_patches/nefarian/.
+// The dispatch (KernelPreparation, BotWorldPopulationMgrNefarianCandidates.cpp)
+// reads OwnsNode, DamageTarget, InterruptTarget, Movement (a Walk leg of at
+// most 9.5 yards on the platform, BotNefarianPath.h, or a descent stage),
+// Actions, SuppressOffense, Blocked and MovementHold. Ascent (Float, Swim,
+// Hop, Board; BotNefarianAscent.h) is turned into native requests by patch
+// .git/round6_patches/nefarian/N2 once package T's stages (N1) exist.
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
@@ -44,6 +46,8 @@ struct AdaptiveNefarianPlan
     // pillar_ascent_unsupported in phase 2 (see the dossier, section 7).
     std::string_view Blocked;
     std::vector<BotNativeAction::Candidate> Actions;
+    // The phase 2 swim-and-hop step of this decision (Movement stays empty).
+    std::optional<Nefarian::AscentStep> Ascent;
 };
 
 class AdaptiveNefarianStrategy
@@ -74,7 +78,7 @@ public:
         DutyPlan const duty = BuildNefarianDutyPlan(board);
         ArenaLayout const layout = BuildArenaLayout(duty);
         plan.Duty = DutyLabel(duty, *bot);
-        ChooseDamageTarget(plan, board, view, duty, *bot, role);
+        ChooseDamageTarget(plan, board, view, duty, *bot, role, facts);
         ChooseActions(plan, board, view, duty, *bot, facts);
         ChooseMovement(plan, MovementContext{ board, view, duty, layout, *bot,
             facts });
@@ -100,6 +104,8 @@ private:
         }
         if (bot.Guid == duty.Shackler)
             return "bone_shackler";
+        if (bot.Guid == duty.WarriorHandler)
+            return "bone_warrior_handler";
         return "raid";
     }
 
@@ -117,7 +123,7 @@ private:
     static void ChooseDamageTarget(AdaptiveNefarianPlan& plan,
         Blackboard const& board, Nefarian::EncounterView const& view,
         Nefarian::DutyPlan const& duty, ActorSnapshot const& bot,
-        std::string_view role)
+        std::string_view role, Nefarian::NativeFacts const* facts)
     {
         using namespace Nefarian;
         bool const onyxiaTank = bot.Guid == duty.OnyxiaTank;
@@ -144,7 +150,8 @@ private:
                         Suppress(plan, "nefarian_airborne_tank_hold");
                 }
                 else if (!healer)
-                    plan.DamageTarget = PhaseOneDamageTarget(view);
+                    plan.DamageTarget = PhaseOneDamageTarget(view,
+                        PhaseOnePacingFor(facts));
                 return;
             case Phase::PlatformAscent:
             case Phase::PlatformHold:
@@ -168,13 +175,22 @@ private:
             case Phase::NefarianGround:
                 if (healer)
                     return;
-                if (onyxiaTank)
+                if (bot.Guid == duty.WarriorHandler)
+                {
                     if (ActorSnapshot const* warrior = LooseWarrior(board, view,
-                            duty, bot))
+                            duty, bot, facts))
                     {
                         plan.DamageTarget = warrior->Guid;
                         return;
                     }
+                    // Only held warriors left: leave them held and stay with
+                    // them rather than walking to Nefarian.
+                    if (AnyActiveWarrior(view))
+                    {
+                        Suppress(plan, "bone_warrior_handler_holds_rooted");
+                        return;
+                    }
+                }
                 if (view.Nefarian && view.Nefarian->Alive)
                     plan.DamageTarget = view.Nefarian->Guid;
                 return;
@@ -194,35 +210,46 @@ private:
         return best;
     }
 
-    // The nearest active, unheld warrior attacking a non-tank (or the warden).
-    // The shackler's candidate is left alone: any damage breaks the shackle.
+    // The warrior the handler (warden) should hold now: the nearest active
+    // warrior that is not held (a stun, root or shackle breaks on damage), is
+    // not the shackler's candidate and is not already on the warden - first
+    // any in or near Nefarian's front (on his tank, say), then any other. When
+    // only warriors already on the warden remain, the nearest unheld one of
+    // those.
     static ActorSnapshot const* LooseWarrior(Blackboard const& board,
         Nefarian::EncounterView const& view, Nefarian::DutyPlan const& duty,
-        ActorSnapshot const& warden)
+        ActorSnapshot const& warden, Nefarian::NativeFacts const* facts)
     {
         using namespace Nefarian;
         std::vector<ActorSnapshot const*> active;
         for (ActorSnapshot const* warrior : view.BoneWarriors)
             if (IsActiveBoneWarrior(*warrior))
                 active.push_back(warrior);
-        ActorSnapshot const* shackle = ShackleCandidate(board, active, duty);
+        ActorSnapshot const* shackle = ShackleCandidate(board, active, duty, facts);
+        auto rank = [&](ActorSnapshot const* warrior)
+        {
+            bool const inFront = !WarriorPointSafe(view, WorldToLocal(warrior->Position));
+            bool const onWarden = warrior->VictimGuid == warden.Guid;
+            return (onWarden ? 2 : 0) + (inFront ? 0 : 1);
+        };
         ActorSnapshot const* best = nullptr;
-        float bestDistance = 0.0f;
         for (ActorSnapshot const* warrior : active)
         {
             if (warrior == shackle || IsBoneWarriorHeld(*warrior))
                 continue;
-            if (duty.IsTank(warrior->VictimGuid)
-                && warrior->VictimGuid != warden.Guid)
-                continue;
-            float const distance = Distance3(warrior->Position, warden.Position);
-            if (!best || distance < bestDistance)
-            {
+            if (!best || rank(warrior) < rank(best)
+                || (rank(warrior) == rank(best)
+                    && Distance3(warrior->Position, warden.Position)
+                        < Distance3(best->Position, warden.Position)))
                 best = warrior;
-                bestDistance = distance;
-            }
         }
         return best;
+    }
+
+    static bool AnyActiveWarrior(Nefarian::EncounterView const& view)
+    {
+        return std::any_of(view.BoneWarriors.begin(), view.BoneWarriors.end(),
+            [](ActorSnapshot const* warrior) { return Nefarian::IsActiveBoneWarrior(*warrior); });
     }
 
     static BotNativeAction::Candidate Cast(Blackboard const& board,
@@ -260,7 +287,16 @@ private:
                 plan.Actions.push_back(Cast(board, interrupt.Reason,
                     interrupt.Target, interrupt.SpellId, Priority::Interrupt,
                     100.0f));
+                return;
             }
+            HealDecision const care = DecidePreAscentCare(board, view, duty, bot, facts);
+            if (!care.Target.IsEmpty())
+                plan.Actions.push_back(Cast(board, care.Reason, care.Target,
+                    care.SpellId, Priority::Support, 85.0f));
+            HealDecision const heal = DecideOffHeal(board, view, duty, bot, facts);
+            if (!heal.Target.IsEmpty())
+                plan.Actions.push_back(Cast(board, heal.Reason, heal.Target,
+                    heal.SpellId, Priority::Support, 80.0f));
             return;
         }
 
@@ -279,21 +315,22 @@ private:
             tauntIfLoose(view.Onyxia, "onyxia_taunt");
         if (bot.Guid == duty.NefarianTank && view.NefarianLanded())
             tauntIfLoose(view.Nefarian, "nefarian_taunt");
-        if (bot.Guid == duty.OnyxiaTank && phase == Phase::NefarianGround)
+        if (bot.Guid == duty.WarriorHandler && phase == Phase::NefarianGround)
             if (!plan.DamageTarget.IsEmpty() && plan.DamageTarget
                 != (view.Nefarian ? view.Nefarian->Guid : ObjectGuid()))
                 for (ActorSnapshot const* warrior : view.BoneWarriors)
                     if (warrior->Guid == plan.DamageTarget)
                         tauntIfLoose(warrior, "bone_warrior_taunt");
 
-        if (phase == Phase::PreEngage || duty.IsTank(bot.Guid))
+        if (phase == Phase::NefarianGround && DecideNaturesGrasp(view, duty, bot, facts))
+            plan.Actions.push_back(Cast(board, "bone_warrior_natures_grasp", bot.Guid,
+                WarriorRootFor(bot.ClassSpec), Priority::Support, 75.0f));
+        if (phase == Phase::PreEngage)
             return;
-        ControlDecision const control = DecideBoneWarriorControl(board, view, duty,
-            bot, facts);
-        if (!control.Target.IsEmpty())
-            plan.Actions.push_back(Cast(board, control.Reason, control.Target,
-                control.SpellId, Priority::Support,
-                control.SpellId == SpellShackleUndead ? 70.0f : 60.0f));
+        ControlDecision const shackle = DecideShackle(board, view, duty, bot, facts);
+        if (!shackle.Target.IsEmpty())
+            plan.Actions.push_back(Cast(board, shackle.Reason, shackle.Target,
+                shackle.SpellId, Priority::Support, 70.0f));
     }
 
     static uint64 LegGeneration(Nefarian::SurfaceGoal const& goal,
@@ -310,13 +347,100 @@ private:
         return Nefarian::HasAnyAura(bot, { 77827, 94128, 94129, 94130 });
     }
 
+    // Phase 3 descent (BotNefarianAscent.h): rim walk, step-off, fall, land.
+    static void ChooseDescent(AdaptiveNefarianPlan& plan,
+        Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        DescentDecision const descent = PlanPillarDescent(context,
+            context.Plan.SlotOf(context.Bot.Guid));
+        if (!descent.Hold.empty())
+            plan.MovementHold = descent.Hold;
+        if (!descent.Move)
+            return;
+        if (Stunned(context.Bot)
+            && descent.Move->Kind != BotNativeAction::TransportSurfaceMove::Stage::Land
+            && descent.Move->Kind != BotNativeAction::TransportSurfaceMove::Stage::Fall)
+        {
+            plan.MovementHold = "nefarian_movement_stunned";
+            return;
+        }
+        SurfaceGoal goal = MakeGoal(context, MovePurpose::PillarDescent,
+            Surface::Floor, BotLocal(context), 3.0f, true);
+        plan.MovementSurface = goal;
+        BotNativeAction::Candidate movement;
+        movement.Id.ScopeKey = context.Board.CurrentScope.Key();
+        movement.Id.Strategy = "adaptive_nefarian";
+        movement.Id.Mechanic = std::string(descent.Mechanic);
+        movement.Id.Actor = context.Bot.Guid;
+        movement.Id.EventGeneration = uint64(descent.Move->Kind) + 1;
+        movement.ActionPriority = BotActionArbitration::Priority::Survival;
+        movement.Utility = 470.0f;
+        movement.ExpiresAtMs = context.Board.ObservedAtMs + 1000;
+        movement.Action = *descent.Move;
+        plan.Movement = std::move(movement);
+    }
+
+    // A walk already running that would now lead a following warrior deeper
+    // into Nefarian's front (he turned, or the warrior did) is validated
+    // before any other rule: unless this decision replaces it with a lawful
+    // leg, the plan holds the bot (WarriorStopHold: the submission clears the
+    // native chase or path, stops the spline and renews a Hazard movement
+    // lease, so combat range movement cannot restart it).
     static void ChooseMovement(AdaptiveNefarianPlan& plan,
+        Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        bool const runningUnsafe = RunningWalkUnsafe(context);
+        ChooseMovementLeg(plan, context);
+        // Held (and the hold renewed every decision) for as long as no lawful
+        // leg exists: a running walk that turned unsafe, a leg the warrior
+        // rule refused, or the handler cornered where it stands (moving or
+        // not). A lawful escape or leg releases it; a safe running leg kept
+        // as nefarian_leg_in_flight is never held.
+        bool const cornered = plan.MovementHold.empty() && plan.MovementSurface
+            && plan.MovementSurface->WarriorHold;
+        if (!plan.Movement && !plan.Ascent
+            && (runningUnsafe || cornered
+                || plan.MovementHold == "nefarian_warrior_path_unsafe"))
+            plan.MovementHold = WarriorStopHold;
+    }
+
+    static bool RunningWalkUnsafe(Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        if (!context.Facts || !LeadsWarriors(context) || OnPillarStructure(context))
+            return false;
+        if (FallState const* fall = context.Facts->FindFall(context.Bot.Guid);
+            fall && (fall->Falling || fall->LandingPending))
+            return false;
+        MovementState const* motion = context.Facts->FindMotion(context.Bot.Guid);
+        return motion && motion->Moving
+            && !WarriorPathNoDeeper(context.View, BotLocal(context),
+                WorldToLocal(motion->Destination));
+    }
+
+    static void ChooseMovementLeg(AdaptiveNefarianPlan& plan,
         Nefarian::MovementContext const& context)
     {
         using namespace Nefarian;
         using BotActionArbitration::Priority;
         Phase const phase = context.View.CurrentPhase;
         bool const fightOnFloor = !PhaseWantsPillar(phase);
+
+        // Off the pillar before Nefarian lands (Shadow of Cowardice), and a
+        // fall already under way is always carried through to its landing.
+        if (fightOnFloor || context.Facts)
+        {
+            FallState const* fall = context.Facts
+                ? context.Facts->FindFall(context.Bot.Guid) : nullptr;
+            bool const falling = fall && (fall->Falling || fall->LandingPending);
+            if (falling || (fightOnFloor && OnPillarStructure(context)))
+            {
+                ChooseDescent(plan, context);
+                return;
+            }
+        }
 
         std::optional<SurfaceGoal> goal;
         Priority priority = Priority::CombatMovement;
@@ -338,6 +462,8 @@ private:
             280.0f);
         if (fightOnFloor)
         {
+            take(WarriorEscape(context), Priority::Survival, 490.0f,
+                Priority::Survival, 490.0f);
             take(BreathEscape(context), Priority::Survival, 480.0f,
                 Priority::Survival, 480.0f);
             take(KiteGoal(context), Priority::Survival, 420.0f,
@@ -352,26 +478,33 @@ private:
         plan.MovementSurface = goal;
 
         LocalPoint const self = BotLocal(context);
-        bool const onTop = OnPillarTop(context);
-        if (onTop && goal->Target == Surface::Floor)
-        {
-            // Leaving a pillar top is a 10-yard drop off a near-vertical side:
-            // StepOff/Fall/Land, not a walk. Not wired yet.
-            goal->Purpose = MovePurpose::PillarDescent;
-            plan.MovementSurface = goal;
-            plan.Blocked = "pillar_descent_unsupported";
-            plan.MovementHold = "pillar_descent_unsupported";
-            return;
-        }
-        if (goal->Target == Surface::Floor
-            && Distance(self, goal->Local) <= goal->ArrivalToleranceYards)
-            return;
+        bool const onPillar = OnPillarStructure(context);
         if (context.View.Elevator.Guid.IsEmpty())
         {
             plan.MovementHold = "nefarian_elevator_unobserved";
             return;
         }
-        if (!onTop && !OnPlatformFloor(context))
+        // Phase 2: the swim-and-hop ascent owns every step off the floor.
+        if (!fightOnFloor && goal->Pillar >= 0 && !onPillar
+            && AscentSupported(context.Facts))
+        {
+            AscentDecision const ascent = PlanPillarAscent(context, goal->Pillar,
+                context.Plan.SlotOf(context.Bot.Guid));
+            if (ascent.Step)
+            {
+                plan.Ascent = ascent.Step;
+                return;
+            }
+            if (!ascent.Hold.empty())
+            {
+                plan.MovementHold = ascent.Hold;
+                return;
+            }
+        }
+        if (goal->Target == Surface::Floor
+            && Distance(self, goal->Local) <= goal->ArrivalToleranceYards)
+            return;
+        if (!onPillar && !OnPlatformFloor(context))
         {
             plan.MovementHold = "nefarian_not_on_platform";
             return;
@@ -385,21 +518,28 @@ private:
         std::optional<PathLeg> leg;
         if (goal->Target == Surface::PillarTop)
         {
-            // Only reached when the runtime declares a pillar ascent.
-            PathLeg ascent;
-            ascent.To = goal->Local;
-            ascent.LocalZ = goal->LocalZ;
-            ascent.Kind = "pillar_ascent";
-            if (onTop || Distance(self, goal->Local) <= MaxLegYards)
-                leg = ascent;
-            else
-                leg = NextLeg(self, PillarBase(uint8(std::max(goal->Pillar, 0)), 0));
+            // On the pillar (after the hop): a short walk up to the slot.
+            if (!onPillar || Distance(self, goal->Local) <= 0.75f)
+                return;
+            PathLeg top;
+            top.To = goal->Local;
+            top.LocalZ = goal->LocalZ;
+            top.Kind = "pillar_top";
+            leg = top;
         }
         else
             leg = NextLeg(self, goal->Local);
         if (!leg)
         {
             plan.MovementHold = "nefarian_no_surface_path";
+            return;
+        }
+        // The leg itself (it may turn at a waypoint) never walks a following
+        // warrior past Nefarian's front.
+        if (!onPillar && LeadsWarriors(context)
+            && !WarriorPathNoDeeper(context.View, self, leg->To))
+        {
+            plan.MovementHold = "nefarian_warrior_path_unsafe";
             return;
         }
         plan.MovementLeg = leg;
@@ -419,9 +559,13 @@ private:
                 LocalPoint const running = WorldToLocal(motion->Destination);
                 float const runningLength = Distance(self, running);
                 float const plannedLength = Distance(self, leg->To);
+                // A running walk that would lead a following warrior into
+                // Nefarian's front is never kept: the planned leg replaces it.
                 if (runningLength >= 0.5f && plannedLength >= 0.5f
                     && runningLength <= MaxLegYards + 0.5f
                     && SegmentWalkable(self, running)
+                    && (!LeadsWarriors(context)
+                        || WarriorPathNoDeeper(context.View, self, running))
                     && Distance(running, leg->To) <= std::max(1.0f, plannedLength)
                     && AngularGap(AngleOf({ running.X - self.X, running.Y - self.Y }),
                         AngleOf({ leg->To.X - self.X, leg->To.Y - self.Y }))

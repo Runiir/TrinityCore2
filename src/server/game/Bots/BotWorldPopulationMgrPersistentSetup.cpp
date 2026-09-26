@@ -322,8 +322,13 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             continue;
 
         bool const trackedPresence = unholyPresenceSetup && buff.SpellId == 48265;
-        bool const auraActive = bot->HasAura(buff.AuraId)
-            || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId));
+        bool const auraActive = (bot->HasAura(buff.AuraId)
+            || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId)))
+            && (!canonicalRaid || BotRaidPersistentBuffs::RaidCoverageHolds(bot, buff,
+                state.ReadinessRetryUntilMs, NowMs(), [bot, &buff] {
+                    SpellInfo const* info = sSpellMgr->GetSpellInfo(buff.SpellId);
+                    return info && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->GetSpellHistory()->HasGlobalCooldown(info)
+                        && bot->GetSpellHistory()->IsReady(info) && info->CheckShapeshift(bot->GetShapeshiftForm()) == SPELL_CAST_OK; }));
         if (auraActive && (!trackedPresence || state.PresenceSetupNativeCastSubmittedAtMs))
         {
             // A submitted receipt and the later native aura observation are

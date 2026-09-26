@@ -339,41 +339,60 @@ def test_the_central_hall_node_clears_the_north_patrol_and_ivoroc_together(world
         assert clearance.spawn_distance((hall["x"], hall["y"], hall["z"]), spawns[NORTH_PATROL]) < hall["cluster_radius_yards"]
 
 
-PYRECRAW, PYRECRAW_ENTRY, PYRECRAW_REACH_3D = 250107, 42764, 16.5
+DRAKE_REACH_3D = 16.5
+PYRECRAW, PYRECRAW_ENTRY, MAIMGOR, MAIMGOR_ENTRY = 250107, 42764, 250109, 42768
 FULL_ROUTES = ("blackwing_descent_10n", "blackwing_descent_10n_full_c0")
+NEFARIAN_ROUTES = ("blackwing_descent_10n_nefarian_diagnostic", NEFARIAN_C0)
+DRAKE_ROUTES = FULL_ROUTES + NEFARIAN_ROUTES
+# node, guid, entry, the node after it (Maimgor's: the Atramedes wing in the full raid, the Orb in the Nefarian shard).
+DRAKE_NODES = (
+    ("bwd.north_corridor.pyrecraw", PYRECRAW, PYRECRAW_ENTRY, {route: "bwd.south_corridor.maimgor" for route in DRAKE_ROUTES}),
+    ("bwd.south_corridor.maimgor", MAIMGOR, MAIMGOR_ENTRY,
+     {**{route: "bwd.atramedes.north_spirits" for route in FULL_ROUTES},
+      **{route: "bwd.nefarian.orb_regroup" for route in NEFARIAN_ROUTES}}),
+)
 
 
-def test_the_full_raid_clears_pyrecraw_right_after_the_central_hall(hostile, world):
-    """Round 5 review: the Atramedes-to-Chimaeron walk passed the hovering Pyrecraw, whom no node cleared.
-    The full routes clear him from the floor under his spawn right after the central hall: a later node that
-    names him makes the future-target guard protect him on every earlier node, and the recovery walk into the
-    Atramedes wing passes 19.7 yd from his spawn. The boss shards never walk past him."""
+def test_the_hovering_drakes_are_cleared_right_after_the_central_hall_wherever_a_walk_passes_them(hostile, world):
+    """Round 5 review: the Atramedes-to-Chimaeron walk passed the hovering Pyrecraw, whom no node cleared. Round 6
+    (r05 Nefarian c0): the descent approach from the central hall runs through his corridor and he engaged the
+    hunter at the descent; from the Orb point it runs 8.6 yd under Maimgor instead. The full routes and the
+    Nefarian shard clear Pyrecraw and then Maimgor right after the central hall, each from the floor inside his
+    reach, so the Orb, Nefarian's intro, either descent approach and the Atramedes wing see no live drake. The
+    Chimaeron shard's walks stay 145 yd from Pyrecraw, and the other boss shards never walk past either."""
     _needs_world(world)
-    spawn = world["by_guid"][PYRECRAW]
-    for scenario_id in FULL_ROUTES:
-        route = _scenario(CONFIG, scenario_id)["route"]
-        ids = [step["node_id"] for step in route]
-        index = ids.index("bwd.north_corridor.pyrecraw")
-        assert ids[index - 1:index + 2] == ["bwd.lower_hall.central_hall", "bwd.north_corridor.pyrecraw",
-                                            "bwd.atramedes.north_spirits"]
-        assert all(not step["node_id"].startswith(("bwd.atramedes.", "bwd.chimaeron.")) for step in route[:index])
-        node = route[index]
-        assert (node["source_entry"], node["source_guid"], node["pack_target_entries"]) == (
-            PYRECRAW_ENTRY, str(PYRECRAW), [PYRECRAW_ENTRY])
-        assert node["completion_policy"] == "cluster_clear_after_pull" and node["cluster_radius_yards"] >= 25.0
-        anchor = (node["x"], node["y"], node["z"])
-        # On the floor under him: arrival is inside his reach wherever his 10 yd random movement took him.
-        horizontal = clearance.math.dist(anchor[:2], spawn.point[:2]) + spawn.slack
-        assert clearance.math.hypot(horizontal, spawn.point[2] - anchor[2]) < PYRECRAW_REACH_3D
-        assert clearance.cleared_by(node, spawn, world)
-        others = [other.guid for other in world["spawns"] if other.map_id == 669 and other.guid != PYRECRAW
-                  and clearance.can_aggro_players(other, world["templates"].get(other.entry) or {}, hostile)
-                  and clearance.spawn_distance(anchor, other) < node["cluster_radius_yards"]]
-        assert others == []
-    for row in clearance.scenarios(CONFIG):
-        if row["id"].startswith("blackwing_descent_10n") and row["id"] not in FULL_ROUTES:
-            assert not any(step.get("source_guid") == str(PYRECRAW)
-                           or PYRECRAW_ENTRY in (step.get("pack_target_entries") or []) for step in row["route"])
+    for node_id, guid, entry, following in DRAKE_NODES:
+        spawn = world["by_guid"][guid]
+        rows = []
+        for scenario_id in DRAKE_ROUTES:
+            route = _scenario(CONFIG, scenario_id)["route"]
+            ids = [step["node_id"] for step in route]
+            index = ids.index(node_id)
+            assert ids[index + 1] == following[scenario_id]
+            assert ids.index("bwd.lower_hall.central_hall") < ids.index("bwd.north_corridor.pyrecraw") == \
+                ids.index("bwd.south_corridor.maimgor") - 1
+            assert all(not step["node_id"].startswith(("bwd.atramedes.", "bwd.chimaeron.", "bwd.nefarian."))
+                       for step in route[:index])
+            node = route[index]
+            rows.append({key: value for key, value in node.items() if key != "step"})
+            assert (node["source_entry"], node["source_guid"], node["pack_target_entries"]) == (entry, str(guid), [entry])
+            assert node["completion_policy"] == "cluster_clear_after_pull" and node["cluster_radius_yards"] >= 25.0
+            anchor = (node["x"], node["y"], node["z"])
+            # On the floor under him: arrival is inside his reach wherever his random movement took him.
+            horizontal = clearance.math.dist(anchor[:2], spawn.point[:2]) + spawn.slack
+            assert clearance.math.hypot(horizontal, spawn.point[2] - anchor[2]) < DRAKE_REACH_3D
+            assert node["cluster_radius_yards"] >= spawn.slack + 15.0
+            assert clearance.cleared_by(node, spawn, world)
+            others = [other.guid for other in world["spawns"] if other.map_id == 669 and other.guid != guid
+                      and clearance.can_aggro_players(other, world["templates"].get(other.entry) or {}, hostile)
+                      and clearance.spawn_distance(anchor, other) < node["cluster_radius_yards"]]
+            assert others == []
+        assert all(row == rows[0] for row in rows)  # one row: the composer takes the full raid's from the Nefarian shard
+        for row in clearance.scenarios(CONFIG):
+            if row["id"].startswith("blackwing_descent_10n") and row["id"] not in DRAKE_ROUTES:
+                assert not any(step.get("source_guid") == str(guid)
+                               or entry in (step.get("pack_target_entries") or []) for step in row["route"])
+    assert world["by_guid"][MAIMGOR].slack == 0.0 and world["by_guid"][PYRECRAW].slack == 10.0  # static, wanders
 
 
 OMNOTRON_C0 = "blackwing_descent_10n_omnotron_c0_diagnostic"

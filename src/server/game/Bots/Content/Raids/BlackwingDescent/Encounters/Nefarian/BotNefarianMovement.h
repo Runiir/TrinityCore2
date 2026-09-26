@@ -67,6 +67,10 @@ struct SurfaceGoal
     float ArrivalToleranceYards = 3.0f;
     int Pillar = -1;
     bool Urgent = false;
+    // A bot leading warriors held where it stands (the handler cornered with
+    // no lawful kite or pen point): the plan renews the warrior hold every
+    // decision while this goal stands, moving or not.
+    bool WarriorHold = false;
 };
 
 struct MovementContext
@@ -146,12 +150,129 @@ inline SurfaceGoal MakeGoal(MovementContext const& context, MovePurpose purpose,
     return goal;
 }
 
+// A point a bone warrior may be led to: well outside Nefarian's front cone
+// (his breath wakes, refills and empowers warriors; confirmed by the user) and
+// outside his tail.
+constexpr float WarriorFrontMarginDeg = 15.0f;
+constexpr float HandlerKiteTriggerYards = 6.0f;
+// The movement hold that stops a running walk no lawful leg replaces (the
+// submission claims the movement lane and stops the spline).
+constexpr std::string_view WarriorStopHold = "nefarian_warrior_path_stop";
+constexpr float HandlerKiteReleaseYards = 10.0f; // hysteresis: kiting ends past this
+constexpr float HandlerPenRadius = 24.0f;
+constexpr float WarriorLeadRangeYards = 25.0f;
+
+// How deep a point lies in the warrior exclusion (radians past its edge; 0
+// outside it): the breath cone widened by WarriorFrontMarginDeg, and the tail
+// cone, both within the cones' 60-yard radius.
+inline float WarriorDanger(EncounterView const& view, LocalPoint point)
+{
+    if (!view.Nefarian || !view.Nefarian->Alive || !view.NefarianLanded())
+        return 0.0f;
+    DragonPose const nefarian = PoseOf(*view.Nefarian);
+    if (Distance(nefarian.Position, point) > DragonConeRadius)
+        return 0.0f;
+    float const off = OffFacing(nefarian.Position, nefarian.Facing, point);
+    float const front = DegToRad(BreathHalfAngleDeg + WarriorFrontMarginDeg) - off;
+    float const rear = off - (Pi - DegToRad(TailLashHalfAngleDeg + 8.0f));
+    return std::max(0.0f, std::max(front, rear));
+}
+
+inline bool WarriorPointSafe(EncounterView const& view, LocalPoint point)
+{
+    return WarriorDanger(view, point) <= 0.0f;
+}
+
+// A straight walk a following warrior may take: it ends outside the
+// exclusion, and along it (sampled at most a yard apart) the depth in the
+// exclusion never grows. From a safe start that means every point is safe;
+// from a start already inside (Nefarian turned onto the walker, or it stands
+// in the margin) it allows only a monotonic way out, never deeper in.
+// Along a straight walk the depth in the exclusion never grows (a leg may
+// stop short of leaving it; from a safe start every point stays safe).
+inline bool WarriorPathNoDeeper(EncounterView const& view, LocalPoint from, LocalPoint to)
+{
+    float const length = Distance(from, to);
+    int const steps = std::max(1, int(std::ceil(length)));
+    float previous = WarriorDanger(view, from);
+    for (int i = 1; i <= steps; ++i)
+    {
+        float const t = float(i) / float(steps);
+        float const danger = WarriorDanger(view, { from.X + (to.X - from.X) * t,
+            from.Y + (to.Y - from.Y) * t });
+        if (danger > previous + 1e-4f)
+            return false;
+        previous = danger;
+    }
+    return true;
+}
+
+inline bool WarriorPathSafe(EncounterView const& view, LocalPoint from, LocalPoint to)
+{
+    if (!WarriorPointSafe(view, to))
+        return false;
+    float const length = Distance(from, to);
+    int const steps = std::max(1, int(std::ceil(length)));
+    float previous = WarriorDanger(view, from);
+    for (int i = 1; i <= steps; ++i)
+    {
+        float const t = float(i) / float(steps);
+        float const danger = WarriorDanger(view, { from.X + (to.X - from.X) * t,
+            from.Y + (to.Y - from.Y) * t });
+        if (danger > previous + 1e-4f)
+            return false;
+        previous = danger;
+    }
+    return true;
+}
+
+// The dragon's current tank: Nefarian (landed) or Onyxia is attacking it, or
+// it is Nefarian's duty tank once he is on the ground. It keeps its tank hold
+// whatever warrior is on it: moving would turn the dragon and sweep his
+// breath over the raid. A warrior on it is the handler's (taunt) or the
+// controls' (shackle, Nature's Grasp), never the tank's to kite.
+inline bool IsDragonTank(MovementContext const& context)
+{
+    ObjectGuid const guid = context.Bot.Guid;
+    EncounterView const& view = context.View;
+    if (view.NefarianLanded()
+        && (view.Nefarian->VictimGuid == guid || guid == context.Plan.NefarianTank))
+        return true;
+    return view.OnyxiaAlive() && view.Onyxia->InCombat
+        && view.Onyxia->VictimGuid == guid;
+}
+
+// The bot leads bone warriors where it walks: it is the warrior handler once
+// Nefarian is on the ground, or an active, unheld warrior near it attacks it.
+// A dragon's tank never leads them (IsDragonTank).
+inline bool LeadsWarriors(MovementContext const& context)
+{
+    ActorSnapshot const& bot = context.Bot;
+    if (IsDragonTank(context))
+        return false;
+    if (bot.Guid == context.Plan.WarriorHandler
+        && (context.View.CurrentPhase == Phase::NefarianGround
+            || context.View.CurrentPhase == Phase::NefarianLanding))
+        return true;
+    for (ActorSnapshot const* warrior : context.View.BoneWarriors)
+        if (IsActiveBoneWarrior(*warrior) && !IsBoneWarriorHeld(*warrior)
+            && warrior->VictimGuid == bot.Guid
+            && Distance3(warrior->Position, bot.Position) <= WarriorLeadRangeYards)
+            return true;
+    return false;
+}
+
 // Danger rules at a floor point. Onyxia's flank is only avoided while she is
 // discharging, and her rear is then the intended refuge (the tank turns her).
 inline bool FloorPointSafe(MovementContext const& context, LocalPoint point,
     bool isTank)
 {
     if (!OnFloorArea(point))
+        return false;
+    // Whoever leads warriors (tank or not) never walks them past Nefarian's
+    // front on the way there.
+    if (LeadsWarriors(context)
+        && !WarriorPathSafe(context.View, BotLocal(context), point))
         return false;
     for (ActorSnapshot const* fire : context.View.Fires)
         if (Distance(WorldToLocal(fire->Position), point)
@@ -247,6 +368,36 @@ inline std::optional<SurfaceGoal> BreathEscape(MovementContext const& context)
     return std::nullopt;
 }
 
+// A bot leading warriors from inside the exclusion walks straight out of it:
+// to the nearer edge's safe side, sweeping around Nefarian on the side it is
+// already on, at about its own distance from him (the first floor spot, clear
+// of fires, whose path leaves the exclusion monotonically).
+inline std::optional<SurfaceGoal> WarriorEscape(MovementContext const& context)
+{
+    LocalPoint const self = BotLocal(context);
+    if (!LeadsWarriors(context) || WarriorPointSafe(context.View, self))
+        return std::nullopt;
+    DragonPose const nefarian = PoseOf(*context.View.Nefarian);
+    LocalPoint const delta{ self.X - nefarian.Position.X, self.Y - nefarian.Position.Y };
+    float const side = NormalizeSigned(AngleOf(delta) - nefarian.Facing) >= 0.0f ? 1.0f : -1.0f;
+    float const off = OffFacing(nefarian.Position, nefarian.Facing, self);
+    bool const inFront = off < Pi / 2.0f;
+    float const safeOff = inFront
+        ? DegToRad(BreathHalfAngleDeg + WarriorFrontMarginDeg + 8.0f)
+        : Pi - DegToRad(TailLashHalfAngleDeg + 8.0f + 8.0f);
+    float const radius = std::clamp(Length(delta), 16.0f, 30.0f);
+    for (float extra : { 0.0f, 10.0f, 20.0f, 30.0f })
+        for (float scale : { 1.0f, 0.8f, 1.2f })
+        {
+            float const bearing = nefarian.Facing + side
+                * (inFront ? safeOff + DegToRad(extra) : safeOff - DegToRad(extra));
+            LocalPoint const point = Offset(nefarian.Position, bearing, radius * scale);
+            if (FloorPointSafe(context, point, context.Plan.IsTank(context.Bot.Guid)))
+                return MakeGoal(context, MovePurpose::Kite, Surface::Floor, point, 1.5f, true);
+        }
+    return std::nullopt;
+}
+
 inline std::optional<SurfaceGoal> KiteGoal(MovementContext const& context)
 {
     if (context.Plan.IsTank(context.Bot.Guid))
@@ -266,7 +417,8 @@ inline std::optional<SurfaceGoal> KiteGoal(MovementContext const& context)
     for (float step : { 0.45f, 0.3f, 0.6f })
     {
         LocalPoint const point = Polar(selfAngle + direction * step, radius);
-        if (FloorPointSafe(context, point, false))
+        if (FloorPointSafe(context, point, false)
+            && WarriorPointSafe(context.View, point))
             return MakeGoal(context, MovePurpose::Kite, Surface::Floor, point,
                 2.5f, true);
     }

@@ -360,13 +360,42 @@ from roster slots.
     Whirlwind pulse (80651) 4 yd (radius index 26; the tank at 4.37–4.56 yd
     took 0 of 13 ticks). `tests/test_atramedes_spirits.py` pins both against
     the client rows.
-  - Ranged and healers stand on a half circle 30 yd from the engaged pack,
-    toward the arena centre, 30° apart:
+  - Ranged and healers stand on a ring 30 yd from the engaged pack, 30°
+    (15.5 yd) apart, as near the bearing toward the arena centre as allowed.
+    Every slot is:
     - outside every Thunderclap (20 yd), with a survival exit when inside
       21.5 yd;
-    - within 38 yd of every spirit;
-    - 15.5 yd apart, above Chain Lightning's 12.5 yd jump;
-    - at least 35 yd from the other pack.
+    - within 40 yd (spell range) of every spirit;
+    - at least 35 yd from every idle spirit (the other pack, even when the
+      tank drags the engaged one toward it);
+    - on the arena floor (48 yd from its centre) and off the pillar holes:
+      all four navmesh cells around it are floor (`ArenaFloor::Solid`);
+    - within heal range of the tank: 38 yd from the living main tank, or,
+      with none in the snapshot, 33 yd from the pack centre, since the tank
+      can stand about 5 yd beyond it. Heal range is about 43 yd with reaches.
+  - When the tank drags the pack where the 30° ring does not fit everyone,
+    the slots stay more than Chain Lightning's 12.5 yd jump apart:
+    1. spread evenly over the widest valid arc of the 30 yd ring, down to
+       26° (13.5 yd);
+    2. else the rings at 30, 33 and 27 yd, packed 15.5 yd then 12.75 yd
+       apart;
+    3. else the valid points of a 1 yd grid around the pack, packed
+       12.75 yd apart;
+    4. with no valid point at all (two engaged spirits more than 80 yd
+       apart), points on the 30 yd ring, preferring those on the floor and
+       clear of the spirits, then those on the floor.
+    The layout is computed once per snapshot. The last few layouts are
+    cached per thread, keyed bit for bit on every input. In a cramped drag
+    that cuts the cost from about 3.8 ms to 0.55 ms per decision round of
+    seven bots.
+    The review of round 6 had found the old fallback (the nearest valid
+    point) stacking slots: some pair under 15 yd in 370 of 824 dragged
+    positions, down to 0 yd. The drag sweep in
+    `tests/test_atramedes_spirits.py` (each pack ±24 yd in 2 yd steps, the
+    other idle, the tank dragging it or dead) now keeps every pair above
+    12.5 yd (worst 12.81 yd) in the 787 positions per case with every
+    engaged spirit in the room. Dragged into the walls (the other 463), the
+    slots stay valid and at least 7 yd apart.
   - The route keeps the pull, threat pickup and completion.
   - Melee near Whirlwind (80652: 5 s, 80651 every second in 4 yd, 56.5k).
     A melee player (not the tank) within 4.75 yd of a whirlwinding spirit
@@ -435,6 +464,37 @@ from roster slots.
   live central-hall north patrol at (-42.8, -164.8). The boss node refused
   it as undeclared, so the raid stood there for 10 minutes (round 5 requests
   A–C).
+
+**Round 5: the first kill, not recorded (2026-09-26).**
+- The plan owned the fight from the landing, and Atramedes died:
+  26,110,798 damage, no death.
+  - The Time Warp fallback came at 5.3 s.
+  - The tank dragged him west.
+  - Searing Flame came at 47–51 s, the air phase at about 91–131 s, and the
+    kill at about 140 s.
+- The native death callback rejected the kill (`gate=combined_rejected`,
+  `engaged_guid_expected` empty). The adaptive owner skips the route
+  adapter, and unlike Magmaw and Chimaeron nothing carried the route's
+  engagement edge (`RememberValidationRouteBossEngagement`). The route never
+  advanced and the plateau watchdog ended the run.
+  - `BotWorldPopulationMgrAtramedesCandidates.cpp` adds the observer. It
+    binds the engagement only while the plan owns the encounter node, the
+    target is Atramedes (the route target entry), he is in combat, and
+    native combat with him is observed.
+  - `.git/round6_patches/atramedes/atramedes_route_observation.patch`
+    declares it and submits it next to Chimaeron's.
+- The Searing Flame went ungonged (three ticks on the raid). The gong owner
+  never reached its shield: 311 of its standby moves were rejected
+  (`route_destination_path_control_level_gap`).
+  - The hall is a bowl: about 75.7 at the centre and 77–77.6 at the shield
+    ring. The plan sent every destination at z 75.
+  - The air kite's ring waypoints were rejected the same way.
+  - Destinations now take the navmesh floor (`BotAtramedesArenaFloor.h`, a
+    2 yd grid regenerated from `data/mmaps` by the test).
+- `validation_route_future_encounter_contamination`: the tank dragged the
+  north pack 14 yd south, and the fixed half circle toward the arena centre
+  put both healers 26 yd from the idle south pack, which joined the fight.
+  The standoff ring now keeps 35 yd from every idle spirit.
 
 Acceptance observations are in the ledger, `acceptance_observations`:
 - a native clear after the spirits and bell;

@@ -5,9 +5,10 @@
 // role and class/spec, never from fixed roster slots, so any composition with
 // two tanks and interrupt-capable members resolves. The plan is a pure
 // function of the blackboard's bot list (external humans never receive a
-// duty), stable across ticks: pillar teams include dead members so a death
-// never reshuffles the platforms, and only the per-team interrupter and the
-// bone warrior controllers skip the dead.
+// duty), stable across ticks: pillar teams are built from the whole roster,
+// dead members included, so a death never reshuffles the platforms; only the
+// live duties (tanks, the warrior handler, the per-team interrupter and
+// off-healer, the shackler) skip the dead.
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
@@ -25,6 +26,8 @@ struct PillarTeam
     ObjectGuid Healer;
     ObjectGuid PrimaryInterrupter;
     ObjectGuid BackupInterrupter;
+    // A team without a healer: the living hybrid that off-heals it.
+    ObjectGuid OffHealer;
     uint8 DamageDealers = 0;
 };
 
@@ -35,7 +38,9 @@ struct DutyPlan
     ObjectGuid OnyxiaTank;
     std::array<PillarTeam, 3> Pillars;
     ObjectGuid Shackler;
-    std::vector<ObjectGuid> Controllers; // capability order
+    // Kites the bone warriors and roots them with Nature's Grasp once its
+    // dragon is dead (user raid experience 2026-09-26): the Onyxia tank.
+    ObjectGuid WarriorHandler;
 
     int PillarOf(ObjectGuid guid) const
     {
@@ -93,6 +98,7 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
         plan.NefarianTank = tanks[0]->Guid;
     if (tanks.size() > 1)
         plan.OnyxiaTank = tanks[1]->Guid;
+    plan.WarriorHandler = plan.OnyxiaTank;
 
     // Pillar teams: one healer each, then a 13-second interrupter where the
     // healer cannot provide one, then balance head count and damage dealers.
@@ -122,6 +128,30 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
         }
         else
             rest.push_back(member);
+    }
+    // Two healers (user raid experience 2026-09-26: 2 tanks, 2 healers,
+    // 6 DPS): pillars are 70 yards apart, so the third pillar has no healer.
+    // It gets the Nefarian tank, the member best able to sustain itself (a
+    // Blood death knight's Death Strike) through the magma swim.
+    // The roster's Nefarian tank, dead or alive: teams never reshuffle when a
+    // tank dies and another takes over the live duty.
+    ActorSnapshot const* rosterTank = nullptr;
+    for (ActorSnapshot const* member : members)
+        if (member->Role == "tank" && (!rosterTank
+                || NefarianTankRank(member->ClassSpec) < NefarianTankRank(rosterTank->ClassSpec)))
+            rosterTank = member;
+    if (healers < plan.Pillars.size() && rosterTank)
+    {
+        auto tank = std::find_if(rest.begin(), rest.end(),
+            [rosterTank](ActorSnapshot const* member)
+            {
+                return member == rosterTank;
+            });
+        if (tank != rest.end())
+        {
+            place(*tank, healers);
+            rest.erase(tank);
+        }
     }
 
     std::stable_sort(rest.begin(), rest.end(), [](auto left, auto right)
@@ -197,38 +227,24 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
             team.PrimaryInterrupter = capable[0]->Guid;
         if (capable.size() > 1)
             team.BackupInterrupter = capable[1]->Guid;
+        if (team.Healer.IsEmpty())
+            for (ObjectGuid guid : team.Members)
+                if (ActorSnapshot const* member = board.FindActor(guid))
+                    if (member->Alive && !plan.IsTank(guid) && OffHealFor(member->ClassSpec))
+                    {
+                        team.OffHealer = guid;
+                        break;
+                    }
     }
 
-    // Bone warrior control: one living shackler, then every other living
-    // non-tank whose spec can learn a stun, snare or root (ControlFor), in
-    // ControlPreference order (stuns, roots, cooldown-free snares, then snares
-    // with a cooldown). Whether each one knows its spell and has it ready is
-    // decided per decision from NativeFacts (DecideBoneWarriorControl).
+    // Shackle Undead backup: the first living member whose spec has it.
     for (ActorSnapshot const* member : members)
-    {
-        if (!member->Alive || plan.IsTank(member->Guid))
-            continue;
-        ControlCapability const control = ControlFor(member->ClassSpec);
-        if (!control.Known())
-            continue;
-        if (control.Kind == ControlKind::Shackle)
+        if (member->Alive && !plan.IsTank(member->Guid)
+            && ControlFor(member->ClassSpec).Kind == ControlKind::Shackle)
         {
-            if (plan.Shackler.IsEmpty())
-                plan.Shackler = member->Guid;
-            continue;
+            plan.Shackler = member->Guid;
+            break;
         }
-        plan.Controllers.push_back(member->Guid);
-    }
-    auto controlRank = [&board](ObjectGuid guid)
-    {
-        ActorSnapshot const* actor = board.FindActor(guid);
-        return actor ? ControlPreference(ControlFor(actor->ClassSpec)) : 9;
-    };
-    std::stable_sort(plan.Controllers.begin(), plan.Controllers.end(),
-        [&controlRank](ObjectGuid left, ObjectGuid right)
-    {
-        return controlRank(left) < controlRank(right);
-    });
     return plan;
 }
 
@@ -250,12 +266,10 @@ inline std::string NefarianDutyPlanJson(DutyPlan const& plan)
                 json << (member ? "," : "") << team.Members[member].GetCounter();
             json << "],\"healer\":" << team.Healer.GetCounter()
                  << ",\"interrupt\":" << team.PrimaryInterrupter.GetCounter()
-                 << ",\"backup\":" << team.BackupInterrupter.GetCounter() << '}';
+                 << ",\"backup\":" << team.BackupInterrupter.GetCounter()
+                 << ",\"off_healer\":" << team.OffHealer.GetCounter() << '}';
         }
-        json << "],\"controllers\":[";
-        for (std::size_t index = 0; index < plan.Controllers.size(); ++index)
-            json << (index ? "," : "") << plan.Controllers[index].GetCounter();
-        json << ']';
+        json << "],\"warrior_handler\":" << plan.WarriorHandler.GetCounter();
     }
     json << '}';
     return json.str();

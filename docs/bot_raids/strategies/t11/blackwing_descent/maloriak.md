@@ -15,28 +15,80 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
 ## Contract
 
 - Interrupt every Arcane Storm.
-- Remove every Remedy at once: Spellsteal, Purge, priest Dispel Magic or Tranquilizing Shot.
-- Release Aberrations: let it through while few Aberrations are loose. Current guidance is to
-  handle about nine at a time; the historical guide releases nine per cycle and interrupts the
-  first cast. Interrupt the rest. At 25% Maloriak releases the whole remaining reserve anyway.
+- Tactic source: the user's first-hand raid tactic (2026-09-26) is authoritative and replaces
+  the guides where they differ (ledger `user_raid_experience_20260926`, conflicts
+  `release_aberrations_interrupts` and `remedy_during_add_switch`).
+- Remedy: above 30%, and again once the chambers are empty and every Aberration is dead, remove
+  it at once (Spellsteal, then Purge, Tranquilizing Shot, priest Dispel Magic). From 30% until
+  then nobody removes it: his self-heal offsets the tank's damage and keeps him above 25%.
+- Release Aberrations: never interrupted. Every release goes through (10N holds 18 in the
+  chambers); kill each Aberration as it comes, one at a time, with no wait for Green (a pack in
+  the slime window simply dies faster). The guides differ: current guidance interrupts when
+  about nine are up, the historical guide interrupts the first release of a cycle. Human raids
+  usually reach Green before 30%; bot damage reaches 30% sooner, with the reserve still full.
+- Threat on adds: the hunter's Misdirection and the rogue's Tricks of the Trade go on the Feral
+  off-tank while their own target is a loose Aberration (armed during the release cast, they
+  would carry boss attacks and boss threat to the Feral). The shaman Frost Shocks a loose
+  Aberration (nearest Maloriak first), else one of the kited pack; never a frozen one. No slow
+  totem (Earthbind would replace the earth buff totem). The hunter lays traps at its feet (their
+  range is self; no Trap Launcher): Freeze Trap for an Aberration running at it that nobody is
+  hitting (not the burn target, not the off-tank's pickup, no player DoT on it; damage breaks
+  it), Ice Trap otherwise, and Ice Trap at the kite loop's far corner for the kited pack
+  (outside Red). A frozen Aberration is left asleep until nothing else is left.
+- The Feral kites: holding Aberrations in phase one it walks a small loop on the flank away
+  from Maloriak, one waypoint at a time and only when the mobile pack on it is within 8 yards,
+  so it stays one controlled group. Every path it walks (joining, each leg, the diagonal left by
+  a dropped corner) stays 20 yards or more from Maloriak and clear of Absolute Zero, jet fire
+  and Flash Freeze blocks; a loop with fewer than three usable waypoints is not used. When no
+  clear path exists, while the pack catches up, or while a rooted Aberration stands beside it,
+  it holds explicitly where it stands (a renewed hold keeps the kite's movement); a rooted one
+  farther behind is left to rejoin. It keeps Nature's Grasp up when the druid knows it.
+- While Aberrations are up in phase one the ranged and healers' back fan leans to the kite's
+  side (20 to 100 degrees off the rear, 20 yards out, 5.6 yards apart): every fan slot reaches
+  every kite waypoint within 40 yards, and the shaman takes the flank end, within Frost Shock's
+  25 yards of the loop; Frost Shock goes only to an Aberration in its range. The fan follows the
+  loop the Feral is actually on (or can join on a clear path); when it holds elsewhere, the fan
+  follows where it holds. Kite paths also keep clear of the cauldron (its 9.5-yard radius plus a
+  margin, so native path smoothing cannot cut into it). The hunter walks to a corner of that
+  loop for the pack's Ice Trap (the farthest from Maloriak that keeps 5 yards from every other
+  player, the Feral and its pack included, and 8 yards from a Biting Chill target) and holds
+  that post only while the spot it actually stands on keeps the same clearances (otherwise it
+  steps onto the corner); with no such corner the post is suspended. A chilled hunter keeps its isolation.
 - Vial order. Normal: random Red or Blue, then the other color, then Green. Heroic: Black first
   and again after each Green. Two independent sources say so verbatim: "On normal difficulty, he
   will either start with Red Vial or Blue Vial, followed by whichever of those he did not use
   first; after those two he will use Green Vial." (Icy Veins, 2024) and "The Red and Blue phases
   can come in any order" (Icy Veins, 2012).
 - Red: stand in front of the boss, inside the Scorching Blast cone, which splits its damage among
-  everyone hit. A Consuming Flames target leaves the cone.
+  everyone hit. A Consuming Flames target leaves the cone. Positioning does not follow the
+  offensive target: ranged damage dealers and healers keep the cone stack, the Consuming Flames
+  exit and the Blue spread while they burn Aberrations. Melee damage dealers on an Aberration
+  fight it at the off-tank, so the cone is shared by the main tank, the healers and the ranged.
 - Blue: spread at least 5 yards apart. Ranged damage dealers break Flash Freeze blocks; everyone
   else stays out of the 5-yard shatter; a Biting Chill target steps away from allies.
-- Green: Debilitating Slime doubles damage taken for 15 s. Burn the Aberrations then.
-- Aberrations are tanked away from Maloriak. Growth Catalyst reaches 10 yards.
-- Pacing: below 30% damage dealers and healers hold the boss while more than one release (3
-  Aberrations) is still in the chambers and a tank is alive, and kill each released batch; tanks
-  keep attacking, and the hold stands down after 90 s. It thins the 25% wave but cannot empty the
-  chambers: at round-3 raid damage expect about 6-9 Aberrations plus both Prime Subjects at 25%
-  (round 3 without it: all 18 plus both, after 80 s).
-- Phase two (25%–0%): burn the boss. The off-tank holds the Prime Subjects and any remaining
-  Aberrations. The raid stays out of the front. The tank steps out of Magma Jets. Everyone
+- Green: Debilitating Slime doubles damage taken for 15 s.
+- Aberrations are tanked away from Maloriak, a controlled kite rather than a spread. Growth
+  Catalyst reaches 10 yards and buffs Maloriak too.
+- At 30%, if Aberrations are left (in the chambers, counted natively from the sleeping,
+  unselectable chamber creatures, or loose): every damage dealer (and healer) stops damaging
+  Maloriak and the damage dealers kill the Aberrations one at a time, the Feral holding the rest,
+  until the chambers are empty and every released one is dead, so phase two starts with only
+  the two Prime Subjects. With nothing left at 30% there is no pause. The Blood DK main tank
+  keeps full damage (Death Strike keeps him healthy). The switch is a cohort latch: Remedy heals
+  him back above 30% without ending it; it ends when the adds are gone, at phase two, after
+  180 s (logged once with his health, the reserve and the loose count) or on a wipe. No DoT is
+  started or refreshed on the boss; DoTs already ticking and projectiles already in flight land,
+  with whatever aura they carry (a player cannot recall either). For every bot but the main tank the boss is restricted at
+  the native edge every tick: no cast, DoT or area spell on him, and the bot's pet, guardians
+  and totems turn to the adds (the totem-owned Greater Fire Elemental skips Fire Nova and Fire
+  Shield while he is in their radius). A cast still running that would reach him (aimed at him,
+  or a Blizzard, Hurricane or Hellfire over him) is stopped, the pet is sent back, and offensive
+  cooldowns, guardian summons, combat potions and raid haste wait for phase two. One Arcane Storm
+  interrupt or taunt on him stays allowed per cast. Between releases the damage dealers wait off
+  the boss.
+- Phase two (25%–0%): burn the boss. The off-tank holds the Prime Subjects (and any Aberration
+  left if the switch could not empty the chambers). The raid stays out of the front. The tank
+  steps out of Magma Jets. Everyone
   avoids Absolute Zero spheres and jet fire. Use raid haste here: the nuke phase is a DPS race.
 
 ## Mode matrix

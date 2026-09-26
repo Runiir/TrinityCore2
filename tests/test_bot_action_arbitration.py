@@ -2082,7 +2082,10 @@ int main()
     assert(nefarianPlan.OwnsNode);
     assert(nefarianPlan.DamageTarget == prototype.Guid);
     assert(nefarianPlan.InterruptTarget == prototype.Guid);
-    assert(nefarianPlan.Blocked == "pillar_ascent_unsupported");
+    // The swim-and-hop ascent (package T's swimmer stages) removes the
+    // round-2 capability blocker.
+    assert(nefarianPlan.Blocked.empty()
+        == BotEncounter::Nefarian::RuntimePillarAscentSupported());
 }
 ''',
         encoding="utf-8",

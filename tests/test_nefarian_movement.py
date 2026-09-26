@@ -178,18 +178,28 @@ static void RunEncounter(LocalPoint entry, float entryLocalZ, char const* label)
     CHECK(Distance(o, WorldToLocal(FindCreature(sim.Board, OnyxiaEntry)->Position)) < 0.01f,
         "Onyxia stays put while held");
 
-    // Phase 2 without a pillar ascent: typed blocker, teams hold the feet.
+    // Phase 2 on the raised floor: every team walks to its pillar's feet
+    // (the swim-and-hop ascent from there is tests/test_nefarian_strategy.py
+    // TestAscent). Without the swimmer's stages the plan also carries the
+    // typed blocker.
     FindCreature(sim.Board, OnyxiaEntry)->Alive = false;
     phase = std::string(label) + ":platform_ascent";
     CHECK(Settle(sim, phase.c_str(), 40, false, false) >= 0, phase.c_str());
     AdaptiveNefarianStrategy strategy;
+    DutyPlan const duty = BuildNefarianDutyPlan(sim.Board);
     for (uint32 slot = 1; slot <= 10; ++slot)
     {
         AdaptiveNefarianPlan const plan = strategy.Propose(sim.Board, Bot(slot),
             FindPlayer(sim.Board, slot).Role);
-        CHECK(plan.Blocked == "pillar_ascent_unsupported" && plan.MovementSurface
-            && plan.MovementSurface->Purpose == MovePurpose::PillarFoot,
-            "every bot holds its pillar foot under the typed blocker");
+        CHECK(plan.Blocked == (RuntimePillarAscentSupported() ? "" : "pillar_ascent_unsupported")
+            && plan.MovementSurface
+            && plan.MovementSurface->Purpose == (RuntimePillarAscentSupported()
+                ? MovePurpose::PillarAscent : MovePurpose::PillarFoot),
+            "every bot heads for its pillar foot");
+        int const pillar = duty.PillarOf(Bot(slot));
+        CHECK(Distance(WorldToLocal(FindPlayer(sim.Board, slot).Position),
+            PillarBase(uint8(pillar), duty.SlotOf(Bot(slot)))) <= 1.6f,
+            "every bot reached its pillar foot on the raised floor");
     }
 
     // Phase 3: Nefarian lands at the centre; the raid re-forms on his wing.

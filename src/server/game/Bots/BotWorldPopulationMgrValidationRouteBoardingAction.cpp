@@ -258,6 +258,39 @@ bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs)
     return ReportApplied(bot, report);
 }
 
+bool ReportSwimState(Player* bot, bool swimming, GameObject const* transport)
+{
+    if (!bot || !bot->IsInWorld() || !EnsureActiveMover(bot))
+        return false;
+    MovementInfo report = CurrentPositionReport(bot);
+    report.jump.fallTime = 0;
+    if (swimming)
+        report.AddMovementFlag(MOVEMENTFLAG_SWIMMING);
+    else
+        report.RemoveMovementFlag(MOVEMENTFLAG_SWIMMING);
+    if (transport)
+    {
+        TransportBase const* base = transport->ToTransportBase();
+        if (!base)
+            return false;
+        float x = bot->GetPositionX();
+        float y = bot->GetPositionY();
+        float z = bot->GetPositionZ();
+        float o = bot->GetOrientation();
+        base->CalculatePassengerOffset(x, y, z, &o);
+        report.transport.guid = transport->GetGUID();
+        report.transport.pos.Relocate(x, y, z, o);
+        report.transport.time = GameTime::GetGameTimeMS();
+    }
+    bot->GetSession()->HandleMovementOpcode(
+        swimming ? MSG_MOVE_START_SWIM : MSG_MOVE_STOP_SWIM, report);
+    MovementInfo const& now = bot->m_movementInfo;
+    return now.time == report.time
+        && now.HasMovementFlag(MOVEMENTFLAG_SWIMMING) == swimming
+        && now.transport.guid == report.transport.guid
+        && now.pos.GetExactDist(&report.pos) < 0.01f;
+}
+
 BotValidationRouteNative::TransportFact ObserveTransport(GameObject const* transport)
 {
     BotValidationRouteNative::TransportFact fact;

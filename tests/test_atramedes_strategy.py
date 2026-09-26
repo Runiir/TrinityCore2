@@ -2059,8 +2059,12 @@ def test_atramedes_strategy_decisions(tmp_path: Path) -> None:
 def test_atramedes_headers_stay_bounded_and_header_only() -> None:
     headers = sorted(ATRAMEDES.glob("*"))
     assert headers, "Atramedes content directory is empty"
+    # The strategy is header-only; the one translation unit is the kernel
+    # adapter that carries the route's engagement edge
+    # (tests/test_atramedes_route_observation.py).
+    sources = [path.name for path in headers if path.suffix != ".h"]
+    assert sources == ["BotWorldPopulationMgrAtramedesCandidates.cpp"], sources
     for path in headers:
-        assert path.suffix == ".h", f"{path.name}: the strategy stays header-only"
         assert len(path.read_text(encoding="utf-8").splitlines()) < 1000
     # The content layout test allows exactly one BotAdaptive*Strategy.h per boss.
     assert [p.name for p in ATRAMEDES.glob("BotAdaptive*Strategy.h")] == [

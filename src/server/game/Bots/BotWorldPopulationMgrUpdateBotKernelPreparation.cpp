@@ -9,6 +9,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscentIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeObserver.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
@@ -677,7 +678,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             BotEncounter::AdaptiveMaloriakStrategy maloriakStrategy;
             BotEncounter::AdaptiveMaloriakPlan maloriakPlan =
                 maloriakStrategy.Propose(*Cohort().EncounterSnapshot,
-                    context.Bot->GetGUID(), GetDungeonRole(context.Bot));
+                    context.Bot->GetGUID(), GetDungeonRole(context.Bot),
+                    Cohort().EncounterLatches ? &Cohort().EncounterLatches->View()
+                        : nullptr);
             context.AdaptiveMaloriakOwnsNode = maloriakPlan.OwnsNode;
             context.AdaptiveMaloriakPriorityHealTargetGuid =
                 maloriakPlan.PriorityHealTarget;
@@ -758,6 +761,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 std::string(nefarianPlan.MovementHold);
             context.AdaptiveNefarianActions = std::move(nefarianPlan.Actions);
             context.AdaptiveNefarianMovement = std::move(nefarianPlan.Movement);
+            // Phase 2 swim-and-hop step: package T's swimmer stages.
+            if (!context.AdaptiveNefarianMovement && nefarianPlan.Ascent)
+                context.AdaptiveNefarianMovement = BotEncounter::Nefarian::AscentCandidate(
+                    *nefarianPlan.Ascent, *Cohort().EncounterSnapshot,
+                    context.Bot->GetGUID());
             if (!nefarianPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
                         nefarianPlan.DamageTarget);

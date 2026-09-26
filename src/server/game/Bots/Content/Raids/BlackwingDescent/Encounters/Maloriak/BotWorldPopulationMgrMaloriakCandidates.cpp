@@ -1,4 +1,6 @@
+#include "Bots/BotEncounterCooldownHold.h"
 #include "Bots/BotEncounterInterruptVeto.h"
+#include "Bots/BotEncounterOffenseRestriction.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -6,10 +8,12 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakAddSwitch.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
 #include "Group.h"
+#include "Log.h"
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
@@ -24,9 +28,12 @@
 #include <list>
 #include <map>
 #include <mutex>
+#include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <utility>
 
 // Kernel candidates for the adaptive Maloriak plan (BotAdaptiveMaloriakStrategy.h).
 // Every candidate submits one ordinary native request (move, interrupt,
@@ -66,9 +73,8 @@ uint32 FirstKnownSpell(Player const* bot, std::array<uint32, N> const& spells)
     return 0;
 }
 
-// Native counterpart of Maloriak::ReleaseAdmitted: loose (selectable) and
-// reserve (still asleep) Aberrations, and live Vile Swills in the Dark phase.
-bool NativeReleaseAdmitted(Unit* boss)
+// Loose (selectable) and reserve (still asleep) living Aberrations.
+std::pair<std::size_t, std::size_t> NativeAberrationCounts(Unit* boss)
 {
     std::list<Creature*> aberrations;
     boss->GetCreatureListWithEntryInGrid(aberrations,
@@ -84,17 +90,7 @@ bool NativeReleaseAdmitted(Unit* boss)
         else
             ++loose;
     }
-    bool darkWithSwills = false;
-    if (boss->HasAura(BotEncounter::Maloriak::ShadowImbuedSpell))
-    {
-        std::list<Creature*> swills;
-        boss->GetCreatureListWithEntryInGrid(swills,
-            BotEncounter::Maloriak::VileSwillEntry, MaloriakAddScanYards);
-        for (Creature const* swill : swills)
-            darkWithSwills = darkWithSwills || swill->IsAlive();
-    }
-    return BotEncounter::Maloriak::ReleaseAdmittedCounts(loose, reserve,
-        darkWithSwills);
+    return { loose, reserve };
 }
 
 bool HasRemedy(Unit const* unit)
@@ -176,25 +172,91 @@ bool ClearOwnCastFor(Player* bot, bool healer, Unit* target, uint32 spellId)
     return true;
 }
 
-// Per-boss latch of the phase-two push hold (map, instance, boss GUID ->
-// window start). Every bot of the cohort refreshes it; the window is the same
-// for all of them, so the first observer starts the clock.
-std::mutex PushHoldMutex;
-std::map<std::tuple<uint32, uint32, uint64>, uint64> PushHoldStartedAtMs;
+// Bosses whose add-switch cap was already reported (map, instance, boss
+// GUID); the latched switch itself lives in the cohort latch store
+// (BotMaloriakLatches.h).
+std::mutex AddSwitchCapMutex;
+std::set<std::tuple<uint32, uint32, uint64>> AddSwitchCapReported;
 
-bool PushHoldHonoured(Player const* bot,
-    BotEncounter::AdaptiveMaloriakPlan const& plan, uint64 nowMs)
+bool ClaimAddSwitchCapReport(Player const* bot, ObjectGuid boss)
 {
-    std::tuple<uint32, uint32, uint64> const key{ bot->GetMapId(),
-        bot->GetInstanceId(), plan.Boss.GetRawValue() };
-    std::lock_guard<std::mutex> guard(PushHoldMutex);
-    if (!plan.PushHoldWindow)
+    std::lock_guard<std::mutex> guard(AddSwitchCapMutex);
+    return AddSwitchCapReported.emplace(bot->GetMapId(), bot->GetInstanceId(),
+        boss.GetRawValue()).second;
+}
+
+// The largest area radius of a spell or the spells it triggers (Blizzard,
+// Hurricane and Rain of Fire channel a periodic trigger with the area).
+float HostileAreaRadius(Unit* caster, SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 3)
+        return 0.0f;
+    float radius = 0.0f;
+    for (SpellEffectInfo const& effect : spellInfo->Effects)
     {
-        PushHoldStartedAtMs.erase(key);
-        return false;
+        if (!effect.IsEffect() && !effect.IsAura())
+            continue;
+        for (SpellTargetIndex index : { SpellTargetIndex::TargetA, SpellTargetIndex::TargetB })
+            if (effect.HasRadius(index))
+                radius = std::max(radius, effect.CalcRadius(caster, index));
+        if (effect.TriggerSpell)
+            radius = std::max(radius, HostileAreaRadius(caster,
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1));
     }
-    return BotEncounter::Maloriak::PushHoldWithinCap(PushHoldStartedAtMs[key],
-        true, nowMs);
+    return radius;
+}
+
+// The hook's stop of running casts that would still reach the boss (one
+// aimed at him, or a hostile area spell such as a ground Blizzard or a
+// self-centred Hellfire whose area covers him): each such slot is
+// interrupted, whatever its explicit target (a self-cast Hellfire's is the
+// bot). Helpful spells never; other slots untouched. A generic cast already
+// launched (a projectile in flight) is not recalled (withDelayed false).
+std::size_t StopCastsReachingBoss(Player* bot, Unit* boss)
+{
+    if (!bot || !boss)
+        return 0;
+    std::size_t stopped = 0;
+    for (CurrentSpellTypes slot : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL,
+             CURRENT_AUTOREPEAT_SPELL })
+    {
+        Spell const* spell = bot->GetCurrentSpell(slot);
+        if (!spell || !spell->GetSpellInfo())
+            continue;
+        SpellInfo const* spellInfo = spell->GetSpellInfo();
+        bool const aimedAtBoss = spell->m_targets.GetUnitTargetGUID() == boss->GetGUID();
+        bool areaOverBoss = false;
+        if (!aimedAtBoss && SpellHasHostileMultiTargetSemantics(spellInfo))
+        {
+            Position center = bot->GetPosition();
+            if (spell->m_targets.HasDst())
+                center = spell->m_targets.GetDstPos()->GetPosition();
+            else if (Unit* target = ObjectAccessor::GetUnit(*bot,
+                         spell->m_targets.GetUnitTargetGUID()))
+                center = target->GetPosition();
+            float const radius = std::max(HostileAreaRadius(bot, spellInfo), 8.0f);
+            areaOverBoss = boss->GetExactDist2d(center.GetPositionX(), center.GetPositionY())
+                <= radius + boss->GetCombatReach();
+        }
+        if (!BotEncounter::Maloriak::AddSwitchStopsCast(spellInfo->IsPositive(),
+                aimedAtBoss, areaOverBoss))
+            continue;
+        bot->InterruptSpell(slot, slot == CURRENT_CHANNELED_SPELL, true);
+        ++stopped;
+    }
+    return stopped;
+}
+
+// One Arcane Storm interrupt or taunt on the boss stays allowed for a restricted
+// bot, for its native cast only; the destructor restores the hook's
+// restriction.
+void AllowOneCastOnBoss(std::optional<BotEncounterOffense::SingleCastAllowance>& allowance,
+    Player const* bot, bool restricted, Unit const* target)
+{
+    if (target && BotEncounter::Maloriak::AddSwitchAllowanceApplies(restricted,
+            target->GetEntry()))
+        allowance.emplace(bot->GetGUID().GetRawValue(),
+            BotEncounter::Maloriak::AddSwitchRestriction(), target->GetGUID());
 }
 }
 
@@ -207,8 +269,8 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
     BotEncounter::AdaptiveMaloriakPlan const& plan = *context.AdaptiveMaloriak;
 
     // Publish (or withdraw) the Release Aberrations interrupt veto before the
-    // cast starts, so a generic rotation interrupt cannot cut an admitted
-    // release. The native recount confirms the blackboard's admission.
+    // cast starts, so a generic rotation interrupt cannot cut a release: the
+    // user tactic lets every release through in phase one.
     if (!plan.Boss.IsEmpty())
     {
         Unit* boss = plan.ReleaseAdmitted
@@ -218,7 +280,7 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         BotEncounterInterruptVeto::Set(context.Bot->GetMapId(),
             context.Bot->GetInstanceId(), plan.Boss.GetRawValue(),
             BotEncounter::Maloriak::ReleaseAberrationsSpell,
-            boss && boss->IsAlive() && NativeReleaseAdmitted(boss));
+            boss && boss->IsAlive());
     }
 
     if (plan.Movement && plan.Movement->ExpiresAtMs > context.DecisionNowMs)
@@ -275,11 +337,14 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         context.State.DecisionKernel.Submit(std::move(movement));
     }
 
-    // The push hold stands down after Maloriak::PhaseTwoPushHoldCapMs.
-    bool const pushHoldHonoured = PushHoldHonoured(context.Bot, plan,
-        context.DecisionNowMs);
-    if (plan.SuppressOffense && (plan.SuppressReason != "phase_two_push_hold"
-            || pushHoldHonoured))
+    // The add switch is the cohort latch (its cap included) the plan
+    // resolved. Its restriction comes from the route-authority hook
+    // (SubmitMaloriakRouteAuthority), which runs after the adaptive route
+    // authority clears it and before the kernel resolves; the suppression
+    // below only clears this bot's target, melee and pet while it waits for
+    // the next release.
+    bool const restricted = plan.AddSwitchRestricts;
+    if (plan.SuppressOffense)
     {
         std::string const reason(plan.SuppressReason);
         BotActionArbitration::Candidate suppress;
@@ -334,7 +399,7 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             BotActionArbitration::Resource::GlobalCooldown,
             BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Target);
-        interrupt.Attempt = [this, &context, lane,
+        interrupt.Attempt = [this, &context, lane, restricted,
             casterGuid = plan.InterruptTarget, castSpellId = plan.InterruptSpellId]()
         {
             Unit* caster = ObjectAccessor::GetUnit(*context.Bot, casterGuid);
@@ -350,10 +415,9 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!current->GetSpellInfo()->CanBeInterrupted(caster))
                 return BotActionArbitration::Outcome::NotApplicable(
                     "interrupt_cast_not_interruptible");
-            if (castSpellId == BotEncounter::Maloriak::ReleaseAberrationsSpell
-                && NativeReleaseAdmitted(caster))
+            if (castSpellId == BotEncounter::Maloriak::ReleaseAberrationsSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
-                    "release_aberrations_admitted");
+                    "release_aberrations_never_interrupted");
             uint32 const interruptSpell = FirstKnownSpell(context.Bot,
                 MaloriakInterruptSpells);
             if (!interruptSpell)
@@ -361,6 +425,8 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
                     "interrupt_spell_unknown");
             bool const healer = std::string_view(
                 GetDungeonRole(context.Bot)) == "healer";
+            std::optional<BotEncounterOffense::SingleCastAllowance> allowance;
+            AllowOneCastOnBoss(allowance, context.Bot, restricted, caster);
             if (!ClearOwnCastFor(context.Bot, healer, caster, interruptSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "interrupt_not_ready_while_casting");
@@ -404,6 +470,8 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
                     "dispel_spell_unknown");
             bool const healer = std::string_view(
                 GetDungeonRole(context.Bot)) == "healer";
+            // The plan assigns Remedy only outside the add switch; there is
+            // no allowance, so the switch restriction refuses a stale purge.
             if (!ClearOwnCastFor(context.Bot, healer, target, dispelSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "dispel_not_ready_while_casting");
@@ -436,7 +504,7 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         taunt.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::Cast,
             BotActionArbitration::Resource::Target);
-        taunt.Attempt = [this, &context, targetGuid = plan.TauntTarget]()
+        taunt.Attempt = [this, &context, restricted, targetGuid = plan.TauntTarget]()
         {
             Unit* target = ObjectAccessor::GetUnit(*context.Bot, targetGuid);
             if (!target || !target->IsAlive())
@@ -450,6 +518,8 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!tauntSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "taunt_spell_unknown");
+            std::optional<BotEncounterOffense::SingleCastAllowance> allowance;
+            AllowOneCastOnBoss(allowance, context.Bot, restricted, target);
             if (!TryCastCombatSpell(context.Bot, target, tauntSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "native_taunt_retryable");
@@ -460,6 +530,169 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
                 "native_taunt_submitted");
         };
         context.State.DecisionKernel.Submit(std::move(taunt));
+    }
+
+    // Misdirection or Tricks of the Trade onto the off-tank for a release
+    // (user tactic): an ordinary native friendly cast, skipped while the
+    // redirect from the last one is still pending on the caster.
+    if (!plan.ThreatRedirectTarget.IsEmpty() && plan.ThreatRedirectSpellId)
+    {
+        BotActionArbitration::Candidate redirect;
+        redirect.Key = "adaptive_maloriak:threat_redirect:"
+            + std::to_string(plan.ThreatRedirectSpellId);
+        redirect.Source = "adaptive_maloriak";
+        redirect.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+        redirect.UtilityScore = 85.0f;
+        redirect.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast);
+        redirect.Attempt = [this, &context, spellId = plan.ThreatRedirectSpellId,
+            targetGuid = plan.ThreatRedirectTarget]()
+        {
+            Player* tank = ObjectAccessor::GetPlayer(*context.Bot, targetGuid);
+            if (!tank || !tank->IsAlive())
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "threat_redirect_tank_unavailable");
+            if (!context.Bot->HasSpell(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "threat_redirect_spell_unknown");
+            if (context.Bot->HasAura(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "threat_redirect_pending");
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo || !context.Bot->GetSpellHistory()->IsReady(spellInfo))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "threat_redirect_cooldown");
+            std::string failure;
+            if (!TryCastFriendlySpell(context.Bot, tank, spellId, &failure))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_threat_redirect_retryable");
+            context.Situation = "adaptive_maloriak";
+            context.Action = "off_tank_threat_redirect";
+            context.State.LastDecisionHandler = "adaptive_maloriak";
+            return BotActionArbitration::Outcome::Started(
+                "native_threat_redirect_submitted");
+        };
+        context.State.DecisionKernel.Submit(std::move(redirect));
+    }
+
+    // Frost Shock on a loose Aberration the off-tank has not picked up yet.
+    if (!plan.SlowTarget.IsEmpty())
+    {
+        BotActionArbitration::Candidate slow;
+        slow.Key = "adaptive_maloriak:slow:" + std::to_string(plan.SlowTarget.GetRawValue());
+        slow.Source = "adaptive_maloriak";
+        slow.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+        slow.UtilityScore = 80.0f;
+        slow.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast,
+            BotActionArbitration::Resource::Target);
+        slow.Attempt = [this, &context, targetGuid = plan.SlowTarget]()
+        {
+            Unit* target = ObjectAccessor::GetUnit(*context.Bot, targetGuid);
+            uint32 const spellId = BotEncounter::Maloriak::FrostShockSpell;
+            if (!target || !target->IsAlive() || target->HasAura(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "slow_target_stale");
+            if (!context.Bot->HasSpell(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "slow_spell_unknown");
+            if (!TryCastCombatSpell(context.Bot, target, spellId))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_slow_retryable");
+            context.Situation = "adaptive_maloriak";
+            context.Action = "aberration_frost_shock";
+            context.State.LastDecisionHandler = "adaptive_maloriak";
+            return BotActionArbitration::Outcome::Started(
+                "native_slow_submitted");
+        };
+        context.State.DecisionKernel.Submit(std::move(slow));
+    }
+
+    // A trap laid at the hunter's feet (Freeze Trap 1499 and Ice Trap 13809
+    // have a self range: they are placed where the hunter stands, the way a
+    // player without Trap Launcher lays them), once the hunter is on the
+    // plan's trap point. The Aberration is only the tactical condition.
+    if (!plan.TrapTarget.IsEmpty() && plan.TrapSpellId)
+    {
+        BotActionArbitration::Candidate trap;
+        trap.Key = "adaptive_maloriak:trap:" + std::to_string(plan.TrapTarget.GetRawValue());
+        trap.Source = "adaptive_maloriak";
+        trap.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+        trap.UtilityScore = 82.0f;
+        trap.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast);
+        trap.Attempt = [this, &context, targetGuid = plan.TrapTarget,
+            wanted = plan.TrapSpellId, point = plan.TrapPoint]()
+        {
+            Unit* target = ObjectAccessor::GetUnit(*context.Bot, targetGuid);
+            if (!target || !target->IsAlive())
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "trap_target_stale");
+            if (context.Bot->GetExactDist2d(point.X, point.Y)
+                > BotEncounter::Maloriak::KiteTrapTolerance)
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "trap_point_not_reached");
+            uint32 spellId = wanted;
+            if (!context.Bot->HasSpell(spellId))
+                spellId = BotEncounter::Maloriak::IceTrapSpell;
+            if (!context.Bot->HasSpell(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "trap_spell_unknown");
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo || !context.Bot->GetSpellHistory()->IsReady(spellInfo))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "trap_cooldown");
+            BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                context.State, context.Bot,
+                BotNativeAction::CastSpell{ ObjectGuid::Empty, spellId },
+                BotMovementArbitration::Owner::Mechanic,
+                BotMovementArbitration::Priority::Mechanic);
+            if (outcome.Result == BotActionArbitration::Disposition::Committed)
+            {
+                context.Situation = "adaptive_maloriak";
+                context.Action = spellId == BotEncounter::Maloriak::FreezeTrapSpell
+                    ? "aberration_freeze_trap" : "aberration_ice_trap";
+                context.State.LastDecisionHandler = "adaptive_maloriak";
+            }
+            return outcome;
+        };
+        context.State.DecisionKernel.Submit(std::move(trap));
+    }
+
+    // Nature's Grasp on the off-tank while it holds Aberrations (a self
+    // buff: an Aberration striking it is rooted), if the druid knows it.
+    if (plan.NaturesGrasp)
+    {
+        BotActionArbitration::Candidate grasp;
+        grasp.Key = "adaptive_maloriak:natures_grasp";
+        grasp.Source = "adaptive_maloriak";
+        grasp.ActionPriority = BotActionArbitration::Priority::ThreatControl;
+        grasp.UtilityScore = 70.0f;
+        grasp.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::GlobalCooldown,
+            BotActionArbitration::Resource::Cast);
+        grasp.Attempt = [this, &context]()
+        {
+            uint32 const spellId = BotEncounter::Maloriak::NaturesGraspSpell;
+            if (!context.Bot->HasSpell(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "natures_grasp_unknown");
+            if (context.Bot->HasAura(spellId))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "natures_grasp_active");
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo || !context.Bot->GetSpellHistory()->IsReady(spellInfo))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "natures_grasp_cooldown");
+            return ExecuteNativeActionIntent(context.State, context.Bot,
+                BotNativeAction::CastSpell{ ObjectGuid::Empty, spellId },
+                BotMovementArbitration::Owner::Mechanic,
+                BotMovementArbitration::Priority::Mechanic);
+        };
+        context.State.DecisionKernel.Submit(std::move(grasp));
     }
 
     if (plan.LustWindow && Cohort().EncounterSnapshot)
@@ -573,4 +806,68 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         BotActionArbitration::Resource::None);
     observation.Attempt = std::move(observe);
     context.State.DecisionKernel.Submit(std::move(observation));
+}
+
+// Route-authority hook (BotMaloriakAddSwitch.h), called by
+// SubmitValidationKernelFallbackCandidates right after
+// ConfigureValidationRouteCombatAuthority clears the bot's current-encounter
+// restriction, as Omnotron's is: the add switch's restriction, cooldown hold
+// and guardian area sparing hold every tick of the latched switch, whichever
+// candidate the kernel resolves. The leases lapse by themselves once the hook
+// stops renewing them.
+void BotWorldPopulationMgr::SubmitMaloriakRouteAuthority(
+    BotUpdateContext& context)
+{
+    if (!context.Bot || !context.AdaptiveMaloriak
+        || !context.AdaptiveMaloriak->OwnsNode)
+        return;
+    BotEncounter::AdaptiveMaloriakPlan const& plan = *context.AdaptiveMaloriak;
+    uint64 const ownerGuid = context.Bot->GetGUID().GetRawValue();
+    Unit* boss = plan.Boss.IsEmpty() ? nullptr
+        : ObjectAccessor::GetUnit(*context.Bot, plan.Boss);
+    if (plan.AddSwitchCapReleased && ClaimAddSwitchCapReport(context.Bot, plan.Boss))
+    {
+        // The switch ran long (the reserve stopped draining or the adds are
+        // not dying): report the boss health, the chamber reserve and the
+        // loose Aberrations it released at (once per boss).
+        float const bossHealthPct = boss ? boss->GetHealthPct() : 0.0f;
+        std::pair<std::size_t, std::size_t> const counts = boss
+            ? NativeAberrationCounts(boss) : std::pair<std::size_t, std::size_t>{};
+        TC_LOG_INFO("server", "Maloriak add switch cap released: boss %.1f%%, "
+            "%u Aberrations in reserve, %u loose (map %u instance %u, cap %u ms)",
+            bossHealthPct, uint32(counts.second), uint32(counts.first),
+            context.Bot->GetMapId(), context.Bot->GetInstanceId(),
+            uint32(BotEncounter::Maloriak::AddSwitchCapMs));
+        std::string raw = BuildRawJson(context.Bot, boss);
+        std::string semantic = BuildSemanticJson(context.Bot, boss,
+            "adaptive_maloriak", &context.Power, context.Stage,
+            context.ChosenActivity.Activity);
+        RecordEvent(context.State, context.Bot, "boss_action", boss,
+            "maloriak_add_switch_cap_released", raw.c_str(), semantic.c_str(),
+            bossHealthPct, uint32(counts.second));
+    }
+
+    bool const restricted = plan.AddSwitchRestricts;
+    BotEncounterCooldownHold::Set(ownerGuid, restricted);
+    BotEncounterOffense::SetGuardianAreaSparing(ownerGuid, restricted);
+    if (!restricted)
+        return;
+    BotEncounterOffense::ApplyOffenseRestriction(ownerGuid,
+        BotEncounter::Maloriak::AddSwitchRestriction());
+    // The restriction refuses new casts; one already running that would
+    // still reach Maloriak (aimed at him, or a hostile area over him, a
+    // self-cast Hellfire included) stops, slot by slot, auto-repeat
+    // included; a heal never does. A projectile already launched lands, as
+    // it would for a player (like a DoT already ticking).
+    StopCastsReachingBoss(context.Bot, boss);
+    // The pet stops and returns (the native Follow command: AttackStop, then
+    // follow); PetAI then skips the restricted boss and picks up the owner's
+    // Aberration.
+    if (Pet* pet = context.Bot->GetPet(); pet && pet->GetCharmInfo()
+        && pet->GetVictim() && pet->GetVictim()->GetGUID() == plan.Boss)
+        ExecuteNativeActionIntent(context.State, context.Bot,
+            BotNativeAction::PetCommand{ pet->GetGUID(),
+                context.Bot->GetGUID(), COMMAND_FOLLOW },
+            BotMovementArbitration::Owner::Mechanic,
+            BotMovementArbitration::Priority::Mechanic);
 }

@@ -3,6 +3,7 @@
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotElementalSpiritwalkersGrace.h"
+#include "Bots/BotEncounterCooldownHold.h"
 #include "Bots/BotEncounterInterruptVeto.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotRaidHealthRecoveryGate.h"
@@ -194,6 +195,15 @@ void BotWorldPopulationMgr::AdmitProfileCombatCandidates(
                     cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))
             {
                 candidate.RejectReason = reservationReason;
+                continue;
+            }
+        // An encounter's hold on offensive cooldowns (BotEncounterCooldownHold.h).
+        if (candidate.RejectReason.empty())
+            if (char const* holdReason = BotEncounterCooldownHold::ReservationReason(
+                    bot->GetGUID().GetRawValue(),
+                    { candidate.Category, candidate.Profile.MechanicTags }))
+            {
+                candidate.RejectReason = holdReason;
                 continue;
             }
         if (candidate.RejectReason.empty()

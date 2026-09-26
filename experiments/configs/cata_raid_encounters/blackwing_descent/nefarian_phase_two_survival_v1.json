@@ -1,0 +1,60 @@
+{
+  "schema": "nefarian_phase_two_survival_v1",
+  "model": "tests/test_nefarian_phase_two_survival.py (resource-limited Monte Carlo; assumptions in its docstring)",
+  "seeds": 600,
+  "off_heal_threshold": 0.9,
+  "pillar_top_separation_yards": {
+    "centres": [
+      69.89,
+      70.02,
+      68.61
+    ],
+    "minimum": 60.8,
+    "note": "nearest flat-top edges (flat radius up to 3.9); every heal reaches 40 yards, so no healer on one pillar reaches another (option B is geometrically impossible)"
+  },
+  "results": {
+    "default": {
+      "death_probability": 0.435,
+      "mean_phase_seconds": 52.2,
+      "median_first_death_seconds": 42.9
+    },
+    "option_a_burn": {
+      "death_probability": 1.0,
+      "mean_phase_seconds": 77.5,
+      "median_first_death_seconds": 27.9
+    },
+    "option_a_burn_offheal": {
+      "death_probability": 1.0,
+      "mean_phase_seconds": 77.5,
+      "median_first_death_seconds": 42.9
+    },
+    "tank_pillar": {
+      "death_probability": 0.918,
+      "mean_phase_seconds": 75.5,
+      "median_first_death_seconds": 35.4
+    },
+    "default_dps_x1.25": {
+      "death_probability": 0.125,
+      "mean_phase_seconds": 42.6,
+      "median_first_death_seconds": 37.9
+    },
+    "default_dps_x1.5": {
+      "death_probability": 0.02,
+      "mean_phase_seconds": 37.8,
+      "median_first_death_seconds": 35.4
+    }
+  },
+  "layout_search": "The exhaustive 2/2/6 layout search of the first model (no layout materially better than the default) was not re-run on the corrected model: the coordinator stopped model refinement; the live run decides.",
+  "sensitivity_death_probability": {
+    "barrage_and_magma_10pct_mitigation": 0.195,
+    "barrage_and_magma_20pct_mitigation": 0.04,
+    "mana_40000": 0.745,
+    "mana_120000": 0.213,
+    "regen_0": 0.447,
+    "regen_300": 0.363,
+    "no_dk_self_heal": 0.568,
+    "no_preparation": 0.663
+  },
+  "sensitivity_source": "The second re-review's variants (GPT-6 Astra: damage reduction, mana pool, mana regeneration, Death Strike self-heal, no preparation), re-run on the corrected model with the default layout.",
+  "note": "This is not a native estimate. The model's default pillar-2 death risk moves from about 4% to 75% under plausible changes of single assumptions (sensitivity_death_probability), and it does not model Blast Nova interrupts. It ranks layouts; the live run decides whether the healerless pillar is viable."
+}

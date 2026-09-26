@@ -287,6 +287,39 @@
         "The Rogue (Biting Chill, then Flash Freeze and Shatter, no healing) died at 63.1 s, released at once (the boss row has no boss_recovery_policy), reached the BWD portal on map 0 at 105.4 s during the encounter and was resurrected there by the native area-trigger handler (CANNOT_ENTER_ZONE_IN_COMBAT); the cohort gate failed the attempt as validation_active_instance_drift and suppressed all offense with the boss at 13.4%."
       ],
       "reliability": "observed_run_evidence"
+    },
+    "run_r05_b1_20260926": {
+      "title": "Round-5 six-shard batch, Maloriak c0 shard (build 24efb927): two attempts, two wipes",
+      "publisher": "repository run evidence",
+      "evidence_dvc": "artifacts/cata_raid_program/round5_batch1_20260926.tar.gz.dvc",
+      "members": [
+        "worldserver.console.log (chunked botauto_combatlog export, trace and diagnose payloads)",
+        "shards/blackwing_descent_10n_maloriak_c0/heartbeat_events.jsonl",
+        "shards/blackwing_descent_10n_maloriak_c0/terminal_trace_drain.jsonl.gz"
+      ],
+      "accessed": "2026-09-26",
+      "claims": [
+        "Both attempts reached about 6% (Red, then 30% at 55-57 s and 25% at 71 s): the push hold took only 14-16 s because casters kept 65-73k DPS on the boss (Lightning Bolt, Fireball, Explosive Shot, Censure) with melee suppressed and targets cleared; two releases (6 Aberrations) came out, 12 Aberrations and both Prime Subjects at 25%, and the raid died to Aberration melee, Acid Nova (up to 12078 raw with Growth Catalyst) and the Prime Subjects.",
+        "Round-5 fixes live: the tank led Maloriak to (-106.4, -453/-456) after the Red vial; no healer line-of-sight failure; healers healed 281-347k in the first 70 s (r04: 0); rotation interrupts vetoed 157 times; Remedy spellstolen; no Arcane Storm tick; Consuming Flames at most 4500 raw.",
+        "After the second wipe every member had two deaths near the node; the death-loop safe-memory route anchor sent the tank to (-97.0, -384.1), 79 yd from the boss node, the recovery return never reached its 35-yd hand-off and the shard ended on semantic_progress_plateau_watchdog."
+      ],
+      "reliability": "observed_run_evidence"
+    },
+    "user_raid_experience_20260926": {
+      "title": "User raid tactic for Maloriak (first-hand raid experience), relayed by the coordinator 2026-09-26",
+      "publisher": "project user (authoritative; outranks guides per the project's tactic policy)",
+      "accessed": "2026-09-26",
+      "claims": [
+        "Never interrupt Release Aberrations: let every release through and kill each pack of 3 as it comes, ideally during Green (Debilitating Slime); 10N has 18 in reserve.",
+        "Hard switch at 30%: every DPS stops damaging Maloriak and kills adds until every Aberration is dead and the chambers are empty; phase two starts with 0 Aberrations and only the two Prime Subjects. No DoTs started or refreshed on him during the switch; ticking DoTs are fine. Pets and guardians switch to adds too.",
+        "The Blood DK main tank keeps full damage on Maloriak throughout, including the switch (Death Strike keeps him healthy).",
+        "Remedy: dispelled above 30% (mage Spellsteal, then Purge, hunter, priest); from 30% until all adds are dead nobody dispels it, so his self-heal offsets the tank's damage and keeps him above 25%; dispelled again once the adds are dead and the reserve is empty.",
+        "Hunter Misdirection and rogue Tricks of the Trade on the Feral off-tank, timed for each release.",
+        "The Feral off-tank kites the Aberrations, helped by Freeze Trap (only on an add nobody is hitting) and slows (hunter Ice or Frost Trap, shaman Frost Shock); no slow totems (Earthbind would replace the earth buff totem); keep them away from Maloriak because Growth Catalyst (10 yd) also buffs him.",
+        "Unchanged: interrupt Arcane Storm; vial mechanics, the tank spot, the line-of-sight formation and the phase-two burn.",
+        "Refinement (relayed 2026-09-26): human raids usually reach Green before 30%; bots reach 30% sooner with the reserve still full. Kill adds as they come; if adds are still left at 30%, stop DPS on the boss and kill them one by one; once all are dead, kill the boss and dispel Remedy again. With nothing left at 30% there is no pause."
+      ],
+      "reliability": "user_first_hand_authoritative"
     }
   },
   "mode_matrix": {
@@ -1145,6 +1178,19 @@
       "wowhead": "3 random raid members",
       "local": "random target within 60 yd, cast range 10 yd (ranged picks fail)",
       "resolution": "unresolved; live and WCL target counts"
+    },
+    {
+      "key": "release_aberrations_interrupts",
+      "icy_cata_classic": "interrupt Release Aberrations when enough adds are up, deal with about nine at a time",
+      "icy_original": "interrupt the first Release of a cycle, let the next three through",
+      "user_raid_experience_20260926": "never interrupt a release; kill each pack as it comes and empty the chambers before 25%",
+      "resolution": "user tactic adopted (authoritative); the guides' interrupt policy is retired"
+    },
+    {
+      "key": "remedy_during_add_switch",
+      "icy_cata_classic": "purge Remedy or let a mage Spellsteal it",
+      "user_raid_experience_20260926": "no Remedy dispel from 30% until the adds are dead and the chambers empty, then dispel again",
+      "resolution": "user tactic adopted (authoritative)"
     }
   ],
   "unresolved": [
@@ -1294,16 +1340,16 @@
       },
       {
         "mechanic": "release_aberrations",
-        "tactic": "admit while fewer than six are loose (nine at a time), interrupt with the second and third short interrupters otherwise; interrupt the first Release of a heroic Dark phase; an admitted release is published as an interrupt veto (keyed by map, instance and boss GUID) that the kernel profile resolver honours; the legacy SelectCombatSpell/BotController paths do not check it",
+        "tactic": "never interrupted (user tactic): the plan assigns no Release interrupt and the dispatch refuses one natively (release_aberrations_never_interrupted); every release in phase one is published as an interrupt veto (keyed by map, instance and boss GUID) that the kernel profile resolver honours; the legacy SelectCombatSpell/BotController paths do not check it",
         "source_refs": [
-          "icy_cata_classic",
-          "icy_original"
+          "user_raid_experience_20260926"
         ]
       },
       {
         "mechanic": "remedy",
-        "tactic": "Spellsteal first, Purge after 1.5 s, all offensive dispellers after 3 s; an assigned purger or interrupter stops its own hard cast only when the duty spell passes every other TryCastCombatSpell gate, and a healer keeps a heal while anyone is below 50%",
+        "tactic": "above 30% and after the add switch: Spellsteal first, Purge after 1.5 s, all offensive dispellers after 3 s; during the add switch nobody is assigned and the switch restriction refuses a stale purge on the boss; an assigned purger stops its own hard cast only when the purge passes every other TryCastCombatSpell gate, and a healer keeps a heal while anyone is below 50%",
         "source_refs": [
+          "user_raid_experience_20260926",
           "icy_cata_classic",
           "icy_original"
         ]
@@ -1327,8 +1373,9 @@
       },
       {
         "mechanic": "green_and_adds",
-        "tactic": "off-tank waits at an add spot at least 20 yd from the boss while chamber creatures remain, then holds released adds there; damage dealers burn them in the slime window, at six loose (nine when the native timer shows Green within 15 s), or below 30% boss health",
+        "tactic": "every Aberration is killed as it comes, one at a time (the weakest attackable one, a frozen one last), with no wait for Green; hunter Misdirection and rogue Tricks of the Trade go on the off-tank only while the caster's own target is a loose Aberration; the shaman Frost Shocks a loose Aberration (nearest Maloriak), else one of the kited pack, never a frozen or freeze-reserved one, no Earthbind; the hunter lays traps at its feet (self range, no Trap Launcher): Freeze Trap for an Aberration running at it that nobody hits (not the burn target, not the off-tank's pickup, no player aura on it), Ice Trap otherwise, and Ice Trap at the kite loop's far corner for the kited pack outside Red; the off-tank picks up loose adds (never a frozen one), kites held Aberrations round a flank loop (waypoints at least 20 yd from Maloriak, clear of Absolute Zero and jet fire, not behind the cauldron, within ranged reach), advancing only while the pack is within 8 yd, and keeps Nature's Grasp up; ranged damage dealers and healers keep Red cone, Consuming Flames and Blue positioning while burning adds, melee fight at the adds; kite paths (joins, legs, the diagonal of a dropped corner) are validated against the 20-yd boss clearance and the hazards (Absolute Zero, jet fire, Flash Freeze), loops need three usable waypoints, and the off-tank holds explicitly (renewed) while the pack catches up, beside a rooted add, or with no clear path; while Aberrations are up in phase one the ranged/healer back fan leans to the kite side (20-100 degrees off the rear at 20 yd), so every fan slot reaches every kite waypoint within 40 yd and the shaman's flank slot is within Frost Shock's 25 yd; the hunter holds its kite trap post; a Biting Chill target keeps its isolation; the fan follows the loop the off-tank actually occupies (or can join on a clear path), else where it holds; kite paths keep 11.5 yd from the cauldron centre; the hunter's trap post is the loop corner farthest from Maloriak that keeps 5 yd from every other player (the off-tank and its pack included) and 8 yd from a Biting Chill target, suspended when none does",
         "source_refs": [
+          "user_raid_experience_20260926",
           "icy_cata_classic",
           "icy_original",
           "client_442_59185_maloriak_rows_20260925"
@@ -1360,20 +1407,20 @@
       },
       {
         "mechanic": "release_interrupt_owner",
-        "tactic": "with a single short interrupter the Arcane Storm owner never takes Release Aberrations (the long pool does); the dispatch revalidates admission with native Aberration counts before interrupting",
+        "tactic": "retired with the user tactic: no Release interrupt owner exists",
         "source_refs": [
-          "icy_cata_classic",
-          "icy_original"
+          "user_raid_experience_20260926"
         ]
       },
       {
-        "mechanic": "phase_two_pacing",
-        "tactic": "below 30% in phase one, with more than 3 Aberrations in the chambers and a living tank, damage dealers and healers hold the boss and burn each released batch; tanks keep attacking; the dispatch drops the hold after 90 s",
-        "expectation": "The hold is bounded by tank damage (about 5% of the boss) and the 90 s cap, so it does not drain the chambers to 3. At the r03 raid damage about 6-9 Aberrations plus both Prime Subjects still come at 25% (r03 without the hold: all 18 plus both).",
+        "mechanic": "add_switch_at_30",
+        "tactic": "a cohort latch (BotMaloriakLatches.h): entered the first time Maloriak is at 30% or lower in phase one with Aberrations left (native chamber reserve or a released one alive); with nothing left then, released at once (no pause); held through Remedy healing him above 30%; released when the chambers are empty and every Aberration is dead, at phase two, after 180 s (logged once: boss health %, reserve, loose count) or reset on disengage/new attempt. The one effective state drives targeting (damage dealers burn one Aberration at a time and wait off the boss between releases; the Blood DK main tank keeps full damage), Remedy (no purge while it holds), the native restriction on the boss for everyone but the main tank (casts, DoT starts/refreshes, area spells; pets, guardians and totems follow; the totem-owned Greater Fire Elemental skips Fire Nova/Fire Shield near him), stopping running casts that would reach him (aimed at him or a hostile area over him; launched projectiles and ticking DoTs land, as for a player), the pet recall, and the offensive-cooldown hold; one Arcane Storm interrupt or taunt on him stays allowed per cast",
+        "expectation": "Phase two should start with 0 Aberrations and the two Prime Subjects. r05 (targets cleared only, 30-25% in 14-16 s at 62-73k DPS, DoT ticks about 55%) had 12 Aberrations plus both Prime Subjects at 25%. Between 30% and 25% the boss takes the DK's damage, offset by Remedy, plus the DoT tails from before the switch; if he still reaches 25% first, the remaining reserve comes with Release All Minions.",
         "source_refs": [
-          "icy_cata_classic",
+          "user_raid_experience_20260926",
           "local_cpp:DamageTaken/UpdateAI",
-          "run_r03_b1_20260925"
+          "run_r03_b1_20260925",
+          "run_r05_b1_20260926"
         ]
       },
       {

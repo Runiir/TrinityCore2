@@ -37,7 +37,9 @@ class Player;
 // pillar top onto its floor. A passenger of the same transport stays one:
 // its splines are transport-local and its reports carry its transport block.
 // Each stage either launches its single native motion or returns a typed
-// Retryable/Unsafe reason and moves nothing. It cannot swim or climb.
+// Retryable/Unsafe reason and moves nothing. It cannot climb; the swimmer's
+// stages (Float, Swim, Hop, Emerge) are BotTransportLiquidMovement's
+// (BotWorldPopulationMgrNativePathTransportLiquid.h).
 namespace BotTransportSurfaceMovement
 {
 BotActionArbitration::Outcome Execute(Player* bot,

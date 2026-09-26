@@ -232,6 +232,9 @@ struct EventMap {
     uint32 ExecuteEvent(){if(ready.empty())return 0;uint32 id=ready.front();ready.erase(ready.begin());return id;}
 };
 uint32 urand(uint32 min,uint32){return min;}
+// Maloriak's guardian area sparing (BotEncounterOffense::IsGuardianAreaSparing)
+// is off in this replay: no encounter sets it.
+static bool ShamanAreaCastBlocked(Creature*,uint32){return false;}
 struct ScriptedAI {
  Creature* me;explicit ScriptedAI(Creature* value):me(value){}
  virtual ~ScriptedAI()=default;

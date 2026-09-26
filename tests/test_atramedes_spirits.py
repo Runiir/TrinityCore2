@@ -434,6 +434,277 @@ static void TestWhirlwindExit()
     assert(!Plan(board, Rogue).Movement);
 }
 
+// Round 5: the tank dragged the north pack 14 yd south, to about
+// (150, -203); the fixed half circle toward the arena centre put both
+// healers 26 yd from the idle south pack, which joined the fight
+// (validation_route_future_encounter_contamination). The ring now keeps
+// every ranged and healer slot 35 yd from every idle spirit.
+static void TestStandoffAvoidsTheIdlePack()
+{
+    Blackboard board = NorthBoard();
+    for (ActorSnapshot& spirit : board.Hostiles)
+        spirit.Position = { spirit.Position.X + 2.0f, spirit.Position.Y - 13.0f, 75.0f };
+    Blackboard const south = SouthBoard();
+    for (ActorSnapshot spirit : south.Hostiles)
+    {
+        spirit.InCombat = false;
+        board.Hostiles.push_back(spirit);
+    }
+    S::Pack const pack = S::BuildPack(board);
+    assert(pack.Engaged.size() == 4 && pack.Idle.size() == 4);
+    assert(S::IdleSafeYards >= 35.0f && S::StandoffRoomRadius <= 48.0f);
+    std::vector<Vector3> slots;
+    for (uint32 slot : StandoffSlots)
+    {
+        std::optional<Vector3> const at = S::StandoffSlot(board, pack, PlayerGuid(Tank),
+            PlayerGuid(slot));
+        assert(at);
+        for (ActorSnapshot const* idle : pack.Idle)
+            assert(G::Distance2d(idle->Position, *at) >= 35.0f);
+        for (ActorSnapshot const* spirit : pack.Engaged)
+        {
+            float const distance = G::Distance2d(spirit->Position, *at);
+            assert(distance >= S::DangerRadius && distance <= 38.0f);
+        }
+        assert(G::Distance2d(*at, A::ArenaCenter) <= 48.01f);
+        slots.push_back(*at);
+    }
+    for (std::size_t i = 0; i < slots.size(); ++i)
+        for (std::size_t j = i + 1; j < slots.size(); ++j)
+            assert(G::Distance2d(slots[i], slots[j]) > S::ChainJumpRadius);
+    // The healers leave the round 5 spots for them.
+    Member(board, Discipline).Position = { 142.0f, -228.0f, 75.0f };
+    AdaptiveAtramedesPlan const disc = Plan(board, Discipline, "healer");
+    assert(disc.Movement);
+    Vector3 const to{ MoveOf(disc)->X, MoveOf(disc)->Y, 75.0f };
+    for (ActorSnapshot const* idle : pack.Idle)
+        assert(G::Distance2d(idle->Position, to) >= 35.0f);
+}
+
+// Review of round 6: the 30 degree pass fell back to the nearest valid
+// point, often one already taken; with the engaged pack dragged 24 yd some
+// pair stood under 15 yd apart in 370 of 824 positions, down to 0 yd.
+// Drag each pack +-24 yd in 2 yd steps, the other idle: while every engaged
+// spirit is in the room, the seven slots are valid (off the pillar holes,
+// 35 yd from the idle pack, outside Thunderclap, in spell range) and more
+// than Chain Lightning's 12.5 yd jump apart. Dragged into the walls they
+// stay valid and apart.
+static void TestStandoffDragSweep()
+{
+    int inRoom = 0;
+    for (int tankAlive = 0; tankAlive < 2; ++tankAlive)
+    for (int north = 0; north < 2; ++north)
+        for (int dx = -24; dx <= 24; dx += 2)
+            for (int dy = -24; dy <= 24; dy += 2)
+            {
+                Blackboard board = north ? NorthBoard() : SouthBoard();
+                bool room = true;
+                for (ActorSnapshot& spirit : board.Hostiles)
+                {
+                    spirit.Position = { spirit.Position.X + float(dx),
+                        spirit.Position.Y + float(dy), 75.0f };
+                    room = room && G::Distance2d(spirit.Position, A::ArenaCenter) <= 48.0f;
+                }
+                // The tank drags the pack.
+                Vector3& tank = Member(board, Tank).Position;
+                tank = { tank.X + float(dx), tank.Y + float(dy), 75.0f };
+                for (ActorSnapshot spirit : (north ? SouthBoard() : NorthBoard()).Hostiles)
+                {
+                    spirit.InCombat = false;
+                    board.Hostiles.push_back(spirit);
+                }
+                S::Pack const pack = S::BuildPack(board);
+                assert(pack.Engaged.size() == 4 && pack.Idle.size() == 4);
+                // Heal reach: 38 yd of the living tank; with none, 33 yd of
+                // the pack centre (the tank stands up to 5 yd beyond it).
+                Member(board, Tank).Alive = tankAlive;
+                S::HealReach const reach = S::HealReachFor(board, pack, PlayerGuid(Tank));
+                Vector3 const anchor = tankAlive ? tank : pack.Center;
+                assert(G::Distance2d(reach.Anchor, anchor) < 0.01f);
+                assert(reach.Yards == (tankAlive ? 38.0f : 33.0f));
+                std::vector<Vector3> const slots = S::StandoffSlots(pack, reach,
+                    StandoffSlots.size());
+                assert(slots.size() == StandoffSlots.size());
+                std::optional<Vector3> const mage = S::StandoffSlot(board, pack,
+                    PlayerGuid(Tank), PlayerGuid(Mage));
+                assert(mage && G::Distance2d(*mage, slots[2]) < 0.01f);
+                for (Vector3 const& at : slots)
+                {
+                    assert(A::ArenaFloor::Solid(at.X, at.Y));
+                    // Healers keep the tank in heal range (40 yd + reaches).
+                    assert(G::Distance2d(at, anchor) <= reach.Yards + 0.011f);
+                    assert(G::Distance2d(at, A::ArenaCenter) <= 48.01f);
+                    for (ActorSnapshot const* idle : pack.Idle)
+                        assert(G::Distance2d(idle->Position, at) >= 35.0f);
+                    for (ActorSnapshot const* spirit : pack.Engaged)
+                    {
+                        float const distance = G::Distance2d(spirit->Position, at);
+                        assert(distance >= 21.5f && distance <= 40.0f);
+                    }
+                }
+                for (std::size_t i = 0; i < slots.size(); ++i)
+                    for (std::size_t j = i + 1; j < slots.size(); ++j)
+                        assert(G::Distance2d(slots[i], slots[j]) > (room ? 12.5f : 7.0f));
+                inRoom += room;
+            }
+    assert(inRoom >= 1500);
+}
+
+// Heal reach. Round 5's drag with the tank left 13 yd behind the pack
+// (148, -189): every slot stays within 38 yd of it, still apart and clear
+// of both packs. With the tank at the pack, as it drags, the bound leaves
+// the ring layout alone.
+static void TestStandoffHealReach()
+{
+    Blackboard board = NorthBoard();
+    for (ActorSnapshot& spirit : board.Hostiles)
+        spirit.Position = { spirit.Position.X + 2.0f, spirit.Position.Y - 13.0f, 75.0f };
+    for (ActorSnapshot spirit : SouthBoard().Hostiles)
+    {
+        spirit.InCombat = false;
+        board.Hostiles.push_back(spirit);
+    }
+    S::Pack const pack = S::BuildPack(board);
+    Vector3 const behind = Member(board, Tank).Position;
+    assert(G::Distance2d(behind, pack.Center) > 12.0f);
+    std::vector<Vector3> const slots = S::StandoffSlots(pack,
+        S::HealReachFor(board, pack, PlayerGuid(Tank)), StandoffSlots.size());
+    S::HealReach unbounded{ behind, 1000.0f };
+    bool moved = false;
+    std::vector<Vector3> const loose = S::StandoffSlots(pack, unbounded, StandoffSlots.size());
+    for (std::size_t i = 0; i < slots.size(); ++i)
+    {
+        assert(G::Distance2d(slots[i], behind) <= 38.01f);
+        moved = moved || G::Distance2d(slots[i], loose[i]) > 0.01f;
+        for (ActorSnapshot const* idle : pack.Idle)
+            assert(G::Distance2d(idle->Position, slots[i]) >= 35.0f);
+        for (std::size_t j = i + 1; j < slots.size(); ++j)
+            assert(G::Distance2d(slots[i], slots[j]) > S::ChainJumpRadius);
+    }
+    // Unbounded, some slot would have been out of the tank's heal range.
+    assert(moved);
+    bool beyond = false;
+    for (Vector3 const& at : loose)
+        beyond = beyond || G::Distance2d(at, behind) > 38.01f;
+    assert(beyond);
+
+    // The tank at the dragged pack: the same layout as unbounded.
+    Member(board, Tank).Position = pack.Center;
+    std::vector<Vector3> const withTank = S::StandoffSlots(pack,
+        S::HealReachFor(board, pack, PlayerGuid(Tank)), StandoffSlots.size());
+    unbounded.Anchor = pack.Center;
+    std::vector<Vector3> const free = S::StandoffSlots(pack, unbounded, StandoffSlots.size());
+    for (std::size_t i = 0; i < withTank.size(); ++i)
+        assert(G::Distance2d(withTank[i], free[i]) < 0.001f);
+
+    // The main tank dead: the pack centre, 33 yd.
+    Member(board, Tank).Alive = false;
+    S::HealReach const none = S::HealReachFor(board, pack, PlayerGuid(Tank));
+    assert(G::Distance2d(none.Anchor, pack.Center) < 0.01f && none.Yards == 33.0f);
+    for (Vector3 const& at : S::StandoffSlots(pack, none, StandoffSlots.size()))
+        assert(G::Distance2d(at, pack.Center) <= 33.01f);
+}
+
+// No valid point at all: two engaged spirits 81 yd apart on the south rim,
+// so no point is within 40 yd of both. The slots come from the 30 yd ring
+// around them, on the floor (in the room, off the pillar holes) and clear
+// of both, never off the mesh.
+static void TestStandoffWithNoValidPoint()
+{
+    Blackboard board = NorthBoard();
+    board.Hostiles.resize(2);
+    board.Hostiles[0].Position = G::PointAt(A::ArenaCenter, 208.0f * G::Pi / 180.0f, 46.0f, 75.0f);
+    board.Hostiles[1].Position = G::PointAt(A::ArenaCenter, 332.0f * G::Pi / 180.0f, 46.0f, 75.0f);
+    for (ActorSnapshot const& spirit : board.Hostiles)
+        assert(A::ArenaFloor::Solid(spirit.Position.X, spirit.Position.Y));
+    assert(G::Distance2d(board.Hostiles[0].Position, board.Hostiles[1].Position) > 81.0f);
+    Member(board, Tank).Position = board.Hostiles[0].Position;
+    S::Pack const pack = S::BuildPack(board);
+    S::HealReach const reach = S::HealReachFor(board, pack, PlayerGuid(Tank));
+    // The ring around the pair leaves the room to the south.
+    bool offFloor = false;
+    for (int step = 0; step < 180; ++step)
+        offFloor = offFloor || !S::OnStandoffFloor(G::PointAt(pack.Center,
+            float(step) * G::TwoPi / 180.0f, S::StandoffRadius, 75.0f));
+    assert(offFloor);
+    std::vector<Vector3> const slots = S::StandoffSlots(pack, reach, StandoffSlots.size());
+    assert(slots.size() == StandoffSlots.size());
+    for (std::size_t i = 0; i < slots.size(); ++i)
+    {
+        assert(!S::StandoffPointValid(pack, reach, slots[i]));
+        assert(A::ArenaFloor::Solid(slots[i].X, slots[i].Y));
+        assert(G::Distance2d(slots[i], A::ArenaCenter) <= 48.01f);
+        assert(S::ClearOfSpirits(pack, slots[i]));
+        for (std::size_t j = i + 1; j < slots.size(); ++j)
+            assert(G::Distance2d(slots[i], slots[j]) > 5.0f);
+    }
+}
+
+// Every ranged bot of a snapshot takes its slot from one layout: the
+// cascade runs once per distinct input, and a hit is the cascade's answer.
+static void TestStandoffSlotCache()
+{
+    Blackboard board = SouthBoard();
+    for (ActorSnapshot& spirit : board.Hostiles)
+        spirit.Position = { spirit.Position.X + 16.0f, spirit.Position.Y - 10.0f, 75.0f };
+    for (ActorSnapshot spirit : NorthBoard().Hostiles)
+    {
+        spirit.InCombat = false;
+        board.Hostiles.push_back(spirit);
+    }
+    S::StandoffSlotCache& cache = S::StandoffSlotCacheForThread();
+    auto check = [&cache](Blackboard const& snapshot, uint64 misses)
+    {
+        S::Pack const pack = S::BuildPack(snapshot);
+        std::vector<Vector3> const direct = S::StandoffSlots(pack,
+            S::HealReachFor(snapshot, pack, PlayerGuid(Tank)), StandoffSlots.size());
+        uint64 const before = cache.Misses;
+        for (std::size_t i = 0; i < StandoffSlots.size(); ++i)
+        {
+            std::optional<Vector3> const at = S::StandoffSlot(snapshot, pack, PlayerGuid(Tank),
+                PlayerGuid(StandoffSlots[i]));
+            assert(at && G::Distance2d(*at, direct[i]) == 0.0f);
+        }
+        assert(cache.Misses - before == misses);
+    };
+    check(board, 1);
+    // The same snapshot again: no cascade.
+    check(board, 0);
+    // Any input moved (an idle spirit by 0.01 yd, the tank): a new layout.
+    board.Hostiles.back().Position.X += 0.01f;
+    check(board, 1);
+    Member(board, Tank).Position.Y -= 0.5f;
+    check(board, 1);
+    // More snapshots than entries, twice over: always the cascade's answer.
+    std::vector<Blackboard> boards;
+    for (int i = 1; i <= 11; ++i)
+    {
+        boards.push_back(board);
+        for (ActorSnapshot& spirit : boards.back().Hostiles)
+            if (spirit.InCombat)
+                spirit.Position.X -= float(i);
+    }
+    for (int round = 0; round < 2; ++round)
+        for (Blackboard const& snapshot : boards)
+            check(snapshot, 1);
+}
+
+// Pillar holes: (176, -194) has no navmesh. A point beside it still has a
+// bilinear height from the other three cells but is not a standoff point.
+static void TestStandoffAvoidsPillarHoles()
+{
+    Blackboard const board = NorthBoard();
+    S::Pack const pack = S::BuildPack(board);
+    S::HealReach const reach = S::HealReachFor(board, pack, PlayerGuid(Tank));
+    assert(A::ArenaFloor::Height(175.0f, -195.0f));
+    assert(!A::ArenaFloor::Solid(175.0f, -195.0f));
+    assert(!S::StandoffPointValid(pack, reach, { 175.0f, -195.0f, 75.0f }));
+    assert(A::ArenaFloor::Solid(173.0f, -200.0f));
+    assert(S::StandoffPointValid(pack, reach, { 173.0f, -200.0f, 75.0f }));
+    // Nor off the table, where there is no floor at all.
+    assert(!A::ArenaFloor::Solid(90.0f, -225.0f));
+}
+
 static void TestStrayPull()
 {
     // A south spirit pulled during the north pack is danger and a target
@@ -456,6 +727,12 @@ int main()
     TestSouthKillOrder();
     TestStandoff();
     TestWhirlwindExit();
+    TestStandoffAvoidsTheIdlePack();
+    TestStandoffDragSweep();
+    TestStandoffHealReach();
+    TestStandoffWithNoValidPoint();
+    TestStandoffSlotCache();
+    TestStandoffAvoidsPillarHoles();
     TestStrayPull();
     std::puts("atramedes spirits ok");
     return 0;

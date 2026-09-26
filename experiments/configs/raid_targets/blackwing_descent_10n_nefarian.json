@@ -27,7 +27,7 @@
     "all_specs": "No matched Nefarian's End 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract.",
     "blood_death_knight": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
     "feral_druid_tank": "No WCL reference and no WoWSims fallback (the index has feral_druid_dps only, which is not this spec): status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Nefarian's End spends time on target swaps (Onyxia, Nefarian, prototypes), pillar travel, kiting and bone-warrior control, so these targets are not encounter-matched.",
+    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Nefarian's End spends time on target swaps (Onyxia, Nefarian, prototypes), pillar travel, kiting and bone-warrior control, so these targets are not encounter-matched.",
     "phase_scope": "A kill-window DPS includes phase 2 (prototypes only, no Nefarian damage) and the platform travel; a matched WCL kill has the same structure, so no phase exclusion is applied."
   },
   "unmatched_reference_notes": {},
@@ -102,8 +102,8 @@
     },
     "11005009": {
       "name": "Bwnefnbi",
-      "spec": "restoration_shaman",
-      "role": "healer"
+      "spec": "elemental_shaman",
+      "role": "dps"
     },
     "11005010": {
       "name": "Bwnefnbj",
@@ -111,9 +111,9 @@
       "role": "dps"
     }
   },
-  "roster_source": "tools/raid_program/raid_shard_plan.build_shard_plan(blackwing_descent_10n.json, boss nefarian, copy 0): character GUID 10,000,000 + packed index 1005001-1005010; spec selection {druid: feral_druid_tank, shaman: restoration_shaman} (two tanks, three healers, five DPS).",
+  "roster_source": "tools/raid_program/raid_shard_plan.build_shard_plan(blackwing_descent_10n.json, boss nefarian, copy 0): character GUID 10,000,000 + packed index 1005001-1005010; spec selection {druid: feral_druid_tank, shaman: elemental_shaman} (two tanks, two healers, six DPS: the user's comp, user raid experience 2026-09-26; M's composition change is requested in .git/round6_patches/nefarian/M2).",
   "roster_policy": "Specs and roles come from this roster, never from the WCL timeline. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
-  "duty_policy": "Duties are chosen by capability each snapshot (BotNefarianDutyPlan.h): Nefarian tank = best living tank (Blood DK > Protection Paladin > Protection Warrior > Feral), Onyxia tank = next tank; one healer per pillar, then a <=13 s interrupter where the healer has none, then balanced head count; interrupters per casting prototype by reach, readiness and cooldown; shackler = first living priest; bone-warrior controllers = other living non-tanks whose spec can learn a stun, root or snare (Curse of Exhaustion only for Affliction, so the canonical Demonology warlock controls nothing), the first in range that knows its spell and has it ready acting. Nobody is bound to a roster slot.",
+  "duty_policy": "Duties are chosen by capability each snapshot (BotNefarianDutyPlan.h): Nefarian tank = best living tank (Blood DK > Protection Paladin > Protection Warrior > Feral), Onyxia tank = next tank and, once Onyxia is dead, the bone-warrior handler (taunt, Nature's Grasp, kite out of Nefarian's front); one healer per pillar (with two healers the Nefarian tank takes the third pillar), then a <=13 s interrupter where a team has none, then balanced head count; interrupters per casting prototype by reach, readiness and cooldown; shackler = first living non-tank with Shackle Undead (backup control). Nobody is bound to a roster slot.",
   "counting_rules": {
     "label": "A label is one build and one batch: run refuses a label that already has kills and runs a pinned copy /tmp/worldserver-<sha12>.",
     "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), is a clear whose post-processing failed (postprocess_error), was recorded without report.json measurement_validity (no_measurement_validity), or has valid_for_dps false (stalled_boss_window).",

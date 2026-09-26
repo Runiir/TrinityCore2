@@ -73,6 +73,8 @@ inline bool IsBoneWarriorControlAura(uint32 spellId)
         case 18223: // Curse of Exhaustion
         case 24394: // Intimidation
         case 89766: // Axe Toss
+        case 19975: // Entangling Roots (Nature's Grasp)
+        case 339:   // Entangling Roots
             return true;
         default:
             return false;
@@ -211,10 +213,12 @@ inline bool IsActiveBoneWarrior(ActorSnapshot const& actor)
         && !HasAura(actor, SpellBoneFeignDeath);
 }
 
-// Stunned, rooted or shackled: the warrior cannot chase anyone.
+// Stunned, rooted or shackled: the warrior cannot chase anyone. Its hold
+// breaks on damage (Shackle Undead, Entangling Roots from Nature's Grasp), so
+// a held warrior is never a damage target.
 inline bool IsBoneWarriorHeld(ActorSnapshot const& actor)
 {
-    return HasAnyAura(actor, { 9484, 853, 122, 82691, 3355, 24394, 89766 });
+    return HasAnyAura(actor, { 9484, 853, 122, 82691, 3355, 24394, 89766, 19975, 339 });
 }
 
 inline bool IsBoneWarriorControlled(ActorSnapshot const& actor)

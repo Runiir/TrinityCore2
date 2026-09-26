@@ -209,6 +209,11 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 "adaptive_magmaw_route_observation_recorded");
         };
 
+        // Maloriak's add switch re-applies its restriction after the reset
+        // above, whatever the kernel resolves this tick, as Omnotron's route
+        // authority below does.
+        SubmitMaloriakRouteAuthority(context);
+
         BotActionArbitration::Candidate magmawObservation;
         magmawObservation.Key = "world.validation_route_magmaw_observation";
         magmawObservation.Source = "validation_route_observer";
@@ -219,6 +224,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         magmawObservation.Attempt = observeAdaptiveMagmawRoute;
         context.State.DecisionKernel.Submit(std::move(magmawObservation));
         SubmitAdaptiveChimaeronRouteObservation(context);
+        SubmitAdaptiveAtramedesRouteObservation(context);
         SubmitAdaptiveOmnotronRouteAuthority(context);
 
         auto runRoute = [this, &context, routeAttempt, routeOwnerReason,

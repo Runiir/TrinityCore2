@@ -4,6 +4,8 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 
 #include "CharmInfo.h"
+#include "MotionMaster.h"
+#include "MoveSpline.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -119,6 +121,56 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
                 : BotActionArbitration::Outcome::Retryable("melee_autoattack_suppression_rejected");
         };
         context.State.DecisionKernel.Submit(std::move(suppress));
+    }
+
+    // A bot leading warriors with no lawful leg (a running walk that would now
+    // take them deeper into Nefarian's front, or no leg at all): hold it. The
+    // hold is renewed every decision while the plan asks for it:
+    // - the autonomous generator of the active slot (a native chase or point
+    //   path) is cleared and the spline stopped, as a client releasing its
+    //   keys; a controlled effect (fear, knockback, jump) is left alone;
+    // - a Hazard movement lease at the bot's own position makes the movement
+    //   executor preserve it against every lower lane, so combat range
+    //   recovery (MoveBotToProfileRange, CombatRange/Combat) cannot move the
+    //   bot in the same tick or before the lease expires.
+    if (context.AdaptiveNefarianMovementHold == BotEncounter::Nefarian::WarriorStopHold)
+    {
+        BotActionArbitration::Candidate stop;
+        stop.Key = "adaptive_nefarian:" + std::string(BotEncounter::Nefarian::WarriorStopHold);
+        stop.Source = "adaptive_nefarian";
+        stop.ActionPriority = BotActionArbitration::Priority::Survival;
+        stop.UtilityScore = 480.0f;
+        stop.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::Movement);
+        stop.ExpiresAtMs = context.DecisionNowMs + 1000;
+        stop.Attempt = [this, &context]()
+        {
+            Player* bot = context.Bot;
+            MotionMaster* motion = bot->GetMotionMaster();
+            if (motion->GetMotionSlot(MOTION_SLOT_CONTROLLED))
+                return BotActionArbitration::Outcome::Retryable(
+                    "nefarian_warrior_path_stop_controlled_motion");
+            // As SettleRetainedMagmawFormation retires a native path.
+            if (!bot->movespline->Finalized())
+                bot->StopMoving();
+            motion->Clear(MOTION_SLOT_ACTIVE);
+            motion->MoveIdle();
+            BotWorldMovement::Intent hold;
+            hold.X = bot->GetPositionX();
+            hold.Y = bot->GetPositionY();
+            hold.Z = bot->GetPositionZ();
+            hold.Owner = BotMovementArbitration::Owner::Hazard;
+            hold.Priority = BotMovementArbitration::Priority::Hazard;
+            BotMovementArbitration::Apply(context.State.MovementLease,
+                BuildMovementRequest(bot, hold, context.DecisionNowMs));
+            context.State.ActivePathValid = false;
+            context.State.IsMoving = false;
+            context.Situation = "adaptive_nefarian";
+            context.Action = "nefarian_warrior_path_stop";
+            context.State.LastDecisionHandler = "adaptive_nefarian";
+            return BotActionArbitration::Outcome::Committed("nefarian_warrior_path_held");
+        };
+        context.State.DecisionKernel.Submit(std::move(stop));
     }
 
     // Claims no resource and never displaces a real action; its only effect

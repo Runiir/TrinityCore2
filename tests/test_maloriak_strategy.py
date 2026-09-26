@@ -26,6 +26,7 @@ INCLUDES = [
 PROGRAM = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/BotWorldPopulationMgrRaidConsumables.h"
+#include "Bots/BotEncounterLatches.h"
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -120,10 +121,23 @@ static ActorSnapshot Add(uint32 entry, uint32 counter, float x, float y, bool se
     return actor;
 }
 
-static AdaptiveMaloriakPlan Plan(Blackboard const& board, Slot slot)
+static AdaptiveMaloriakPlan Plan(Blackboard const& board, Slot slot,
+    EncounterLatchView const* latches = nullptr)
 {
     AdaptiveMaloriakStrategy strategy;
-    return strategy.Propose(board, G(slot), board.Players[slot].Role);
+    return strategy.Propose(board, G(slot), board.Players[slot].Role, latches);
+}
+
+// The cohort publisher: a new revision, then one latch update from it.
+[[maybe_unused]] static void Publish(Blackboard& board, EncounterLatchStore& store, uint64 stepMs = 0)
+{
+    board.Revision += 1;
+    board.ObservedAtMs += stepMs;
+    store.BeginPublication(EncounterLatchScopeKey(board.CurrentScope.Key(),
+        board.CurrentScope.ServerEpoch, board.CurrentScope.EncounterEpoch),
+        board.Revision, board.ObservedAtMs);
+    if (board.Route.NodeId == M::EncounterNode)
+        M::UpdateEncounterLatches(board, store.Module(M::LatchModule));
 }
 
 static Vector3 Destination(AdaptiveMaloriakPlan const& plan)
@@ -281,24 +295,37 @@ int main()
         CHECK(Interrupts(board, ROGUE, 77896) && !Interrupts(board, RET, 77896));
     }
 
-    // Release Aberrations: admitted while fewer than six are loose; the
-    // second and third short interrupters stop it otherwise.
+    // User tactic (2026-09-26): Release Aberrations is never interrupted,
+    // however many Aberrations are loose; every release is admitted (the
+    // dispatch vetoes generic interrupts of it) in phase one.
     {
         Blackboard board = Canonical();
         Boss(board).Cast = CastSnapshot{ 77569, ObjectGuid(), board.ObservedAtMs, false, true };
         for (uint32 index = 0; index < 18; ++index)
             board.Summons.push_back(Add(41440, 200 + index, -140.0f, -430.0f, index < 3, 100.0f));
-        for (Slot slot : { RET, ROGUE, SHAMAN, DK })
-            CHECK(!Plan(board, slot).InterruptTarget);
-        for (uint32 index = 3; index < 6; ++index)
+        for (Slot slot : { DK, FERAL, HUNTER, MAGE, RET, ROGUE, SHAMAN, LOCK, HOLY, DISC })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            CHECK(!plan.InterruptTarget && !plan.InterruptSpellId);
+            CHECK(plan.ReleaseAdmitted);
+        }
+        for (uint32 index = 3; index < 12; ++index)
             board.Summons[index].Selectable = board.Summons[index].Attackable = true;
-        CHECK(!Interrupts(board, RET, 77569));
-        CHECK(Interrupts(board, ROGUE, 77569) && Interrupts(board, SHAMAN, 77569));
-        CHECK(std::string(Plan(board, ROGUE).InterruptLane) == "release_aberrations_quota");
-        for (ActorSnapshot& aberration : board.Summons)
-            aberration.Selectable = aberration.Attackable = true;
-        CHECK(!Plan(board, ROGUE).InterruptTarget);
-        CHECK(M::Observe(board).ReserveAberrations == 0);
+        for (Slot slot : { RET, ROGUE, SHAMAN, MAGE })
+            CHECK(!Interrupts(board, slot, 77569) && Plan(board, slot).ReleaseAdmitted);
+        // Heroic Dark phase with Vile Swills: still never interrupted.
+        Boss(board).Auras.push_back({ 92716, Boss(board).Guid, 1, 0 });
+        board.Summons.push_back(Add(49811, 900, -120.0f, -440.0f, true, 100.0f));
+        CHECK(!Interrupts(board, ROGUE, 77569));
+        // Arcane Storm is the boss's own cast and is still interrupted.
+        board.Summons.pop_back();
+        Boss(board).Auras.pop_back();
+        Boss(board).Cast = CastSnapshot{ 77896, ObjectGuid(), board.ObservedAtMs, false, true };
+        CHECK(Interrupts(board, RET, 77896));
+        // Phase two admits nothing (Release All Minions is not interruptible).
+        Boss(board).Cast.reset();
+        Boss(board).HealthPct = 24.0f;
+        CHECK(!Plan(board, MAGE).ReleaseAdmitted);
     }
 
     // Remedy: Spellsteal first, Purge after 1.5 s, every dispeller after 3 s.
@@ -391,8 +418,8 @@ int main()
         CHECK(chill.Movement && chill.Movement->Id.Mechanic == "biting_chill_isolation");
     }
 
-    // Green / add control: burn Aberrations in the slime window, the off-tank
-    // picks up and taunts loose adds, then holds them at the add spot.
+    // Add control: Aberrations are burned as they come (in the slime window
+    // too), the off-tank picks up and taunts loose adds, then kites them.
     {
         Blackboard board = Canonical();
         board.Summons.push_back(Add(41440, 401, -128.0f, -436.0f, true, 80.0f));
@@ -400,7 +427,11 @@ int main()
         board.Summons.push_back(Add(41440, 403, -131.0f, -435.0f, true, 90.0f));
         for (ActorSnapshot& add : board.Summons)
             add.VictimGuid = G(FERAL);
-        CHECK(Plan(board, MAGE).DamageTarget == Boss(board).Guid);
+        // Green in 10 s: no wait, the weakest is burned now.
+        Boss(board).MechanicTimers.push_back({ 77937, 10000, false, FactSource::NativeInstanceState });
+        CHECK(Plan(board, MAGE).DamageTarget == board.Summons[1].Guid);
+        CHECK(std::string(Plan(board, MAGE).Duty) == "aberration_burn");
+        Boss(board).MechanicTimers.clear();
         Boss(board).Auras.push_back({ 92917, Boss(board).Guid, 1, board.ObservedAtMs + 30000 });
         Boss(board).Auras.push_back({ 77615, ObjectGuid(), 1, board.ObservedAtMs + 14000 });
         AdaptiveMaloriakPlan const burn = Plan(board, MAGE);
@@ -408,13 +439,16 @@ int main()
         CHECK(std::string(burn.Duty) == "aberration_slime_burn");
         CHECK(Plan(board, ROGUE).DamageTarget == board.Summons[1].Guid);
         CHECK(!Plan(board, ROGUE).Movement);
+        // Holding them at the add spot, the off-tank kites: off the loop it
+        // joins it first (review item 9: kite at the anchor).
         AdaptiveMaloriakPlan const hold = Plan(board, FERAL);
-        CHECK(std::string(hold.Duty) == "off_tank_hold");
-        CHECK(hold.DamageTarget == board.Summons[1].Guid);
-        CHECK(!hold.Movement && !hold.TauntTarget);
+        CHECK(std::string(hold.Duty) == "off_tank_kite");
+        CHECK(hold.DamageTarget == board.Summons[1].Guid && !hold.TauntTarget);
+        CHECK(hold.Movement && hold.Movement->Id.Mechanic == "off_tank_kite");
+        CHECK(Dist(Destination(hold), M::KiteLoopWest[0]) < 0.01f);
         board.Players[FERAL].Position = { -105.0f, -440.0f, 73.6f };
         AdaptiveMaloriakPlan const drag = Plan(board, FERAL);
-        CHECK(drag.Movement && drag.Movement->Id.Mechanic == "off_tank_add_anchor");
+        CHECK(drag.Movement && drag.Movement->Id.Mechanic == "off_tank_kite");
         board.Summons[2].VictimGuid = G(HOLY);
         AdaptiveMaloriakPlan const pickup = Plan(board, FERAL);
         CHECK(std::string(pickup.Duty) == "off_tank_pickup");
@@ -440,109 +474,661 @@ int main()
         CHECK(!Plan(board, MAGE).Movement);
     }
 
-    // Outside the slime window: overflow and pre-25% cleanup.
+    // Each Aberration is killed as it comes (user tactic), with no wait for
+    // Green (review item 10: burn before Green).
     {
         Blackboard board = Canonical();
-        for (uint32 index = 0; index < 5; ++index)
-            board.Summons.push_back(Add(41440, 500 + index, -130.0f, -434.0f, true, 100.0f - index));
-        CHECK(Plan(board, LOCK).DamageTarget == Boss(board).Guid);
-        board.Summons.push_back(Add(41440, 505, -130.0f, -434.0f, true, 60.0f));
+        board.Summons.push_back(Add(41440, 500, -130.0f, -434.0f, true, 100.0f));
         CHECK(Plan(board, LOCK).DamageTarget == board.Summons.back().Guid);
-        // Green in 10 s: six loose Aberrations wait for the slime window.
-        Boss(board).MechanicTimers.push_back({ 77937, 10000, false, FactSource::NativeInstanceState });
-        CHECK(Plan(board, LOCK).DamageTarget == Boss(board).Guid);
-        Boss(board).MechanicTimers.clear();
-        board.Summons.pop_back();
-        Boss(board).HealthPct = 29.0f;
+        CHECK(std::string(Plan(board, LOCK).Duty) == "aberration_burn");
+        for (uint32 index = 1; index < 5; ++index)
+            board.Summons.push_back(Add(41440, 500 + index, -130.0f, -434.0f, true, 100.0f - index));
         CHECK(Plan(board, LOCK).DamageTarget == board.Summons[4].Guid);
+        Boss(board).MechanicTimers.push_back({ 77937, 10000, false, FactSource::NativeInstanceState });
+        CHECK(Plan(board, LOCK).DamageTarget == board.Summons[4].Guid);
+        Boss(board).MechanicTimers.clear();
         // A leaping Aberration (released, still immune) is not a target yet.
         for (ActorSnapshot& add : board.Summons)
             add.Attackable = false;
         CHECK(Plan(board, LOCK).DamageTarget == Boss(board).Guid);
     }
 
-    // Round 4 (r03 wipe): every Release Aberrations was cut by profile
-    // interrupts, so 25% freed 18 Aberrations and 2 Prime Subjects. The plan
-    // publishes whether a release is admitted (the dispatch turns it into an
-    // interrupt veto) and holds boss damage below 30% while the chambers
-    // still hold more than one release. The hold is bounded by tank damage
-    // and a 90 s cap, so it does not drain the chambers to 3: at the r03 raid
-    // damage about 6-9 Aberrations plus both Prime Subjects still come at 25%.
+    // User tactic (2026-09-26): the hard switch at 30%. Every damage dealer
+    // leaves the boss for the Aberrations until the chambers are empty and
+    // the loose ones are dead; the Blood DK main tank keeps full damage;
+    // nobody dispels Remedy during the switch; afterwards Remedy is dispelled
+    // again and the raid burns.
     {
         Blackboard board = Canonical();
         Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
         for (uint32 index = 0; index < 18; ++index)
             board.Summons.push_back(Add(41440, 1000 + index, -140.0f, -430.0f, false, 100.0f));
-        AdaptiveMaloriakPlan const early = Plan(board, MAGE);
-        CHECK(early.Boss == Boss(board).Guid);
-        CHECK(early.ReleaseAdmitted);
-        CHECK(!early.SuppressOffense && early.DamageTarget == Boss(board).Guid);
-        for (Slot slot : { DK, FERAL, HOLY, ROGUE })
-            CHECK(Plan(board, slot).ReleaseAdmitted);
-        // Six loose: the next release is interrupted (no veto).
-        for (uint32 index = 0; index < 6; ++index)
-            board.Summons[index].Selectable = board.Summons[index].Attackable = true;
-        CHECK(!Plan(board, MAGE).ReleaseAdmitted);
-        for (uint32 index = 0; index < 6; ++index)
-            board.Summons[index].Alive = false;
-        CHECK(Plan(board, MAGE).ReleaseAdmitted);
-
-        // 28% with 12 in the chambers and none loose: damage dealers and
-        // healers hold, tanks keep the boss; the boss stays the formation
-        // target.
-        Boss(board).HealthPct = 28.0f;
-        for (Slot slot : { MAGE, ROGUE, LOCK, HOLY, DISC })
-        {
-            AdaptiveMaloriakPlan const hold = Plan(board, slot);
-            CHECK(hold.SuppressOffense);
-            CHECK(std::string(hold.SuppressReason) == "phase_two_push_hold");
-            CHECK(hold.DamageTarget == Boss(board).Guid);
-        }
-        AdaptiveMaloriakPlan const tank = Plan(board, DK);
-        CHECK(!tank.SuppressOffense && tank.DamageTarget == Boss(board).Guid);
-        // Every bot, tanks included, reports the same window for the latch.
-        for (Slot slot : { DK, FERAL, MAGE, HOLY })
-            CHECK(Plan(board, slot).PushHoldWindow);
-        // Without a living tank nobody would push to 25%: no hold.
-        board.Players[DK].Alive = false;
-        board.Players[FERAL].Alive = false;
-        CHECK(!Plan(board, MAGE).PushHoldWindow);
-        CHECK(!Plan(board, MAGE).SuppressOffense);
-        board.Players[DK].Alive = true;
-        board.Players[FERAL].Alive = true;
-        // A released batch is burned instead of waiting.
-        board.Summons[6].Selectable = board.Summons[6].Attackable = true;
-        AdaptiveMaloriakPlan const burn = Plan(board, LOCK);
-        CHECK(!burn.SuppressOffense && burn.DamageTarget == board.Summons[6].Guid);
-        CHECK(Plan(board, HOLY).SuppressOffense);
-        board.Summons[6].Alive = false;
-        // Three or fewer left in the chambers: push to 25%.
-        for (uint32 index = 7; index < 15; ++index)
-            board.Summons[index].Alive = false;
-        CHECK(!Plan(board, MAGE).SuppressOffense);
-        CHECK(!Plan(board, HOLY).SuppressOffense);
-        // Above 30% nothing waits; phase two never waits and admits nothing.
-        for (uint32 index = 7; index < 15; ++index)
-            board.Summons[index].Alive = true;
+        // 31%: no switch; damage dealers stay on the boss, Remedy is stolen.
         Boss(board).HealthPct = 31.0f;
-        CHECK(!Plan(board, MAGE).SuppressOffense);
+        Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
+        AdaptiveMaloriakPlan const before = Plan(board, MAGE);
+        CHECK(!before.AddSwitchWindow && !before.AddSwitchRestricts);
+        CHECK(before.DamageTarget == Boss(board).Guid && !before.SuppressOffense);
+        CHECK(before.DispelTarget == Boss(board).Guid);
+
+        // 30% with 12 in the chambers and three loose: every damage dealer on
+        // the adds, the DK on the boss, nobody on Remedy (every dispeller,
+        // even after 3 s).
+        Boss(board).HealthPct = 30.0f;
+        Boss(board).Auras.back().ExpiresAtMs = board.ObservedAtMs + 5000;
+        for (uint32 index = 0; index < 6; ++index)
+            board.Summons[index].Alive = index >= 3;
+        for (uint32 index = 3; index < 6; ++index)
+            board.Summons[index].Selectable = board.Summons[index].Attackable = true;
+        CHECK(M::Observe(board).ReserveAberrations == 12);
+        for (Slot slot : { HUNTER, MAGE, RET, ROGUE, SHAMAN, LOCK })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            CHECK(plan.AddSwitchWindow && plan.AddSwitchRestricts);
+            CHECK(plan.DamageTarget != Boss(board).Guid);
+            CHECK(plan.DamageTarget == board.Summons[3].Guid
+                || plan.DamageTarget == board.Summons[4].Guid
+                || plan.DamageTarget == board.Summons[5].Guid);
+            CHECK(!plan.SuppressOffense);
+            CHECK(std::string(plan.Duty) == "aberration_burn");
+        }
+        for (Slot slot : { HUNTER, MAGE, SHAMAN, DISC, HOLY, RET, ROGUE, LOCK, FERAL, DK })
+            CHECK(!Plan(board, slot).DispelTarget);
+        AdaptiveMaloriakPlan const dk = Plan(board, DK);
+        CHECK(dk.AddSwitchWindow && !dk.AddSwitchRestricts);
+        CHECK(dk.DamageTarget == Boss(board).Guid && !dk.SuppressOffense);
+        CHECK(std::string(dk.Duty) == "main_tank");
+        CHECK(Plan(board, FERAL).AddSwitchRestricts);
+        // Healers are off the boss too.
+        for (Slot slot : { HOLY, DISC })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            CHECK(plan.AddSwitchRestricts && plan.SuppressOffense);
+            CHECK(std::string(plan.SuppressReason) == "add_switch_wait");
+        }
+        // The DK keeps damaging through the whole switch, even at 26%.
+        Boss(board).HealthPct = 26.0f;
+        CHECK(Plan(board, DK).DamageTarget == Boss(board).Guid && !Plan(board, DK).SuppressOffense);
+
+        // Loose ones dead, nine still in the chambers: damage dealers wait off
+        // the boss for the next release.
+        for (uint32 index = 3; index < 6; ++index)
+            board.Summons[index].Alive = false;
+        AdaptiveMaloriakPlan const wait = Plan(board, LOCK);
+        CHECK(wait.AddSwitchWindow && wait.AddSwitchRestricts && wait.SuppressOffense);
+        CHECK(std::string(wait.SuppressReason) == "add_switch_wait");
+        CHECK(!wait.DispelTarget && !Plan(board, MAGE).DispelTarget);
+
+        // The last release is out: the switch holds until its adds are dead.
+        for (uint32 index = 6; index < 18; ++index)
+            board.Summons[index].Selectable = board.Summons[index].Attackable = true;
+        CHECK(M::Observe(board).ReserveAberrations == 0);
+        CHECK(Plan(board, LOCK).AddSwitchWindow);
+        CHECK(Plan(board, LOCK).DamageTarget != Boss(board).Guid);
+        CHECK(!Plan(board, MAGE).DispelTarget);
+
+        // Chambers empty, every Aberration dead: Remedy is dispelled again
+        // and everyone burns the boss.
+        for (uint32 index = 6; index < 18; ++index)
+            board.Summons[index].Alive = false;
+        AdaptiveMaloriakPlan const burn = Plan(board, MAGE);
+        CHECK(!burn.AddSwitchWindow && !burn.AddSwitchRestricts);
+        CHECK(burn.DamageTarget == Boss(board).Guid && !burn.SuppressOffense);
+        CHECK(burn.DispelTarget == Boss(board).Guid);
+        CHECK(Plan(board, SHAMAN).DispelTarget == Boss(board).Guid);
+        CHECK(Plan(board, HOLY).DamageTarget == Boss(board).Guid && !Plan(board, HOLY).SuppressOffense);
+
+        // Phase two starts with only the Prime Subjects; no switch there.
         Boss(board).HealthPct = 24.0f;
-        AdaptiveMaloriakPlan const two = Plan(board, MAGE);
-        CHECK(std::string(two.Phase) == "phase_two");
-        CHECK(!two.SuppressOffense && !two.ReleaseAdmitted && !two.PushHoldWindow);
+        CHECK(!Plan(board, MAGE).AddSwitchWindow);
+        // Before the pull there is no switch either.
+        Blackboard idle = Canonical();
+        Boss(idle).InCombat = false;
+        idle.NativeBossState = "not_started";
+        Boss(idle).HealthPct = 20.0f;
+        CHECK(!Plan(idle, MAGE).AddSwitchWindow);
     }
 
-    // The dispatch's push-hold latch: starts at the first observation of the
-    // window, stands down after 90 s, resets when the window closes.
+    // Review P1 (remedy_rebound): the switch is a cohort latch. Remedy is
+    // left on Maloriak, so he heals back above 30%; the switch holds (no
+    // restriction lift, no purge re-armed) until the adds are gone, and the
+    // cap and the reset end it. One effective state for everything.
     {
-        uint64 started = 0;
-        CHECK(!M::PushHoldWithinCap(started, false, 5000) && started == 0);
-        CHECK(M::PushHoldWithinCap(started, true, 10000) && started == 10000);
-        CHECK(M::PushHoldWithinCap(started, true, 99999));
-        CHECK(!M::PushHoldWithinCap(started, true, 100000));
-        CHECK(!M::PushHoldWithinCap(started, true, 150000) && started == 10000);
-        CHECK(!M::PushHoldWithinCap(started, false, 150001) && started == 0);
-        CHECK(M::PushHoldWithinCap(started, true, 200000) && started == 200000);
+        EncounterLatchStore store;
+        Blackboard board = Canonical();
+        for (uint32 index = 0; index < 9; ++index)
+            board.Summons.push_back(Add(41440, 1300 + index, -140.0f, -430.0f, false, 100.0f));
+        Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 5000 });
+        Boss(board).HealthPct = 31.0f;
+        Publish(board, store);
+        CHECK(!Plan(board, MAGE, &store.View()).AddSwitchWindow);
+        CHECK(Plan(board, MAGE, &store.View()).DispelTarget == Boss(board).Guid);
+        Boss(board).HealthPct = 29.9f;
+        Publish(board, store, 1000);
+        uint64 const enteredAt = board.ObservedAtMs;
+        AdaptiveMaloriakPlan const first = Plan(board, MAGE, &store.View());
+        CHECK(first.AddSwitchWindow && first.AddSwitchRestricts && !first.DispelTarget);
+        // Remedy heals him to 30.1%: still the switch.
+        Boss(board).HealthPct = 30.1f;
+        Boss(board).Auras.back().ExpiresAtMs = board.ObservedAtMs + 3000;
+        Publish(board, store, 1000);
+        AdaptiveMaloriakPlan const rebound = Plan(board, MAGE, &store.View());
+        CHECK(rebound.AddSwitchWindow && rebound.AddSwitchRestricts);
+        CHECK(!rebound.DispelTarget && !Plan(board, SHAMAN, &store.View()).DispelTarget);
+        CHECK(std::string(rebound.SuppressReason) == "add_switch_wait");
+        EncounterLatch const* entered = store.View().Module(M::LatchModule)->Find(M::AddSwitchEnteredLatch);
+        CHECK(entered && entered->SetAtMs == enteredAt);
+        // Without the published view (a stale revision) the unlatched
+        // condition applies; the runtime always passes the current view.
+        CHECK(!Plan(board, MAGE).AddSwitchWindow);
+        // The cap: 180 s after the entry the switch ends everywhere at once.
+        Publish(board, store, M::AddSwitchCapMs - 2000);
+        CHECK(Plan(board, MAGE, &store.View()).AddSwitchWindow);
+        Publish(board, store, 1000);
+        AdaptiveMaloriakPlan const capped = Plan(board, MAGE, &store.View());
+        CHECK(!capped.AddSwitchWindow && !capped.AddSwitchRestricts && capped.AddSwitchCapReleased);
+        CHECK(capped.DispelTarget == Boss(board).Guid && capped.DamageTarget == Boss(board).Guid);
+        CHECK(!capped.SuppressOffense);
+        // A wipe (disengage) clears the latch for the next pull.
+        Boss(board).InCombat = false;
+        board.NativeBossState = "not_started";
+        Publish(board, store, 1000);
+        Boss(board).InCombat = true;
+        board.NativeBossState = "in_progress";
+        Boss(board).HealthPct = 29.0f;
+        Publish(board, store, 1000);
+        AdaptiveMaloriakPlan const again = Plan(board, MAGE, &store.View());
+        CHECK(again.AddSwitchWindow && !again.AddSwitchCapReleased);
+    }
+
+    // User refinement: the pause at 30% happens only if adds remain. With
+    // the chambers empty and nothing alive at 30%, no pause: burn straight
+    // through and keep dispelling Remedy; it never pauses later either.
+    {
+        EncounterLatchStore store;
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
+        Boss(board).HealthPct = 29.0f;
+        Publish(board, store);
+        AdaptiveMaloriakPlan const mage = Plan(board, MAGE, &store.View());
+        CHECK(!mage.AddSwitchWindow && !mage.AddSwitchRestricts);
+        CHECK(mage.DamageTarget == Boss(board).Guid && !mage.SuppressOffense);
+        CHECK(mage.DispelTarget == Boss(board).Guid);
+        CHECK(Plan(board, LOCK, &store.View()).DamageTarget == Boss(board).Guid);
+        EncounterLatch const* released = store.View().Module(M::LatchModule)->Find(M::AddSwitchReleasedLatch);
+        CHECK(released && released->Value == uint64(M::AddSwitchRelease::NothingLeft));
+        Publish(board, store, 1000);
+        CHECK(!Plan(board, MAGE, &store.View()).AddSwitchWindow);
+    }
+
+    // User refinement: during the pause the damage dealers burn one
+    // Aberration at a time; only the Feral holds the rest.
+    {
+        EncounterLatchStore store;
+        Blackboard board = Canonical();
+        board.Summons.push_back(Add(41440, 1400, -133.0f, -452.0f, true, 70.0f));
+        board.Summons.push_back(Add(41440, 1401, -134.0f, -453.0f, true, 40.0f));
+        board.Summons.push_back(Add(41440, 1402, -133.0f, -454.0f, true, 90.0f));
+        for (ActorSnapshot& add : board.Summons)
+            add.VictimGuid = G(FERAL);
+        board.Summons.push_back(Add(41440, 1403, -140.0f, -430.0f, false, 100.0f));
+        Boss(board).HealthPct = 28.0f;
+        Publish(board, store);
+        for (Slot slot : { HUNTER, MAGE, RET, ROGUE, SHAMAN, LOCK })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot, &store.View());
+            CHECK(plan.DamageTarget == board.Summons[1].Guid);
+        }
+        CHECK(Plan(board, FERAL, &store.View()).DamageTarget != Boss(board).Guid);
+        CHECK(Plan(board, DK, &store.View()).DamageTarget == Boss(board).Guid);
+        board.Summons[1].Alive = false;
+        Publish(board, store, 1000);
+        for (Slot slot : { HUNTER, MAGE, RET, ROGUE, SHAMAN, LOCK })
+            CHECK(Plan(board, slot, &store.View()).DamageTarget == board.Summons[0].Guid);
+    }
+
+    // Threat onto the Feral off-tank (user tactic): the hunter's
+    // Misdirection and the rogue's Tricks of the Trade arm only while their
+    // own next target is a loose Aberration (review item 6: during the
+    // release cast nothing is attackable yet, and a redirect armed then
+    // would carry boss attacks and boss threat to the Feral).
+    {
+        Blackboard board = Canonical();
+        for (uint32 index = 0; index < 6; ++index)
+            board.Summons.push_back(Add(41440, 1100 + index, -140.0f, -430.0f, false, 100.0f));
+        CHECK(!Plan(board, HUNTER).ThreatRedirectTarget && !Plan(board, ROGUE).ThreatRedirectTarget);
+        Boss(board).Cast = CastSnapshot{ 77569, ObjectGuid(), board.ObservedAtMs, false, true };
+        for (Slot slot : { HUNTER, ROGUE, MAGE, LOCK, SHAMAN, DK, FERAL, HOLY })
+            CHECK(!Plan(board, slot).ThreatRedirectTarget);
+        // Released and leaping (not attackable yet): still nothing.
+        board.Summons[0].Selectable = true;
+        CHECK(!Plan(board, HUNTER).ThreatRedirectTarget && !Plan(board, ROGUE).ThreatRedirectTarget);
+        Boss(board).Cast.reset();
+        // Landed and not on the bear: the hunter and the rogue burn it and
+        // redirect onto the Feral; the shaman slows the one nearest the boss.
+        board.Summons[0].Attackable = true;
+        board.Summons[1].Selectable = board.Summons[1].Attackable = true;
+        board.Summons[0].Position = { -125.0f, -445.0f, 73.6f };
+        board.Summons[1].Position = { -140.0f, -430.0f, 73.6f };
+        board.Summons[0].VictimGuid = G(HOLY);
+        board.Summons[1].VictimGuid = G(MAGE);
+        AdaptiveMaloriakPlan const hunter = Plan(board, HUNTER);
+        CHECK(hunter.DamageTarget == board.Summons[0].Guid || hunter.DamageTarget == board.Summons[1].Guid);
+        CHECK(hunter.ThreatRedirectTarget == G(FERAL) && hunter.ThreatRedirectSpellId == M::MisdirectionSpell);
+        AdaptiveMaloriakPlan const rogue = Plan(board, ROGUE);
+        CHECK(rogue.ThreatRedirectTarget == G(FERAL) && rogue.ThreatRedirectSpellId == M::TricksOfTheTradeSpell);
+        for (Slot slot : { MAGE, LOCK, SHAMAN, DK, FERAL, HOLY })
+            CHECK(!Plan(board, slot).ThreatRedirectTarget);
+        CHECK(Plan(board, SHAMAN).SlowTarget == board.Summons[0].Guid);
+        board.Summons[0].Auras.push_back({ M::FrostShockSpell, G(SHAMAN), 1, board.ObservedAtMs + 8000 });
+        // The other one is 25 yards from the shaman: out of Frost Shock's
+        // range (review item 7), so no slow until it comes closer.
+        CHECK(!Plan(board, SHAMAN).SlowTarget);
+        board.Summons[1].Position = { -130.0f, -440.0f, 73.6f };
+        CHECK(Plan(board, SHAMAN).SlowTarget == board.Summons[1].Guid);
+        board.Summons[1].Position = { -140.0f, -430.0f, 73.6f };
+        CHECK(!Plan(board, MAGE).SlowTarget);
+        // An Aberration running at the hunter: Freeze Trap when nobody hits
+        // it (not the raid's burn focus), Ice Trap when it is the focus;
+        // nothing when it is far away or on someone else.
+        board.Summons[1].VictimGuid = G(HUNTER);
+        board.Summons[1].HealthPct = 100.0f;
+        board.Summons[0].HealthPct = 50.0f;
+        board.Summons[1].Position = { board.Players[HUNTER].Position.X + 8.0f,
+            board.Players[HUNTER].Position.Y, 73.6f };
+        AdaptiveMaloriakPlan const freeze = Plan(board, HUNTER);
+        CHECK(freeze.TrapTarget == board.Summons[1].Guid && freeze.TrapSpellId == M::FreezeTrapSpell);
+        board.Summons[1].HealthPct = 40.0f;
+        AdaptiveMaloriakPlan const ice = Plan(board, HUNTER);
+        CHECK(ice.TrapTarget == board.Summons[1].Guid && ice.TrapSpellId == M::IceTrapSpell);
+        board.Summons[1].Position = { -140.0f, -430.0f, 73.6f };
+        CHECK(!Plan(board, HUNTER).TrapTarget);
+        board.Summons[1].Position = { board.Players[ROGUE].Position.X + 5.0f,
+            board.Players[ROGUE].Position.Y, 73.6f };
+        board.Summons[1].VictimGuid = G(ROGUE);
+        CHECK(!Plan(board, HUNTER).TrapTarget && !Plan(board, ROGUE).TrapTarget);
+        board.Summons[1].VictimGuid = G(MAGE);
+        // Everything on the bear: no redirect; the shaman's Frost Shock and
+        // the hunter's Ice Trap (at the kite loop's trap corner) now cover
+        // the kited pack (review item 9).
+        board.Summons[0].VictimGuid = G(FERAL);
+        board.Summons[1].VictimGuid = G(FERAL);
+        board.Summons[0].Auras.clear();
+        CHECK(!Plan(board, HUNTER).ThreatRedirectTarget && !Plan(board, ROGUE).ThreatRedirectTarget);
+        // (the one nearer Maloriak first)
+        CHECK(Plan(board, SHAMAN).SlowTarget == board.Summons[1].Guid);
+        AdaptiveMaloriakPlan const kiteTrap = Plan(board, HUNTER);
+        CHECK(kiteTrap.TrapSpellId == M::IceTrapSpell && !kiteTrap.TrapTarget.IsEmpty());
+        CHECK(kiteTrap.Movement && kiteTrap.Movement->Id.Mechanic == "hunter_kite_trap_corner");
+        board.Players[HUNTER].Position = kiteTrap.TrapPoint;
+        CHECK(!Plan(board, HUNTER).Movement || Plan(board, HUNTER).Movement->Id.Mechanic != "hunter_kite_trap_corner");
+        // In Red the hunter keeps the cone stack instead.
+        Boss(board).Auras.push_back({ M::FireImbuedSpell, Boss(board).Guid, 1, 0 });
+        CHECK(!Plan(board, HUNTER).TrapTarget);
+        Boss(board).Auras.pop_back();
+        // No living off-tank: nobody to redirect to.
+        board.Summons[0].VictimGuid = G(HOLY);
+        board.Players[FERAL].Alive = false;
+        CHECK(!Plan(board, HUNTER).ThreatRedirectTarget);
+    }
+
+    // Review adversarial checks. Red: a ranged damage dealer burning a pack
+    // keeps the Scorching Blast cone stack; a melee one fights at the adds.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ M::FireImbuedSpell, Boss(board).Guid, 1, 0 });
+        board.Players[MAGE].Position = { -105.8f, -475.0f, 73.6f };
+        AdaptiveMaloriakPlan const before = Plan(board, MAGE);
+        CHECK(before.Movement && before.Movement->Id.Mechanic == "red_cone_stack");
+        for (uint32 index = 0; index < 3; ++index)
+            board.Summons.push_back(Add(41440, 990 + index, -130.0f, -434.0f, true, 100.0f));
+        AdaptiveMaloriakPlan const after = Plan(board, MAGE);
+        CHECK(after.DamageTarget != Boss(board).Guid);
+        CHECK(after.Movement && after.Movement->Id.Mechanic == "red_cone_stack");
+        AdaptiveMaloriakPlan const healer = Plan(board, HOLY);
+        CHECK(!healer.Movement || healer.Movement->Id.Mechanic == "red_cone_stack");
+        board.Players[ROGUE].Position = { -105.8f, -475.0f, 73.6f };
+        AdaptiveMaloriakPlan const rogue = Plan(board, ROGUE);
+        CHECK(rogue.DamageTarget != Boss(board).Guid && !rogue.Movement);
+        // Consuming Flames still leaves the cone while burning adds.
+        board.Players[MAGE].Auras.push_back({ 77786, Boss(board).Guid, 1, board.ObservedAtMs + 9000 });
+        AdaptiveMaloriakPlan const flames = Plan(board, MAGE);
+        CHECK(flames.Movement && flames.Movement->Id.Mechanic == "consuming_flames_leave_cone");
+    }
+
+    // Freeze vs Frost Shock: never the same add; an add someone hits (here
+    // the off-tank's pickup) gets an Ice Trap, not a Freeze Trap.
+    {
+        Blackboard board = Canonical();
+        board.Summons.push_back(Add(41440, 990, -140.0f, -440.0f, true, 40.0f));
+        board.Summons.back().VictimGuid = G(FERAL);
+        board.Summons.push_back(Add(41440, 991, -114.0f, -437.0f, true, 100.0f));
+        board.Summons.back().VictimGuid = G(HUNTER);
+        AdaptiveMaloriakPlan const hunter = Plan(board, HUNTER);
+        AdaptiveMaloriakPlan const shaman = Plan(board, SHAMAN);
+        CHECK(hunter.TrapSpellId != M::FreezeTrapSpell || hunter.TrapTarget != shaman.SlowTarget);
+        CHECK(hunter.TrapTarget == board.Summons[1].Guid && hunter.TrapSpellId == M::IceTrapSpell);
+        CHECK(Plan(board, FERAL).DamageTarget == board.Summons[1].Guid);
+        // A frozen add is left alone: no pickup, no Frost Shock, no burn
+        // while anything else is left.
+        board.Summons[1].Auras.push_back({ M::FreezingTrapAuraSpell, G(HUNTER), 1, board.ObservedAtMs + 20000 });
+        board.Summons[1].VictimGuid = ObjectGuid();
+        CHECK(Plan(board, FERAL).DamageTarget != board.Summons[1].Guid);
+        CHECK(Plan(board, SHAMAN).SlowTarget != board.Summons[1].Guid);
+        CHECK(Plan(board, LOCK).DamageTarget == board.Summons[0].Guid);
+        // An unhit add running at the hunter (not the focus, not the pickup,
+        // no DoT) is frozen, and the shaman does not Frost Shock it.
+        board.Summons[1].Auras.clear();
+        board.Summons[1].VictimGuid = G(HUNTER);
+        board.Summons.push_back(Add(41440, 992, -125.0f, -445.0f, true, 100.0f));
+        board.Summons.back().VictimGuid = G(HOLY);
+        AdaptiveMaloriakPlan const freeze = Plan(board, HUNTER);
+        CHECK(freeze.TrapTarget == board.Summons[1].Guid && freeze.TrapSpellId == M::FreezeTrapSpell);
+        CHECK(Plan(board, SHAMAN).SlowTarget != board.Summons[1].Guid);
+        // A DoT on it (someone is damaging it): Ice Trap instead.
+        board.Summons[1].Auras.push_back({ 172, G(LOCK), 1, board.ObservedAtMs + 18000 });
+        CHECK(Plan(board, HUNTER).TrapSpellId == M::IceTrapSpell);
+    }
+
+    // The kite: paced round the flank loop, away from Maloriak and clear of
+    // hazards; the off-tank waits at a waypoint for a straggling pack.
+    {
+        Blackboard board = Canonical();
+        board.Players[FERAL].Position = M::KiteLoopWest[0];
+        for (uint32 index = 0; index < 3; ++index)
+        {
+            board.Summons.push_back(Add(41440, 995 + index, M::KiteLoopWest[0].X + 1.0f,
+                M::KiteLoopWest[0].Y, true, 100.0f));
+            board.Summons.back().VictimGuid = G(FERAL);
+        }
+        AdaptiveMaloriakPlan const step = Plan(board, FERAL);
+        CHECK(step.Movement && step.Movement->Id.Mechanic == "off_tank_kite");
+        CHECK(Dist(Destination(step), M::KiteLoopWest[1]) < 0.01f);
+        CHECK(step.NaturesGrasp);
+        // Mid-leg it keeps going forward, not back.
+        board.Players[FERAL].Position = { -134.0f, -446.0f, 73.6f };
+        CHECK(Dist(Destination(Plan(board, FERAL)), M::KiteLoopWest[1]) < 0.01f);
+        // A straggler: wait at the waypoint.
+        board.Players[FERAL].Position = M::KiteLoopWest[1];
+        board.Summons[2].Position = { -125.0f, -446.0f, 73.6f };
+        // Review item 4: the wait is an explicit, renewed hold where the
+        // off-tank stands (it keeps the mechanic movement lease).
+        AdaptiveMaloriakPlan const wait = Plan(board, FERAL);
+        CHECK(wait.Movement && wait.Movement->Id.Mechanic == "off_tank_kite_hold");
+        CHECK(Dist(Destination(wait), M::KiteLoopWest[1]) < 0.01f);
+        CHECK(std::string(wait.Duty) == "off_tank_kite");
+        for (ActorSnapshot& add : board.Summons)
+            add.Position = M::KiteLoopWest[1];
+        CHECK(Dist(Destination(Plan(board, FERAL)), M::KiteLoopWest[2]) < 0.01f);
+        // Every waypoint keeps the boss at 20 yards or more and avoids an
+        // Absolute Zero sphere on the path.
+        for (Vector3 const& point : M::KiteLoopWest)
+            CHECK(Dist(point, Boss(board).Position) >= M::KiteBossClearance);
+        board.Summons.push_back(Add(M::AbsoluteZeroEntry, 999, M::KiteLoopWest[2].X,
+            M::KiteLoopWest[2].Y, true, 100.0f));
+        CHECK(Dist(Destination(Plan(board, FERAL)), M::KiteLoopWest[2]) > 1.0f);
+        board.Summons.pop_back();
+        // Nature's Grasp only while it is not up already.
+        board.Players[FERAL].Auras.push_back({ M::NaturesGraspSpell, G(FERAL), 3, board.ObservedAtMs + 30000 });
+        CHECK(!Plan(board, FERAL).NaturesGrasp);
+    }
+
+    // Re-review item 2: kite paths, not only endpoints, keep Maloriak and the
+    // hazards at their clearance; a join that cannot is an explicit hold.
+    {
+        auto pathClearance = [](Vector3 from, Vector3 to, Vector3 point)
+        {
+            return M::SegmentDistance(from, to, point);
+        };
+        // Boss between the pack and the far loop: no path through him.
+        Blackboard board = Canonical();
+        Boss(board).Position = { -124.0f, -453.0f, 73.6f };
+        Vector3 const start{ -138.0f, -453.0f, 73.6f };
+        M::Observation observation = M::Observe(board);
+        M::KiteDecision decision = M::KiteStep(M::ResolveKite(observation, start), start, {},
+            Boss(board).Position, M::CollectFormationHazards(observation));
+        CHECK(!decision.Move || pathClearance(start, decision.Destination, Boss(board).Position)
+            >= std::min(M::KiteBossClearance, Dist(start, Boss(board).Position) - 0.3f));
+        // The full plan: an explicit hold where the off-tank stands.
+        board.Players[FERAL].Position = start;
+        board.Summons.push_back(Add(41440, 1500, -139.0f, -453.0f, true, 60.0f));
+        board.Summons.back().VictimGuid = G(FERAL);
+        AdaptiveMaloriakPlan const blocked = Plan(board, FERAL);
+        CHECK(blocked.Movement);
+        CHECK(blocked.Movement->Id.Mechanic == "off_tank_kite_hold"
+            || pathClearance(start, Destination(blocked), Boss(board).Position) >= 14.0f);
+        // A Flash Freeze block across the join: never walked through.
+        Blackboard ice = Canonical();
+        ice.Players[FERAL].Position = { -138.0f, -420.0f, 73.6f };
+        ice.Summons.push_back(Add(41440, 1501, -138.0f, -421.0f, true, 50.0f));
+        ice.Summons.back().VictimGuid = G(FERAL);
+        ice.Summons.push_back(Add(M::FlashFreezeEntry, 1502, -138.0f, -433.0f, true, 100.0f));
+        AdaptiveMaloriakPlan const joined = Plan(ice, FERAL);
+        CHECK(joined.Movement);
+        CHECK(joined.Movement->Id.Mechanic == "off_tank_kite_hold"
+            || pathClearance(ice.Players[FERAL].Position, Destination(joined),
+                ice.Summons.back().Position) >= M::ShatterDanger);
+        // A dropped corner makes a diagonal leg: jet fire by one corner drops
+        // it, and jet fire on the diagonal between its neighbours makes the
+        // loop unusable rather than walked through.
+        Blackboard sphere = Canonical();
+        Vector3 const legMiddle{ (M::KiteLoopWest[0].X + M::KiteLoopWest[2].X) / 2.0f,
+            (M::KiteLoopWest[0].Y + M::KiteLoopWest[2].Y) / 2.0f, 73.6f };
+        sphere.Summons.push_back(Add(M::MagmaJetFireEntry, 1503, -139.0f, -445.0f, true, 100.0f));
+        sphere.Summons.push_back(Add(M::MagmaJetFireEntry, 1504, legMiddle.X, legMiddle.Y, true, 100.0f));
+        M::Observation const sphereView = M::Observe(sphere);
+        M::KiteGeometry const west = M::BuildKiteLoop(M::KiteLoopWest, Boss(sphere).Position,
+            M::CollectFormationHazards(sphereView));
+        CHECK(west.Waypoints.size() != 3);
+        for (std::size_t index = 0; index < west.Waypoints.size(); ++index)
+            CHECK(M::KitePathClear(west.Waypoints[index],
+                west.Waypoints[(index + 1) % west.Waypoints.size()], Boss(sphere).Position,
+                M::CollectFormationHazards(sphereView)));
+    }
+
+    // Re-review item 3: a loop with two usable waypoints is rejected (its
+    // two legs overlap), so the off-tank never turns round mid-leg.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Position = { -110.0f, -453.0f, 73.6f };
+        M::Observation const observation = M::Observe(board);
+        std::vector<M::FormationHazard> const hazards = M::CollectFormationHazards(observation);
+        CHECK(M::BuildKiteLoop(M::KiteLoopWest, Boss(board).Position, hazards).Waypoints.empty());
+        Vector3 const first{ -138.0f, -460.0f, 73.6f };
+        Vector3 const later{ -138.0f, -457.0f, 73.6f };
+        M::KiteDecision const a = M::KiteStep(M::ResolveKite(observation, first), first, {},
+            Boss(board).Position, hazards);
+        M::KiteDecision const b = M::KiteStep(M::ResolveKite(observation, later), later, {},
+            Boss(board).Position, hazards);
+        CHECK(a.Move == b.Move);
+        CHECK(!a.Move || Dist(a.Destination, b.Destination) < 0.01f);
+        M::KiteGeometry two;
+        two.Waypoints = { { -138.0f, -446.0f, 73.6f }, { -138.0f, -460.0f, 73.6f } };
+        two.Center = { -138.0f, -453.0f, 73.6f };
+        CHECK(!M::KiteStep(two, later, {}, Boss(board).Position, hazards).Move);
+    }
+
+    // Re-review item 4: rooted Aberrations. One rooted beside the off-tank
+    // holds the kite (an explicit hold); one rooted far behind is left to
+    // rejoin and the rest go on.
+    {
+        Blackboard board = Canonical();
+        board.Players[FERAL].Position = M::KiteLoopWest[1];
+        for (uint32 index = 0; index < 2; ++index)
+        {
+            board.Summons.push_back(Add(41440, 1510 + index, M::KiteLoopWest[1].X,
+                M::KiteLoopWest[1].Y + 1.0f, true, 100.0f));
+            board.Summons.back().VictimGuid = G(FERAL);
+        }
+        board.Summons[0].Auras.push_back({ 19975, G(FERAL), 1, board.ObservedAtMs + 20000 });
+        AdaptiveMaloriakPlan const rooted = Plan(board, FERAL);
+        CHECK(rooted.Movement && rooted.Movement->Id.Mechanic == "off_tank_kite_hold");
+        board.Summons[0].Position = M::KiteLoopWest[3];
+        AdaptiveMaloriakPlan const onward = Plan(board, FERAL);
+        CHECK(onward.Movement && onward.Movement->Id.Mechanic == "off_tank_kite");
+        CHECK(Dist(Destination(onward), M::KiteLoopWest[2]) < 0.01f);
+    }
+
+    // Re-review items 5-7 in Blue with the pack kited on the west loop: the
+    // hunter holds its trap post (no return to its fan slot), a chilled
+    // hunter keeps its isolation, and the fan leans west so the shaman's
+    // slot is within Frost Shock range of the pack and every fan slot
+    // reaches every waypoint within 40 yards; the same on the east loop.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ M::FrostImbuedSpell, Boss(board).Guid, 1, 0 });
+        board.Players[FERAL].Position = M::KiteLoopWest[1];
+        board.Summons.push_back(Add(41440, 1520, M::KiteLoopWest[1].X, M::KiteLoopWest[1].Y, true, 60.0f));
+        board.Summons.back().VictimGuid = G(FERAL);
+        AdaptiveMaloriakPlan const toPost = Plan(board, HUNTER);
+        CHECK(toPost.Movement && toPost.Movement->Id.Mechanic == "hunter_kite_trap_corner");
+        Vector3 const post = Destination(toPost);
+        board.Players[HUNTER].Position = post;
+        AdaptiveMaloriakPlan const atPost = Plan(board, HUNTER);
+        CHECK(atPost.Movement && atPost.Movement->Id.Mechanic == "hunter_kite_trap_post_hold");
+        CHECK(Dist(Destination(atPost), post) <= M::KiteTrapTolerance);
+        CHECK(atPost.TrapSpellId == M::IceTrapSpell);
+        // Biting Chill: isolation first, never the trap post.
+        board.Players[HUNTER].Position = { -123.0f, -460.0f, 73.6f };
+        board.Players[HUNTER].Auras.push_back({ M::BitingChillSpell, Boss(board).Guid, 1, board.ObservedAtMs + 9000 });
+        AdaptiveMaloriakPlan const chilled = Plan(board, HUNTER);
+        CHECK(!chilled.Movement || chilled.Movement->Id.Mechanic.rfind("hunter_kite_trap", 0) != 0);
+        board.Players[HUNTER].Auras.clear();
+        board.Players[HUNTER].Position = post;
+        // Frost Shock reach: the shaman's Blue slot on the west flank.
+        board.Players[SHAMAN].Position = { -90.0f, -470.0f, 73.6f };
+        AdaptiveMaloriakPlan const shaman = Plan(board, SHAMAN);
+        CHECK(shaman.Movement && shaman.Movement->Id.Mechanic == "blue_spread");
+        CHECK(Dist(Destination(shaman), board.Summons[0].Position) <= M::FrostShockRangeYards);
+        for (bool east : { false, true })
+        {
+            Blackboard side = board;
+            auto const& loop = east ? M::KiteLoopEast : M::KiteLoopWest;
+            side.Players[FERAL].Position = loop[1];
+            side.Summons[0].Position = loop[1];
+            M::BossFrame const frame = M::ResolveFrame(Boss(side), &side.Players[DK]);
+            M::Observation const observation = M::Observe(side);
+            M::KiteGeometry const kite = M::ResolveKite(observation, loop[1]);
+            CHECK(!kite.Waypoints.empty());
+            float const sign = M::ToFramePolar(frame, kite.Center).Angle >= 0.0f ? 1.0f : -1.0f;
+            std::vector<Vector3> fan;
+            for (std::size_t position = 0; position < 6; ++position)
+                fan.push_back(M::BiasedBackRangedSlot(frame, position, 6, sign));
+            for (Vector3 const& slot : fan)
+                for (Vector3 const& waypoint : kite.Waypoints)
+                    CHECK(Dist(slot, waypoint) <= 40.0f);
+            for (std::size_t i = 0; i < fan.size(); ++i)
+                for (std::size_t j = i + 1; j < fan.size(); ++j)
+                    CHECK(Dist(fan[i], fan[j]) >= M::SpreadYards);
+            for (Vector3 const& waypoint : kite.Waypoints)
+                CHECK(Dist(fan.back(), waypoint) <= M::FrostShockRangeYards);
+        }
+    }
+
+    // Kite re-review 2, item 1: the trap post keeps the Blue spread from the
+    // off-tank holding a rooted pack at the loop's far corner, and a Biting
+    // Chill target's isolation, chilled Feral included: it moves to another
+    // corner, or is suspended when none is clear.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ M::FrostImbuedSpell, Boss(board).Guid, 1, 0 });
+        board.Players[FERAL].Position = { -138.0f, -446.0f, 73.6f };
+        board.Summons.push_back(Add(41440, 1530, -138.0f, -446.0f, true, 50.0f));
+        board.Summons.back().VictimGuid = G(FERAL);
+        board.Summons.back().Auras.push_back({ 53313, G(FERAL), 1, board.ObservedAtMs + 20000 });
+        for (bool chilled : { true, false })
+        {
+            Blackboard side = board;
+            if (chilled)
+                side.Players[FERAL].Auras.push_back({ M::BitingChillSpell, Boss(side).Guid, 1,
+                    side.ObservedAtMs + 9000 });
+            AdaptiveMaloriakPlan const feral = Plan(side, FERAL);
+            CHECK(feral.Movement && feral.Movement->Id.Mechanic == "off_tank_kite_hold");
+            AdaptiveMaloriakPlan hunter = Plan(side, HUNTER);
+            if (hunter.Movement)
+                side.Players[HUNTER].Position = Destination(hunter);
+            hunter = Plan(side, HUNTER);
+            float const gap = Dist(Destination(Plan(side, FERAL)), Destination(hunter));
+            CHECK(!hunter.Movement || gap >= (chilled ? M::TrapPostChillYards : M::SpreadYards));
+            CHECK(!hunter.Movement || Dist(side.Players[HUNTER].Position, side.Players[FERAL].Position)
+                >= M::SpreadYards);
+        }
+        // A chilled raid member 6.5 yards from the next corner: that corner
+        // is too close for the Biting Chill isolation (8 yards); another one.
+        Blackboard chill = board;
+        chill.Players[MAGE].Position = { -131.5f, -460.0f, 73.6f };
+        chill.Players[MAGE].Auras.push_back({ M::BitingChillSpell, Boss(chill).Guid, 1, chill.ObservedAtMs + 9000 });
+        AdaptiveMaloriakPlan const around = Plan(chill, HUNTER);
+        CHECK(around.Movement && around.Movement->Id.Mechanic == "hunter_kite_trap_corner");
+        CHECK(Dist(Destination(around), chill.Players[MAGE].Position) >= M::TrapPostChillYards);
+        CHECK(Dist(Destination(around), chill.Players[FERAL].Position) >= M::SpreadYards);
+        // Delta review: the hunter holds where it stands only while that spot
+        // itself keeps the spread (5 yd) and a chilled neighbour's isolation
+        // (8 yd); inside the 3-yd arrival tolerance but too close, it steps
+        // onto the validated corner.
+        for (bool chilledHoly : { false, true })
+        {
+            Blackboard held = board;
+            held.Players[FERAL].Position = { -138.0f, -460.0f, 73.6f };
+            held.Summons[0].Position = held.Players[FERAL].Position;
+            held.Players[HOLY].Position = { -138.0f, chilledHoly ? -454.1f : -451.1f, 73.6f };
+            if (chilledHoly)
+                held.Players[HOLY].Auras.push_back({ M::BitingChillSpell, Boss(held).Guid, 1,
+                    held.ObservedAtMs + 9000 });
+            held.Players[HUNTER].Position = { -138.0f, -448.9f, 73.6f };
+            AdaptiveMaloriakPlan const hunter = Plan(held, HUNTER);
+            Vector3 const place = hunter.Movement ? Destination(hunter) : held.Players[HUNTER].Position;
+            CHECK(Dist(place, held.Players[HOLY].Position)
+                >= (chilledHoly ? M::TrapPostChillYards : M::SpreadYards));
+            CHECK(!hunter.Movement || hunter.Movement->Id.Mechanic != "hunter_kite_trap_post_hold"
+                || Dist(place, held.Players[HUNTER].Position) < 0.01f);
+        }
+        // Every corner crowded: the post is suspended (no trap post move).
+        Blackboard crowded = board;
+        crowded.Players[MAGE].Position = M::KiteLoopWest[0];
+        crowded.Players[HOLY].Position = M::KiteLoopWest[2];
+        crowded.Players[DISC].Position = M::KiteLoopWest[3];
+        AdaptiveMaloriakPlan const suspended = Plan(crowded, HUNTER);
+        CHECK(!suspended.Movement || suspended.Movement->Id.Mechanic.rfind("hunter_kite_trap", 0) != 0);
+        CHECK(suspended.TrapTarget.IsEmpty());
+    }
+
+    // Kite re-review 2, item 2: the Feral holds west because the east join
+    // crosses the room past Maloriak; the fan leans west (where the pack
+    // is), so the shaman stays within Frost Shock range and the healers
+    // within 40 yards of the pack.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Position = { -108.4f, -453.0f, 73.6f };
+        Boss(board).Auras.push_back({ M::FrostImbuedSpell, Boss(board).Guid, 1, 0 });
+        board.Players[DK].Position = M::MainTankSpot;
+        board.Players[FERAL].Position = { -138.0f, -446.0f, 73.6f };
+        board.Summons.push_back(Add(41440, 1540, -138.0f, -446.0f, true, 50.0f));
+        board.Summons.back().VictimGuid = G(FERAL);
+        AdaptiveMaloriakPlan const feral = Plan(board, FERAL);
+        CHECK(feral.Movement && feral.Movement->Id.Mechanic == "off_tank_kite_hold");
+        // From an east-side spot the shaman is sent to the west flank.
+        board.Players[SHAMAN].Position = { -90.0f, -461.0f, 73.6f };
+        AdaptiveMaloriakPlan const shaman = Plan(board, SHAMAN);
+        CHECK(shaman.Movement && shaman.Movement->Id.Mechanic == "blue_spread");
+        CHECK(Dist(Destination(shaman), board.Summons[0].Position) <= M::FrostShockRangeYards);
+        board.Players[SHAMAN].Position = Destination(shaman);
+        CHECK(Plan(board, SHAMAN).SlowTarget == board.Summons[0].Guid);
+        for (Slot slot : { HOLY, DISC, MAGE, LOCK })
+        {
+            AdaptiveMaloriakPlan const plan = Plan(board, slot);
+            Vector3 const place = plan.Movement ? Destination(plan) : board.Players[slot].Position;
+            CHECK(Dist(place, board.Summons[0].Position) <= 40.0f);
+        }
+    }
+
+    // Kite re-review 2, note: a leg that cuts past the cauldron is refused
+    // (native path smoothing would take it into the cauldron's radius).
+    {
+        CHECK(!M::KitePathClear({ -100.0f, -496.0f, 73.6f }, { -128.0f, -460.0f, 73.6f },
+            { -80.0f, -460.0f, 73.6f }, {}));
+        CHECK(M::KitePathClear(M::KiteLoopWest[0], M::KiteLoopWest[1],
+            { -105.8f, -455.0f, 73.6f }, {}));
     }
 
     // Stopping the bot's own cast for a purge or interrupt: never a heal in
@@ -1209,20 +1795,6 @@ int main()
         CHECK(Dist(M::AddAnchorFor(boss17, &middle), M::AddAnchorEast) < 0.01f);
     }
 
-    // Review minor 3: one short interrupter keeps Arcane Storm; the long
-    // pool (Counterspell) takes Release Aberrations.
-    {
-        M::InterruptPools pools;
-        pools.Short = { G(RET) };
-        pools.Long = { G(MAGE) };
-        CHECK(M::ReleaseInterrupters(pools) == std::vector<ObjectGuid>{ G(MAGE) });
-        pools.Long.clear();
-        CHECK(M::ReleaseInterrupters(pools).empty());
-        pools.Short.clear();
-        pools.Long = { G(MAGE), G(FERAL) };
-        CHECK(M::ReleaseInterrupters(pools) == std::vector<ObjectGuid>{ G(FERAL) });
-    }
-
     // Review minor 4: Remedy difficulty variants (SpellDifficulty 3267).
     {
         Blackboard board = Canonical();
@@ -1274,23 +1846,96 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     assert "RememberValidationRouteBossEngagement(creature)" in module
     assert '"adaptive_maloriak_route_observation_recorded"' in module
     assert "magmaw_route_observation" not in module
-    # Interrupts: ended, uninterruptible or admitted releases are skipped.
+    # Interrupts: ended or uninterruptible casts are skipped, and Release
+    # Aberrations is never interrupted (user tactic 2026-09-26).
     assert "FindCurrentSpellBySpellId(castSpellId)" in module
     assert "CanBeInterrupted(caster)" in module
-    assert "NativeReleaseAdmitted(caster)" in module
-    assert "ReleaseAdmittedCounts(loose, reserve," in module
+    assert "if (castSpellId == BotEncounter::Maloriak::ReleaseAberrationsSpell)\n                return BotActionArbitration::Outcome::NotApplicable(\n                    \"release_aberrations_never_interrupted\");" in module
+    assert "NativeReleaseAdmitted" not in module and "ReleaseAdmittedCounts" not in module
     # Remedy: every difficulty variant, offensive priest dispel 527 (not 528).
     assert "Maloriak::RemedySpells" in module
     assert "30449u, 370u, 19801u, 527u };" in module and " 528u" not in module
-    # Round 4: the admitted-release veto is published natively each tick;
+    # Round 4: the release veto is published natively each tick (every
+    # release in phase one since the user tactic);
     # moves that start outside the laboratory take the route lane; assigned
     # interrupts and purges stop the bot's own hard cast (Remedy went
     # unpurged for 225000 healing) and purges hold the lanes through the GCD.
-    assert "boss && boss->IsAlive() && NativeReleaseAdmitted(boss)" in module
+    assert "BotEncounter::Maloriak::ReleaseAberrationsSpell,\n            boss && boss->IsAlive());" in module
     assert "!BotEncounter::Maloriak::InRoom(" in module
     assert "BotMovementArbitration::Owner::Route" in module
     assert module.count("ClearOwnCastFor(context.Bot, healer,") == 2
+    # Misdirection / Tricks onto the off-tank and the Frost Shock slow.
+    assert "TryCastFriendlySpell(context.Bot, tank, spellId, &failure)" in module
+    assert "if (context.Bot->HasAura(spellId))" in module
+    assert "TryCastCombatSpell(context.Bot, target, spellId)" in module
+    assert '"aberration_freeze_trap" : "aberration_ice_trap"' in module
+    # Review item 8: traps (self range) are laid with the native self cast
+    # at the plan's trap point, not through the hostile-target helper.
+    trap = module[module.index("trap.Attempt = [this, &context, targetGuid = plan.TrapTarget,"):
+                  module.index("DecisionKernel.Submit(std::move(trap));")]
+    assert "BotNativeAction::CastSpell{ ObjectGuid::Empty, spellId }" in trap
+    assert "TryCastCombatSpell" not in trap
+    assert "> BotEncounter::Maloriak::KiteTrapTolerance)" in trap
+    grasp = module[module.index("grasp.Attempt = [this, &context]()"):
+                   module.index("DecisionKernel.Submit(std::move(grasp));")]
+    assert "BotEncounter::Maloriak::NaturesGraspSpell" in grasp and "HasSpell(spellId)" in grasp
     assert '"native_dispel_wait_global_cooldown"' in module
+    # The add switch restricts the boss at the native edge (with only the
+    # target cleared, casters kept 65-73k DPS on him through the r05 holds).
+    # The restriction comes from a route-authority hook that runs after the
+    # adaptive reset every tick (as Omnotron's), never from a candidate the
+    # kernel may not resolve; one Arcane Storm interrupt or taunt on him stays
+    # allowed through the shared SingleCastAllowance, before its cast. Remedy
+    # gets no allowance: the plan never assigns it during the switch.
+    assert "ApplyPushHoldRestriction" not in module and "class PushHoldAllowance" not in module
+    assert "SetCurrentEncounterRestrictions" not in module
+    suppress = module.index("suppress.Attempt = [this, &context, reason]()")
+    assert "Restriction" not in module[suppress:module.index("DecisionKernel.Submit(std::move(suppress));", suppress)]
+    # One effective switch state (the cohort latch, its cap included).
+    assert "bool const restricted = plan.AddSwitchRestricts;" in module
+    assert "ObserveAddSwitch" not in module and "AddSwitchLatches" not in module
+    for anchor, cast in (
+            ("AllowOneCastOnBoss(allowance, context.Bot, restricted, caster);",
+             "ClearOwnCastFor(context.Bot, healer, caster, interruptSpell)"),
+            ("AllowOneCastOnBoss(allowance, context.Bot, restricted, target);\n            if (!TryCastCombatSpell(context.Bot, target, tauntSpell))",
+             "TryCastCombatSpell(context.Bot, target, tauntSpell)")):
+        assert module.index(anchor) < module.index(cast)
+    dispel = module[module.index("dispel.Attempt = [this, &context, targetGuid = plan.DispelTarget]()"):
+                    module.index("DecisionKernel.Submit(std::move(dispel));")]
+    assert "allowance" not in dispel.replace("no allowance", "")
+    assert module.count("std::optional<BotEncounterOffense::SingleCastAllowance> allowance;") == 2
+    assert "allowance.emplace(bot->GetGUID().GetRawValue(),\n            BotEncounter::Maloriak::AddSwitchRestriction(), target->GetGUID());" in module
+    hook = module[module.index("void BotWorldPopulationMgr::SubmitMaloriakRouteAuthority("):]
+    order = [hook.index(marker) for marker in (
+        "if (plan.AddSwitchCapReleased && ClaimAddSwitchCapReport(context.Bot, plan.Boss))",
+        "bool const restricted = plan.AddSwitchRestricts;",
+        "BotEncounterCooldownHold::Set(ownerGuid, restricted);",
+        "BotEncounterOffense::SetGuardianAreaSparing(ownerGuid, restricted);",
+        "BotEncounterOffense::ApplyOffenseRestriction(ownerGuid,\n        BotEncounter::Maloriak::AddSwitchRestriction());",
+        "StopCastsReachingBoss(context.Bot, boss);",
+        "pet->GetVictim()->GetGUID() == plan.Boss)",
+        "context.Bot->GetGUID(), COMMAND_FOLLOW },")]
+    assert order == sorted(order)
+    # A long switch reports the boss health (a percentage, review item 11),
+    # the reserve and the loose adds, once per boss.
+    assert '"maloriak_add_switch_cap_released"' in hook
+    assert "boss ? boss->GetHealthPct() : 0.0f;" in hook and "UnitHealthPct" not in hook
+    assert "bossHealthPct, uint32(counts.second));" in hook
+    # Review item 3: a running hostile area cast over the boss (ground
+    # channel, self-centred) is stopped as well as one aimed at him; a
+    # launched projectile lands, like a ticking DoT (no withDelayed cancel).
+    # Re-review item 1: the slots the reach check finds are interrupted
+    # themselves (a self-cast Hellfire's explicit target is the bot, which
+    # the generic offensive-cast test would keep).
+    reach = module[module.index("std::size_t StopCastsReachingBoss(Player* bot, Unit* boss)"):]
+    reach = reach[:reach.index("\n}\n")]
+    for token in ("GetUnitTargetGUID() == boss->GetGUID()", "SpellHasHostileMultiTargetSemantics(spellInfo)",
+                  "spell->m_targets.HasDst()", "HostileAreaRadius(bot, spellInfo)", "CURRENT_AUTOREPEAT_SPELL",
+                  "AddSwitchStopsCast(spellInfo->IsPositive(),",
+                  "bot->InterruptSpell(slot, slot == CURRENT_CHANNELED_SPELL, true);"):
+        assert token in reach, token
+    assert "InterruptOffensiveCasts" not in module and "InterruptNonMeleeSpells(false);\n    return true;" in module
+    assert "withDelayed" not in hook
     # Every plan move, the main tank's hold of its spot included, goes
     # through the ordinary native request: only a submitted move renews the
     # mechanic movement lease (a kernel-only hold let the combat profile's
@@ -1301,9 +1946,8 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     assert "main_tank_spot_hold" not in module
     # The veto is keyed by map and instance (per-map creature GUIDs).
     assert "BotEncounterInterruptVeto::Set(context.Bot->GetMapId(),\n            context.Bot->GetInstanceId(), plan.Boss.GetRawValue()," in module
-    # The push hold stands down after the cap.
-    assert "PushHoldHonoured(context.Bot, plan," in module
-    assert 'plan.SuppressReason != "phase_two_push_hold"' in module
+    # The add-switch wait follows the latched plan state only.
+    assert 'plan.SuppressReason != "add_switch_wait"' not in module
     # A bot stops its own cast only when the duty spell passes every other
     # TryCastCombatSpell gate (r03: Wind Shear no_line_of_sight 24 times).
     combat_spell = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp").read_text(encoding="utf-8")

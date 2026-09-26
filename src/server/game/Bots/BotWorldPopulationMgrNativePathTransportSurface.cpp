@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
+#include "Bots/BotWorldPopulationMgrNativePathTransportLiquid.h"
 #include "Bots/BotValidationRouteNativeFallSpline.h"
 #include "Bots/BotValidationRouteNativeApproach.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
@@ -329,8 +330,10 @@ Outcome ExecuteStepOff(Player* bot, GameObject* transport, TransportSurfaceMove 
 
     // The step is level at the bot's own feet toward the declared step-off
     // point. Like a client, the member falls as soon as its whole body has
-    // left the lip: the first candidate along that heading whose footprint
-    // is over the void starts the fall (never beyond MaxStepOffYards).
+    // left the lip over a proven landing: the first candidate along that
+    // heading whose footprint is over the void and under which the native
+    // fall lands on the declared floor starts the fall (never beyond
+    // MaxStepOffYards; see Route::ChooseStepOff).
     float const fromX = bot->GetPositionX();
     float const fromY = bot->GetPositionY();
     float const fromZ = bot->GetPositionZ();
@@ -341,24 +344,17 @@ Outcome ExecuteStepOff(Player* bot, GameObject* transport, TransportSurfaceMove 
         return Outcome::Retryable("native_ledge_drop_step_off_at_member");
     headingX /= declared;
     headingY /= declared;
-    Route::ApproachVerdict verdict{ false, "ledge_drop_step_length_invalid" };
-    G3D::Vector3 chosen;
-    for (float step = Route::SurfaceSampleStepYards; step <= Route::MaxStepOffYards + 1e-3f;
-        step += Route::SurfaceSampleStepYards)
+    auto candidateAt = [=](float step)
     {
-        G3D::Vector3 const candidate(fromX + headingX * step, fromY + headingY * step, fromZ);
-        verdict = Route::ValidateLedgeDrop(drop,
-            ProbeLedgeDrop(bot, transport, candidate, action.FloorToleranceYards));
-        if (verdict.Ok)
-        {
-            chosen = candidate;
-            break;
-        }
-        if (!Route::StepOffCandidateAdvances(verdict.Reason))
-            break;
-    }
-    if (!verdict.Ok)
-        return Outcome::Retryable("native_" + verdict.Reason);
+        return G3D::Vector3(fromX + headingX * step, fromY + headingY * step, fromZ);
+    };
+    Route::StepOffChoice const choice = Route::ChooseStepOff(drop, [&](float step)
+    {
+        return ProbeLedgeDrop(bot, transport, candidateAt(step), action.FloorToleranceYards);
+    });
+    if (!choice.Verdict.Ok)
+        return Outcome::Retryable("native_" + choice.Verdict.Reason);
+    G3D::Vector3 const chosen = candidateAt(choice.StepYards);
     // The landing was proven against the platform where it is now: it must
     // keep still for the step, the whole native fall and the boarding after.
     if (Boarding::TransportStationaryMs(transport)
@@ -393,10 +389,10 @@ Outcome LaunchNativeFall(Player* bot, bool fallingOn)
     return Outcome::Retryable("native_ledge_drop_fall_not_launched");
 }
 
-// Gravity does not wait for the platform: a stationary member over the void
-// after its step falls whatever the transport does now. A passenger's fall
-// spline runs in the transport's own frame (MoveSplineInit transforms it).
-Outcome ExecuteFall(Player* bot)
+// A stationary member over the void after its step falls at once, onto the
+// floor MoveFall's own query finds under it now. A passenger's fall spline
+// runs in the transport's own frame (MoveSplineInit transforms it).
+Outcome ExecuteFall(Player* bot, TransportSurfaceMove const& action)
 {
     if (Boarding::NativeFallSplineActive(bot))
         return Outcome::Submitted("native_ledge_drop_fall_in_progress");
@@ -409,6 +405,14 @@ Outcome ExecuteFall(Player* bot)
         bot->GetPositionZ(), true, MAX_FALL_DISTANCE);
     if (floor > INVALID_HEIGHT && std::fabs(bot->GetPositionZ() - floor) < 0.1f)
         return Outcome::Committed("native_ledge_drop_already_grounded");
+    // The step-off proved the landing only where the step was to end. A step
+    // cut short or displaced over the void can stand where that same query
+    // does not find the declared floor (under the Nefarian platform's north
+    // half it finds the model's underside): refuse, counted, instead of a
+    // fall through the platform. The node then ends typed on exhaustion.
+    if (!Route::FallLandsOnDeclaredFloor(floor > INVALID_HEIGHT, floor, action.LandingZ,
+            action.LandingToleranceYards))
+        return Outcome::Retryable("native_ledge_drop_fall_landing_mismatch");
 
     // No generator may resume a line through the air after the fall.
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
@@ -474,8 +478,14 @@ BotActionArbitration::Outcome Execute(Player* bot, TransportSurfaceMove const& a
         return Outcome::Retryable("native_surface_move_member_dead");
     if (bot->GetVehicle())
         return Outcome::Retryable("native_surface_move_member_in_vehicle");
+    // The swimmer's stages (a platform sinking into liquid).
+    if (action.Kind == TransportSurfaceMove::Stage::Float
+        || action.Kind == TransportSurfaceMove::Stage::Swim
+        || action.Kind == TransportSurfaceMove::Stage::Hop
+        || action.Kind == TransportSurfaceMove::Stage::Emerge)
+        return BotTransportLiquidMovement::Execute(bot, action);
     if (action.Kind == TransportSurfaceMove::Stage::Fall)
-        return ExecuteFall(bot);
+        return ExecuteFall(bot, action);
 
     GameObject* transport = ResolveTransport(bot, action.Transport);
     if (action.Kind == TransportSurfaceMove::Stage::Land)

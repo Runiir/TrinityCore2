@@ -252,6 +252,9 @@ def encounter_duty_rules() -> dict[str, list]:
     assert "{ 4987u, 2782u }" in OMNOTRON_CANDIDATES.read_text()
 
     chimaeron = constants(CHIMAERON_DUTIES)
+    maloriak = constants(MALORIAK_DUTIES)
+    nefarian_constants = constants(NEFARIAN_CAPABILITIES)
+    assert "SpellNaturesGrasp : 0" in function_body(NEFARIAN_CAPABILITIES, "inline uint32 WarriorRootFor")
     rank_body = function_body(CHIMAERON_DUTIES, "inline int LustRank")
     mage_rank = int(re.search(r"IsMageSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
     shaman_rank = int(re.search(r"IsShamanSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
@@ -299,9 +302,15 @@ def encounter_duty_rules() -> dict[str, list]:
         "all": [combat_res],
         "nefarian": [
             lambda bot, _bots: [{capability_spell(nefarian_interrupts, bot["class_spec"])}],
+            # Round 6, the user's tactic: the druid roots bone warriors with Nature's Grasp (WarriorRootFor).
+            lambda bot, _bots: [{nefarian_constants["SpellNaturesGrasp"]}] if bot["class_spec"].endswith(
+                ("druid", "druid_tank")) else [],
             lambda bot, _bots: [] if bot["role"] == "tank" else [{capability_spell(nefarian_controls, bot["class_spec"])}]],
         "maloriak": [
             lambda bot, _bots: [{REMEDY_DISPEL_BY_CLASS.get(int(bot["class"]))}],
+            # Round 6, the user's Maloriak tactic: the rogue's Tricks and the hunter's traps (BotMaloriakDuties.h).
+            lambda bot, _bots: [{maloriak["TricksOfTheTradeSpell"]}] if int(bot["class"]) == 4 else
+                               [{maloriak["FreezeTrapSpell"]}, {maloriak["IceTrapSpell"]}] if int(bot["class"]) == 3 else [],
             lust(maloriak_rank, lambda spec: shaman_lust if spec.endswith("_shaman") else {chimaeron["TimeWarpSpell"]})],
         "omnotron": [
             lambda bot, _bots: [{capability_spell(interrupts, bot["class_spec"])}],
@@ -342,7 +351,8 @@ def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
                         gaps.add((spec, min(alternatives)))
     assert gaps == UNLEARNABLE_DUTY_SPELLS
     # The review's spells are among the checked ones: Time Warp, Sprint, Dash, Stampeding Roar, Cat Form.
-    assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853, 20484} <= required_seen
+    assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853, 20484,
+            57934, 1499, 13809, 16689} <= required_seen
 
 
 def combat_res_spells() -> list[int]:
@@ -388,7 +398,8 @@ def test_combat_res_owners_are_the_non_tank_members_that_know_one(plan):
 
 
 def test_canonical_only_declarations_stay_out_of_the_legacy_rosters():
-    """Rebirth, Power Word: Fortitude and the Ravager are canonical-roster provisioning; the legacy rosters keep theirs."""
+    """Rebirth, Power Word: Fortitude, the Maloriak Tricks and traps, Nature's Grasp and the Ravager are canonical-roster provisioning;
+    the legacy rosters keep theirs."""
     for path in (ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
                  ROOT / "experiments/configs/validation_provisioning_cata_001.json"):
         legacy = json.loads(path.read_text())
@@ -406,6 +417,6 @@ def test_canonical_only_declarations_stay_out_of_the_legacy_rosters():
 
         walk(legacy)
         assert bots, path
-        assert not any({20484, 21562} & set(bot.get("spells") or []) for bot in bots), path
+        assert not any({20484, 21562, 57934, 1499, 13809, 16689} & set(bot.get("spells") or []) for bot in bots), path
         hunters = [bot for bot in bots if str(bot["class_spec"]).endswith("_hunter")]
         assert hunters and all(isinstance(bot.get("pet"), dict) and bot["pet"]["entry"] == 8959 for bot in hunters), path

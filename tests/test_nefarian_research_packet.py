@@ -88,16 +88,25 @@ def test_raid_target_matches_the_canonical_nefarian_shard() -> None:
     assert (ROOT / target["wcl_reference_manifest"]).is_file()
     assert target["lockout"]["precompleted_boss_keys"] == [
         "magmaw", "omnotron", "chimaeron", "atramedes", "maloriak"]
+    # The user's comp (user raid experience 2026-09-26): 2 tanks, 2 healers,
+    # 6 DPS, the shaman Elemental; the Feral's Nature's Grasp 16689 declared.
+    selection = boss["spec_selection"]
+    assert selection == {"druid": "feral_druid_tank", "shaman": "elemental_shaman"}
+    druid = next(c for c in composition["characters"] if c["character_key"] == "druid")
+    known = set(druid.get("spells") or [])
+    for spells in (druid.get("group_spells") or {}).values():
+        known |= set(spells)
+    assert 16689 in known, "the Feral handler's Nature's Grasp is provisioned"
     specs = {}
     for character in composition["characters"]:
-        chosen = boss["spec_selection"].get(character["character_key"], character["specs"][0])
+        chosen = selection.get(character["character_key"], character["specs"][0])
         specs[character["slot"]] = chosen
     roster = target["roster"]
     assert len(roster) == 10
     for guid, actor in roster.items():
         assert specs[int(guid) - 11005000] == actor["spec"]
     roles = [actor["role"] for actor in roster.values()]
-    assert (roles.count("tank"), roles.count("healer"), roles.count("dps")) == (2, 3, 5)
+    assert (roles.count("tank"), roles.count("healer"), roles.count("dps")) == (2, 2, 6)
     assert "blackwing_descent_10n_nefarian_c0_diagnostic" in target["run_plan"]["argv_template"]
 
 

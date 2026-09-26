@@ -52,14 +52,23 @@ struct MovementState
     Vector3 Destination;
 };
 
-// The single runtime answer to "can the movement layer lift a bot from the
-// floor onto a pillar top?". Package T's transport-surface movement can
-// neither swim nor climb, so it is false. Every plan (NativeFacts below) and
-// the nefarian_duty_plan status read this one function, so they agree; flip
-// it (or make it query T's executor) when a lawful ascent exists.
+// A native fall in progress (the falling movement flags or a running fall
+// spline) and a finished fall whose landing is not reported yet
+// (BotValidationRouteBoardingAction::NativeFallInProgress/LandingPending).
+struct FallState
+{
+    ObjectGuid Actor;
+    bool Falling = false;
+    bool LandingPending = false;
+};
+
+// The single runtime answer to "can the movement layer take a bot from the
+// floor onto a pillar top?": yes, by the swim-and-hop ascent (Float, Swim,
+// Hop, Emerge; package T's swimmer stages). Every plan (NativeFacts below)
+// and the nefarian_duty_plan status read this one function, so they agree.
 inline bool RuntimePillarAscentSupported()
 {
-    return false;
+    return true;
 }
 
 struct NativeFacts
@@ -71,6 +80,25 @@ struct NativeFacts
     bool PillarAscentSupported = RuntimePillarAscentSupported();
     std::vector<SpellReadiness> Readiness;
     std::vector<MovementState> Motion;
+    std::vector<FallState> Falls;
+    // The instance's difficulty (Map::IsHeroic): heroic keeps the phase 1
+    // Electrocute pacing (BotNefarianTactics.h PhaseOnePacingFor).
+    bool Heroic = false;
+    // Raid members the observing bot has no line of sight to
+    // (WorldObject::IsWithinLOSInMap), for its heals.
+    std::vector<ObjectGuid> OutOfSight;
+
+    bool InSight(ObjectGuid actor) const
+    {
+        return std::find(OutOfSight.begin(), OutOfSight.end(), actor) == OutOfSight.end();
+    }
+
+    FallState const* FindFall(ObjectGuid actor) const
+    {
+        auto itr = std::find_if(Falls.begin(), Falls.end(),
+            [actor](FallState const& state) { return state.Actor == actor; });
+        return itr == Falls.end() ? nullptr : &*itr;
+    }
 
     // A spell without an entry counts as known and ready: native submission
     // stays the judge.

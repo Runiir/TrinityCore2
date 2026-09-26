@@ -11,6 +11,7 @@
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
 #include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakLatches.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakNativeTimers.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMobility.h"
 
@@ -613,6 +614,9 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     if (snapshot->Route.NodeId == BotEncounter::Chimaeron::EncounterNode)
         BotEncounter::Chimaeron::UpdateEncounterLatches(*snapshot,
             Cohort().EncounterLatches->Module(BotEncounter::Chimaeron::LatchModule));
+    if (snapshot->Route.NodeId == BotEncounter::Maloriak::EncounterNode)
+        BotEncounter::Maloriak::UpdateEncounterLatches(*snapshot,
+            Cohort().EncounterLatches->Module(BotEncounter::Maloriak::LatchModule));
     Cohort().EncounterSnapshot = std::move(snapshot);
     Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
 }

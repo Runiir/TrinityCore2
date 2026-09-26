@@ -485,6 +485,8 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         # Round 5: Pyrecraw hovers over the corridor to Chimaeron; full raid only, cleared before the
         # Atramedes wing so the future-target guard never protects him on an Atramedes-wing node.
         "bwd.north_corridor.pyrecraw",
+        # Round 6: Maimgor too, so every later walk and either Nefarian descent approach passes no live drake.
+        "bwd.south_corridor.maimgor",
         "bwd.atramedes.north_spirits",
         "bwd.atramedes.south_spirits",
         "bwd.atramedes.regroup",
@@ -502,7 +504,7 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.nefarian.descent",
         "bwd.nefarian.encounter",
     ]
-    assert [row["step"] for row in routes] == list(range(1, 30))
+    assert [row["step"] for row in routes] == list(range(1, 31))
     assert all(row["diagnostic_only"] is False for row in routes)
     assert all(row["runtime_profile_id"] == CANONICAL_ID for row in routes)
 
@@ -517,8 +519,11 @@ def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile
         "chimaeron": ["bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter"],
         # Round 3: a seeded lockout keeps the central-hall trash alive, so the shard
         # starts at the Maloriak junction and clears it before the Orb.
+        # Round 6: both drakes die before the Orb; the r05 descent approach ran through Pyrecraw's corridor,
+        # and from the Orb point it runs under Maimgor.
         "nefarian": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.lower_hall.central_hall",
-                     "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip",
+                     "bwd.north_corridor.pyrecraw", "bwd.south_corridor.maimgor", "bwd.nefarian.orb_regroup",
+                     "bwd.nefarian.orb_gossip",
                      "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
     }
     for boss, scenario_id in DIAGNOSTIC_IDS.items():
@@ -564,7 +569,7 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
 
 def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     routes = _routes(_manifests(), DIAGNOSTIC_IDS["nefarian"])
-    junction, lab_patrol, hall, preparation, orb, intro, descent, boss = routes
+    junction, lab_patrol, hall, pyrecraw, maimgor, preparation, orb, intro, descent, boss = routes
     # Round 3: the hall trash is cleared from the Maloriak junction before the Orb regroup.
     assert (junction["x"], junction["y"], junction["z"]) == (-110.0, -335.0, 67.73)
     # Round 4: the north patrol is keyed on its Mongrel. A later node naming the Slayer entry 42802 made
@@ -573,6 +578,12 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     assert [(row["source_entry"], row["source_guid"]) for row in (lab_patrol, hall)] == [
         (42802, "250117"), (46083, "250120")]
     assert lab_patrol["pack_target_entries"] == [42802, 42803]
+    # Round 6 (r05): the descent approach from the hall runs through Pyrecraw's corridor, so he dies first.
+    assert (pyrecraw["source_entry"], pyrecraw["source_guid"], pyrecraw["pack_target_entries"]) == (
+        42764, "250107", [42764])
+    # From the Orb point the descent approach runs under Maimgor instead, so he dies next.
+    assert (maimgor["source_entry"], maimgor["source_guid"], maimgor["pack_target_entries"]) == (
+        42768, "250109", [42768])
     assert sorted(hall["pack_target_entries"]) == [42767, 46083]
     assert preparation["source_entry"] == 203254
     assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)
@@ -598,8 +609,8 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     assert descent["transport_contract"]["timeout_ms"] == 180000
     assert "completion_contract" not in descent
     assert boss["label"] == "Nefarian"
-    assert [row["kind"] for row in routes] == ["regroup", "trash", "trash", "regroup", "interaction",
-                                               "interaction", "transport", "boss"]
+    assert [row["kind"] for row in routes] == ["regroup", "trash", "trash", "trash", "trash", "regroup",
+                                               "interaction", "interaction", "transport", "boss"]
 
 
 def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():

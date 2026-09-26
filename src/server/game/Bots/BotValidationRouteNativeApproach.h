@@ -245,6 +245,16 @@ struct LedgeDropProbe
     float PredictedDamagePct = 0.0f;
 };
 
+// The floor a native fall lands on is the declared one: MoveFall's own query
+// (Map::GetHeight from the member, unlimited search) found a floor within the
+// landing tolerance of the declared height. Proven before the step and again
+// where the fall actually starts.
+inline bool FallLandsOnDeclaredFloor(bool landingFound, float landingZ,
+    float declaredZ, float toleranceYards)
+{
+    return landingFound && std::fabs(landingZ - declaredZ) <= toleranceYards;
+}
+
 inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
     LedgeDropProbe const& probe)
 {
@@ -277,7 +287,8 @@ inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
         return { false, "ledge_drop_landing_missing" };
     if (probe.StepZ - probe.LandingZ < MinLedgeDropYards)
         return { false, "ledge_drop_too_shallow" };
-    if (std::fabs(probe.LandingZ - contract.LandingZ) > contract.LandingToleranceYards)
+    if (!FallLandsOnDeclaredFloor(true, probe.LandingZ, contract.LandingZ,
+            contract.LandingToleranceYards))
         return { false, "ledge_drop_landing_height_mismatch" };
     if (probe.LandingInLiquid)
         return { false, "ledge_drop_lands_in_liquid" };
@@ -289,13 +300,62 @@ inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
 }
 
 // Candidates walk out from the member along the declared heading; the fall
-// starts at the first one whose whole footprint has left the lip. Only these
-// rejections (still on or over the lip) move to the next candidate, within
-// MaxStepOffYards of the member; every other rejection is final.
-inline bool StepOffCandidateAdvances(std::string const& reason)
+// starts at the first one whose whole footprint has left the lip and whose
+// landing is proven. A candidate still on or over the lip, or one whose
+// landing MotionMaster::MoveFall would not put on the declared floor, moves
+// to the next candidate, within MaxStepOffYards of the member: the floor
+// query a fall uses (Map::GetHeight, first hit through a gameobject model)
+// can see another floor a little further out, as under the Nefarian
+// platform's north half (tests/test_nefarian_ledge_drop_floor_query.py).
+// Every other rejection (the step itself, a floor too close below, the
+// health margin) is final.
+inline bool StepOffStillOnLip(std::string const& reason)
 {
     return reason == "ledge_drop_step_off_over_floor"
         || reason == "ledge_drop_step_off_footprint_supported";
+}
+
+inline bool StepOffCandidateAdvances(std::string const& reason)
+{
+    return StepOffStillOnLip(reason)
+        || reason == "ledge_drop_landing_missing"
+        || reason == "ledge_drop_landing_height_mismatch"
+        || reason == "ledge_drop_lands_in_liquid"
+        || reason == "ledge_drop_landing_surface_mismatch";
+}
+
+// The step-off the member takes: the first candidate, SurfaceSampleStepYards
+// apart along its heading up to MaxStepOffYards, that ValidateLedgeDrop
+// admits. probeAt(step) observes the candidate `step` yards out. Without one
+// the choice is the final rejection that ended the search or, once
+// MaxStepOffYards is spent, the first candidate past the lip (where a client
+// would have started to fall), else the last one.
+struct StepOffChoice
+{
+    ApproachVerdict Verdict{ false, "ledge_drop_step_length_invalid" };
+    float StepYards = 0.0f;
+};
+
+template <typename ProbeAt>
+StepOffChoice ChooseStepOff(ApproachContract const& contract, ProbeAt&& probeAt)
+{
+    StepOffChoice choice;
+    StepOffChoice pastLip;
+    bool leftLip = false;
+    for (float step = SurfaceSampleStepYards; step <= MaxStepOffYards + 1e-3f;
+        step += SurfaceSampleStepYards)
+    {
+        choice.Verdict = ValidateLedgeDrop(contract, probeAt(step));
+        choice.StepYards = step;
+        if (choice.Verdict.Ok || !StepOffCandidateAdvances(choice.Verdict.Reason))
+            return choice;
+        if (!leftLip && !StepOffStillOnLip(choice.Verdict.Reason))
+        {
+            leftLip = true;
+            pastLip = choice;
+        }
+    }
+    return leftLip ? pastLip : choice;
 }
 }
 

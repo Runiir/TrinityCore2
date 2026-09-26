@@ -1,23 +1,28 @@
 #ifndef TRINITY_BOT_NEFARIAN_PHASE_MOVEMENT_H
 #define TRINITY_BOT_NEFARIAN_PHASE_MOVEMENT_H
 
-// Phase goals for Nefarian's End: pillar ascent/hold/descent, dragon tanking
-// and raid formation. Hazard goals (fire, breath, kite) live in
-// BotNefarianMovement.h and outrank everything here.
+// Phase goals for Nefarian's End: pillar foot/top, dragon tanking, the bone
+// warrior handler and raid formation. Hazard goals (fire, breath, kite) live
+// in BotNefarianMovement.h and outrank everything here; the swim-and-hop
+// ascent and the descent steps are in BotNefarianAscent.h.
 
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMovement.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscent.h"
 
 namespace BotEncounter::Nefarian
 {
-// Capability blocker of the current phase: phase 2 needs a lawful pillar
-// ascent, which the movement layer does not provide (it can neither swim nor
-// climb). Published on the plan and in the duty-plan status so the watchdog
-// can classify the run; the bots still hold the pillar feet meanwhile.
+inline bool AscentSupported(NativeFacts const* facts)
+{
+    return facts ? facts->PillarAscentSupported : RuntimePillarAscentSupported();
+}
+
+// Capability blocker of the current phase: phase 2 needs the swim-and-hop
+// ascent (package T's Float, Swim and Hop stages, patch
+// .git/round6_patches/nefarian/N1). Without it the plan and the duty-plan
+// status carry pillar_ascent_unsupported so the watchdog can classify the
+// run; the bots still hold the pillar feet meanwhile.
 inline std::string_view CapabilityBlocker(Phase phase, NativeFacts const* facts)
 {
-    bool const ascent = facts ? facts->PillarAscentSupported
-        : RuntimePillarAscentSupported();
-    if (PhaseWantsPillar(phase) && !ascent)
+    if (PhaseWantsPillar(phase) && !AscentSupported(facts))
         return "pillar_ascent_unsupported";
     return {};
 }
@@ -31,24 +36,18 @@ inline std::optional<SurfaceGoal> PillarGoal(MovementContext const& context)
     if (pillar < 0)
         return std::nullopt;
     uint8 const slot = context.Plan.SlotOf(context.Bot.Guid);
-    bool const onTop = OnPillarTop(context);
-    // Without a pillar ascent the team holds the pillar's foot, where ranged
-    // members reach the prototype (about 18 yd) through the magma.
-    bool const ascent = context.Facts ? context.Facts->PillarAscentSupported
-        : RuntimePillarAscentSupported();
-    if (!onTop && !ascent)
-        return MakeGoal(context, MovePurpose::PillarFoot, Surface::Floor,
-            PillarBase(uint8(pillar), slot), 3.0f, false, pillar);
-    // While the floor is still up, wait at the pillar's foot; once it moves
-    // the pillar top is the only refuge from the magma.
-    if (phase == Phase::PlatformAscent && !onTop
-        && context.View.Elevator.State == ElevatorState::Raised)
-        return MakeGoal(context, MovePurpose::PillarAscent, Surface::Floor,
-            PillarBase(uint8(pillar), slot), 3.0f, false, pillar);
-    return MakeGoal(context, phase == Phase::PlatformAscent
-            ? MovePurpose::PillarAscent : MovePurpose::PillarHold,
-        Surface::PillarTop, PillarSlot(uint8(pillar), slot), 2.0f, !onTop,
-        pillar);
+    if (OnPillarStructure(context))
+        return MakeGoal(context, phase == Phase::PlatformAscent
+                ? MovePurpose::PillarAscent : MovePurpose::PillarHold,
+            Surface::PillarTop, PillarSlot(uint8(pillar), slot), 1.0f, false,
+            pillar);
+    // The foot of the pillar on the member's slot heading, reached while the
+    // floor keeps still. Without an ascent the team holds it; ranged members
+    // reach the prototype (about 10 yd) from there.
+    return MakeGoal(context, AscentSupported(context.Facts)
+            ? MovePurpose::PillarAscent : MovePurpose::PillarFoot,
+        Surface::Floor, PillarBase(uint8(pillar), slot), 1.5f,
+        context.View.Elevator.State == ElevatorState::Raised, pillar);
 }
 
 inline LocalPoint NefarianGroundPosition(EncounterView const& view)
@@ -56,6 +55,15 @@ inline LocalPoint NefarianGroundPosition(EncounterView const& view)
     if (view.Nefarian && view.NefarianLanded())
         return WorldToLocal(view.Nefarian->Position);
     return { 0.0f, 0.0f };
+}
+
+// Nefarian's facing on the ground: observed once he has landed, otherwise
+// the layout's (he lands facing his tank).
+inline float GroundFacing(EncounterView const& view, ArenaLayout const& layout)
+{
+    if (view.Nefarian && view.NefarianLanded())
+        return PoseOf(*view.Nefarian).Facing;
+    return layout.NefarianGroundFacing;
 }
 
 // Phase 3 wing: the side of Nefarian with more room from Shadowblaze fires
@@ -69,7 +77,7 @@ inline float PhaseThreeWingSign(EncounterView const& view,
     for (float sign : { 1.0f, -1.0f })
     {
         LocalPoint const wing = Offset(centre,
-            layout.NefarianGroundFacing + sign * Pi / 2.0f, 16.0f);
+            GroundFacing(view, layout) + sign * Pi / 2.0f, 16.0f);
         float score = 60.0f;
         for (auto const* list : { &view.Fires, &view.BoneWarriors })
             for (ActorSnapshot const* actor : *list)
@@ -133,13 +141,91 @@ inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
     if (nefarianTank)
         return MakeGoal(context, MovePurpose::TankHold, Surface::Floor,
             Offset(centre, layout.NefarianGroundFacing, 14.0f), 2.5f, false);
-    // The free Onyxia tank keeps reanimated warriors on the far wing, away
-    // from Nefarian's breath and tail and from the raid.
+    if (context.Bot.Guid != context.Plan.WarriorHandler)
+        return std::nullopt;
+    // The warrior handler keeps reanimated warriors in a pen on the far wing,
+    // away from the raid and never in front of Nefarian (his breath wakes and
+    // empowers them), and kites them around the pen while one reaches it.
+    // Kiting starts when an unheld chaser comes within HandlerKiteTriggerYards
+    // and ends only past HandlerKiteReleaseYards; a running kite keeps its
+    // destination to the end; and while a chaser is within the release, no
+    // destination (kite or pen) is ever back toward it.
     float const raidSign = PhaseThreeWingSign(view, layout);
-    LocalPoint const pen = Offset(centre,
-        layout.NefarianGroundFacing - raidSign * Pi / 2.0f, 24.0f);
-    return MakeGoal(context, MovePurpose::WarriorPen, Surface::Floor, pen, 3.0f,
-        false);
+    float const penBearing = GroundFacing(view, layout) - raidSign * Pi / 2.0f;
+    LocalPoint const self = BotLocal(context);
+    ActorSnapshot const* chaser = ChasingBoneWarrior(view, context.Bot,
+        HandlerKiteReleaseYards);
+    LocalPoint const from = chaser ? WorldToLocal(chaser->Position) : self;
+    // Never back toward the chaser: the walk heads at least 60 degrees off
+    // the direction to it (along the pen arc with the warrior coming from
+    // the centre side is fine; turning back past it is not).
+    auto away = [&](LocalPoint point)
+    {
+        if (!chaser)
+            return true;
+        LocalPoint const walk{ point.X - self.X, point.Y - self.Y };
+        LocalPoint const toward{ from.X - self.X, from.Y - self.Y };
+        return walk.X * toward.X + walk.Y * toward.Y
+            <= 0.5f * Length(walk) * Length(toward);
+    };
+    auto onPenArc = [&](LocalPoint point)
+    {
+        return std::fabs(Distance(point, centre) - HandlerPenRadius) <= 1.5f;
+    };
+    if (chaser && context.Facts)
+        if (MovementState const* motion = context.Facts->FindMotion(context.Bot.Guid);
+            motion && motion->Moving)
+        {
+            LocalPoint const running = WorldToLocal(motion->Destination);
+            if (Distance(self, running) >= 0.5f && onPenArc(running) && away(running)
+                && FloorPointSafe(context, running, true))
+                return MakeGoal(context, MovePurpose::Kite, Surface::Floor, running,
+                    2.0f, false);
+        }
+    if (chaser && Distance3(chaser->Position, context.Bot.Position) < HandlerKiteTriggerYards)
+    {
+        std::optional<LocalPoint> best;
+        float bestDistance = 0.0f;
+        for (float step : { -30.0f, -15.0f, 0.0f, 15.0f, 30.0f })
+        {
+            LocalPoint const point = Offset(centre, penBearing
+                - raidSign * DegToRad(step), HandlerPenRadius);
+            if (Distance(point, self) < 1.0f || !away(point)
+                || !FloorPointSafe(context, point, true))
+                continue;
+            float const distance = Distance(point, from);
+            if (!best || distance > bestDistance)
+            {
+                best = point;
+                bestDistance = distance;
+            }
+        }
+        // Cornered at the end of the arc: hold and tank it there (Nature's
+        // Grasp roots it) rather than walk back past it.
+        SurfaceGoal goal = MakeGoal(context, MovePurpose::Kite, Surface::Floor,
+            best ? *best : self, 2.0f, false);
+        goal.WarriorHold = !best;
+        return goal;
+    }
+    // The pen itself, or the nearest pen-arc point the handler can reach
+    // without leading a warrior past Nefarian's front (or back toward a
+    // chaser still within the release distance: then it holds).
+    for (float step : { 0.0f, -15.0f, 15.0f, -30.0f, 30.0f })
+    {
+        LocalPoint const point = Offset(centre, penBearing - raidSign * DegToRad(step),
+            HandlerPenRadius);
+        if (away(point) && FloorPointSafe(context, point, true))
+            return MakeGoal(context, MovePurpose::WarriorPen, Surface::Floor, point,
+                3.0f, false);
+    }
+    if (chaser)
+    {
+        SurfaceGoal goal = MakeGoal(context, MovePurpose::WarriorPen, Surface::Floor,
+            self, 3.0f, false);
+        goal.WarriorHold = true;
+        return goal;
+    }
+    return std::nullopt;
 }
 
 inline uint8 FormationSlot(Blackboard const& board, ObjectGuid guid)
@@ -203,7 +289,7 @@ inline std::optional<SurfaceGoal> FormationGoal(MovementContext const& context,
     if (phase != Phase::NefarianLanding && phase != Phase::NefarianGround)
         return std::nullopt;
     LocalPoint const centre = NefarianGroundPosition(view);
-    float const wing = context.Layout.NefarianGroundFacing
+    float const wing = GroundFacing(view, context.Layout)
         + PhaseThreeWingSign(view, context.Layout) * Pi / 2.0f;
     float const depth = melee ? NefarianMeleeReach - 9.0f
         : 18.0f + float(slot / 5) * 4.0f;
@@ -215,8 +301,8 @@ inline std::optional<SurfaceGoal> FormationGoal(MovementContext const& context,
         : SafeNear(context, centre, wing, depth, false);
     if (!moved)
         return std::nullopt;
-    MovePurpose const purpose = OnPillarTop(context) ? MovePurpose::PillarDescent
-        : MovePurpose::Formation;
+    MovePurpose const purpose = OnPillarStructure(context)
+        ? MovePurpose::PillarDescent : MovePurpose::Formation;
     return MakeGoal(context, purpose, Surface::Floor, *moved, 3.0f,
         purpose == MovePurpose::PillarDescent);
 }

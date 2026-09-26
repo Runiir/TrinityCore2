@@ -21,15 +21,18 @@
  */
 
 #include "ScriptMgr.h"
+#include "Bots/BotEncounterOffenseRestriction.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CombatManager.h"
 #include "ScriptedCreature.h"
 #include "Player.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
 #include <algorithm>
+#include <list>
 #include <tuple>
 #include <vector>
 
@@ -239,6 +242,48 @@ class npc_pet_shaman_earth_elemental : public CreatureScript
         }
 };
 
+// A Greater Fire Elemental area spell (Fire Nova, Fire Shield) that would
+// reach a unit restricted for its shaman while the shaman's encounter spares
+// guardian areas (BotEncounterOffense::SetGuardianAreaSparing: Maloriak's add
+// switch only). Checked around the elemental and around its victim.
+bool ShamanAreaCastBlocked(Creature* elemental, uint32 spellId)
+{
+    Unit* owner = ShamanElementalOwner(elemental);
+    uint64 const ownerGuid = owner ? owner->GetGUID().GetRawValue() : 0;
+    if (!ownerGuid || !BotEncounterOffense::IsGuardianAreaSparing(ownerGuid))
+        return false;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return false;
+    float radius = 0.0f;
+    for (SpellEffectInfo const& effect : spellInfo->Effects)
+        for (SpellTargetIndex index : { SpellTargetIndex::TargetA, SpellTargetIndex::TargetB })
+            if (effect.HasRadius(index))
+                radius = std::max(radius, effect.CalcRadius(elemental, index));
+    if (radius <= 0.0f)
+        return false;
+    std::vector<BotEncounterOffense::AreaPoint> centers;
+    std::vector<BotEncounterOffense::AreaPoint> restricted;
+    for (Unit* center : { static_cast<Unit*>(elemental), elemental->GetVictim() })
+    {
+        if (!center)
+            continue;
+        centers.push_back({ center->GetPositionX(), center->GetPositionY(), 0.0f });
+        std::list<Creature*> nearby;
+        center->GetCreatureListWithEntryInGrid(nearby, 0, radius + 5.0f);
+        for (Creature const* creature : nearby)
+            if (creature->IsAlive()
+                && BotRaidAreaAuthority::IsCurrentEncounterRestrictedEntry(ownerGuid,
+                    creature->GetEntry())
+                && BotRaidAreaAuthority::IsProtectedEncounterTarget(ownerGuid,
+                    creature->GetEntry(), creature->GetSpawnId(),
+                    creature->GetGUID().GetRawValue()))
+                restricted.push_back({ creature->GetPositionX(), creature->GetPositionY(),
+                    creature->GetCombatReach() });
+    }
+    return BotEncounterOffense::AreaReachesRestricted(centers, radius, restricted);
+}
+
 class npc_pet_shaman_fire_elemental : public CreatureScript
 {
     public:
@@ -282,11 +327,13 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_SHAMAN_FIRENOVA:
-                            DoCastVictim(SPELL_SHAMAN_FIRENOVA);
+                            if (!ShamanAreaCastBlocked(me, SPELL_SHAMAN_FIRENOVA))
+                                DoCastVictim(SPELL_SHAMAN_FIRENOVA);
                             _events.ScheduleEvent(EVENT_SHAMAN_FIRENOVA, urand(5000, 20000));
                             break;
                         case EVENT_SHAMAN_FIRESHIELD:
-                            DoCastVictim(SPELL_SHAMAN_FIRESHIELD);
+                            if (!ShamanAreaCastBlocked(me, SPELL_SHAMAN_FIRESHIELD))
+                                DoCastVictim(SPELL_SHAMAN_FIRESHIELD);
                             _events.ScheduleEvent(EVENT_SHAMAN_FIRESHIELD, 2000);
                             break;
                         case EVENT_SHAMAN_FIREBLAST:

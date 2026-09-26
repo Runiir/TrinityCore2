@@ -135,6 +135,20 @@
       "accessed": "2026-09-25",
       "authority": "execution client data",
       "claim": "sha256 b51adf90a9d625ebdf24fd5454c62aa1c9143a157a30812d3b2c66225eb597de; vertical rays every 5 degrees and 0.5 yd: flat centre local z -0.546 to r 21.17, 10-degree ramp 0.1763 per yard to r 32.43, ring 1.439 to r 60; floor at local (25, 0) +0.0737; pillar block plus skirt 5.15-6.0 yd from each centre; re-derived by tests/test_nefarian_platform_profile.py when the .vmo is present."
+    },
+    {
+      "id": "user_raid_experience_2026_09_26",
+      "title": "The user's own Nefarian's End raid (first-hand tactics, relayed by the coordinator 2026-09-26)",
+      "accessed": "2026-09-26",
+      "authority": "user first-hand raid experience (authoritative over guides)",
+      "claim": "2 tanks, 2 healers, 6 DPS with the shaman Elemental; Bloodlust and burn Onyxia before Nefarian lands; swim up in the rising magma and hop onto the pillar tops once they are level with the surface; the Feral druid kites the bone warriors and roots them with Nature's Grasp; bone warriors must not get in front of Nefarian (his breath buffs them and refills their energy, confirmed); the Onyxia burn may not hold on heroic or with lower gear."
+    },
+    {
+      "id": "arena_wmo_liquid",
+      "title": "Blackwing Descent arena WMO liquid: data/vmaps/Blackwingv2.wmo.vmo group 0 LIQU, spawn 857346 (669_31_31.vmtile), sampled into nefarian_magma_v1.json",
+      "accessed": "2026-09-26",
+      "authority": "execution client data",
+      "claim": "sha256 7a081d35774f7deac595a983946bc8693e8acfa16256ac1f5cd8fedc997a774b; LiquidType 19 (WMO Magma, overridden to 404 by area 5094); surface flat at world z 2.7713 at the pillars, the centre, the board point and the ring; re-derived by tests/test_nefarian_magma.py when the .vmo is present."
     }
   ],
   "values": [
@@ -580,10 +594,46 @@
       "unit": "LiquidType 404 spell 81114 and stacking 81118/94073-94075 (99 stacks, 10 s)",
       "source_refs": [
         "client_434_dbc_15595",
+        "user_raid_experience_2026_09_26",
         "wowhead_cata_classic"
       ],
       "status": "resolved",
-      "implementation_consequence": "A raid that cannot leave the floor in phase 2 takes escalating magma damage until phase 3 raises the floor."
+      "implementation_consequence": "The swim-and-hop ascent keeps each bot about 8.4 s in the magma (the ring goes under 5.5 s after the platform starts down, the hop lands at about 13.9 s): 8 ticks = 47,000 fire in normal (5000 + 250 k), about 96,000 in heroic (+2000 per stack). Healers top everyone up before the ring goes under."
+    },
+    {
+      "key": "magma_surface_and_pillar_ascent",
+      "value": {
+        "magma_surface_world_z": 2.7713,
+        "pillar_top_world_z_lowered": 3.0571,
+        "pillar_top_above_surface": 0.286,
+        "lowering_ms": 13333,
+        "lowering_speed_yd_per_s": 1.0749,
+        "centre_submerged_ms": 3658,
+        "ring_submerged_ms": 5504,
+        "rim_edge_local_z": [
+          9.14,
+          9.16
+        ],
+        "flat_top_radius": [
+          3.5,
+          3.9
+        ],
+        "wall_radius": [
+          5.3,
+          5.7
+        ],
+        "float_depth_yd": 1.2,
+        "swim_station_radius": 6.7,
+        "hop": "the client's jump (7.95577 yd/s up, gravity 19.2911, apex 1.64) from the station onto the rim just above the waterline: rise about 1.34, speed 4-4.7 yd/s, body clearance >= 0.27 on every slot"
+      },
+      "source_refs": [
+        "arena_wmo_liquid",
+        "platform_collision_model",
+        "user_raid_experience_2026_09_26",
+        "repo_nefarians_end"
+      ],
+      "status": "resolved",
+      "implementation_consequence": "Phase 2 is a lawful swim-and-hop ascent (BotNefarianAscent.h, BotNefarianMagma.h); the executor stages Float, Swim, Hop and Emerge are requested from package T (patch N1). The native stop height is unchanged."
     }
   ],
   "timers": [
@@ -1048,9 +1098,9 @@
       "evidence_gap": "Client periods give 4 warriors in 10N vs Wowhead 12; native 33 s energy vs Wowhead 50 s."
     },
     {
-      "key": "pillar_access_and_magma_geometry",
+      "key": "heroic_onyxia_burn_and_magma",
       "status": "fidelity_blocked",
-      "evidence_gap": "Players swim up through the magma (Wowhead; the lip can block jumping); package T cannot swim or climb, so no lawful pillar ascent exists yet. Lava navmesh at z 3.0 and pillar tops at 3.06 lowered suggest the tops sit just above the magma; the exact surface height is unobserved."
+      "evidence_gap": "The user expects the phase 1 Onyxia burn may not hold on heroic or with lower gear; heroic keeps the Electrocute budget untested, and heroic magma (+2000 per 81118 stack) makes the 8.4 s swim cost about 96k per bot."
     },
     {
       "key": "heroic_dominion_cinders_and_phase_two_end",
