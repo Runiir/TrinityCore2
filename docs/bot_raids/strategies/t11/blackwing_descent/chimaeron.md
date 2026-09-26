@@ -113,7 +113,10 @@ chosen by capability, not by slot:
 - **Tank healer.** Holy Paladin first, then Discipline Priest, Holy Priest, Restoration Druid and
   Restoration Shaman.
 - **Lust owner.** A mage (Time Warp) first, then a shaman (Bloodlust, or Heroism when that is the
-  variant the bot knows).
+  variant the bot knows). The owner is chosen from the shared snapshot, which carries no spell book,
+  so the runtime casts only a lust spell the owner knows (`Player::HasSpell`, as Maloriak's raid
+  haste does). An owner that knows none skips it with `chimaeron_lust_spell_unknown`; the round-4
+  canonical Fire Mage did not know Time Warp until M provisioned it.
 - **Barrier owner.** The Discipline Priest.
 - **Spirit Link owner.** The Restoration Shaman.
 

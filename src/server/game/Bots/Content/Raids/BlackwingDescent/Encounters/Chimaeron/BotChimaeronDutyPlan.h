@@ -4,6 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFacts.h"
 
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -106,6 +107,41 @@ inline int LustRank(std::string_view spec)
     if (IsShamanSpec(spec))
         return 1;
     return -1;
+}
+
+inline bool IsLustSpell(uint32 spellId)
+{
+    return spellId == TimeWarpSpell || spellId == BloodlustSpell || spellId == HeroismSpell;
+}
+
+// The raid haste the lust owner can actually cast, from its own spell book
+// (Player::HasSpell, observed by the runtime): the proposed spell when known,
+// otherwise the shaman's other faction variant (Bloodlust is Horde-only,
+// Heroism Alliance-only). Empty when the owner knows none: the runtime skips
+// the cast with the typed reason LustSpellUnknownReason instead of asking the
+// executor for a spell it would refuse on every tick. The owner is chosen from
+// the shared snapshot, which carries no spell book, so every bot agrees on it;
+// the next owner in the mage-then-shaman order is not taken over locally.
+constexpr char const* LustSpellUnknownReason = "chimaeron_lust_spell_unknown";
+
+inline std::optional<uint32> KnownLustSpell(uint32 proposed, bool knowsTimeWarp,
+    bool knowsBloodlust, bool knowsHeroism)
+{
+    auto knows = [&](uint32 spellId)
+    {
+        return (spellId == TimeWarpSpell && knowsTimeWarp)
+            || (spellId == BloodlustSpell && knowsBloodlust)
+            || (spellId == HeroismSpell && knowsHeroism);
+    };
+    if (!IsLustSpell(proposed))
+        return std::nullopt;
+    if (knows(proposed))
+        return proposed;
+    if (proposed != TimeWarpSpell)
+        for (uint32 variant : { BloodlustSpell, HeroismSpell })
+            if (knows(variant))
+                return variant;
+    return std::nullopt;
 }
 
 // The acting bot's own role comes from the runtime (GetDungeonRole); every

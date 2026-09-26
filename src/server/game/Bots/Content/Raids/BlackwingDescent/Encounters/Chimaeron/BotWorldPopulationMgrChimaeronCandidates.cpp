@@ -9,6 +9,7 @@
 #include "Player.h"
 #include "Unit.h"
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -38,26 +39,51 @@ void BotWorldPopulationMgr::SubmitAdaptiveChimaeronCandidates(BotUpdateContext& 
         action.RequiredResources = proposal.Resources();
         action.ExpiresAtMs = proposal.ExpiresAtMs;
         BotNativeAction::Intent intent = proposal.Action;
-        // The shaman lust is faction-specific: cast the variant this bot knows.
+        // The lust is cast only from this bot's own spell book (as Maloriak's
+        // raid haste does): the shaman's faction variant it knows, and never a
+        // Time Warp the mage owner was not taught. An owner that knows no lust
+        // spell skips it with a typed reason (resource-free, so nothing else
+        // is displaced) instead of submitting a cast the executor refuses.
+        bool lustUnknown = false;
         if (auto* cast = std::get_if<BotNativeAction::CastSpell>(&intent);
-            cast && cast->SpellId == BotEncounter::Chimaeron::BloodlustSpell
-            && !context.Bot->HasSpell(BotEncounter::Chimaeron::BloodlustSpell)
-            && context.Bot->HasSpell(BotEncounter::Chimaeron::HeroismSpell))
-            cast->SpellId = BotEncounter::Chimaeron::HeroismSpell;
-        action.Attempt = [this, &context, intent = std::move(intent),
-            mechanic = proposal.Id.Mechanic]()
+            cast && BotEncounter::Chimaeron::IsLustSpell(cast->SpellId))
         {
-            BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                context.State, context.Bot, intent, BotMovementArbitration::Owner::Mechanic,
-                BotMovementArbitration::Priority::Mechanic);
-            if (outcome.Result == BotActionArbitration::Disposition::Committed)
+            std::optional<uint32> const known = BotEncounter::Chimaeron::KnownLustSpell(
+                cast->SpellId,
+                context.Bot->HasSpell(BotEncounter::Chimaeron::TimeWarpSpell),
+                context.Bot->HasSpell(BotEncounter::Chimaeron::BloodlustSpell),
+                context.Bot->HasSpell(BotEncounter::Chimaeron::HeroismSpell));
+            if (known)
+                cast->SpellId = *known;
+            else
+                lustUnknown = true;
+        }
+        if (lustUnknown)
+        {
+            action.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::None);
+            action.Attempt = []()
             {
-                context.Situation = "adaptive_chimaeron";
-                context.Action = mechanic;
-                context.State.LastDecisionHandler = "adaptive_chimaeron";
-            }
-            return outcome;
-        };
+                return BotActionArbitration::Outcome::NotApplicable(
+                    BotEncounter::Chimaeron::LustSpellUnknownReason);
+            };
+        }
+        else
+            action.Attempt = [this, &context, intent = std::move(intent),
+                mechanic = proposal.Id.Mechanic]()
+            {
+                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+                    context.State, context.Bot, intent,
+                    BotMovementArbitration::Owner::Mechanic,
+                    BotMovementArbitration::Priority::Mechanic);
+                if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                {
+                    context.Situation = "adaptive_chimaeron";
+                    context.Action = mechanic;
+                    context.State.LastDecisionHandler = "adaptive_chimaeron";
+                }
+                return outcome;
+            };
         context.State.DecisionKernel.Submit(std::move(action));
     }
 

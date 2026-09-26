@@ -741,6 +741,38 @@ static void TestEncounterReset()
     CHECK(live.OwnsNode && !live.SuppressOffense && live.DamageTarget == Boss(board).Guid);
 }
 
+static void TestLustSpellFromTheOwnersSpellBook()
+{
+    // M's round-4 review: the canonical Fire Mage lust owner did not know
+    // Time Warp. The runtime casts only a lust spell the owner knows
+    // (Player::HasSpell), like Maloriak's raid haste.
+    using C::KnownLustSpell;
+    CHECK(C::IsLustSpell(80353) && C::IsLustSpell(2825) && C::IsLustSpell(32182));
+    CHECK(!C::IsLustSpell(62618) && !C::IsLustSpell(0));
+    // Mage owner: Time Warp only when taught; a mage never casts a shaman lust.
+    CHECK(KnownLustSpell(C::TimeWarpSpell, true, false, false) == C::TimeWarpSpell);
+    CHECK(!KnownLustSpell(C::TimeWarpSpell, false, false, false));
+    CHECK(!KnownLustSpell(C::TimeWarpSpell, false, true, true));
+    // Shaman owner: the faction variant it knows.
+    CHECK(KnownLustSpell(C::BloodlustSpell, false, true, false) == C::BloodlustSpell);
+    CHECK(KnownLustSpell(C::BloodlustSpell, false, false, true) == C::HeroismSpell);
+    CHECK(KnownLustSpell(C::HeroismSpell, false, true, false) == C::BloodlustSpell);
+    CHECK(!KnownLustSpell(C::BloodlustSpell, false, false, false));
+    // Not a lust spell: never rewritten.
+    CHECK(!KnownLustSpell(62618, true, true, true));
+    CHECK(std::string(C::LustSpellUnknownReason) == "chimaeron_lust_spell_unknown");
+
+    // The strategy still names the mage owner and proposes Time Warp at the
+    // burn push; whether he knows it is the runtime's spell-book check.
+    Blackboard board = Board("bwd.chimaeron.encounter", true);
+    Boss(board).HealthPct = 20.5f;
+    Boss(board).Auras.push_back({ C::MortalityBossSpell, ObjectGuid(), 1, 0 });
+    C::Duties const duties = C::BuildDuties(board);
+    CHECK(duties.LustOwner == G(MAGE) && duties.LustSpell == C::TimeWarpSpell);
+    CHECK(CastOf(Plan(board, MAGE)) == C::TimeWarpSpell);
+    CHECK(CastOf(Plan(board, SHAMAN)) != C::BloodlustSpell);
+}
+
 int main()
 {
     TestDuties();
@@ -754,6 +786,7 @@ int main()
     TestArbitrationReplayShape();
     TestOtherNodes();
     TestEncounterReset();
+    TestLustSpellFromTheOwnersSpellBook();
     if (failures)
         std::fprintf(stderr, "%d checks failed\n", failures);
     return failures ? 1 : 0;
@@ -792,6 +825,27 @@ def test_strategy_headers_stay_small_and_self_contained() -> None:
         # The strategy reads the blackboard only; it never reaches into the core.
         for forbidden in ('#include "Player.h"', '#include "Creature.h"', "ObjectAccessor"):
             assert forbidden not in text, (path, forbidden)
+
+
+def test_runtime_casts_only_a_lust_spell_the_owner_knows() -> None:
+    """The lust owner is chosen from the shared snapshot (no spell book), so the
+    runtime checks its own spell book before submitting, as Maloriak's raid haste
+    does, and skips an unknown lust with a typed, resource-free candidate."""
+    source = (CHIMAERON / "BotWorldPopulationMgrChimaeronCandidates.cpp").read_text(encoding="utf-8")
+    for marker in (
+        "BotEncounter::Chimaeron::IsLustSpell(cast->SpellId)",
+        "BotEncounter::Chimaeron::KnownLustSpell(",
+        "context.Bot->HasSpell(BotEncounter::Chimaeron::TimeWarpSpell)",
+        "context.Bot->HasSpell(BotEncounter::Chimaeron::BloodlustSpell)",
+        "context.Bot->HasSpell(BotEncounter::Chimaeron::HeroismSpell)",
+        "cast->SpellId = *known;",
+        "BotActionArbitration::Outcome::NotApplicable(\n"
+        "                    BotEncounter::Chimaeron::LustSpellUnknownReason);",
+        "BotActionArbitration::Resource::None);",
+    ):
+        assert marker in source, marker
+    # The spell-book check precedes the executor submission.
+    assert source.index("KnownLustSpell(") < source.index("ExecuteNativeActionIntent(")
 
 
 def _script_constant(name: str) -> int:
