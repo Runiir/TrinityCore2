@@ -58,7 +58,10 @@ TOKEN_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 BOSS_KEY_RE = re.compile(r"[a-z][a-z0-9_]*")
 DIFFICULTIES = ("10n", "25n", "10h", "25h")
 # Verbs a shard's watchdog may send; each must name the shard's cohort.
-SHARD_VERBS = frozenset({"start", "status", "diagnose", "trace", "combatlog", "stop"})
+# `readycheck` is the leader's native wipe-recovery ready check
+# (tools.bot_ml.live_validation_native_readycheck): without it a wiped shard
+# holds at the instance entrance until the no-progress window expires.
+SHARD_VERBS = frozenset({"start", "status", "diagnose", "trace", "combatlog", "readycheck", "stop"})
 # Unkeyed adaptive state stays frozen while shards share one worldserver
 # (BotExperienceLearningPolicy::ShardIsolationEnabled, BotSemantic writes).
 # Server-side re-provisioning on start would rewrite every validation
@@ -968,6 +971,9 @@ class ShardCoordinator:
                 max_death_loops=policy.max_death_loops,
                 status_command=f".botauto status {spec.cohort_id}",
                 sleep=self.sleep,
+                # Raid-program shards re-pull after a full wipe: the watchdog
+                # sends the leader's native ready check once recovery holds.
+                native_readycheck=True,
             )
             outcome.output, outcome.returncode, outcome.timed_out = output, returncode, timed_out
             outcome.command = list(command)

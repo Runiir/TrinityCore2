@@ -281,6 +281,9 @@ class HeartbeatSignals:
 
     route_actions: RouteActionLedger = field(default_factory=RouteActionLedger)
     near_wipes: NearWipeTracker = field(default_factory=NearWipeTracker)
+    # The loop's NativeReadyCheckRequester when the ready check is enabled
+    # (live_validation_native_readycheck); its receipt joins watchdog_state.
+    native_readycheck: Any = None
 
 
 def terminal_drain_command(heartbeat_commands: Sequence[str]) -> str:

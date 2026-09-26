@@ -10,6 +10,10 @@ while tools.raid_program.capture_progress.ready_for_native_readycheck held on
 11 consecutive status heartbeats (worldserver.console.log lines 1844-3708).
 The shard coordinator's completion watchdog never sent `.botauto readycheck`
 (0 occurrences in the console log), and its transport refused the verb.
+
+The watchdog's predicate (live_validation_native_readycheck) mirrors the
+native handler for any raid size; tests/test_live_validation_native_readycheck.py
+covers the retry, refusal, send-order and opt-in protocol.
 """
 from __future__ import annotations
 
@@ -20,11 +24,11 @@ import pytest
 
 from tools.bot_ml.live_validation_native_readycheck import (
     NativeReadyCheckRequester,
+    ready_for_native_readycheck,
     readycheck_request_identity,
 )
 from tools.bot_ml.run_live_bot_validation import command_script, run_transport_completion_watchdog
 from tools.raid_program import shard_coordinator as sc
-from tools.raid_program.capture_progress import ready_for_native_readycheck
 
 COHORT = "blackwing_descent_10n_omnotron_c0"
 NODE = "bwd.omnotron.encounter"
@@ -46,7 +50,8 @@ def _status(phase: str, *, wipe_generation: int = 1, alive: int = 10) -> dict:
         "evidence_complete": phase == "ready_check_done",
     }
     runtime = {
-        "instance_kind": "raid", "expected_size": 10, "alive_size": alive if phase != "wiped" else 0,
+        "instance_kind": "raid", "expected_size": 10, "active_size": 10, "roster_complete": True,
+        "alive_size": alive if phase != "wiped" else 0,
         "attempt_id": 1, "assignment_generation": 1,
         "wipe_generation": 0 if engaged else wipe_generation,
         "wipe_state": "engaged" if engaged else "wiped",
@@ -81,17 +86,24 @@ def test_round3_final_status_satisfies_the_native_readycheck_predicate() -> None
         assert not ready_for_native_readycheck(_status(phase))
 
 
+ACCEPTED = json.dumps({"ok": True, "action": "botauto_readycheck", "cohort_id": COHORT,
+                       "ready_check_pending": True, "ready_check_complete": False})
+
+
 def test_requester_sends_one_readycheck_per_recovery_scope() -> None:
     requester = NativeReadyCheckRequester(COHORT)
     assert requester.command == READYCHECK
     assert requester.due([_status("engaged")]) == ""
     assert requester.due([_status("wiped")]) == ""
     assert requester.due([{"note": 1}, _status("evidence_pending")]) == READYCHECK
-    # The same wipe's later heartbeats do not repeat the request.
+    assert requester.take() == READYCHECK
+    assert requester.record_reply(ACCEPTED)["outcome"] == "accepted"
+    # The same wipe's later heartbeats do not repeat an accepted request.
     assert requester.due([_status("evidence_pending")]) == ""
     assert requester.due([_status("ready_check_done")]) == ""
     # A second wipe of the same node is a new recovery scope.
     assert requester.due([_status("evidence_pending", wipe_generation=2)]) == READYCHECK
+    assert requester.take() == READYCHECK
     assert requester.requests == [
         readycheck_request_identity(_status("evidence_pending")),
         readycheck_request_identity(_status("evidence_pending", wipe_generation=2)),
@@ -152,10 +164,12 @@ def test_transport_watchdog_sends_the_readycheck_after_the_status_that_allows_it
     assert commands.count(READYCHECK) == 1
     index = commands.index(READYCHECK)
     statuses = [i for i, c in enumerate(commands) if c.startswith(".botauto status")]
-    # Sent once, right after the first status with complete native evidence,
-    # and never while engaged or before the release/runback/resurrection.
+    # Sent once, at the end of the first heartbeat whose status has complete
+    # native evidence (after its diagnose and trace), and never while engaged
+    # or before the release/runback/resurrection.
     first_ready = next(i for i in statuses if phases[i] == "evidence_pending")
-    assert index == first_ready + 1
+    assert commands[first_ready:index] == [
+        f".botauto status {COHORT}", f".botauto diagnose {COHORT} all", f".botauto trace {COHORT} all 128 delta"]
     assert [phases[i] for i in statuses if i < index] == ["engaged", "wiped", "evidence_pending"]
     assert len([i for i in statuses if i > index]) >= 2  # later heartbeats do not repeat it
 

@@ -68,6 +68,7 @@ try:
         prepull_failure_label,
     )
     from .live_validation_world_ticks import WorldTickLedger
+    from .live_validation_native_readycheck import READYCHECK_PHASE, NativeReadyCheckRequester
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -117,6 +118,7 @@ except ImportError:
         prepull_failure_label,
     )
     from live_validation_world_ticks import WorldTickLedger
+    from live_validation_native_readycheck import READYCHECK_PHASE, NativeReadyCheckRequester
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -6221,6 +6223,9 @@ def live_validation_report(
         max_repeated_decisions=max_repeated_decisions,
         max_death_loops=max_death_loops,
     )
+    if signals is not None and signals.native_readycheck is not None:
+        # Requests sent at the end of earlier heartbeats and their replies.
+        state["native_readycheck"] = signals.native_readycheck.receipt()
     effective_failure_labels = resolved_manifest_failure_labels(
         failure_labels, evidence, validation_route_manifest
     )
@@ -6358,6 +6363,8 @@ def expected_command_output_marker(command_text: str) -> str:
         return '"diagnosis_schema_version"'
     if command_text.startswith(".botauto trace"):
         return '"trace_schema_version"'
+    if command_text.startswith(".botauto readycheck"):
+        return '"action":"botauto_readycheck"'
     if command_text.startswith(".botauto combatlog"):
         return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
@@ -6662,11 +6669,17 @@ def run_transport_completion_watchdog(
     sleep: Callable[[float], None] = time.sleep,
     light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
+    native_readycheck: bool = True,
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
 
     The callback owns connection and lifecycle details; this function never sends a
     server shutdown command, making it safe for attached sessions and SOAP.
+
+    ``native_readycheck`` sends the leader's native wipe-recovery ready check
+    (live_validation_native_readycheck).  The shard coordinator (the raid
+    program) relies on the default; bot-live-validate passes its opt-in
+    ``--native-readycheck`` flag, which is off by default.
     """
     deadline = (
         None if timeout_sec is None else time.monotonic() + timeout_sec
@@ -6683,6 +6696,10 @@ def run_transport_completion_watchdog(
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
     signals = HeartbeatSignals()
+    # A wiped cohort holds until the leader's native ready check completes;
+    # nothing else starts it here (live_validation_native_readycheck).
+    readycheck = NativeReadyCheckRequester(expected_cohort_id) if native_readycheck else None
+    signals.native_readycheck = readycheck
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
     heartbeat_index = 0
@@ -6794,16 +6811,47 @@ def run_transport_completion_watchdog(
             returncode, timed_out = send(effective_command, record_as=configured_command)
             if returncode != 0 or timed_out:
                 return returncode, timed_out
-            planner.observe(configured_command, last_output["text"])
-            if world_ticks.observe_output(last_output["text"], parse_json_objects):
+            command_output = last_output["text"]
+            planner.observe(configured_command, command_output)
+            if readycheck is not None and is_status_command(effective_command):
+                # Staged from this heartbeat's own status; sent at the end of
+                # the heartbeat only if no terminal or clear fires.
+                readycheck.due(parse_json_objects(command_output), heartbeat_index)
+            if world_ticks.observe_output(command_output, parse_json_objects):
                 world_ticks.write(output_dir)
             if trace_retention.enabled and effective_command.startswith(".botauto trace"):
                 trace_retention.observe(
                     heartbeat_index=heartbeat_index,
                     phase=planner.mode,
                     command=effective_command,
-                    output=last_output["text"],
+                    output=command_output,
                 )
+        return 0, False
+
+    def send_staged_readycheck() -> tuple[int, bool]:
+        """Send the staged ready check; only a timeout or a lost transport propagates."""
+        command_text = readycheck.take() if readycheck is not None else ""
+        if not command_text:
+            return 0, False
+        remaining = (
+            max(30, int(no_progress_window_sec))
+            if deadline is None
+            else max(1, int(deadline - time.monotonic()))
+        )
+        sent_at_ms = now_ms()
+        output, returncode, timed_out = execute_command(command_text, remaining)
+        timings.record(
+            phase=READYCHECK_PHASE, heartbeat_index=heartbeat_index,
+            command=command_text, sent_at_ms=sent_at_ms, completed_at_ms=now_ms(),
+            response_bytes=len(output or ""), returncode=returncode, timed_out=timed_out,
+        )
+        # Only the newest reply is kept in the console buffer; receipts keep all.
+        output_parts.append_heartbeat(READYCHECK_PHASE, f"$ {command_text}\n" + (output or ""))
+        reply = readycheck.record_reply(
+            output or "", returncode=returncode, timed_out=timed_out, heartbeat_index=heartbeat_index,
+        )
+        if reply["propagate"]:
+            return (returncode or 1), timed_out
         return 0, False
 
     def drain_retained_trace(budget: CleanupBudget) -> None:
@@ -7090,6 +7138,10 @@ def run_transport_completion_watchdog(
             finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return fail()
+        # No terminal or clear fired on this heartbeat: send its ready check.
+        returncode, timed_out = send_staged_readycheck()
+        if returncode != 0 or timed_out:
+            return finish(returncode, timed_out)
     # The emergency cap protects infrastructure; it is not a typed bot failure.
     return finish(124, True)
 
@@ -7112,7 +7164,14 @@ def run_worldserver_completion_watchdog(
     calibration_native_completion: bool = False,
     light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
+    native_readycheck: bool = False,
 ) -> tuple[str, int, bool, list[str]]:
+    """The process-mode completion watchdog (bot-live-validate --transport process).
+
+    ``native_readycheck`` is opt-in here (``--native-readycheck``): the
+    accepted single-cohort Magmaw target runs through this path, and sending
+    the wipe-recovery ready check would re-pull after a full drudge wipe.
+    """
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
@@ -7128,6 +7187,8 @@ def run_worldserver_completion_watchdog(
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
     signals = HeartbeatSignals()
+    readycheck = NativeReadyCheckRequester(expected_cohort_id) if native_readycheck else None
+    signals.native_readycheck = readycheck
     terminal_failure = False
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
@@ -7274,6 +7335,10 @@ def run_worldserver_completion_watchdog(
             effective_command = planner.effective_command(configured_command)
             command_output = send_command(effective_command, record_as=configured_command)
             planner.observe(configured_command, command_output)
+            if readycheck is not None and is_status_command(effective_command):
+                # Staged from this heartbeat's own status; sent at the end of
+                # the heartbeat only if no terminal or clear fires.
+                readycheck.due(parse_json_objects(command_output), heartbeat_index)
             if world_ticks.observe_output(command_output, parse_json_objects):
                 world_ticks.write(output_dir)
             if trace_retention.enabled and effective_command.startswith(".botauto trace"):
@@ -7299,6 +7364,17 @@ def run_worldserver_completion_watchdog(
         )
         if receipt:
             output_parts.append_cleanup(receipt)
+
+    def send_staged_readycheck() -> None:
+        """Send the staged ready check; a refusal re-arms it for a later heartbeat."""
+        command_text = readycheck.take() if readycheck is not None else ""
+        if not command_text:
+            return
+        output = ""
+        if process.poll() is None:
+            output = send_command(command_text, phase=READYCHECK_PHASE, record=False)
+            output_parts.append_heartbeat(READYCHECK_PHASE, f"$ {command_text}\n" + output)
+        readycheck.record_reply(output, heartbeat_index=heartbeat_index)
 
     def drain_terminal(budget: CleanupBudget) -> None:
         """Capture every bot's pending decisions before the stop despawns them."""
@@ -7595,6 +7671,8 @@ def run_worldserver_completion_watchdog(
                 write_json(output_dir / "report.json", report)
                 terminal_failure = True
                 break
+            # No terminal or clear fired on this heartbeat: send its ready check.
+            send_staged_readycheck()
         # ``timed_out`` is the watchdog verdict: only the emergency cap sets
         # it.  Cleanup overruns are recorded in the cleanup summary instead.
         timed_out = time.monotonic() >= deadline
@@ -7739,6 +7817,7 @@ def run_soap_completion_watchdog(
         calibration_native_completion=args.calibration_native_completion,
         light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
         retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
+        native_readycheck=bool(getattr(args, "native_readycheck", False)),
     )
 
 
@@ -7844,6 +7923,8 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--stop")
     if getattr(args, "light_combat_heartbeats", False):
         command.append("--light-combat-heartbeats")
+    if getattr(args, "native_readycheck", False):
+        command.append("--native-readycheck")
     for route_node in getattr(args, "retain_trace_route_node", None) or []:
         command.extend(["--retain-trace-route-node", str(route_node)])
     if getattr(args, "preserve_worldserver", False):
@@ -8632,6 +8713,7 @@ def run_reusable_validation_session(
                 calibration_native_completion=calibration_native_completion,
                 light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
                 retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
+                native_readycheck=bool(getattr(args, "native_readycheck", False)),
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
@@ -8836,6 +8918,13 @@ def _main() -> int:
         help="Send the full diagnose/trace heartbeat on every heartbeat (the default).",
     )
     parser.set_defaults(light_combat_heartbeats=False)
+    parser.add_argument(
+        "--native-readycheck",
+        action="store_true",
+        help="Opt in to the leader's native wipe-recovery ready check (live_validation_native_readycheck): after a "
+        "full wipe the cohort re-pulls once its recovery evidence holds. Off by default, so accepted single-cohort "
+        "targets keep their protocol; the shard coordinator always sends it.",
+    )
     parser.add_argument(
         "--retain-trace-route-node",
         action="append",
@@ -9404,6 +9493,7 @@ def _main() -> int:
                 calibration_native_completion=args.calibration_native_completion,
                 light_combat_heartbeats=args.light_combat_heartbeats,
                 retain_trace_route_nodes=tuple(args.retain_trace_route_node or ()),
+                native_readycheck=bool(getattr(args, "native_readycheck", False)),
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():
