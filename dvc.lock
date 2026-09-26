@@ -430,8 +430,8 @@ stages:
     deps:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 0ff67978c4f5ce7b172aa0ad12bae65b.dir
-      size: 3985594
+      md5: 34c56c5d82631d777eaf497058d7aeac.dir
+      size: 4039523
       nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
@@ -447,16 +447,16 @@ stages:
       size: 156525
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 695010ebec137f245d76a097e92d84f6
-      size: 120697
+      md5: 858ccf033f89e8556698764879b2869b
+      size: 123927
     - path: sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
       hash: md5
       md5: d55ce540c300d77f0ddde75a68ec9cfa
       size: 23898
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: f49e2c0da20037f8a289fe84a91671de
-      size: 68265
+      md5: f8d88959b9548f3c678ff37a67420c3b
+      size: 72301
     - path: tools/bot_ml/common.py
       hash: md5
       md5: bb0de5d5b481e92f0fcffd74cbf1562e
@@ -464,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 33748bdb01bd26bbfbf7590284622bfa.dir
-      size: 1109044
+      md5: 6f56438cc390a471d6e9e3b958c01e8a.dir
+      size: 1116244
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -1883,8 +1883,8 @@ stages:
       size: 1797
     - path: experiments/configs/raid_compositions
       hash: md5
-      md5: a0c29053c19cb0468d00af6630ff947a.dir
-      size: 11501
+      md5: dd9b806990cafd0a639d7704b389382c.dir
+      size: 21492
       nfiles: 1
     - path: experiments/configs/raid_prerequisites
       hash: md5
@@ -1897,8 +1897,8 @@ stages:
       size: 27753
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 695010ebec137f245d76a097e92d84f6
-      size: 120697
+      md5: 858ccf033f89e8556698764879b2869b
+      size: 123927
     - path: experiments/configs/wowsims_cata_dps_reference_requests_v1.json
       hash: md5
       md5: 5297802cf6b3143a77c02fac868b1194
@@ -1986,6 +1986,6 @@ stages:
     outs:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 0ff67978c4f5ce7b172aa0ad12bae65b.dir
-      size: 3985594
+      md5: 34c56c5d82631d777eaf497058d7aeac.dir
+      size: 4039523
       nfiles: 4
