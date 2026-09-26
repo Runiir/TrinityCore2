@@ -430,8 +430,8 @@ stages:
     deps:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 94a610bb303cbe3a0f87c4ea7b220274.dir
-      size: 4055159
+      md5: d3b4923255139c8a0e75cc656d07c172.dir
+      size: 4061923
       nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
@@ -1883,8 +1883,8 @@ stages:
       size: 1797
     - path: experiments/configs/raid_compositions
       hash: md5
-      md5: 4e8c3610ff99cf4b840142aa55609d73.dir
-      size: 33997
+      md5: f83f58307993a2b965d80bb17222f3a5.dir
+      size: 34838
       nfiles: 1
     - path: experiments/configs/raid_prerequisites
       hash: md5
@@ -1986,6 +1986,6 @@ stages:
     outs:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: 94a610bb303cbe3a0f87c4ea7b220274.dir
-      size: 4055159
+      md5: d3b4923255139c8a0e75cc656d07c172.dir
+      size: 4061923
       nfiles: 4
