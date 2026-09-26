@@ -1,0 +1,23 @@
+{
+  "schema": "raid_shard_run_plan_v1",
+  "description": "BWD 10N end-to-end acceptance: the canonical composition clears all trash and all six bosses in order in one fresh instance, including the Orb of Culmination and the descent to Nefarian.",
+  "raid_shard_plan": "dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json",
+  "watchdog": {
+    "heartbeat_sec": 30,
+    "no_progress_window_sec": 180,
+    "max_repeated_decisions": 20,
+    "max_death_loops": 3,
+    "emergency_timeout_sec": 10800,
+    "transition_timeout_sec": 180
+  },
+  "shards": [
+    {
+      "cohort_id": "blackwing_descent_10n_full_c0",
+      "runtime_profile_id": "blackwing_descent_10n_full_c0",
+      "raid": "blackwing_descent",
+      "mode": "10N",
+      "boss_key": "full",
+      "lockout": null
+    }
+  ]
+}
