@@ -1,5 +1,6 @@
 import json
 import math
+import re
 from pathlib import Path
 from tests.combat_resolver_source import combat_resolver_source
 
@@ -2595,8 +2596,6 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
         'currentTank->GetGUID() == raidAssignment.OffTankGuid',
         '"raid_kill_sync_execution_hold_low_target"',
         'isHeldLowTarget(bot->GetVictim())',
-        'isHeldLowTarget(current->m_targets.GetUnitTarget())',
-        'isHeldLowTarget(repeat->m_targets.GetUnitTarget())',
         'isHeldLowTarget(pet->GetVictim())',
         'isHeldLowTarget(controlled->GetVictim())',
         'bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);',
@@ -2604,6 +2603,9 @@ def test_phase1_target_transfer_and_swap_controls_are_executable():
         'for (Unit* controlled : bot->m_Controlled)',
     ):
         assert token in IMPL
+    for spell in ("current", "repeat"):
+        assert re.search(rf"if \(Unit\* castTarget = BotSpellCastTarget::UnitTarget\({spell}\);"
+                         r"\s+isHeldLowTarget\(castTarget\)\)", IMPL), spell
 
 
 def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
@@ -2737,7 +2739,8 @@ def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
         "stopWrongControlledFocusTarget(pet);",
         "stopWrongControlledFocusTarget(controlled);",
         "state.TargetGuid = focus->GetGUID();",
-        "if (!focus || current->m_targets.GetUnitTarget() != focus)",
+        "if (!focus || BotSpellCastTarget::UnitTarget(current) != focus)",
+        "if (!focus || BotSpellCastTarget::UnitTarget(repeat) != focus)",
     ):
         assert token in focus
     assert 'raidAdapter.TargetControl != "focus_fire"' in IMPL

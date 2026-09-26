@@ -3,6 +3,7 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotSpellCastTarget.h"
 #include "CharmInfo.h"
 #include "CellImpl.h"
 #include "DataStores/DBCStores.h"
@@ -283,7 +284,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER)
         {
             if (Spell* repeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-                if (repeat->m_targets.GetUnitTarget() != target)
+                if (BotSpellCastTarget::UnitTarget(repeat) != target)
                     bot->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
             if (!bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
                 bot->CastSpell(target, 75, false); // Auto Shot

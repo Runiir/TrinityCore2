@@ -1,6 +1,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Bots/BotMeleeAutoAttackIntent.h"
+#include "Bots/BotSpellCastTarget.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
@@ -49,7 +50,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::EnforceFutureBossBoundary()
     for (CurrentSpellTypes spellType : {
             CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
         if (Spell* current = Bot->GetCurrentSpell(spellType))
-            if (isFutureBoss(current->m_targets.GetUnitTarget()))
+            if (isFutureBoss(BotSpellCastTarget::UnitTarget(current)))
             {
                 Bot->InterruptSpell(spellType, false);
                 cleared = true;

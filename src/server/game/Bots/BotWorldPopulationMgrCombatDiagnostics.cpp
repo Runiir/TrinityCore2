@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotSpellCastTarget.h"
 
 #include "Creature.h"
 #include "GameTime.h"
@@ -194,7 +195,7 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
         diagnostic.RangedAutoActive = true;
         if (SpellInfo const* repeatInfo = repeat->GetSpellInfo())
             diagnostic.RangedAutoSpellId = repeatInfo->Id;
-        if (Unit* repeatTarget = repeat->m_targets.GetUnitTarget())
+        if (Unit* repeatTarget = BotSpellCastTarget::UnitTarget(repeat))
         {
             diagnostic.RangedAutoTargetGuid = repeatTarget->GetGUID();
             if (Creature const* creature = repeatTarget->ToCreature())

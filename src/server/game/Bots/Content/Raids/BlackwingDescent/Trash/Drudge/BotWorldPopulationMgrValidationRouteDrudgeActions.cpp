@@ -2,6 +2,7 @@
 
 #include "Bots/BotActionArbiter.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotSpellCastTarget.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeHealthSync.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMovementLease.h"
@@ -45,7 +46,7 @@ void DrudgeLaneContext::HoldOffense()
     BotRaidAreaAuthority::Set(ownerGuid, true);
     for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
         if (Spell* current = Bot->GetCurrentSpell(spellType))
-            if (Unit* castTarget = current->m_targets.GetUnitTarget();
+            if (Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
                 castTarget && Bot->IsValidAttackTarget(castTarget))
                 Bot->InterruptSpell(spellType, false);
     Manager.SubmitMeleeAutoAttackIntent(State,
@@ -57,7 +58,7 @@ void DrudgeLaneContext::HoldOffense()
     {
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = pet->GetCurrentSpell(spellType))
-                if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                if (Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
                     castTarget && pet->IsValidAttackTarget(castTarget))
                     pet->InterruptSpell(spellType, false);
         pet->AttackStop();
@@ -67,7 +68,7 @@ void DrudgeLaneContext::HoldOffense()
         {
             for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                 if (Spell* current = controlled->GetCurrentSpell(spellType))
-                    if (Unit* castTarget = current->m_targets.GetUnitTarget();
+                    if (Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
                         castTarget && controlled->IsValidAttackTarget(castTarget))
                         controlled->InterruptSpell(spellType, false);
             controlled->AttackStop();

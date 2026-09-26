@@ -19,6 +19,9 @@ enum class BotActionResult {Ok,InvalidTarget};
 struct Unit {bool alive=true,valid=true; bool IsAlive(){return alive;}};
 struct Targets {Unit* target=nullptr; Unit* GetUnitTarget(){return target;}};
 struct Spell {Targets m_targets;};
+// BotSpellCastTarget::UnitTarget: the cached target while it is a live unit
+// (contract replayed in test_bot_spell_cast_target.py); live here.
+namespace BotSpellCastTarget {Unit* UnitTarget(Spell* spell){return spell ? spell->m_targets.target : nullptr;}}
 struct Player:Unit {
  Spell storage; Spell* repeat=nullptr; int starts=0,interrupts=0,faces=0;
  int klass=CLASS_HUNTER;
@@ -77,6 +80,9 @@ struct Creature:Unit {int entry=42347; int GetEntry()const{return entry;}};
 struct SpellInfo {int Id=75;};
 struct Targets {Unit* target=nullptr; Unit* GetUnitTarget(){return target;}};
 struct Spell {SpellInfo info;Targets m_targets;SpellInfo const* GetSpellInfo(){return &info;}};
+// BotSpellCastTarget::UnitTarget: the cached target while it is a live unit
+// (contract replayed in test_bot_spell_cast_target.py); live here.
+namespace BotSpellCastTarget {Unit* UnitTarget(Spell* spell){return spell ? spell->m_targets.target : nullptr;}}
 struct Player {Spell* repeat=nullptr;Spell* GetCurrentSpell(int slot){assert(slot==CURRENT_AUTOREPEAT_SPELL);return repeat;}};
 struct Diagnostic {bool RangedAutoActive=false;int RangedAutoSpellId=0;Guid RangedAutoTargetGuid;int RangedAutoTargetEntry=0;};
 Diagnostic Observe(Player* bot) {Diagnostic diagnostic;

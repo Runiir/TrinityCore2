@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotSpellCastTarget.h"
 
 #include "GameTime.h"
 #include "Group.h"
@@ -123,7 +124,8 @@ bool BotWorldPopulationMgr::UpdateCalibrationHealer(WorldBotState& state, Player
         // for an affected target has an immediate response; do not charge the
         // remaining cast time to the healer's decision latency.
         if (healingCastActive)
-            healingCastResponded = recordHealResponse(currentSpell->m_targets.GetUnitTarget(), 0);
+            healingCastResponded = recordHealResponse(
+                BotSpellCastTarget::UnitTarget(currentSpell), 0);
     }
     bool casting = healer->HasUnitState(UNIT_STATE_CASTING);
     if (casting && healingCastActive && !healingCastResponded

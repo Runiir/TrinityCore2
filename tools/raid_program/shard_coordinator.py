@@ -28,6 +28,10 @@ tools.raid_program.raid_shard_provisioning: the collision preflight, one
 transaction per cohort with the anchor cohort first, and a DB readback. Other
 (legacy) shards keep the unchanged 110-character validation provisioning.
 Every shard is recorded under its boss's raid target `<raid>_<size><diff>_<boss>`.
+
+--gdb-backtrace runs the worldserver as gdb's inferior (tools.raid_program.crash_capture):
+console bytes are unchanged, a fatal signal writes <output-dir>/worldserver.crash_backtrace.txt,
+exits 128 + signal and is summarized under shard_run.json worldserver.crash_backtrace.
 """
 from __future__ import annotations
 
@@ -355,6 +359,8 @@ class ShardConsoleTransport(ConsoleTransport):
               interrupted: threading.Event | None = None,
               drain_timeout_sec: int = 180) -> "ShardConsoleTransport":
         adopted = cls(transport.process, transport.log_path, max_response_bytes)
+        adopted.server_pid = getattr(transport, "server_pid", transport.process.pid)
+        adopted.crash_backtrace = getattr(transport, "crash_backtrace", None)
         adopted.interrupted = interrupted
         adopted.drain_timeout_sec = drain_timeout_sec
         return adopted
@@ -1428,7 +1434,8 @@ def check_plan_scenario_rows(plan: ShardRunPlan, config: Path) -> dict[str, Any]
 
 def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_root: Path,
              scenario_dir: Path, provisioning_config: Path, gear_profiles: Path,
-             flat: bool = False) -> dict[str, Any]:
+             flat: bool = False, crash_capture: bool = False) -> dict[str, Any]:
+    from tools.raid_program import crash_capture as crash_capture_module
     from tools.raid_program.raid_shard_provisioning import RaidShardProvisioningError
     from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
     from tools.raid_program.shared_instance_fixture import sha256
@@ -1448,8 +1455,10 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
 
     try:
         with owned_console(repository=REPO_ROOT, source=REPO_ROOT, binary=worldserver, config=config,
-                           output_dir=run_root, before_launch=before_launch, lifecycle=lifecycle) as base:
-            verify_process_binary(base.process, binary_sha256)
+                           output_dir=run_root, before_launch=before_launch, lifecycle=lifecycle,
+                           crash_capture=crash_capture) as base:
+            verify_process_binary(base.process, binary_sha256, pid=base.server_pid,
+                                  binary=worldserver, backtrace=base.crash_backtrace)
             interrupted = threading.Event()
             console = SerializedConsole(
                 ShardConsoleTransport.adopt(base, interrupted=interrupted,
@@ -1460,7 +1469,7 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                                   runtime_asset_closure=checks["runtime_asset_closure"],
                                   stage_preflight=checks["stage"], preparation=preparation)
             coordinator = ShardCoordinator(plan, console, run_root, scenario_dir=scenario_dir,
-                                           server_pid=base.process.pid, console_log=base.log_path,
+                                           server_pid=base.server_pid, console_log=base.log_path,
                                            interrupted=interrupted, flat=flat)
             coordinator.finalizer = lambda outcome: finalize_live_shard(
                 outcome, context, plan.watchdog, coordinator.server, coordinator.run_id)
@@ -1471,6 +1480,10 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                    "error": f"raid shard provisioning refused: {error}", "shards": [], "ingest": [],
                    "preparation": {**preparation, "raid_shard_provisioning": error.report}}
     summary["worldserver"] = {"path": str(worldserver), "sha256": binary_sha256, "lifecycle": lifecycle}
+    if crash_capture:
+        # Only under --gdb-backtrace: a default run's shard_run.json is unchanged.
+        summary["worldserver"].update(crash_capture=True,
+                                      crash_backtrace=crash_capture_module.summarize(run_root))
     if lifecycle.get("process_return_code") not in (0, None) and summary.get("terminal_reason") == "completed":
         summary["terminal_reason"] = "infrastructure_loss"
         summary.setdefault("infrastructure_failures", []).append("worldserver_exit_code_nonzero")
@@ -1511,6 +1524,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--flat-shard-dir", action="store_true",
                         help="exactly one --shard: its run directory is --output-dir itself (a scoreboard kill dir)")
     parser.add_argument("--dry-run", action="store_true", help="validate the plan and print the shard scripts")
+    parser.add_argument("--gdb-backtrace", action="store_true",
+                        help="run the worldserver under gdb -batch; a fatal signal writes "
+                             "<output-dir>/worldserver.crash_backtrace.txt (exit status 128 + signal)")
     args = parser.parse_args(argv)
     plan = load_run_plan(args.plan, select=args.shard)
     if args.flat_shard_dir and len(plan.shards) != 1:
@@ -1535,7 +1551,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     summary = run_live(plan, worldserver=args.worldserver.resolve(), base_config=args.config.resolve(),
                        run_root=output, scenario_dir=args.validation_scenario_dir.resolve(),
                        provisioning_config=args.validation_provisioning_config.resolve(),
-                       gear_profiles=args.gear_profiles.resolve(), flat=args.flat_shard_dir)
+                       gear_profiles=args.gear_profiles.resolve(), flat=args.flat_shard_dir,
+                       crash_capture=args.gdb_backtrace)
     print(json.dumps({"shard_run": str(output / "shard_run.json"), "terminal_reason": summary.get("terminal_reason"),
                       "shards": [(row["cohort_id"], row["completion_reason"], row["native_clear"])
                                  for row in summary.get("shards", [])]}))

@@ -4,6 +4,7 @@
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
+#include "Bots/BotSpellCastTarget.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "DataStores/DBCStores.h"
@@ -242,7 +243,7 @@ raid_cooldown_complete:
             BotActionArbitration::Priority::Terminal,
             "raid_area_contamination_fail_closed");
         if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-            if (Unit* castTarget = current->m_targets.GetUnitTarget();
+            if (Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
                 castTarget && bot->IsValidAttackTarget(castTarget))
                 bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
         if (bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
@@ -297,10 +298,10 @@ raid_cooldown_complete:
             if (!attacker)
                 return;
             if (Spell* current = attacker->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-                if (!focus || current->m_targets.GetUnitTarget() != focus)
+                if (!focus || BotSpellCastTarget::UnitTarget(current) != focus)
                     attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);
             if (Spell* repeat = attacker->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-                if (!focus || repeat->m_targets.GetUnitTarget() != focus)
+                if (!focus || BotSpellCastTarget::UnitTarget(repeat) != focus)
                     attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
             if (attacker->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                 attacker->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
@@ -662,12 +663,14 @@ raid_cooldown_complete:
             Unit* meleeLowTarget = isHeldLowTarget(bot->GetVictim()) ? bot->GetVictim() : nullptr;
             Unit* genericLowTarget = nullptr;
             if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-                if (isHeldLowTarget(current->m_targets.GetUnitTarget()))
-                    genericLowTarget = current->m_targets.GetUnitTarget();
+                if (Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
+                    isHeldLowTarget(castTarget))
+                    genericLowTarget = castTarget;
             Unit* repeatLowTarget = nullptr;
             if (Spell* repeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-                if (isHeldLowTarget(repeat->m_targets.GetUnitTarget()))
-                    repeatLowTarget = repeat->m_targets.GetUnitTarget();
+                if (Unit* castTarget = BotSpellCastTarget::UnitTarget(repeat);
+                    isHeldLowTarget(castTarget))
+                    repeatLowTarget = castTarget;
             Pet* pet = bot->GetPet();
             bool const petDamagingLow = pet && isHeldLowTarget(pet->GetVictim());
             bool controlledDamagingLow = false;

@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteContamination.h"
 
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotSpellCastTarget.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
@@ -39,7 +40,7 @@ bool ShouldInterruptOffensiveSpell(Player* bot, Unit* caster, Spell* current,
     if (!current)
         return false;
 
-    Unit* castTarget = current->m_targets.GetUnitTarget();
+    Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
     return IsProtectedFutureTarget(bot, castTarget,
                isImmediateNextEncounterMember)
         || (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo())
@@ -64,7 +65,7 @@ void GuardCurrentOffense(Player* bot, Unit* actor,
 
     if (Spell* current = actor->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
     {
-        Unit* castTarget = current->m_targets.GetUnitTarget();
+        Unit* castTarget = BotSpellCastTarget::UnitTarget(current);
         if (IsProtectedFutureTarget(bot, castTarget ? castTarget : actor->GetVictim(),
                 isImmediateNextEncounterMember))
             actor->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
