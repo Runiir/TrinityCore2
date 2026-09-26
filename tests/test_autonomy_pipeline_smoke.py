@@ -2377,7 +2377,10 @@ def test_dungeon_healer_holds_pending_pull_and_blood_tank_taunts_healer_target()
     assert "pendingDungeonPullCount" in heal_helper
     assert "healer->GetExactDist2d(creature) > 35.0f" in heal_helper
     assert "focusedPendingPull = combatTarget" in heal_helper
-    assert "healer->InterruptNonMeleeSpells(false)" in heal_helper
+    # The blanket interrupt outside composition raid rows; offensive casts
+    # only on them (BotRouteHoldInterrupt).
+    assert ("BotRouteHoldInterrupt::InterruptForRouteHold(healer,\n"
+            "                    BotRouteHoldInterrupt::OffensiveOnlyScope(Cohort(), Party()));") in heal_helper
     assert '"healer_hold_for_pending_dungeon_pull"' in heal_helper
     assert '"healer_wait_for_pending_dungeon_pull"' in heal_helper
     assert_ordered(

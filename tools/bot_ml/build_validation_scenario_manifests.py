@@ -599,7 +599,10 @@ def recovery_transport(step: dict[str, Any], rides: Sequence[dict[str, Any]]) ->
 # whole party is back and while the completion does not hold. A boss that
 # respawns awake satisfies its wake's completion and is never re-woken. The
 # contracts sit under "interaction" and "completion": the runtime's row reader
-# finds "interaction_contract" and "completion_contract" by text.
+# finds "interaction_contract" and "completion_contract" by text. A wait row
+# right before the waking interaction adds its completion as "ready" (without
+# its timeout) when it waits for the interaction's gameobject to become
+# selectable: the wake runs only while that holds.
 RECOVERY_MAX_INTERACTIONS = 2  # MaxRecoveryInteractions
 
 
@@ -616,15 +619,29 @@ def recovery_wakes(*routes: Sequence[dict[str, Any]]) -> dict[str, list[dict[str
             while start > 0 and steps[start - 1].get("kind") == "interaction":
                 start -= 1
             chain: list[dict[str, Any]] = []
+            ready: dict[str, Any] | None = None
             for member in steps[start:index + 1]:
                 node_id = str(member.get("node_id") or "")
                 if chain and node_id and node_id not in wakes:
                     wakes[node_id] = copy.deepcopy(chain[-RECOVERY_MAX_INTERACTIONS:])
                 interaction = member.get("interaction_contract")
                 completion = member.get("completion_contract")
-                if member is not step and interaction and completion:
-                    chain.append({"node_id": node_id, "interaction": interaction,
-                                  "completion": completion})
+                if member is step:
+                    continue
+                if interaction and completion:
+                    wake = {"node_id": node_id, "interaction": interaction, "completion": completion}
+                    # The wait row right before the interaction (Atramedes'
+                    # bell_ready: the bell is selectable only before his
+                    # intro) gates the wake: without it the boss respawns
+                    # by himself and the wake waits for that.
+                    if ready:
+                        wake["ready"] = ready
+                    chain.append(wake)
+                    ready = None
+                elif completion and not interaction and completion.get("kind") == "gameobject_selectable":
+                    ready = {key: value for key, value in completion.items() if key != "timeout_ms"}
+                else:
+                    ready = None
     return wakes
 
 

@@ -46,6 +46,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             bool CombatAttempted = false;
             bool ActionSubmitted = false;
             bool PositionHold = false;
+            bool OffenseHold = false;
             BotActionArbitration::Outcome RouteOutcome;
         };
         std::shared_ptr<RouteAttempt> routeAttempt =
@@ -241,6 +242,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             uint64 const previousPathChangeMs = context.State.LastPathChangeMs;
             uint64 const previousCombatAttemptMs =
                 context.State.LastCombatAttempt.RecordedAtMs;
+            context.State.ValidationRouteOffenseHold = false;
             routeAttempt->Handled = TryValidationRouteObjective(
                 context.State, context.Bot, context.Power, context.Stage,
                 context.ChosenActivity.Activity, context.Situation,
@@ -271,6 +273,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 && context.AdaptiveDrudgeOwnsNode
                 && !context.DrudgeCombatAuthorityAllowed
                 && IsExactDrudgePositionHold(context.Action);
+            routeAttempt->OffenseHold = context.State.ValidationRouteOffenseHold;
             // MotionMaster paths are set-and-forget. A matching native path
             // can be retained without changing LastPathChangeMs; preserve
             // its movement lane so the route candidate cannot claim cast
@@ -416,6 +419,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                 || routeAttempt->ActionSubmitted
                 || routeAttempt->PositionHold)
                 return outcome;
+            // A threat-gate hold on a composition raid row owns the cast lanes
+            // for the tick (BotRouteHoldInterrupt).
+            if (routeAttempt->OffenseHold)
+                return BotActionArbitration::Outcome::Submitted("route_offense_hold");
             return BotActionArbitration::Outcome::NotApplicable(
                 routeAttempt->MovementSubmitted
                     ? "route_movement_only"

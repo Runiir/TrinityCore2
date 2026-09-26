@@ -530,6 +530,7 @@ inline std::vector<std::uint32_t> ObservedCreatureEntries(NodeContract const& no
         if (wake.Interaction.Entry && wake.Interaction.Target != TargetType::GameObject)
             entries.push_back(wake.Interaction.Entry);
         CollectObservedCreatureEntries(wake.Completion, entries);
+        CollectObservedCreatureEntries(wake.Ready, entries);
     }
     std::sort(entries.begin(), entries.end());
     entries.erase(std::unique(entries.begin(), entries.end()), entries.end());

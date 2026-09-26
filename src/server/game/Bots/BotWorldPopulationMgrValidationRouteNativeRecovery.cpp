@@ -49,8 +49,10 @@ std::vector<RecoveryMemberView> RecoveryViews(Input const& input, NodeRuntime co
         view.Aboard = platform && Facts::OnTransport(bot, platform);
         auto const state = runtime.TransportMembers.find(view.Guid);
         bool const known = state != runtime.TransportMembers.end();
-        view.InFlight = BotValidationRouteBoardingAction::NativeFallInProgress(bot)
-            || (known && ApproachPhaseInFlight(state->second.Approach));
+        view.InFlight = RecoveryMemberInFlight(known,
+            known && ApproachPhaseInFlight(state->second.Approach),
+            BotValidationRouteBoardingAction::NativeFallSplineActive(bot));
+        view.Released = member.ReleasedThisAttempt;
         view.Boarded = known && state->second.Boarded;
         view.AtExit = !ride.ExitPoint.Valid || bot->GetExactDist(ride.ExitPoint.X,
             ride.ExitPoint.Y, ride.ExitPoint.Z) <= ride.ArrivalToleranceYards;
@@ -134,19 +136,25 @@ bool RunRecoveryWakes(Input const& input, Callbacks const& callbacks, NodeContra
         OwnerElection const election = ops.Elect(wake.Interaction);
         bool const satisfied = evaluator && Facts::EvaluateCompletion(wake.Completion,
             evaluator, input.Members, election.Owner, runtime.Completion).Satisfied;
-        bool const waiting = !engaged && triggered && !encounterEngaged && !satisfied && !assembled;
+        // Without its target usable (Atramedes' bell is selectable only
+        // before his intro; after it he respawns by himself) the wake waits.
+        bool const ready = !wake.Ready.Declared || (evaluator && Facts::EvaluateCompletion(
+            wake.Ready, evaluator, input.Members, election.Owner, wake.ReadyMemory).Satisfied);
+        bool const waiting = !engaged && triggered && !encounterEngaged && !satisfied
+            && (!assembled || !ready);
+        RecoveryWakeHolder const holder = assembled ? RecoveryWakeHolder{ 0, "target_not_ready" }
+            : RecoveryAssemblyHolder(views);
         if (RecoveryWaitTimedOut(wake.Waiting, waiting, input.NowMs))
         {
-            RecoveryWakeHolder const holder = RecoveryAssemblyHolder(views);
             runtime.Enter(input.Scope, input.NowMs);
             FailOnce(runtime, callbacks, RecoveryInteractionFailure(wake.NodeId,
-                std::string("party_unassembled:") + holder.Reason + ":"
-                    + std::to_string(holder.Guid)));
+                assembled ? std::string("target_not_ready")
+                    : std::string("party_unassembled:") + holder.Reason + ":"
+                        + std::to_string(holder.Guid)));
             return true;
         }
         if (waiting)
         {
-            RecoveryWakeHolder const holder = RecoveryAssemblyHolder(views);
             std::string const named = std::string(holder.Reason) + ":"
                 + std::to_string(holder.Guid);
             if (wake.Waiting.Holder != named)
@@ -157,8 +165,8 @@ bool RunRecoveryWakes(Input const& input, Callbacks const& callbacks, NodeContra
                         + named, nullptr, 0.0f, wake.Interaction.Entry);
             }
         }
-        RecoveryWakeStep const step =
-            DecideRecoveryWake(triggered, engaged, encounterEngaged, satisfied, assembled);
+        RecoveryWakeStep const step = DecideRecoveryWake(triggered, engaged, encounterEngaged,
+            satisfied, assembled && ready);
         RetireRecoveryTrigger(wake.Baseline, input.Scope, input.BossResetGeneration, trigger,
             step, satisfied, encounterEngaged);
         switch (step)

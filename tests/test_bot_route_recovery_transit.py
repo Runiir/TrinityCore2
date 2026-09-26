@@ -214,10 +214,12 @@ int main()
     CHECK(!RideNeeded(party, boardZ, exitZ));
     CHECK(DecideRecoveryRide(applies, false, false) == RecoveryStep::Idle);
 
-    // Runback: all alive at the elevator's upper lip.
+    // Runback: all alive at the elevator's upper lip, each resurrected after
+    // its release (the death evidence the boarding end requires).
     for (RecoveryMemberView& member : party)
     {
         member.Alive = true;
+        member.Released = true;
         member.Z = 190.10f;
     }
     CHECK(RideNeeded(party, boardZ, exitZ));
@@ -276,6 +278,7 @@ int main()
     for (RecoveryMemberView& member : partial)
         member.InCombat = true;
     partial[0].Z = 190.10f;
+    partial[0].Released = true;
     partial[0].InCombat = false;
     CHECK(RideNeeded(partial, boardZ, exitZ) && !RecoveryMayEngage(partial, boardZ, exitZ));
     CHECK(DecideRecoveryRide(applies, false, true, false) == RecoveryStep::Idle);
@@ -307,7 +310,7 @@ int main()
     old.Boarded = true;
     old.Left = true;
     RecoveryMemberView back;
-    back.Alive = true; back.OnRouteInstance = true; back.Z = 190.10f;
+    back.Alive = true; back.OnRouteInstance = true; back.Released = true; back.Z = 190.10f;
     CHECK(StaleRiderState(back, old, boardZ, exitZ));
     // Not while aboard or in flight, nor below, nor without an earlier ride.
     RecoveryMemberView aboard = back;
@@ -393,6 +396,8 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
         "RecoveryApplies(ride, input.AnchorZ)",
         "RecoveryMayEngage(views, boardZ, exitZ)",
         "view.InCombat = bot->IsInCombat();",
+        "view.InFlight = RecoveryMemberInFlight(known,",
+        "view.Released = member.ReleasedThisAttempt;",
     ):
         assert marker in recovery, marker
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "Relocate(", "UpdatePosition(",

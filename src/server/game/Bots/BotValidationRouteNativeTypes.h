@@ -271,6 +271,7 @@ struct RecoveryInteraction
     std::string NodeId;
     InteractionContract Interaction;
     CompletionContract Completion;
+    CompletionContract Ready; CompletionMemory ReadyMemory; // optional: target usable (bell)
     RecoveryBaseline Baseline;
     RecoveryWait Waiting;
     NodeRuntime Runtime; // started while the wake runs

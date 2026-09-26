@@ -754,10 +754,12 @@ inline ParseError ValidateNodeShape(std::string_view kind,
 // ---------------------------------------------------------------------------
 // Recovery wakes
 // ---------------------------------------------------------------------------
-// A row's recovery_interaction: [{"node_id", "interaction", "completion"}] in
-// route order, each the unchanged interaction and completion contracts of an
-// earlier interaction node that wakes the boss this node waits for. They sit
-// under "interaction" and "completion", never "interaction_contract" or
+// A row's recovery_interaction: [{"node_id", "interaction", "completion",
+// optional "ready"}] in route order, each the unchanged interaction and
+// completion contracts of an earlier interaction node that wakes the boss this
+// node waits for, and the completion of the wait row before it ("ready": its
+// target is usable; the wake never runs without it). They sit under
+// "interaction", "completion" and "ready", never "interaction_contract" or
 // "completion_contract", so the row reader never mistakes them for the row's
 // own contracts.
 inline ParseError ParseRecoveryInteractions(Json const& array,
@@ -773,7 +775,7 @@ inline ParseError ParseRecoveryInteractions(Json const& array,
         if (!item.IsObject())
             return ParseError::Invalid("recovery_interaction_not_object");
         for (auto const& [key, value] : item.Members)
-            if (!KnownField(key, { "node_id", "interaction", "completion" }))
+            if (!KnownField(key, { "node_id", "interaction", "completion", "ready" }))
                 return ParseError::Unknown("recovery_interaction." + key);
         Json const* id = item.Find("node_id");
         Json const* interaction = item.Find("interaction");
@@ -797,6 +799,16 @@ inline ParseError ParseRecoveryInteractions(Json const& array,
             return scoped(error);
         if (ParseError error = ParseCompletion(*completion, wake.Completion))
             return scoped(error);
+        if (Json const* ready = item.Find("ready"))
+        {
+            if (ParseError error = ParseCompletion(*ready, wake.Ready))
+                return scoped(error);
+            // The builder gates only on the wake's gameobject turning selectable.
+            if (wake.Ready.Kind != CompletionKind::GameObjectSelectable)
+                return ParseError::Invalid("recovery_interaction_ready_kind_unsupported");
+            if (wake.Ready.TimeoutMs)
+                return ParseError::Invalid("recovery_interaction_ready_timeout_unsupported");
+        }
         // The same shape as the interaction node it repeats.
         if (ParseError error = ValidateNodeShape("interaction", wake.Interaction,
                 wake.Completion, TransportContract()))

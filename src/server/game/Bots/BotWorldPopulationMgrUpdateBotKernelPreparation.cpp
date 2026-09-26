@@ -253,7 +253,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                                 member->IsInWorld()
                                     && member->GetMapId() == routeNode.MapId
                                     && IsValidationCohortMemberInOriginalInstance(
-                                        cohortState, member) });
+                                        cohortState, member),
+                                Cohort().AttemptId
+                                    && cohortState.ValidationReleasedAttemptId
+                                        == Cohort().AttemptId });
                     for (auto const& roster : Cohort().Raid.RosterByGuid)
                         if (roster.second.Active && roster.second.LeaseOwned)
                             nativeInput.Roster[roster.second.Guid.GetRawValue()] =

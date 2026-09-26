@@ -1487,9 +1487,12 @@ def test_boss_route_rejects_undeclared_engaged_trash_before_shared_actions():
     threat = (BOT_DIR / "BotWorldPopulationMgrValidationRouteTrashThreatControl.cpp").read_text(
         encoding="utf-8"
     )
+    # Returning after a wipe, admitted return trash is fought; otherwise any
+    # engaged hostile is rejected, as before (BossTrashBlockRejects).
     early_rejection = threat.index(
         'if (Cohort().Config.ValidationRouteKind == "boss"\n'
-        "        && trashThreatControl.EngagedCount > 0"
+        "        && BotValidationRouteRecoveryReturn::BossTrashBlockRejects(returning,\n"
+        "            trashThreatControl.EngagedCount, trashThreatControl.AreaTarget != nullptr,"
     )
 
     assert early_rejection < threat.index("trashThreatControl.InsecureTrashSwarm")
@@ -2394,7 +2397,10 @@ def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
     tank_focus = VALIDATION_ROUTE_TANK_FOCUS
     target_engagement = VALIDATION_ROUTE_TARGET_ENGAGEMENT
 
-    assert 'if (!tankFocusIsRouteTarget)' in tank_focus
+    # Fail closed, except trash attacking a member walking back after a wipe
+    # far from the boss room (round 5: BotValidationRouteRecoveryReturn).
+    assert ('if (!tankFocusIsRouteTarget\n'
+            '                && !BotValidationRouteRecoveryReturn::AdmitsReturnTrash(') in tank_focus
     assert '"boss_route_target_not_declared"' in tank_focus
     assert 'action = "boss_route_prerequisite_blocked";' in tank_focus
     assert '&& !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature())' in target_engagement

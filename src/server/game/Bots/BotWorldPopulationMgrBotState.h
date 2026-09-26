@@ -440,6 +440,12 @@ namespace BotWorldPopulationMgrBotState
         // Post-wipe return to the boss node, armed by a resurrection after a
         // release (BotValidationRouteRecoveryReturn.h).
         BotValidationRouteRecoveryReturn::Memory ValidationRecoveryReturn;
+        // Attempt in which the member last resurrected after a release: the
+        // death evidence a recovery ride requires at its boarding end.
+        uint64 ValidationReleasedAttemptId = 0;
+        // This tick's route threat-gate hold owns the cast lanes (composition
+        // raid rows, BotRouteHoldInterrupt): reset before the route runs.
+        bool ValidationRouteOffenseHold = false;
         // Per-player observations for typed, ordinary-movement descents. A
         // cohort may advance only after every member independently departs,
         // lands alive and grounded, and proves a native path onward.

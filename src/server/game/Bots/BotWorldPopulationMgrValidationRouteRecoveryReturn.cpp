@@ -91,6 +91,13 @@ bool BotWorldPopulationMgr::BotUpdateContext::ObserveValidationRecoveryReturn()
     std::string const nodeId = node ? node->NodeId : std::string();
     bool const announced = memory.Announced;
     Return::Decision const decision = Return::Decide(memory, input);
+    memory.Returning = decision.Step == Return::Verdict::Returning;
+    if (memory.Returning)
+    {
+        memory.AnchorX = node->NavigationAnchorX;
+        memory.AnchorY = node->NavigationAnchorY;
+        memory.AnchorZ = node->NavigationAnchorZ;
+    }
     std::string reason;
     if (decision.Step == Return::Verdict::Returning && !announced)
     {

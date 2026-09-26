@@ -37,6 +37,9 @@ struct MemberInput
     Player* Bot = nullptr;
     // On the route map, in the cohort's original instance.
     bool OnRouteInstance = false;
+    // Resurrected after a release in this attempt (recovery rides' death
+    // evidence: WorldBotState::ValidationReleasedAttemptId).
+    bool ReleasedThisAttempt = false;
 };
 
 struct Callbacks

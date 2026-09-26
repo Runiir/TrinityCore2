@@ -388,9 +388,18 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         // A released member resurrected away from a composition raid row's
         // boss node walks back under route ownership
         // (BotValidationRouteRecoveryReturn.h; out of scope it never arms).
-        if (context.State.NativeReleaseRequested
-            && context.State.NativeRecoveryEpisodeStartedMs)
+        // The runback worldport through the instance entrance (the native
+        // corpse resurrection) already cleared NativeReleaseRequested; the
+        // graveyard landing it proved stays until this tick. Round 4
+        // atramedes_c0: eight releases, the return never armed.
+        if (BotValidationRouteRecoveryReturn::ReleasedResurrection(
+                context.State.NativeReleaseRequested,
+                context.State.NativeReleaseLandingObserved,
+                context.State.NativeRecoveryEpisodeStartedMs != 0))
+        {
+            context.State.ValidationReleasedAttemptId = Cohort().AttemptId;
             context.ArmValidationRecoveryReturn();
+        }
         if (context.State.NativeRecoveryGhostFlightEnabled)
         {
             if (context.State.NativeRecoveryGhostGravityDisabled)

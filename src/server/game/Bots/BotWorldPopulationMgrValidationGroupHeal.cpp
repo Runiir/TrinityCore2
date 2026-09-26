@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRouteHoldInterruptServer.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "CellImpl.h"
@@ -317,9 +318,11 @@ bool BotWorldPopulationMgr::TryValidationRouteGroupHeal(
             // If the profile already started Wrath/Moonfire in the one-tick
             // race, cancel that non-healing cast before anchoring at the tank.
             // This is a native interruption only; it does not manufacture a
-            // heal or alter the target's combat state.
+            // heal or alter the target's combat state. On composition raid
+            // rows only that offensive cast stops; a heal survives.
             if (healer->HasUnitState(UNIT_STATE_CASTING))
-                healer->InterruptNonMeleeSpells(false);
+                BotRouteHoldInterrupt::InterruptForRouteHold(healer,
+                    BotRouteHoldInterrupt::OffensiveOnlyScope(Cohort(), Party()));
 
             bool moved = false;
             if (allowMovement)

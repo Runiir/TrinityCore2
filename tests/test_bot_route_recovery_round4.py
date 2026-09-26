@@ -342,7 +342,10 @@ def test_recovery_return_replay(tmp_path: Path) -> None:
 def test_return_is_armed_in_scope_by_a_release_and_yields_the_boss_plans() -> None:
     preparation = _code(_source("BotWorldPopulationMgrUpdateBotPreparation.cpp"))
     arm = preparation.index("context.ArmValidationRecoveryReturn();")
-    assert preparation.index("if (context.State.NativeReleaseRequested\n            && context.State.NativeRecoveryEpisodeStartedMs)") < arm
+    assert preparation.index("if (BotValidationRouteRecoveryReturn::ReleasedResurrection(\n"
+                             "                context.State.NativeReleaseRequested,\n"
+                             "                context.State.NativeReleaseLandingObserved,\n"
+                             "                context.State.NativeRecoveryEpisodeStartedMs != 0))") < arm
     # Armed before the release episode is cleared on resurrection.
     assert arm < preparation.index("context.State.NativeReleaseRequested = false;")
 
@@ -725,13 +728,13 @@ def test_runtime_redoes_wakes_after_the_rides_and_fails_typed() -> None:
         "RetireRecoveryTrigger(wake.Baseline, input.Scope, input.BossResetGeneration, trigger,\n            step, satisfied, encounterEngaged);",
         "RecoveryPartyAssembled(views)",
         "RecoveryEncounterEngaged(views)",
-        "DecideRecoveryWake(triggered, engaged, encounterEngaged, satisfied, assembled);",
+        "DecideRecoveryWake(triggered, engaged, encounterEngaged,\n            satisfied, assembled && ready);",
         '"route_recovery_interaction_engaged:" + wake.NodeId',
         '"route_recovery_interaction_complete:" + wake.NodeId',
         'RecoveryInteractionFailure(wake.NodeId,\n                "native_interaction_timeout")',
         "ops.Interact(RecoveryCallbacks(callbacks, wake.NodeId, &RecoveryInteractionFailure),",
         "Facts::EvaluateCompletion(wake.Completion,",
-        "bool const waiting = !engaged && triggered && !encounterEngaged && !satisfied && !assembled;",
+        "bool const waiting = !engaged && triggered && !encounterEngaged && !satisfied\n            && (!assembled || !ready);",
         "if (RecoveryWaitTimedOut(wake.Waiting, waiting, input.NowMs))",
         'std::string("party_unassembled:") + holder.Reason + ":"',
         '"route_recovery_interaction_waiting:" + wake.NodeId + ":"',

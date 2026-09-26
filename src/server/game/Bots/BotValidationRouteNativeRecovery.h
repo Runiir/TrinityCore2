@@ -75,8 +75,12 @@ struct RecoveryMemberView
     bool OnRouteInstance = false;
     // A passenger of this ride's platform.
     bool Aboard = false;
-    // A walk, step or fall of the ride's approach in flight, or a native fall.
+    // A walk, step or fall of this ride's own approach in flight
+    // (RecoveryMemberInFlight): never another transport's.
     bool InFlight = false;
+    // Released (died and ran back) in this attempt: the only way a living
+    // member comes back on the ride's boarding side.
+    bool Released = false;
     // Boarded during this ride and not yet at its exit point.
     bool Boarded = false;
     bool AtExit = false;
@@ -84,9 +88,24 @@ struct RecoveryMemberView
     float Z = 0.0f;
 };
 
+// A member is in flight for a ride only while that ride runs its approach:
+// it is known to the ride's runtime (it took a ride step) and its approach
+// phase is in flight or a native fall spline is running. Round 4 Nefarian
+// c0: the Nefarian descent's own ledge drop (a native fall, its landing never
+// reported once the ride took over, MOVEMENTFLAG_FALLING left set) engaged
+// the lower-wing ride with no death and held all ten members until
+// native_transport_timeout. The falling flag without a running spline (a
+// knock-back or a step off the car's edge whose landing the ride's surface
+// walk never reports) is not a fall in flight.
+inline bool RecoveryMemberInFlight(bool knownToRide, bool approachInFlight, bool nativeFall)
+{
+    return knownToRide && (approachInFlight || nativeFall);
+}
+
 // A living member on the route needs the ride while it is aboard or in
-// flight, stands at the boarding end, or has ridden but not yet walked to
-// the exit point. Dead members belong to the native death recovery.
+// flight, stands at the boarding end after a release in this attempt (death
+// evidence: nobody else comes back up there), or has ridden but not yet
+// walked to the exit point. Dead members belong to the native death recovery.
 inline bool MemberNeedsRide(RecoveryMemberView const& member, float boardZ, float exitZ)
 {
     if (!member.Alive || !member.OnRouteInstance)
@@ -94,7 +113,7 @@ inline bool MemberNeedsRide(RecoveryMemberView const& member, float boardZ, floa
     if (member.Aboard || member.InFlight)
         return true;
     if (SideOf(member.Z, boardZ, exitZ) == RecoverySide::Board)
-        return true;
+        return member.Released;
     return member.Boarded && !member.AtExit;
 }
 

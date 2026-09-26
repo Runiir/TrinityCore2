@@ -4,6 +4,8 @@
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPolicyHelpers.h"
+#include "Bots/BotRouteHoldInterruptServer.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteReturnTrash.h"
 
 #include "ObjectAccessor.h"
 #include "Creature.h"
@@ -144,13 +146,20 @@ bool ObjectiveContext::RunTankFocusAssist(
                 ? (tankFocusIsBossRoute ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "normal_dungeon_trash")
                 : "validation_route_prerequisite";
 
-            if (!tankFocusIsRouteTarget)
+            // Trash that attacks a member walking back after a wipe, far
+            // from the boss room, is assisted as between any two nodes
+            // (BotValidationRouteRecoveryReturn::ReturnTrashAdmitted).
+            if (!tankFocusIsRouteTarget
+                && !BotValidationRouteRecoveryReturn::AdmitsReturnTrash(
+                    state.ValidationRecoveryReturn, bot, tankFocusTarget))
             {
                 // Boss nodes own only their declared objective contract.  An
                 // undeclared corridor hostile must be completed by an explicit
                 // preceding trash node, never by a generic boss prerequisite
-                // assist that bypasses target/area/multidot authority.
-                bot->InterruptNonMeleeSpells(false);
+                // assist that bypasses target/area/multidot authority. A heal
+                // in progress survives on composition raid rows.
+                BotRouteHoldInterrupt::InterruptForRouteHold(bot,
+                    BotRouteHoldInterrupt::OffensiveOnlyScope(Cohort(), Party()));
                 SubmitMeleeAutoAttackIntent(state,
                     BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
                     BotMeleeAutoAttack::Owner::Safety,

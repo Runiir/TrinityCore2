@@ -5,6 +5,8 @@
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotRouteHoldInterruptServer.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteReturnTrash.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -112,6 +114,12 @@ bool ObjectiveContext::RunTrashThreatControl(
     };
     using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
     trashThreatControl = TrashThreatControl();
+    // While this member walks back after a wipe, an engaged hostile that is
+    // not admitted return trash (BotValidationRouteRecoveryReturn) is left
+    // out of every choice below; the block rejects (the first such hostile)
+    // only when nothing admitted remains.
+    bool const returning = state.ValidationRecoveryReturn.Returning;
+    Unit* returnTrashRejected = nullptr;
     // Boss nodes can still contain ordinary prerequisite packs. Apply the
     // same secure-threat and Misdirection policy to those mobs, while leaving
     // the configured boss and declared boss adds to their specialized logic.
@@ -164,6 +172,14 @@ bool ObjectiveContext::RunTrashThreatControl(
             if (!victim || victim->GetGroup() != bot->GetGroup())
                 continue;
 
+            if (returning && Cohort().Config.ValidationRouteKind == "boss"
+                && !BotValidationRouteRecoveryReturn::AdmitsReturnTrash(
+                    state.ValidationRecoveryReturn, bot, creature))
+            {
+                if (!returnTrashRejected)
+                    returnTrashRejected = creature;
+                continue;
+            }
             ++trashThreatControl.EngagedCount;
             std::string victimRole = GetDungeonRole(victim);
             if (victimRole == "healer")
@@ -209,9 +225,10 @@ bool ObjectiveContext::RunTrashThreatControl(
             // all five BWD damage slots while both tanks already owned every
             // declared Drakonid.  Keep that legacy tuning outside raid trash;
             // here require current native victim ownership plus positive 1.3x
-            // headroom, recomputed on every decision.
+            // headroom, recomputed on every decision. Return trash met on a
+            // boss node's walk back is raid trash too.
             bool secureThreat = bot->GetMap() && bot->GetMap()->IsRaid()
-                && Cohort().Config.ValidationRouteKind != "boss"
+                && (Cohort().Config.ValidationRouteKind != "boss" || returning)
                 ? tankThreat > 0.0f && tankThreat >= highestPartyThreat * 1.3f
                 : tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f;
             if (secureThreat)
@@ -225,13 +242,19 @@ bool ObjectiveContext::RunTrashThreatControl(
     // this rejection immediately after observation and before any of the
     // shared trash threat, movement, Misdirection, defensive, or profile-action
     // branches below; a downstream check is too late because many of those
-    // branches return after acting on AreaTarget.
+    // branches return after acting on AreaTarget. Trash that attacks a member
+    // walking back after a wipe, far from the boss room, is the exception
+    // (BotValidationRouteRecoveryReturn::ReturnTrashAdmitted).
     if (Cohort().Config.ValidationRouteKind == "boss"
-        && trashThreatControl.EngagedCount > 0
-        && trashThreatControl.AreaTarget)
+        && BotValidationRouteRecoveryReturn::BossTrashBlockRejects(returning,
+            trashThreatControl.EngagedCount, trashThreatControl.AreaTarget != nullptr,
+            returnTrashRejected != nullptr))
     {
-        Unit* rejected = trashThreatControl.AreaTarget;
-        bot->InterruptNonMeleeSpells(false);
+        Unit* rejected = returning ? returnTrashRejected : trashThreatControl.AreaTarget;
+        // A heal in progress survives on composition raid rows
+        // (BotRouteHoldInterrupt); elsewhere every cast stops, as before.
+        BotRouteHoldInterrupt::InterruptForRouteHold(bot,
+            BotRouteHoldInterrupt::OffensiveOnlyScope(Cohort(), Party()));
         SubmitMeleeAutoAttackIntent(state,
             BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
             BotMeleeAutoAttack::Owner::Threat,
@@ -645,7 +668,12 @@ bool ObjectiveContext::RunTrashThreatControl(
             return true;
         }
 
-        bot->InterruptNonMeleeSpells(false);
+        // On composition raid rows the hold owns the cast lanes for the tick
+        // (the route action claims them), so no offensive candidate starts a
+        // cast under it only to be interrupted on the next tick.
+        bool const offensiveOnly = BotRouteHoldInterrupt::OffensiveOnlyScope(Cohort(), Party());
+        BotRouteHoldInterrupt::InterruptForRouteHold(bot, offensiveOnly);
+        state.ValidationRouteOffenseHold = offensiveOnly;
         SubmitMeleeAutoAttackIntent(state,
             BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
             BotMeleeAutoAttack::Owner::Threat,
