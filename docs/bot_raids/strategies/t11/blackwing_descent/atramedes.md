@@ -400,6 +400,42 @@ from roster slots.
     players took every Thunderclap, both healers died at 45 s and 53 s, and
     the raid wiped at 63 s.
 
+**Round 4, the first live pull (2026-09-26).**
+- Both spirit packs were cleared. The bell was rung, and Atramedes landed at
+  (214.5, -223.9) and aggroed the raid, which was still on the bell gather
+  point (231.6, -224.4), 17 yd away and inside his 20 yd reach.
+- The plan never saw him. Both the intro and the 30 s post-wipe respawn are
+  `instance->SummonCreature` TempSummons, which the blackboard files under
+  Summons, while `FindBoss` looked only at Hostiles.
+- The route therefore failed closed on the boss for the whole fight
+  (`raid_mechanic_contract_fail_closed`, 762 decisions):
+  - nobody moved or cast;
+  - the 84k dealt to him came only from Lightning Shield, Eye for an Eye,
+    Molten Armor and pets.
+- Timeline:
+
+  | Time | Event |
+  |---|---|
+  | 13 s | Modulation (25k each) |
+  | 27.4–32.4 s | Sonic Breath, 6 ticks, on all ten stacked players; 5 ticks (+100 Sound) by 31.4 s |
+  | 31.7 s | Devastation on all ten |
+  | 32.7–35.1 s | Everyone died |
+
+  Every player reached 100 Sound in the same breath, so this run cannot show
+  whether the Devastation condition restricts it to the Noisy player.
+- There was no Searing Flame (the first is at 46 s), no air phase and no
+  gong.
+- Fixes:
+  - `FindBoss` looks in Summons and Hostiles.
+  - The plan owns the node only while Atramedes is engaged, so the idle
+    respawn is walked to and pulled by the route.
+  - `TestRound4BellStack` replays the landing snapshot: tank drag, ranged
+    arc, melee slots, the owner's standby and the breath split.
+- After the wipe, the elevator recovery worked, but the walk back met the
+  live central-hall north patrol at (-42.8, -164.8). The boss node refused
+  it as undeclared, so the raid stood there for 10 minutes (round 5 requests
+  A–C).
+
 Acceptance observations are in the ledger, `acceptance_observations`:
 - a native clear after the spirits and bell;
 - every Searing Flame gonged within 2 s;

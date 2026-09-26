@@ -210,11 +210,19 @@ inline uint32 SoundOf(ActorSnapshot const& actor)
     return actor.MaxAlternatePower ? actor.AlternatePower : 0;
 }
 
+// Atramedes is always a native summon: the bell intro and the respawn 30 s
+// after a wipe both use instance->SummonCreature (instance_blackwing_descent
+// DATA_ATRAMEDES_INTRO, EVENT_RESPAWN_ATRAMEDES), and the encounter
+// blackboard files an attackable TempSummon under Summons, not Hostiles
+// (BotWorldPopulationMgrEncounterBlackboard.cpp). Round 4 looked only at
+// Hostiles: the plan never found him, never owned the node, and the route
+// failed closed on him for the whole fight (raid_mechanic_contract_fail_closed).
 inline ActorSnapshot const* FindBoss(Blackboard const& board)
 {
-    for (ActorSnapshot const& actor : board.Hostiles)
-        if (actor.Alive && actor.Entry == BossEntry)
-            return &actor;
+    for (auto const* list : { &board.Summons, &board.Hostiles })
+        for (ActorSnapshot const& actor : *list)
+            if (actor.Alive && actor.Entry == BossEntry)
+                return &actor;
     return nullptr;
 }
 

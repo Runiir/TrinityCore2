@@ -125,13 +125,15 @@ inline Pack BuildPack(Blackboard const& board)
     Pack pack;
     float x = 0.0f;
     float y = 0.0f;
-    for (ActorSnapshot const& hostile : board.Hostiles)
-        if (hostile.Alive && hostile.InCombat && IsSpirit(hostile.Entry))
-        {
-            pack.Engaged.push_back(&hostile);
-            x += hostile.Position.X;
-            y += hostile.Position.Y;
-        }
+    // Spawn-group creatures are Hostiles; Summons too, like FindBoss.
+    for (auto const* list : { &board.Hostiles, &board.Summons })
+        for (ActorSnapshot const& hostile : *list)
+            if (hostile.Alive && hostile.InCombat && IsSpirit(hostile.Entry))
+            {
+                pack.Engaged.push_back(&hostile);
+                x += hostile.Position.X;
+                y += hostile.Position.Y;
+            }
     if (!pack.Engaged.empty())
         pack.Center = { x / float(pack.Engaged.size()),
             y / float(pack.Engaged.size()), ArenaCenter.Z };

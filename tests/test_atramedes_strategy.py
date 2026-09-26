@@ -106,7 +106,9 @@ static Blackboard Board()
         MakePlayer(Elemental, "dps", "elemental_shaman", 140.0f, -222.0f),
         MakePlayer(Warlock, "dps", "demonology_warlock", 136.0f, -243.0f),
     };
-    ActorSnapshot boss = MakeUnit(A::BossEntry, 1, 172.0f, -224.5f, ActorKind::Hostile);
+    // As the server builds it: Atramedes is an instance TempSummon (the bell
+    // intro and the post-wipe respawn), filed under Summons.
+    ActorSnapshot boss = MakeUnit(A::BossEntry, 1, 172.0f, -224.5f, ActorKind::Summon);
     boss.InCombat = true;
     boss.ReactAggressive = true;
     boss.Attackable = true;
@@ -114,7 +116,7 @@ static Blackboard Board()
     boss.VictimGuid = PlayerGuid(Tank);
     boss.Health = boss.MaxHealth = 26111168;
     boss.HealthPct = 100.0f;
-    board.Hostiles.push_back(boss);
+    board.Summons.push_back(boss);
     for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
     {
         ActorSnapshot shield = MakeUnit(spawn.Entry, spawn.SpawnId, spawn.X, spawn.Y,
@@ -136,7 +138,8 @@ static ActorSnapshot& Member(Blackboard& board, uint32 counter)
     return board.Players.front();
 }
 
-static ActorSnapshot& Boss(Blackboard& board) { return board.Hostiles.front(); }
+// The boss is the first summon (flames are pushed after it).
+static ActorSnapshot& Boss(Blackboard& board) { return board.Summons.front(); }
 
 static AdaptiveAtramedesPlan Plan(Blackboard const& board, uint32 counter, char const* role = "dps")
 {
@@ -224,12 +227,39 @@ static void TestScopeAndOwnership()
     board.Route.NodeId = "bwd.atramedes.regroup";
     assert(!Plan(board, Balance).OwnsNode);
     board = Board();
-    board.Hostiles.clear();
+    board.Summons.clear();
     assert(!Plan(board, Balance).OwnsNode);
+    // Round 4: the native summon was invisible to a Hostiles-only lookup, the
+    // plan never owned the node and the route failed closed on the boss.
     board = Board();
+    assert(Boss(board).Kind == ActorKind::Summon && board.Hostiles.empty());
+    assert(A::FindBoss(board) == &board.Summons.front());
+    assert(A::BuildDutyPlan(board).Applies);
     AdaptiveAtramedesPlan plan = Plan(board, Balance);
     assert(plan.OwnsNode);
     assert(plan.DamageTarget == Boss(board).Guid);
+    assert(Plan(board, Tank, "tank").DamageTarget == Boss(board).Guid);
+    // The respawned, idle Atramedes (not in combat): the route walks back
+    // and pulls; the plan owns only an engaged boss.
+    {
+        Blackboard idle = Board();
+        Boss(idle).InCombat = false;
+        Boss(idle).VictimGuid = ObjectGuid();
+        for (ActorSnapshot const& player : idle.Players)
+        {
+            AdaptiveAtramedesPlan const quiet = AdaptiveAtramedesStrategy().Propose(idle,
+                player.Guid, player.Role.c_str());
+            assert(!quiet.OwnsNode && quiet.DamageTarget.IsEmpty() && !quiet.Movement
+                && !quiet.Interaction);
+        }
+    }
+    // Found in either list.
+    {
+        Blackboard hostile = Board();
+        hostile.Hostiles.push_back(hostile.Summons.front());
+        hostile.Summons.erase(hostile.Summons.begin());
+        assert(Plan(hostile, Balance).OwnsNode);
+    }
     Member(board, Balance).Alive = false;
     assert(!Plan(board, Balance).OwnsNode);
 }
@@ -395,6 +425,54 @@ static void TestSoundGongs()
     Member(board, Warlock).AlternatePower = 95;
     Member(board, Warlock).MaxAlternatePower = 0;
     assert(CountClicks(board) == 0);
+}
+
+// Round 4, the first live pull: Atramedes (a native summon) landed at
+// (214.53, -223.92) and aggroed the raid still stacked on the bell gather
+// point (231.6, -224.4), 17 yd away inside his 20 yd reach. With the plan
+// blind to the summon nobody moved: one Sonic Breath hit all ten for four
+// ticks and Devastation followed on all of them. From that exact snapshot
+// the plan now spreads everyone and splits the breath.
+static void TestRound4BellStack()
+{
+    Blackboard board = Board();
+    Vector3 const bell{ 231.6f, -224.4f, 75.0f };
+    Boss(board).Position = { 214.531f, -223.918f, 74.7668f };
+    for (ActorSnapshot& player : board.Players)
+        player.Position = bell;
+    A::DutyPlan const duties = A::BuildDutyPlan(board);
+    assert(Mechanic(Plan(board, Tank, "tank")) == "tank_anchor_drag");
+    for (uint32 slot : { Balance, Mage, Elemental, Warlock })
+        assert(Mechanic(Plan(board, slot)) == "ranged_arc");
+    for (uint32 slot : { HolyPaladin, Discipline })
+        assert(Mechanic(Plan(board, slot, "healer")) == "ranged_arc");
+    for (uint32 slot : { Retribution, Rogue })
+        assert(Mechanic(Plan(board, slot)) == "melee_max_range");
+    assert(duties.GongOwner == PlayerGuid(Hunter));
+    assert(Mechanic(Plan(board, Hunter)) == "gong_owner_standby");
+    // Every non-tank plan damages him.
+    for (ActorSnapshot const& player : board.Players)
+        assert(AdaptiveAtramedesStrategy().Propose(board, player.Guid, player.Role.c_str())
+            .DamageTarget == Boss(board).Guid);
+
+    // The first Sonic Breath on that stack: the tracked Elemental kites and
+    // everyone else in the beam leaves it.
+    ActorSnapshot flames = MakeUnit(A::TrackingFlamesEntry, 92, bell.X, bell.Y, ActorKind::Summon);
+    board.Summons.push_back(flames);
+    AddAura(Member(board, Elemental), A::TrackingAura, flames.Guid);
+    CastOnBoss(board, A::SonicBreathChannelSpells.front());
+    assert(Mechanic(Plan(board, Elemental)) == "sonic_breath_kite");
+    int exits = 0;
+    for (ActorSnapshot const& player : board.Players)
+    {
+        if (player.Guid == PlayerGuid(Elemental) || player.Guid == PlayerGuid(Tank))
+            continue;
+        std::string const mechanic = Mechanic(AdaptiveAtramedesStrategy().Propose(board,
+            player.Guid, player.Role.c_str()));
+        assert(mechanic == "sonic_breath_beam_exit" || mechanic == "gong_approach");
+        exits += mechanic == "sonic_breath_beam_exit";
+    }
+    assert(exits >= 7);
 }
 
 static void TestSonicBreathKiteAndBeam()
@@ -1958,6 +2036,7 @@ int main()
     TestAirReplayFromEverySlot();
     TestFireTankAndArc();
     TestMeleeMaxRange();
+    TestRound4BellStack();
     TestAirAbilities();
     TestAirMobilityReplay();
     TestPurity();

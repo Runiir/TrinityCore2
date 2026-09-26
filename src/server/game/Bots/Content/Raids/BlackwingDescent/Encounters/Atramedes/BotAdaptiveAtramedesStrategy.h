@@ -68,7 +68,11 @@ public:
         if (!bot || !bot->Alive)
             return plan;
         Facts const facts = BuildFacts(board);
-        if (!facts.Boss)
+        // Only an engaged Atramedes. Before the pull (the respawn 30 s after
+        // a wipe stands idle at AtramedesRespawnPosition) the route walks the
+        // raid back and pulls him; an owned node with nothing to do would
+        // hold everyone where they stand.
+        if (!facts.Boss || facts.CurrentPhase == Phase::PrePull)
             return plan;
         plan.OwnsNode = true;
 
