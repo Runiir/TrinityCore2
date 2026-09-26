@@ -708,6 +708,36 @@ baiter, BM did 14-16k because it can't Cobra Shot while moving; legacy Survival 
 - **Crash:** the worldserver segfaulted (exit -11) on the last cohort's `.botauto stop`,
   after every shard had finished. No core was captured; a crash investigation is round 5.
 
+## Round 5 (2026-09-26): analysis of the round-4 batch
+
+Root causes found so far:
+
+| Shard | Root cause | Fix (owner) |
+|---|---|---|
+| Atramedes | The instance script summons Atramedes (bell, or after a wipe). The strategy looked only in the hostile list, never in `Summons`, so the plan never took over. The raid stood on the bell point for 35 s; Sonic Breath raised all ten to 100 Sound and Devastation wiped them | AT 60c3df86ab (search `Summons`, then hostiles; own the node only while Atramedes is engaged) |
+| Atramedes | Recovery: the walk back met a live patrol more than 100 yd from the anchor and stood for 10 min; the return never armed; a bell rung within 30 s of a wipe would summon a second Atramedes | T (in progress) |
+| Nefarian | A lower-wing recovery ride engaged at the descent without a wipe | T (in progress) |
+| Maloriak | `validation_active_instance_drift` | MA (in progress) |
+| All | Worldserver segfault on `.botauto stop` | crash investigation (in progress) |
+
+Class patches from C, reviewed and committed in 38f4b5770f:
+- the combat resolver split into an admission module;
+- raid-scoped Survival Blood Fury and Elemental Wrath of Air fixes;
+- native `CastSpell` intents require the spell to be known and active (`HasActiveSpell`);
+- canonical raids never pick a tank as combat-res owner.
+
+Two follow-ups from the review:
+- **Combat res:** no canonical character knows Rebirth or Raise Ally today, so no combat
+  res happens on any boss. Once the druid gets Rebirth, the tank exclusion still leaves
+  Omnotron, Chimaeron, Maloriak and Nefarian without one, because the druid tanks there.
+  Those bosses need a non-tank owner, for example a warlock Soulstone on a healer before
+  the pull.
+- **DVC:** patch 02 adds a dependency to `all_spec_phase4_rotation_contract`. The stage,
+  like phases 1-9 and the ML stages, has been stale since before the raid program, and
+  cache and remote match its lock. It was not reproduced: its tool starts a worldserver,
+  and a rerun would overwrite the accepted Phase 4 bundle. The raid program's own stages
+  are current.
+
 ## Round 3 candidates (from the round 2 reviews)
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
