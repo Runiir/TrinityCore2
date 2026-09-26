@@ -115,6 +115,17 @@ observed state and capability, never from a roster slot:
 
 - **Ownership.** The strategy owns the node only while a construct is engaged;
   the validation route approaches and pulls the patrolling construct.
+- **Staging and pull.** The route node's own position (-324.78, -399.08) is a
+  patrol waypoint, and walking onto it body-pulled Arcanotron before the
+  pre-pull setup in round 3. The encounter rows therefore navigate to
+  (-336.08, -356.46, 213.871), observed walkable corridor ground 36.7 yd from
+  the patrol line (construct aggro is 15 yd minus combat reach: level 88 is
+  above the expansion cap) and at most 45 yd from any patrol point. Flask, food
+  and pre-pot finish there; then the raid pulls. The pull target is whichever
+  construct the controller powered up at random. The other three are not
+  selectable (creature_template unit_flags 0x82000000), so the pre-pot
+  boss-target check must accept the route row's alternate entries, not only
+  the credit entry 42180.
 - **Tanks.** A tank owns the active construct whose victim it is. A new
   construct goes to the tank whose construct is gone or shutting down. The
   owner taunts its construct if it attacks anyone else. While its construct is
