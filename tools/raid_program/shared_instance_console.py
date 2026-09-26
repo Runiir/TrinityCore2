@@ -169,24 +169,57 @@ def owned_console(*, repository: Path, source: Path, binary: Path, config: Path,
                 transport.wait_ready(startup_timeout_sec)
                 yield transport
             finally:
+                _close_launch(process, inferior, lifecycle, crash_capture)
+
+
+def _close_launch(process: subprocess.Popen[bytes], inferior: crash_capture_module.Inferior | None,
+                  lifecycle: dict[str, Any] | None, crash_capture: bool) -> None:
+    """`server exit`, else the forced stop. However that ends (an exception such as
+    Ctrl-C during a grace wait included), nothing of this launch keeps running:
+    an orphaned gdb or worldserver would block every later launch's admission.
+    The lifecycle is always recorded."""
+    try:
+        try:
+            if process.poll() is None:
                 try:
-                    if process.poll() is None:
-                        try:
-                            assert process.stdin is not None
-                            process.stdin.write(b"server exit\n")
-                            process.stdin.flush()
-                            process.wait(timeout=SHUTDOWN_TIMEOUT_SEC)
-                        except (BrokenPipeError, OSError, subprocess.TimeoutExpired, KeyboardInterrupt):
-                            _force_stop(process, inferior, lifecycle, crash_capture)
-                finally:
-                    # Always recorded, however the forced stop ended.
-                    if inferior is not None:
-                        inferior.close()
-                    if process.stdin:
-                        process.stdin.close()
-                    if lifecycle is not None:
-                        lifecycle.update(process_exited=process.poll() is not None,
-                                         process_return_code=process.returncode)
+                    assert process.stdin is not None
+                    process.stdin.write(b"server exit\n")
+                    process.stdin.flush()
+                    process.wait(timeout=SHUTDOWN_TIMEOUT_SEC)
+                except (BrokenPipeError, OSError, subprocess.TimeoutExpired, KeyboardInterrupt):
+                    _force_stop(process, inferior, lifecycle, crash_capture)
+        finally:
+            if process.poll() is None:
+                _kill_launch(process, inferior, lifecycle)
+    finally:
+        if inferior is not None:
+            inferior.close()
+        if process.stdin:
+            process.stdin.close()
+        if lifecycle is not None:
+            lifecycle.update(process_exited=process.poll() is not None,
+                             process_return_code=process.returncode)
+
+
+def _kill_launch(process: subprocess.Popen[bytes], inferior: crash_capture_module.Inferior | None,
+                 lifecycle: dict[str, Any] | None) -> None:
+    """Last resort after the stop raised: SIGKILL the launched group (gdb's takes
+    its inferior with it, PTRACE_O_EXITKILL) and the worldserver itself."""
+    if lifecycle is not None:
+        lifecycle["teardown_last_resort_kill"] = True
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except OSError as error:
+        _LOG.warning("last-resort SIGKILL of process group %d failed: %s", process.pid, error)
+    if inferior is not None:
+        try:
+            inferior.send(signal.SIGKILL)
+        except OSError as error:
+            _LOG.warning("last-resort worldserver SIGKILL via pidfd failed: %s", error)
+    try:
+        process.wait(timeout=TERMINATION_GRACE_SEC)
+    except subprocess.TimeoutExpired:
+        _LOG.warning("process group %d still running after the last-resort SIGKILL", process.pid)
 
 
 def _force_stop(process: subprocess.Popen[bytes], inferior: crash_capture_module.Inferior | None,

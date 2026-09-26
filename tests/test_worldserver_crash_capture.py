@@ -7,7 +7,7 @@ libstdc++'s typeinfo vtable during `.botauto stop`, no core, 51-byte reply).
 """
 from __future__ import annotations
 
-from contextlib import nullcontext
+from contextlib import nullcontext, suppress
 import errno
 import json
 import os
@@ -15,7 +15,9 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 
@@ -81,10 +83,59 @@ int main(void)
 '''
 
 GDB_CHATTER = ("libthread_db", "Thread ", "SIGSEGV", "Inferior", "gdb", "Reading symbols")
+# A killed gdb's inferior dies asynchronously (PTRACE_O_EXITKILL); a leak lives on.
+EXIT_GRACE_SEC = 5
+
+
+def _launched_from(folder: Path) -> list[int]:
+    """Live processes of one test: executable, working directory or an argument
+    under its tmp dir (the fake worldserver, gdb with its script, a fake gdb)."""
+    prefix = str(folder)
+    found = []
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit() or int(entry.name) == os.getpid():
+            continue
+        marks = []
+        for link in ("exe", "cwd"):
+            with suppress(OSError):  # exited, a zombie, or another user's process
+                marks.append(os.readlink(entry / link))
+        with suppress(OSError):
+            marks += (entry / "cmdline").read_bytes().decode(errors="replace").split("\0")
+        if any(mark == prefix or mark.startswith(prefix + "/") for mark in marks):
+            found.append(int(entry.name))
+    return found
+
+
+def _gone(pid: int, timeout_sec: float = EXIT_GRACE_SEC) -> bool:
+    """The pid has no process left, not even a zombie awaiting its (new) parent."""
+    deadline = time.monotonic() + timeout_sec
+    while Path(f"/proc/{pid}").exists() and time.monotonic() < deadline:
+        time.sleep(0.02)
+    return not Path(f"/proc/{pid}").exists()
+
+
+def _reap_leaks(folder: Path) -> list[int]:
+    """SIGKILL whatever the test left running (each process and its group, never
+    pytest's own group) and return the leaked pids."""
+    deadline = time.monotonic() + EXIT_GRACE_SEC
+    while (leaked := _launched_from(folder)) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    own_group = os.getpgrp()
+    for pid in leaked:
+        with suppress(OSError):
+            group = os.getpgid(pid)
+            if group != own_group:
+                os.killpg(group, signal.SIGKILL)
+        with suppress(OSError):
+            os.kill(pid, signal.SIGKILL)
+    deadline = time.monotonic() + EXIT_GRACE_SEC
+    while _launched_from(folder) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    return leaked
 
 
 @pytest.fixture
-def fake_worldserver(tmp_path: Path) -> Path:
+def fake_worldserver(tmp_path: Path) -> Iterator[Path]:
     if shutil.which("gdb") is None or shutil.which("cc") is None:
         pytest.skip("gdb and a C compiler are required")
     source = tmp_path / "fake_worldserver.c"
@@ -92,7 +143,11 @@ def fake_worldserver(tmp_path: Path) -> Path:
     binary = tmp_path / "bin" / "worldserver"
     binary.parent.mkdir()
     subprocess.run(["cc", "-O0", "-o", str(binary), str(source), "-lpthread"], check=True)
-    return binary
+    yield binary
+    # Passed or failed, no gdb or fake worldserver of this test outlives it: a
+    # leaked one blocks every live run's "no worldserver running" admission.
+    leaked = _reap_leaks(tmp_path)
+    assert not leaked, f"processes of this test outlived it (now killed): {leaked}"
 
 
 @pytest.fixture
@@ -148,7 +203,7 @@ def test_crash_under_gdb_is_reported_like_the_live_incident(tmp_path, fake_world
         health = console.health()
         assert health["server_exited"] and health["server_exit_code"] == 139 and not health["healthy"]
     assert lifecycle["process_return_code"] == 139
-    assert "forced_termination" not in lifecycle
+    assert "forced_termination" not in lifecycle and "teardown_last_resort_kill" not in lifecycle
 
     log = (output / "worldserver.console.log").read_text(encoding="utf-8")
     assert log.startswith("TC>botauto cohorts\n")
@@ -172,7 +227,7 @@ def test_normal_shutdown_under_gdb_keeps_exit_code_zero(tmp_path, fake_worldserv
         reply, code, timed_out = base(".botauto status x", 10)
         assert (code, timed_out) == (0, False) and '"action":"botauto_status"' in reply
     assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == 0
-    assert "forced_termination" not in lifecycle
+    assert "forced_termination" not in lifecycle and "teardown_last_resort_kill" not in lifecycle
     assert crash_capture.summarize(output)["crashed"] is False
     log = (output / "worldserver.console.log").read_text(encoding="utf-8")
     assert log.endswith("server exit\n") and "Inferior" not in log
@@ -193,8 +248,8 @@ def test_a_forced_kill_is_never_a_clean_exit(tmp_path, fake_worldserver, unlocke
     assert lifecycle["process_exited"] is True
     assert lifecycle["process_return_code"] == return_code
     assert lifecycle.get("forced_termination") == forced
-    assert "debugger_forced_termination" not in lifecycle
-    assert not Path(f"/proc/{server_pid}").exists()
+    assert "debugger_forced_termination" not in lifecycle and "teardown_last_resort_kill" not in lifecycle
+    assert _gone(server_pid)
 
 
 # A stand-in for gdb that stays busy after its worldserver died, as gdb does
@@ -236,8 +291,9 @@ def test_a_busy_debugger_after_the_sigkill_is_killed_not_terminated(tmp_path, fa
         assert base(".botauto status x", 10)[1] == 0
     assert lifecycle["forced_termination"] == "worldserver_sigkill"
     assert lifecycle["debugger_forced_termination"] == "sigkill"
+    assert "teardown_last_resort_kill" not in lifecycle
     assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == -9
-    assert not Path(f"/proc/{server_pid}").exists()
+    assert _gone(server_pid)
     assert _fds() == fds  # the pidfd is closed
 
 
@@ -258,9 +314,59 @@ def test_an_unsignalable_worldserver_still_completes_teardown(tmp_path, fake_wor
     assert lifecycle["forced_termination_error"] == "worldserver_sigterm: [Errno 9] Bad file descriptor"
     assert "forced_termination" not in lifecycle
     assert lifecycle["debugger_forced_termination"] == "sigkill"
+    assert "teardown_last_resort_kill" not in lifecycle
     assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == -9
     # Killing gdb kills its inferior (PTRACE_O_EXITKILL), although its group is its own.
-    assert not Path(f"/proc/{server_pid}").exists()
+    assert _gone(server_pid)
+
+
+def test_an_interrupted_teardown_leaves_nothing_running(tmp_path, fake_worldserver, unlocked, monkeypatch):
+    """Ctrl-C during the forced stop: no gdb or worldserver outlives the console."""
+    send = crash_capture.Inferior.send
+    calls = []
+
+    def interrupted_once(self, signum):
+        calls.append(signum)
+        if len(calls) == 1:
+            raise KeyboardInterrupt
+        return send(self, signum)
+
+    monkeypatch.setattr(crash_capture.Inferior, "send", interrupted_once)
+    monkeypatch.setattr(console_module, "SHUTDOWN_TIMEOUT_SEC", 1)
+    monkeypatch.setattr(console_module, "TERMINATION_GRACE_SEC", 1)
+    monkeypatch.setenv("FAKE_HANG_ON_EXIT", "1")
+    output = tmp_path / "run"
+    lifecycle: dict = {}
+    with pytest.raises(KeyboardInterrupt):
+        with _owned(fake_worldserver, output, lifecycle) as base:
+            server_pid, debugger = base.server_pid, base.process
+            assert base(".botauto status x", 10)[1] == 0
+    assert calls[0] == signal.SIGTERM
+    assert lifecycle["teardown_last_resort_kill"] is True
+    assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == -9
+    assert debugger.returncode == -9 and _gone(server_pid)
+
+
+def test_the_leak_guard_kills_and_reports_a_survivor(tmp_path, fake_worldserver):
+    """The fixture's guard: a hung worldserver under gdb, left running on purpose."""
+    script = tmp_path / "hang.gdb"
+    script.write_text("run\n", encoding="utf-8")
+    debugger = subprocess.Popen(["gdb", "-q", "-nx", "-batch", "-x", str(script), str(fake_worldserver)],
+                                cwd=tmp_path, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        deadline = time.monotonic() + 30
+        while len(_launched_from(tmp_path)) < 2 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        survivors = _launched_from(tmp_path)
+        assert debugger.pid in survivors and len(survivors) == 2  # gdb and its fake worldserver
+        assert sorted(_reap_leaks(tmp_path)) == sorted(survivors)
+        assert debugger.wait(timeout=EXIT_GRACE_SEC) == -9
+        assert all(_gone(pid) for pid in survivors) and _launched_from(tmp_path) == []
+    finally:
+        with suppress(OSError):
+            os.killpg(debugger.pid, signal.SIGKILL)
+        debugger.wait(timeout=EXIT_GRACE_SEC)
 
 
 @pytest.mark.parametrize("lifecycle,reason,failures", [
@@ -284,14 +390,18 @@ def test_worldserver_exit_gate(lifecycle, reason, failures):
 
 def test_inferior_signals_only_its_own_process(tmp_path):
     child = subprocess.Popen(["sleep", "30"])
-    inferior = crash_capture.Inferior(child.pid, crash_capture.pidfd_open(child.pid))
-    assert crash_capture.is_inferior(os.getpid(), child.pid, Path(shutil.which("sleep")))
-    assert not crash_capture.is_inferior(os.getpid() + 1, child.pid, Path(shutil.which("sleep")))
-    assert inferior.send(signal.SIGTERM) is True
-    child.wait(timeout=10)
-    # Reaped: the pid may be recycled, the pidfd still names the dead process.
-    assert inferior.send(signal.SIGTERM) is False
-    inferior.close()
+    try:
+        inferior = crash_capture.Inferior(child.pid, crash_capture.pidfd_open(child.pid))
+        assert crash_capture.is_inferior(os.getpid(), child.pid, Path(shutil.which("sleep")))
+        assert not crash_capture.is_inferior(os.getpid() + 1, child.pid, Path(shutil.which("sleep")))
+        assert inferior.send(signal.SIGTERM) is True
+        child.wait(timeout=10)
+        # Reaped: the pid may be recycled, the pidfd still names the dead process.
+        assert inferior.send(signal.SIGTERM) is False
+        inferior.close()
+    finally:
+        child.kill()
+        child.wait(timeout=10)
 
 
 def test_gdb_files_are_never_written_over_an_earlier_run(tmp_path):
