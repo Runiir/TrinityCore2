@@ -1,6 +1,8 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h"
 
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeGeometryState.h"
+#include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRosterIdentity.h"
+#include "Bots/BotCanonicalRaidScope.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
@@ -767,12 +769,13 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildContract()
     }
     OneBasedSlot = roster->second.SlotIndex + 1;
     Role = roster->second.Role;
-    std::vector<std::string> const exactSlotIds = {
-        "raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2",
-        "raid_healer_3", "raid_dps_1", "raid_dps_2", "raid_dps_3",
-        "raid_dps_4", "raid_dps_5"
-    };
-    if (roster->second.RosterSlotId != exactSlotIds[roster->second.SlotIndex])
+    // Legacy rosters prove the slot by its generated id; a canonical
+    // composition by the role its route row assigns (BotRaidDrudgeRosterIdentity.h).
+    if (!BotRaidDrudgeRosterIdentity::Matches(
+            BotCanonicalRaidScope::IsCanonicalRaid(Manager.Cohort().Raid.RaidInstance,
+                Manager.Cohort().Config.ValidationRouteScenarioId),
+            roster->second.SlotIndex, roster->second.RosterSlotId, Role,
+            Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots, HealerSlots))
     {
         HoldOffense();
         Record(nullptr, "drudge_lane_roster_slot_identity_mismatch");

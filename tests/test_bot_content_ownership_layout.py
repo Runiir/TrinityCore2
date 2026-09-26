@@ -80,6 +80,7 @@ DRUDGE_FILES = {
     "BotRaidDrudgeRecoveryCandidates.h",
     "BotRaidDrudgeRecoveryTelemetry.h",
     "BotRaidDrudgeReseparationReceipt.h",
+    "BotRaidDrudgeRosterIdentity.h",
     "BotRaidDrudgeSpacingDiagnostic.h",
     "BotRaidDrudgeThreatSeedState.h",
     "BotWorldPopulationMgrValidationRouteDrudge.h",
