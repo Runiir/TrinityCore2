@@ -2,12 +2,13 @@
 import json
 from pathlib import Path
 import subprocess
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_actual_resolver_publication_and_passive_call_sites(tmp_path):
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    source = combat_resolver_source()
     start = source.index("    if (publishDiagnostics)")
     publication = source[start:source.index("    if (!best || !best->SpellId)", start)]
     fallback = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp").read_text()
@@ -274,7 +275,7 @@ int main(){
     }
     assert json.loads(frost_json) == {"frost": True}
 
-    resolver = (bots / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     attach_at = resolver.index("BotBloodDecisionObservation::Attach(")
     mask_at = resolver.index("Party().LastCombatMaskByBot", attach_at)
     chosen_at = resolver.index("Party().LastChosenCombatByBot", mask_at)

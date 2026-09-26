@@ -7,6 +7,7 @@ already-admitted Movement claim, not a simulated native pincer execution.
 import json
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / 'src/server/game/Bots'
@@ -26,7 +27,7 @@ def compile_fixture(tmp_path, revision=None):
     producer = read('BotClassSpecActionProfileCandidates.cpp')
     missing = between(producer, '        else if (spell.SpellId && !spellInfo)', '        else if (spell.SpellId && spell.Category')
     ranged = between(producer, '        else if (spell.RequiresMeleeRange', '        else if (spellInfo && spellInfo->NeedsComboPoints()')
-    resolver = read('BotWorldPopulationMgrCombatResolver.cpp')
+    resolver = read('BotWorldPopulationMgrCombatResolver.cpp') if revision else combat_resolver_source()
     native = between(resolver, '    auto effectiveSpellMinRange =', '    auto effectiveSpellMaxRange =')
     gate = between(resolver, '        float distance = selfCenteredHostileAction', '        if (deferLavaBurstMovementRejection)')
     pre_rejected = between(resolver, '        if (!candidate.RejectReason.empty())\n        {\n            // Preserve the highest-priority', '        bool candidateIsMajorTankDefensive')

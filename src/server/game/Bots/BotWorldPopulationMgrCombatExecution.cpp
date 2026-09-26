@@ -3,9 +3,11 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRaidShamanTotems.h"
 #include "Bots/BotSpellResolution.h"
 #include "Creature.h"
 #include "GameTime.h"
+#include "Group.h"
 #include "Map.h"
 #include "Player.h"
 #include "SpellHistory.h"
@@ -71,11 +73,28 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
     // Native active primary talent tree 261 is Elemental (TalentTab.dbc).
     bool const isElemental = bot->GetPrimaryTalentTree(bot->GetActiveSpec()) == 261;
+    // Raid only: another member's 10% melee haste makes Windfury redundant,
+    // so a non-Elemental shaman places Wrath of Air (BotRaidShamanTotems.h).
+    auto otherMeleeHasteProvider = [bot]()
+    {
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                if (Player* member = itr->GetSource(); member && member != bot
+                    && member->IsAlive() && member->IsInMap(bot))
+                    for (uint32 provider : BotRaidShamanTotems::OtherMeleeHasteProviders)
+                        if (member->HasAura(provider, member->GetGUID()))
+                            return true;
+        return false;
+    };
+    bool const raidWrathOfAir = BotRaidShamanTotems::PreferWrathOfAir(
+        Cohort().Raid.RaidInstance && bot->GetMap() && bot->GetMap()->IsRaid(),
+        isElemental, bot->HasSpell(BotRaidShamanTotems::WrathOfAirTotem),
+        otherMeleeHasteProvider);
     // Tremor is reactive utility, not steady Elemental setup. There is no
     // typed fear demand in this maintenance lane; leave its earth slot optional.
     uint32 const desiredEarthTotemSpell = isElemental ? 0 : 8075;
     uint32 const desiredWaterTotemSpell = isElemental ? 5675 : 5394;
-    uint32 const desiredAirTotemSpell = isElemental ? 3738 : 8512;
+    uint32 const desiredAirTotemSpell = isElemental || raidWrathOfAir ? 3738 : 8512;
     uint32 const totemSpellIds[] = { desiredEarthTotemSpell, 3599, desiredWaterTotemSpell, desiredAirTotemSpell };
     for (uint32 spellId : totemSpellIds)
     {
@@ -110,7 +129,8 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
             && (slot != SUMMON_SLOT_TOTEM_FIRE
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894)
-            && (!isElemental || slot == SUMMON_SLOT_TOTEM_FIRE
+            && ((!isElemental && !(raidWrathOfAir && slot == SUMMON_SLOT_TOTEM_AIR))
+                || slot == SUMMON_SLOT_TOTEM_FIRE
                 || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
         if (ready)
             continue;

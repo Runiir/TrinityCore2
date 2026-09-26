@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 from tests.test_survival_native_action_admission import database, rows, SQL as SHOT_SQL
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 SQL=ROOT/'sql/custom/world/2026_09_13_01_survival_disable_remote_aoe_trap.sql'
@@ -60,7 +61,7 @@ def test_loaded_remote_trap_cannot_reach_native_reconciliation_after_disable(tmp
     before=[r for r in loader_rows(db) if r[0]==274]
     db.executescript(SQL.read_text())
     after=[r for r in loader_rows(db) if r[0]==274]
-    resolver=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    resolver=combat_resolver_source()
     count=resolver[resolver.index('        if (candidate.Profile.MinEnemies > hostileCount)'):resolver.index('        if (bot->getClass() == CLASS_DRUID')]
     aura=resolver[resolver.index('        if (candidate.Profile.RequiredSelfAura &&'):resolver.index('        if (candidate.Profile.RequiredSelfAuraStacks)')]
     execution=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp').read_text()

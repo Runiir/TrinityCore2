@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,7 +213,7 @@ def test_moving_rows_have_distinct_stable_action_ids_from_maintained_dots() -> N
 
 
 def test_native_gates_keep_one_eclipse_variant_and_moving_only_semantics() -> None:
-    resolver = (BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     candidates = (BOT_DIR / "BotClassSpecActionProfileCandidates.cpp").read_text(encoding="utf-8")
     # Eclipse direction keys on spell id, so exactly one of the two rows can pass.
     assert re.search(

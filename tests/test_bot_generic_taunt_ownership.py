@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +43,7 @@ def _compile_production_probe(tmp_path: Path) -> Path:
         "bool BotWorldPopulationMgr::HasOtherLiveCohortTankVictim(",
     )
     resolver_gate = _extract_gate(
-        RESOLVER.read_text(encoding="utf-8"),
+        combat_resolver_source(),
         "        if (candidate.Profile.RequiresTargetNotVictim",
     )
     spell_gate = _extract_gate(
@@ -262,7 +263,7 @@ def test_production_taunt_helper_and_both_gates_compile_and_replay(tmp_path: Pat
 
 
 def test_encounter_swap_executor_remains_outside_generic_taunt_filter() -> None:
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     spell = SPELL.read_text(encoding="utf-8")
     boss = BOSS.read_text(encoding="utf-8")
     assert "HasOtherLiveCohortTankVictim(bot, target)" in resolver

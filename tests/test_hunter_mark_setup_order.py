@@ -9,6 +9,7 @@ import subprocess
 import csv
 import json
 import re
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOT = ROOT / "src/server/game/Bots"
@@ -26,7 +27,7 @@ def body(text, signature):
 def test_hunter_mark_obeys_combat_ranking_through_setup_consumer(tmp_path):
     setup = (BOT / "BotWorldPopulationMgrPersistentSetup.cpp").read_text()
     execution = (BOT / "BotWorldPopulationMgrCombatExecution.cpp").read_text()
-    resolver = (BOT / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     candidates = (BOT / "BotClassSpecActionProfileCandidates.cpp").read_text()
     profile = (BOT / "BotClassSpecActionProfile.h").read_text()
     catalog = (BOT / "BotCombatActionCatalog.h").read_text()

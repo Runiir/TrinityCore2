@@ -1050,9 +1050,12 @@ def test_encounter_interrupt_veto_lease_and_resolver_gate(tmp_path: Path) -> Non
     header = (ROOT / "src/server/game/Bots/BotEncounterInterruptVeto.h").read_text(encoding="utf-8")
     assert "caster->GetMapId(), caster->GetInstanceId()," in header
     assert "only the kernel profile resolver" in header
-    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    # The resolver's candidate gates live in its admission module (round 4 split).
+    bots = ROOT / "src/server/game/Bots"
+    resolver = (bots / "BotWorldPopulationMgrCombatResolverAdmission.cpp").read_text(encoding="utf-8")
     assert '#include "Bots/BotEncounterInterruptVeto.h"' in resolver
     assert "BotEncounterInterruptVeto::IsCurrentCastVetoed(target," in resolver
     gate = resolver.index('candidate.RejectReason = "encounter_interrupt_vetoed";')
     assert "candidate.Category == BotCombatActionCategory::Interrupt && targetCastVetoed" in resolver[gate - 200:gate]
-    assert len(resolver.splitlines()) < 1000
+    for name in ("BotWorldPopulationMgrCombatResolver.cpp", "BotWorldPopulationMgrCombatResolverAdmission.cpp"):
+        assert len((bots / name).read_text(encoding="utf-8").splitlines()) < 1000

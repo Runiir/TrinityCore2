@@ -4,6 +4,7 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,9 +127,7 @@ def test_native_item_lifecycle_health_ranking_and_reservation(tmp_path: Path, po
     profile_header = (
         ROOT / "src/server/game/Bots/BotClassSpecActionProfile.h"
     ).read_text(encoding="utf-8")
-    resolver = (
-        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
-    ).read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     reservation_header = (
         ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
     ).read_text(encoding="utf-8")
@@ -417,7 +416,7 @@ def test_raid_potion_health_owner_actual_callers_and_gate(tmp_path, execute_perc
     callers = []
     downstream = []
     for name in ("BotWorldPopulationMgrCombatResolver.cpp", "BotWorldPopulationMgrCombatSpell.cpp"):
-        text = (bots / name).read_text()
+        text = combat_resolver_source() if name == "BotWorldPopulationMgrCombatResolver.cpp" else (bots / name).read_text()
         callers.append(_between(text, "    auto const potionHealthOwner =", "    BotRaidCooldownReservation::RouteContext"))
         downstream.append(_between(text, "        if (!BotRaidCombatPotionHealthOwner::MeetsHostileTargetHealthGate", "        float selfHealthPct"))
     # The multidot rebuild must carry the same boss owner despite a different damage target.

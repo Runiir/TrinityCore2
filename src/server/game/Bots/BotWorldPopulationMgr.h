@@ -737,6 +737,8 @@ private:
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
     ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, bool movementCompatibleOnly = false, char const* specTagOverride = nullptr, bool publishDiagnostics = true, uint32 policyExcludedSpellId = 0, uint32 scopedAreaSpellId = 0, uint32 scopedAreaTargetEntry = 0) const;
+    struct ProfileCombatAdmission;
+    void AdmitProfileCombatCandidates(ProfileCombatAdmission& admission) const;
     void RecordNoProfileActionRejections(Player* bot, std::vector<BotActionCandidate> const& candidates) const;
     ResolvedCombatAction ResolveNoProfileAction(Player* bot, Unit* target, BotClassSpecActionProfile const& profile, std::vector<BotActionCandidate> const& candidates, bool areaOnly, ResolvedCombatAction action) const;
     BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, uint32 policyExcludedSpellId = 0, uint32 scopedAreaSpellId = 0, uint32 scopedAreaTargetEntry = 0);

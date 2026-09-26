@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +32,7 @@ def test_magmaw_scoped_area_exception_is_narrow_and_quarantined() -> None:
 
 
 def test_scoped_area_authority_reaches_every_native_gate() -> None:
-    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     executor = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
     mechanics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp").read_text()
     planning = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidPlanning.cpp").read_text()
@@ -60,7 +61,7 @@ def test_scoped_area_authority_reaches_every_native_gate() -> None:
 def test_scoped_magic_keeps_the_melee_chain_protection_split() -> None:
     semantics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.cpp").read_text()
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.h").read_text()
-    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     executor = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
 
     assert "SpellHasHostileMeleeChainSemantics" in header

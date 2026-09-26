@@ -29,11 +29,12 @@ uint64 NowMs(){return 1000;}
 struct Unit { bool alive=true; bool IsAlive(){return alive;} };
 struct Totem:Unit {uint32 spell=0; uint32 GetUInt32Value(int){return spell;} };
 struct Creature {Totem totem; Totem* ToTotem(){return &totem;} };
-struct Map {std::array<Creature,4> creatures; Creature* GetCreature(uint64 id){return &creatures[id-1];}};
+struct Map {std::array<Creature,4> creatures; bool raid=false; Creature* GetCreature(uint64 id){return &creatures[id-1];} bool IsRaid(){return raid;}};
 struct SpellInfo {};
 struct SpellMgr {SpellInfo info; bool missing=false; SpellInfo const* GetSpellInfo(uint32){return missing?nullptr:&info;}} manager;
 auto sSpellMgr=&manager;
 struct SpellHistory {bool gcd=false,ready=true; bool HasGlobalCooldown(SpellInfo const*){return gcd;} bool IsReady(SpellInfo const*){return ready;}};
+struct Group;
 struct Player:Unit {
  int cls=7; bool combat=true,moving=false,casting=false; uint32 tree=261; uint8 active=1;
  std::set<uint32> spells{8075,3599,5394,8512,3738,8190,8143,5675}; std::vector<uint32> casts;
@@ -43,8 +44,18 @@ struct Player:Unit {
  uint8 GetActiveSpec(){return active;} uint32 GetPrimaryTalentTree(uint8 spec){assert(spec==active);return tree;}
  bool HasSpell(uint32 id){return spells.count(id);} Map* GetMap(){return &map;}
  bool HasUnitState(int){return casting;} SpellHistory* GetSpellHistory(){return &history;}
- uint64 GetGUID(){return 123;} int CastSpell(Player*,uint32 spell,bool triggered){assert(!triggered);casts.push_back(spell);return result;}
+ uint64 GetGUID(){return guid;} int CastSpell(Player*,uint32 spell,bool triggered){assert(!triggered);casts.push_back(spell);return result;}
+ // Round 4 raid air totem: group members and their own passive auras.
+ Group* group=nullptr; std::set<uint32> ownAuras; uint64 guid=123;
+ Group* GetGroup(){return group;} bool IsInMap(Player*){return true;}
+ bool HasAura(uint32 id,uint64 caster){return caster==guid&&ownAuras.count(id);}
 };
+struct GroupReference {Player* source; GroupReference* following=nullptr; Player* GetSource(){return source;} GroupReference* next(){return following;}};
+struct Group {std::vector<GroupReference> refs; GroupReference* GetFirstMember(){return refs.empty()?nullptr:&refs[0];}
+ void Add(Player* member){refs.push_back({member}); for(size_t i=0;i+1<refs.size();++i) refs[i].following=&refs[i+1];}};
+namespace BotRaidShamanTotems {
+constexpr uint32 WrathOfAirTotem=3738; constexpr uint32 OtherMeleeHasteProviders[]={53290,55610};
+template<class Probe> bool PreferWrathOfAir(bool raidScope,bool isElemental,bool knowsWrathOfAir,Probe&& probe){return raidScope&&!isElemental&&knowsWrathOfAir&&probe();}}
 struct WorldBotState {std::map<std::string,uint64> ReadinessRetryUntilMs;};
 struct ResolvedCombatAction {bool Valid; std::string Type,DebugName; uint32 SpellId;uint64 TargetGuid;};
 enum class BotActionResult {Ok,CastFailed};
@@ -53,6 +64,8 @@ struct BotWorldPopulationMgr {
  template<class... T> void ObserveBotCandidateFailure(T&&...)const{}
  template<class... T> void RecordCombatAttempt(T&&...)const{}
  template<class... T> void TryResolveBotBlocker(T&&...)const{}
+ struct CohortStub {struct {bool RaidInstance=false;} Raid;} cohort;
+ CohortStub const& Cohort() const {return cohort;}
 };
 '''+function+r'''
 int main(){
@@ -87,6 +100,38 @@ int main(){
  {Player p;WorldBotState s;p.spells.erase(8512);assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts[0]==3738);}
  {Player p;WorldBotState s;p.spells.erase(3738);assert(!mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts.empty());assert(s.ReadinessRetryUntilMs.count("totem_spell_missing:3738"));}
  {Player p;WorldBotState s;p.tree=263;p.spells.erase(3738);assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts[0]==8512);}
+ // Round 4 raid air totem: another member's own Hunting Party (53290) or
+ // Improved Icy Talons (55610) makes a raid non-Elemental shaman place Wrath
+ // of Air, replacing a Windfury already down. Outside a raid, without a
+ // provider, or when the shaman lacks Wrath of Air, it keeps Windfury.
+ {
+  BotWorldPopulationMgr raidMgr; raidMgr.cohort.Raid.RaidInstance=true;
+  for(uint32 provider:{53290u,55610u}) for(uint32 tree:{263u,262u}){
+   Player hunter; hunter.guid=77; hunter.ownAuras.insert(provider);
+   Group group; Player p; group.Add(&p); group.Add(&hunter); p.group=&group; p.tree=tree; p.map.raid=true;
+   WorldBotState s; assert(raidMgr.TryEnsureCombatTotems(s,&p,&target,1)); assert(p.casts==std::vector<uint32>{3738});
+   Player again; group.refs[0].source=&again; again.group=&group; again.tree=tree; again.map.raid=true;
+   again.m_SummonSlot[3]=4; again.map.creatures[3].totem.spell=8512;
+   WorldBotState s2; assert(raidMgr.TryEnsureCombatTotems(s2,&again,&target,1)); assert(again.casts==std::vector<uint32>{3738});
+  }
+  Player hunter; hunter.guid=77; hunter.ownAuras.insert(53290);
+  // A provider aura cast by someone else on the member is not the member's own passive.
+  Player buffed; buffed.guid=78;
+  for(int variant=0;variant<5;++variant){
+   Group group; Player p; group.Add(&p); p.group=&group; p.tree=263; p.map.raid=true;
+   BotWorldPopulationMgr* owner=&raidMgr; BotWorldPopulationMgr dungeonMgr;
+   if(variant==0) group.Add(&buffed);
+   if(variant==1){group.Add(&hunter); p.map.raid=false;}
+   if(variant==2){group.Add(&hunter); owner=&dungeonMgr;}
+   if(variant==3){group.Add(&hunter); p.spells.erase(3738);}
+   if(variant==4){group.Add(&hunter); hunter.alive=false;}
+   WorldBotState s; assert(owner->TryEnsureCombatTotems(s,&p,&target,1)); assert(p.casts==std::vector<uint32>{8512});
+   hunter.alive=true;
+  }
+  // Elemental in a raid with a provider: unchanged Wrath of Air.
+  Group group; Player p; group.Add(&p); group.Add(&hunter); p.group=&group; p.map.raid=true;
+  WorldBotState s; assert(raidMgr.TryEnsureCombatTotems(s,&p,&target,1)); assert(p.casts==std::vector<uint32>{3738});
+ }
  for(int gate=0;gate<8;gate++){Player p;WorldBotState s;
   if(gate==0)p.cls=1;if(gate==1)p.moving=true;if(gate==2)p.combat=false;if(gate==3)p.casting=true;
   if(gate==4)p.history.gcd=true;if(gate==5)p.history.ready=false;if(gate==6)manager.missing=true;

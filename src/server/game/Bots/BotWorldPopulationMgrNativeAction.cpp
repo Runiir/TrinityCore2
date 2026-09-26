@@ -452,8 +452,13 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
             if (!target || !target->IsInWorld())
                 return BotActionArbitration::Outcome::Retryable("native_cast_target_unavailable");
             auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
+            // Server-side CastSpell has no spellbook check; only the client's
+            // cast opcode does (Unit::ProcessPendingSpellCastRequest). Hold a
+            // native intent to that same rule: the requested spell must be
+            // actively known unless it skips the check (round 4 lawfulness).
             if (!resolved.Effective
-                || (resolved.Effective != resolved.Requested && !bot->HasSpell(action.SpellId)))
+                || (!bot->HasActiveSpell(action.SpellId)
+                    && !resolved.Requested->HasAttribute(SPELL_ATTR8_SKIP_IS_KNOWN_CHECK)))
                 return BotActionArbitration::Outcome::Retryable("native_cast_unknown_spell");
             SpellCastResult result = bot->CastSpell(target, resolved.Effective->Id,
                 CastSpellExtraArgs(resolved.Flags));

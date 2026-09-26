@@ -18,11 +18,14 @@ from pathlib import Path
 
 import pytest
 
+from tests.combat_resolver_source import combat_resolver_source
+
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "sql/custom/world"
 BOTS = ROOT / "src/server/game/Bots"
 DBC = ROOT / "data/dbc/enUS"
 RESOLVER = BOTS / "BotWorldPopulationMgrCombatResolver.cpp"
+ADMISSION = BOTS / "BotWorldPopulationMgrCombatResolverAdmission.cpp"
 OVERRIDES = BOTS / "BotRaidRotationOverrides.h"
 RESERVATION = BOTS / "BotWorldPopulationMgrRaidCooldownReservation.h"
 INCLUDES = ["-I", str(ROOT / "src/server/game"), "-I", str(ROOT / "src/common")]
@@ -250,7 +253,7 @@ def test_a_changed_db_row_wins_over_the_raid_override(tmp_path: Path) -> None:
 
 
 def test_resolver_applies_raid_fixes_only_in_raid_scope() -> None:
-    resolver = RESOLVER.read_text()
+    resolver = combat_resolver_source()
     assert '#include "Bots/BotRaidRotationOverrides.h"' in resolver
     scope = ("    bool const raidRotationScope = Cohort().Raid.RaidInstance\n"
              "        && bot->GetMap() && bot->GetMap()->IsRaid();\n"
@@ -274,7 +277,8 @@ def test_resolver_applies_raid_fixes_only_in_raid_scope() -> None:
     assert "<= NOMINAL_MELEE_RANGE" not in resolver
     # Drain Life: the healer-owned recovery gate uses the same scope.
     assert "BotRaidHealthRecoveryGate::Holds(raidRotationScope," in resolver
-    assert resolver.count("raidRotationScope") == 5
+    # Five round 3 uses, plus the round 4 canonical Survival scope (round 4 test).
+    assert resolver.count("raidRotationScope") == 6
 
 
 def test_no_world_db_rotation_row_changes_this_round() -> None:
@@ -419,8 +423,8 @@ int main() {
 
 
 def test_resolver_applies_the_health_recovery_gate_after_the_profile_health_gate() -> None:
-    resolver = RESOLVER.read_text()
-    assert '#include "Bots/BotRaidHealthRecoveryGate.h"' in resolver
+    resolver = combat_resolver_source()
+    assert '#include "Bots/BotRaidHealthRecoveryGate.h"' in ADMISSION.read_text()
     profile_gate = resolver.index('candidate.RejectReason = "self_health_gate";')
     raid_gate = resolver.index("BotRaidHealthRecoveryGate::Holds(raidRotationScope,")
     assert profile_gate < raid_gate < resolver.index("float distance = selfCenteredHostileAction")
@@ -428,7 +432,7 @@ def test_resolver_applies_the_health_recovery_gate_after_the_profile_health_gate
     assert "BotRaidHealthRecoveryGate::HealthRecoveryTag" in gate
     assert "selfHealthPct, livingGroupHealer" in gate
     assert "candidate.RejectReason = BotRaidHealthRecoveryGate::RejectReason;" in gate
-    probe = resolver[resolver.index("auto livingGroupHealer"):resolver.index("auto effectiveSpellMinRange")]
+    probe = resolver[resolver.index("auto livingGroupHealer"):resolver.index("bool const targetActivelyCasting")]
     assert 'std::string(GetDungeonRole(member)) == "healer"' in probe
     assert "member != bot" in probe and "member->IsAlive()" in probe and "member->IsInMap(bot)" in probe
     # The Demonology Drain Life row is the only DPS health_recovery row.

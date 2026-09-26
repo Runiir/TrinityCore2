@@ -1,6 +1,7 @@
 import json
 import math
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,6 +75,7 @@ def _ordered_manager_sources() -> tuple[Path, ...]:
         BOT_DIR / "BotWorldPopulationMgrRaidRuntime.cpp",
         BOT_DIR / "BotWorldPopulationMgrEncounterJson.cpp",
         BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp",
+        BOT_DIR / "BotWorldPopulationMgrCombatResolverAdmission.cpp",
         BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp",
         BOT_DIR / "BotWorldPopulationMgrBossMechanics.cpp",
         BOT_DIR / "BotWorldPopulationMgrRaidPlanning.cpp",
@@ -234,6 +236,7 @@ BOSS_DISPATCH = (BOT_DIR / "BotWorldPopulationMgrBossDispatch.cpp").read_text(en
 BOSS_TARGETING = (BOT_DIR / "BotWorldPopulationMgrBossTargeting.cpp").read_text(encoding="utf-8")
 COMBAT_RESOLUTION = _read_source_set((
     BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp",
+    BOT_DIR / "BotWorldPopulationMgrCombatResolverAdmission.cpp",
     BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp",
 ))
 STATUS = (
@@ -2302,7 +2305,7 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
 def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     route_runtime = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
     contamination = (BOT_DIR / "BotWorldPopulationMgrValidationRouteContamination.cpp").read_text(encoding="utf-8")
-    resolver = (BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     executor = (BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp").read_text(encoding="utf-8")
     authority = VALIDATION_AUTHORITY
     future_guard = VALIDATION_TARGETING

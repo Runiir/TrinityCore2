@@ -1,6 +1,7 @@
 from pathlib import Path
 import sqlite3
 import subprocess
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 SQL=ROOT/'sql/custom/world/2026_09_12_01_elemental_native_min_range.sql'
@@ -43,7 +44,7 @@ def test_exact_sql_scope_idempotence_and_rollback():
 
 def test_production_resolver_range_gate_uses_migrated_rows(tmp_path):
     rows=migrated_rows()
-    source=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    source=combat_resolver_source()
     native=source[source.index('    auto effectiveSpellMinRange ='):source.index('    auto effectiveSpellMaxRange =')]
     gate=source[source.index('        float distance = selfCenteredHostileAction'):source.index('        if (deferLavaBurstMovementRejection)')]
     helper=(ROOT/'src/server/game/Bots/BotSpellMinimumRange.h').read_text()

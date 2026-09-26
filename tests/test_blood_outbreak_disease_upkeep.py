@@ -17,6 +17,7 @@ import struct
 from pathlib import Path
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -232,7 +233,7 @@ def test_outbreak_priority_is_above_strikes_but_yields_to_survival():
     source = CANDIDATES.read_text(encoding="utf-8")
     assert "candidate.Score = spell.DamageWeight + spell.HealingWeight + spell.ThreatWeight" in source
     assert "- float(spell.PriorityBucket) * 0.03f;" in source
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     for formula in (
         "roleScore += candidate.Profile.DamageWeight * 0.55f + candidate.Profile.HealingWeight * 0.25f + candidate.Profile.ThreatWeight * 0.25f;",
         "roleScore += candidate.Profile.ThreatWeight + candidate.Profile.MitigationWeight + candidate.Profile.SurvivalWeight * 0.45f;",

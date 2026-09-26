@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql"
@@ -308,7 +309,7 @@ def test_migrated_rows_through_the_actual_candidate_gates(tmp_path: Path) -> Non
     _gate_replay(tmp_path, rows)
     # The resolver repeats the same plain gate on the action target, and the
     # Eclipse gate still owns Solar Moonfire/Sunfire direction.
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     assert ("if (candidate.Profile.ForbiddenTargetAura && "
             "actionTarget->HasAura(candidate.Profile.ForbiddenTargetAura))") in resolver
     assert "(candidate.SpellId == 8921 && solarEclipse)" in resolver

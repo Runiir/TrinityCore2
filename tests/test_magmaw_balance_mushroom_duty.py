@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -402,7 +403,7 @@ def test_pinned_dbc_detonate_payload_radius():
 def test_sql_and_native_path_keep_the_exception_narrow():
     sql = SQL.read_text(encoding="utf-8")
     rollback_sql = ROLLBACK_SQL.read_text(encoding="utf-8")
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     executor = EXECUTOR.read_text(encoding="utf-8")
     duty_source = DUTY_SOURCE.read_text(encoding="utf-8")
     druid_spells = DRUID_SPELLS.read_text(encoding="utf-8")

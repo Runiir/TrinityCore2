@@ -271,6 +271,7 @@ stages:
     - src/server/game/Bots/BotControllerCombat.cpp
     - src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp
     - src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp
+    - src/server/game/Bots/BotWorldPopulationMgrCombatResolverAdmission.cpp
     - src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp
     - src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h
     - src/server/game/CMakeLists.txt

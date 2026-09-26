@@ -21,12 +21,14 @@ import sys
 from pathlib import Path
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / "src/server/game/Bots"
 RESERVATION = BOTS / "BotWorldPopulationMgrRaidCooldownReservation.h"
 GATE = BOTS / "BotWorldPopulationMgrValidationRecoveryGate.cpp"
 RESOLVER = BOTS / "BotWorldPopulationMgrCombatResolver.cpp"
+ADMISSION = BOTS / "BotWorldPopulationMgrCombatResolverAdmission.cpp"
 SPELL = BOTS / "BotWorldPopulationMgrCombatSpell.cpp"
 TRASH = BOTS / "BotWorldPopulationMgrValidationRouteTankTrashRecovery.cpp"
 MANAGER = BOTS / "BotWorldPopulationMgr.h"
@@ -233,7 +235,7 @@ def test_route_helper_and_every_trash_defensive_path_use_the_rule() -> None:
     assert "char const* BossDefensiveReservationReason(Player const* bot, uint32 defensiveSpellId) const;" in manager
 
     # Profile rows (Icebound's 65% row) in both candidate paths.
-    resolver = text(RESOLVER)
+    resolver = combat_resolver_source()
     assert re.search(r"candidate\.Category == BotCombatActionCategory::Defensive\)\s*"
                      r"if \(char const\* bossReserve = BossDefensiveReservationReason\("
                      r"bot, candidate\.ResolvedSpellId\)\)", resolver)
@@ -246,7 +248,7 @@ def test_route_helper_and_every_trash_defensive_path_use_the_rule() -> None:
     ibf = trash[trash.index("if (UnitHealthPct(bot) <= 0.55f && bot->HasSpell(48792)"):]
     ibf = ibf[:ibf.index("TryCastFriendlySpell(bot, bot, 48792)")]
     assert "!Manager.BossDefensiveReservationReason(bot, 48792)" in ibf
-    for path in (RESERVATION, GATE, RESOLVER, SPELL, TRASH, MANAGER):
+    for path in (RESERVATION, GATE, RESOLVER, ADMISSION, SPELL, TRASH, MANAGER):
         assert len(text(path).splitlines()) < 1000, path
 
 

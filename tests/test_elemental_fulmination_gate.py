@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 import sqlite3
 import subprocess
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOT = ROOT / "src/server/game/Bots"
@@ -56,7 +57,7 @@ def test_actual_candidate_builder_and_regular_selection_use_charges(tmp_path):
     header = re.sub(r'^#include "[^\"]+"\n', '', (BOT / "BotClassSpecActionProfile.h").read_text(), flags=re.M)
     catalog = (BOT / "BotCombatActionCatalog.h").read_text()
     enum = catalog[catalog.index("enum class BotCombatActionCategory"):catalog.index("\nstruct BotCombatActionDefinition")]
-    resolver = (BOT / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     comparator = resolver[resolver.index("    auto candidatePreferred ="):resolver.index("    auto hasMechanicTag =")]
     enemy_gate = resolver[resolver.index("        if (candidate.Profile.MinEnemies > hostileCount)"):resolver.index('        if (bot->getClass() == CLASS_DRUID && profile.SpecTag == "balance_druid")')]
     call = re.search(r'    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates\(bot, target, profile\);', resolver)[0]

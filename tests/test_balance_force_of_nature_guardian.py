@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 
 from test_warlock_doomguard_guardian import function
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 BOT=ROOT/'src/server/game/Bots'
@@ -19,7 +20,7 @@ def test_native_summon_semantics_reaches_both_callers(tmp_path):
     shared=(BOT/'BotWorldPopulationMgrSpellSemantics.cpp').read_text()
     helper=function(shared,'bool SpellHasHostileMultiTargetSemantics(')
     melee_helper=function(shared,'bool SpellHasHostileMeleeChainSemantics(')
-    resolver=(BOT/'BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    resolver=combat_resolver_source()
     executor=(BOT/'BotActionExecutor.cpp').read_text()
     for source in (resolver,executor):
         assert 'bool SpellHasHostileMultiTargetSemantics(' not in source

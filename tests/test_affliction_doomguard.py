@@ -7,6 +7,7 @@ from pathlib import Path
 from tests.test_survival_remote_trap_admission import loader_rows
 from tools.bot_ml.build_validation_provisioning import bot_known_spell_ids, build_character_insert_sql, load_config
 from tools.bot_ml.build_all_spec_phase1_catalogs import QUALIFICATION_TUNED_ACTION_SPELL_IDS, action_spell_ids
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 FIXTURE=ROOT/'tests/fixtures/affliction_doomguard_native.json'
@@ -84,7 +85,7 @@ def test_production_admission_self_resolution_reservations_and_submission(tmp_pa
     bots=ROOT/'src/server/game/Bots'
     candidate=(bots/'BotClassSpecActionProfileCandidates.cpp').read_text()
     unknown=candidate[candidate.index('        else if (spell.SpellId && !spellInfo)'):candidate.index('        else if (spell.Category == BotCombatActionCategory::UseItem')]
-    resolver=(bots/'BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    resolver=combat_resolver_source()
     count=resolver[resolver.index('        if (candidate.Profile.MinEnemies > hostileCount)'):resolver.index('        if (bot->getClass() == CLASS_DRUID')]
     reservation=resolver[resolver.index('        if (candidate.RejectReason.empty())\n            if (char const* reservationReason'):resolver.index('        if (areaOnly && candidate.Category')]
     combat_spell=(bots/'BotWorldPopulationMgrCombatSpell.cpp').read_text()

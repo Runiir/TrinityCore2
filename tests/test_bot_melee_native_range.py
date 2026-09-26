@@ -3,12 +3,13 @@ from pathlib import Path
 import subprocess
 import sqlite3
 import re
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_unset_melee_cap_uses_native_reach(tmp_path, rune_strike_caps=None):
-    source = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    source = combat_resolver_source()
     start = source.index("    auto effectiveSpellMaxRange =")
     helper = source[start:source.index("\n    };", start) + 7]
     start = source.index("        float maxRange = candidate.Profile.MaxRange")

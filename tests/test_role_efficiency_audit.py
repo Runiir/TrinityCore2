@@ -78,6 +78,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     root = Path(__file__).resolve().parents[1]
     runtime_files = (
         "BotWorldPopulationMgrCombatResolver.cpp",
+        "BotWorldPopulationMgrCombatResolverAdmission.cpp",
         "BotWorldPopulationMgrCombatSupport.cpp",
         "BotWorldPopulationMgrCombatSpell.cpp",
         "BotWorldPopulationMgrValidationGroupHeal.cpp",

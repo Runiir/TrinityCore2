@@ -13,6 +13,7 @@ import struct
 import subprocess
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "sql/custom/world/2026_09_23_60_fire_hot_streak_native_range.sql"
@@ -235,7 +236,7 @@ def test_migrated_rows_through_actual_resolver_range_envelope(tmp_path: Path) ->
     before = {row[0]: row for row in _state(db)[1]}
     db.executescript(_forward())
     after = {row[0]: row for row in _state(db)[1]}
-    source = RESOLVER.read_text(encoding="utf-8")
+    source = combat_resolver_source()
     native = _resolver_segment(source, "    auto effectiveSpellMaxRange =", "\n    };", 7)
     configured = _resolver_segment(source, "        float maxRange = candidate.Profile.MaxRange",
                                    "        if (candidate.Profile.RequiresMeleeRange")

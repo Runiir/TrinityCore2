@@ -10,6 +10,7 @@ PROFILE_DB = ROOT / "src/server/game/Bots/BotClassSpecActionProfileDb.cpp"
 PROFILE_CANDIDATES = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 CONTROLLER = ROOT / "src/server/game/Bots/BotControllerCombat.cpp"
 COMBAT_RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+COMBAT_RESOLVER_ADMISSION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolverAdmission.cpp"
 COMBAT_SPELL = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
 CALIBRATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
 ROTATION_CONTRACT = ROOT / "tools/bot_ml/build_phase4_rotation_contract.py"
@@ -33,7 +34,7 @@ def test_gate_is_typed_and_reusable_not_spell_hardcoded() -> None:
     for source in (
         PROFILE_CANDIDATES,
         CONTROLLER,
-        COMBAT_RESOLVER,
+        COMBAT_RESOLVER_ADMISSION,
         COMBAT_SPELL,
     ):
         text = source.read_text(encoding="utf-8")
@@ -75,6 +76,7 @@ def test_all_modified_bot_sources_remain_below_line_limit() -> None:
         PROFILE_CANDIDATES,
         CONTROLLER,
         COMBAT_RESOLVER,
+        COMBAT_RESOLVER_ADMISSION,
         COMBAT_SPELL,
         CALIBRATION,
     ):

@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.combat_resolver_source import combat_resolver_source
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 OUTCOME = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolverOutcome.cpp"
+ADMISSION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolverAdmission.cpp"
+ADMISSION_CONTEXT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolverAdmission.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 SUPPORT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp"
 SPELL = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
@@ -17,12 +21,27 @@ SWAP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp"
 def test_combat_resolver_module_is_narrow_and_registered() -> None:
     module = MODULE.read_text(encoding="utf-8")
     outcome = OUTCOME.read_text(encoding="utf-8")
+    admission = ADMISSION.read_text(encoding="utf-8")
     world = WORLD.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
-    assert len(module.splitlines()) <= 1000
+    # Round 4 split the resolver by concern with headroom below the hook.
+    assert len(module.splitlines()) < 700
+    assert len(admission.splitlines()) < 700
     assert len(outcome.splitlines()) <= 1000
     assert "Bots/BotWorldPopulationMgrCombatResolver.cpp" in cmake
+    assert "Bots/BotWorldPopulationMgrCombatResolverAdmission.cpp" in cmake
     assert "Bots/BotWorldPopulationMgrCombatResolverOutcome.cpp" in cmake
+    # The per-candidate admission gates and ranking are their own module; the
+    # resolver builds the candidates, delegates, then picks among the bests.
+    assert "void BotWorldPopulationMgr::AdmitProfileCombatCandidates(" in admission
+    assert "BotWorldPopulationMgr::AdmitProfileCombatCandidates(" not in module
+    assert "    AdmitProfileCombatCandidates(admission);" in module
+    assert module.index("BuildCandidates(bot, target, profile, potionHealthOwner);") \
+        < module.index("    AdmitProfileCombatCandidates(admission);") \
+        < module.index("    if (bestInterrupt)")
+    assert "struct BotWorldPopulationMgr::ProfileCombatAdmission" in ADMISSION_CONTEXT.read_text(encoding="utf-8")
+    assert "for (BotActionCandidate& candidate : candidates)" in admission
+    assert "for (BotActionCandidate& candidate : candidates)" not in module
     assert "BotWorldPopulationMgr::ResolveProfileCombatAction" in module
     assert "BotWorldPopulationMgr::ResolveProfileCombatAction" not in world
     # The no-valid-action outcome (rejection aggregates and the wait/melee
@@ -35,7 +54,7 @@ def test_combat_resolver_module_is_narrow_and_registered() -> None:
 
 
 def test_combat_resolver_preserves_profile_and_safety_arbitration() -> None:
-    module = MODULE.read_text(encoding="utf-8")
+    module = combat_resolver_source()
     for marker in (
         "BotClassSpecActionProfileStore::BuildCandidates",
         "future_encounter_target_forbidden",
@@ -50,7 +69,7 @@ def test_combat_resolver_preserves_profile_and_safety_arbitration() -> None:
 
 
 def test_combat_resolver_preserves_density_and_range_fallbacks() -> None:
-    module = MODULE.read_text(encoding="utf-8") + OUTCOME.read_text(encoding="utf-8")
+    module = combat_resolver_source() + OUTCOME.read_text(encoding="utf-8")
     for marker in (
         "living_bomb_spread",
         "densityRecovery",
@@ -66,7 +85,7 @@ def test_combat_resolver_preserves_density_and_range_fallbacks() -> None:
 
 
 def test_generic_taunt_ownership_gate_is_shared_with_select_combat_spell() -> None:
-    module = MODULE.read_text(encoding="utf-8")
+    module = combat_resolver_source()
     header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
         encoding="utf-8"
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +72,7 @@ def test_build_candidates_uses_only_tagged_current_channel_and_strict_priority()
 def test_channel_clip_is_typed_through_resolution_and_native_cast_owns_interrupt() -> None:
     profile_header = PROFILE_HEADER.read_text(encoding="utf-8")
     types = TYPES.read_text(encoding="utf-8")
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     executor = EXECUTOR.read_text(encoding="utf-8")
 
     assert "bool InterruptCurrentChanneledSpell = false;" in profile_header

@@ -478,7 +478,7 @@ def test_every_caller_shares_one_spell_aware_guard() -> None:
     assert "constexpr float AreaGuardRadius = 45.0f;" in reach
 
     callers = {
-        "BotWorldPopulationMgrCombatResolver.cpp": ["HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)"],
+        "BotWorldPopulationMgrCombatResolverAdmission.cpp": ["HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)"],
         "BotActionExecutor.cpp": [
             "HasNearbyProtectedEncounterTarget(bot, target, spellInfo)",
             "HasNearbyProtectedEncounterTarget(bot, target, preview.Effective)",

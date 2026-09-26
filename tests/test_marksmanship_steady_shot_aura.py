@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlite3
 import re
 import subprocess
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,7 +47,7 @@ def test_scoped_migration_and_actual_aura_condition_evaluator(tmp_path):
     evaluator = source[start:end]
     start = source.index("    int32 cost = spellInfo->CalcPowerCost", source.index("bool HasEnoughPowerForProfileSpell"))
     native_power = source[start:source.index("\n}", start)]
-    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     begin = resolver.index("    auto candidatePreferred =")
     comparator = resolver[begin:resolver.index("\n    };", begin)+7]
     program = r'''

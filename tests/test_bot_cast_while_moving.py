@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -224,7 +225,7 @@ int main()
 
 def test_production_callers_use_the_shared_native_predicate() -> None:
     helper = HELPER.read_text(encoding="utf-8")
-    resolver = RESOLVER.read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     executor = EXECUTOR.read_text(encoding="utf-8")
 
     assert "HasAuraTypeWithAffectMask" in helper

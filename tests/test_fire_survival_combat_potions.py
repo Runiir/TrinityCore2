@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 BOTS=ROOT/'src/server/game/Bots'
@@ -73,7 +74,7 @@ int main(){Player fire1,fire2;BotActionProfileSpell potion{"combustion_ready"},o
 
 
 def test_actual_comparator_potion_before_combat_with_native_safety_owners(tmp_path):
-    resolver=(BOTS/'BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    resolver=combat_resolver_source()
     start=resolver.index('    auto candidatePreferred =')
     comparator=resolver[start:resolver.index('\n    };',start)+7]
     execution=(BOTS/'BotWorldPopulationMgrCombatExecution.cpp').read_text()

@@ -4,6 +4,7 @@ import sqlite3
 import struct
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT/'tests/fixtures/survival_8146_native_admission.json'
@@ -59,7 +60,7 @@ def test_exact_scope_and_idempotence():
 def test_loaded_rows_through_production_count_and_native_range(tmp_path):
     db,data=database();before=[a for a in rows(db,'bot_rotation_action') if a['profile_id']==274]
     db.executescript(SQL.read_text());after=[a for a in rows(db,'bot_rotation_action') if a['profile_id']==274]
-    source=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    source=combat_resolver_source()
     native=source[source.index('    auto effectiveSpellMaxRange ='):source.index('    auto effectiveSpellMaxRange =')+source[source.index('    auto effectiveSpellMaxRange ='):].index('\n    };')+7]
     count=source[source.index('        if (candidate.Profile.MinEnemies > hostileCount)'):source.index('        if (bot->getClass() == CLASS_DRUID')]
     maximum=source[source.index('        if (maxRange > 0.0f && distance > maxRange)'):source.index('        if (deferLavaBurstMovementRejection)')]

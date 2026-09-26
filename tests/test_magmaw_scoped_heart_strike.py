@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,7 +48,7 @@ def _production_fixture_source() -> str:
         "ResolveScopedEncounterAreaSpellId(bot, result.Target)",
         "manager.ResolveScopedEncounterAreaSpellId(bot, target)",
     )
-    resolver = (BOT / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     resolver_start = resolver.index(
         "        if (HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)"
     )

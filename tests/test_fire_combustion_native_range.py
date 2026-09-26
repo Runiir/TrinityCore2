@@ -5,6 +5,7 @@ import struct
 import subprocess
 
 from test_fire_native_range import _connection, _action_rows
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT=Path(__file__).resolve().parents[1]
 SQL=ROOT/'sql/custom/world/2026_09_13_04_fire_combustion_native_range.sql'
@@ -42,7 +43,7 @@ def test_exact_all_profile_scope_and_mysql_float_idempotence():
 
 def test_migrated_rows_through_actual_resolver_native_envelope_and_dot_gate(tmp_path):
     db=database();before=_action_rows(db);db.executescript(SQL.read_text());after=_action_rows(db)
-    source=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    source=combat_resolver_source()
     start=source.index('    auto effectiveSpellMaxRange =')
     native=source[start:source.index('\n    };',start)+7]
     start=source.index('        float maxRange = candidate.Profile.MaxRange')

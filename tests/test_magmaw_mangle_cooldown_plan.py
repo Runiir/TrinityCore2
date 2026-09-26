@@ -20,6 +20,7 @@ import re
 import sqlite3
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / "src/server/game/Bots"
@@ -28,6 +29,7 @@ PLAN = MAGMAW / "BotMagmawMangleCooldownPlan.h"
 DEFENSIVE = MAGMAW / "BotMagmawMangleDefensive.h"
 MODULE = MAGMAW / "BotWorldPopulationMgrMagmawMangleDefensive.cpp"
 RESOLVER = BOTS / "BotWorldPopulationMgrCombatResolver.cpp"
+ADMISSION = BOTS / "BotWorldPopulationMgrCombatResolverAdmission.cpp"
 RESERVATION = BOTS / "BotWorldPopulationMgrRaidCooldownReservation.h"
 RUNE_TAP_SQL = ROOT / "sql/custom/world/2026_09_24_10_blood_rune_tap.sql"
 SEAT_HEART_STRIKE_SQL = ROOT / "sql/custom/world/2026_09_23_40_blood_mangle_death_strike_runes.sql"
@@ -98,14 +100,14 @@ def _rune_tap_row() -> tuple:
 
 
 def _candidate_preferred() -> str:
-    source = text(RESOLVER)
+    source = combat_resolver_source()
     start = source.index("    auto candidatePreferred =")
     end = source.index("\n    };", start) + len("\n    };")
     return source[start:end]
 
 
 def _role_score_switch() -> str:
-    source = text(RESOLVER)
+    source = combat_resolver_source()
     start = source.index("        float roleScore = candidate.Score;")
     end = source.index("        candidate.Score = roleScore;", start)
     return source[start:end]
@@ -699,7 +701,7 @@ def test_extracted_resolver_blocks_are_the_production_ones() -> None:
 
 
 def test_resolver_applies_the_plan_after_the_boss_reservation() -> None:
-    resolver = text(RESOLVER)
+    resolver = combat_resolver_source()
     assert ('#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/'
             'BotMagmawMangleCooldownPlan.h"') in resolver
     observe = ("    BotEncounter::MagmawMangleCooldownPlan::Plan const manglePlan =\n"
@@ -717,7 +719,7 @@ def test_resolver_applies_the_plan_after_the_boss_reservation() -> None:
     assert re.search(r"if \(candidate\.RejectReason\.empty\(\)\)\s*"
                      r"if \(char const\* mangleHold = manglePlan\.RejectReason\(candidate\.SpellId\)\)\s*"
                      r"\{\s*candidate\.RejectReason = mangleHold;\s*continue;\s*\}", loop)
-    for path in (RESOLVER, MODULE, PLAN, DEFENSIVE, RESERVATION):
+    for path in (RESOLVER, ADMISSION, MODULE, PLAN, DEFENSIVE, RESERVATION):
         assert len(text(path).splitlines()) < 1000, path
 
 

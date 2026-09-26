@@ -13,11 +13,13 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / "src/server/game/Bots"
 HEADER = BOTS / "BotTauntVehicleSeat.h"
 RESOLVER = BOTS / "BotWorldPopulationMgrCombatResolver.cpp"
+ADMISSION = BOTS / "BotWorldPopulationMgrCombatResolverAdmission.cpp"
 SPELL = BOTS / "BotWorldPopulationMgrCombatSpell.cpp"
 
 
@@ -101,10 +103,11 @@ def test_both_taunt_candidate_paths_apply_the_gate_first() -> None:
             r"&& BotTauntVehicleSeat::TauntWouldOnlyPullHolderOntoSeat\(bot, target\)\)\s*"
             r"\{\s*candidate\.RejectReason = BotTauntVehicleSeat::RejectReason;\s*continue;\s*\}")
     for path in (RESOLVER, SPELL):
-        source = text(path)
+        source = combat_resolver_source() if path == RESOLVER else text(path)
         assert '#include "Bots/BotTauntVehicleSeat.h"' in source
         match = re.search(gate, source)
         assert match, path
         assert match.start() < source.index('candidate.RejectReason = "threat_already_established";')
-        assert len(source.splitlines()) < 1000, path
+    for path in (RESOLVER, ADMISSION, SPELL):
+        assert len(text(path).splitlines()) < 1000, path
     assert 'RejectReason = "seat_holder_victim_out_of_reach";' in text(HEADER)

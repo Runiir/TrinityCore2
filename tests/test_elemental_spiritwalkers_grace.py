@@ -18,6 +18,7 @@ from tools.bot_ml.build_validation_provisioning import (
     load_config_with_bwd_diagnostic_shards,
 )
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -140,7 +141,7 @@ def test_catalog_reconciliation_and_character_spell_provisioning() -> None:
 
 
 def test_native_opportunity_gate_is_order_independent_and_spell_specific(tmp_path: Path) -> None:
-    resolver_source = RESOLVER.read_text(encoding="utf-8")
+    resolver_source = combat_resolver_source()
     comparator_start = resolver_source.index("    auto candidatePreferred =")
     comparator_end = resolver_source.index("\n    };", comparator_start) + 7
     comparator = resolver_source[comparator_start:comparator_end].replace(

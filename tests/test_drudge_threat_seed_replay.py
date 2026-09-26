@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).parents[1]
@@ -280,9 +281,7 @@ def test_worldserver_uses_the_replayed_transition_and_resolved_spell_range():
     release = seed.index("SetAllOffenseSuppressed(guid, false)", suppression)
     assert suppression < release
 
-    resolver = (
-        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
-    ).read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     assert 'hostileTargetOnly && candidate.Profile.TargetSelector != "enemy"' in resolver
     assert 'candidate.RejectReason = "hostile_target_required"' in resolver
 

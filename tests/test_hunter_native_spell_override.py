@@ -2,6 +2,7 @@
 import json
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOT = ROOT / "src/server/game/Bots"
@@ -263,7 +264,7 @@ int main(){
 
 def test_effective_identity_is_retained_and_execution_safety_order_preserved():
     candidates=(BOT / "BotClassSpecActionProfileCandidates.cpp").read_text()
-    resolver=(BOT / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver=combat_resolver_source()
     controller=(BOT / "BotControllerCombat.cpp").read_text()
     executor=(BOT / "BotActionExecutor.cpp").read_text()
     assert 'candidate.SpellId = spell.SpellId;' in candidates

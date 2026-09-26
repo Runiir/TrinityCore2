@@ -162,6 +162,38 @@ inline uint32 Apply(BotClassSpecActionProfile& profile)
         }
     return changed;
 }
+
+// Round 4, canonical-composition raids only (BotCanonicalRaidScope.h): the
+// Orc Survival hunter is also the legacy accepted Magmaw hunter 30009, so a
+// raid-wide Survival fix would change that accepted result.
+//   * Blood Fury 20572 carries the pinned single-target fixture's one-enemy
+//     ceiling (max_enemies = 1), so a boss with one engaged add within 12 yd
+//     (Magmaw's parasites, Maloriak's aberrations, a second Omnotron
+//     construct) never saw it. The raid cooldown reservation still holds it
+//     on trash and pre-pull, as it holds every offensive cooldown.
+inline constexpr char const* CanonicalScopeTag = "canonical_raid_rotation_20260926";
+
+inline bool ApplySurvival(BotActionProfileSpell& spell)
+{
+    if (spell.SpellId == 20572)
+        return ReplaceEnemyCeiling(spell, 1, 0);
+    return false;
+}
+
+// Returns the number of rows changed. Call only in canonical raid scope.
+inline uint32 ApplyCanonical(BotClassSpecActionProfile& profile)
+{
+    if (profile.Role != "dps" || profile.ClassId != 3 || profile.SpecTag != "survival")
+        return 0;
+    uint32 changed = 0;
+    for (BotActionProfileSpell& spell : profile.Spells)
+        if (ApplySurvival(spell))
+        {
+            AppendTag(spell, CanonicalScopeTag);
+            ++changed;
+        }
+    return changed;
+}
 }
 
 #endif

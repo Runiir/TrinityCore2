@@ -138,9 +138,12 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             ).read_text(),
         )
     )
-    world_resolver = (
-        repository / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
-    ).read_text()
+    # ResolveProfileCombatAction and its candidate admission module (round 4
+    # split by concern) are one resolver for these source checks.
+    world_resolver = "\n".join(
+        (repository / f"src/server/game/Bots/BotWorldPopulationMgrCombatResolver{module}.cpp").read_text()
+        for module in ("", "Admission")
+    )
     forward = (repository / "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql").read_text()
     forward += (repository / "sql/custom/world/2026_09_07_00_bot_rotation_hostile_health_gate.sql").read_text()
     forward += (repository / "sql/custom/world/2026_09_08_03_elemental_fulmination_gate.sql").read_text()

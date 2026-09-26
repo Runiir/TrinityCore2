@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -222,7 +223,7 @@ def _statement(source: str, marker: str) -> str:
 
 
 def _compile_native_density_fixture(tmp_path: Path) -> None:
-    resolver = (BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp").read_text(encoding="utf-8")
+    resolver = combat_resolver_source()
     combat_spell = (BOT_DIR / "BotWorldPopulationMgrCombatSpell.cpp").read_text(encoding="utf-8")
     controller = (BOT_DIR / "BotControllerCombat.cpp").read_text(encoding="utf-8")
     executor = (BOT_DIR / "BotActionExecutor.cpp").read_text(encoding="utf-8")

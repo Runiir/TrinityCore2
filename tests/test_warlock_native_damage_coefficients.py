@@ -2,6 +2,7 @@ import json
 import struct
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -307,9 +308,7 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
     profile_source = (
         PROFILE_CANDIDATES
     ).read_text()
-    world_source = (
-        ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
-    ).read_text()
+    world_source = combat_resolver_source()
     executor_source = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
 
     assert "ProfileSpellMaximumRange" in profile_source
@@ -327,7 +326,7 @@ def test_profile_range_prefilter_preserves_native_combat_reach() -> None:
 def test_short_range_action_recovery_source_contract() -> None:
     source = "\n".join(
         (
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
+            combat_resolver_source(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp").read_text(),
         )
     )
@@ -365,7 +364,7 @@ def test_shadowflame_uses_a_self_cast_with_a_hostile_range_anchor() -> None:
     source = "\n".join(
         (
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp").read_text(),
-            (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text(),
+            combat_resolver_source(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatRange.h").read_text(),
             (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationRows.cpp").read_text(),
         )

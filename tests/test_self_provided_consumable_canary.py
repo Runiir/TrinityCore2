@@ -5,6 +5,7 @@ import subprocess
 import pytest
 
 from tools.bot_ml.build_phase8_evidence_identity_manifest import _profile_target
+from tests.combat_resolver_source import combat_resolver_source
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -129,9 +130,7 @@ def test_single_target_calibration_excludes_fixture_potion_from_profile_candidat
     calibration_bot = _source(
         "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
     )
-    resolver = _source(
-        "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
-    )
+    resolver = combat_resolver_source()
     executor = _source(
         "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"
     )

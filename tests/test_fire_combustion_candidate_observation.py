@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / 'src/server/game/Bots'
@@ -123,7 +124,7 @@ int main(){
 
 
 def test_actual_resolver_guard_and_unchanged_admission(tmp_path):
-    resolver = (BOTS / 'BotWorldPopulationMgrCombatResolver.cpp').read_text()
+    resolver = combat_resolver_source()
     start = resolver.index('    if (publishDiagnostics)')
     end = resolver.index('        uint32 botKey', start)
     block = resolver[start:end] + '    }\n'

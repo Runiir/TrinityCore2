@@ -7,6 +7,7 @@ and the actual transient-backoff consumer execute, with the real kernel call sit
 from pathlib import Path
 import subprocess
 from test_magmaw_support_target_admission import compile_probe
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / "src/server/game/Bots"
@@ -19,7 +20,7 @@ def section(source, start, end):
 
 def test_actual_optional_purpose_preview_execute_and_dual_exclusions(tmp_path):
     fallback = (BOTS / "BotWorldPopulationMgrUpdateBotKernelFallback.cpp").read_text()
-    resolver = (BOTS / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    resolver = combat_resolver_source()
     execution = (BOTS / "BotWorldPopulationMgrCombatExecution.cpp").read_text()
     header = (BOTS / "BotWorldPopulationMgr.h").read_text()
     purpose = section(fallback, "            uint32 const policyExcludedSpellId =", "            bool const hazardRetained")

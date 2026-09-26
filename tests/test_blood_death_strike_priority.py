@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -279,7 +280,7 @@ def test_sql_replay_is_idempotent_and_scoped_to_blood_tank_death_strike():
 
 
 def _candidate_preferred_source() -> str:
-    source = RESOLVER.read_text(encoding="utf-8")
+    source = combat_resolver_source()
     start = source.index("    auto candidatePreferred =")
     end = source.index("\n    };", start) + len("\n    };")
     return source[start:end]

@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
+#include "Bots/BotCanonicalRaidScope.h"
 
 #include "Creature.h"
 #include "Group.h"
@@ -427,7 +428,18 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         uint32 RecoveryMs = 0;
     };
     std::vector<OwnerCandidate> owners;
+    // A canonical-composition raid never makes an active tank the caster: a
+    // Feral or Blood tank that turns from its target mid-pull to cast Rebirth
+    // or Raise Ally drops threat; the Balance druid or a healer casts instead
+    // (round 4). Legacy accepted scenarios keep today's owner set
+    // (BotCanonicalRaidScope.h).
+    bool const canonicalRaid = Cohort().Raid.RaidInstance
+        && BotCanonicalRaidScope::IsCanonicalCompositionScenario(
+            Cohort().Config.ValidationRouteScenarioId);
     for (Member const& member : living)
+    {
+        if (canonicalRaid && std::string(GetDungeonRole(member.Bot)) == "tank")
+            continue;
         for (auto const& [spellId, playerSpell] : member.Bot->GetSpellMap())
         {
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
@@ -436,6 +448,7 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
             owners.push_back({ member, spellId,
                 std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime) });
         }
+    }
 
     if (owners.empty())
     {

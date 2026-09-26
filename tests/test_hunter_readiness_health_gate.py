@@ -1,6 +1,7 @@
 import re
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOT = ROOT / 'src/server/game/Bots'
@@ -11,7 +12,7 @@ def test_readiness_uses_hostile_health_in_actual_selection_branches(tmp_path):
     definitions = header[header.index('struct BotActionProfileSpell'):header.index('struct BotActionCandidate')]
     functions = []
     for index, name in enumerate(('BotWorldPopulationMgrCombatSpell.cpp', 'BotWorldPopulationMgrCombatResolver.cpp')):
-        source = (BOT/name).read_text()
+        source = combat_resolver_source() if name == 'BotWorldPopulationMgrCombatResolver.cpp' else (BOT/name).read_text()
         begin = source.index('float targetHealthPct = UnitHealthPct(actionTarget);')
         branch = source[begin:source.index('float selfHealthPct = UnitHealthPct(bot);', begin)]
         functions.append(f'''bool select{index}(BotActionProfileSpell profile, Unit* target) {{

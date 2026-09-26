@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import subprocess
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -201,7 +202,7 @@ def test_production_movement_gate_and_ranking_replay(tmp_path: Path) -> None:
     moving = rows[(2948, MOVING_TAGS)]
     fallback = rows[(2948, FALLBACK_TAGS)]
 
-    resolver_source = RESOLVER.read_text(encoding="utf-8")
+    resolver_source = combat_resolver_source()
     comparator_start = resolver_source.index("    auto candidatePreferred =")
     comparator_end = resolver_source.index("\n    };", comparator_start) + 7
     comparator = resolver_source[comparator_start:comparator_end].replace(

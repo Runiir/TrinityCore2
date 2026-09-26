@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,7 +134,12 @@ CALIBRATION_FAMILY = module_family(
     "BotWorldPopulationMgrCalibration*.cpp",
     include=(BOT_DIR / "BotWorldPopulationMgr.cpp",),
 )
+COMBAT_RESOLVER_FAMILY = (
+    BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp",
+    BOT_DIR / "BotWorldPopulationMgrCombatResolverAdmission.cpp",
+)
 BOT_MGR_FAMILIES = {
+    "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction": COMBAT_RESOLVER_FAMILY,
     "void BotWorldPopulationMgr::UpdateBot": UPDATE_BOT_FAMILY,
     "bool BotWorldPopulationMgr::TryValidationRouteObjective": ROUTE_OBJECTIVE_FAMILY,
     "bool BotWorldPopulationMgr::MoveBotToPoint": MOVEMENT_FAMILY,
@@ -338,7 +344,7 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
 def test_profile_taunts_require_a_real_non_tank_victim() -> None:
     manager = read(BOT_MGR)
     assert manager.count("(!target->GetVictim() || target->GetVictim() == bot)") >= 2
-    resolver = read(BOT_DIR / "BotWorldPopulationMgrCombatResolver.cpp")
+    resolver = combat_resolver_source()
     spell = read(BOT_DIR / "BotWorldPopulationMgrCombatSpell.cpp")
     assert resolver.count("HasOtherLiveCohortTankVictim(bot, target)") == 1
     assert spell.count("HasOtherLiveCohortTankVictim(bot, target)") == 1
@@ -6522,7 +6528,7 @@ def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
 
 
 def test_profile_minimum_range_rejection_enters_shared_recovery_lane():
-    resolver = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp")
+    resolver = combat_resolver_source()
     execution = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp")
     assert "action.RangeRecoveryRequired = true;" in resolver
     assert_ordered(

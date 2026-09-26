@@ -20,6 +20,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.combat_resolver_source import combat_resolver_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -349,7 +350,7 @@ def test_recovery_rows_rank_below_death_strike_in_every_mode():
     candidates = _text(CANDIDATES)
     assert "candidate.Score = spell.DamageWeight + spell.HealingWeight + spell.ThreatWeight" in candidates
     assert "- float(spell.PriorityBucket) * 0.03f;" in candidates
-    resolver = _text(RESOLVER)
+    resolver = combat_resolver_source()
     for formula in (
         "roleScore += candidate.Profile.DamageWeight * 0.55f + candidate.Profile.HealingWeight * 0.25f + candidate.Profile.ThreatWeight * 0.25f;",
         "roleScore += candidate.Profile.ThreatWeight + candidate.Profile.MitigationWeight + candidate.Profile.SurvivalWeight * 0.45f;",
