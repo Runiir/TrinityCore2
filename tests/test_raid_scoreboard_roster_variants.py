@@ -36,7 +36,7 @@ def test_c0_shard_runs_use_the_canonical_variant_and_legacy_runs_keep_the_accept
     assert sorted(legacy) == [str(guid) for guid in range(30001, 30011)]
     judged = target_for_records(ROOT, target, [_kill(C0), _kill(C0)])
     assert sorted(roster(judged)) == [str(guid) for guid in range(11000001, 11000011)]
-    assert roster(judged)["11000003"]["spec"] == "beast_mastery_hunter"
+    assert roster(judged)["11000003"]["spec"] == "survival_hunter"
     assert judged["validation_scenario_id"] == C0
     assert judged["roster_variant"] == {"path": SIDECAR, "sha256": file_sha256(ROOT / SIDECAR),
                                         "validation_scenario_id": C0}
@@ -78,7 +78,7 @@ def test_c0_kills_are_judged_and_shown_with_the_c0_roster(root):  # noqa: F811
     assert "roster_variant" not in legacy and "11000001" not in legacy["actors"]
     shown = render(root, SCENARIO, "c0")
     assert f"roster={C0}" in shown.splitlines()[0]
-    assert "Bwmgwnbc" in shown and "beast_mastery_hunter" in shown
+    assert "Bwmgwnbc" in shown and "survival_hunter" in shown
     assert "roster=" not in render(root, SCENARIO, "legacy").splitlines()[0]
 
 
@@ -92,7 +92,7 @@ def test_a_c0_summary_takes_specs_from_the_c0_roster(root):  # noqa: F811
                            "encounter_window_dps": 1.0}]}
     record = record_from_summary(summary, root=root, target=target, scenario=SCENARIO, label="c0",
                                  kill_id="c0-k1", deaths={})
-    assert record["actors"][0]["spec"] == "beast_mastery_hunter" and record["actors"][0]["role"] == "dps"
+    assert record["actors"][0]["spec"] == "survival_hunter" and record["actors"][0]["role"] == "dps"
 
 
 def test_the_accepted_magmaw_graph_still_accepts_its_verdict():

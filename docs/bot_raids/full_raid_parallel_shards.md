@@ -43,7 +43,7 @@ orchestrator skill are boss-level only.
   | --- | --- | --- |
   | Death Knight | Blood (tank) | — |
   | Druid | Balance | Feral tank (two-tank bosses) |
-  | Hunter | Beast Mastery | — |
+  | Hunter | Survival (Beast Mastery until 2026-09-26) | — |
   | Mage | Fire | — |
   | Paladin | Holy | — |
   | Paladin | Retribution | — |
@@ -62,6 +62,16 @@ orchestrator skill are boss-level only.
   | 1 tank, 2 healers (default) | 19/20 | 30% bleed. The hunter pet covers 4% physical damage instead. |
   | 2 tanks (druid Feral) | 19/20 | 5% spell haste. The shaman picks Windfury or Wrath of Air. |
   | 3 healers, shaman Resto | 18/20 (1 tank), 19/20 (2 tanks) | 4% physical damage |
+
+  This table is for Beast Mastery with an exotic Worm (Acid Spit). The BM bots actually got the
+  catalog wolf (entry 8959, Furious Howl), so no live run had the 4% physical debuff. Survival
+  recheck (2026-09-26, all 23 categories of the same file; details in the composition's
+  `buff_coverage_declared.survival_recheck`): Survival adds Hunting Party (10% melee and ranged
+  haste), so the shaman's air totem is always Wrath of Air and the two-tank spell-haste gap closes;
+  BM's Ferocious Inspiration duplicated the Retribution Paladin's Communion. With the wolf, the only
+  gaps are 4% physical (every shard) and 30% bleed (Balance shards: Magmaw, Atramedes). A Ravager
+  (non-exotic, Ravage 50518) would close the physical gap; it needs a native Cunning pet fixed point
+  and a Survival reference with that pet before it replaces the wolf.
 
   25-man compositions follow the same method; buffs stack more easily there.
 

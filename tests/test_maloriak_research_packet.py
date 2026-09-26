@@ -107,8 +107,11 @@ def test_raid_target_matches_the_canonical_maloriak_shard() -> None:
     assert specs == sorted(expected)
     assert sum(row["role"] == "tank" for row in roster.values()) == 2
     assert sum(row["role"] == "healer" for row in roster.values()) == 2
-    for spec in ("blood_death_knight", "feral_druid_tank", "beast_mastery_hunter"):
+    for spec in ("blood_death_knight", "feral_druid_tank"):
         assert spec in target["reference_gaps"]
+    # The Survival hunter (canonical since 2026-09-26) has a WoWSims fallback, so it is no gap.
+    assert "survival_hunter" not in target["reference_gaps"]
+    assert "survival_hunter" in target["reference_gaps"]["with_wowsims_fallback"]
 
 
 def test_dossier_carries_the_contract_and_its_blockers() -> None:

@@ -8,7 +8,7 @@
       "validation_scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic",
       "cohort_id": "blackwing_descent_10n_magmaw_c0",
       "composition_id": "blackwing_descent_10n_canonical_v1",
-      "roster_source": "tools.raid_program.raid_shard_plan: packed identity raid 1, 10N, boss 0, copy 0 (character GUID 11000000 + slot); spec selection from experiments/configs/raid_compositions/blackwing_descent_10n.json (Magmaw: Balance druid, Elemental shaman)",
+      "roster_source": "tools.raid_program.raid_shard_plan: packed identity raid 1, 10N, boss 0, copy 0 (character GUID 11000000 + slot); spec selection from experiments/configs/raid_compositions/blackwing_descent_10n.json (Magmaw: Balance druid, Elemental shaman; the hunter slot 11000003 is Survival since 2026-09-26, before any c0 label was recorded)",
       "roster": {
         "11000001": {
           "name": "Bwmgwnba",
@@ -22,7 +22,7 @@
         },
         "11000003": {
           "name": "Bwmgwnbc",
-          "spec": "beast_mastery_hunter",
+          "spec": "survival_hunter",
           "role": "dps"
         },
         "11000004": {

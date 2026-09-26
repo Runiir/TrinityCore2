@@ -6,6 +6,7 @@ Evidence (round-2 batch, 2026-09-25): the prepull candidate failed closed for th
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -96,9 +97,11 @@ def test_the_fallback_table_mirrors_the_runtime_contract_archetypes():
 def test_the_shaman_carries_native_heroism_in_every_shard(plan):
     shamans = [bot for shard in plan["shards"] for bot in shard["bots"] if bot["character_key"] == "shaman"]
     assert len(shamans) == len(plan["shards"])
-    assert all(bot["spells"] == [HEROISM, WATER_SHIELD] and bot["race"] == 11 for bot in shamans)
-    assert all("spells" not in bot for shard in plan["shards"] for bot in shard["bots"]
-               if bot["character_key"] != "shaman")
+    assert all({HEROISM, WATER_SHIELD} <= set(bot["spells"]) and bot["race"] == 11 for bot in shamans)
+    declared = {row["character_key"]: sorted(row.get("spells") or []) for row in json.loads(COMPOSITION.read_text())["characters"]}
+    for shard in plan["shards"]:
+        for bot in shard["bots"]:
+            assert sorted(bot.get("spells") or []) == declared[bot["character_key"]], bot["name"]
 
 
 def test_declared_spells_must_be_native_to_the_race_and_class(plan):
@@ -163,3 +166,56 @@ def test_every_canonical_spec_knows_its_persistent_self_buff(plan):
             assert required <= known, (shard["cohort_id"], bot["class_spec"], sorted(required - known))
             checked.add(bot["class_spec"])
     assert {"restoration_shaman", "elemental_shaman", "fire_mage", "demonology_warlock"} <= checked
+
+
+NEFARIAN_CAPABILITIES = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
+MALORIAK_CANDIDATES = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/"
+                       "BotWorldPopulationMgrMaloriakCandidates.cpp")
+# MaloriakRemedyDispelSpells in class order: Spellsteal, Purge, Tranquilizing Shot, Dispel Magic.
+REMEDY_DISPEL_BY_CLASS = {8: 30449, 7: 370, 3: 19801, 5: 527}
+# Reviewed gaps: Curse of Exhaustion 18223 is an Affliction talent, so a Demonology warlock cannot learn it.
+UNLEARNABLE_DUTY_SPELLS = {("demonology_warlock", 18223)}
+
+
+def capability_table(function: str) -> list[tuple[str, str, int]]:
+    """(match kind, spec or suffix, spell) rows of a Nefarian capability function, in if-chain order."""
+    source = NEFARIAN_CAPABILITIES.read_text()
+    body = source[source.index(f"inline {function}"):]
+    body = body[:body.index("\n}\n")]
+    return [("suffix", suffix, int(spell)) if suffix else ("exact", exact, int(spell))
+            for suffix, exact, spell in re.findall(
+                r'if \((?:SpecEndsWith\(spec, "(\w+)"\)|spec == "(\w+)")\)\s*return \{ (\d+),', body)]
+
+
+def capability_spell(table: list[tuple[str, str, int]], spec: str) -> int | None:
+    for kind, value, spell in table:
+        if (kind == "suffix" and spec.endswith(value)) or (kind == "exact" and spec == value):
+            return spell
+    return None
+
+
+def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
+    """Round 4: Nefarian controls and Maloriak Remedy dispels named spells no canonical bot knew."""
+    if not (DBC / "SkillLineAbility.dbc").is_file() or not (ROOT / "dataset/world_knowledge/trainers.jsonl").is_file():
+        pytest.skip("client DBCs or trainers not hydrated")
+    from tools.raid_program.raid_loadout_spells import loadout_known_spells, native_baseline, spell_learn_map
+
+    controls, interrupts = capability_table("ControlCapability ControlFor"), capability_table("InterruptCapability InterruptFor")
+    assert ("suffix", "hunter", 5116) in controls and ("suffix", "priest", 9484) in controls
+    dispels = re.search(r"MaloriakRemedyDispelSpells = \{([^}]*)\}", MALORIAK_CANDIDATES.read_text()).group(1)
+    assert [int(value) for value in re.findall(r"(\d+)u", dispels)] == list(REMEDY_DISPEL_BY_CLASS.values())
+    learn_map, gaps, checked = spell_learn_map(DBC), set(), set()
+    for shard in plan["shards"]:
+        for bot in shard["bots"]:
+            spec, known = bot["class_spec"], set(loadout_known_spells(bot, DBC)["known_spell_ids"])
+            required = {capability_spell(interrupts, spec), REMEDY_DISPEL_BY_CLASS.get(int(bot["class"]))}
+            if bot["role"] != "tank":  # the control plan skips tanks
+                required.add(capability_spell(controls, spec))
+            baseline = native_baseline(int(bot["class"]), int(bot["race"]), DBC, learn_map)
+            for spell in sorted(required - {None}):
+                if spell not in known:
+                    assert spell not in baseline, (shard["cohort_id"], spec, spell)  # learnable but not provisioned
+                    gaps.add((spec, spell))
+            checked.add(spec)
+    assert gaps == UNLEARNABLE_DUTY_SPELLS
+    assert {"survival_hunter", "fire_mage", "discipline_priest", "retribution_paladin", "restoration_shaman"} <= checked

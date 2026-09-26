@@ -20,8 +20,7 @@
   "reference_gaps": {
     "all_specs": "No matched Atramedes 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract.",
     "blood_death_knight": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "beast_mastery_hunter": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "balance_druid, fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Atramedes costs movement (Sonar Pulse, Sonic Breath, air phase), so these targets are not encounter-matched."
+    "with_wowsims_fallback": "balance_druid, survival_hunter (the canonical hunter since 2026-09-26, user decision; Beast Mastery had no fallback), fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Atramedes costs movement (Sonar Pulse, Sonic Breath, air phase), so these targets are not encounter-matched."
   },
   "unmatched_reference_notes": {},
   "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json (actors empty; add wcl_cast_timelines here once extracted)",
@@ -53,7 +52,7 @@
   "roster": {
     "11003001": {"name": "Bwatrnba", "spec": "blood_death_knight", "role": "tank"},
     "11003002": {"name": "Bwatrnbb", "spec": "balance_druid", "role": "dps"},
-    "11003003": {"name": "Bwatrnbc", "spec": "beast_mastery_hunter", "role": "dps"},
+    "11003003": {"name": "Bwatrnbc", "spec": "survival_hunter", "role": "dps"},
     "11003004": {"name": "Bwatrnbd", "spec": "fire_mage", "role": "dps"},
     "11003005": {"name": "Bwatrnbe", "spec": "holy_paladin", "role": "healer"},
     "11003006": {"name": "Bwatrnbf", "spec": "retribution_paladin", "role": "dps"},

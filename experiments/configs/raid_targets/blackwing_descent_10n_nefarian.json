@@ -27,8 +27,7 @@
     "all_specs": "No matched Nefarian's End 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract.",
     "blood_death_knight": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
     "feral_druid_tank": "No WCL reference and no WoWSims fallback (the index has feral_druid_dps only, which is not this spec): status no_reference until a matched kill is extracted.",
-    "beast_mastery_hunter": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "fire_mage, retribution_paladin, assassination_rogue and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Nefarian's End spends time on target swaps (Onyxia, Nefarian, prototypes), pillar travel, kiting and bone-warrior control, so these targets are not encounter-matched.",
+    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Nefarian's End spends time on target swaps (Onyxia, Nefarian, prototypes), pillar travel, kiting and bone-warrior control, so these targets are not encounter-matched.",
     "phase_scope": "A kill-window DPS includes phase 2 (prototypes only, no Nefarian damage) and the platform travel; a matched WCL kill has the same structure, so no phase exclusion is applied."
   },
   "unmatched_reference_notes": {},
@@ -73,7 +72,7 @@
     },
     "11005003": {
       "name": "Bwnefnbc",
-      "spec": "beast_mastery_hunter",
+      "spec": "survival_hunter",
       "role": "dps"
     },
     "11005004": {

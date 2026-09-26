@@ -75,8 +75,10 @@ def test_wcl_placeholders_carry_no_measured_value() -> None:
     plan = dps["extraction_plan"]
     assert {"summary", "casts", "boss_casts", "boss_melee", "health"} <= set(plan["views"])
     assert plan["candidate_reports_to_open_first"]
-    for spec in ("blood_death_knight", "beast_mastery_hunter"):
+    for spec in ("blood_death_knight", "survival_hunter"):
         assert spec in plan["wanted_specs"]
+    # The canonical hunter is Survival (user decision 2026-09-26).
+    assert "beast_mastery_hunter" not in plan["wanted_specs"]
 
 
 def test_raid_target_is_scoreboard_loadable_and_honest() -> None:
@@ -88,7 +90,11 @@ def test_raid_target_is_scoreboard_loadable_and_honest() -> None:
     assert "wcl_cast_timelines" not in target  # added only once actors exist
     references = scoreboard_core.reference_targets(ROOT, target)
     assert all(ref["basis"] == "wowsims_fallback" for ref in references.values())
-    assert "blood_death_knight" not in references and "beast_mastery_hunter" not in references
+    # Blood has neither a WCL reference nor a WoWSims fallback; the Survival
+    # hunter has the WoWSims fallback.
+    assert "blood_death_knight" not in references
+    assert target["roster"]["11003003"]["spec"] == "survival_hunter"
+    assert references["survival_hunter"]["basis"] == "wowsims_fallback"
     assert target["encounter_route_node_id"] == "bwd.atramedes.encounter"
     assert target["lockout"]["precompleted_boss_keys"] == ["magmaw", "omnotron"]
     assert target["run_plan"]["requires_seeded_lockout"] is True

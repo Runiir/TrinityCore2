@@ -24,8 +24,7 @@
     "all_specs": "No matched Maloriak 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract; the Magmaw 10N references are a different encounter and are never borrowed.",
     "blood_death_knight": "Tank. No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
     "feral_druid_tank": "Off-tank on Aberrations and Prime Subjects. No WCL reference and no WoWSims fallback (the index has feral_druid_dps only, a different role): status no_reference until a matched kill is extracted.",
-    "beast_mastery_hunter": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Maloriak costs interrupts, Remedy dispels, Flash Freeze breaks, add damage and phase positioning, so these targets are not encounter-matched."
+    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Maloriak costs interrupts, Remedy dispels, Flash Freeze breaks, add damage and phase positioning, so these targets are not encounter-matched."
   },
   "unmatched_reference_notes": {},
   "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json (actors empty; add wcl_cast_timelines here once extracted)",
@@ -69,7 +68,7 @@
     },
     "11004003": {
       "name": "Bwmalnbc",
-      "spec": "beast_mastery_hunter",
+      "spec": "survival_hunter",
       "role": "dps"
     },
     "11004004": {

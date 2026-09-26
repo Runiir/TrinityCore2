@@ -116,7 +116,7 @@ def test_magmaw_patrol_pull_owner_moves_to_the_canonical_hunter(plan):
     row = rows.configured_scenarios(_read(CONFIG))[magmaw["scenario_id"]]
     chainwielder = next(step for step in row["route"] if step["node_id"] == "bwd.magmaw.chainwielder")
     slot = chainwielder["patrol_pull_owner_roster_slot"]
-    assert magmaw["bots"][slot - 1]["class_spec"] == "beast_mastery_hunter" and slot == 5
+    assert magmaw["bots"][slot - 1]["class_spec"] == "survival_hunter" and slot == 5
     legacy = next(shard for shard in _read(FIXTURE)["shards"] if shard["scenario_id"] == magmaw["route_template_scenario_id"])
     assert legacy["bots"][9 - 1]["class_spec"] == "survival_hunter"  # the template's owner slot 9
 
@@ -194,7 +194,7 @@ def test_full_raid_route_remaps_every_roster_slot_onto_the_canonical_roster(plan
     assert specs([magmaw["main_tank_roster_slot"]]) == ["blood_death_knight"]
     assert specs([magmaw["off_tank_roster_slot"]]) == ["feral_druid_tank"]
     chainwielder = next(step for step in row["route"] if step["node_id"] == "bwd.magmaw.chainwielder")
-    assert specs([chainwielder["patrol_pull_owner_roster_slot"]]) == ["beast_mastery_hunter"]
+    assert specs([chainwielder["patrol_pull_owner_roster_slot"]]) == ["survival_hunter"]
 
 
 @pytest.mark.parametrize("mutate,check", [

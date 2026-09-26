@@ -13,6 +13,6 @@
     ],
     "fallback_discovery": "WCL Cataclysm Classic rankings for encounter 1027 (Omnotron Defense System), 10-player normal; open a kill whose roster covers the canonical specs",
     "per_reference_fields": ["id (<report>-fight<id>)", "url", "mode", "duration_sec", "raid_dps", "average_item_level", "target_scope (four constructs and Poison Bombs)", "actor_dps per class_spec", "limitations"],
-    "specs_needed": ["blood_death_knight", "feral_druid_tank", "beast_mastery_hunter", "fire_mage", "retribution_paladin", "assassination_rogue", "elemental_shaman", "demonology_warlock"]
+    "specs_needed": ["blood_death_knight", "feral_druid_tank", "survival_hunter", "fire_mage", "retribution_paladin", "assassination_rogue", "elemental_shaman", "demonology_warlock"]
   }
 }

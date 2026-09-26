@@ -36,7 +36,7 @@ def test_canonical_bwd_10n_composition_matches_the_decision_table():
     assert specs == {
         "death_knight": ["blood_death_knight"],
         "druid": ["balance_druid", "feral_druid_tank"],
-        "hunter": ["beast_mastery_hunter"],
+        "hunter": ["survival_hunter"],  # user decision 2026-09-26 (was Beast Mastery)
         "mage": ["fire_mage"],
         "paladin_holy": ["holy_paladin"],
         "paladin_ret": ["retribution_paladin"],
@@ -108,16 +108,17 @@ def test_gear_coverage_lists_gaps_without_inventing_gear():
     base = read_json(BASE_GEAR_PROFILES) if BASE_GEAR_PROFILES.is_file() else None
     specs = composition_specs(composition) + [s for s in legacy_bwd_specs() if s not in composition_specs(composition)]
     report = gear_coverage_report(specs, catalog, read_json(WOWSIMS_GEAR_PROFILES), base, read_json(REFERENCE_REQUESTS))
-    for spec in ("retribution_paladin", "assassination_rogue", "demonology_warlock",
-                 "fire_mage", "balance_druid", "elemental_shaman", "affliction_warlock", "marksmanship_hunter"):
+    for spec in ("retribution_paladin", "assassination_rogue", "demonology_warlock", "fire_mage", "balance_druid",
+                 "elemental_shaman", "affliction_warlock", "marksmanship_hunter", "survival_hunter"):
         assert spec in report["covered"], spec
         assert report["specs"][spec]["authority"] == "wowsims_p4_preset"
         assert report["specs"][spec]["provider_revision"] == "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
-    for spec in ("beast_mastery_hunter", "feral_druid_tank", "restoration_shaman",
-                 "blood_death_knight", "holy_paladin", "discipline_priest"):
+    for spec in ("feral_druid_tank", "restoration_shaman", "blood_death_knight", "holy_paladin", "discipline_priest"):
         assert spec in report["gaps"], spec
         assert report["specs"][spec]["authority"] != "wowsims_p4_preset"
-    assert report["specs"]["beast_mastery_hunter"]["wowsims_dps_reference_request"] is False
+    # The Survival hunter that replaced Beast Mastery (2026-09-26) has a WoWSims preset and a DPS reference.
+    assert report["specs"]["survival_hunter"]["wowsims_dps_reference_request"] is True
+    assert report["specs"]["survival_hunter"]["gear_profile_id"] == "wowsims_cata_p4_survival_hunter"
     if base is not None:
         assert report["specs"]["feral_druid_tank"]["authority"] == "heuristic_player_acquisition_profile"
 

@@ -15,6 +15,7 @@
     "state": "no_matched_wcl_reference",
     "reason": "classic.warcraftlogs.com human-verification gate on 2026-09-25; see the reference manifest's extraction_plan.",
     "wowsims_fallback_specs": [
+      "survival_hunter",
       "fire_mage",
       "retribution_paladin",
       "assassination_rogue",
@@ -23,10 +24,9 @@
     ],
     "no_reference_specs": [
       "blood_death_knight",
-      "feral_druid_tank",
-      "beast_mastery_hunter"
+      "feral_druid_tank"
     ],
-    "consequence": "scoreboard verdict reports no_reference for Blood DK, Feral tank and BM hunter; the overall status stays fail until matched WCL references exist."
+    "consequence": "scoreboard verdict reports no_reference for Blood DK and Feral tank (the Survival hunter, canonical since 2026-09-26, has a WoWSims fallback); the overall status stays fail until matched WCL references exist."
   },
   "unmatched_reference_notes": {},
   "kills_per_measurement": 3,
@@ -69,7 +69,7 @@
     },
     "11001003": {
       "name": "Bwomnnbc",
-      "spec": "beast_mastery_hunter",
+      "spec": "survival_hunter",
       "role": "dps"
     },
     "11001004": {

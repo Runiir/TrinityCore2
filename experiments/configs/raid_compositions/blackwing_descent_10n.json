@@ -14,12 +14,39 @@
   "buff_coverage_declared": {
     "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
     "provider_path": "ui/core/components/inputs/buffs_debuffs.ts",
-    "note": "Copied verbatim from the decision document; not recomputed here.",
+    "note": "Copied verbatim from the decision document, for the Beast Mastery hunter with an exotic Worm (Acid Spit); superseded by survival_recheck. That pet was never provisioned: the BM bots got the catalog wolf (entry 8959, Furious Howl), so no live BM run had the 4% physical debuff.",
     "configurations": [
       {"configuration": "1 tank, 2 healers (default)", "coverage": "19/20", "missing": "30% bleed. The hunter pet covers 4% physical damage instead."},
       {"configuration": "2 tanks (druid Feral)", "coverage": "19/20", "missing": "5% spell haste. The shaman picks Windfury or Wrath of Air."},
       {"configuration": "3 healers, shaman Resto", "coverage": "18/20 (1 tank), 19/20 (2 tanks)", "missing": "4% physical damage"}
-    ]
+    ],
+    "survival_recheck": {
+      "decided": "2026-09-26",
+      "decision": "User decision: the canonical hunter is Survival (the accepted, qualified hunter spec; the fixed Magmaw baiter). As BM it did 14-16k because Cobra Shot cannot be cast while moving; the legacy Survival baiter did 37.6k.",
+      "method": "Recomputed against the 23 categories of RAID_BUFFS_CONFIG (16) and DEBUFFS_CONFIG (7) of the same provider file and revision. Pet providers are the CreatureFamily skill-line abilities (SkillLineAbility) whose SpellEffect aura, misc value and amount equal the WoWSims representative (Acid Spit 55749: aura 87, physical, +4; Stampede 57386: aura 255, +30 bleed; Furious Howl 24604: aura 290, +5 crit). Exotic families (creature_template type_flags 0x10000: Worm 42, Rhino 43, Core Hound, Devilsaur, Spirit Beast, Silithid, Chimaera, Shale Spider) need the Beast Mastery talent 53270, so a Survival hunter cannot use them.",
+      "hunter_delta": {
+        "lost_with_beast_mastery": "Ferocious Inspiration 34460 (+3% damage), also provided by the Retribution Paladin's Communion 31876; nothing is lost. The exotic-pet options (Worm Acid Spit, Rhino Stampede, Core Hound Ancient Hysteria) were never provisioned.",
+        "gained_with_survival": "Hunting Party 53290 (10% melee and ranged haste). The shaman no longer needs Windfury, so its one air totem is Wrath of Air (5% spell haste) in every configuration. That closes the two-tank spell-haste gap of the BM table."
+      },
+      "pet_providers_non_exotic": {
+        "physical_damage_4pct": "Ravager (family 31, Cunning): Ravage 50518. The only non-exotic provider; nobody else in this roster has one (Blood Frenzy is Arms, Savage Combat is Combat rogue, Brittle Bones is Frost DK).",
+        "bleed_30pct": "Boar (5, Tenacity) Gore 35290 or Hyena (25, Ferocity) Tendon Rip 50271. The Feral tank's Mangle covers it in the four two-tank shards.",
+        "crit_5pct": "Wolf (1, Ferocity) Furious Howl 24604. Redundant in every shard: Elemental Oath 51470 (Elemental) or Leader of the Pack 17007 (Feral) is always present.",
+        "cat": "no buff or debuff in these categories"
+      },
+      "configurations": [
+        {"configuration": "1 tank, 2 healers: Balance druid, Elemental shaman (Magmaw, Atramedes)",
+         "missing": {"survival_wolf": ["30% bleed", "4% physical damage"], "survival_ravager": ["30% bleed"],
+                     "beast_mastery_as_provisioned_wolf": ["30% bleed", "4% physical damage"]}},
+        {"configuration": "2 tanks, 2 healers: Feral druid, Elemental shaman (Omnotron, Maloriak)",
+         "missing": {"survival_wolf": ["4% physical damage"], "survival_ravager": [],
+                     "beast_mastery_as_provisioned_wolf": ["5% spell haste or 10% melee haste (one air totem)", "4% physical damage"]}},
+        {"configuration": "2 tanks, 3 healers: Feral druid, Restoration shaman (Chimaeron, Nefarian, full raid)",
+         "missing": {"survival_wolf": ["4% physical damage"], "survival_ravager": [],
+                     "beast_mastery_as_provisioned_wolf": ["5% spell haste or 10% melee haste (one air totem)", "4% physical damage"]}}
+      ],
+      "pet_choice": "Ravager, for coverage: it is the only Survival pet that adds a category (4% physical damage, missing in every shard); a wolf or cat adds none. It is not provisioned yet: the hunter keeps the catalog wolf (entry 8959), the native level-85 Ferocity save/load fixed point that the legacy accepted Survival baiter and the WoWSims Survival reference (pet_type wolf) use. A Ravager needs a tameable template (e.g. 26030 Tamable Ravager), a native Cunning talent fixed point captured on a server (the wolf's Ferocity talent spells 53184, 53186, 53205, 53401, 53434, 61681, 61683, 62760 do not apply to a Cunning pet) and a Survival reference re-run with pet_type Ravager."
+    }
   },
   "spec_source": "experiments/configs/all_spec_targets_cata_p4_v1.json",
   "default_copies": 1,
@@ -48,14 +75,20 @@
   "characters": [
     {"character_key": "death_knight", "slot": 1, "specs": ["blood_death_knight"]},
     {"character_key": "druid", "slot": 2, "specs": ["balance_druid", "feral_druid_tank"]},
-    {"character_key": "hunter", "slot": 3, "specs": ["beast_mastery_hunter"]},
-    {"character_key": "mage", "slot": 4, "specs": ["fire_mage"]},
-    {"character_key": "paladin_holy", "slot": 5, "specs": ["holy_paladin"]},
-    {"character_key": "paladin_ret", "slot": 6, "specs": ["retribution_paladin"]},
-    {"character_key": "priest", "slot": 7, "specs": ["discipline_priest"]},
+    {"character_key": "hunter", "slot": 3, "specs": ["survival_hunter"], "spells": [5116, 19801],
+     "spells_note": "Concussive Shot 5116: the hunter's Nefarian bone-warrior snare (ControlFor); Tranquilizing Shot 19801: the hunter's Maloriak Remedy dispel (MaloriakRemedyDispelSpells, rank 2 after the mage and the Elemental shaman). Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell. Neither Beast Mastery nor Survival had them.",
+     "spec_note": "Survival (user decision 2026-09-26), replacing Beast Mastery. The catalog build is the legacy accepted Magmaw Survival baiter's: Orc (race 2, like the Demonology warlock), talent tree 809 with Hunting Party 53290, glyphs 45731/45732/42898/42904/45735/42899, gear wowsims_cata_p4_survival_hunter, agility flask/food/potion 58087/62669/58145 (its generated prepull contract), action profile survival_hunter, wolf pet 8959. See buff_coverage_declared.survival_recheck for the pet choice."},
+    {"character_key": "mage", "slot": 4, "specs": ["fire_mage"], "spells": [122, 30449],
+     "spells_note": "Frost Nova 122: the mage's Nefarian bone-warrior root (ControlFor, self-centred); Spellsteal 30449: the first-choice Maloriak Remedy dispel (MaloriakRemedyDispelSpells rank 0). Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell."},
+    {"character_key": "paladin_holy", "slot": 5, "specs": ["holy_paladin"], "spells": [853],
+     "spells_note": "Hammer of Justice 853: the paladin's Nefarian bone-warrior stun (ControlFor ranks stuns first). Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell. Cleanse is in the Holy profile."},
+    {"character_key": "paladin_ret", "slot": 6, "specs": ["retribution_paladin"], "spells": [853, 4987],
+     "spells_note": "Hammer of Justice 853: the Nefarian bone-warrior stun this spec was kept for (Nefarian rationale); Cleanse 4987: the Omnotron Soaked In Poison backup dispel (Omnotron duty plan: Holy Paladin Cleanse, then Retribution Cleanse). Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell."},
+    {"character_key": "priest", "slot": 7, "specs": ["discipline_priest"], "spells": [9484],
+     "spells_note": "Shackle Undead 9484: the Nefarian shackler (ControlFor; the Nefarian rationale's Shackle Undead). Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell."},
     {"character_key": "rogue", "slot": 8, "specs": ["assassination_rogue"]},
-    {"character_key": "shaman", "slot": 9, "specs": ["elemental_shaman", "restoration_shaman"], "spells": [32182, 52127],
-     "spells_note": "Heroism 32182, the Draenei shaman's raid haste (Bloodlust 2825 is Horde-only), and Water Shield 52127: trainer class spells every level-85 shaman knows, outside the action profiles. The legacy roster declared Heroism per bot, and Magmaw's Bloodlust owner casts it. Water Shield is the healer shaman's persistent self-buff (BotPersistentSelfBuffContract); the restoration profile lists only Lightning Shield, so the round-3 Nefarian c0 Restoration shaman logged persistent_setup_spell_missing:52127 on every setup tick."},
+    {"character_key": "shaman", "slot": 9, "specs": ["elemental_shaman", "restoration_shaman"], "spells": [370, 8056, 32182, 52127],
+     "spells_note": "Purge 370: the Maloriak Remedy dispel the Maloriak rationale names (rank 1 for Elemental, 3 for Restoration); Frost Shock 8056: the Nefarian bone-warrior snare the Nefarian rationale names. Encounter duty spell: a trainer class spell outside the action profiles, which only list rotation spells, so it was never provisioned and ExecuteNativeActionIntent refused the duty as an unknown spell. Heroism 32182, the Draenei shaman's raid haste (Bloodlust 2825 is Horde-only), and Water Shield 52127: trainer class spells every level-85 shaman knows, outside the action profiles. The legacy roster declared Heroism per bot, and Magmaw's Bloodlust owner casts it. Water Shield is the healer shaman's persistent self-buff (BotPersistentSelfBuffContract); the restoration profile lists only Lightning Shield, so the round-3 Nefarian c0 Restoration shaman logged persistent_setup_spell_missing:52127 on every setup tick."},
     {"character_key": "warlock", "slot": 10, "specs": ["demonology_warlock"]}
   ],
   "bosses": [
@@ -69,12 +102,12 @@
       "rationale": "One tank: Mangle seizes a single Blood DK and the accepted shard kills with one tank and no swap, so the druid is Balance and owns the parasite Wild Mushroom duty. Two healers (Holy Paladin, Discipline Priest): raid damage outside Mangle is light, and the Mangle spike (accepted worst 5 s bucket about 136k, 12%/s of a 202-232k Blood DK) is single-target tank healing that these two cover; accepted kills end in about 100 s, one Mangle cycle. The shaman stays Elemental: it owns Bloodlust for the first exposed-head burn, keeps 19/20 buff coverage and adds a seventh DPS for the bait and chain duties. If a canonical kill loses the tank in a Mangle window, switch the shaman to restoration_shaman (three healers); the capability duty plan then still names that single shaman as the Bloodlust owner.",
       "duty_plan": {
         "pull_tank": "lowest-GUID living tank (the Blood DK)",
-        "baiters": "Fire Mage (Blink lane) and the Hunter (Disengage lane, any hunter spec)",
+        "baiters": "Fire Mage (Blink lane) and the Survival Hunter (Disengage lane, any hunter spec). Survival keeps damage up while it moves (instant Explosive Shot, Black Arrow and Arcane Shot); the BM baiter did 14-16k, the legacy Survival baiter 37.6k",
         "chain_riders": "two non-baiter DPS without a stationary duty, by GUID: Retribution Paladin and Assassination Rogue",
         "mushrooms": "Balance Druid",
         "bloodlust": "the single shaman (Elemental here)",
         "tank_swap": "not a Magmaw duty: none with one tank; a two-tank roster swaps only through its route mechanic contract (tank_swap_trigger, read by src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp and run by src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp)",
-        "battle_res": "not a Magmaw duty: the generic combat-res reconciler (src/server/game/Bots/BotWorldPopulationMgrCombatRes.cpp) picks a caster per death among native combat resurrections (Rebirth 20484, or a resurrect spell under the in-combat resurrection limit); here the Balance Druid's Rebirth",
+        "battle_res": "not a Magmaw duty: the generic combat-res reconciler (src/server/game/Bots/BotWorldPopulationMgrCombatRes.cpp) picks a caster per death among native combat resurrections (Rebirth 20484, or a resurrect spell under the in-combat resurrection limit); meant to be the Balance Druid's Rebirth, but Rebirth 20484 is not provisioned (it is outside the Balance action profile). Declaring it in this file would also make the Feral tank a battle-res owner in the two-tank shards, because the reconciler's owner scan does not exclude tanks, so it waits for that exclusion",
         "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h (pull tank, baiters, chain riders, mushrooms, Bloodlust)"
       }
     },
@@ -91,7 +124,7 @@
         "tanks": "the tank a construct is attacking owns it; a new construct goes to the tank whose construct is gone or shutting down; the owner taunts it back (Dark Command, Growl)",
         "interrupts": "Arcane Annihilator rotation by capability and reach: Retribution Rebuke and Assassination Kick, then Elemental Wind Shear, then Blood DK Mind Freeze, then Fire Counterspell, then Feral Skull Bash; backup acts 450 ms into the cast",
         "dispels": "Soaked In Poison: Holy Paladin Cleanse, then Retribution Cleanse",
-        "bombs": "ranged DPS (BM Hunter, Fire Mage, Elemental, Demonology) kill a Poison Bomb only where its 6 yd blast reaches nobody",
+        "bombs": "ranged DPS (Survival Hunter, Fire Mage, Elemental, Demonology) kill a Poison Bomb only where its 6 yd blast reaches nobody",
         "bloodlust": "none (no reviewed release window)",
         "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h"
       }
@@ -116,7 +149,7 @@
       "rationale": "One tank: Atramedes is a single-target fight with no tank swap and Sonic Breath never targets his current victim (spell_atramedes_sonic_breath removes it), so the Blood DK tanks alone and the druid stays Balance. Two healers (Holy Paladin, Discipline Priest): Modulation (31.2-32.8k Shadow in 10N, no Sound) is the only unavoidable raid damage, and Searing Flame is gonged at its start. The shaman stays Elemental for 19/20 buff coverage and a seventh damage dealer. Wowhead's 10-player recommendation is 1 tank, 2 healers, 7 DPS.",
       "duty_plan": {
         "tank": "main-tank lease or the role tank (Blood DK); drags Atramedes to the ground anchor (150, -224.5)",
-        "gong_owner": "best ranged damage dealer by gong rank (Beast Mastery Hunter), beside the shield nearest the anchor",
+        "gong_owner": "best ranged damage dealer by gong rank (Survival Hunter: GongRank ranks every hunter spec ahead of the Fire Mage), beside the shield nearest the anchor",
         "gong_backup": "next ranged by gong rank (Fire Mage); strikes when the owner is dead or kiting",
         "sonic_breath_kite": "whoever carries Tracking from Tracking Flames circles the boss 28-42 yd out, away from the raid",
         "air_kite": "whoever carries Tracking from the Reverberating Flame runs the shield ring and strikes a shield in reach when the flame is within 11 yd",
