@@ -57,6 +57,16 @@ struct BossFrame
     float Vy() const { return Ux; }
 };
 
+// Inside the laboratory rectangle on its floor level. A move that starts
+// outside (the entrance corridor, the lower-wing elevator landing after a
+// runback) is travel to the room, not a local mechanic step.
+inline bool InRoom(Vector3 const& point)
+{
+    return point.X >= RoomMinX && point.X <= RoomMaxX
+        && point.Y >= RoomMinY && point.Y <= RoomMaxY
+        && point.Z >= RoomFloorZ - 4.0f && point.Z <= RoomFloorZ + 5.0f;
+}
+
 inline Vector3 ClampToRoom(Vector3 point)
 {
     point.X = std::clamp(point.X, RoomMinX, RoomMaxX);

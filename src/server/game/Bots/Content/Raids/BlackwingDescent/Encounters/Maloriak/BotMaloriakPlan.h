@@ -15,7 +15,15 @@ namespace BotEncounter
 struct AdaptiveMaloriakPlan
 {
     bool OwnsNode = false;
-    // Pre-pull hold for everyone but the pull tank.
+    // The observed boss, and whether its next Release Aberrations should be
+    // allowed to finish (Maloriak::ReleaseAdmitted). The dispatch publishes
+    // it as an interrupt veto so generic rotation interrupts cannot cut an
+    // admitted release (in the r03 attempt all of them were cut, so the 25%
+    // Release All Minions freed 18 Aberrations and 2 Prime Subjects at once).
+    ObjectGuid Boss;
+    bool ReleaseAdmitted = false;
+    // Offense hold: pre-pull (everyone but the pull tank), the off-tank's
+    // add-spot wait, a blocked melee ring, or the phase-two push hold.
     bool SuppressOffense = false;
     std::string_view SuppressReason;
     ObjectGuid DamageTarget;

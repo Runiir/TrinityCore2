@@ -1600,6 +1600,18 @@
       "status": "patch_requested",
       "native": "SpellMgrCorrectionsPart04.cpp overwrites 77760 EFFECT_0 TargetA twice; the review confirmed TargetB is intended (DBC).",
       "next": "Apply maloriak_biting_chill_spellfix.patch."
+    },
+    {
+      "key": "consuming_flames_self_proc",
+      "status": "fixed_in_owned_script",
+      "native": "spell_maloriak_consuming_flames defined CheckProc (magic damage other than its own ticks) but never registered it, so each periodic tick added 50% of itself: r03 10N raw ticks 4500, 6322, 8598, 12467, 17454, 25308, 36697, 36697, 41803, 58733 on a target taking no other damage (each step +50% of the previous landed tick). Client row 77786: flat 4500/s (10N).",
+      "next": "Registered DoCheckProc; the next Red phase should show 4500 raw ticks growing only after other magic damage."
+    },
+    {
+      "key": "growth_catalyst_on_maloriak",
+      "status": "observed_native_consistent",
+      "native": "77987 is an area aura on friends within 10 yd (+10% damage done per nearby caster, multiplicative). With the 18 released Aberrations beside the main tank, Maloriak's Acid Nova ticked 19453 raw = 7500 x 1.1^10 and his melee reached 28217 after attacker bonuses against a published 6088 maximum (about 1.1^16). The script already exempts Flash Freeze and Vile Swill, not Maloriak; the current guide's 'Aberrations kited by a tank away from Maloriak' matches the boss being buffed.",
+      "next": "No native change without WCL aura evidence on the boss; the strategy keeps adds at the add spots at least 20 yd from him."
     }
   ]
 }

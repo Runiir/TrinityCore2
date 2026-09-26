@@ -38,6 +38,13 @@ public:
     // when six or more are loose, or before the 25% release of the reserve.
     static constexpr std::size_t OverflowBurnCount = 6;
     static constexpr float CleanupBeforePhaseTwoPct = 30.0f;
+    // Pacing: at 25% Release All Minions frees the whole reserve plus two
+    // Prime Subjects, so below 30% damage dealers and healers hold the boss
+    // while more than one release (3 Aberrations) is still in the chambers,
+    // killing each released batch instead. Tanks keep attacking, which bounds
+    // the hold (about 5% of the boss at tank damage). The r03 attempt reached
+    // 25% after 80 s with all 18 in reserve and wiped to them.
+    static constexpr std::size_t PhaseTwoReserveCap = 3;
 
     // Hazard radii come from client rows (BotMaloriakFormation.h): Absolute
     // Zero trigger 3 yd and explosion 5 yd, Magma Jets fire 3 yd, Shatter
@@ -84,6 +91,9 @@ public:
             return plan;
         ActorSnapshot const& boss = *observation.Boss;
         plan.OwnsNode = true;
+        plan.Boss = boss.Guid;
+        plan.ReleaseAdmitted = observation.CurrentPhase != Maloriak::Phase::PhaseTwo
+            && Maloriak::ReleaseAdmitted(observation);
         plan.Phase = Maloriak::PhaseName(observation.CurrentPhase);
         std::string_view const botRole = bot->Role.empty()
             ? role : std::string_view(bot->Role);
@@ -596,7 +606,10 @@ private:
         plan.DamageTarget = observation.Boss->Guid;
         plan.Duty = botRole == "healer" ? "healer" : "boss_damage";
         if (botRole != "dps")
+        {
+            HoldPhaseTwoPush(observation, plan);
             return;
+        }
         if (Maloriak::IsRangedDamageSpec(bot.ClassSpec, botRole)
             && !observation.FlashFreezeBlocks.empty())
         {
@@ -614,7 +627,10 @@ private:
         }
         std::size_t const attackable = observation.AttackableAberrationCount();
         if (!attackable)
+        {
+            HoldPhaseTwoPush(observation, plan);
             return;
+        }
         bool const greenImminent = observation.NextGreenVialMs
             && *observation.NextGreenVialMs <= GreenImminentMs;
         std::size_t const overflow = greenImminent
@@ -631,6 +647,22 @@ private:
         plan.DamageTarget = weakest->Guid;
         plan.Duty = observation.SlimeWindow ? "aberration_slime_burn"
             : "aberration_burn";
+    }
+
+    // Below 30% in phase one, boss damage waits while more than
+    // PhaseTwoReserveCap Aberrations are still in the chambers. The boss stays
+    // the formation target; the suppression only clears the offensive target.
+    static void HoldPhaseTwoPush(Maloriak::Observation const& observation,
+        AdaptiveMaloriakPlan& plan)
+    {
+        if (observation.CurrentPhase == Maloriak::Phase::PhaseTwo
+            || plan.DamageTarget != observation.Boss->Guid
+            || observation.Boss->HealthPct > CleanupBeforePhaseTwoPct
+            || observation.ReserveAberrations <= PhaseTwoReserveCap)
+            return;
+        plan.SuppressOffense = true;
+        plan.SuppressReason = "phase_two_push_hold";
+        plan.Duty = "phase_two_push_hold";
     }
 
     // Formation: Red stacks in the Scorching Blast cone except Consuming
@@ -728,6 +760,17 @@ private:
         float const tolerance = melee ? MeleeSlotTolerance : RangedSlotTolerance;
         if (Maloriak::Distance2d(bot.Position, destination) <= tolerance)
             return std::nullopt;
+        if (!melee)
+        {
+            std::vector<Vector3> neighbours;
+            for (ActorSnapshot const& player : board.Players)
+                if (player.Alive && player.Guid != bot.Guid)
+                    neighbours.push_back(player.Position);
+            if (Maloriak::RangedPlaceAcceptable(frame, bot.Position, destination,
+                    arc, hazards, neighbours,
+                    arc == Maloriak::SlotArc::Back ? Maloriak::SpreadYards : 0.0f))
+                return std::nullopt;
+        }
         return BuildMove(board, destination, mechanic, observation.Boss->Guid,
             BotActionArbitration::Priority::Mechanic, 200.0f, false);
     }

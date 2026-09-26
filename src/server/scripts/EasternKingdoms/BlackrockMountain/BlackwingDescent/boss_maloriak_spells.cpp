@@ -117,6 +117,11 @@ class spell_maloriak_consuming_flames: public AuraScript
 
     void Register() override
     {
+        // CheckProc was never registered, so each Consuming Flames tick fed
+        // 50% of itself back into the aura: r03 10N ticks grew 4500, 6322,
+        // 8598, 12467 ... 58733 with no other damage taken (each step exactly
+        // +50% of the previous landed tick). Only other magic damage feeds it.
+        DoCheckProc.Register(&spell_maloriak_consuming_flames::CheckProc);
         OnEffectProc.Register(&spell_maloriak_consuming_flames::HandleProc, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE);
     }
 };

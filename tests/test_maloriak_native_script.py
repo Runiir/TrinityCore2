@@ -238,3 +238,16 @@ def test_reset_comment_states_the_real_respawn_path() -> None:
     reset = function_body(boss, "void Reset() override")
     assert "Default Group without compatibility mode" in reset
     assert "The former VIAL_RED start" in boss
+
+
+def test_consuming_flames_only_grows_from_other_magic_damage() -> None:
+    """Round 4: CheckProc existed but was never registered, so every tick fed
+    50% of itself back into the aura (r03 10N: 4500, 6322, 8598, 12467, 17454,
+    25308, 36697, 41803, 58733 raw with no other damage taken)."""
+    source = text(SPELLS)
+    start = source.index("class spell_maloriak_consuming_flames")
+    body = source[start:source.index("};", start)]
+    assert "eventInfo.GetSpellInfo()->Id == GetId()" in body
+    assert "DmgClass != SPELL_DAMAGE_CLASS_MAGIC" in body
+    assert "DoCheckProc.Register(&spell_maloriak_consuming_flames::CheckProc);" in body
+    assert "CalculatePct(eventInfo.GetDamageInfo()->GetDamage(), 50)" in body

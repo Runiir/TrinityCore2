@@ -30,6 +30,9 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
   else stays out of the 5-yard shatter; a Biting Chill target steps away from allies.
 - Green: Debilitating Slime doubles damage taken for 15 s. Burn the Aberrations then.
 - Aberrations are tanked away from Maloriak. Growth Catalyst reaches 10 yards.
+- Pacing: below 30% damage dealers and healers hold the boss while more than one release (3
+  Aberrations) is still in the chambers, and kill each released batch; tanks keep attacking, which
+  bounds the hold. In round 3 the raid reached 25% after 80 s with all 18 in reserve.
 - Phase two (25%–0%): burn the boss. The off-tank holds the Prime Subjects and any remaining
   Aberrations. The raid stays out of the front. The tank steps out of Magma Jets. Everyone
   avoids Absolute Zero spheres and jet fire. Use raid haste here: the nuke phase is a DPS race.
@@ -174,8 +177,8 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 | Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued |
 | Off-tank | Feral (bear) | picks up and taunts loose Aberrations, Prime Subjects and Vile Swills; holds them at an add spot ≥ 20 yd from the boss |
 | Arcane Storm | Retribution (lowest-GUID melee 10 s interrupt) | the owner at the cast; the second short interrupter after 0.8 s of channel; everyone capable after 2 s |
-| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting |
-| Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s |
+| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting. An admitted release is published as an interrupt veto that ordinary rotation interrupts honour (in round 3 they cut every release) |
+| Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s; an assigned purger or interrupter stops its own hard cast first |
 | Raid haste | Elemental Shaman (else a Mage) | in phase two |
 | Flash Freeze | ranged damage dealers | break the nearest block; others leave the 5-yard shatter |
 
@@ -186,7 +189,9 @@ clamped to the room floor:
   engages. The pull tank waits for the play-mode pull timer, for nobody dead, for everyone at 70%
   health or more, and for every non-tank within 15 yd of its slot. Every holder reports that
   gate's reason, and only a satisfied gate reports `prepull_pull_owner_wait`, so the shared
-  25-second pre-pot waits for the pull gate (round 3);
+  25-second pre-pot waits for the pull gate (round 3). A move that starts outside the laboratory
+  (the corridor, the lower-wing elevator landing after a runback) is travel on the route lane,
+  not a same-level mechanic step;
 - Red: rows in front inside the cone, melee at ±25° beside the tank, Consuming Flames targets
   behind;
 - Blue, Dark and phase two: a fan behind the boss at 18 yd, 40° apart, and melee behind at ±50°

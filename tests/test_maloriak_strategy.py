@@ -460,6 +460,103 @@ int main()
         CHECK(Plan(board, LOCK).DamageTarget == Boss(board).Guid);
     }
 
+    // Round 4 (r03 wipe): every Release Aberrations was cut by profile
+    // interrupts, so 25% freed 18 Aberrations and 2 Prime Subjects. The plan
+    // publishes whether a release is admitted (the dispatch turns it into an
+    // interrupt veto) and holds boss damage below 30% while the chambers
+    // still hold more than one release.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        for (uint32 index = 0; index < 18; ++index)
+            board.Summons.push_back(Add(41440, 1000 + index, -140.0f, -430.0f, false, 100.0f));
+        AdaptiveMaloriakPlan const early = Plan(board, MAGE);
+        CHECK(early.Boss == Boss(board).Guid);
+        CHECK(early.ReleaseAdmitted);
+        CHECK(!early.SuppressOffense && early.DamageTarget == Boss(board).Guid);
+        for (Slot slot : { DK, FERAL, HOLY, ROGUE })
+            CHECK(Plan(board, slot).ReleaseAdmitted);
+        // Six loose: the next release is interrupted (no veto).
+        for (uint32 index = 0; index < 6; ++index)
+            board.Summons[index].Selectable = board.Summons[index].Attackable = true;
+        CHECK(!Plan(board, MAGE).ReleaseAdmitted);
+        for (uint32 index = 0; index < 6; ++index)
+            board.Summons[index].Alive = false;
+        CHECK(Plan(board, MAGE).ReleaseAdmitted);
+
+        // 28% with 12 in the chambers and none loose: damage dealers and
+        // healers hold, tanks keep the boss; the boss stays the formation
+        // target.
+        Boss(board).HealthPct = 28.0f;
+        for (Slot slot : { MAGE, ROGUE, LOCK, HOLY, DISC })
+        {
+            AdaptiveMaloriakPlan const hold = Plan(board, slot);
+            CHECK(hold.SuppressOffense);
+            CHECK(std::string(hold.SuppressReason) == "phase_two_push_hold");
+            CHECK(hold.DamageTarget == Boss(board).Guid);
+        }
+        AdaptiveMaloriakPlan const tank = Plan(board, DK);
+        CHECK(!tank.SuppressOffense && tank.DamageTarget == Boss(board).Guid);
+        // A released batch is burned instead of waiting.
+        board.Summons[6].Selectable = board.Summons[6].Attackable = true;
+        AdaptiveMaloriakPlan const burn = Plan(board, LOCK);
+        CHECK(!burn.SuppressOffense && burn.DamageTarget == board.Summons[6].Guid);
+        CHECK(Plan(board, HOLY).SuppressOffense);
+        board.Summons[6].Alive = false;
+        // Three or fewer left in the chambers: push to 25%.
+        for (uint32 index = 7; index < 15; ++index)
+            board.Summons[index].Alive = false;
+        CHECK(!Plan(board, MAGE).SuppressOffense);
+        CHECK(!Plan(board, HOLY).SuppressOffense);
+        // Above 30% nothing waits; phase two never waits and admits nothing.
+        for (uint32 index = 7; index < 15; ++index)
+            board.Summons[index].Alive = true;
+        Boss(board).HealthPct = 31.0f;
+        CHECK(!Plan(board, MAGE).SuppressOffense);
+        Boss(board).HealthPct = 24.0f;
+        AdaptiveMaloriakPlan const two = Plan(board, MAGE);
+        CHECK(std::string(two.Phase) == "phase_two");
+        CHECK(!two.SuppressOffense && !two.ReleaseAdmitted);
+    }
+
+    // Ranged hysteresis (r03: healers re-pathed on almost every decision as
+    // the boss-tank frame turned). A healer on its Blue slot keeps its place
+    // when the tank walks 15 degrees around the boss, but not when another
+    // player stands within 5 yards or the place falls in front of the boss.
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
+        AdaptiveMaloriakPlan const first = Plan(board, HOLY);
+        CHECK(first.Movement.has_value());
+        Vector3 const slot = Destination(first);
+        board.Players[HOLY].Position = slot;
+        CHECK(!Plan(board, HOLY).Movement);
+        Vector3 const bossAt = Boss(board).Position;
+        Vector3 const tankAt = board.Players[DK].Position;
+        float const turned = std::atan2(tankAt.Y - bossAt.Y, tankAt.X - bossAt.X)
+            + 15.0f * 3.14159265f / 180.0f;
+        board.Players[DK].Position = { bossAt.X + 3.0f * std::cos(turned),
+            bossAt.Y + 3.0f * std::sin(turned), tankAt.Z };
+        AdaptiveMaloriakPlan const turnedPlan = Plan(board, HOLY);
+        CHECK(!turnedPlan.Movement);
+        board.Players[DISC].Position = { slot.X + 2.0f, slot.Y, slot.Z };
+        CHECK(Plan(board, HOLY).Movement.has_value());
+        board.Players[DISC].Position = { -95.0f, -440.0f, 73.6f };
+        board.Players[HOLY].Position = { bossAt.X, bossAt.Y + 12.0f, bossAt.Z };
+        CHECK(Plan(board, HOLY).Movement.has_value());
+    }
+
+    // Travel versus local moves: the staging line and the add spots are in
+    // the laboratory; the entrance corridor and the lower-wing elevator
+    // landing (where the r03 runback left the raid) are not.
+    {
+        CHECK(M::InRoom(M::StagingSlot(0, 8)) && M::InRoom(M::StagingSlot(7, 8)));
+        CHECK(M::InRoom(M::AddAnchorWest) && M::InRoom(M::AddAnchorEast));
+        CHECK(!M::InRoom(Vector3{ -218.7f, -235.4f, 76.8f }));
+        CHECK(!M::InRoom(Vector3{ -105.0f, -380.0f, 76.8f }));
+        CHECK(!M::InRoom(Vector3{ -110.0f, -440.0f, 63.0f }));
+    }
+
     // Phase two: burn the boss, lust, dodge Magma Jets and Absolute Zero.
     {
         Blackboard board = Canonical();
@@ -794,6 +891,16 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     # Remedy: every difficulty variant, offensive priest dispel 527 (not 528).
     assert "Maloriak::RemedySpells" in module
     assert "30449u, 370u, 19801u, 527u };" in module and " 528u" not in module
+    # Round 4: the admitted-release veto is published natively each tick;
+    # moves that start outside the laboratory take the route lane; assigned
+    # interrupts and purges stop the bot's own hard cast (Remedy went
+    # unpurged for 225000 healing) and purges hold the lanes through the GCD.
+    assert "BotEncounterInterruptVeto::Set(plan.Boss.GetRawValue()," in module
+    assert "boss && boss->IsAlive() && NativeReleaseAdmitted(boss)" in module
+    assert "!BotEncounter::Maloriak::InRoom(" in module
+    assert "BotMovementArbitration::Owner::Route" in module
+    assert module.count("ClearOwnCastFor(context.Bot,") == 2
+    assert '"native_dispel_wait_global_cooldown"' in module
     timers = (folder / "BotMaloriakNativeTimers.cpp").read_text(encoding="utf-8")
     assert "Maloriak::PublishedMechanicSpells" in timers
     assert "GetTimeUntilEncounterMechanic(spellId)" in timers

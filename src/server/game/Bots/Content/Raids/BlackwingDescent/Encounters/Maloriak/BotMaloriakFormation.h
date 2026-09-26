@@ -167,6 +167,33 @@ inline bool MeleeRingBlocked(BossFrame const& frame, SlotArc arc,
     }
     return true;
 }
+
+// Ranged hysteresis. Slots follow the boss-tank frame, so every tank step
+// or boss turn moved them; in the r03 attempt the healers re-pathed on
+// almost every decision (49 phase-two spread moves in 20 s, 36 Blue moves)
+// instead of casting. A ranged player that already stands within
+// RangedHoldYards of its slot, 8 to 30 yards from the boss, inside the arc,
+// clear of every hazard and (spreadYards > 0) apart from every other
+// player keeps its place.
+constexpr float RangedHoldYards = 9.0f;
+
+inline bool RangedPlaceAcceptable(BossFrame const& frame, Vector3 const& place,
+    Vector3 const& slot, SlotArc arc, std::vector<FormationHazard> const& hazards,
+    std::vector<Vector3> const& otherPlayers, float spreadYards)
+{
+    if (Distance2d(place, slot) > RangedHoldYards)
+        return false;
+    FramePolarCoords const polar = ToFramePolar(frame, place);
+    if (polar.Radius < 8.0f || polar.Radius > 30.0f || !ArcAdmits(arc, polar.Angle))
+        return false;
+    if (!hazards.empty() && !ClearOfHazards(place, hazards))
+        return false;
+    if (spreadYards > 0.0f)
+        for (Vector3 const& other : otherPlayers)
+            if (Distance2d(place, other) < spreadYards)
+                return false;
+    return true;
+}
 }
 
 #endif

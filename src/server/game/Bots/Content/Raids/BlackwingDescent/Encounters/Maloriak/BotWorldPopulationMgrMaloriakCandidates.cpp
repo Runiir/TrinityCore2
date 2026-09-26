@@ -1,3 +1,4 @@
+#include "Bots/BotEncounterInterruptVeto.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
@@ -10,9 +11,12 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 
+#include <algorithm>
 #include <array>
 #include <list>
 #include <string>
@@ -90,6 +94,23 @@ bool HasRemedy(Unit const* unit)
             return true;
     return false;
 }
+
+// TryCastCombatSpell refuses while the bot is casting, and casters chain hard
+// casts, so round 4's one Remedy (25000/s, 225000 healed) was never purged. A
+// bot assigned an interrupt or purge stops its own cast first, as a player
+// would, but only when that spell is off cooldown and the target is in range.
+bool ClearOwnCastFor(Player* bot, Unit* target, uint32 spellId)
+{
+    if (!bot->HasUnitState(UNIT_STATE_CASTING))
+        return true;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !bot->GetSpellHistory()->IsReady(spellInfo)
+        || !bot->IsWithinDistInMap(target,
+            std::max(5.0f, spellInfo->GetMaxRange(false))))
+        return false;
+    bot->InterruptNonMeleeSpells(false);
+    return true;
+}
 }
 
 void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
@@ -100,10 +121,33 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         return;
     BotEncounter::AdaptiveMaloriakPlan const& plan = *context.AdaptiveMaloriak;
 
+    // Publish (or withdraw) the Release Aberrations interrupt veto before the
+    // cast starts, so a generic rotation interrupt cannot cut an admitted
+    // release. The native recount confirms the blackboard's admission.
+    if (!plan.Boss.IsEmpty())
+    {
+        Unit* boss = plan.ReleaseAdmitted
+            ? ObjectAccessor::GetUnit(*context.Bot, plan.Boss) : nullptr;
+        BotEncounterInterruptVeto::Set(plan.Boss.GetRawValue(),
+            BotEncounter::Maloriak::ReleaseAberrationsSpell,
+            boss && boss->IsAlive() && NativeReleaseAdmitted(boss));
+    }
+
     if (plan.Movement && plan.Movement->ExpiresAtMs > context.DecisionNowMs)
     {
         bool const survival = plan.Movement->ActionPriority
             >= BotActionArbitration::Priority::Survival;
+        // Round 4: after the runback the raid stood on the lower-wing
+        // elevator landing (-219, -235, z 76.8). A mechanic-lane move to the
+        // staging line (z 73.6, same nominal level) must keep every path
+        // control on the actor's level, but the native path dips to z 66.9,
+        // so all 152 staging moves were refused as
+        // route_destination_path_control_level_gap and the pull gate never
+        // opened. A move that starts outside the laboratory is travel and
+        // takes the route lane (progressive native segments).
+        bool const travel = !survival && !BotEncounter::Maloriak::InRoom(
+            { context.Bot->GetPositionX(), context.Bot->GetPositionY(),
+              context.Bot->GetPositionZ() });
         BotActionArbitration::Candidate movement;
         movement.Key = plan.Movement->Id.Key();
         movement.Source = plan.Movement->Id.Strategy;
@@ -111,19 +155,23 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         movement.UtilityScore = plan.Movement->Utility;
         movement.RequiredResources = plan.Movement->Resources();
         movement.ExpiresAtMs = plan.Movement->ExpiresAtMs;
-        movement.Attempt = [this, &context, survival,
+        movement.Attempt = [this, &context, survival, travel,
             intent = BotNativeAction::WithMovementReason(
                 plan.Movement->Action, plan.Movement->Id.Mechanic)]()
         {
             // Survival moves (sphere, jet fire, Magma Jets) take the hazard
             // lane; formation, staging and add-spot moves only the mechanic
             // lane, so native combat movement is not leased away.
+            BotMovementArbitration::Owner const owner = survival
+                ? BotMovementArbitration::Owner::Hazard
+                : (travel ? BotMovementArbitration::Owner::Route
+                          : BotMovementArbitration::Owner::Mechanic);
+            BotMovementArbitration::Priority const priority = survival
+                ? BotMovementArbitration::Priority::Hazard
+                : (travel ? BotMovementArbitration::Priority::Route
+                          : BotMovementArbitration::Priority::Mechanic);
             BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                context.State, context.Bot, intent,
-                survival ? BotMovementArbitration::Owner::Hazard
-                    : BotMovementArbitration::Owner::Mechanic,
-                survival ? BotMovementArbitration::Priority::Hazard
-                    : BotMovementArbitration::Priority::Mechanic);
+                context.State, context.Bot, intent, owner, priority);
             if (outcome.Result == BotActionArbitration::Disposition::Committed)
             {
                 context.Situation = "adaptive_maloriak";
@@ -215,6 +263,9 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!interruptSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "interrupt_spell_unknown");
+            if (!ClearOwnCastFor(context.Bot, caster, interruptSpell))
+                return BotActionArbitration::Outcome::Retryable(
+                    "interrupt_not_ready_while_casting");
             if (!TryCastCombatSpell(context.Bot, caster, interruptSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "native_interrupt_retryable");
@@ -253,6 +304,15 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!dispelSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "dispel_spell_unknown");
+            if (!ClearOwnCastFor(context.Bot, target, dispelSpell))
+                return BotActionArbitration::Outcome::Retryable(
+                    "dispel_not_ready_while_casting");
+            // Purges share the GCD: hold the cast lanes through it so the
+            // rotation cannot start another hard cast before the purge.
+            if (SpellInfo const* dispelInfo = sSpellMgr->GetSpellInfo(dispelSpell);
+                dispelInfo && context.Bot->GetSpellHistory()->HasGlobalCooldown(dispelInfo))
+                return BotActionArbitration::Outcome::Submitted(
+                    "native_dispel_wait_global_cooldown");
             if (!TryCastCombatSpell(context.Bot, target, dispelSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "native_dispel_retryable");
