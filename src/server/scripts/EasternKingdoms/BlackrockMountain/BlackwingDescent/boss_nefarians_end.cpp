@@ -169,6 +169,7 @@ struct boss_nefarians_end : public BossAI
     void EnterEvadeMode(EvadeReason /*why*/) override
     {
         _EnterEvadeMode();
+        DisengageLightningMachine();
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
 
         if (events.IsInPhase(PHASE_TWO) && !_elevatorLowered)
@@ -200,9 +201,27 @@ struct boss_nefarians_end : public BossAI
             Talk(SAY_SLAY);
     }
 
+    // Nefarian's Lightning Machine (51089, an instance creature, not one of
+    // his summons) enters combat with the raid through its Electrocute casts
+    // and stays there once the fight is over. Round 8's kill left it in
+    // combat for 12 minutes: the raid never left combat, the fallen could not
+    // release and the route never completed. The encounter over (killed or
+    // reset), the machine leaves combat.
+    void DisengageLightningMachine()
+    {
+        if (Creature* machine = instance->GetCreature(DATA_NEFARIANS_LIGHTNING_MACHINE))
+        {
+            machine->InterruptNonMeleeSpells(false);
+            machine->CombatStop(true);
+            TC_LOG_INFO("server.nefarians_end", "NefariansEnd lightning_machine disengaged machine=%s in_combat=%d",
+                machine->GetGUID().ToString().c_str(), int(machine->IsInCombat()));
+        }
+    }
+
     void JustDied(Unit* /*killer*/) override
     {
         _JustDied();
+        DisengageLightningMachine();
         Talk(SAY_DEATH);
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
         instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_EXPLOSIVE_CINDERS);

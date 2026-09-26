@@ -476,6 +476,71 @@
         "boss_nefarians_end.cpp: Onyxia's unkillable flag is set when she appears and cleared with ACTION_NEFARIAN_LANDED (her 'no death before Nefarian lands', as _allowDeath)",
         "the Nefarian tank picks Nefarian up like the Onyxia tank does (DragonPickupGoal): into taunt range with a clear line before leading him out"
       ]
+    },
+    "round8_batch1": {
+      "evidence": "artifacts/cata_raid_program/round8_batch1_20260927.tar.gz shard blackwing_descent_10n_nefarian_c0; combat log export complete (13,402 events)",
+      "outcome": "Nefarian killed at 509.3 s (confirmed_unit_death, gate accepted by the route observer); route stuck on bwd.nefarian.encounter for about 8m40s after the kill until semantic_progress_plateau_watchdog; 6 of 10 bots dead",
+      "timeline": "Onyxia died 78.4 s; Time Warp: Temporal Displacement 80354 applied to the members at 41.1 s (the Time Warp cast 80353 itself is not in the logs); platform lowered ~93 s; tanks on pillar 2 by 95 s; prototypes died at 118 (pillar 0), 127 (pillar 1) and 144 s (pillar 2); Nefarian killed at 509.3 s by the four survivors",
+      "tank_pillar": "DK took 108k in phase 2 (Death Strike 91k, Rune Tap 41k, Unholy Strength 54k, a Flash of Light 43k); the Feral 93k (Survival Instincts once); neither was in danger",
+      "root_causes": [
+        "route: Nefarian's Lightning Machine (51089, an instance creature) stayed in combat after the kill, so native hostile activity never ended: the fallen never released (partial-death admission waits for hostile inactivity) and the survivors held (native_full_wipe_hold_partial_death) for about 8m40s",
+        "deaths: the lowered stop is GoState GO_STATE_TRANSPORT_ACTIVE (24), which the boarding rest rule (RestRemainingAtLevelMs) does not count as a stop, so every hop at the lowered stop was refused and the healer-pillar teams stayed in the lava"
+      ],
+      "fixes": [
+        "boss_nefarians_end.cpp: the Lightning Machine leaves combat when Nefarian dies or the encounter resets",
+        ".git/round9_patches/nefarian/R9_stop_frame_zero_rest.patch (T): GoState 24 after its arrival time is a stop"
+      ],
+      "deaths_observed": [
+        {
+          "bot": "discipline_priest",
+          "time_s": 149.5,
+          "last_hit": "Magma 81114",
+          "position": "in the lava under the raised platform"
+        },
+        {
+          "bot": "survival_hunter",
+          "time_s": 151.2,
+          "last_hit": "Magma 81114",
+          "position": "in the lava"
+        },
+        {
+          "bot": "assassination_rogue",
+          "time_s": 171.3,
+          "last_hit": "self-attributed spell 0 (environmental lava damage)",
+          "position": "r 25.4, z 2.77: at the lava surface under the raised ring"
+        },
+        {
+          "bot": "feral_druid_tank",
+          "time_s": 178.0,
+          "last_hit": "Nefarian's Shadowflame Breath 77826 (24,109), after 14,942 of self-attributed spell 0 lava damage",
+          "position": "r 32.5, z 2.77: in the lava under the raised ring, in front of Nefarian (at r 11.6 on the floor, breathing at the DK); it was not tanking"
+        },
+        {
+          "bot": "elemental_shaman",
+          "time_s": 180.5,
+          "last_hit": "Electrocute 81272 (50,139), after 53,519 of Magma",
+          "position": "r 24.5, z -1.63: the lava bowl under the raised platform"
+        },
+        {
+          "bot": "holy_paladin",
+          "time_s": 182.1,
+          "last_hit": "Magma 81114",
+          "position": "in the lava"
+        }
+      ],
+      "observed_vs_inferred": {
+        "observed": [
+          "every healer-pillar member's hop candidate returned native_liquid_hop_transport_moving at the lowered stop (decision kernel traces)",
+          "those members stayed at float depth by their swim stations from about 95 s to 145 s",
+          "all six deaths occurred with the body in the lava (positions above)",
+          "the Lightning Machine (51089) was the active hostile for the whole post-kill hold"
+        ],
+        "inferred": [
+          "the hop refusals come from RestRemainingAtLevelMs not counting GoState 24 as a stop (code reading of the core's stop-frame update; fixed by patch R9_stop_frame_zero_rest.patch)",
+          "those members then missed the rising floor at the phase change, which left them in the lava for phase 3 (the rising-floor miss itself was not traced)",
+          "the Feral and shaman deaths are consequences of being in the lava (breath and Electrocute finished bots already low), not tank-pillar or breath-cone failures"
+        ]
+      }
     }
   }
 }

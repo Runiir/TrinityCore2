@@ -125,12 +125,14 @@ std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
         return 0;
     GameObjectTemplate const* info = transport->GetGOInfo();
     // Stop-frame transports only move when a script changes their state:
-    // the rest is unbounded once a stop state is set and its arrival time
-    // (GAMEOBJECT_LEVEL) has passed; while travelling there is no rest.
+    // the rest is unbounded once a stop state (24 included) is set and its
+    // arrival time (GAMEOBJECT_LEVEL) has passed; while travelling there is
+    // no rest (StopFrameRestMs).
+    static_assert(GoStateTransportActive == GO_STATE_TRANSPORT_ACTIVE
+        && GoStateTransportStopped == GO_STATE_TRANSPORT_STOPPED);
     if (info && info->transport.Timeto2ndfloor > 0)
-        return transport->GetGoState() >= GO_STATE_TRANSPORT_STOPPED
-            && GameTime::GetGameTimeMS() >= transport->GetUInt32Value(GAMEOBJECT_LEVEL)
-            ? UnboundedRestMs : 0;
+        return StopFrameRestMs(uint32(transport->GetGoState()), GameTime::GetGameTimeMS(),
+            transport->GetUInt32Value(GAMEOBJECT_LEVEL));
     TransportAnimation const* animation =
         sTransportMgr->GetTransportAnimInfo(transport->GetEntry());
     if (!animation || !animation->TotalTime)

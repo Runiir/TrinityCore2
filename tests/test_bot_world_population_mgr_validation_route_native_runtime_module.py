@@ -143,7 +143,8 @@ def test_boarding_executor_reports_positions_through_native_handlers() -> None:
     # stop-frame transports rest unbounded only once arrived at a stop.
     assert "sTransportMgr->GetTransportAnimInfo(transport->GetEntry())" in boarding
     assert "GameTime::GetGameTimeMS() % timeline.PeriodMs" in boarding
-    assert "transport->GetGoState() >= GO_STATE_TRANSPORT_STOPPED\n            && GameTime::GetGameTimeMS() >= transport->GetUInt32Value(GAMEOBJECT_LEVEL)" in boarding
+    assert "return StopFrameRestMs(uint32(transport->GetGoState()), GameTime::GetGameTimeMS(),\n            transport->GetUInt32Value(GAMEOBJECT_LEVEL));" in boarding
+    assert "static_assert(GoStateTransportActive == GO_STATE_TRANSPORT_ACTIVE" in boarding
     # Floors are probed from feet + 0.1 yd straight down the tolerance.
     assert "constexpr float FloorProbeLiftYards = 0.1f;" in boarding
     assert "float distance = FloorProbeLiftYards + tolerance;" in boarding

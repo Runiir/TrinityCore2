@@ -750,6 +750,58 @@ with a clear line, and only then leads him out. Replay: a taunt after about 3 s.
 **Noted**: a few bots stood 1-3 yd below the floor near the ramp start (r 21-24),
 with no magma damage.
 
+## 7d. Round 8 live run: Nefarian killed, route incomplete (analysed in round 9)
+
+Nefarian died at 509 s. The route observer accepted the kill, but the node never
+completed and the run ended on the plateau watchdog. Six of the ten bots died.
+
+**Timeline**
+
+| Time | Event |
+|---|---|
+| 41.1 s | Time Warp (Temporal Displacement 80354 on the raid; the cast 80353 itself is not logged) |
+| 78.4 s | Onyxia died |
+| ~93 s | The platform reached the lowered stop |
+| 95 s | Both tanks on pillar 2 |
+| 118 / 127 / 144 s | Prototypes died on pillars 0, 1 and 2 |
+| 509 s | Nefarian died, killed by the four survivors |
+
+- The tank pillar held easily. The DK took 108k in phase 2 (Death Strike 91k)
+  and the Feral 93k.
+- The healer-pillar members reached their swim stations but were refused every
+  hop (`native_liquid_hop_transport_moving`, observed). They stayed in the lava
+  until phase 3.
+- All six died with the body in the lava:
+
+  | Bot | Time | Last hit |
+  |---|---|---|
+  | Disc | 149.5 s | magma |
+  | Hunter | 151.2 s | magma |
+  | Rogue | 171.3 s | self-attributed lava damage |
+  | Feral | 178.0 s | Nefarian's breath |
+  | Shaman | 180.5 s | Electrocute |
+  | Holy | 182.1 s | magma |
+
+  The Feral was in the lava under the raised ring, in front of Nefarian, and
+  was not tanking. Inferred: these members missed the rising floor at the phase
+  change.
+- After the kill the route held for about 8m40s.
+
+**Root causes and fixes**
+- **Route completion.** Nefarian's Lightning Machine (51089) stayed in combat
+  after the kill, so native hostile activity never ended:
+  - the fallen never released, because partial-death admission waits for hostile
+    inactivity;
+  - the survivors held (`native_full_wipe_hold_partial_death`).
+
+  Fix: `boss_nefarians_end.cpp` takes the machine out of combat when Nefarian
+  dies or the encounter resets.
+- **Hop refusal.** The lowered stop is GoState `GO_STATE_TRANSPORT_ACTIVE` (24).
+  The core parks the platform there once `GAMEOBJECT_LEVEL` passes, but the
+  boarding rest rule only counted states from 25 up as a stop.
+
+  Fix: patch `R9_stop_frame_zero_rest.patch` for T.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). None is

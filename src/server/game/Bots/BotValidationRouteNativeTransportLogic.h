@@ -107,6 +107,24 @@ struct TransportTimeline
 
 constexpr std::uint64_t UnboundedRestMs = std::numeric_limits<std::uint64_t>::max();
 
+// A stop-frame transport (GAMEOBJECT_TYPE_TRANSPORT with stop frames) moves
+// only when a script changes its GoState. It rests, without bound, once its
+// state is a stop and the arrival time (GAMEOBJECT_LEVEL) has passed:
+// GO_STATE_TRANSPORT_STOPPED + n (25 + n) parks it at stop frame n, and
+// GO_STATE_TRANSPORT_ACTIVE (24) at path progress 0 (GameObject.cpp
+// TransportGameObject::Update, stopTargetTime 0). Nefarian's End lowers its
+// platform with state 24; before round 9 only 25 and up counted as a stop and
+// every hop at the lowered stop was refused (native_liquid_hop_transport_moving).
+constexpr std::uint32_t GoStateTransportActive = 24;
+
+inline std::uint64_t StopFrameRestMs(std::uint32_t goState, std::uint64_t nowMs,
+    std::uint64_t arrivalMs)
+{
+    bool const stopState = goState == GoStateTransportActive
+        || goState >= GoStateTransportStopped;
+    return stopState && nowMs >= arrivalMs ? UnboundedRestMs : 0;
+}
+
 // Milliseconds the platform keeps its origin within `tolerance` of
 // `levelOffset` from `progressMs` on (0 when not at the level now).
 inline std::uint64_t RestRemainingMs(TransportTimeline const& timeline,
