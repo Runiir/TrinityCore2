@@ -231,7 +231,17 @@ def wait_inferior(process: subprocess.Popen[bytes], binary: Path, timeout_sec: f
                 pidfd = pidfd_open(pid)
             except ProcessLookupError:
                 continue
-            if is_inferior(process.pid, pid, binary, proc):
+            try:
+                # Signal 0 through the pidfd: the pinned process still lives,
+                # and its identity is read again after pinning.
+                pidfd_send_signal(pidfd, 0)
+                pinned = is_inferior(process.pid, pid, binary, proc)
+            except ProcessLookupError:
+                pinned = False
+            except BaseException:
+                os.close(pidfd)
+                raise
+            if pinned:
                 return Inferior(pid, pidfd)
             os.close(pidfd)
         time.sleep(0.05)

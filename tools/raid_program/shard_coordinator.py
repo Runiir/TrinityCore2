@@ -1484,11 +1484,25 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
         # Only under --gdb-backtrace: a default run's shard_run.json is unchanged.
         summary["worldserver"].update(crash_capture=True,
                                       crash_backtrace=crash_capture_module.summarize(run_root))
-    if lifecycle.get("process_return_code") not in (0, None) and summary.get("terminal_reason") == "completed":
-        summary["terminal_reason"] = "infrastructure_loss"
-        summary.setdefault("infrastructure_failures", []).append("worldserver_exit_code_nonzero")
+    apply_worldserver_exit_gate(summary, lifecycle)
     harness.write_json(run_root / "shard_run.json", summary)
     return summary
+
+
+def apply_worldserver_exit_gate(summary: dict[str, Any], lifecycle: Mapping[str, Any]) -> None:
+    """A completed run lost its infrastructure when the worldserver exited nonzero
+    or teardown had to SIGKILL it (--gdb-backtrace records the step; the gate
+    does not rely on the exit status alone)."""
+    if summary.get("terminal_reason") != "completed":
+        return
+    failures = []
+    if lifecycle.get("process_return_code") not in (0, None):
+        failures.append("worldserver_exit_code_nonzero")
+    if lifecycle.get("forced_termination") == "worldserver_sigkill":
+        failures.append("worldserver_forced_kill")
+    if failures:
+        summary["terminal_reason"] = "infrastructure_loss"
+        summary.setdefault("infrastructure_failures", []).extend(failures)
 
 
 def dry_run_source_check(plan: ShardRunPlan, planned: Sequence[ShardSpec], *,

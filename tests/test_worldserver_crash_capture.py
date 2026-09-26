@@ -8,11 +8,13 @@ libstdc++'s typeinfo vtable during `.botauto stop`, no core, 51-byte reply).
 from __future__ import annotations
 
 from contextlib import nullcontext
+import errno
 import json
 import os
 import shutil
 import signal
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -191,7 +193,93 @@ def test_a_forced_kill_is_never_a_clean_exit(tmp_path, fake_worldserver, unlocke
     assert lifecycle["process_exited"] is True
     assert lifecycle["process_return_code"] == return_code
     assert lifecycle.get("forced_termination") == forced
+    assert "debugger_forced_termination" not in lifecycle
     assert not Path(f"/proc/{server_pid}").exists()
+
+
+# A stand-in for gdb that stays busy after its worldserver died, as gdb does
+# during a long `thread apply all bt`, and exits 0 on SIGTERM like gdb.
+FAKE_BUSY_GDB = r'''
+import os, signal, subprocess, sys, time
+child = subprocess.Popen(sys.argv[1:], process_group=0)  # gdb's inferior has its own group
+def quit_clean(*_):
+    child.kill()
+    os._exit(0)
+signal.signal(signal.SIGTERM, quit_clean)
+code = child.wait()
+time.sleep(float(os.environ["FAKE_GDB_BUSY_SEC"]))
+os._exit(128 - code if code < 0 else code)
+'''
+
+
+def _fds() -> set[str]:
+    return set(os.listdir("/proc/self/fd"))
+
+
+def test_a_busy_debugger_after_the_sigkill_is_killed_not_terminated(tmp_path, fake_worldserver, unlocked,
+                                                                    monkeypatch):
+    """Review of 0004: gdb still busy after the worldserver's SIGKILL must not exit 0."""
+    script = tmp_path / "busy_gdb.py"
+    script.write_text(FAKE_BUSY_GDB, encoding="utf-8")
+    monkeypatch.setattr(crash_capture, "debugger_command",
+                        lambda binary, arguments, output_dir: [sys.executable, str(script), str(binary), *arguments])
+    monkeypatch.setattr(console_module, "SHUTDOWN_TIMEOUT_SEC", 1)
+    monkeypatch.setattr(console_module, "TERMINATION_GRACE_SEC", 1)
+    monkeypatch.setenv("FAKE_HANG_ON_EXIT", "1")
+    monkeypatch.setenv("FAKE_GDB_BUSY_SEC", "5")
+    fds = _fds()
+    output = tmp_path / "run"
+    lifecycle: dict = {}
+    with _owned(fake_worldserver, output, lifecycle) as base:
+        server_pid = base.server_pid
+        assert server_pid != base.process.pid
+        assert base(".botauto status x", 10)[1] == 0
+    assert lifecycle["forced_termination"] == "worldserver_sigkill"
+    assert lifecycle["debugger_forced_termination"] == "sigkill"
+    assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == -9
+    assert not Path(f"/proc/{server_pid}").exists()
+    assert _fds() == fds  # the pidfd is closed
+
+
+def test_an_unsignalable_worldserver_still_completes_teardown(tmp_path, fake_worldserver, unlocked, monkeypatch):
+    """Review of 0004: an OSError from the pidfd is logged and gdb's group is killed."""
+    def refuse(self, signum):
+        raise OSError(errno.EBADF, "Bad file descriptor")
+
+    monkeypatch.setattr(crash_capture.Inferior, "send", refuse)
+    monkeypatch.setattr(console_module, "SHUTDOWN_TIMEOUT_SEC", 1)
+    monkeypatch.setattr(console_module, "TERMINATION_GRACE_SEC", 1)
+    monkeypatch.setenv("FAKE_HANG_ON_EXIT", "1")
+    output = tmp_path / "run"
+    lifecycle: dict = {}
+    with _owned(fake_worldserver, output, lifecycle) as base:
+        server_pid = base.server_pid
+        assert base(".botauto status x", 10)[1] == 0
+    assert lifecycle["forced_termination_error"] == "worldserver_sigterm: [Errno 9] Bad file descriptor"
+    assert "forced_termination" not in lifecycle
+    assert lifecycle["debugger_forced_termination"] == "sigkill"
+    assert lifecycle["process_exited"] is True and lifecycle["process_return_code"] == -9
+    # Killing gdb kills its inferior (PTRACE_O_EXITKILL), although its group is its own.
+    assert not Path(f"/proc/{server_pid}").exists()
+
+
+@pytest.mark.parametrize("lifecycle,reason,failures", [
+    ({"process_return_code": 0}, "completed", None),
+    ({"process_return_code": 0, "forced_termination": "worldserver_sigterm"}, "completed", None),
+    ({"process_return_code": 0, "forced_termination": "worldserver_sigkill"},
+     "infrastructure_loss", ["worldserver_forced_kill"]),
+    ({"process_return_code": 137, "forced_termination": "worldserver_sigkill"},
+     "infrastructure_loss", ["worldserver_exit_code_nonzero", "worldserver_forced_kill"]),
+    ({"process_return_code": -11}, "infrastructure_loss", ["worldserver_exit_code_nonzero"]),
+])
+def test_worldserver_exit_gate(lifecycle, reason, failures):
+    summary = {"terminal_reason": "completed"}
+    sc.apply_worldserver_exit_gate(summary, lifecycle)
+    assert summary["terminal_reason"] == reason
+    assert summary.get("infrastructure_failures") == failures
+    other = {"terminal_reason": "setup_failed"}
+    sc.apply_worldserver_exit_gate(other, {"process_return_code": 1, "forced_termination": "worldserver_sigkill"})
+    assert other == {"terminal_reason": "setup_failed"}
 
 
 def test_inferior_signals_only_its_own_process(tmp_path):

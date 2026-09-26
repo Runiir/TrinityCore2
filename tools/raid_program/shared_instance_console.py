@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import logging
 import os
 from pathlib import Path
 import re
@@ -18,6 +19,8 @@ from tools.raid_program.shared_instance_fixture import sha256
 # Owned shutdown: `server exit`, then escalating signals (tests shorten these).
 SHUTDOWN_TIMEOUT_SEC = 30
 TERMINATION_GRACE_SEC = 5
+
+_LOG = logging.getLogger(__name__)
 
 
 def verify_process_binary(process: subprocess.Popen[bytes], expected_sha256: str,
@@ -166,38 +169,68 @@ def owned_console(*, repository: Path, source: Path, binary: Path, config: Path,
                 transport.wait_ready(startup_timeout_sec)
                 yield transport
             finally:
-                if process.poll() is None:
-                    try:
-                        assert process.stdin is not None
-                        process.stdin.write(b"server exit\n")
-                        process.stdin.flush()
-                        process.wait(timeout=SHUTDOWN_TIMEOUT_SEC)
-                    except (BrokenPipeError, OSError, subprocess.TimeoutExpired, KeyboardInterrupt):
-                        if process.poll() is None and inferior is not None:
-                            _terminate_inferior(process, inferior, lifecycle)
-                        if process.poll() is None:
-                            os.killpg(process.pid, signal.SIGTERM)
-                            try:
-                                process.wait(timeout=TERMINATION_GRACE_SEC)
-                            except subprocess.TimeoutExpired:
-                                os.killpg(process.pid, signal.SIGKILL)
-                                process.wait(timeout=TERMINATION_GRACE_SEC)
-                if inferior is not None:
-                    inferior.close()
-                if process.stdin:
-                    process.stdin.close()
-                if lifecycle is not None:
-                    lifecycle.update(process_exited=process.poll() is not None,
-                                     process_return_code=process.returncode)
+                try:
+                    if process.poll() is None:
+                        try:
+                            assert process.stdin is not None
+                            process.stdin.write(b"server exit\n")
+                            process.stdin.flush()
+                            process.wait(timeout=SHUTDOWN_TIMEOUT_SEC)
+                        except (BrokenPipeError, OSError, subprocess.TimeoutExpired, KeyboardInterrupt):
+                            _force_stop(process, inferior, lifecycle, crash_capture)
+                finally:
+                    # Always recorded, however the forced stop ended.
+                    if inferior is not None:
+                        inferior.close()
+                    if process.stdin:
+                        process.stdin.close()
+                    if lifecycle is not None:
+                        lifecycle.update(process_exited=process.poll() is not None,
+                                         process_return_code=process.returncode)
+
+
+def _force_stop(process: subprocess.Popen[bytes], inferior: crash_capture_module.Inferior | None,
+                lifecycle: dict[str, Any] | None, crash_capture: bool) -> None:
+    if process.poll() is None and inferior is not None:
+        _terminate_inferior(process, inferior, lifecycle)
+    if process.poll() is None and crash_capture:
+        # gdb outlived the worldserver steps (busy with a post-mortem such as
+        # `thread apply all bt`, or the worldserver could not be signalled).
+        # gdb quits 0 on SIGTERM after killing its inferior, so a forced stop
+        # would read as clean: SIGKILL instead (the kernel then kills the
+        # worldserver too, PTRACE_O_EXITKILL), and gdb exits -9.
+        if lifecycle is not None:
+            lifecycle["debugger_forced_termination"] = "sigkill"
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=TERMINATION_GRACE_SEC)
+        return
+    if process.poll() is None:
+        os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=TERMINATION_GRACE_SEC)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait(timeout=TERMINATION_GRACE_SEC)
 
 
 def _terminate_inferior(process: subprocess.Popen[bytes], inferior: crash_capture_module.Inferior,
                         lifecycle: dict[str, Any] | None) -> None:
     """Escalate on the worldserver itself: it has its own process group, and gdb
     quits on its own SIGTERM with exit 0 after killing it. SIGTERM lets it shut
-    down; SIGKILL then makes gdb exit 128 + 9, so a forced kill is never clean."""
+    down; SIGKILL then makes gdb exit 128 + 9, so a forced kill is never clean.
+    A signal that cannot be sent (any OSError but an exited process) is logged
+    and leaves the rest to _force_stop's debugger kill."""
     for signum, step in ((signal.SIGTERM, "worldserver_sigterm"), (signal.SIGKILL, "worldserver_sigkill")):
-        if process.poll() is not None or not inferior.send(signum):
+        if process.poll() is not None:
+            return
+        try:
+            delivered = inferior.send(signum)
+        except OSError as error:
+            _LOG.warning("worldserver %s via pidfd failed: %s", step, error)
+            if lifecycle is not None:
+                lifecycle["forced_termination_error"] = f"{step}: {error}"
+            return
+        if not delivered:
             return
         if lifecycle is not None:
             lifecycle["forced_termination"] = step

@@ -25,11 +25,21 @@ ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "src/server/game/Bots/BotSpellCastTarget.h"
 CONTAMINATION = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteContamination.cpp"
 BOT_SOURCES = [ROOT / "src/server/game/Bots", *sorted((ROOT / "src/server/scripts/Commands").glob("cs_*bot*.cpp"))]
-CACHED_TARGET_READ = re.compile(r"(?:\b(\w+)\s*(?:\.|->)\s*)?"
+CACHED_TARGET_READ = re.compile(r"(?:\b(?P<owner>\w+)\s*(?:\.|->)\s*)?"
                                r"\b(?:GetUnitTarget|GetObjectTarget|GetGOTarget|GetCorpseTarget|GetOrigUnitTarget)"
                                r"\s*\(\s*\)")
-# A SpellCastTargets the file constructs itself holds pointers it just set.
-LOCAL_TARGETS = re.compile(r"\bSpellCastTargets\s+(\w+)\s*[;({=]")
+# Only a default-constructed local SpellCastTargets holds pointers the function
+# itself just set, and only inside its own block and until it is reassigned.
+# A copy of (or reference to) a live spell's m_targets is as stale as m_targets.
+SCOPE_TOKEN = re.compile(
+    r"(?P<open>\{)|(?P<close>\})"
+    r"|\bSpellCastTargets\s+(?P<local>\w+)\s*(?:\{\s*\})?\s*;"
+    r"|(?P<read>" + CACHED_TARGET_READ.pattern + r")"
+    # any other declaration or parameter: `auto& x = ...`, `T const& x)`, `T x(...)`
+    r"|(?:\b(?P<type>\w+)\b|>)(?:\s*[&*]+\s*|\s+)(?P<bound>\w+)\s*(?=[({;,)]|=(?!=))"
+    r"|\b(?P<assigned>\w+)\s*=(?!=)")
+NOT_A_TYPE = {"return", "co_return", "throw", "case", "else", "goto", "delete", "sizeof"}
+LITERAL = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])+\'|/\*.*?\*/')
 MIGRATED_SITES = {
     "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp": 5,
     "src/server/game/Bots/BotWorldPopulationMgrCalibrationHealer.cpp": 1,
@@ -51,17 +61,36 @@ def _bot_files() -> list[Path]:
 
 
 def _cached_reads(text: str, helper: bool = False) -> list[tuple[int, str]]:
-    local = set(LOCAL_TARGETS.findall(text))
+    scopes: list[dict[str, bool]] = [{}]  # per open block: name -> exempt local
+
+    def exempt(name: str | None) -> bool:
+        return next((scope[name] for scope in reversed(scopes) if name in scope), False)
+
     reads = []
     for number, line in enumerate(text.splitlines(), 1):
-        if line.lstrip().startswith("//"):
-            continue
-        for match in CACHED_TARGET_READ.finditer(line):
-            if match.group(1) in local:
-                continue
-            if helper and match.group(0).replace(" ", "") == "m_targets.GetObjectTarget()":
-                continue  # the helper compares the cached pointer, never dereferences it
-            reads.append((number, line.strip()))
+        code = LITERAL.sub('""', line).split("//", 1)[0]
+        for token in SCOPE_TOKEN.finditer(code):
+            if token["open"]:
+                scopes.append({})
+            elif token["close"]:
+                if len(scopes) > 1:
+                    scopes.pop()
+            elif token["local"]:
+                scopes[-1][token["local"]] = True
+            elif token["read"]:
+                if exempt(token["owner"]):
+                    continue
+                if helper and token["read"].replace(" ", "") == "m_targets.GetObjectTarget()":
+                    continue  # the helper compares the cached pointer, never dereferences it
+                reads.append((number, line.strip()))
+            elif token["bound"]:
+                if token["type"] not in NOT_A_TYPE:
+                    scopes[-1][token["bound"]] = False  # shadows any exempt local
+            elif token["assigned"]:
+                # reassigning the local (from m_targets or anything else) revokes it
+                owner = next((scope for scope in reversed(scopes) if token["assigned"] in scope), None)
+                if owner is not None:
+                    owner[token["assigned"]] = False
     return reads
 
 
@@ -80,9 +109,50 @@ Unit* mine = targets.GetUnitTarget();
 Unit* theirs = current->m_targets.GetUnitTarget();
 Unit* other = spell->m_targets . GetObjectTarget();
 // current->m_targets.GetUnitTarget() in a comment
+Log("{ not a scope", targets.GetUnitTarget());
+return targets.GetUnitTarget();
 """
     assert [number for number, _ in _cached_reads(text)] == [4, 5]
     assert _cached_reads("WorldObject* const cached = spell->m_targets.GetObjectTarget();", helper=True) == []
+
+
+@pytest.mark.parametrize("text", [
+    # a copy of a live spell's targets carries its stale pointers
+    "SpellCastTargets targets = spell->m_targets;\nUnit* u = targets.GetUnitTarget();",
+    "SpellCastTargets targets(spell->m_targets);\nUnit* u = targets.GetUnitTarget();",
+    "SpellCastTargets targets{spell->m_targets};\nUnit* u = targets.GetUnitTarget();",
+    "SpellCastTargets const& targets = spell->m_targets;\nUnit* u = targets.GetUnitTarget();",
+    "auto& targets = spell->m_targets;\nUnit* u = targets.GetUnitTarget();",
+    # default-constructed, then overwritten
+    "SpellCastTargets targets;\ntargets = spell->m_targets;\nUnit* u = targets.GetUnitTarget();",
+    "SpellCastTargets targets;\nif (x)\n{\n    targets = spell->m_targets;\n}\nUnit* u = targets.GetUnitTarget();",
+    # the same name, bound differently in another function of the same file
+    "void A()\n{\n    SpellCastTargets targets;\n    Use(targets);\n}\n"
+    "void B(Spell* spell)\n{\n    auto& targets = spell->m_targets;\n    Unit* u = targets.GetUnitTarget();\n}",
+    "void A()\n{\n    SpellCastTargets targets;\n}\n"
+    "void B(SpellCastTargets const& targets)\n{\n    Unit* u = targets.GetUnitTarget();\n}",
+    "void A()\n{\n    SpellCastTargets targets;\n}\nvoid B()\n{\n    Unit* u = targets.GetUnitTarget();\n}",
+    # a nested binding shadows the local
+    "SpellCastTargets targets;\n{\n    auto const& targets = spell->m_targets;\n    Unit* u = targets.GetUnitTarget();\n}",
+])
+def test_grep_guard_flags_targets_copied_or_bound_from_a_spell(text):
+    assert [line for _, line in _cached_reads(text)] == ["Unit* u = targets.GetUnitTarget();"]
+
+
+def test_grep_guard_keeps_the_local_exemption_in_its_own_block():
+    text = """void A(Spell* spell)
+{
+    SpellCastTargets targets;
+    {
+        auto const& targets = spell->m_targets;
+        Use(targets);
+    }
+    Unit* mine = targets.GetUnitTarget();
+    if (targets == other)
+        Unit* again = targets.GetUnitTarget();
+}
+"""
+    assert _cached_reads(text) == []
 
 
 def test_every_listed_site_uses_the_helper_and_stays_small():
