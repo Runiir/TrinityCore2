@@ -643,6 +643,29 @@ deleted this doc by accident that way; it was restored from HEAD.
 
   Round 4 starts with the per-boss wipe analysis.
 
+## Round 4 (2026-09-26): why the reached bosses wiped, and recovery
+
+Root causes from the round-3 batch:
+
+| Shard | Root cause | Fix (owner) |
+|---|---|---|
+| Chimaeron, Omnotron | The raid prepull consumable candidate stayed committed in combat and held every bot's GCD, cast and target lanes: 0 heals, 0 player damage | `chimaeron/prepull_window_stand_down.patch` |
+| Omnotron | Encounter anchor on a construct patrol path (body pull); no ready check after the wipe; prepot needed the credit construct | M staging anchor, H native ready check, C prepull alternate entries |
+| Maloriak | The rotation interrupted every Release Aberrations, so all 18 Aberrations came at 25%; Growth Catalyst stacked; Consuming Flames fed on its own ticks | MA commit 53415411e5 plus `01_encounter_interrupt_veto.patch` |
+| Atramedes | Whirlwind killed two melee; tank area threat broke the kill order; the runback walk (438 yd) exceeded the PathGenerator cap (~296 yd) | AT 23d3c36f7a, `spirit_kill_order_tank.patch`, T corridor legs |
+| Nefarian | The north_patrol node named 42802, so the future guard forbade the lab Slayer | M d10fb0a450 (keyed on Mongrel 250120, anchor rule 4) |
+| All lower wing | The recovery ride was starved by the prepull candidate; the walk back after a ride belonged to boss plans; no re-wake after a wipe | T `recovery_path_round4.patch` |
+
+Post-wipe recovery (T): a released member is walked back to the boss node by the route
+(ride, then the anchor walk, in legs of up to 220 yd when a path exceeds PathGenerator's
+296 yd cap) and handed to the encounter plan within 35 yd. Transport rest-window stages run
+at Survival priority. A boss woken by an interaction is re-woken after a wipe at its node
+(`recovery_interaction`). The full-wipe recovery hold still needs the watchdog's native
+ready check (harness patch H).
+
+User decision (2026-09-26): the canonical hunter becomes **Survival**. As the fixed Magmaw
+baiter, BM did 14-16k because it can't Cobra Shot while moving; legacy Survival did 37.6k.
+
 ## Round 3 candidates (from the round 2 reviews)
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
