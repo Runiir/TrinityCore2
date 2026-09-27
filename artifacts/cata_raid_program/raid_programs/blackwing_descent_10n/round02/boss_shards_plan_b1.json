@@ -1,0 +1,104 @@
+{
+  "kind": "boss_shards",
+  "program_id": "blackwing_descent:10N",
+  "raid_shard_plan": "dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json",
+  "round": 2,
+  "schema": "raid_shard_run_plan_v1",
+  "shards": [
+    {
+      "boss_key": "magmaw",
+      "cohort_id": "blackwing_descent_10n_magmaw_c0",
+      "lockout": null,
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_magmaw_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_magmaw_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic"
+    },
+    {
+      "boss_key": "omnotron",
+      "cohort_id": "blackwing_descent_10n_omnotron_c0",
+      "lockout": null,
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_omnotron_c0_diagnostic"
+    },
+    {
+      "boss_key": "chimaeron",
+      "cohort_id": "blackwing_descent_10n_chimaeron_c0",
+      "lockout": {
+        "difficulty": "10n",
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "raid": "blackwing_descent",
+        "seed_boss_argument": "magmaw,omnotron"
+      },
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_chimaeron_c0_diagnostic"
+    },
+    {
+      "boss_key": "atramedes",
+      "cohort_id": "blackwing_descent_10n_atramedes_c0",
+      "lockout": {
+        "difficulty": "10n",
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "raid": "blackwing_descent",
+        "seed_boss_argument": "magmaw,omnotron"
+      },
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_atramedes_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_atramedes_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_atramedes_c0_diagnostic"
+    },
+    {
+      "boss_key": "maloriak",
+      "cohort_id": "blackwing_descent_10n_maloriak_c0",
+      "lockout": {
+        "difficulty": "10n",
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "raid": "blackwing_descent",
+        "seed_boss_argument": "magmaw,omnotron"
+      },
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_maloriak_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_maloriak_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_maloriak_c0_diagnostic"
+    },
+    {
+      "boss_key": "nefarian",
+      "cohort_id": "blackwing_descent_10n_nefarian_c0",
+      "lockout": {
+        "difficulty": "10n",
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron",
+          "chimaeron",
+          "atramedes",
+          "maloriak"
+        ],
+        "raid": "blackwing_descent",
+        "seed_boss_argument": "magmaw,omnotron,chimaeron,atramedes,maloriak"
+      },
+      "mode": "10n",
+      "pool_tag": "blackwing_descent_10n_nefarian_c0_diagnostic",
+      "raid": "blackwing_descent",
+      "runtime_profile_id": "blackwing_descent_10n_nefarian_c0_diagnostic",
+      "scenario_id": "blackwing_descent_10n_nefarian_c0_diagnostic"
+    }
+  ]
+}

@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 26,
+      "revision": 27,
       "stage": "run",
       "round": 2,
       "bootstrap_sources": {
@@ -2165,7 +2165,22 @@
             "worldserver_sha256": "8698dcdad05781ac41ae5f68bea8422112e3d451eab6ce132f32b32201190d7b",
             "recorded_utc": "2026-09-27T13:12:40Z"
           },
-          "run_plans": [],
+          "run_plans": [
+            {
+              "batch": 1,
+              "kind": "boss_shards",
+              "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round02/boss_shards_plan_b1.json",
+              "sha256": "6e89f42c9dbbe03104e9dbcade00a146250e8f3ca5288b4a377903ad85399e4c",
+              "cohorts": [
+                "blackwing_descent_10n_magmaw_c0",
+                "blackwing_descent_10n_omnotron_c0",
+                "blackwing_descent_10n_chimaeron_c0",
+                "blackwing_descent_10n_atramedes_c0",
+                "blackwing_descent_10n_maloriak_c0",
+                "blackwing_descent_10n_nefarian_c0"
+              ]
+            }
+          ],
           "runs": [],
           "assessment": null,
           "coordinator_fixes": [
@@ -2348,7 +2363,8 @@
               "worldserver_sha256": "8698dcdad05781ac41ae5f68bea8422112e3d451eab6ce132f32b32201190d7b",
               "recorded_utc": "2026-09-27T13:12:40Z"
             }
-          ]
+          ],
+          "plans_written": true
         }
       ],
       "history": [
@@ -2584,6 +2600,14 @@
           "success": true,
           "source_commit": "a82a035b81a40482023737eca2d02790a3cd34a2",
           "adopted": false
+        },
+        {
+          "revision": 27,
+          "utc": "2026-09-27T13:12:51Z",
+          "action": "run_plans",
+          "round": 2,
+          "batches": 1,
+          "replan": false
         }
       ]
     }
