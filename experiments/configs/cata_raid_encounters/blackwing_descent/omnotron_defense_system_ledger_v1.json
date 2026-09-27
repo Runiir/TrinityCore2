@@ -756,7 +756,7 @@
           11.244,
           11.331
         ],
-        "derivation": "lower 75,687 / 6,731.4; upper min(51,220 / 4,520.5, 46,798 / (0.9 * 4,520.5)); staged sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql"
+        "derivation": "lower 75,687 / 6,731.4; upper min(51,220 / 4,520.5, 46,798 / (0.9 * 4,520.5)); staged sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql"
       }
     },
     {
@@ -1490,7 +1490,7 @@
       ],
       "status": "resolved",
       "known": "DamageModifier 11.2 for 42166/42178/42179/42180 (effective 11.312 with the native +1% auto-attack bonus; bounds 11.244-11.331) from 136 landed WCL melee rows over three 10N kills; staged SQL and registry patch in this packet.",
-      "next": "Live: encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL envelope once the staged SQL is applied.",
+      "next": "Live: encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL envelope once the promoted SQL (sql/custom/world, 2026-09-27) is applied at worldserver startup.",
       "source_refs": [
         "tdb_434_22011",
         "wcl_human_verification_gate_20260925",

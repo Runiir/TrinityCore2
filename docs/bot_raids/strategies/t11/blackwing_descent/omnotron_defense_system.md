@@ -226,9 +226,9 @@ and the cast timeline manifest.
   value under Scarlet Fever or Vindication is 46,798. The native roll at
   DamageModifier 1 is 4,520.5-6,731.4, plus the +1% auto-attack bonus. That
   bounds the effective multiplier to 11.244-11.331. DamageModifier **11.2**
-  (effective 11.312) is staged in
-  `sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql`
-  for 42166, 42178, 42179 and 42180. The registry rows are a coordinator patch.
+  (effective 11.312) is in
+  `sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql`
+  for 42166, 42178, 42179 and 42180 (promoted 2026-09-27; the DB updater applies it at worldserver startup). The registry rows are applied.
   Difficulty entries stay open.
 - **Shared health, 10N.** The WCL health tooltip at pull reads 25,767,600 in
   all three kills. In the Y8aj kill, damage on the two constructs totals

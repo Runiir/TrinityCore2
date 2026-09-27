@@ -844,8 +844,8 @@ Onyxia 10N are now derived from WCL `U` melee samples of three 10N kills
 - Onyxia 41270: 37 landed rows, 35 under Scarlet Fever. Bounds are 10.314–10.465, so
   DamageModifier is 10.212–10.361. Chosen **10.34375**. The upper bound rests on fully
   absorbed rows, whose `U` is a WCL estimate; two of them read 42,883 in different kills.
-- Files: `sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql` and
-  `..._01_nefarian_onyxia_damage_modifier.sql`. Registry rows go through the coordinator.
+- Files: `sql/custom/world/2026_09_27_24_nefarian_damage_modifier.sql` and
+  `sql/custom/world/2026_09_27_25_nefarian_onyxia_damage_modifier.sql` (promoted 2026-09-27; the DB updater applies it at worldserver startup). The registry rows are applied.
 
 | Creature | Class, level, attack time | Native swing at DM 1 | Status |
 |---|---|---|---|
@@ -873,7 +873,8 @@ clear with 0 boss-window deaths.
 
 ## 10. Unresolved (fidelity_blocked)
 
-1. The creature melee DamageModifier: Nefarian and Onyxia 10N are staged; the bone
+1. The creature melee DamageModifier: Nefarian and Onyxia 10N are promoted to
+   `sql/custom/world`; the bone
    warrior and the 25N/10H/25H templates are open.
 2. Nefarian's phase 1 Tail Lash (unobserved) and the cone geometry. Breath ticks are
    resolved (3; SpellMgr patch requested).

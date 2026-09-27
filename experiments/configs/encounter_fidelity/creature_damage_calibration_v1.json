@@ -217,7 +217,7 @@
         "bounds_derivation": "lower = 62,831 / (0.9 * 6,764.2) = 10.32 (largest hit under Scarlet Fever; the largest unreduced hit gives 68,939 / 6,764.2 = 10.19); upper = 47,665 / 4,553.3 = 10.47 (smallest unreduced hit; the smallest under Scarlet Fever, 45,877 / (0.9 * 4,553.3) = 11.20, is looser); with the native +1% auto-attack bonus 10.22 <= m <= 10.36; the value must satisfy both, so 10.32-10.36",
         "cross_check": "Pooled mean of the 22 landed U is 55,546 vs a native expectation of 54,045 at 10.35 for the 3 unreduced / 19 Scarlet Fever mix (+2.8%). Treating Scarlet Fever as outside U leaves no consistent value (10.19 > 10.08). Same-fight health derivation 26,111,168 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists.",
         "sample_note": "Only 3 unreduced rows (before Scarlet Fever at 6.9 s). Scarlet Fever rows average 55,317 vs 56,996 unreduced, smaller than the expected 10% (as in the Chimaeron sample); the bounds hold under either reading except the no-aura one, which has no solution.",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_atramedes_damage_modifier.py"
       },
@@ -638,7 +638,7 @@
         "bounds_derivation": "effective lower = max(largest unreduced 345,349 / 18,037.9 = 19.146, largest reduced 314,547 / (0.9 * 18,037.9) = 19.3757) = 19.3757; effective upper = min(smallest unreduced 253,562 / 12,142.1 = 20.883, smallest reduced 285,219 / (0.9 * 12,142.1) = 26.10) = 20.88; with the +1% auto-attack bonus m * 1.01 must lie in 19.3757-20.88, i.e. 314,547 / (0.9 * 18,037.9 * 1.01) = 19.1838 <= m <= 20.67",
         "cross_check": "Mean unreduced U 299,823 / (native mean 15,090.0 * 1.01) = 19.67. Same-fight health derivation 20,699,972 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists (Break/Double Attack deal no damage of their own).",
         "sample_note": "Scarlet Fever samples (7) average 294,874 vs 299,823 unreduced, not the expected 10% lower. The lower bound is set by the largest reduced row (314,547 under -10%), the upper bound by the smallest unreduced row; at 20 every unreduced row lies in the native envelope and every reduced row in the -10% envelope.",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_chimaeron_damage_modifier.py"
       },
@@ -755,7 +755,7 @@
         "bounds_derivation": "lower = 63,630 / 6,764.2 (largest hit, unreduced); upper = 44,663 / 4,553.3 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 40,559 / (0.9 * 4,553.3) = 9.90, is looser); m * 1.01 must also stay <= 9.81",
         "cross_check": "Mean of the 26 Scarlet Fever rows 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. At 9.5 the native U-stage envelope 43,689-64,903 (39,320-58,412 under -10%) contains every observed row. No weapon-percent ability exists for a second cross-check.",
         "sample_note": "Scarlet Fever 81130 was on Maloriak 3.9-100.2 s and 102.9-125.0 s, so only 3 of 29 landed rows are unreduced; Demoralizing Roar/Shout and Vindication had no events.",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_maloriak_damage_modifier.py"
       },
@@ -1034,7 +1034,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "Y8ajQ7dbmKMG1RZy-24"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -1114,7 +1114,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "xAhkN2y9YP3KRmnJ-12"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -1193,7 +1193,7 @@
         "this_construct_fights": [
           "Y8ajQ7dbmKMG1RZy-24"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -1273,7 +1273,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "xAhkN2y9YP3KRmnJ-12"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -1692,7 +1692,7 @@
         "bounds_derivation": "effective lower = max(largest reduced U 78,033 / (0.9 x 6,764.2), largest unreduced U 85,806 / 6,764.2); effective upper = smallest reduced U 52,977 / (0.9 x 4,553.3); -10% auras: Scarlet Fever 81130, Curse of Weakness 702; DamageModifier bounds = effective bounds / 1.01",
         "cross_check": "sample mean 67,076.7 implies an effective 12.907 with the observed aura mix; chosen effective 12.8775",
         "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_24_nefarian_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_nefarian_damage_modifier.py",
         "bounds_effective_with_native_1pct": {
@@ -1815,7 +1815,7 @@
         "bounds_derivation": "effective lower = max(largest reduced U 62,791 / (0.9 x 6,764.2), largest unreduced U 65,353 / 6,764.2); effective upper = smallest reduced U 42,883 / (0.9 x 4,553.3); -10% auras: Scarlet Fever 81130; DamageModifier bounds = effective bounds / 1.01",
         "cross_check": "sample mean 54,464.0 implies an effective 10.63 with the observed aura mix; chosen effective 10.4472; the upper bound rests on fully absorbed rows whose U is a WCL estimate (two read 42,883), so confirm live",
         "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_01_nefarian_onyxia_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_25_nefarian_onyxia_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_nefarian_damage_modifier.py",
         "bounds_effective_with_native_1pct": {

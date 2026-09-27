@@ -56,7 +56,7 @@
   "declared_gaps": [
     "Matched WCL kills are one-tank, one-healer rosters; the canonical roster has two tanks and three healers, so the Blood DK tank target (median 25,888.5) comes from a tank without taunt swaps.",
     "Fire Mage (died in the only kill it appears in), Assassination Rogue and Demonology Warlock keep the WoWSims fallback; the Feral tank has neither a matched WCL reference nor a verified WoWSims fallback; its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so this fails nothing.",
-    "Encounter damage fidelity: creature 43296 DamageModifier 20 is derived and staged (sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql); the registry patch and the move to sql/custom/world are coordinator steps, and kills before that run at the upstream value 1.",
+    "Encounter damage fidelity: creature 43296 DamageModifier 20 is derived and promoted to sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql (2026-09-27); the DB updater applies it at worldserver startup, and kills recorded before that ran at the upstream value 1.",
     "Native 10N health 20,699,972 equals the WCL-derived value; kill durations are directly comparable.",
     "Phase-two (Mortality) tank deaths are Blizzlike: the fight 27 tank died to a Mortality melee 2 s before the kill. The 0 boss-window death rule may need a Mortality exception.",
     "scoreboard run's single-scenario argv cannot seed the lockout; runs go through shard_coordinator and are added with scoreboard ingest."

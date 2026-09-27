@@ -240,7 +240,7 @@
       ],
       "repository_observation": "Every creature has DamageModifier 1 since sql/updates/world/4.3.4/2025_06_18_06_world.sql; Nefarian/Onyxia class 1 level 88 BaseAttackTime 1500, bone warrior class 4 level 85 BaseAttackTime 2000 BaseVariance 0.5. Old TDB DamageModifier was 90 (10N) and 6 (warrior) under the previous formula.",
       "status": "resolved_10n_dragons_staged",
-      "implementation_consequence": "Staged sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql (41376 = 12.75) and 2026_09_27_01_nefarian_onyxia_damage_modifier.sql (41270 = 10.34375); registry rows via the coordinator patch. 41918 and the 25N/10H/25H templates stay open.",
+      "implementation_consequence": "Promoted (2026-09-27; applied at worldserver startup) sql/custom/world/2026_09_27_24_nefarian_damage_modifier.sql (41376 = 12.75) and 2026_09_27_25_nefarian_onyxia_damage_modifier.sql (41270 = 10.34375); registry rows via the coordinator patch. 41918 and the 25N/10H/25H templates stay open.",
       "wcl_10N_samples": {
         "landed": 201,
         "miss_or_parry": 65,

@@ -1,7 +1,8 @@
 -- Maloriak 10N (creature_template 41378): restore melee damage with DamageModifier 9.5.
 --
--- Staged. Move to sql/custom/world/ (or apply with mysql) right before the
--- Maloriak measurement batch; see sql/custom/staged/README.md.
+-- Promoted 2026-09-27 from sql/custom/staged/world. The worldserver DB updater
+-- applies every file in sql/custom/world at startup (see the Magmaw precedent,
+-- 2026_09_23_30_magmaw_damage_modifier.sql).
 --
 -- Why the value is 1 today. Upstream migration
 -- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set

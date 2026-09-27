@@ -307,7 +307,7 @@ Every creature template runs at DamageModifier 1 (upstream reset
 - Vile Swill: 6,027-8,975.
 
 Historically the 10N melee was about 25k per boss hit and 5k per Aberration hit, and about 20k
-per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5, staged; see finding
+per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5, promoted to `sql/custom/world`; see finding
 7 below). The other boss modes and the adds stay `open`, and the non-melee helpers are
 `not_applicable`.
 
@@ -345,8 +345,8 @@ per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5,
    but not natively (open).
 7. Maloriak 10N melee: 29 landed swings with U 40,559-63,630 (Scarlet Fever on the boss for all but
    3 of them). Against the native roll 4,553.3-6,764.2 the bounds are 9.41-9.71 with the +1%
-   auto-attack bonus. DamageModifier 9.5 is staged in
-   `sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql`. Aberration and Prime Subject
+   auto-attack bonus. DamageModifier 9.5 is in
+   `sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql` (promoted 2026-09-27; the DB updater applies it at worldserver startup). Aberration and Prime Subject
    stay open because the log does not show their Growth Catalyst stacks.
 8. Full-route run r11 (2026-09-27) killed Maloriak natively, but it recorded no Maloriak melee swings
    and was not the Maloriak shard.

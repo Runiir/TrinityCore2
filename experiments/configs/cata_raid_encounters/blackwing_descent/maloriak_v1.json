@@ -216,7 +216,7 @@
     "heroic_prime_subject_fixate_implementation": "no spell data",
     "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source: the Default Group respawn builds a new AI, so counters never survived; Reset is defensive; the random first vial awaits a live observation"
   },
-  "native_damage_calibration_20260927": "Maloriak 10N 41378 DamageModifier 9.5 staged (sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql) from WCL MxFq7TRbvnjGY1hJ fight 34 melee U (bounds 9.41-9.71); registry patch requested. 25N/10H/25H and the adds stay open.",
+  "native_damage_calibration_20260927": "Maloriak 10N 41378 DamageModifier 9.5 staged (sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql) from WCL MxFq7TRbvnjGY1hJ fight 34 melee U (bounds 9.41-9.71); registry patch requested. 25N/10H/25H and the adds stay open.",
   "native_repairs_20260927": [
     "phase_two_cadence: Magma Jets / Acid Nova / Absolute Zero repeat 11.8 / 30.7 / 11.3 s (was 6 / 20 / 7 s), first Absolute Zero 11.3 s after Unstable Mix (was 8.4 s), from WCL 10N fights VL3fW9wNm2PRJDYt 13 and MxFq7TRbvnjGY1hJ 34 (ledger phase_two_wcl_10N)."
   ]

@@ -677,7 +677,7 @@
     "damage_modifier": {
       "value": 20.0,
       "state": "staged",
-      "sql": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+      "sql": "sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql",
       "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json"
     }
   }

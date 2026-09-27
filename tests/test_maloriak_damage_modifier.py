@@ -1,4 +1,5 @@
-"""Static checks for the staged Maloriak 10N DamageModifier migration.
+"""Static checks for the Maloriak 10N DamageModifier migration (under sql/custom/world, applied by the
+worldserver DB updater at startup).
 
 The migration is replayed against an in-memory SQLite copy of the Maloriak
 creature_template rows (live world DB read back on 2026-09-27: every template at
@@ -20,7 +21,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql"
+MIGRATION = ROOT / "sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql"
 LEDGER = ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json"
 REGISTRY_PATCH = (ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent/"
                   "maloriak_damage_calibration_registry_patch_v1.json")
@@ -181,3 +182,10 @@ def test_registry_patch_records_the_same_value():
     for entry in MALORIAK_OTHER_MODES + ADDS:
         other = patch["creatures"][str(entry)]
         assert other["status"] == "open" and other["damage_modifier"] is None
+
+
+def test_file_is_applied_under_sql_custom_world():
+    # Promoted 2026-09-27: the worldserver DB updater applies sql/custom/world at startup.
+    assert MIGRATION.parent == ROOT / "sql/custom/world"
+    assert not (ROOT / "sql/custom/staged/world" / MIGRATION.name).exists()
+    assert not list((ROOT / "sql/custom/staged/world").glob(f"*{MIGRATION.stem.split('_', 4)[-1]}*"))

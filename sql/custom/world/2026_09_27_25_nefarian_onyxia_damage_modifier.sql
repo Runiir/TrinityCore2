@@ -1,8 +1,9 @@
 -- Onyxia 10N in Nefarian's End (creature_template 41270): restore melee damage
 -- with DamageModifier 10.34375.
 --
--- Staged, not active: move this file to sql/custom/world/ (or apply it with
--- mysql ... world < file) right before the measurement batch that should use it.
+-- Promoted 2026-09-27 from sql/custom/staged/world. The worldserver DB updater
+-- applies every file in sql/custom/world at startup (see the Magmaw precedent,
+-- 2026_09_23_30_magmaw_damage_modifier.sql).
 --
 -- Why the value is 1 today: upstream sql/updates/world/4.3.4/2025_06_18_06_world.sql
 -- (commit 68a3622133) set DamageModifier = 1 for every creature.

@@ -4,7 +4,7 @@
   "operation": "replace the four 10N construct entries 42166, 42178, 42179 and 42180 with the rows below (open -> calibrated); every other key is unchanged",
   "boss": "omnotron_defense_system",
   "status_summary": "Four 10N constructs calibrated at DamageModifier 11.2 from three matched 10N WCL kills (2026-09-27); the staged SQL must move to sql/custom/world together with this registry change. Twelve construct difficulty entries and Poison Bomb 42897 (+49121-49123) stay open; controller, Power Generator, Poison Puddle, Chemical Cloud (+49118-49120) and heroic Nefarius stay not_applicable.",
-  "staged_sql": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+  "staged_sql": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
   "creatures": {
     "42166": {
       "name": "Arcanotron",
@@ -63,7 +63,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "Y8ajQ7dbmKMG1RZy-24"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -143,7 +143,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "xAhkN2y9YP3KRmnJ-12"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -222,7 +222,7 @@
         "this_construct_fights": [
           "Y8ajQ7dbmKMG1RZy-24"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {
@@ -302,7 +302,7 @@
           "MxFq7TRbvnjGY1hJ-24",
           "xAhkN2y9YP3KRmnJ-12"
         ],
-        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_omnotron_defense_system_damage_modifier.py",
         "bounds": {

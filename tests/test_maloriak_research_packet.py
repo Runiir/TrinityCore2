@@ -153,7 +153,7 @@ def test_damage_registry_patch_is_schema_valid_and_honest() -> None:
     patch = load(ENCOUNTERS / "maloriak_damage_calibration_registry_patch_v1.json")
     registry = load_registry(ROOT)
     assert patch["target"] == "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
-    assert patch["staged_sql"] == "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql"
+    assert patch["staged_sql"] == "sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql"
     creatures = patch["creatures"]
     for entry, row in creatures.items():
         assert entry.isdigit() and row["status"] in REGISTRY_STATUSES

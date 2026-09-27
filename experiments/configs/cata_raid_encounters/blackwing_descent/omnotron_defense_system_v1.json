@@ -293,7 +293,7 @@
     "route kill attribution needs the credit creature 42180 as route source_entry",
     "full-raid r11 (2026-09-27): native council kill with real_boss_kill_evidence on bwd.omnotron.encounter; no native melee stage captured",
     "round 1 (2026-09-27): normal-mode native timers set from WCL 10N (Chemical Bomb 11 s, Poison Protocol 22.5 s, Lightning Conductor repeat 26 s, Power Generator repeat 30 s); heroic unchanged",
-    "round 1 (2026-09-27): construct DamageModifier 11.2 staged (sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql)"
+    "round 1 (2026-09-27): construct DamageModifier 11.2 staged (sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql)"
   ],
   "phase_graph": {
     "prepull": "Controller summons four inactive constructs (Inactive 78726, Powered Down 82265, not selectable); 10 s after reset the first queued construct recharges (45 s normal) and then walks its patrol, attackable, without Activated.",

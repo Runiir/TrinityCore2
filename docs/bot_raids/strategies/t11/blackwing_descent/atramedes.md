@@ -7,7 +7,7 @@ the native script and the database were audited on 2026-09-25 (repository
 revision `a570b44369`). The report pages showed a human-verification interstitial that an agent could not
 pass on 2026-09-25. On 2026-09-27 the Warcraft Logs (WCL) 10N kill MxFq7TRbvnjGY1hJ fight 32 was read. It was
 opened through the user's running Chrome, after the headless and scratch-profile routes looped on
-Cloudflare. That read resolved the boss melee DamageModifier (10.35, staged), the 10N max health
+Cloudflare. That read resolved the boss melee DamageModifier (10.35, promoted to `sql/custom/world`), the 10N max health
 (26,111,168, equal to native), the WCL DPS references and the Modulation repeat (16 s).
 Nothing here is a live-validation result.
 
@@ -20,8 +20,8 @@ Nothing here is a live-validation result.
   (1.5 s base slowed by Frost Fever). Scarlet Fever covered 6.9–112.1 s and
   129.1–162.1 s. The registry bounds method gives 10.32–10.47, or
   10.22–10.36 after the native +1% auto-attack bonus, so 10.32–10.36 for both.
-  The staged value is 10.35
-  (`sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql`,
+  The value is 10.35
+  (`sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql` (promoted 2026-09-27; the DB updater applies it at worldserver startup),
   `atramedes_damage_calibration_registry_patch_v1.json`,
   `tests/test_atramedes_damage_modifier.py`). The 25N, 10H and 25H templates stay open.
 - **Health.** `tools.raid_program.derive_encounter_health` on six consecutive

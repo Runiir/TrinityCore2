@@ -2,7 +2,7 @@
 
 Status (2026-09-27, raid program round 1): research packet, native script audit and the 10N bot
 strategy are done. Warcraft Logs (WCL) 10N data from two kills now resolves health, the boss
-melee DamageModifier (20, staged), the first Caustic Slime timer and the DPS references (see
+melee DamageModifier (20, promoted to `sql/custom/world`), the first Caustic Slime timer and the DPS references (see
 "WCL 10N observations"). Other claims stay unresolved, so the fidelity state is still
 `fidelity_blocked`.
 The fidelity target is Cataclysm Classic 4.4.2 (build 59185); the execution client is
@@ -13,7 +13,7 @@ and the bot tactic. Machine-readable files:
 - claim ledger: `experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json`
 - WCL reference and cast timelines: `chimaeron_wcl_dps_reference_v1.json`,
   `chimaeron_wcl_cast_timelines_v1.json` in the same directory
-- melee calibration: `sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql` and the
+- melee calibration: `sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql` and the
   registry patch `chimaeron_damage_calibration_registry_patch_v1.json` (same directory as the ledger)
 - raid target: `experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json`
 
@@ -116,8 +116,8 @@ Still deferred:
 - The knockout rule.
 - The Slime repeat: native 5 s, while the WCL impacts are 5.9-6.4 s apart (2 intervals).
 
-The boss melee DamageModifier for 10N is 20, derived from WCL. The migration is staged, not yet
-applied. At modifier 1 a 10N swing rolls 12,142-18,038 before the +1% auto-attack bonus; 20 gives
+The boss melee DamageModifier for 10N is 20, derived from WCL. The migration was promoted to
+`sql/custom/world` on 2026-09-27; the DB updater applies it at the next worldserver startup. At modifier 1 a 10N swing rolls 12,142-18,038 before the +1% auto-attack bonus; 20 gives
 245-364k at the WCL U stage.
 
 ## Bot strategy (canonical 10N composition)
@@ -233,7 +233,7 @@ HTTP requests still get the Cloudflare page. Report `Y8ajQ7dbmKMG1RZy` has no Ch
   WCL's mitigation % does), so it is the attacker-side stage. Scarlet Fever was up 5.2-34.3 s and
   52.5-81.5 s. The bounds are 19.3757 (largest reduced hit 314,547 / (0.9 x native max)) and 20.88
   (smallest unreduced hit / native min), or 19.1838-20.67 once the +1% auto-attack bonus is
-  included. DamageModifier 20 is staged.
+  included. DamageModifier 20 is promoted to `sql/custom/world`.
 - **Neither kill had a Systems Failure or Feud** (two Massacres and one). Neither is long enough
   to test the 450 s berserk.
 - **Single-tank kills.** Both groups tanked Chimaeron with one Blood DK. He held 4 Break stacks
@@ -247,7 +247,7 @@ HTTP requests still get the Cloudflare page. Report `Y8ajQ7dbmKMG1RZy` has no Ch
 - WCL 10N: Systems Failure frequency (longer kills), post-Massacre Break timing (swing-bound
   versus timer), Slime repeat, berserk, and a kill that covers Fire Mage, Assassination Rogue,
   Demonology Warlock or a Feral tank.
-- Apply the staged DamageModifier and the registry patch (coordinator), then confirm on a live kill
+- The DamageModifier is promoted and the registry row applied (2026-09-27); confirm on a live kill
   that `encounter_fidelity.boss_melee` is within ±10% of WCL.
 - The 4.4.2 client rows for the spell chain (`extract_442_client_spell_rows --follow-triggers`).
 - Heroic behavior (Shadow Whip delay, Mocking Shadows), the 25N/10H Slime target mapping, and

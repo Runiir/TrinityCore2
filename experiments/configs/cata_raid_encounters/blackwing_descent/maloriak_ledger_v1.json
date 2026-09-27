@@ -785,7 +785,7 @@
         "wcl_MxFq7TRbvnjGY1hJ_34",
         "native_stats_20260925"
       ],
-      "value": "Maloriak 10N melee U 40,559-63,630 over 29 landed swings (3 unreduced 44,663-63,630; 26 under Scarlet Fever 40,559-57,319), median swing gap 1.81 s. Bounds against the native roll 4,553.3-6,764.2 give 9.41 <= m <= 9.71 with the +1% auto-attack bonus; DamageModifier 9.5 is staged in sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql.",
+      "value": "Maloriak 10N melee U 40,559-63,630 over 29 landed swings (3 unreduced 44,663-63,630; 26 under Scarlet Fever 40,559-57,319), median swing gap 1.81 s. Bounds against the native roll 4,553.3-6,764.2 give 9.41 <= m <= 9.71 with the +1% auto-attack bonus; DamageModifier 9.5 is staged in sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql.",
       "wcl_10N_samples": {
         "report": "MxFq7TRbvnjGY1hJ",
         "fight": 34,

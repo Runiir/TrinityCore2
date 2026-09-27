@@ -1,4 +1,5 @@
-"""Static checks for the staged Nefarian and Onyxia 10N DamageModifier migrations.
+"""Static checks for the Nefarian and Onyxia 10N DamageModifier migrations (under
+sql/custom/world, applied by the worldserver DB updater at startup).
 
 Each migration is replayed against an in-memory SQLite copy of the relevant
 creature_template rows (all at the upstream DamageModifier 1), exercising the
@@ -19,12 +20,12 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGED = ROOT / "sql/custom/staged/world"
+WORLD = ROOT / "sql/custom/world"
 SAMPLES = ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json"
 
 MIGRATIONS = {
-    41376: (STAGED / "2026_09_27_00_nefarian_damage_modifier.sql", 12.75, "Nefarian", (51104, 51105, 51106)),
-    41270: (STAGED / "2026_09_27_01_nefarian_onyxia_damage_modifier.sql", 10.34375, "Onyxia", (51116, 51117, 51118)),
+    41376: (WORLD / "2026_09_27_24_nefarian_damage_modifier.sql", 12.75, "Nefarian", (51104, 51105, 51106)),
+    41270: (WORLD / "2026_09_27_25_nefarian_onyxia_damage_modifier.sql", 10.34375, "Onyxia", (51116, 51117, 51118)),
 }
 
 # Native per-swing roll at DamageModifier 1: gt_npc_damage_by_class_exp3[88].Warrior,
@@ -116,3 +117,10 @@ def test_registry_row_matches_migration_once_calibrated(entry: int) -> None:
     assert row["evidence"]["derivation_file"] == path.relative_to(ROOT).as_posix()
     assert row["evidence"]["migration_state"] == "staged"
     assert row["evidence"]["wcl_mode"] == "10N"
+
+
+def test_files_are_applied_under_sql_custom_world() -> None:
+    # Promoted 2026-09-27: the worldserver DB updater applies sql/custom/world at startup.
+    for path, *_ in MIGRATIONS.values():
+        assert path.parent == WORLD and path.is_file()
+        assert not list((ROOT / "sql/custom/staged/world").glob(f"*{path.stem.split('_', 4)[-1]}*"))

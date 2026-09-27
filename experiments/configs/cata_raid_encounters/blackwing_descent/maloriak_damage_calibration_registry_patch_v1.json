@@ -3,7 +3,7 @@
   "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
   "apply": "Replace target.creatures['41378'] with creatures['41378'] verbatim. Every other key is already in the target verbatim and stays unchanged (49974/49980/49986, the adds and helpers remain open or not_applicable).",
   "owner": "coordinator",
-  "staged_sql": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+  "staged_sql": "sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql",
   "creatures": {
     "41378": {
       "name": "Maloriak",
@@ -47,7 +47,7 @@
         "bounds_derivation": "lower = 63,630 / 6,764.2 (largest hit, unreduced); upper = 44,663 / 4,553.3 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 40,559 / (0.9 * 4,553.3) = 9.90, is looser); m * 1.01 must also stay <= 9.81",
         "cross_check": "Mean of the 26 Scarlet Fever rows 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. At 9.5 the native U-stage envelope 43,689-64,903 (39,320-58,412 under -10%) contains every observed row. No weapon-percent ability exists for a second cross-check.",
         "sample_note": "Scarlet Fever 81130 was on Maloriak 3.9-100.2 s and 102.9-125.0 s, so only 3 of 29 landed rows are unreduced; Demoralizing Roar/Shout and Vindication had no events.",
-        "derivation_file": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+        "derivation_file": "sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql",
         "migration_state": "staged",
         "test": "tests/test_maloriak_damage_modifier.py"
       },
@@ -270,5 +270,5 @@
       "reason": "Heroic presenter (npc_maloriak_lord_victor_nefarius, NullCreatureAI) that throws the Black vial; never melees."
     }
   },
-  "staged_sql_apply": "Move the staged file to sql/custom/world/ (or apply with mysql) right before the Maloriak measurement batch, after reading back the live creature_template row 41378 (expected DamageModifier 1, BaseAttackTime 1500, BaseVariance 1; read back 2026-09-27). A live kill must then show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL reference."
+  "staged_sql_apply": "Promoted 2026-09-27 to sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql; the worldserver DB updater applies sql/custom/world files at startup, so the value is live after the next worldserver start."
 }

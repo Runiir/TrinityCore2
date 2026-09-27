@@ -216,7 +216,7 @@
     "Sound sources (10N): Sonar Pulse disks +3 per 0.5 s within 5 yd; Sonic Breath +20 per 1 s tick in a 15-degree beam; fire patches +5 (3 yd); air breath +3 per 0.5 s (5 yd); spawned air patches +10 (8 yd); Sonar Bomb +20 (6 yd). A shield strike sets everyone to 0.",
     "Native fixes (2026-09-25): Sound Bar and Noisy! removed on evade/death; intro-flight Vertigo resumes the landing; landing removes the air Sonar Bomb trigger; redirected Reverberating Flame restarts at initial speed; time-to-Searing-Flame/Sonic-Breath/liftoff published through GetTimeUntilEncounterMechanic.",
     "Devastation (78868) has no DB target restriction; a staged condition limits it to Noisy! holders per both current guides.",
-    "WCL 10N (MxFq7TRbvnjGY1hJ fight 32, 2026-09-27 read): max health 26,111,168 equals native; boss melee DamageModifier 10.35 staged (sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql); gong Vertigo delays queued events, which explains the first Modulation/Sonar at 22.45 s; Sonic Breath 24.1 s then 43.7 s; Searing Flame 45.1 s; air about 90-129 s; Devastation hit a single player."
+    "WCL 10N (MxFq7TRbvnjGY1hJ fight 32, 2026-09-27 read): max health 26,111,168 equals native; boss melee DamageModifier 10.35 staged (sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql); gong Vertigo delays queued events, which explains the first Modulation/Sonar at 22.45 s; Sonic Breath 24.1 s then 43.7 s; Searing Flame 45.1 s; air about 90-129 s; Devastation hit a single player."
   ],
   "unresolved": [
     "ground_air_phase_timestamps",

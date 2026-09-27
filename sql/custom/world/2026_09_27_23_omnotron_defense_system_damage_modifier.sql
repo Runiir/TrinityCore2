@@ -2,9 +2,9 @@
 -- Entries: Arcanotron 42166, Magmatron 42178, Electron 42179, Toxitron 42180
 -- (10N base templates only).
 --
--- STAGED. This file is in sql/custom/staged/world. Move it to sql/custom/world
--- (or apply it by hand) right before the Omnotron measurement batch, so that
--- it cannot leak into a baseline.
+-- Promoted 2026-09-27 from sql/custom/staged/world. The worldserver DB updater
+-- applies every file in sql/custom/world at startup (see the Magmaw precedent,
+-- 2026_09_23_30_magmaw_damage_modifier.sql).
 --
 -- Why the value is 1 today. Upstream migration
 -- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) reset

@@ -557,7 +557,7 @@
             10.36
           ]
         },
-        "staged_sql": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+        "staged_sql": "sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql",
         "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_damage_calibration_registry_patch_v1.json",
         "test": "tests/test_atramedes_damage_modifier.py"
       },
@@ -1650,8 +1650,8 @@
         "10N"
       ],
       "status": "resolved",
-      "known": "Native roll at DamageModifier 1 (BaseAttackTime 1500): 4,553.3-6,764.2 per swing. DamageModifier 10.35 from 22 landed WCL 10N U samples (45,877-68,939; Scarlet Fever 6.9-112.1 and 129.1-162.1 s); bounds 10.32-10.47, 10.22-10.36 with the +1% auto-attack bonus, 10.32-10.36 for both. Staged: sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql.",
-      "next": "Apply the staged SQL before the measurement batch; a live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL mean 55,546.",
+      "known": "Native roll at DamageModifier 1 (BaseAttackTime 1500): 4,553.3-6,764.2 per swing. DamageModifier 10.35 from 22 landed WCL 10N U samples (45,877-68,939; Scarlet Fever 6.9-112.1 and 129.1-162.1 s); bounds 10.32-10.47, 10.22-10.36 with the +1% auto-attack bonus, 10.32-10.36 for both. Staged: sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql.",
+      "next": "SQL promoted to sql/custom/world on 2026-09-27 (applied by the DB updater at worldserver startup); a live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL mean 55,546.",
       "source_refs": [
         "tdb_bindings_20260925",
         "wcl_human_verification_20260925",

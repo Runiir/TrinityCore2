@@ -1,6 +1,7 @@
-"""Static checks for the staged Omnotron Defense System 10N DamageModifier migration.
+"""Static checks for the Omnotron Defense System 10N DamageModifier migration (under
+sql/custom/world, applied by the worldserver DB updater at startup).
 
-The staged SQL is replayed against an in-memory SQLite copy of the construct
+The SQL is replayed against an in-memory SQLite copy of the construct
 templates (every one at DamageModifier 1 after the upstream reset). The
 calibration arithmetic is pinned to the matched 10N WCL envelope. That
 envelope was read on 2026-09-27 from three kills: MxFq7TRbvnjGY1hJ fight 24,
@@ -17,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql"
+MIGRATION = ROOT / "sql/custom/world/2026_09_27_23_omnotron_defense_system_damage_modifier.sql"
 PATCH = ROOT / ("experiments/configs/cata_raid_encounters/blackwing_descent/"
                 "omnotron_defense_system_damage_calibration_registry_patch_v1.json")
 LEDGER = ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json"
@@ -80,9 +81,10 @@ def _native_range(modifier: float) -> tuple[float, float]:
             (BASE_DAMAGE * 1.5 + ap_term) * ATTACK_TIME_S * modifier)
 
 
-def test_file_is_staged_not_auto_applied() -> None:
-    assert MIGRATION.parent == ROOT / "sql/custom/staged/world"
-    assert not list((ROOT / "sql/custom/world").glob("*omnotron*"))
+def test_file_is_applied_under_sql_custom_world() -> None:
+    assert MIGRATION.parent == ROOT / "sql/custom/world"
+    assert [path.name for path in (ROOT / "sql/custom/world").glob("*omnotron*")] == [MIGRATION.name]
+    assert not list((ROOT / "sql/custom/staged/world").glob("*omnotron*"))
 
 
 def test_forward_updates_exactly_the_four_10n_constructs() -> None:

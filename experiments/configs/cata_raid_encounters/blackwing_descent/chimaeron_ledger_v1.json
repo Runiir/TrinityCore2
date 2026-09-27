@@ -652,7 +652,7 @@
           "with_auto_attack_bonus_lower": 19.1838,
           "with_auto_attack_bonus_upper": 20.67
         },
-        "staged_sql": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+        "staged_sql": "sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql",
         "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json",
         "test": "tests/test_chimaeron_damage_modifier.py"
       }
@@ -1178,8 +1178,8 @@
         "10N"
       ],
       "status": "calibrated_staged",
-      "known": "17 landed melee U samples (253,562-345,349) from MxFq7TRbvnjGY1hJ fight 27 against the native 12,142.1-18,037.9 roll: bounds 19.3757-20.88 (19.1838-20.67 with the +1% auto-attack bonus; the lower bound is the largest reduced row 314,547 / (0.9 x 18,037.9)). DamageModifier 20 staged in sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql; registry patch requested (chimaeron_damage_calibration_registry_patch_v1.json).",
-      "next": "Coordinator: apply the registry patch and move the staged SQL into sql/custom/world before the Chimaeron batch; live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of WCL (mean 297,785).",
+      "known": "17 landed melee U samples (253,562-345,349) from MxFq7TRbvnjGY1hJ fight 27 against the native 12,142.1-18,037.9 roll: bounds 19.3757-20.88 (19.1838-20.67 with the +1% auto-attack bonus; the lower bound is the largest reduced row 314,547 / (0.9 x 18,037.9)). DamageModifier 20 staged in sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql; registry patch requested (chimaeron_damage_calibration_registry_patch_v1.json).",
+      "next": "Registry rows applied and the SQL promoted to sql/custom/world on 2026-09-27 (applied by the DB updater at worldserver startup); live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of WCL (mean 297,785).",
       "source_refs": [
         "tdb_434_22011_chimaeron_rows",
         "wcl_MxFq7TRbvnjGY1hJ_27"
