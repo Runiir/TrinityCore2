@@ -1,4 +1,5 @@
 #include "Bots/BotMgr.h"
+#include "Bots/BotActiveSpecIdentity.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Chat.h"
 #include "Config.h"
@@ -90,6 +91,9 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
     // removal that bypasses BotWorldPopulationMgr.  Never let transient raid
     // damage authority survive reuse of the persistent character GUID.
     BotRaidAreaAuthority::Clear(botGuid.GetRawValue());
+    // Nor a spec contract's identity registration: the character's next
+    // cohort (or a re-provisioned copy) registers its own groups again.
+    BotActiveSpecIdentity::Forget(botGuid.GetCounter());
     TC_LOG_INFO("server", "PlayerBot cleanup begin bot=%s logout=%u", botGuid.ToString().c_str(), logoutPlayer ? 1 : 0);
     _removingBots.insert(botGuid);
     if (logoutPlayer)

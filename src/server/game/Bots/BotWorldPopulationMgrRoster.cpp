@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotMgr.h"
+#include "Bots/BotActiveSpecIdentity.h"
 
 #include "DatabaseEnv.h"
 #include "Group.h"
@@ -148,6 +149,10 @@ std::string BotWorldPopulationMgr::GetBotClassSpec(Player const* bot) const
 {
     if (!bot)
         return {};
+
+    BotActiveSpecIdentity::Identity activeIdentity;
+    if (BotActiveSpecIdentity::Resolve(bot->GetGUID().GetCounter(), bot->GetActiveSpec(), activeIdentity))
+        return activeIdentity.ClassSpec;
 
     if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
         return result->Fetch()[0].GetString();

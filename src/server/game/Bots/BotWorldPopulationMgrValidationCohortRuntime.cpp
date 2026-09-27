@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotActiveSpecIdentity.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 
@@ -295,9 +296,16 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
                 raid.AccountNameById[slot.AccountId] = slot.AccountName = account->Fetch()[0].GetString();
         slot.CharacterName = bot->GetName();
         slot.SubGroup = raidValidation ? group->GetMemberGroup(bot->GetGUID()) : 0;
-        slot.Role = plannedSlot && !plannedSlot->Role.empty() ? plannedSlot->Role : GetDungeonRole(bot);
+        // A member a canonical full raid's spec contract registered has the
+        // identity of its active talent group (BotActiveSpecIdentity.h).
+        BotActiveSpecIdentity::Identity activeIdentity;
+        bool const specSwitchIdentity = BotActiveSpecIdentity::Resolve(
+            guid, bot->GetActiveSpec(), activeIdentity);
+        slot.Role = specSwitchIdentity ? activeIdentity.Role
+            : (plannedSlot && !plannedSlot->Role.empty() ? plannedSlot->Role : GetDungeonRole(bot));
         slot.ClassId = bot->getClass();
-        slot.ClassSpec = botState && !botState->RosterClassSpec.empty() ? botState->RosterClassSpec : GetBotClassSpec(bot);
+        slot.ClassSpec = specSwitchIdentity ? activeIdentity.ClassSpec
+            : (botState && !botState->RosterClassSpec.empty() ? botState->RosterClassSpec : GetBotClassSpec(bot));
         slot.AverageItemLevel = botState && botState->RosterAverageItemLevel > 0.0f
             ? botState->RosterAverageItemLevel : bot->GetAverageItemLevel();
         std::ostringstream gearIdentity;
@@ -357,14 +365,19 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
         slot.Active = bot->IsInWorld();
         slot.LeaseOwned = LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot);
         slot.AdmissionPlannedSlotPresent = plannedSlot != nullptr;
+        // The planned (provisioned) identity is one talent group of a
+        // registered member; the role check moves to the spec contract's
+        // role counts below.
         slot.AdmissionPlannedRoleMatches = plannedSlot
-            && slot.Role == plannedSlot->Role;
+            && (specSwitchIdentity || slot.Role == plannedSlot->Role);
         slot.AdmissionPlannedClassSpecMatches = plannedSlot
             && (Cohort().Config.PoolClassSpecFilter.empty()
                 || (plannedSlot->SlotIndex
                         < Cohort().Config.PoolClassSpecFilter.size()
-                    && slot.ClassSpec == Cohort().Config.PoolClassSpecFilter[
-                        plannedSlot->SlotIndex]));
+                    && (slot.ClassSpec == Cohort().Config.PoolClassSpecFilter[
+                            plannedSlot->SlotIndex]
+                        || (specSwitchIdentity && BotActiveSpecIdentity::DeclaresClassSpec(guid,
+                            Cohort().Config.PoolClassSpecFilter[plannedSlot->SlotIndex])))));
         slot.AdmissionDeclaredSpecMatches =
             LoadedBotMatchesDeclaredSpec(bot, slot.ClassSpec);
         slot.AdmissionRuntimeHunterObserverApplicable =
@@ -491,8 +504,19 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
             [](RaidRosterPlanSlot const& slot) { return slot.Role == "healer"; }));
         uint32 const expectedDps = uint32(std::count_if(rosterPlan.begin(), rosterPlan.end(),
             [](RaidRosterPlanSlot const& slot) { return slot.Role == "dps"; }));
-        raid.RosterCompositionValid = raid.RosterCompositionValid
-            && tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps;
+        // After a spec-switch node the declared composition is that node's
+        // contract (BotRaidSpecSwitch.h); on the node itself members switch
+        // one by one, so only each member's own identity is checked there.
+        uint32 contractTanks = 0;
+        uint32 contractHealers = 0;
+        uint32 contractDps = 0;
+        bool specSwitchInProgress = false;
+        if (ActiveSpecContractRoleCounts(contractTanks, contractHealers, contractDps, specSwitchInProgress))
+            raid.RosterCompositionValid = raid.RosterCompositionValid && (specSwitchInProgress
+                || (tankCount == contractTanks && healerCount == contractHealers && dpsCount == contractDps));
+        else
+            raid.RosterCompositionValid = raid.RosterCompositionValid
+                && tankCount == expectedTanks && healerCount == expectedHealers && dpsCount == expectedDps;
     }
     else if (!Cohort().Config.ValidationRouteEnable)
         raid.RosterCompositionValid = true;

@@ -93,7 +93,11 @@ def test_canonical_bwd_routes_gate_their_first_regroup_only(tmp_path: Path) -> N
         kinds = [str(step.get("kind") or "") for step in scenario["route"]]
         assert kinds[0] == "regroup", scenario_id
         assert builder.prepull_setup_gate(scenario), scenario_id
-        assert _gated(kinds, tmp_path, builder.prepull_setup_gate(scenario)) == [0], scenario_id
+        # Round 10: the full raid starts with its first spec-switch regroup at the route start, then the entrance
+        # regroup at the same spot; both stand before the first pull. Later spec-switch nodes gate through their
+        # contract (ObjectiveContext::HoldForPrepullSetup), not through this staging rule.
+        expected = [0, 1] if scenario_id == "blackwing_descent_10n_full_c0" else [0]
+        assert _gated(kinds, tmp_path, builder.prepull_setup_gate(scenario)) == expected, scenario_id
 
 
 def test_accepted_magmaw_and_legacy_scenarios_are_not_gated(tmp_path: Path) -> None:
@@ -239,7 +243,8 @@ def test_gate_runs_only_out_of_combat_at_the_anchor_and_blocks_the_advance() -> 
     # Checked only in the arrival branch, which runs only out of combat, and
     # before the member is marked arrived.
     branch = run[run.index("if (ArrivalRoute && !arrivalCombatActive)"):]
-    assert branch.index("if (HoldForPrepullSetup())\n                return true;") < branch.index(
+    # Round 10: a canonical full raid's spec-switch node switches the talent group first.
+    assert branch.index("if (HoldForSpecSwitch() || HoldForPrepullSetup())\n                return true;") < branch.index(
         'State.ValidationRouteTerminalReason = "arrival";')
     assert "Callbacks.EnrollEngagedPackMembers();\n        \n        State.ValidationPrepullSetupSinceMs = 0;" in run
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "Relocate(", "AddAura(", "CastSpell("):

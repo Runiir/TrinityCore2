@@ -75,12 +75,39 @@ std::string ObjectiveContext::PrepullMissingSetup() const
 // finishes its own persistent setup before it counts as arrived, so the first
 // pull never starts unprepared. True while it is still setting up (or after a
 // typed timeout).
+// A canonical full raid's spec-switch node (BotRaidSpecSwitch.h): the member
+// switches to the node's talent group, equips its set and re-freezes its
+// receipt before it counts as arrived.
+bool ObjectiveContext::HoldForSpecSwitch()
+{
+    auto& party = Manager.Party();
+    if (!Manager.Cohort().Raid.RaidInstance
+        || party.ValidationRouteManifestIndex >= party.ValidationRouteManifest.size())
+        return false;
+    ValidationRouteManifestNode const& node = party.ValidationRouteManifest[party.ValidationRouteManifestIndex];
+    if (node.SpecContract.empty() || node.NodeId != Manager.Cohort().Config.ValidationRouteNodeId)
+        return false;
+    std::string action;
+    if (!Manager.TryRaidSpecSwitch(State, Bot, node.SpecContract, action))
+        return false;
+    Situation = "validation_route_spec_switch";
+    Action = action;
+    Target = nullptr;
+    return true;
+}
+
 bool ObjectiveContext::HoldForPrepullSetup()
 {
     namespace Prepull = BotValidationRoutePrepull;
     auto& party = Manager.Party();
+    // A spec-switch node also sets up again: the new talent group needs its
+    // own forms, auras and shields before the next pull.
+    bool const specSwitchNode = party.ValidationRouteManifestIndex < party.ValidationRouteManifest.size()
+        && !party.ValidationRouteManifest[party.ValidationRouteManifestIndex].SpecContract.empty()
+        && party.ValidationRouteManifest[party.ValidationRouteManifestIndex].PrepullSetupGate;
     if (!Manager.Cohort().Raid.RaidInstance
-        || !Prepull::GateApplies(party.ValidationRouteManifest, party.ValidationRouteManifestIndex)
+        || !(specSwitchNode
+            || Prepull::GateApplies(party.ValidationRouteManifest, party.ValidationRouteManifestIndex))
         || party.ValidationRouteManifest[party.ValidationRouteManifestIndex].NodeId
             != Manager.Cohort().Config.ValidationRouteNodeId)
         return false;
@@ -441,7 +468,7 @@ bool ObjectiveContext::Run()
         if (CanonicalRouteDistance <= RouteArrivalRadius
             && std::fabs(Bot->GetPositionZ() - Manager.Cohort().Config.ValidationRouteZ) <= 4.0f)
         {
-            if (HoldForPrepullSetup())
+            if (HoldForSpecSwitch() || HoldForPrepullSetup())
                 return true;
             State.ValidationRouteTerminalState = true;
             State.ValidationRouteTerminalAtMs = NowMs();

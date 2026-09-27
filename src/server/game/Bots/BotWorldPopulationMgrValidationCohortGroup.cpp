@@ -537,6 +537,12 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         }
         for (WorldBotState& state : Party().Bots)
         {
+            // A canonical full raid member between its Activate Spec cast and
+            // the re-frozen receipt (BotWorldPopulationMgrRaidSpecSwitch.cpp)
+            // is not drifting: its talent group, gear and identity change
+            // together under a spec-switch node.
+            if (state.SpecSwitchPending)
+                continue;
             Player* member = GetLoadedBot(state);
             auto const receiptItr = raid.AdmissionReceiptByGuid.find(
                 state.Guid.GetCounter());
@@ -878,4 +884,47 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             }
         }
     }
+}
+
+// Re-freeze one member's admission receipt after a lawful spec switch: the
+// same identity fields admission freezes, observed from the loaded Player
+// in its new talent group and gear set. Group, map, pet and spawn facts are
+// kept; the class spec and role are the active group's
+// (BotActiveSpecIdentity.h), so every later drift check compares against
+// the new spec.
+bool BotWorldPopulationMgr::RefreezeAdmissionReceiptForSpecSwitch(
+    WorldBotState& state, Player* bot, std::string& reason)
+{
+    RaidRuntime& raid = Cohort().Raid;
+    auto receipt = bot ? raid.AdmissionReceiptByGuid.find(bot->GetGUID().GetCounter())
+        : raid.AdmissionReceiptByGuid.end();
+    if (receipt == raid.AdmissionReceiptByGuid.end())
+    {
+        reason = "admission_receipt_missing";
+        return false;
+    }
+    CohortAdmissionMemberReceipt row = receipt->second;
+    row.Role = GetDungeonRole(bot);
+    row.ClassSpec = GetBotClassSpec(bot);
+    row.ActiveSpecIndex = bot->GetActiveSpec();
+    row.PrimaryTalentTreeId = bot->GetPrimaryTalentTree(row.ActiveSpecIndex);
+    row.ActiveTalentSpellIds.clear();
+    for (auto const& [spellId, talent] : bot->GetTalentMap(row.ActiveSpecIndex))
+        if (talent.State != PLAYERSPELL_REMOVED)
+            row.ActiveTalentSpellIds.push_back(spellId);
+    std::sort(row.ActiveTalentSpellIds.begin(), row.ActiveTalentSpellIds.end());
+    row.ActiveTalentCount = uint32(row.ActiveTalentSpellIds.size());
+    std::string expectedGearManifestSha256;
+    row.GearManifest.clear();
+    if (!ResolveExpectedBotGearIdentity(row.ClassSpec, row.GearProfileId, expectedGearManifestSha256)
+        || !ObserveEquippedGearIdentity(bot, row.GearManifest, row.GearManifestSha256))
+    {
+        reason = "gear_identity_unresolved";
+        return false;
+    }
+    row.GearItemCount = uint32(row.GearManifest.size());
+    receipt->second = std::move(row);
+    state.RosterRole = receipt->second.Role;
+    state.RosterClassSpec = receipt->second.ClassSpec;
+    return true;
 }

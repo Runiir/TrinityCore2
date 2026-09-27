@@ -799,6 +799,16 @@ private:
     bool ObserveEquippedGearIdentity(Player const* bot,
         std::vector<RaidRosterItemIdentity>& manifest,
         std::string& manifestSha256) const;
+    // Canonical full raid spec switch (BotWorldPopulationMgrRaidSpecSwitch.cpp).
+    bool TryRaidSpecSwitch(WorldBotState& state, Player* bot,
+        std::vector<BotRaidSpecSwitch::ContractRow> const& contract, std::string& action);
+    bool EquipTalentGroupSet(Player* bot, uint8 talentGroup, bool& equipped, std::string& reason);
+    bool RefreezeAdmissionReceiptForSpecSwitch(WorldBotState& state, Player* bot, std::string& reason);
+    bool ActiveSpecContractRoleCounts(uint32& tanks, uint32& healers, uint32& dps,
+        bool& switching) const;
+    // The loaded route authorises talent-group switches (spec_contract nodes):
+    // the raid runtime JSON then marks its roster `spec_contract_scope`.
+    bool HasValidationRouteSpecContracts() const;
     bool EquippedGearManifestsEqual(
         std::vector<RaidRosterItemIdentity> const& left,
         std::vector<RaidRosterItemIdentity> const& right) const;

@@ -223,6 +223,8 @@ def bot_rows(config: dict[str, Any], scenario: dict[str, Any], slot: int, bot: d
         lines.append(
             "INSERT INTO `characters`.`character_inventory` (`guid`, `bag`, `slot`, `item`) "
             f"SELECT c.`guid`, {row['bag']}, {row['slot']}, {row['item_guid']} {_select(name)};")
+    if switches_spec(bot):
+        lines += equipment_set_rows(bot)
     return lines
 
 
@@ -301,10 +303,51 @@ def _account_rows(config: dict[str, Any], scenario: dict[str, Any]) -> list[str]
     return [line for line in build_account_insert_sql(stub).split("\n") if line.startswith("INSERT INTO")]
 
 
+EQUIPMENT_SLOTS = 19
+EQUIPMENT_SET_ICON = "INV_Misc_QuestionMark"
+EQUIPMENT_SET_NAME_LENGTH = 31
+
+
+def switches_spec(bot: dict[str, Any]) -> bool:
+    loadout = bot.get("loadout") or {}
+    return bool(loadout.get("runtime_spec_switch")) and int(loadout.get("talent_groups_count") or 0) > 1
+
+
+def equipment_set_rows(bot: dict[str, Any]) -> list[str]:
+    """One native equipment set per talent group (setindex = group) for a character that switches groups at
+    runtime: each slot holds that group's physical item GUID (0 = empty, so it is unequipped), and a slot no
+    group uses is ignored. The runtime switch uses it through CMSG_EQUIPMENT_SET_USE (BotRaidSpecSwitch.h)."""
+    loadout = bot["loadout"]
+    base = int(loadout["item_guid_base"])
+    sets = [{int(slot): base + int(offset) for slot, offset in group_set.items()} for group_set in loadout["spec_gear_sets"]]
+    used = set().union(*(set(group_set) for group_set in sets))
+    ignore_mask = sum(1 << slot for slot in range(EQUIPMENT_SLOTS) if slot not in used)
+    rows = []
+    for index, (group, group_set) in enumerate(zip(loadout["groups"], sets)):
+        name = str(group["class_spec"])[:EQUIPMENT_SET_NAME_LENGTH]
+        items = ", ".join(str(group_set.get(slot, 0)) for slot in range(EQUIPMENT_SLOTS))
+        columns = ", ".join(f"`item{slot}`" for slot in range(EQUIPMENT_SLOTS))
+        rows.append(
+            "INSERT INTO `characters`.`character_equipmentsets` (`guid`, `setindex`, `name`, `iconname`, `ignore_mask`, "
+            f"{columns}) SELECT c.`guid`, {int(group['talent_group'])}, {sql_quote(name)}, {sql_quote(EQUIPMENT_SET_ICON)}, "
+            f"{ignore_mask}, {items} {_select(str(bot['name']))};")
+    return rows
+
+
+def _equipment_set_cleanup(scenario: dict[str, Any]) -> list[str]:
+    names = [str(bot["name"]) for bot in scenario["bots"] if switches_spec(bot)]
+    if not names:
+        return []
+    return ["DELETE FROM `characters`.`character_equipmentsets` WHERE `guid` IN (SELECT `guid` FROM "
+            f"`characters`.`characters` WHERE `name` IN ({', '.join(map(sql_quote, names))}));"]
+
+
 def cohort_sql(config: dict[str, Any], scenario: dict[str, Any], reservation: dict[str, Any],
                gem_mapping: dict[int, int], dbc_dir: Path) -> list[str]:
     lines = ["START TRANSACTION;"]
     lines += cohort_guards(reservation, scenario["id"])
+    # Before the legacy cleanup deletes the characters themselves.
+    lines += _equipment_set_cleanup(scenario)
     lines += _cleanup_preamble({"scenarios": [scenario]})
     lines += _account_rows(config, scenario)
     for slot, bot in enumerate(scenario["bots"]):

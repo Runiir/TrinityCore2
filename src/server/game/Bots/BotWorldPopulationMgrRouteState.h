@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 
+#include "Bots/BotRaidSpecSwitch.h"
 #include "Bots/BotValidationRouteNativeTypes.h"
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryTelemetry.h"
@@ -262,6 +263,10 @@ namespace BotWorldPopulationMgrRouteState
         float OpenerSummonO = 0.0f;
         uint32 ExpectedBotCount = 0;
         std::vector<RosterIdentity> ExpectedRoster;
+        // Canonical full raid spec-switch node (BotRaidSpecSwitch.h): every
+        // member's wanted talent group and each group's identity; empty on
+        // every other node.
+        std::vector<BotRaidSpecSwitch::ContractRow> SpecContract;
     };
 
     struct ValidationRouteEvidence

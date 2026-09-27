@@ -243,7 +243,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"encounter_in_progress\":" << (raid.EncounterInProgress ? "true" : "false")
              << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
              << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
-             << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
+             << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}" << (HasValidationRouteSpecContracts() ? ",\"spec_contract_scope\":true" : "")
              << ",\"strategy_transition\":{\"from_strategy\":\""
              << JsonEscape(raid.PreviousStrategyId) << "\",\"to_strategy\":\""
              << JsonEscape(raid.StrategyId) << "\",\"advanced\":"
@@ -268,7 +268,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
             firstCompactRoster = false;
             json << "{\"roster_slot_id\":\"" << JsonEscape(slot.RosterSlotId)
                  << "\",\"lease_role_slot\":\"" << JsonEscape(slot.LeaseRoleSlot)
-                 << "\",\"slot\":" << slot.SlotIndex
+                 << "\",\"slot\":" << slot.SlotIndex << (HasValidationRouteSpecContracts() ? ",\"spec_contract_scope\":true" : "")
                  << ",\"guid\":" << guid
                  << ",\"subgroup\":" << uint32(slot.SubGroup)
                  << ",\"role\":\"" << JsonEscape(slot.Role)
@@ -379,7 +379,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
     json << "]}"
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
          << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
-         << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}"
+         << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}" << (HasValidationRouteSpecContracts() ? ",\"spec_contract_scope\":true" : "")
          << ",\"drudge_threat_seed\":{\"attempt_id\":"
          << Party().ValidationRouteDrudgeThreatSeedAttemptId
          << ",\"wipe_generation\":" << Party().ValidationRouteDrudgeThreatSeedWipeGeneration
@@ -933,7 +933,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
         first = false;
         json << "{\"roster_slot_id\":\"" << JsonEscape(slot.RosterSlotId) << "\""
              << ",\"lease_role_slot\":\"" << JsonEscape(slot.LeaseRoleSlot) << "\""
-             << ",\"slot\":" << slot.SlotIndex
+             << ",\"slot\":" << slot.SlotIndex << (HasValidationRouteSpecContracts() ? ",\"spec_contract_scope\":true" : "")
              << ",\"guid\":" << guid
              << ",\"account_id\":" << slot.AccountId
              << ",\"account\":\"" << JsonEscape(slot.AccountName) << "\""

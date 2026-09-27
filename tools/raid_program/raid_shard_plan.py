@@ -464,6 +464,10 @@ def full_raid_shard(composition: dict[str, Any], catalog: dict[str, dict[str, An
     bots = [_bot(composition, catalog, character, identity_boss, FULL_RAID_KEY, 0, cohort,
                  specs[str(character["character_key"])]) for character in composition["characters"]]
     bots.sort(key=lambda bot: (ROLE_ORDER[bot["role"]], bot["composition_slot"]))
+    for bot in bots:
+        # The full raid switches talent groups per boss at runtime (raid_full_route_mirror.py):
+        # every group's own spells are known and each group's gear is a native equipment set.
+        bot["loadout"]["runtime_spec_switch"] = True
     template = str(full["scenario_id"])
     start_source = cohort if cohort in starts else template
     return {

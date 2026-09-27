@@ -523,6 +523,22 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");
         ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);
         ExtractJsonBoolField(routeJson, "prepull_setup_gate", node.PrepullSetupGate);
+        {
+            // Fail-closed like the native contracts: a present but malformed
+            // spec contract (any value but a well-formed non-empty array), or
+            // one outside a regroup row, stops the manifest before any bot is
+            // admitted. Only an absent property skips it.
+            bool specContractPresent = false;
+            std::string specContractError;
+            bool const specContractValid = BotRaidSpecSwitch::ParseRouteRowContract(
+                routeJson, node.SpecContract, specContractPresent, specContractError);
+            if (specContractPresent && (!specContractValid || node.Kind != "regroup"))
+            {
+                Party().ValidationRouteManifestLoadError = "spec_contract_invalid:"
+                    + (specContractError.empty() ? std::string("node_kind") : specContractError);
+                return;
+            }
+        }
         ExtractJsonBoolField(routeJson, "composition_recovery", node.CompositionRecovery);
         node.RecoveryReturnBlockedBy =
             ExtractJsonStringField(routeJson, "recovery_return_blocked_by");

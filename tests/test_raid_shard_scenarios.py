@@ -88,6 +88,11 @@ def test_rows_clone_the_route_template_and_keep_node_ids(plan):
     for shard in plan["shards"]:
         row, template = scenarios[shard["scenario_id"]], scenarios[shard["route_template_scenario_id"]]
         assert row["route_template_scenario_id"] == template["id"]
+        if shard["shard_kind"] == "full_raid":
+            # Round 10: the full raid mirrors the boss shards instead (test_full_raid_route_mirrors_the_boss_shards).
+            assert row["required_roles"] == shard["role_counts"]
+            assert "prerequisite_contract" not in row and "roster_identity" not in row and "diagnostic_only" not in row
+            continue
         assert [step["node_id"] for step in row["route"]] == [step["node_id"] for step in template["route"]]
         assert row["mechanic_profiles"] == template["mechanic_profiles"]
         for step, source in zip(row["route"], template["route"]):
@@ -165,7 +170,7 @@ def test_builder_adds_cohort_rows_without_touching_legacy_rows(plan):
     routes = [row for row in after["validation_routes"] if row["scenario_id"] in COHORTS]
     assert all(row["runtime_profile_id"] == row["scenario_id"] for row in routes)
     full_routes = [row for row in routes if row["scenario_id"] == FULL]
-    assert len(full_routes) == len(rows.configured_scenarios(config)["blackwing_descent_10n"]["route"])
+    assert len(full_routes) == len(rows.configured_scenarios(config)[FULL]["route"])
     assert after["report"]["raid_shard_plan_scenarios_without_config_rows"] == []
     with pytest.raises(ValueError, match="raid_shard_provisioning_scenario_collision"):
         build_manifests(config, report, {}, fixture, [plan], [{"provisioning_readiness": report}])
@@ -175,26 +180,75 @@ def test_builder_adds_cohort_rows_without_touching_legacy_rows(plan):
         build_manifests(declared, report, {}, fixture, [plan], [readiness])
 
 
-def test_full_raid_route_remaps_every_roster_slot_onto_the_canonical_roster(plan):
+def test_full_raid_route_mirrors_the_boss_shards(plan):
+    """Round 10 (r10b full-raid wipe at the Drudges): the full raid runs each boss's own shard rows, renumbered onto
+    the same characters, with a spec-switch node wherever the shard puts a member in its other talent group."""
+    from tools.raid_program.raid_full_route_mirror import mirror_full_route
+
     full = next(shard for shard in plan["shards"] if shard["shard_kind"] == "full_raid")
     scenarios = rows.configured_scenarios(_read(CONFIG))
-    template, row = scenarios["blackwing_descent_10n"], scenarios[FULL]
-    legacy = template["roster_identity"]
-    mapping = rows.slot_mapping(rows.legacy_rosters(_read(FIXTURE), _read(CONFIG))["blackwing_descent_10n"], full["bots"])
-    assert sorted(mapping) == sorted(mapping.values()) == list(range(1, 11))  # one-to-one
-    for legacy_slot, slot in mapping.items():
-        assert legacy[legacy_slot - 1]["role"] == full["bots"][slot - 1]["role"]
-    drudges = next(step for step in row["route"] if step["node_id"] == "bwd.magmaw.drudges")
+    row = scenarios[FULL]
+    mirrored = mirror_full_route(plan, full, scenarios)
+    assert row["route"] == mirrored["route"] and row["mechanic_profiles"] == mirrored["mechanic_profiles"]
     specs = lambda slots: [full["bots"][slot - 1]["class_spec"] for slot in slots]
-    assert set(specs(drudges["split_lane_tank_slots"])) == {"blood_death_knight", "feral_druid_tank"}
-    assert set(specs(drudges["split_healer_roster_slots"])) == {"holy_paladin", "discipline_priest", "restoration_shaman"}
-    assert specs(drudges["split_seed_roster_slots"]) == ["demonology_warlock", "fire_mage"]  # ranged seeds stay ranged
-    assert sorted(drudges["split_lane_a_roster_slots"] + drudges["split_lane_b_roster_slots"]) == list(range(1, 11))
-    magmaw = next(step for step in row["route"] if step["node_id"] == "bwd.magmaw.encounter")["mechanic_contract"]
-    assert specs([magmaw["main_tank_roster_slot"]]) == ["blood_death_knight"]
-    assert specs([magmaw["off_tank_roster_slot"]]) == ["feral_druid_tank"]
-    chainwielder = next(step for step in row["route"] if step["node_id"] == "bwd.magmaw.chainwielder")
-    assert specs([chainwielder["patrol_pull_owner_roster_slot"]]) == ["survival_hunter"]
+    keys = [bot["character_key"] for bot in full["bots"]]
+    by_id = {step["node_id"]: step for step in row["route"]}
+    for shard in plan["shards"]:
+        if shard["shard_kind"] != "boss":
+            continue
+        slot_of = {bot["character_key"]: keys.index(bot["character_key"]) + 1 for bot in shard["bots"]}
+        remapped = rows.remap_route(scenarios[shard["scenario_id"]]["route"],
+                                    {index: slot_of[bot["character_key"]] for index, bot in enumerate(shard["bots"], 1)},
+                                    FULL)
+        for step in remapped:
+            kept = {key: value for key, value in step.items() if key != "step"}
+            assert {key: value for key, value in by_id[step["node_id"]].items() if key != "step"} == kept, (
+                shard["scenario_id"], step["node_id"])
+    # The Drudges run the one-tank variant the Magmaw shard clears; Magmaw has no tank swap.
+    drudges, magmaw = by_id["bwd.magmaw.drudges"], by_id["bwd.magmaw.encounter"]
+    assert "split_lane_tank_slots" not in drudges and drudges["mechanic_profile"] == "trash_ground_danger_movement"
+    assert "main_tank_roster_slot" not in magmaw["mechanic_contract"]
+    assert specs([by_id["bwd.magmaw.chainwielder"]["patrol_pull_owner_roster_slot"]]) == ["survival_hunter"]
+    switches = [step for step in row["route"] if step["node_id"].startswith("bwd.spec_switch.")]
+    assert [step["node_id"] for step in switches] == [f"bwd.spec_switch.{boss}" for boss in
+                                                      ("magmaw", "omnotron", "atramedes", "chimaeron", "nefarian")]
+    assert row["route"][0]["node_id"] == "bwd.spec_switch.magmaw"
+    wanted = {step["node_id"]: {entry["character_key"]: (entry["talent_group"], entry["class_spec"], entry["role"])
+                                for entry in step["spec_contract"]} for step in switches}
+    assert wanted["bwd.spec_switch.magmaw"]["druid"] == (0, "balance_druid", "dps")
+    assert wanted["bwd.spec_switch.magmaw"]["shaman"] == (0, "elemental_shaman", "dps")
+    assert wanted["bwd.spec_switch.omnotron"]["druid"] == (1, "feral_druid_tank", "tank")
+    assert wanted["bwd.spec_switch.atramedes"]["druid"] == (0, "balance_druid", "dps")
+    assert wanted["bwd.spec_switch.chimaeron"]["shaman"] == (1, "restoration_shaman", "healer")
+    assert wanted["bwd.spec_switch.nefarian"]["shaman"] == (0, "elemental_shaman", "dps")
+    for step in switches:
+        assert step["kind"] == "regroup" and step["completion_policy"] == "arrival"
+        assert [entry["roster_slot"] for entry in step["spec_contract"]] == list(range(1, 11))
+        source = next(shard for shard in plan["shards"] if shard["scenario_id"] == step["spec_contract_source"])
+        assert {bot["character_key"]: bot["class_spec"] for bot in source["bots"]} == {
+            key: identity[1] for key, identity in wanted[step["node_id"]].items()}
+    # Never on a boss spawn or a transport: the last walkable node the raid cleared (or the start).
+    for step in switches[1:]:
+        previous = row["route"][row["route"].index(step) - 1]
+        standing = next(other for other in reversed(row["route"][:row["route"].index(step)])
+                        if other["kind"] in ("regroup", "travel", "trash", "interaction")
+                        and not other.get("transport_contract"))
+        assert (step["x"], step["y"], step["z"]) == (standing["x"], standing["y"], standing["z"]), previous["node_id"]
+    assert rows.validate_raid_shard_scenarios(plan, _read(CONFIG), _read(PROFILES), _read(FIXTURE))["all_passed"]
+
+
+def test_a_full_route_edit_or_a_shard_edit_is_mirror_drift(plan):
+    config = _read(CONFIG)
+    drudges = next(step for step in rows.configured_scenarios(config)[FULL]["route"]
+                   if step["node_id"] == "bwd.magmaw.drudges")
+    drudges["minimum_distance_yards"] = 1.0
+    report = rows.validate_raid_shard_scenarios(plan, config, _read(PROFILES), _read(FIXTURE))
+    assert "full_route_mirror_drift" in {row["check"] for row in report["failures"]}
+    config = _read(CONFIG)
+    next(step for step in rows.configured_scenarios(config)["blackwing_descent_10n_chimaeron_c0_diagnostic"]["route"]
+         if step["node_id"] == "bwd.chimaeron.regroup")["x"] += 1.0
+    report = rows.validate_raid_shard_scenarios(plan, config, _read(PROFILES), _read(FIXTURE))
+    assert {row["check"] for row in report["failures"]} == {"full_route_mirror_drift"}
 
 
 @pytest.mark.parametrize("mutate,check", [
@@ -329,3 +383,52 @@ def test_append_keeps_every_other_byte_and_refuses_unknown_layouts():
         rows.append_to_array(text, ['    {"c": 3}'], "schema")
     with pytest.raises(rows.RaidShardScenarioError, match="unexpected_array_layout"):
         rows.append_to_array(json.dumps({"rows": [1], "x": 2}) + "\n", ["3"], "rows")
+
+
+def test_a_full_only_selection_needs_the_complete_plan_as_mirror_context(plan):
+    """Review P2: validating only the full cohort (the shard coordinator's full-only launch) must not skip the
+    mirror. Without the complete plan it fails closed; with it, a route that lost its switch nodes is drift."""
+    config = _read(CONFIG)
+    full_only = {**plan, "shards": [shard for shard in plan["shards"] if shard["scenario_id"] == FULL]}
+    report = rows.validate_raid_shard_scenarios(full_only, config, _read(PROFILES), _read(FIXTURE))
+    assert {row["check"] for row in report["failures"]} == {"full_route_mirror_drift"}
+    assert report["failures"][0]["drift"][0]["kind"] == "mirror_context_incomplete"
+    assert rows.validate_raid_shard_scenarios(full_only, config, _read(PROFILES), _read(FIXTURE),
+                                              mirror_plan=plan)["all_passed"]
+    route = rows.configured_scenarios(config)[FULL]["route"]
+    route[:] = [step for step in route if not step["node_id"].startswith("bwd.spec_switch.")]
+    report = rows.validate_raid_shard_scenarios(full_only, config, _read(PROFILES), _read(FIXTURE), mirror_plan=plan)
+    assert {row["check"] for row in report["failures"]} == {"full_route_mirror_drift"}
+
+
+def test_composition_owned_mechanic_profiles_merge_with_conflict_checks(plan):
+    """Review P2: the mirror merges the route composition's own mechanic profiles like the shards'."""
+    from tools.raid_program.raid_full_route_mirror import FullRouteMirrorError, mirror_full_route, route_composition
+
+    full = next(shard for shard in plan["shards"] if shard["scenario_id"] == FULL)
+    scenarios = rows.configured_scenarios(_read(CONFIG))
+    composition = copy.deepcopy(route_composition(full["route_template_scenario_id"]))
+    composition["mechanic_profiles"] = {"trash_ground_danger_movement": ["not_the_shard_profile"]}
+    with pytest.raises(FullRouteMirrorError, match="mechanic_profile_conflict:trash_ground_danger_movement"):
+        mirror_full_route(plan, full, scenarios, composition)
+    transit = next(node_set for node_set in composition["node_sets"] if node_set.get("rows"))
+    transit["rows"][0]["mechanic_profile"] = "composition_only_profile"
+    composition["mechanic_profiles"] = {"composition_only_profile": ["transport"]}
+    mirrored = mirror_full_route(plan, full, scenarios, composition)
+    assert mirrored["mechanic_profiles"]["composition_only_profile"] == ["transport"]
+
+
+def test_a_missing_owner_row_blocks_a_selected_full_only_check(plan):
+    """Re-review P2: with the complete plan as context, a full-only selection whose Magmaw owner row is gone (and whose
+    switch nodes are gone) is refused as mirror_context_incomplete, not passed."""
+    config = _read(CONFIG)
+    config["diagnostic_scenarios"] = [row for row in config["diagnostic_scenarios"]
+                                      if row["id"] != "blackwing_descent_10n_magmaw_c0_diagnostic"]
+    route = rows.configured_scenarios(config)[FULL]["route"]
+    route[:] = [step for step in route if not step["node_id"].startswith("bwd.spec_switch.")]
+    full_only = {**plan, "shards": [shard for shard in plan["shards"] if shard["scenario_id"] == FULL]}
+    report = rows.validate_raid_shard_scenarios(full_only, config, _read(PROFILES), _read(FIXTURE), mirror_plan=plan)
+    assert not report["all_passed"]
+    (failure,) = [row for row in report["failures"] if row["check"] == "full_route_mirror_drift"]
+    assert failure["drift"] == [{"kind": "mirror_context_incomplete",
+                                 "reason": "owner_scenario_row_missing:blackwing_descent_10n_magmaw_c0_diagnostic"}]

@@ -7,6 +7,7 @@
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianProtectedMovement.h"
+#include "Bots/BotActiveSpecIdentity.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -90,6 +91,12 @@ char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
 {
     if (!bot)
         return "dps";
+
+    // A member a canonical full raid's spec contract registered takes the
+    // role of its active talent group (BotActiveSpecIdentity.h).
+    BotActiveSpecIdentity::Identity activeIdentity;
+    if (BotActiveSpecIdentity::Resolve(bot->GetGUID().GetCounter(), bot->GetActiveSpec(), activeIdentity))
+        return activeIdentity.Role == "tank" ? "tank" : (activeIdentity.Role == "healer" ? "healer" : "dps");
 
     if (Group* group = bot->GetGroup())
     {

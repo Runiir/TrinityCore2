@@ -14,11 +14,15 @@ two tracked rows exist for its scenario ID `<raid>_<size><diff>_<boss>_c<copy>_d
   plan's `runtime_profile` row.
 
 A composition's end-to-end cohort (`full_raid`, e.g. `blackwing_descent_10n_full_c0`)
-is not diagnostic: its row sits in `scenarios`, is cloned from the full-raid
-route (`blackwing_descent_10n`), carries no roster_identity (the plan supplies
-the roster) and no predecessor metadata. Its roster slots are remapped one to
-one; a legacy slot whose class the composition lacks takes a free slot of the
-same role (e.g. the Protection Paladin tank slot becomes the Feral druid).
+is not diagnostic: its row sits in `scenarios`, carries no roster_identity (the
+plan supplies the roster) and no predecessor metadata. Its route mirrors the
+composition's own boss shards (tools/raid_program/raid_full_route_mirror.py):
+the raid's route composition gives the node-set order, each set's rows are the
+owning boss shard's committed rows with roster slots renumbered onto the same
+characters, and spec-switch nodes move each member to the talent group that
+shard uses (round 10: the legacy full route's two-tank rows held a Feral druid
+and a Restoration shaman on Magmaw, which the one-tank Magmaw shard never runs).
+`--check` fails on any drift from the mirror; `--write-full-routes` rewrites it.
 
 Where each boss's rows live, for patch requests from boss agents: the scenario
 object whose `id` is the cohort's scenario ID (e.g.
@@ -50,6 +54,8 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from tools.raid_program.raid_composition import COMPOSITION_DIR, REPO_ROOT, read_json
+from tools.raid_program.raid_full_route_mirror import (
+    FullRouteMirrorError, FullRouteMirrorIncomplete, mirror_drift, mirror_full_route)
 
 SPEC_CATALOG = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
 SCENARIO_CONFIG = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
@@ -190,9 +196,10 @@ def clone_scenario(template: dict[str, Any], shard: dict[str, Any], template_ros
         # the plan (build_validation_scenario_manifests), never roster_identity.
         return {
             "id": scenario_id,
-            "description": (f"Canonical-composition end-to-end cohort ({composition_id}) on the full raid route; "
-                            f"route rows cloned from {template['id']} with node IDs kept and roster slots "
-                            "remapped onto the canonical roster. Every kill is natural."),
+            "description": (f"Canonical-composition end-to-end cohort ({composition_id}) on the full raid route "
+                            f"({template['id']} order); every node set's rows mirror the composition's own boss shard "
+                            "with roster slots renumbered onto the same characters, and spec-switch nodes move each "
+                            "member to that shard's talent group. Every kill is natural."),
             "instance": template["instance"],
             "map_id": int(shard["map_id"]),
             "recovery_entrance": copy.deepcopy(template.get("recovery_entrance") or {}),
@@ -246,6 +253,12 @@ def plan_scenario_rows(plan: dict[str, Any], config: dict[str, Any],
         if template is None or template_id == shard["scenario_id"]:
             raise RaidShardScenarioError(f"route_template_missing:{shard['scenario_id']}:{template_id}")
         rows.append(clone_scenario(template, shard, rosters.get(template_id, []), str(plan["composition_id"])))
+    # The end-to-end cohort mirrors the boss shards, including rows cloned in this same pass.
+    available = {**{row["id"]: row for row in rows}, **scenarios}
+    for row, shard in zip(rows, plan["shards"]):
+        if shard.get("shard_kind") == FULL_RAID_KIND:
+            mirrored = mirror_full_route(plan, shard, available)
+            row["route"], row["mechanic_profiles"] = mirrored["route"], mirrored["mechanic_profiles"]
     return rows
 
 
@@ -289,7 +302,8 @@ def start_reference(shard: dict[str, Any], row: dict[str, Any],
 def validate_raid_shard_scenarios(plan: dict[str, Any], config: dict[str, Any],
                                   profiles: dict[str, Any] | None = None,
                                   fixture: dict[str, Any] | None = None,
-                                  require_all: bool = True) -> dict[str, Any]:
+                                  require_all: bool = True,
+                                  mirror_plan: dict[str, Any] | None = None) -> dict[str, Any]:
     """Fail-closed identity checks of every plan cohort's scenario row and runtime profile.
 
     Route contents belong to the boss owner once cloned; this checks only what
@@ -344,6 +358,30 @@ def validate_raid_shard_scenarios(plan: dict[str, Any], config: dict[str, Any],
             fail("route_template_boss_node_missing", template=shard.get("route_template_scenario_id"),
                  boss_nodes=boss_nodes)
         bots = shard["bots"]
+        if shard.get("shard_kind") == FULL_RAID_KIND:
+            # The mirror needs every boss shard: a caller that validates a selection (the shard coordinator's
+            # full-only launch) passes the complete plan as `mirror_plan`. Without it the check fails closed;
+            # only a boss row that is itself missing (reported as missing) skips it.
+            try:
+                drift = mirror_drift(row, mirror_full_route(mirror_plan or plan, shard, scenarios))
+            except FullRouteMirrorIncomplete as error:
+                # Only an owner row this very check already reports as missing (the whole-plan check before the
+                # rows exist) is not repeated; any other gap, including an owner row absent under a selected
+                # (full-only) validation, blocks.
+                reported = str(error).startswith("owner_scenario_row_missing:") and str(error).split(":", 1)[1] in {
+                    str(other["scenario_id"]) for other in plan["shards"] if str(other["scenario_id"]) not in scenarios}
+                drift = [] if reported else [{"kind": "mirror_context_incomplete", "reason": str(error)}]
+            except (FullRouteMirrorError, RaidShardScenarioError) as error:
+                drift = [{"kind": "mirror_failed", "reason": str(error)}]
+            if drift:
+                fail("full_route_mirror_drift", drift=drift)
+            for where, slot in _slot_references(route):
+                if not 1 <= slot <= len(bots):
+                    fail("roster_slot_out_of_range", field=where, slot=slot)
+            if profile_rows is not None and profile_rows.get(str(shard["runtime_profile_id"])) != shard["runtime_profile"]:
+                fail("runtime_profile_row", expected=shard["runtime_profile"],
+                     actual=profile_rows.get(str(shard["runtime_profile_id"])))
+            continue
         template_roster = rosters.get(str(shard.get("route_template_scenario_id") or ""), [])
         mapping = slot_mapping(template_roster, bots)
         template_slots = {where: slot for where, slot in _slot_references((template or {}).get("route") or [])}
@@ -427,6 +465,21 @@ def append_to_array(text: str, rendered: Iterable[str], key: str) -> str:
     return new_text
 
 
+def write_full_routes(plan: dict[str, Any], scenario_config: Path) -> None:
+    """Rewrite only each end-to-end cohort row's route and mechanic_profiles blocks (every other byte kept)."""
+    from tools.raid_program.raid_route_composer import ComposedRoute, materialize_text
+
+    text = scenario_config.read_text(encoding="utf-8")
+    for shard in plan["shards"]:
+        scenarios = configured_scenarios(json.loads(text))
+        if shard.get("shard_kind") != FULL_RAID_KIND or str(shard["scenario_id"]) not in scenarios:
+            continue
+        mirrored = mirror_full_route(plan, shard, scenarios)
+        text = materialize_text(text, ComposedRoute(scenario_id=str(shard["scenario_id"]), route=mirrored["route"],
+                                                    mechanic_profiles=mirrored["mechanic_profiles"]))
+    scenario_config.write_text(text, encoding="utf-8")
+
+
 def scenario_section(row: dict[str, Any]) -> str:
     """Boss shards join the diagnostic shards; an end-to-end cohort is an ordinary scenario."""
     return DIAGNOSTIC_SECTION if row.get("diagnostic_only") else SCENARIO_SECTION
@@ -453,6 +506,8 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--check", action="store_true", help="exit 1 unless every cohort row and profile validates")
     mode.add_argument("--write-missing", action="store_true",
                       help="clone rows and profiles for cohorts that have none; never rewrite existing rows")
+    mode.add_argument("--write-full-routes", action="store_true",
+                      help="rewrite each end-to-end cohort's route and mechanic profiles from its boss-shard mirror")
     args = parser.parse_args(argv)
 
     plans = ([read_json(args.plan)] if args.plan
@@ -474,6 +529,8 @@ def main(argv: list[str] | None = None) -> int:
             args.scenario_config.write_text(config_text, encoding="utf-8")
             args.runtime_profiles.write_text(
                 append_to_array(profiles_text, map(render_profile, profile_rows), "profiles"), encoding="utf-8")
+        if args.write_full_routes:
+            write_full_routes(plan, args.scenario_config)
         report = validate_raid_shard_scenarios(plan, read_json(args.scenario_config),
                                                read_json(args.runtime_profiles), fixture)
         reports.append({"composition_id": plan["composition_id"], **report})

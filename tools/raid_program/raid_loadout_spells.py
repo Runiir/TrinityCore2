@@ -266,9 +266,11 @@ def loadout_known_spells(bot: dict[str, Any], dbc_dir: Path, action_profiles: di
                                                         baseline, action_profiles)
         inactive_only -= specialization_closure(active, learn_map) | single_active | baseline
     known = set(single_active)
+    switches = bool(loadout.get("runtime_spec_switch"))
     for group in groups:
-        # A group's own declared spells are provisioned only while that group is active.
-        known.update(bot_spell_ids(_view(bot, group, group_spells=group is active), action_profiles))
+        # A group's own declared spells are provisioned only while that group is active, unless the
+        # character switches groups during its run (a canonical full raid): a player knows both.
+        known.update(bot_spell_ids(_view(bot, group, group_spells=switches or group is active), action_profiles))
         known.update(NATIVE_SELF_SETUP_SPELL_IDS.get(str(group["class_spec"]), ()))
     known -= inactive_only
     if int(loadout.get("talent_groups_count") or 0) > 1:

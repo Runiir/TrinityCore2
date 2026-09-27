@@ -31,6 +31,7 @@
 #include <unordered_map>
 
 #include "Bots/BotClassSpecActionProfileInternal.h"
+#include "Bots/BotActiveSpecIdentity.h"
 
 namespace
 {
@@ -102,6 +103,10 @@ std::string InferSpecTag(Player const* bot, std::string const& role)
 {
     if (!bot)
         return "generic";
+
+    BotActiveSpecIdentity::Identity activeIdentity;
+    if (BotActiveSpecIdentity::Resolve(bot->GetGUID().GetCounter(), bot->GetActiveSpec(), activeIdentity))
+        return BotClassSpecActionProfileDetail::CanonicalSpecTag(activeIdentity.ClassSpec);
 
     std::string classSpec = PoolClassSpec(bot->GetGUID().GetCounter());
     if (!classSpec.empty())

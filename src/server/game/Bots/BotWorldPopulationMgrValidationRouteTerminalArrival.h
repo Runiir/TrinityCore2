@@ -69,6 +69,8 @@ struct ObjectiveContext
     bool Run();
     // Raid staging node: finish persistent setup before counting as arrived.
     bool HoldForPrepullSetup();
+    // Canonical full raid spec-switch node: switch talent group first.
+    bool HoldForSpecSwitch();
     std::string PrepullMissingSetup() const;
     bool RunTrashThreatControl(TrashThreatControl& trashThreatControl,
         TrashThreatControlCallbacks const& callbacks);

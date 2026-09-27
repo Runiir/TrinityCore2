@@ -438,6 +438,16 @@ namespace BotWorldPopulationMgrBotState
         // anchor, out of combat (0: not waiting), and in which generation.
         uint64 ValidationPrepullSetupSinceMs = 0;
         uint64 ValidationPrepullSetupGeneration = 0;
+        // Canonical full raid spec switch (BotRaidSpecSwitch.h): the route
+        // generation it belongs to, when this member began waiting, when it
+        // last submitted a cast or equipment swap, and whether its admission
+        // receipt is being re-frozen (the gear drift check skips it meanwhile).
+        uint64 SpecSwitchGeneration = 0;
+        uint64 SpecSwitchSinceMs = 0;
+        uint64 SpecSwitchLastAttemptMs = 0;
+        uint8 SpecSwitchFromGroup = 0;
+        bool SpecSwitchPending = false;
+        bool SpecSwitchReceiptCurrent = false;
         // Dead since, while a gated staging node waits for this member.
         uint64 ValidationPrepullDeadSinceMs = 0;
         // Post-wipe return to the boss node, armed by a resurrection after a

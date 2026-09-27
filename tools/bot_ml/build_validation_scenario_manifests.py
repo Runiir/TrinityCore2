@@ -702,6 +702,49 @@ def post_kill_arrivals(*routes: Sequence[dict[str, Any]]) -> dict[str, dict[str,
     return arrivals
 
 
+SPEC_CONTRACT_ROW_FIELDS = ("roster_slot", "character_key", "talent_group", "class_spec", "role")
+SPEC_CONTRACT_ROLES = ("tank", "healer", "dps")
+
+
+def spec_contract(scenario: dict[str, Any], step: dict[str, Any]) -> list[dict[str, Any]]:
+    """A canonical full raid's spec-switch regroup row (tools/raid_program/raid_full_route_mirror.py):
+    every roster slot's wanted talent group and each talent group's identity, for the runtime switch
+    (BotRaidSpecSwitch.h). Only composition scenarios and regroup rows carry one. Fail closed: a declared
+    contract that is null, empty or of the wrong shape is refused, never silently dropped."""
+    if "spec_contract" not in step:
+        return []
+    rows = step["spec_contract"]
+    node_id = str(step.get("node_id") or "")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"spec_contract_shape:{node_id}")
+    if not scenario.get("composition_id") or str(step.get("kind") or "") != "regroup":
+        raise ValueError(f"spec_contract_outside_composition_regroup:{node_id}")
+
+    def integer(value: Any) -> bool:
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+    contract, slots = [], set()
+    for row in rows:
+        if not isinstance(row, dict) or not integer(row.get("roster_slot")) or not integer(row.get("talent_group")) \
+                or not isinstance(row.get("class_spec"), str) or not isinstance(row.get("character_key"), str) \
+                or row.get("role") not in SPEC_CONTRACT_ROLES or not isinstance(row.get("talent_groups"), list) \
+                or not row["talent_groups"] or row["roster_slot"] in slots:
+            raise ValueError(f"spec_contract_row_invalid:{node_id}:{row.get('roster_slot') if isinstance(row, dict) else row}")
+        slots.add(row["roster_slot"])
+        groups = []
+        for group in row["talent_groups"]:
+            if not isinstance(group, dict) or not integer(group.get("talent_group")) \
+                    or not isinstance(group.get("class_spec"), str) or group.get("role") not in SPEC_CONTRACT_ROLES:
+                raise ValueError(f"spec_contract_row_invalid:{node_id}:{row['roster_slot']}")
+            groups.append({"talent_group": group["talent_group"], "class_spec": group["class_spec"],
+                           "role": group["role"]})
+        wanted = {"talent_group": row["talent_group"], "class_spec": row["class_spec"], "role": row["role"]}
+        if wanted not in groups or len({group["talent_group"] for group in groups}) != len(groups):
+            raise ValueError(f"spec_contract_row_invalid:{node_id}:{row['roster_slot']}")
+        contract.append({**{key: row[key] for key in SPEC_CONTRACT_ROW_FIELDS}, "talent_groups": groups})
+    return contract
+
+
 def prepull_setup_gate(scenario: dict[str, Any]) -> bool:
     """Whether a scenario's rows opt into the runtime's prepull setup gate
     (BotValidationRoutePrepull.h): composition/canonical scenarios only (a
@@ -1250,6 +1293,9 @@ def build_manifests(
                 route["recovery_interaction"] = wake
             if prepull_setup_gate(scenario):
                 route["prepull_setup_gate"] = True
+            contract = spec_contract(scenario, step)
+            if contract:
+                route["spec_contract"] = contract
             if composition_recovery(scenario):
                 route["composition_recovery"] = True
                 blocked_by = blockers.get(str(step.get("node_id") or ""))

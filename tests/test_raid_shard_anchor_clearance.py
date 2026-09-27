@@ -348,7 +348,9 @@ DRAKE_ROUTES = FULL_ROUTES + NEFARIAN_ROUTES
 DRAKE_NODES = (
     ("bwd.north_corridor.pyrecraw", PYRECRAW, PYRECRAW_ENTRY, {route: "bwd.south_corridor.maimgor" for route in DRAKE_ROUTES}),
     ("bwd.south_corridor.maimgor", MAIMGOR, MAIMGOR_ENTRY,
-     {**{route: "bwd.atramedes.north_spirits" for route in FULL_ROUTES},
+     # Round 10: the canonical full raid switches the druid to Balance before the Atramedes wing, at Maimgor's anchor.
+     {"blackwing_descent_10n": "bwd.atramedes.north_spirits",
+      "blackwing_descent_10n_full_c0": "bwd.spec_switch.atramedes",
       **{route: "bwd.nefarian.orb_regroup" for route in NEFARIAN_ROUTES}}),
 )
 

@@ -163,6 +163,27 @@ def test_plan_scenario_rows_are_checked_against_the_generated_plan(tmp_path, mon
     assert sc.check_plan_scenario_rows(sc.ShardRunPlan(shards=plan.shards[:1]), config) is None
 
 
+def test_a_full_only_launch_checks_the_full_route_against_every_boss_shard(tmp_path, monkeypatch, generated):
+    """Round 10 review: a full-only selection still validates the full raid's route mirror against the complete plan,
+    so a full route that lost its spec-switch nodes is refused before launch."""
+    source = _source(tmp_path, generated)
+    config = tmp_path / "w.conf"
+    config.write_text('BotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"\n')
+    plan = sc.load_run_plan(source, select=["blackwing_descent_10n_full_c0"])
+    report = sc.check_plan_scenario_rows(plan, config)
+    assert report["all_passed"] and report["checked"] == ["blackwing_descent_10n_full_c0"]
+    from tools.raid_program import raid_shard_scenarios as rows
+
+    scenarios = json.loads(rows.SCENARIO_CONFIG.read_text())
+    full = next(row for row in scenarios["scenarios"] if row["id"] == "blackwing_descent_10n_full_c0")
+    full["route"] = [step for step in full["route"] if not step["node_id"].startswith("bwd.spec_switch.")]
+    edited = tmp_path / "validation_scenarios.json"
+    edited.write_text(json.dumps(scenarios))
+    monkeypatch.setattr(rows, "SCENARIO_CONFIG", edited)
+    with pytest.raises(sc.ShardPlanError, match="full_route_mirror_drift"):
+        sc.check_plan_scenario_rows(plan, config)
+
+
 def test_flat_layout_puts_the_only_shard_in_the_run_root(tmp_path):
     world = FakeWorld()
     plan = sc.ShardRunPlan(shards=(sc.parse_shard(shard_row("blackwing_descent_10n_magmaw_c0", MAGMAW)),),

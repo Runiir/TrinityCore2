@@ -1422,10 +1422,14 @@ def check_plan_scenario_rows(plan: ShardRunPlan, config: Path) -> dict[str, Any]
                                                   "dataset/bot_runtime_profiles/profiles.json"))
     manifest = manifest if manifest.is_absolute() else REPO_ROOT / manifest
     read = lambda path: json.loads(Path(path).read_text(encoding="utf-8"))
-    source_plan = read(plan.source_plan)
-    source_plan["shards"] = [shard for shard in source_plan["shards"] if shard["scenario_id"] in selected]
+    complete_plan = read(plan.source_plan)
+    source_plan = {**complete_plan, "shards": [shard for shard in complete_plan["shards"]
+                                               if shard["scenario_id"] in selected]}
+    # A full raid's route mirrors every boss shard (raid_full_route_mirror.py): the complete plan is its
+    # mirror context even when only the full cohort is selected.
     report = validate_raid_shard_scenarios(source_plan, read(SCENARIO_CONFIG), read(manifest),
-                                           read(LEGACY_BWD_FIXTURE) if LEGACY_BWD_FIXTURE.is_file() else None)
+                                           read(LEGACY_BWD_FIXTURE) if LEGACY_BWD_FIXTURE.is_file() else None,
+                                           mirror_plan=complete_plan)
     if not report["all_passed"]:
         raise ShardPlanError(f"plan cohort scenario rows drifted from {plan.source_plan}: "
                              + json.dumps(report["failures"], sort_keys=True)[:2000])
