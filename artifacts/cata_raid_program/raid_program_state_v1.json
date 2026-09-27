@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 24,
+      "revision": 25,
       "stage": "build",
       "round": 2,
       "bootstrap_sources": {
@@ -1996,7 +1996,14 @@
           "build": null,
           "run_plans": [],
           "runs": [],
-          "assessment": null
+          "assessment": null,
+          "coordinator_fixes": [
+            {
+              "reason": "Round 2 coordinator repairs, commit dc32876966, reviewed by GPT-6 Astra. Canonical-raid class rotations: Demonology native range, Fel Flame and no Drain Life; no Fan of Knives for Assassination (user decision); Fire Combustion patience; Elemental Mastery. Shared runtime: no in-place revive for a dead passenger on a static instance transport during an encounter; per-lifecycle native death counts; floorless passenger range recovery refused; LandInLiquid. Scoreboard and fidelity: encounter-scoped death basis, per-attempt Chimaeron Mortality exemption (user decision), enrage-anchored melee fidelity, watchdog reset on a confirmed kill. Composition: warlock declares Fel Flame; DVC reproduced and pushed.",
+              "head": "dc32876966f9708887b222520f5164c3d2f64b76",
+              "utc": "2026-09-27T13:09:32Z"
+            }
+          ]
         }
       ],
       "history": [
@@ -2216,6 +2223,13 @@
           "packet": "boss:nefarian",
           "abandoned": false,
           "external": false
+        },
+        {
+          "revision": 25,
+          "utc": "2026-09-27T13:09:32Z",
+          "action": "coordinator_fix",
+          "round": 2,
+          "reason": "Round 2 coordinator repairs, commit dc32876966, reviewed by GPT-6 Astra. Canonical-raid class rotations: Demonology native range, Fel Flame and no Drain Life; no Fan of Knives for Assassination (user decision); Fire Combustion patience; Elemental Mastery. Shared runtime: no in-place revive for a dead passenger on a static instance transport during an encounter; per-lifecycle native death counts; floorless passenger range recovery refused; LandInLiquid. Scoreboard and fidelity: encounter-scoped death basis, per-attempt Chimaeron Mortality exemption (user decision), enrage-anchored melee fidelity, watchdog reset on a confirmed kill. Composition: warlock declares Fel Flame; DVC reproduced and pushed."
         }
       ]
     }
