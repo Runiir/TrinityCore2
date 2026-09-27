@@ -2683,7 +2683,8 @@ def test_production_finalizer_calls_pending_trace_drain_helper():
         / "tools/raid_program/capture_live_run.py"
     ).read_text(encoding="utf-8")
     assert "collect_terminal_trace(" in source
-    assert "drain_pending=drain_pending_trace_batches" in source
+    # The capture's spec-switch authority (if any) is bound to the helper; it is still the production drain.
+    assert "drain_pending=with_spec_authority(drain_pending_trace_batches)" in source
     assert '"botauto trace all 128"' not in source
 
 
@@ -7320,7 +7321,7 @@ def test_every_terminal_capture_path_requests_a_fresh_full_evidence_bundle():
     assert "signal.signal(signal.SIGINT, defer_post_capture_interrupt)" in post_capture
     assert finalization_source.index("signal.signal(signal.SIGINT, signal.SIG_IGN)") > (
         finalization_source.index(
-            "normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name)"
+            "normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name"
         )
     )
     watchdog = finalization_source[

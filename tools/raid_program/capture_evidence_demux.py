@@ -9,6 +9,8 @@ try:
         personal_threat_episode_join_report,
     )
     from tools.raid_program.capture_runtime_identity import (
+        IDENTITY_FIELDS,
+        SPEC_CONTRACT_SCOPE_MARKER,
         STRATEGY_FIELD,
         _roster_binding_identity,
         _roster_binding_lifecycle_rejections,
@@ -32,6 +34,8 @@ except ModuleNotFoundError:
         personal_threat_episode_join_report,
     )
     from capture_runtime_identity import (
+        IDENTITY_FIELDS,
+        SPEC_CONTRACT_SCOPE_MARKER,
         STRATEGY_FIELD,
         _roster_binding_identity,
         _roster_binding_lifecycle_rejections,
@@ -51,6 +55,14 @@ except ModuleNotFoundError:
     )
 
 
+def _spec_scope() -> tuple[Any, Any]:
+    try:
+        from tools.raid_program.capture_spec_transitions import masking_authorised, scope_marker_rejections
+    except ModuleNotFoundError:
+        from capture_spec_transitions import masking_authorised, scope_marker_rejections
+    return masking_authorised, scope_marker_rejections
+
+
 def _controller_terminal_binding(
     controller_terminal: dict[str, Any] | None,
     rows: list[dict[str, Any]],
@@ -59,6 +71,7 @@ def _controller_terminal_binding(
     canonical_roster: tuple[tuple[Any, ...], ...],
     canonical_cohort: str,
     profile_name: str,
+    spec_authority: Any = None,
 ) -> tuple[bool, list[str]]:
     """Validate controller-owned terminal evidence before waiving ready-check.
 
@@ -100,9 +113,15 @@ def _controller_terminal_binding(
     roster = runtime.get("roster") if isinstance(runtime, dict) else None
     if not isinstance(runtime, dict) or runtime.get("active") is not True:
         reasons.append("evidence_demux_controller_terminal_runtime_inactive")
-    if not isinstance(runtime, dict) or _runtime_identity(runtime, include_strategy=False) != canonical_identity:
+    masking_authorised, scope_marker_rejections = _spec_scope()
+    scoped = masking_authorised(runtime, spec_authority)
+    reasons.extend(f"evidence_demux_controller_terminal_{reason}"
+                   for reason in scope_marker_rejections(runtime, spec_authority))
+    if not isinstance(runtime, dict) or _runtime_identity(
+            runtime, include_strategy=False, spec_scope_authorised=scoped) != canonical_identity:
         reasons.append("evidence_demux_controller_terminal_attempt_mismatch")
-    if not isinstance(roster, list) or _roster_binding_identity(roster) != canonical_roster:
+    if not isinstance(roster, list) or _roster_binding_identity(
+            roster, spec_scope_authorised=scoped) != canonical_roster:
         reasons.append("evidence_demux_controller_terminal_roster_mismatch")
     if terminal_status.get("bots") != len(canonical_roster):
         reasons.append("evidence_demux_controller_terminal_bot_count_mismatch")
@@ -296,7 +315,7 @@ def _trace_actor_transport_rejections(
 
 
 def _required_telemetry_envelope_report(
-    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n",
+    rows: list[dict[str, Any]], *, profile_name: str = "blackwing_descent_10n", spec_authority: Any = None,
 ) -> dict[str, Any]:
     """Validate the complete canonical bot roster in every diagnose/trace row.
 
@@ -310,16 +329,22 @@ def _required_telemetry_envelope_report(
     canonical_roster: tuple[tuple[Any, ...], ...] | None = None
     canonical_cohort: str | None = None
     canonical_guids: set[int] | None = None
+    masking_authorised, scope_marker_rejections = _spec_scope()
     for row in rows:
         payload = row.get("payload")
         if not isinstance(payload, dict) or payload.get("action") != "botauto_status":
             continue
         runtime = payload.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
-        identity = _runtime_identity(runtime, include_strategy=False) if isinstance(runtime, dict) else None
-        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
+        scoped = masking_authorised(runtime, spec_authority)
+        identity = (_runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped)
+                    if isinstance(runtime, dict) else None)
+        roster_identity = (_roster_binding_identity(roster, spec_scope_authorised=scoped)
+                           if isinstance(roster, list) else None)
         cohort = payload.get("cohort_id")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
+            continue
+        if scope_marker_rejections(runtime, spec_authority):
             continue
         if identity is None or roster_identity is None or not isinstance(cohort, str) or not cohort:
             continue
@@ -374,11 +399,15 @@ def _required_telemetry_envelope_report(
             row_reasons.append(f"evidence_demux_{channel}_envelope_not_ok")
         runtime = payload.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        scoped = masking_authorised(runtime, spec_authority)
+        row_reasons.extend(f"evidence_demux_{channel}_{reason}"
+                           for reason in scope_marker_rejections(runtime, spec_authority))
         if (
             not isinstance(runtime, dict)
             or runtime.get("active") is not True
-            or _runtime_identity(runtime, include_strategy=False) != canonical_identity
-            or (_roster_binding_identity(roster) if isinstance(roster, list) else None) != canonical_roster
+            or _runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped) != canonical_identity
+            or (_roster_binding_identity(roster, spec_scope_authorised=scoped)
+                if isinstance(roster, list) else None) != canonical_roster
             or payload.get("cohort_id") != canonical_cohort
         ):
             row_reasons.append(f"evidence_demux_{channel}_runtime_identity_unbound")
@@ -423,7 +452,12 @@ def _required_telemetry_envelope_report(
                         "attempt_id": canonical_identity[10],
                         "runtime_profile_generation": canonical_identity[11],
                         "runtime_profile_hash": canonical_identity[12],
-                        "assignment_generation": canonical_identity[13],
+                        # The observed integer: a spec-scoped identity masks it.
+                        "assignment_generation": (
+                            runtime.get("assignment_generation")
+                            if isinstance(runtime, dict) and isinstance(runtime.get("assignment_generation"), int)
+                            and not isinstance(runtime.get("assignment_generation"), bool) else None
+                        ),
                         "route_generation": (
                             (runtime.get("route_progress") or {}).get("generation")
                             if isinstance(runtime.get("route_progress"), dict)
@@ -619,8 +653,16 @@ def evidence_demux_report(
     fixture_terminal: dict[str, Any] | None = None,
     fixture_expected_identity: dict[str, Any] | None = None,
     personal_threat_episode_target: dict[str, Any] | None = None,
+    spec_authority: Any = None,
 ) -> dict[str, Any]:
-    """Independently bind every retained JSON row to one raid lifecycle."""
+    """Independently bind every retained JSON row to one raid lifecycle.
+
+    `spec_authority` is the verified route authority of the manifest the
+    capture preflight selected (capture_spec_transitions.load_route_authority).
+    It alone authorises the talent-group transitions a canonical full raid
+    makes and the masking of their mutable loadout identity; without it any
+    `spec_contract_scope` marker is rejected (capture_spec_transitions.py).
+    """
 
     reasons: list[str] = []
     known_actions = {
@@ -637,9 +679,17 @@ def evidence_demux_report(
     canonical_identity_sha256: str | None = None
     canonical_roster_sha256: str | None = None
     canonical_active_sequence: int | None = None
+    try:
+        from tools.raid_program.capture_spec_transitions import SpecTransitionTracker
+    except ModuleNotFoundError:
+        from capture_spec_transitions import SpecTransitionTracker
+    masking_authorised, scope_marker_rejections = _spec_scope()
+    spec_transitions = (SpecTransitionTracker(spec_authority)
+                        if spec_authority is not None and spec_authority.contracts else None)
     episode_join = personal_threat_episode_join_report(
         rows, target=personal_threat_episode_target,
     )
+    scope_skips: list[str] = []
 
     for row in rows:
         # An outer annotation is evidence output, not evidence input.  Replace
@@ -662,9 +712,16 @@ def evidence_demux_report(
         runtime = payload.get("raid_runtime")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             continue
-        identity = _runtime_identity(runtime, include_strategy=False)
+        # An unauthorised or inconsistent scope marker never establishes (or masks) the canonical identity.
+        scope_rejections = scope_marker_rejections(runtime, spec_authority)
+        if scope_rejections:
+            scope_skips.extend(f"evidence_demux_{reason}" for reason in scope_rejections)
+            continue
+        scoped = masking_authorised(runtime, spec_authority)
+        identity = _runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped)
         roster = runtime.get("roster")
-        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
+        roster_identity = (_roster_binding_identity(roster, spec_scope_authorised=scoped)
+                           if isinstance(roster, list) else None)
         cohort = payload.get("cohort_id")
         roster_guid_values = (
             [member[3] for member in roster_identity]
@@ -694,11 +751,12 @@ def evidence_demux_report(
             break
     if canonical_identity is None:
         telemetry_envelopes = _required_telemetry_envelope_report(
-            rows, profile_name=profile_name,
+            rows, profile_name=profile_name, spec_authority=spec_authority,
         )
         for row in rows:
             row["identity_binding"]["reasons"] = ["evidence_demux_no_active_raid_rows"]
         early_rejections = ["evidence_demux_no_active_raid_rows"]
+        early_rejections.extend(scope_skips)
         early_rejections.extend(episode_join["rejections"])
         return {
             "rejections": list(dict.fromkeys(early_rejections)),
@@ -716,7 +774,7 @@ def evidence_demux_report(
         }
 
     telemetry_envelopes = _required_telemetry_envelope_report(
-        rows, profile_name=profile_name,
+        rows, profile_name=profile_name, spec_authority=spec_authority,
     )
     controller_terminal_bound, controller_terminal_rejections = _controller_terminal_binding(
         controller_terminal,
@@ -725,6 +783,7 @@ def evidence_demux_report(
         canonical_roster=canonical_roster,
         canonical_cohort=canonical_cohort,
         profile_name=profile_name,
+        spec_authority=spec_authority,
     )
     reasons.extend(controller_terminal_rejections)
     fixture_terminal_bound, fixture_terminal_rejections, fixture_row_rejections = (
@@ -742,6 +801,9 @@ def evidence_demux_report(
     reasons.extend(fixture_terminal_rejections)
     reasons.extend(episode_join["rejections"])
     stop_seen = False
+    # The masked identity of the stop row once it bound: native StopAutonomy() resets the party runtime, so a
+    # scoped capture's post-cleanup status carries no spec scope marker and binds to this identity instead.
+    validated_stop_identity: tuple[Any, ...] | None = None
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
     previous_strategy: str | None = None
@@ -778,8 +840,11 @@ def evidence_demux_report(
         observed_actions.add(str(action))
 
         if action == "botauto_status":
+            # A scoped terminal failure is judged against the same verified route authority (as a transition);
+            # validators are only handed one when it exists, so an unscoped run calls them as before.
             terminal_reason, _ = terminal_failure_validator(
                 payload, profile_name=profile_name,
+                **({"spec_authority": spec_authority} if spec_authority is not None else {}),
             )
             terminal_failure_seen = terminal_failure_seen or terminal_reason is not None
 
@@ -892,10 +957,36 @@ def evidence_demux_report(
                 reject("evidence_demux_cross_identity_row")
             if payload.get("bots") != 0 or payload.get("lease_count") != 0:
                 reject("evidence_demux_cleanup_not_empty")
+            if spec_transitions is None:
+                for scope_reason in scope_marker_rejections(runtime, spec_authority):
+                    reject(f"evidence_demux_{scope_reason}")
+                cleanup_identity = _runtime_identity(runtime, include_strategy=False)
+                expected_cleanup_identity = canonical_identity
+            else:
+                # Native cleanup cleared the route manifest and with it the scope markers; the row binds to the
+                # validated stop's identity with the assignment generation masked under the authority. A marker
+                # that is still present must be well formed and consistent, and there is no binding without a
+                # stop that bound.
+                if validated_stop_identity is None:
+                    reject("evidence_demux_spec_cleanup_without_validated_stop")
+                for scope_reason in scope_marker_rejections(runtime, spec_authority):
+                    if scope_reason != "spec_contract_route_without_runtime_scope":
+                        reject(f"evidence_demux_{scope_reason}")
+                cleanup_identity = _runtime_identity(runtime, include_strategy=False)
+                generation = runtime.get("assignment_generation")
+                if cleanup_identity is not None and (
+                        not isinstance(generation, int) or isinstance(generation, bool) or generation < 0):
+                    cleanup_identity = None
+                if cleanup_identity is not None:
+                    masked_index = IDENTITY_FIELDS.index("assignment_generation")
+                    cleanup_identity = (cleanup_identity[:masked_index] + (SPEC_CONTRACT_SCOPE_MARKER,)
+                                        + cleanup_identity[masked_index + 1:])
+                expected_cleanup_identity = validated_stop_identity
             if (
                 payload.get("server_epoch") != canonical_identity[9]
                 or payload.get("attempt_id") != canonical_identity[10]
-                or _runtime_identity(runtime, include_strategy=False) != canonical_identity
+                or cleanup_identity is None
+                or cleanup_identity != expected_cleanup_identity
             ):
                 reject("evidence_demux_cross_identity_row")
             inactive_cleanup_seen = True
@@ -909,14 +1000,23 @@ def evidence_demux_report(
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             reject("evidence_demux_identity_missing")
             continue
-        identity = _runtime_identity(runtime, include_strategy=False)
+        scoped = masking_authorised(runtime, spec_authority)
+        identity = _runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped)
         roster = runtime.get("roster")
-        roster_identity = _roster_binding_identity(roster) if isinstance(roster, list) else None
+        roster_identity = (_roster_binding_identity(roster, spec_scope_authorised=scoped)
+                           if isinstance(roster, list) else None)
         if (identity != canonical_identity or roster_identity != canonical_roster
                 or payload.get("cohort_id") != canonical_cohort):
             reject("evidence_demux_cross_identity_row")
         for lifecycle_reason in _roster_binding_lifecycle_rejections(roster):
             reject(f"evidence_demux_{lifecycle_reason}")
+        # Scope markers are judged before any masked comparison binds the row; with an authority the tracker
+        # also binds route progress (a status row's node identity), membership and every loadout transition.
+        spec_reasons = (scope_marker_rejections(runtime, spec_authority) if spec_transitions is None
+                        else spec_transitions.observe(
+                            runtime, (payload.get("validation_route") or {}) if action == "botauto_status" else None))
+        for transition_reason in spec_reasons:
+            reject(f"evidence_demux_{transition_reason}")
         strategy = runtime.get(STRATEGY_FIELD)
         route_marker = _route_advancement_marker(runtime)
         if not isinstance(strategy, str) or not strategy.strip():
@@ -972,6 +1072,8 @@ def evidence_demux_report(
                     reject("evidence_demux_bot_outside_roster")
         if not row_reasons:
             binding["state"] = "bound"
+            if action == "botauto_stop" and spec_transitions is not None:
+                validated_stop_identity = identity
             if action == "botauto_status":
                 native = runtime.get("native_recovery") or {}
                 try:

@@ -480,6 +480,7 @@ def drain_terminal_trace(
     budget_sec: float = TERMINAL_TRACE_DRAIN_BUDGET_SEC,
     max_calls: int = TERMINAL_TRACE_DRAIN_MAX_CALLS,
     clock: Callable[[], float] = time.monotonic,
+    tail_command: str = "",
 ) -> str:
     """Capture every bot's pending and newest decisions after a terminal failure.
 
@@ -498,17 +499,21 @@ def drain_terminal_trace(
     The budget is checked between calls, and one call can take up to the
     cleanup step cap (``CLEANUP_STEP_MAX_SEC``, 180 s), so the worst case is
     about ``budget_sec`` plus two step caps, inside the shared cleanup budget.
+
+    ``tail_command`` (opt-in) serves heartbeats without a delta trace (the
+    full-raid shard reads a bounded tail): the delta drain is skipped and only
+    that one bounded non-delta tail is captured.
     """
     command = terminal_drain_command(heartbeat_commands)
-    if not command:
+    if not command and not tail_command:
         return ""
-    tail = terminal_tail_command(command)
+    tail = terminal_tail_command(command) if command else tail_command
     started = clock()
     capture = _DrainCapture(Path(output_dir) / TERMINAL_TRACE_DRAIN_FILE)
     calls = 0
     pending: dict[int, int] = {}
-    delta_stop = "budget_exhausted"
-    while calls < max(1, int(max_calls)):
+    delta_stop = "budget_exhausted" if command else "no_delta_heartbeat"
+    while command and calls < max(1, int(max_calls)):
         if calls and clock() - started >= budget_sec:
             break
         calls += 1
@@ -527,7 +532,8 @@ def drain_terminal_trace(
             delta_stop = "pending_zero"
             break
     else:
-        delta_stop = "max_calls"
+        if command:
+            delta_stop = "max_calls"
     tail_captured = False
     if delta_stop != "transport_unavailable":
         output, ok = run(tail)
@@ -543,7 +549,7 @@ def drain_terminal_trace(
     newest_captured = tail_captured and bool(bots) and all(receipt["newest_captured"] for receipt in bots)
     backlog_drained = delta_stop == "pending_zero"
     return cleanup_step_receipt(
-        command, returncode=0, timed_out=delta_stop in {"budget_exhausted", "max_calls"},
+        command or tail, returncode=0, timed_out=delta_stop in {"budget_exhausted", "max_calls"},
         completed=newest_captured and not capture.write_failed,
         extra={
             "purpose": "terminal_trace_drain",

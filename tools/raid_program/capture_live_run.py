@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import functools
 import os
 from pathlib import Path
 import signal
@@ -43,6 +44,7 @@ from tools.raid_program.capture_environment_validation import (
     validate_launch_artifact_snapshot,
 )
 from tools.raid_program.capture_setup import CaptureSetup
+from tools.raid_program.capture_spec_transitions import spec_authority_kwargs
 from tools.raid_program.capture_telemetry_transport import (
     JsonLogCursor,
     TelemetryScheduler,
@@ -106,6 +108,11 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
     drudge_observed = setup.drudge_observed
     drudge_required = setup.drudge_required
     drudge_frozen_anchors = setup.drudge_frozen_anchors
+    # A canonical full raid's verified spec-switch authority (None otherwise: every call below is then HEAD's).
+    spec_kwargs = spec_authority_kwargs(getattr(setup, "spec_authority", None))
+
+    def with_spec_authority(function: Any) -> Any:
+        return functools.partial(function, **spec_kwargs) if spec_kwargs else function
     started_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     recovery_required = (
         profile_name == "blackwing_descent_10n"
@@ -448,8 +455,8 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         expected_status=expected_status,
                         telemetry_timeout_seconds=float(args.telemetry_timeout_sec),
                         record_resource_sample=record_process_resource_sample,
-                        validate_bundle=validate_forced_evidence_bundle,
-                        drain_pending=drain_pending_trace_batches,
+                        validate_bundle=with_spec_authority(validate_forced_evidence_bundle),
+                        drain_pending=with_spec_authority(drain_pending_trace_batches),
                         monotonic=time.monotonic, sleep=time.sleep,
                     )
                 )
@@ -644,7 +651,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             elapsed_seconds=time.monotonic() - monitor_started_at,
                             request_final_evidence=request_final_evidence,
                             preflight_classifier=terminal_preflight_failure_reason,
-                            runtime_classifier=terminal_runtime_failure_reason,
+                            runtime_classifier=with_spec_authority(terminal_runtime_failure_reason),
                         )
                         if batch_failure is not None:
                             terminal_failure, telemetry_abort = batch_failure
@@ -696,6 +703,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             route_partition=runtime_assets.get(
                                 "runtime_route_partition", runtime_assets.get("route_partition")
                             ),
+                            **spec_kwargs,
                         )
                         last_rejections = rejections
                         if accepted:
@@ -823,6 +831,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         recovery_accepted, _ = accepted_native_recovery(
                             monitor_statuses,
                             profile_name=profile_name,
+                            **spec_kwargs,
                         )
                     if drudge_required:
                         drudge_accepted, _ = accepted_drudge_contract(

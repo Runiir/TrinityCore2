@@ -54,6 +54,7 @@ from tools.raid_program.runtime_asset_closure import (
     enforce_runtime_asset_closure_from_args,
 )
 from tools.raid_program import trace_transport_smoke
+from tools.raid_program.capture_spec_transitions import capture_spec_authority
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -315,6 +316,9 @@ class CaptureSetup:
     checkpoint_target_guid: int | None = None
     build_worktree: Path | None = None
     build_identity_before: dict[str, Any] | None = None
+    # The verified route authority of a canonical full raid's spec switches (capture_spec_transitions.py),
+    # loaded once from the preflight-verified route manifest; None for every route without spec contracts.
+    spec_authority: Any = None
 
 
 def controller_route_hold_runtime_manifest_identity(
@@ -775,6 +779,13 @@ def prepare_capture_setup(
             "capture preflight rejected: "
             + ",".join(development_canonical_rejections)
         )
+    try:
+        spec_authority = (
+            None if args.trace_transport_smoke
+            else capture_spec_authority(runtime_assets, scenario_id)
+        )
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        raise SystemExit(f"runtime profile assets rejected: spec_authority:{error}") from error
     route_manifest = runtime_assets.get("route_manifest")
     controller_route_hold_scheduler: ControllerRouteHoldScheduler | None = None
     if args.fixture_expansion_replay:
@@ -934,4 +945,5 @@ def prepare_capture_setup(
         personal_threat_episode_target=personal_threat_episode_target,
         build_worktree=build_worktree,
         build_identity_before=build_provenance.get("build_worktree_identity"),
+        spec_authority=spec_authority,
     )

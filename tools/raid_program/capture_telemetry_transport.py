@@ -13,9 +13,11 @@ try:
         _roster_binding_identity,
         _runtime_identity,
     )
+    from tools.raid_program.capture_spec_transitions import masking_authorised
     from tools.raid_program.capture_value_types import _positive_int
 except ModuleNotFoundError:
     from capture_runtime_identity import _roster_binding_identity, _runtime_identity
+    from capture_spec_transitions import masking_authorised
     from capture_value_types import _positive_int
 
 try:
@@ -488,6 +490,7 @@ def drain_pending_trace_batches(
     read_trace_response: Callable[[float], tuple[dict[str, Any], float] | None],
     monotonic: Callable[[], float] = time.monotonic,
     max_batches: int = 64,
+    spec_authority: Any = None,
 ) -> dict[str, Any]:
     """Drain every retained terminal trace page without changing cursor mode.
 
@@ -506,12 +509,14 @@ def drain_pending_trace_batches(
         and isinstance(expected_status.get("raid_runtime"), dict)
         else None
     )
+    # Spec-switch masking only with the verified authority's consent; without one this is HEAD's comparison.
+    expected_scoped = masking_authorised(expected_runtime, spec_authority)
     expected_identity = (
-        _runtime_identity(expected_runtime, include_strategy=False)
+        _runtime_identity(expected_runtime, include_strategy=False, spec_scope_authorised=expected_scoped)
         if expected_runtime is not None else None
     )
     expected_roster = (
-        _roster_binding_identity(expected_runtime.get("roster"))
+        _roster_binding_identity(expected_runtime.get("roster"), spec_scope_authorised=expected_scoped)
         if expected_runtime is not None
         and isinstance(expected_runtime.get("roster"), list)
         else None
@@ -548,10 +553,11 @@ def drain_pending_trace_batches(
             return False
         runtime = row.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        scoped = masking_authorised(runtime, spec_authority)
         if (
             not isinstance(runtime, dict)
-            or _runtime_identity(runtime, include_strategy=False) != expected_identity
-            or _roster_binding_identity(roster) != expected_roster
+            or _runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped) != expected_identity
+            or _roster_binding_identity(roster, spec_scope_authorised=scoped) != expected_roster
             or row.get("cohort_id") != expected_cohort
         ):
             reject("trace_drain_runtime_identity_mismatch")

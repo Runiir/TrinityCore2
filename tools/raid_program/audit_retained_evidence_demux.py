@@ -10,6 +10,7 @@ from typing import Any
 
 from tools.raid_program.capture_evidence_demux import evidence_demux_report
 from tools.raid_program.capture_runtime_acceptance import terminal_runtime_failure_reason
+from tools.raid_program.capture_spec_transitions import capture_spec_authority, spec_authority_kwargs
 from tools.raid_program.recurrence_checkpoint_seals import (
     MAGMAW_TRANSFER_CHECKPOINT_ACTOR_GUID,
     MAGMAW_TRANSFER_CHECKPOINT_CASE_ID,
@@ -77,6 +78,7 @@ def offline_demux_audit(
     expected_report_sha256: str, expected_actor_guid: int,
     expected_source_commit: str, expected_route_sha256: str,
     expected_seal_sha256: str, expected_profile: str,
+    route_manifest: Path | None = None,
 ) -> dict[str, Any]:
     raw_bytes = raw_path.read_bytes()
     report_bytes = report_path.read_bytes()
@@ -101,6 +103,15 @@ def offline_demux_audit(
         or _expected_fixture_identity(capture_report) != expected_identity
     ):
         raise ValueError("offline_demux_expected_identity_mismatch")
+    # A retained canonical full raid is audited against the spec authority of its bound route manifest (the
+    # capture's own sha256); a route without spec contracts yields None and HEAD's audit.
+    spec_authority = (
+        capture_spec_authority(
+            {"route_manifest": str(route_manifest), "route_sha256": expected_route_sha256},
+            str(expected_identity["scenario_id"]),
+        )
+        if route_manifest is not None else None
+    )
     audit = evidence_demux_report(
         rows,
         profile_name=str(capture_report.get("runtime_profile", "")),
@@ -108,6 +119,7 @@ def offline_demux_audit(
         terminal_failure_validator=terminal_runtime_failure_reason,
         fixture_terminal=capture_report.get("fixture_terminal"),
         fixture_expected_identity=expected_identity,
+        **spec_authority_kwargs(spec_authority),
     )
     return {
         "schema": "cata_raid_offline_evidence_demux_audit_v1",
@@ -129,6 +141,8 @@ def main() -> int:
     parser.add_argument("--expected-route-sha256", required=True)
     parser.add_argument("--expected-seal-sha256", required=True)
     parser.add_argument("--expected-profile", required=True)
+    parser.add_argument("--route-manifest", type=Path,
+                        help="the capture's bound route manifest; required to audit spec-switch evidence")
     args = parser.parse_args()
     try:
         result = offline_demux_audit(
@@ -140,6 +154,7 @@ def main() -> int:
             expected_route_sha256=args.expected_route_sha256,
             expected_seal_sha256=args.expected_seal_sha256,
             expected_profile=args.expected_profile,
+            route_manifest=args.route_manifest,
         )
     except ValueError as error:
         print(json.dumps({"gate_passed": False, "reason": str(error)}, sort_keys=True))

@@ -6607,6 +6607,11 @@ def persist_rolling_heartbeat(
     write_json(output_dir / "report.json", report)
 
 
+# A per-command timeout gets at most the remaining budget, truncated to whole
+# seconds, so a command that ran into the cap ends up to a second early.
+EMERGENCY_CAP_TOLERANCE_SEC = 2.0
+
+
 def persist_final_timeout_liveness(
     output_dir: Path,
     heartbeat_index: int,
@@ -6624,8 +6629,16 @@ def persist_final_timeout_liveness(
     expected_cohort_id: str,
     liveness_clock: Mapping[str, Any],
     signals: HeartbeatSignals | None = None,
+    *,
+    emergency_cap_reached: bool = True,
+    completion_reason_override: str = "",
 ) -> None:
-    """Persist one bounded emergency-cap receipt before an early timeout exit."""
+    """Persist one bounded timeout receipt before an early timeout exit.
+
+    By default the timeout is the emergency cap.  A caller that knows the
+    timeout was one console exchange's (the cap not reached) passes
+    ``emergency_cap_reached=False`` and its own completion reason.
+    """
     report = rolling_heartbeat_report(
         output_dir,
         heartbeat_index,
@@ -6641,6 +6654,7 @@ def persist_final_timeout_liveness(
         max_repeated_decisions,
         max_death_loops,
         validation_route_manifest,
+        completion_reason_override=completion_reason_override,
         expected_cohort_id=expected_cohort_id,
         persist=False,
         signals=signals,
@@ -6650,7 +6664,7 @@ def persist_final_timeout_liveness(
         observed_monotonic=time.monotonic(),
         observed_unix=int(time.time()),
         no_progress_window_sec=no_progress_window_sec,
-        emergency_cap_reached=True,
+        emergency_cap_reached=bool(emergency_cap_reached),
         **dict(liveness_clock),
     )
     report["semantic_liveness"] = advanced_liveness.pop("receipt")
@@ -6699,6 +6713,8 @@ def run_transport_completion_watchdog(
     retain_trace_route_nodes: Sequence[str] = (),
     native_readycheck: bool = True,
     max_encounter_resets: int = DEFAULT_MAX_ENCOUNTER_RESETS,
+    console_timeout_reason: str = "",
+    terminal_trace_command: str = "",
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
 
@@ -6714,6 +6730,15 @@ def run_transport_completion_watchdog(
     after that many native encounter resets on one boss node that no wipe
     explains (0 disables it).  The shard coordinator relies on the default;
     bot-live-validate passes ``--max-encounter-resets`` (default 0).
+
+    ``console_timeout_reason`` (opt-in; the shard coordinator passes
+    ``console_command_timeout``) labels a timeout of one console exchange
+    that ended before the emergency cap: it is an infrastructure fault, not
+    the cap.  Without it every timeout keeps the emergency-cap label.
+
+    ``terminal_trace_command`` (opt-in) is the bounded non-delta trace the
+    terminal drain captures before the stop when no heartbeat trace is a
+    delta (the full-raid shard); callers with a delta heartbeat ignore it.
     """
     deadline = (
         None if timeout_sec is None else time.monotonic() + timeout_sec
@@ -6934,6 +6959,7 @@ def run_transport_completion_watchdog(
 
         receipt = drain_terminal_trace(
             run, heartbeat_commands, output_dir, parse_json_objects, observe=observe,
+            tail_command=terminal_trace_command,
         )
         if receipt:
             output_parts.append_cleanup(receipt)
@@ -6944,6 +6970,12 @@ def run_transport_completion_watchdog(
 
     def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
         def persist_timeout(code: int) -> None:
+            # A console exchange that timed out well before the emergency cap
+            # is an infrastructure fault; only callers that opt in relabel it.
+            console_timeout = bool(console_timeout_reason) and not (
+                deadline is not None
+                and time.monotonic() >= deadline - EMERGENCY_CAP_TOLERANCE_SEC
+            )
             persist_final_timeout_liveness(
                 output_dir,
                 heartbeat_index + 1,
@@ -6961,6 +6993,8 @@ def run_transport_completion_watchdog(
                 expected_cohort_id,
                 liveness_clock,
                 signals=signals,
+                emergency_cap_reached=not console_timeout,
+                completion_reason_override=console_timeout_reason if console_timeout else "",
             )
 
         if timed_out:

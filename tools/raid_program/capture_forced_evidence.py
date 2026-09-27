@@ -10,6 +10,7 @@ try:
         _roster_binding_lifecycle_rejections,
         _runtime_identity,
     )
+    from tools.raid_program.capture_spec_transitions import masking_authorised
     from tools.raid_program.capture_value_types import _positive_int
 except ModuleNotFoundError:
     from capture_runtime_identity import (
@@ -17,6 +18,7 @@ except ModuleNotFoundError:
         _roster_binding_lifecycle_rejections,
         _runtime_identity,
     )
+    from capture_spec_transitions import masking_authorised
     from capture_value_types import _positive_int
 
 
@@ -66,6 +68,7 @@ def validate_forced_evidence_bundle(
     *,
     requested_at_monotonic: float,
     freshness_timeout_seconds: float,
+    spec_authority: Any = None,
 ) -> dict[str, Any]:
     """Validate the diagnose/trace responses to one explicit final request.
 
@@ -97,13 +100,16 @@ def validate_forced_evidence_bundle(
         if isinstance(expected_status, dict)
         else None
     )
+    # A canonical full raid's spec switches mask only with the verified authority's consent
+    # (capture_spec_transitions.masking_authorised); without one this is HEAD's comparison.
+    expected_scoped = masking_authorised(expected_runtime, spec_authority)
     expected_identity = (
-        _runtime_identity(expected_runtime, include_strategy=False)
+        _runtime_identity(expected_runtime, include_strategy=False, spec_scope_authorised=expected_scoped)
         if isinstance(expected_runtime, dict)
         else None
     )
     expected_roster = (
-        _roster_binding_identity(expected_runtime.get("roster"))
+        _roster_binding_identity(expected_runtime.get("roster"), spec_scope_authorised=expected_scoped)
         if isinstance(expected_runtime, dict)
         and isinstance(expected_runtime.get("roster"), list)
         else None
@@ -158,10 +164,11 @@ def validate_forced_evidence_bundle(
             continue
         runtime = row.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
+        scoped = masking_authorised(runtime, spec_authority)
         if (
             not isinstance(runtime, dict)
-            or _runtime_identity(runtime, include_strategy=False) != expected_identity
-            or _roster_binding_identity(roster) != expected_roster
+            or _runtime_identity(runtime, include_strategy=False, spec_scope_authorised=scoped) != expected_identity
+            or _roster_binding_identity(roster, spec_scope_authorised=scoped) != expected_roster
             or row.get("cohort_id") != expected_cohort
         ):
             reject(channel, "forced_response_runtime_identity_unbound")

@@ -8,6 +8,9 @@ try:
     from tools.raid_program.capture_runtime_identity import (
         ROSTER_ID_FIELDS,
         STRATEGY_FIELD,
+        _in_spec_contract_scope,
+        _membership_identity_rejections,
+        _roster_row_projection,
         _route_advancement_marker,
         _runtime_identity,
     )
@@ -19,6 +22,9 @@ except ModuleNotFoundError:
     from capture_runtime_identity import (
         ROSTER_ID_FIELDS,
         STRATEGY_FIELD,
+        _in_spec_contract_scope,
+        _membership_identity_rejections,
+        _roster_row_projection,
         _route_advancement_marker,
         _runtime_identity,
     )
@@ -251,65 +257,109 @@ def _identity_manifest_rejections(
         if expected is None:
             reasons.append("frozen_identity_unknown_roster_slot")
             continue
-        for field in ("account", "name", "talents", "glyphs"):
+        reasons.extend(_membership_identity_rejections(row, expected))
+        for field in ("talents", "glyphs"):
             if field not in row:
                 reasons.append(f"frozen_identity_{field}_missing")
-        if not _positive_int(row.get("guid")):
-            reasons.append("frozen_identity_guid_missing")
-        if expected.get("character_guid") is not None and row.get("guid") != expected["character_guid"]:
-            reasons.append("frozen_identity_character_guid_mismatch")
-        if expected.get("account_id") is not None and row.get("account_id") != expected["account_id"]:
-            reasons.append("frozen_identity_account_id_mismatch")
-        if str(row.get("account") or "").upper() != expected["account"]:
-            reasons.append("frozen_identity_account_mismatch")
-        if row.get("name") != expected["name"]:
-            reasons.append("frozen_identity_name_mismatch")
         actual_talents = _canonical_int_list(row.get("talents"))
         if actual_talents is None or tuple(sorted(actual_talents)) != expected["talents"]:
             reasons.append("frozen_identity_talents_mismatch")
         if _canonical_int_list(row.get("glyphs")) != expected["glyphs"]:
             reasons.append("frozen_identity_glyphs_mismatch")
-        actual_gear = _runtime_gear_manifest(row)
-        if actual_gear is None:
-            reasons.append("frozen_identity_full_gear_manifest_missing")
-        else:
-            expected_gear = expected["gear"]
-            actual_by_slot = {item[0]: item for item in actual_gear}
-            if set(actual_by_slot) != {item["slot"] for item in expected_gear}:
-                reasons.append("frozen_identity_full_gear_slots_mismatch")
-            for item in expected_gear:
-                actual = actual_by_slot.get(item["slot"])
-                if actual is None:
-                    continue
-                if actual[2] != item["entry"]:
-                    reasons.append("frozen_identity_gear_entry_mismatch")
-                if (
-                    actual[3] != item["enchant_id"]
-                    or _compact_trailing_zero_gems(actual[4]) != _compact_trailing_zero_gems(item["gem_item_ids"])
-                    or actual[5] != item["reforge_id"]
-                ):
-                    reasons.append("frozen_identity_gear_modifiers_mismatch")
+        reasons.extend(_gear_identity_rejections(_runtime_gear_manifest(row), expected["gear"]))
     return list(dict.fromkeys(reasons))
 
 
-def _roster_identity(roster: list[dict[str, Any]]) -> tuple[tuple[Any, ...], ...] | None:
+def _gear_identity_rejections(actual_gear: Any, expected_gear: tuple[dict[str, Any], ...]) -> list[str]:
+    """A runtime gear manifest against the expected items (slots, entries, enchant, gems, reforge)."""
+    if actual_gear is None:
+        return ["frozen_identity_full_gear_manifest_missing"]
+    reasons: list[str] = []
+    actual_by_slot = {item[0]: item for item in actual_gear}
+    if set(actual_by_slot) != {item["slot"] for item in expected_gear}:
+        reasons.append("frozen_identity_full_gear_slots_mismatch")
+    for item in expected_gear:
+        actual = actual_by_slot.get(item["slot"])
+        if actual is None:
+            continue
+        if actual[2] != item["entry"]:
+            reasons.append("frozen_identity_gear_entry_mismatch")
+        if (
+            actual[3] != item["enchant_id"]
+            or _compact_trailing_zero_gems(actual[4]) != _compact_trailing_zero_gems(item["gem_item_ids"])
+            or actual[5] != item["reforge_id"]
+        ):
+            reasons.append("frozen_identity_gear_modifiers_mismatch")
+    return reasons
+
+
+def _roster_identity(
+    roster: list[dict[str, Any]], *, spec_scope_authorised: bool = False,
+) -> tuple[tuple[Any, ...], ...] | None:
     if len(roster) != 10 or any(not isinstance(row, dict) for row in roster):
         return None
     rows: list[tuple[Any, ...]] = []
     for row in sorted(roster, key=lambda value: value.get("slot") if isinstance(value.get("slot"), int) else -1):
         if any(field not in row for field in ROSTER_ID_FIELDS):
             return None
-        rows.append(tuple(row[field] for field in ROSTER_ID_FIELDS))
+        rows.append(_roster_row_projection(row, ROSTER_ID_FIELDS, spec_scope_authorised=spec_scope_authorised))
     return tuple(rows)
 
 
-def _roster_rejections(
+def _spec_contract_roster_rejections(
     runtime: dict[str, Any],
-    profile_name: str = "blackwing_descent_10n",
+    authority: Any,
+    *,
+    completed: bool = True,
 ) -> list[str]:
+    """A canonical full raid's roster against its verified route authority (capture_spec_transitions.py).
+
+    Membership (slot, class, GUID, account id and name, character name) is always checked against the plan.
+    `completed` (a completed-roster acceptance) requires every member to hold the wanted identity of the contract
+    in force and its talent group's provisioned talents, glyphs and gear. A transition or failure observation
+    (native recovery) requires a declared talent group, and outside a switch node the wanted identity and its
+    provisioned loadout; at a switch node a member may still be mid-switch."""
+    try:
+        from tools.raid_program.capture_spec_transitions import member_loadout_rejections, node_index
+    except ModuleNotFoundError:
+        from capture_spec_transitions import member_loadout_rejections, node_index
+    index = node_index(runtime)
     roster = runtime.get("roster")
-    if not isinstance(roster, list):
-        return ["roster_not_a_list"]
+    if index is None or index >= len(authority.node_ids) or not isinstance(roster, list):
+        return ["spec_contract_roster_identity_unavailable"]
+    contract = authority.in_force(index)
+    switching = contract is not None and contract.node_index == index
+    strict = completed or not switching
+    reasons: list[str] = []
+    seen: set[int] = set()
+    for row in roster:
+        if not isinstance(row, dict) or not _in_spec_contract_scope(row):
+            reasons.append("spec_contract_roster_row_out_of_scope")
+            continue
+        slot = row.get("slot")
+        member = authority.members.get(slot) if isinstance(slot, int) and not isinstance(slot, bool) else None
+        if member is None or slot in seen:
+            reasons.append("exact_frozen_bwd_10n_roster_identity")
+            continue
+        seen.add(slot)
+        reasons.extend(_membership_identity_rejections(row, member.membership(), check_position=True))
+        identity = (str(row.get("class_spec")), str(row.get("role")))
+        group = member.group_for(identity)
+        if group is None:
+            reasons.append("spec_contract_undeclared_talent_group")
+            continue
+        wanted = contract.wanted.get(slot) if contract is not None else member.initial
+        if strict and identity != wanted:
+            reasons.append("spec_contract_roster_identity_mismatch")
+        if strict:
+            reasons.extend(member_loadout_rejections(row, group))
+    if seen != set(authority.members):
+        reasons.append("exact_frozen_bwd_10n_roster_identity")
+    return list(dict.fromkeys(reasons))
+
+
+def _roster_membership_rejections(roster: list[Any]) -> tuple[list[str], list[dict[str, Any]]]:
+    """Membership identity every roster must show (slots, IDs, leases, class, subgroups, GUIDs)."""
     reasons: list[str] = []
     if len(roster) != 10:
         reasons.append("exact_roster")
@@ -344,6 +394,37 @@ def _roster_rejections(
         reasons.append("positive_roster_guids")
     if len(set(guids)) != 10:
         reasons.append("unique_roster_guids")
+    return reasons, rows
+
+
+def _roster_rejections(
+    runtime: dict[str, Any],
+    profile_name: str = "blackwing_descent_10n",
+    spec_authority: Any = None,
+    *,
+    completed: bool = True,
+) -> list[str]:
+    """`spec_authority` is the capture preflight's verified route authority
+    (capture_spec_transitions.load_route_authority); None means no spec scope,
+    and any scope marker is then rejected before it can mask identity."""
+    roster = runtime.get("roster")
+    if not isinstance(roster, list):
+        return ["roster_not_a_list"]
+    try:
+        from tools.raid_program.capture_spec_transitions import scope_marker_rejections
+    except ModuleNotFoundError:
+        from capture_spec_transitions import scope_marker_rejections
+    scope_reasons = scope_marker_rejections(runtime, spec_authority)
+    if scope_reasons:
+        return scope_reasons
+    if spec_authority is not None and spec_authority.contracts:
+        reasons, rows = _roster_membership_rejections(roster)
+        if not all(row.get("active") is True for row in rows):
+            reasons.append("all_roster_active")
+        if not all(row.get("lease_owned") is True for row in rows):
+            reasons.append("all_roster_leases_owned")
+        return reasons + _spec_contract_roster_rejections(runtime, spec_authority, completed=completed)
+    reasons, rows = _roster_membership_rejections(roster)
     roles = Counter(row.get("role") for row in rows)
     expected_roster = expected_bwd_10n_roster(profile_name)
     if roles != Counter(row[1] for row in expected_roster):
@@ -412,6 +493,7 @@ def accepted_foundation_status(
     *,
     profile_name: str = "blackwing_descent_10n",
     route_partition: dict[str, Any] | None = None,
+    spec_authority: Any = None,
 ) -> tuple[bool, list[str]]:
     runtime = status.get("raid_runtime") or {}
     reasons: list[str] = []
@@ -467,7 +549,7 @@ def accepted_foundation_status(
     reasons.extend(name for name, passed in checks.items() if not passed)
     if profile_name != "blackwing_descent_10n":
         reasons.extend(_completed_partition_rejections(status, route_partition))
-    reasons.extend(_roster_rejections(runtime, profile_name))
+    reasons.extend(_roster_rejections(runtime, profile_name, spec_authority))
     roster = runtime.get("roster")
     roster_guids = {
         row.get("guid") for row in roster if isinstance(row, dict)
@@ -513,6 +595,7 @@ def terminal_runtime_failure_reason(
     status: dict[str, Any],
     *,
     profile_name: str = "blackwing_descent_10n",
+    spec_authority: Any = None,
 ) -> tuple[str | None, list[str]]:
     """Return an exact active-attempt failure without requiring success state.
 
@@ -520,6 +603,10 @@ def terminal_runtime_failure_reason(
     route, and no ready check.  It must still be bound to the selected profile,
     exact leased roster, native group/instance, and active attempt before the
     capture controller is allowed to stop the shared worldserver.
+
+    A failure is a transition, not a completed roster: with a verified route
+    authority (`spec_authority`) a member may be mid-switch at a switch node.
+    Without one any spec scope is still rejected.
     """
 
     runtime = status.get("raid_runtime")
@@ -549,7 +636,8 @@ def terminal_runtime_failure_reason(
     }
     rejections.extend(name for name, passed in checks.items() if not passed)
     rejections.extend(
-        f"terminal_failure_{item}" for item in _roster_rejections(runtime, profile_name)
+        f"terminal_failure_{item}"
+        for item in _roster_rejections(runtime, profile_name, spec_authority, completed=False)
     )
     return (reason.strip() if not rejections else None), list(dict.fromkeys(rejections))
 
@@ -558,11 +646,18 @@ def accepted_native_recovery(
     statuses: list[dict[str, Any]],
     *,
     profile_name: str = "blackwing_descent_10n",
+    spec_authority: Any = None,
 ) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     runtimes = [status.get("raid_runtime") if isinstance(status, dict) else None for status in statuses]
     if not statuses or any(not isinstance(runtime, dict) for runtime in runtimes):
         return False, ["native_event_evidence_missing"]
+    try:
+        from tools.raid_program.capture_spec_transitions import SpecTransitionTracker, masking_authorised
+    except ModuleNotFoundError:
+        from capture_spec_transitions import SpecTransitionTracker, masking_authorised
+    spec_transitions = (SpecTransitionTracker(spec_authority)
+                        if spec_authority is not None and spec_authority.contracts else None)
 
     identity: tuple[Any, ...] | None = None
     roster_identity: tuple[tuple[Any, ...], ...] | None = None
@@ -584,7 +679,8 @@ def accepted_native_recovery(
         assert isinstance(runtime, dict)
         if statuses[index].get("ok") is not True:
             reasons.append("native_status_not_ok")
-        current_identity = _runtime_identity(runtime)
+        spec_scope_authorised = masking_authorised(runtime, spec_authority)
+        current_identity = _runtime_identity(runtime, spec_scope_authorised=spec_scope_authorised)
         if current_identity is None:
             reasons.append("native_identity_fields_missing")
         elif identity is None:
@@ -643,7 +739,8 @@ def accepted_native_recovery(
         ):
             reasons.append("native_identity_not_exact_bwd_10n")
 
-        current_roster = _roster_identity(runtime.get("roster") if isinstance(runtime.get("roster"), list) else [])
+        current_roster = _roster_identity(runtime.get("roster") if isinstance(runtime.get("roster"), list) else [],
+                                          spec_scope_authorised=spec_scope_authorised)
         if current_roster is None:
             reasons.append("native_roster_identity_missing")
         elif roster_identity is None:
@@ -652,9 +749,12 @@ def accepted_native_recovery(
             reasons.append("native_recovery_mixed_roster")
         reasons.extend(
             f"native_{reason}"
-            for reason in _roster_rejections(runtime, profile_name)
+            for reason in _roster_rejections(runtime, profile_name, spec_authority, completed=False)
             if reason not in {"all_roster_active", "all_roster_leases_owned"}
         )
+        if spec_transitions is not None:
+            reasons.extend(f"native_{reason}" for reason in spec_transitions.observe(
+                runtime, statuses[index].get("validation_route") or {}))
 
         sequence = runtime.get("evidence_sequence")
         if not _positive_int(sequence):

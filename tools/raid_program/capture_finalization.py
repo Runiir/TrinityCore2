@@ -38,6 +38,7 @@ from tools.raid_program.capture_runtime_acceptance import (
 )
 from tools.raid_program.capture_runtime_io import _artifact_record
 from tools.raid_program.capture_setup import CaptureSetup
+from tools.raid_program.capture_spec_transitions import spec_authority_kwargs
 from tools.raid_program.capture_telemetry_transport import (
     action_payloads,
     json_rows,
@@ -197,14 +198,18 @@ def resolve_personal_threat_episode_target(
 
 def normalized_batch_payload(
     log_bytes: bytes, *, profile_name: str = "blackwing_descent_10n",
+    spec_authority: Any = None,
 ) -> list[dict[str, Any]]:
     """Return an immutable, replayable JSONL representation of parsed evidence."""
+
+    def reporter(rows: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
+        return evidence_demux_report(rows, **kwargs, **spec_authority_kwargs(spec_authority))
 
     return _normalized_batch_payload_impl(
         log_bytes,
         profile_name=profile_name,
         json_row_parser=json_rows,
-        evidence_reporter=evidence_demux_report,
+        evidence_reporter=evidence_demux_report if spec_authority is None else reporter,
     )
 
 
@@ -214,8 +219,14 @@ def evidence_demux_report(
     fixture_terminal: dict[str, Any] | None = None,
     fixture_expected_identity: dict[str, Any] | None = None,
     personal_threat_episode_target: dict[str, Any] | None = None,
+    spec_authority: Any = None,
 ) -> dict[str, Any]:
-    """Independently bind every retained JSON row to one raid lifecycle."""
+    """Independently bind every retained JSON row to one raid lifecycle.
+
+    `spec_authority` is the capture's verified spec-switch route authority
+    (CaptureSetup.spec_authority); it is forwarded to the demux and, through
+    it, to the terminal-failure validator. None keeps HEAD's behaviour.
+    """
 
     return _evidence_demux_report_impl(
         rows,
@@ -225,9 +236,10 @@ def evidence_demux_report(
         fixture_terminal=fixture_terminal,
         fixture_expected_identity=fixture_expected_identity,
         personal_threat_episode_target=personal_threat_episode_target,
+        **spec_authority_kwargs(spec_authority),
     )
-def evidence_demux_rejections(rows: list[dict[str, Any]]) -> list[str]:
-    return evidence_demux_report(rows)["rejections"]
+def evidence_demux_rejections(rows: list[dict[str, Any]], *, spec_authority: Any = None) -> list[str]:
+    return evidence_demux_report(rows, **spec_authority_kwargs(spec_authority))["rejections"]
 
 
 def write_normalized_batch(path: Path, rows: list[dict[str, Any]]) -> tuple[str, int]:
@@ -367,9 +379,11 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     telemetry_abort = run.telemetry_abort
     log_bytes = run.log_bytes
 
-    normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name)
+    spec_authority = getattr(setup, "spec_authority", None)
+    spec_kwargs = spec_authority_kwargs(spec_authority)
+    normalized_rows = normalized_batch_payload(log_bytes, profile_name=profile_name, **spec_kwargs)
     telemetry_envelopes = _required_telemetry_envelope_report(
-        normalized_rows, profile_name=profile_name,
+        normalized_rows, profile_name=profile_name, **spec_kwargs,
     )
     raw_payload_sha256, raw_payload_rows = write_normalized_batch(raw_output, normalized_rows)
     # The complete log was decoded once into normalized_rows above.  Project
@@ -405,7 +419,8 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
     profiles = action_payloads(normalized_rows, "botauto_profile")
     stop_rows = action_payloads(normalized_rows, "botauto_stop")
     recovery_accepted, recovery_rejections = (
-        accepted_native_recovery(active_statuses, profile_name=profile_name) if recovery_required
+        accepted_native_recovery(active_statuses, profile_name=profile_name, **spec_kwargs)
+        if recovery_required
         else (True, ["native_recovery_not_required_for_diagnostic_partition"])
     )
     drudge_accepted, drudge_rejections = (
@@ -484,6 +499,7 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             else None
         ),
         personal_threat_episode_target=resolved_personal_threat_episode_target,
+        **spec_kwargs,
     )
     if (
         personal_threat_episode_target_binding is not None

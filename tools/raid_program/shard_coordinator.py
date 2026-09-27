@@ -48,6 +48,7 @@ import uuid
 from typing import Any, Callable, Mapping, Sequence
 
 from tools.bot_ml import run_live_bot_validation as harness
+from tools.raid_program.run_root_headroom import DEFAULT_MIN_HEADROOM_BYTES, GIB, safe_headroom
 from tools.raid_program.shared_instance_console import ConsoleTransport
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -353,6 +354,8 @@ class ShardConsoleTransport(ConsoleTransport):
     # Exchanges abandoned by an exception other than an operator interruption
     # (e.g. EIO reading the console log). The run cannot pass after one.
     transport_faults: int = 0
+    # Why the latched failure happened (a timed-out reply), for shard_run.json.
+    last_failure: dict[str, Any] | None = None
 
     @classmethod
     def adopt(cls, transport: ConsoleTransport, max_response_bytes: int = 256 * 1024 * 1024,
@@ -453,7 +456,23 @@ class ShardConsoleTransport(ConsoleTransport):
                     self.transport_faults += 1
                 raise
         self.failed = True
+        self.last_failure = timed_out_reply_receipt(command, bytes(output), marker, self.log_path)
         return output.decode(errors="replace"), 1, True
+
+
+def timed_out_reply_receipt(command: str, output: bytes, marker: re.Pattern[bytes],
+                            log_path: Path) -> dict[str, Any]:
+    """Why a reply never completed, and how much the console log could still grow.
+
+    A reply whose marker arrived without its closing ``TC>`` prompt was cut by
+    the worldserver's stdio: its write to the console log failed (a full
+    filesystem or user quota), so the rest will never arrive.
+    """
+    found = marker.search(output)
+    return {"reason": "reply_prompt_missing" if found else "reply_marker_missing",
+            "command": command, "response_bytes": len(output),
+            "reply_bytes_after_marker": len(output) - found.start() if found else 0,
+            "console_log_headroom": safe_headroom(Path(log_path).parent)}
 
 
 class SerializedConsole:
@@ -497,10 +516,14 @@ class SerializedConsole:
         # Every transport exception is caught here; the transport's own count
         # also covers faults raised outside this console.
         faults = max(self.transport_errors, int(getattr(self._transport, "transport_faults", 0) or 0))
-        return {"transport_failed": failed, "server_exited": exit_code is not None,
-                "server_exit_code": exit_code, "healthy": not failed and exit_code is None and not faults,
-                "abandoned_reply_pending": bool(getattr(self._transport, "dirty", False)),
-                "transport_faults": faults}
+        health = {"transport_failed": failed, "server_exited": exit_code is not None,
+                  "server_exit_code": exit_code, "healthy": not failed and exit_code is None and not faults,
+                  "abandoned_reply_pending": bool(getattr(self._transport, "dirty", False)),
+                  "transport_faults": faults}
+        last_failure = getattr(self._transport, "last_failure", None)
+        if last_failure is not None:
+            health["last_failure"] = last_failure
+        return health
 
 
 # ---------------------------------------------------------------- demultiplexing
@@ -774,17 +797,40 @@ def clear_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> 
             "failure_reason": reply.get("failure_reason")}
 
 
+# A full-raid cohort writes ~30 decision-trace rows per bot per second (~11 KB
+# each) while a delta poll exports at most 128 per bot: the delta never caught
+# up (pending pinned at the 4096-row cap, gap every poll) and each 30 s
+# heartbeat reply stayed ~13.7 MB of console log.  The full raid heartbeat
+# reads the newest rows instead, like the light combat heartbeat; boss shards
+# keep the delta export.
+FULL_RAID_HEARTBEAT_TRACE_LIMIT = 8
+
+
 def shard_script(spec: ShardSpec, policy: WatchdogPolicy) -> str:
     """The harness watchdog script, addressed to the shard, starting its profile."""
+    full_raid = is_full_raid_shard(spec)
     script = harness.command_script(
-        selector=policy.selector, trace_limit=policy.trace_limit, start=True, stop=True,
-        exit_server=False, cohort_id=spec.cohort_id, trace_delta=True,
+        selector=policy.selector,
+        trace_limit=min(policy.trace_limit, FULL_RAID_HEARTBEAT_TRACE_LIMIT) if full_raid else policy.trace_limit,
+        start=True, stop=True, exit_server=False, cohort_id=spec.cohort_id, trace_delta=not full_raid,
     )
     start = f".botauto start {spec.cohort_id}"
     lines = [f"{start} {spec.profile}" if line == start else line for line in script.splitlines()]
     if f"{start} {spec.profile}" not in lines:
         raise ShardRunError("watchdog script has no start command")
     return "\n".join(lines) + "\n"
+
+
+def terminal_trace_command(spec: ShardSpec, policy: WatchdogPolicy) -> str:
+    """The one bounded non-delta trace a failed full-raid shard captures before its stop.
+
+    Its heartbeat has no delta trace, so the terminal drain has no delta to
+    walk; this single reply (the newest rows per bot) keeps the failing bots'
+    last decisions.  Boss shards drain their delta heartbeat as before.
+    """
+    if not is_full_raid_shard(spec):
+        return ""
+    return f".botauto trace {spec.cohort_id} {policy.selector} {policy.trace_limit}"
 
 
 def observed_instance(report: Mapping[str, Any] | None) -> tuple[int, int]:
@@ -980,6 +1026,10 @@ class ShardCoordinator:
                 # Raid-program shards re-pull after a full wipe: the watchdog
                 # sends the leader's native ready check once recovery holds.
                 native_readycheck=True,
+                # A console reply that never completed is infrastructure loss,
+                # not the emergency cap (shard_run.json names the transport).
+                console_timeout_reason=CONSOLE_COMMAND_TIMEOUT_REASON,
+                terminal_trace_command=terminal_trace_command(spec, policy),
             )
             outcome.output, outcome.returncode, outcome.timed_out = output, returncode, timed_out
             outcome.command = list(command)
@@ -1201,6 +1251,7 @@ RAID_TARGETS_DIR = REPO_ROOT / "experiments/configs/raid_targets"
 # Sidecars (raid_target_roster_variants_v1) that let a target judge another
 # roster without changing the accepted target's bytes (its verdicts pin them).
 RAID_TARGET_VARIANTS_DIR = REPO_ROOT / "experiments/configs/raid_target_roster_variants"
+CONSOLE_COMMAND_TIMEOUT_REASON = "console_command_timeout"
 # Full-raid cohorts are recorded by the end-to-end clear recorder, not a boss scoreboard.
 FULL_RAID_COHORT_RE = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*_(?:10|25)[nh]_full_c[0-9]+")
 
@@ -1438,13 +1489,15 @@ def check_plan_scenario_rows(plan: ShardRunPlan, config: Path) -> dict[str, Any]
 
 def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_root: Path,
              scenario_dir: Path, provisioning_config: Path, gear_profiles: Path,
-             flat: bool = False, crash_capture: bool = False) -> dict[str, Any]:
+             flat: bool = False, crash_capture: bool = False,
+             min_headroom_bytes: int = DEFAULT_MIN_HEADROOM_BYTES) -> dict[str, Any]:
     from tools.raid_program import crash_capture as crash_capture_module
     from tools.raid_program.raid_shard_provisioning import RaidShardProvisioningError
     from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
     from tools.raid_program.shared_instance_fixture import sha256
 
     run_root.mkdir(parents=True, exist_ok=False)
+    headroom = require_run_root_headroom(run_root, min_headroom_bytes)
     config = write_shard_config(base_config, run_root)
     checks = preflight(plan, config=config, run_root=run_root, scenario_dir=scenario_dir)
     binary_sha256 = sha256(worldserver)
@@ -1484,6 +1537,7 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                    "error": f"raid shard provisioning refused: {error}", "shards": [], "ingest": [],
                    "preparation": {**preparation, "raid_shard_provisioning": error.report}}
     summary["worldserver"] = {"path": str(worldserver), "sha256": binary_sha256, "lifecycle": lifecycle}
+    summary["run_root_headroom"] = {"at_launch": headroom, "at_close": safe_headroom(run_root)}
     if crash_capture:
         # Only under --gdb-backtrace: a default run's shard_run.json is unchanged.
         summary["worldserver"].update(crash_capture=True,
@@ -1491,6 +1545,27 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
     apply_worldserver_exit_gate(summary, lifecycle)
     harness.write_json(run_root / "shard_run.json", summary)
     return summary
+
+
+class RunRootHeadroomError(ShardRunError):
+    """The run root cannot hold the console log: refused before any server starts."""
+
+
+def require_run_root_headroom(run_root: Path, minimum_bytes: int) -> dict[str, Any]:
+    """Refuse a run whose console log would exhaust free space or the user quota.
+
+    The worldserver keeps running when its stdout write fails; replies are cut
+    and the run ends as a console timeout.  Refusing up front names the cause.
+    """
+    headroom = safe_headroom(run_root)
+    available = headroom.get("headroom_bytes")
+    if minimum_bytes > 0 and (available is None or available < minimum_bytes):
+        raise RunRootHeadroomError(
+            f"run_root_headroom_insufficient: {run_root} has {available} writable bytes "
+            f"(filesystem {headroom.get('filesystem_available_bytes')}, user quota "
+            f"{headroom.get('quota_available_bytes')}); need {minimum_bytes}. "
+            "Archive old run directories with DVC and remove them, or choose another --output-dir.")
+    return headroom
 
 
 def apply_worldserver_exit_gate(summary: dict[str, Any], lifecycle: Mapping[str, Any]) -> None:
@@ -1542,6 +1617,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--flat-shard-dir", action="store_true",
                         help="exactly one --shard: its run directory is --output-dir itself (a scoreboard kill dir)")
     parser.add_argument("--dry-run", action="store_true", help="validate the plan and print the shard scripts")
+    parser.add_argument("--min-run-root-headroom-gib", type=float,
+                        default=DEFAULT_MIN_HEADROOM_BYTES / GIB,
+                        help="refuse to launch unless the output directory's filesystem and user quota "
+                             "leave this much writable space (0 disables)")
     parser.add_argument("--gdb-backtrace", action="store_true",
                         help="run the worldserver under gdb -batch; a fatal signal writes "
                              "<output-dir>/worldserver.crash_backtrace.txt (exit status 128 + signal)")
@@ -1566,11 +1645,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     output = args.output_dir.resolve()
     if output.is_relative_to(REPO_ROOT):
         raise SystemExit("--output-dir must be outside the source tree (evidence is archived with DVC)")
-    summary = run_live(plan, worldserver=args.worldserver.resolve(), base_config=args.config.resolve(),
-                       run_root=output, scenario_dir=args.validation_scenario_dir.resolve(),
-                       provisioning_config=args.validation_provisioning_config.resolve(),
-                       gear_profiles=args.gear_profiles.resolve(), flat=args.flat_shard_dir,
-                       crash_capture=args.gdb_backtrace)
+    try:
+        summary = run_live(plan, worldserver=args.worldserver.resolve(), base_config=args.config.resolve(),
+                           run_root=output, scenario_dir=args.validation_scenario_dir.resolve(),
+                           provisioning_config=args.validation_provisioning_config.resolve(),
+                           gear_profiles=args.gear_profiles.resolve(), flat=args.flat_shard_dir,
+                           crash_capture=args.gdb_backtrace,
+                           min_headroom_bytes=int(args.min_run_root_headroom_gib * GIB))
+    except RunRootHeadroomError as error:
+        raise SystemExit(str(error)) from None
     print(json.dumps({"shard_run": str(output / "shard_run.json"), "terminal_reason": summary.get("terminal_reason"),
                       "shards": [(row["cohort_id"], row["completion_reason"], row["native_clear"])
                                  for row in summary.get("shards", [])]}))
