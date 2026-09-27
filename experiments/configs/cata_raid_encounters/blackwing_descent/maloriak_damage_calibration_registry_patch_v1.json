@@ -1,10 +1,9 @@
 {
   "schema": "maloriak_damage_calibration_registry_patch_v1",
   "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
-  "apply": "Merge every key of creatures into target.creatures verbatim (no existing key is replaced).",
+  "apply": "Replace target.creatures['41378'] with creatures['41378'] verbatim. Every other key is already in the target verbatim and stays unchanged (49974/49980/49986, the adds and helpers remain open or not_applicable).",
   "owner": "coordinator",
-  "staged_sql": null,
-  "staged_sql_reason": "No DamageModifier is derived without a matched same-mode WCL melee U sample (classic.warcraftlogs.com gated on 2026-09-25). The native rolls at modifier 1 are recorded so the calibration is a single division once samples exist; the staged SQL goes under sql/custom/staged/world/ with 'maloriak' in the name at that point.",
+  "staged_sql": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
   "creatures": {
     "41378": {
       "name": "Maloriak",
@@ -13,8 +12,8 @@
       "mode": "10N",
       "base_entry": 41378,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 9.5,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,
@@ -27,10 +26,46 @@
         "min": 4553.3,
         "max": 6764.2
       },
-      "open_reason": "No same-mode (10N) Maloriak melee U sample: classic.warcraftlogs.com was behind a human-verification gate on 2026-09-25. Extract ability-1 rows from Maloriak with Scarlet Fever/Demoralizing windows per maloriak_wcl_dps_reference_v1.json (views.boss_melee), first from reports MxFq7TRbvnjGY1hJ and Y8ajQ7dbmKMG1RZy. Historical 10N guide: about 25k per hit after tank mitigation, every 1.5-2 s. Template values come from the TDB dump; read back the live creature_template row before staging.",
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 34,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 9.41,
+          "upper": 9.81,
+          "with_auto_attack_bonus": {
+            "lower": 9.41,
+            "upper": 9.71
+          }
+        },
+        "bounds_derivation": "lower = 63,630 / 6,764.2 (largest hit, unreduced); upper = 44,663 / 4,553.3 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 40,559 / (0.9 * 4,553.3) = 9.90, is looser); m * 1.01 must also stay <= 9.81",
+        "cross_check": "Mean of the 26 Scarlet Fever rows 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. At 9.5 the native U-stage envelope 43,689-64,903 (39,320-58,412 under -10%) contains every observed row. No weapon-percent ability exists for a second cross-check.",
+        "sample_note": "Scarlet Fever 81130 was on Maloriak 3.9-100.2 s and 102.9-125.0 s, so only 3 of 29 landed rows are unreduced; Demoralizing Roar/Shout and Vindication had no events.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_maloriak_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 40559,
+        "u_max": 63630,
+        "u_mean": 48573.5,
+        "u_mean_basis": "mean of all 29 landed U values (3 unreduced mean 51,209.3; 26 under Scarlet Fever mean 48,269.4)",
+        "landed_samples": 29,
+        "avoided_samples": 11,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_34"
+      },
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
-        "value_key": "native_melee_roll_modifier_1"
+        "value_key": "boss_melee",
+        "samples_field": "wcl_10N_samples"
       }
     },
     "49974": {
@@ -234,5 +269,6 @@
       "damage_modifier": null,
       "reason": "Heroic presenter (npc_maloriak_lord_victor_nefarius, NullCreatureAI) that throws the Black vial; never melees."
     }
-  }
+  },
+  "staged_sql_apply": "Move the staged file to sql/custom/world/ (or apply with mysql) right before the Maloriak measurement batch, after reading back the live creature_template row 41378 (expected DamageModifier 1, BaseAttackTime 1500, BaseVariance 1; read back 2026-09-27). A live kill must then show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL reference."
 }

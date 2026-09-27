@@ -18,16 +18,24 @@
     "unseeded_prerequisites": "The laboratory patrol (Drakonid Slayer 250117 leading Drakeadon Mongrels 250118/250119) stays native and is the shard's trash node; Maimgor 250109 is off the junction-to-laboratory path (about 34 yards) and is not pulled."
   },
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
-  "matched_reference_ids": [],
-  "reference_status": "pending_extraction",
+  "matched_reference_ids": [
+    "MxFq7TRbvnjGY1hJ-fight34",
+    "VL3fW9wNm2PRJDYt-fight13"
+  ],
+  "reference_status": "extracted",
   "reference_gaps": {
-    "all_specs": "No matched Maloriak 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract; the Magmaw 10N references are a different encounter and are never borrowed.",
-    "blood_death_knight": "Tank. No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "feral_druid_tank": "Off-tank on Aberrations and Prime Subjects. No WCL reference and no WoWSims fallback (the index has feral_druid_dps only, a different role): status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Maloriak costs interrupts, Remedy dispels, Flash Freeze breaks, add damage and phase positioning, so these targets are not encounter-matched."
+    "with_wowsims_fallback": "fire_mage and assassination_rogue are absent from both matched kills and are judged against 0.90 x verified WoWSims DPS. WoWSims is a single-target patchwerk reference; Maloriak costs interrupts, Remedy dispels, Flash Freeze breaks, add damage and phase positioning, so these targets are not encounter-matched.",
+    "wcl_matched": "Median over MxFq7TRbvnjGY1hJ fight 34 (2024-10-28, 125.1 s) and VL3fW9wNm2PRJDYt fight 13 (2024-10-21, 209.6 s), all targets: blood_death_knight 11,681.9 (fight 34 main tank only), survival_hunter median(25,375.4, 16,145.0), retribution_paladin median(19,708.8, 20,230.9), elemental_shaman 23,356.4 (fight 34), demonology_warlock 18,229.8 (fight 13, two Warlocks).",
+    "no_reference_until_wcl": [
+      "feral_druid_tank"
+    ],
+    "feral_druid_tank_role": "No role-matched reference: the only Feral in the matched kills (Labraizz, fight 13, 16,202.0 DPS) tanked Maloriak, while the bot's Feral tanks the adds. A boss-tank reference is not treated as matched for the add-tank role, and feral_druid_tank has no verified WoWSims fallback, so it has no DPS target. Its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so the missing reference no longer fails the verdict."
   },
-  "unmatched_reference_notes": {},
-  "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json (actors empty; add wcl_cast_timelines here once extracted)",
+  "unmatched_reference_notes": {
+    "MxFq7TRbvnjGY1hJ-fight34:combat_rogue,shadow_priest,balance_druid": "Specs the bot roster does not field; context only.",
+    "VL3fW9wNm2PRJDYt-fight13:frost_death_knight,shadow_priest": "Specs the bot roster does not field; context only. The add-tank Blood DK Orageux (1,117.2 DPS) is excluded from actor_dps.",
+    "VL3fW9wNm2PRJDYt-fight13:casts": "Feral tank and Demonology casts are in maloriak_wcl_cast_timelines_fight13_v1.json; the scoreboard timeline comparison uses fight 34 only."
+  },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
   "actor_dps_ratio": 0.95,
@@ -45,6 +53,14 @@
   "roles_without_dps_target": [
     "healer"
   ],
+  "dps_gate_exempt_specs": [
+    "feral_druid_tank"
+  ],
+  "dps_gate_exempt_decision": {
+    "source": "user decision 2026-09-27",
+    "quote": "Just count blood tank as dps, leave feral out. Feral dps is negligible, but bdk is relevant.",
+    "effect": "feral_druid_tank DPS is recorded and reported as informational: no parity gate, and a missing reference does not fail the verdict. blood_death_knight stays gated against its WCL reference. no_reference_until_wcl / no_reference_specs entries for feral_druid_tank remain as documentation only."
+  },
   "healer_status": "Healers have no DPS target; their status follows the encounter status.",
   "fallback_reference": {
     "source": "wowsims",
@@ -54,7 +70,7 @@
     "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
   },
   "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
-  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass. Specs listed in dps_gate_exempt_specs are the exception (user decision 2026-09-27): their DPS is informational, a missing reference fails nothing, and like a healer their status follows the encounter.",
   "roster": {
     "11004001": {
       "name": "Bwmalnba",
@@ -174,5 +190,6 @@
       "--output-dir",
       "{output_dir}"
     ]
-  }
+  },
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json"
 }

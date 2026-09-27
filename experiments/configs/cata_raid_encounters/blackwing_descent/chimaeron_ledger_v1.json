@@ -14,7 +14,7 @@
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
   "unresolved_material_count": 9,
   "encounter": "chimaeron",
-  "purpose": "Source, value and timer ledger for Chimaeron. Round 2 (2026-09-25) adds execution-client spell rows, TDB rows, pinned addon timers and the native repairs; WCL observations are blocked and listed as open work.",
+  "purpose": "Source, value and timer ledger for Chimaeron. Round 2 (2026-09-25) adds execution-client spell rows, TDB rows, pinned addon timers and the native repairs; WCL observations are blocked and listed as open work. Round 1 of the BWD 10N raid program (2026-09-27) adds WCL 10N observations from two kills (MxFq7TRbvnjGY1hJ fight 27, xAhkN2y9YP3KRmnJ fight 14) read through GPT-6 Astra's browser surface: melee U samples, health derivation, boss timeline and per-spec DPS.",
   "scope": [
     "10N",
     "10H",
@@ -23,7 +23,7 @@
   ],
   "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
   "historical_repository_claim_revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-  "retrieved_utc_date": "2026-09-25",
+  "retrieved_utc_date": "2026-09-27",
   "source_catalog": [
     {
       "id": "wowhead_cata_chimaeron_2024",
@@ -330,6 +330,26 @@
       "accessed": "2026-09-25",
       "authority": "access record, not evidence",
       "notes": "Every shared preview tab was redirected to /human-challenge ('One Quick Check ... I am a human and not a bot'); WebFetch returned HTTP 403. The coordinator asked the user to pass the check; extraction resumes afterwards."
+    },
+    {
+      "id": "wcl_MxFq7TRbvnjGY1hJ_27",
+      "title": "Warcraft Logs report MxFq7TRbvnjGY1hJ fight 27: Chimaeron, Normal, 10 players, kill",
+      "publisher": "classic.warcraftlogs.com (Cataclysm Classic)",
+      "published_or_updated": "2024-10-28 (report date)",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27",
+      "accessed": "2026-09-27",
+      "authority": "same-mode observed kill (post-4.2 tuning era: derived max HP equals native 10N health)",
+      "notes": "95.3 s kill, 1 tank (Blood DK) + 1 healer (Holy Paladin) + 8 DPS, average item level 359.5, raid DPS 217,144.7 (All Enemies). Views: summary, damage-done, deaths, damage-taken events ability 1 options 4098 (23 rows, one page), Break 82881 debuff events, enemy debuffs/buffs, enemy casts, boss resource rows. Captured by GPT-6 Astra via codex exec with CUA_REPL_ENABLED_SURFACES=browser (no verification page appeared, none was clicked). Local capture: ~/.cache/chimaeron_wcl/extraction.json (not retained in git)."
+    },
+    {
+      "id": "wcl_xAhkN2y9YP3KRmnJ_14",
+      "title": "Warcraft Logs report xAhkN2y9YP3KRmnJ fight 14: Chimaeron, Normal, 10 players, kill",
+      "publisher": "classic.warcraftlogs.com (Cataclysm Classic)",
+      "published_or_updated": "2025-06-11 (report date)",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14",
+      "accessed": "2026-09-27",
+      "authority": "same-mode observed kill",
+      "notes": "60.0 s kill, 1 tank (Blood DK) + 1 healer (Restoration Shaman) + 8 DPS, average item level 401.4, raid DPS 345,080.1. One Massacre (begin 25.959 s), Mortality 50.153 s. Fire Mage died at 35 s (Cauterize) and is absent from the Damage Done table. Report Y8ajQ7dbmKMG1RZy has no Chimaeron encounter."
     }
   ],
   "values": [
@@ -350,11 +370,23 @@
       "native_derivation": "ceil(gt_npc_total_hp_exp3[88].Warrior 85892 x HealthModifier): 10N 43296 x241, 25N 47774 x844, 10H 47775 x422, 25H 47776 x1476 (TDB 4.3.4 snapshot; no later update touches these modifiers).",
       "unit": "hit points",
       "source_refs": [
-        "wowhead_cata_chimaeron_2024",
-        "tdb_434_22011_chimaeron_rows"
+        "tdb_434_22011_chimaeron_rows",
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wowhead_cata_chimaeron_2024"
       ],
-      "status": "conflict",
-      "notes": "Heroic native values match the guide; both normal modes are exactly 1/1.25 of the guide value. Magmaw's native normal health matches its WCL-derived health, so a generic normal-mode nerf does not explain it. Resolve with a WCL 10N health derivation (tools.raid_program.derive_encounter_health) before changing HealthModifier."
+      "status": "resolved_10N (WCL-derived 20,699,972 equals native); guide 25.9M is not the observed Classic value",
+      "notes": "Heroic native values match the guide; both normal modes are exactly 1/1.25 of the guide value. Magmaw's native normal health matches its WCL-derived health, so a generic normal-mode nerf does not explain it. Resolve with a WCL 10N health derivation (tools.raid_program.derive_encounter_health) before changing HealthModifier. 2026-09-27: six consecutive resource rows of MxFq7TRbvnjGY1hJ fight 27 derive exactly 20,699,972 (native 10N). 25N remains unobserved.",
+      "wcl_10N_derivation": {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "fight": 27,
+        "actor_id": 304,
+        "derived_max_health": 20699972,
+        "tool": "tools.raid_program.derive_encounter_health",
+        "intervals": 6,
+        "observation_kind": "derived_from_rendered_resource_changes",
+        "display": "20.7m",
+        "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27"
+      }
     },
     {
       "key": "boss_melee",
@@ -379,12 +411,251 @@
       "native_derivation": "(gt_npc_damage_by_class_exp3[88].Warrior 2947.9421 x {1, 1.5} + creature_classlevelstats(88,1).attackpower 1226 / 14 x BaseVariance 1) x BaseAttackTime 4.0 s x DamageModifier; the native pipeline adds +1% to auto attacks. Current DamageModifier is the upstream reset value 1 (TDB snapshot had 265 under the legacy damage formula).",
       "unit": "damage per swing before target mitigation (melee_resolution.after_attacker_bonus_amount)",
       "source_refs": [
+        "icy_veins_cata_chimaeron_2024",
         "tdb_434_22011_chimaeron_rows",
-        "icy_veins_cata_chimaeron_2024"
+        "wcl_MxFq7TRbvnjGY1hJ_27"
       ],
-      "status": "unresolved",
-      "wcl_10N_samples": null,
-      "notes": "Icy Veins corroborates the 4 s swing interval. The DamageModifier calibration needs same-mode WCL melee U samples (ability 1) on a target with no Break stacks; extraction is blocked by the WCL human-verification gate (2026-09-25)."
+      "status": "resolved_10N (DamageModifier 20, staged)",
+      "wcl_10N_samples": {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "fight": 27,
+        "mode": "10N",
+        "date": "2024-10-28",
+        "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27&type=damage-taken&view=events&hostility=0&ability=1&options=4098&target=304",
+        "recipient": "Wongelrainer (Blood Death Knight, only tank; Break 1-4 stacks from 4.6 s)",
+        "done_reduction_windows": {
+          "Scarlet Fever 81130": [
+            [
+              5.247,
+              34.255
+            ],
+            [
+              52.519,
+              81.522
+            ]
+          ],
+          "Demoralizing Roar 99": [],
+          "Demoralizing Shout 1160": [],
+          "Vindication 26017": []
+        },
+        "landed": [
+          {
+            "t": 4.647,
+            "u": 282216,
+            "amount": 67376,
+            "absorbed": 18096,
+            "mitigation_pct": 69.71,
+            "overkill": null,
+            "break_stacks": null,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 9.468,
+            "u": 290929,
+            "amount": 75354,
+            "absorbed": 34784,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": 1,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 9.468,
+            "u": 304452,
+            "amount": 114474,
+            "absorbed": 783,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": 1,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 14.265,
+            "u": 287639,
+            "amount": 28871,
+            "absorbed": 52798,
+            "mitigation_pct": 71.61,
+            "overkill": null,
+            "break_stacks": 1,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 19.069,
+            "u": 285219,
+            "amount": null,
+            "absorbed": 107977,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": null,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 34.78,
+            "u": 340603,
+            "amount": 89567,
+            "absorbed": 65165,
+            "mitigation_pct": 54.57,
+            "overkill": null,
+            "break_stacks": 2,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 39.581,
+            "u": 301245,
+            "amount": 33010,
+            "absorbed": 103842,
+            "mitigation_pct": 54.57,
+            "overkill": null,
+            "break_stacks": null,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 44.395,
+            "u": 341477,
+            "amount": 95879,
+            "absorbed": 130352,
+            "mitigation_pct": 33.75,
+            "overkill": null,
+            "break_stacks": 3,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 44.395,
+            "u": 253562,
+            "amount": 17761,
+            "absorbed": 150225,
+            "mitigation_pct": 33.75,
+            "overkill": null,
+            "break_stacks": 3,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 49.183,
+            "u": 276630,
+            "amount": 22352,
+            "absorbed": 160917,
+            "mitigation_pct": 33.75,
+            "overkill": null,
+            "break_stacks": 3,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 53.996,
+            "u": 288929,
+            "amount": 93450,
+            "absorbed": 97967,
+            "mitigation_pct": 33.75,
+            "overkill": null,
+            "break_stacks": null,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 69.576,
+            "u": 314547,
+            "amount": 70193,
+            "absorbed": 167966,
+            "mitigation_pct": 24.29,
+            "overkill": null,
+            "break_stacks": 4,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 74.376,
+            "u": 292401,
+            "amount": 36679,
+            "absorbed": 184711,
+            "mitigation_pct": 24.29,
+            "overkill": null,
+            "break_stacks": 4,
+            "done_reduction_aura": "Scarlet Fever"
+          },
+          {
+            "t": 83.991,
+            "u": 305863,
+            "amount": 30133,
+            "absorbed": 85659,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": 4,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 88.786,
+            "u": 345349,
+            "amount": 5669,
+            "absorbed": 125071,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": 4,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 88.797,
+            "u": 266519,
+            "amount": 12285,
+            "absorbed": 88613,
+            "mitigation_pct": 62.14,
+            "overkill": null,
+            "break_stacks": 4,
+            "done_reduction_aura": null
+          },
+          {
+            "t": 93.595,
+            "u": 284761,
+            "amount": 28,
+            "absorbed": null,
+            "mitigation_pct": 24.29,
+            "overkill": 215578,
+            "break_stacks": null,
+            "done_reduction_aura": null
+          }
+        ],
+        "avoided": [
+          {
+            "t": 0,
+            "hit_type": "parry"
+          },
+          {
+            "t": 23.87,
+            "hit_type": "parry"
+          },
+          {
+            "t": 23.878,
+            "hit_type": "parry"
+          },
+          {
+            "t": 64.771,
+            "hit_type": "miss"
+          },
+          {
+            "t": 74.376,
+            "hit_type": "parry"
+          },
+          {
+            "t": 79.192,
+            "hit_type": "dodge"
+          }
+        ],
+        "limitations": [
+          "U is WCL's unmitigated estimate; M% moves with Break stacks while U does not, so U excludes Break (target-side).",
+          "break_stacks null where a Break change shares the melee timestamp.",
+          "Only one tank took every swing; no Double Attack tank without Break exists in this kill.",
+          "Scarlet Fever rows average 294,874 versus 299,823 unreduced: smaller than the expected 10%. The lower calibration bound comes from the largest reduced row (314,547 / (0.9 x 18,037.9) = 19.3757), the upper from the smallest unreduced row."
+        ]
+      },
+      "notes": "Swing interval in the WCL kill is 4.8 s (4.0 s base slowed 20% by Frost Fever). 25N/10H/25H (BaseAttackTime 2000) remain uncalibrated; do not copy the 10N value.",
+      "calibration_10N": {
+        "damage_modifier": 20.0,
+        "bounds": {
+          "lower": 19.3757,
+          "upper": 20.88,
+          "with_auto_attack_bonus_lower": 19.1838,
+          "with_auto_attack_bonus_upper": 20.67
+        },
+        "staged_sql": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+        "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json",
+        "test": "tests/test_chimaeron_damage_modifier.py"
+      }
     },
     {
       "key": "pips_mixture_health_floor",
@@ -603,26 +874,30 @@
   "timers": [
     {
       "key": "caustic_slime",
-      "native": "first 5 s after engage, repeat 5 s, 19 s after Massacre cast start",
+      "native": "first 15 s after engage (repaired 2026-09-27; was 5 s), repeat 5 s, 19 s after Massacre cast start",
       "addons": "BigWigs: 15 s after engage and after Massacre success; DBM: always 19 s after Massacre (cast start)",
       "guides": "every 5 s",
-      "status": "post-Massacre resolved (19 s); first cast after engage conflicts (5 s vs 15 s)",
+      "status": "first cast 15 s (WCL + BigWigs) - native repaired 2026-09-27 from 5 s; post-Massacre 19 s agrees; 5 s repeat vs observed ~6 s impacts left unchanged (2 intervals)",
       "source_refs": [
-        "repo_boss_chimaeron",
         "bigwigs_cataclysm_v11_0_13_chimaeron",
-        "dbm_cataclysm_4b02efe_chimaeron"
-      ]
+        "dbm_cataclysm_4b02efe_chimaeron",
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27"
+      ],
+      "wcl_10N": "MxFq7TRbvnjGY1hJ fight 27: 82935 impacts (debuff+damage, 2 targets) at 17.17/17.52, 23.52/23.61, 47.47/47.62, 53.32/53.58 s; none before 17 s. Massacre begins 25.97 and 55.96 s. Impact 2.2-2.5 s after the cast time implied by 15 s / 19 s after Massacre start (missile flight). Observed repeat 5.9-6.4 s between impacts (2 intervals)."
     },
     {
       "key": "break",
       "native": "5 s, repeat 15 s, 11 s after Massacre cast start",
       "addons": "BigWigs CD 4.8 / 14.2 / 13.6 after Massacre start; DBM 4.5 / 15 / 14 after Massacre start",
-      "status": "initial and repeat agree; post-Massacre conflict (11 s vs 13.6-14 s)",
+      "status": "initial agrees; repeat observed 14.4 s (3 swings) vs native 15 s; post-Massacre observed 13.6 s (2 samples, swing-locked) vs native 11 s - left open: retail Break appears swing-bound, a fixed 13.6 s timer would only match at 4.8 s swings",
       "source_refs": [
-        "repo_boss_chimaeron",
         "bigwigs_cataclysm_v11_0_13_chimaeron",
-        "dbm_cataclysm_4b02efe_chimaeron"
-      ]
+        "dbm_cataclysm_4b02efe_chimaeron",
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27"
+      ],
+      "wcl_10N": "MxFq7TRbvnjGY1hJ fight 27: Break applications/stacks at 4.65, 19.07, 39.58, 54.00, 69.58, 83.99 s, each on a melee swing timestamp (swings every 4.8 s, so 14.4 s = 3 swings). After Massacre cast start (25.97, 55.96): 13.62 s both times, = second swing after the Massacre melee reset; matches BigWigs 13.6."
     },
     {
       "key": "double_attack",
@@ -631,22 +906,27 @@
       "guides": "about 10 s",
       "status": "native and DBM agree on 15 s; guides differ",
       "source_refs": [
-        "repo_boss_chimaeron",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "icy_veins_cata_chimaeron_2024"
-      ]
+        "icy_veins_cata_chimaeron_2024",
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27"
+      ],
+      "wcl_10N": "Double Attack 88826 applied on the same swings as Break (4.65, 19.07, 39.58, 54.00, 69.58, 83.99 s) and removed on the next swing (paired melee rows at 9.47, 44.40, 74.38, 88.79/88.80 s; 23.87/23.88 double parry; 59.97 removed by Massacre)."
     },
     {
       "key": "massacre",
       "native": "cast start 26 s, repeat 30 s, 4 s cast",
       "addons": "DBM 26 / 30; BigWigs 25 after engage, 25 after success",
-      "status": "resolved within 1 s",
+      "status": "resolved (WCL agrees with native)",
       "source_refs": [
-        "repo_boss_chimaeron",
-        "dbm_cataclysm_4b02efe_chimaeron",
         "bigwigs_cataclysm_v11_0_13_chimaeron",
-        "client_434_dbc_chimaeron_20260925"
-      ]
+        "client_434_dbc_chimaeron_20260925",
+        "dbm_cataclysm_4b02efe_chimaeron",
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_xAhkN2y9YP3KRmnJ_14"
+      ],
+      "wcl_10N": "MxFq7TRbvnjGY1hJ fight 27: begin 25.966, success 29.970; begin 55.958, success 59.972. xAhkN2y9YP3KRmnJ fight 14: begin 25.959, success 29.964. Agrees with native 26/30 s and 4 s cast."
     },
     {
       "key": "systems_failure",
@@ -654,10 +934,13 @@
       "addons": "DBM: 26 s; after the 2nd or 3rd Massacre, 3rd always",
       "status": "duration resolved; probability conflict",
       "source_refs": [
-        "repo_boss_chimaeron",
+        "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "client_434_dbc_chimaeron_20260925"
-      ]
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_xAhkN2y9YP3KRmnJ_14"
+      ],
+      "wcl_10N": "No Systems Failure or Feud in either kill (fight 27 had two Massacres, fight 14 one). Consistent with DBM's 'not before the 2nd' and not contradicting native 40/60% rolls; no probability evidence."
     },
     {
       "key": "wake_sequence",
@@ -756,12 +1039,12 @@
     {
       "key": "bileotron_probability_and_reroute_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Reroute 26000 ms resolved from client rows. Knockout probability conflicts: native 40/60/80/100%, DBM 'after massacre 2~3 cast ... 3rd 100%'. Needs Systems Failure versus Massacre counts from several WCL kills."
+      "evidence_gap": "Reroute 26000 ms resolved from client rows. Knockout probability conflicts: native 40/60/80/100%, DBM 'after massacre 2~3 cast ... 3rd 100%'. Needs Systems Failure versus Massacre counts from several WCL kills. Two WCL 10N kills (2 and 1 Massacres) show no Systems Failure; more and longer kills are needed."
     },
     {
       "key": "event_cadence",
       "status": "fidelity_blocked",
-      "evidence_gap": "Massacre 26/30 s and Break 15 s agree with DBM. Open: first Caustic Slime after engage (native 5 s, BigWigs 15 s), Break/Double Attack after Massacre (native 11 s, addons 13.6-14 s), wake-up (native 23 s, BigWigs 30 s). Needs WCL cast/aura timelines."
+      "evidence_gap": "WCL 10N (MxFq7TRbvnjGY1hJ fight 27): Massacre 26/30 s confirmed; first Caustic Slime 15 s confirmed and repaired natively. Open: Break/Double Attack are swing-locked in retail (every 3 swings, 13.6 s after Massacre start at 4.8 s swings) versus native 11 s/15 s timers; slime repeat (5 s native vs ~6 s between impacts); wake-up (native 23 s, BigWigs 30 s)."
     },
     {
       "key": "spell_data",
@@ -776,7 +1059,7 @@
     {
       "key": "mode_damage_scaling",
       "status": "fidelity_blocked",
-      "evidence_gap": "Normal health conflicts (native 20.70M/72.49M vs guide 25.9M/90.6M; heroic agrees). Boss melee DamageModifier is uncalibrated (upstream value 1) pending WCL U samples."
+      "evidence_gap": "10N resolved: WCL-derived health 20,699,972 equals native, and melee DamageModifier 20 is staged from 17 WCL U samples. 25N/10H/25H health (25N native 72.49M vs guide 90.6M) and melee (BaseAttackTime 2000) have no same-mode sample."
     },
     {
       "key": "helper_field_reset",
@@ -808,13 +1091,14 @@
       "modes": [
         "10N"
       ],
-      "status": "values_resolved_timing_open",
-      "known": "235200 Nature split within 6 yd, -75% hit 2.5 s, 2 targets in 10-player, victim excluded, Break-affected excluded unless short.",
-      "next": "WCL 10N: first cast after engage (5 vs 15 s) and 5 s repeat cadence; per-target U on spread targets.",
+      "status": "first_cast_resolved_repeat_open",
+      "known": "235200 Nature split within 6 yd, -75% hit 2.5 s, 2 targets in 10-player, victim excluded, Break-affected excluded unless short. WCL 10N: first impacts 17.2 s (cast 15 s + flight), none earlier; native first cast repaired from 5 s to 15 s.",
+      "next": "WCL 10N (another kill): repeat interval between slime casts (native 5 s vs ~6 s between impacts).",
       "source_refs": [
-        "client_434_dbc_chimaeron_20260925",
+        "bigwigs_cataclysm_v11_0_13_chimaeron",
         "blizzard_406_hotfix_mar29",
-        "bigwigs_cataclysm_v11_0_13_chimaeron"
+        "client_434_dbc_chimaeron_20260925",
+        "wcl_MxFq7TRbvnjGY1hJ_27"
       ]
     },
     {
@@ -822,13 +1106,14 @@
       "modes": [
         "10N"
       ],
-      "status": "mechanism_resolved_cadence_open",
-      "known": "Break +25% physical/-15% healing done per stack, 4 stacks, 60 s; Double Attack one charge consumed by the next swing; both on a shared 15 s timer natively and in DBM.",
-      "next": "WCL 10N: Break and Double Attack applications after each Massacre (native 11 s vs addons 13.6-14 s); tank taunt timing in a clean kill.",
+      "status": "mechanism_resolved_cadence_observed_native_open",
+      "known": "Break +25% physical/-15% healing done per stack, 4 stacks, 60 s; Double Attack one charge consumed by the next swing; both on a shared 15 s timer natively and in DBM. WCL 10N (single-tank kill): Break and Double Attack land on the same swing every 3 swings (14.4 s at 4.8 s swings) and 13.6 s after each Massacre cast start; the one Blood DK tank held 4 Break stacks without a swap and died to a Mortality melee (215,606 overkill) at 93 s, 2 s before the kill.",
+      "next": "Decide with the implementer whether native Break/Double Attack should follow the swing (retail pattern) instead of the 11 s/15 s timer; a two-tank WCL kill would show taunt timing.",
       "source_refs": [
+        "bigwigs_cataclysm_v11_0_13_chimaeron",
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "bigwigs_cataclysm_v11_0_13_chimaeron"
+        "wcl_MxFq7TRbvnjGY1hJ_27"
       ]
     },
     {
@@ -850,12 +1135,14 @@
         "10N"
       ],
       "status": "duration_resolved_probability_open",
-      "known": "26 s offline (Reroute Power), Feud 30 s pacify, Caustic Slime 19 s after the Massacre cast start.",
+      "known": "26 s offline (Reroute Power), Feud 30 s pacify, Caustic Slime 19 s after the Massacre cast start. WCL 10N: no Systems Failure in either kill (2 and 1 Massacres).",
       "next": "WCL 10N (several kills): Massacre index of each Systems Failure to settle 40/60/80/100 versus DBM's 2nd-or-3rd rule.",
       "source_refs": [
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "repo_boss_chimaeron"
+        "repo_boss_chimaeron",
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_xAhkN2y9YP3KRmnJ_14"
       ]
     },
     {
@@ -876,11 +1163,12 @@
       "modes": [
         "10N"
       ],
-      "status": "conflict",
-      "known": "Native 20,699,972 versus guide 25.9M; heroic native values match the guide.",
-      "next": "WCL 10N kill: derive max HP from consecutive resource rows with derive_encounter_health (three intervals).",
+      "status": "resolved_10N",
+      "known": "WCL-derived 10N max health 20,699,972 (MxFq7TRbvnjGY1hJ fight 27, six intervals) equals native; the guide's 25.9M is not the observed Classic value.",
+      "next": "None for 10N. 25N (72,492,848 native vs guide 90.6M) needs a 25N kill.",
       "source_refs": [
         "tdb_434_22011_chimaeron_rows",
+        "wcl_MxFq7TRbvnjGY1hJ_27",
         "wowhead_cata_chimaeron_2024"
       ]
     },
@@ -889,11 +1177,12 @@
       "modes": [
         "10N"
       ],
-      "status": "blocked_wcl_access",
-      "known": "Native swing at DamageModifier 1: 12,142-18,038 (4.0 s BaseAttackTime), +1% auto-attack bonus. Registry rows 43296/47774/47775/47776 are requested as open (.git/round2_patches/chimaeron/registry_chimaeron_entries.json); only the 10N row points at this ledger.",
-      "next": "WCL 10N: Chimaeron melee (ability 1) damage-taken rows with U on the Double Attack tank (no Break stacks), plus the Break tank with stack counts; derive bounds as for Magmaw, stage the UPDATE and mark the registry calibrated.",
+      "status": "calibrated_staged",
+      "known": "17 landed melee U samples (253,562-345,349) from MxFq7TRbvnjGY1hJ fight 27 against the native 12,142.1-18,037.9 roll: bounds 19.3757-20.88 (19.1838-20.67 with the +1% auto-attack bonus; the lower bound is the largest reduced row 314,547 / (0.9 x 18,037.9)). DamageModifier 20 staged in sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql; registry patch requested (chimaeron_damage_calibration_registry_patch_v1.json).",
+      "next": "Coordinator: apply the registry patch and move the staged SQL into sql/custom/world before the Chimaeron batch; live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of WCL (mean 297,785).",
       "source_refs": [
-        "tdb_434_22011_chimaeron_rows"
+        "tdb_434_22011_chimaeron_rows",
+        "wcl_MxFq7TRbvnjGY1hJ_27"
       ]
     },
     {
@@ -901,10 +1190,12 @@
       "modes": [
         "10N"
       ],
-      "status": "blocked_wcl_access",
-      "known": "classic.warcraftlogs.com answered with a human-verification interstitial in every shared browser tab and HTTP 403 to fetches on 2026-09-25; no agent attestation was made.",
-      "next": "Open the Chimaeron 10N kill in the reports that hold the Magmaw 10N references (MxFq7TRbvnjGY1hJ, Y8ajQ7dbmKMG1RZy, xAhkN2y9YP3KRmnJ), else the 10N Chimaeron rankings; record per-spec DPS, duration and roster in chimaeron_wcl_dps_reference_v1.json and cast timelines in chimaeron_wcl_cast_timelines_v1.json.",
+      "status": "resolved_two_kills",
+      "known": "Two 10N kills recorded in chimaeron_wcl_dps_reference_v1.json and matched in the raid target: MxFq7TRbvnjGY1hJ-fight27 (95.3 s, ilvl 359.5) and xAhkN2y9YP3KRmnJ-fight14 (60.0 s, ilvl 401.4). Matched canonical specs: blood_death_knight, survival_hunter, retribution_paladin (fight 27 only). Fire Mage died in fight 14 and has no DPS row; Feral tank, Assassination and Demonology are absent from both kills.",
+      "next": "Optional: a Chimaeron 10N kill with Fire Mage, Assassination Rogue, Demonology Warlock or a Feral tank (rankings) to replace the WoWSims fallback.",
       "source_refs": [
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_xAhkN2y9YP3KRmnJ_14",
         "wcl_gate_20260925"
       ]
     },
@@ -914,7 +1205,7 @@
         "10N"
       ],
       "status": "unresolved",
-      "known": "Addons list a 450 s berserk (DBM marks it heroic); the native script has none.",
+      "known": "Addons list a 450 s berserk (DBM marks it heroic); the native script has none. WCL 10N kills of 95 s and 60 s show no Berserk (too short to test 450 s).",
       "next": "A long WCL normal kill or wipe past 7:30 would show whether normal mode enrages.",
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13_chimaeron",
@@ -924,7 +1215,7 @@
   ],
   "research_completion_policy": "Values used by the 10N bot strategy are resolved from client rows, the native script and two current guides. WCL-dependent claims (DPS references, cast timelines, melee calibration, normal health) stay open until the Warcraft Logs gate is cleared; nothing is copied from another mode.",
   "wcl_extraction_plan": {
-    "status": "blocked_wcl_human_verification",
+    "status": "extracted_2026_09_27",
     "candidate_reports": [
       {
         "report": "MxFq7TRbvnjGY1hJ",
@@ -946,6 +1237,7 @@
       "?fight=<id>&type=auras&view=events&hostility=1&ability=88853 (Systems Failure on the Bile-O-Tron)",
       "?fight=<id>&type=damage-taken&view=events&by=ability&options=4098 filtered to ability 1 from Chimaeron (melee U samples)",
       "?fight=<id>&type=resources (boss health for derive_encounter_health)"
-    ]
+    ],
+    "result": "MxFq7TRbvnjGY1hJ fight 27 and xAhkN2y9YP3KRmnJ fight 14 (Chimaeron 10N kills) extracted; Y8ajQ7dbmKMG1RZy has no Chimaeron encounter. Access: codex exec -m gpt-6-astra with CUA_REPL_ENABLED_SURFACES=browser (Astra's browser surface). Plain HTTP/headless requests still get Cloudflare 'Just a moment...' (403)."
   }
 }

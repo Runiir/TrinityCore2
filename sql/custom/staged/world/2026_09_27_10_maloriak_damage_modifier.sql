@@ -1,0 +1,59 @@
+-- Maloriak 10N (creature_template 41378): restore melee damage with DamageModifier 9.5.
+--
+-- Staged. Move to sql/custom/world/ (or apply with mysql) right before the
+-- Maloriak measurement batch; see sql/custom/staged/README.md.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set
+-- DamageModifier = 1 for every creature, "pending re-evaluation". The live world DB
+-- row read back on 2026-09-27: 41378 DamageModifier 1, BaseAttackTime 1500,
+-- BaseVariance 1, unit_class 1, rank 1, level 88, difficulty_entry_1 49974.
+--
+-- Native formula (Creature.cpp UpdateLevelDependantStats and
+-- CreatureStatSystem.cpp CalculateMinMaxDamage):
+--   base = gt_npc_damage_by_class_exp3[level 88].Warrior = 2947.9421
+--          (unit_class 1, HealthScalingExpansion 3, rank 1, rate 1)
+--   weapon min/max = base, base * 1.5
+--   AP term = creature_classlevelstats(88, 1).attackpower 1226 / 14 * BaseVariance 1 = 87.57
+--   swing = (weapon + AP term) * BaseAttackTime 1.5 s * DamageModifier * TOTAL_PCT
+--   At DamageModifier 1, one swing is 4,553.3 to 6,764.2.
+--
+-- Matched stage: WCL "U" (unmitigatedAmount) = melee_resolution.after_attacker_bonus_amount
+-- (before the target's armor, block, damage-taken reductions and absorbs). Attacker-side
+-- -10% physical done auras (Scarlet Fever 81130 here) sit inside both U and that stage.
+--
+-- WCL MxFq7TRbvnjGY1hJ fight 34 (Maloriak, 10N kill, 2024-10-28, 2:05, Blood DK tank
+-- Greysnout took every swing): 40 melee rows (ability 1), 29 landed with U (25 hits,
+-- 4 full absorbs), 7 dodges, 3 parries, 1 miss. Scarlet Fever was on Maloriak
+-- 3.9-100.2 s and 102.9-125.0 s. Demoralizing Roar/Shout and Vindication: no events.
+--   unreduced U (3):          44,663-63,630
+--   U under Scarlet Fever (26): 40,559-57,319
+--   largest hit unreduced      : 63,630 / 6,764.2            = 9.41 (lower bound)
+--   smallest hit unreduced     : 44,663 / 4,553.3            = 9.81 (upper bound)
+--   smallest hit under -10%    : 40,559 / (0.9 * 4,553.3)    = 9.90 (looser)
+-- The native pipeline adds an unconditional +1% to auto-attacks
+-- (Unit::MeleeDamageBonusDone), so m * 1.01 <= 9.81 as well: 9.41 <= m <= 9.71.
+-- 9.5 is inside (9.5 * 1.01 = 9.595). Mean cross-check on the 26 Scarlet Fever rows:
+-- 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. The three unreduced
+-- rows are too few for a mean check.
+-- At 9.5 the native U-stage envelope is 43,689-64,903 unreduced and 39,320-58,412 under a
+-- -10% done aura; every observed row is inside.
+-- No weapon-percent ability exists for a second cross-check: Maloriak's spells (Arcane
+-- Storm, Scorching Blast, Biting Chill, Flash Freeze, Magma Jets, Acid Nova, Absolute
+-- Zero) are flat spell damage and do not read DamageModifier.
+--
+-- Scope. Only 10N entry 41378. The 25N, 10H and 25H templates 49974, 49980 and 49986 keep
+-- DamageModifier 1 and use BaseAttackTime 2000, not 1500. There are no same-mode melee
+-- samples for them, so they stay open, not copied. Aberration 41440 and Prime Subject 41841
+-- stay open: their U includes Growth Catalyst stacks that the WCL rows do not show.
+-- The worldserver loads creature_template at startup.
+--
+-- The migration is idempotent. The reverse is the commented block at the end, not a separate
+-- file (the auto-updater would apply a separate revert file immediately). It only restores 1
+-- when the value is still this migration's 9.5.
+
+UPDATE `creature_template` SET `DamageModifier` = 9.5 WHERE `entry` = 41378;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41378 AND `DamageModifier` = 9.5;
+-- END REVERSE MIGRATION

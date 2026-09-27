@@ -6,6 +6,10 @@
   "cohort_id": "blackwing_descent_10n_nefarian_c0",
   "composition_id": "blackwing_descent_10n_canonical_v1",
   "encounter_route_node_id": "bwd.nefarian.encounter",
+  "native_dps_excluded_target_entries": [
+    41918
+  ],
+  "native_dps_scope": "The matched WCL references were read from WCL's default Nefarian's End damage-done view, which excludes Animated Bone Warriors (41918): recorded on farY2, inferred for MxFq7 and cYg4 (see the DPS reference manifest's enemy_scope_consistency). The scoreboard subtracts each bot's damage to 41918 from its encounter-window DPS, and the verdict only counts records marked with that scope.",
   "lockout": {
     "raid": "blackwing_descent",
     "difficulty": "10N",
@@ -21,24 +25,29 @@
     "unseeded_prerequisites": "The Orb of Culmination gossip (menu 11492, option 0), Lord Victor Nefarius's intro, the elevator rise and the ledge-to-platform descent stay native; the fight only starts for bots that are passengers of GO 207834."
   },
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_dps_reference_v1.json",
-  "matched_reference_ids": [],
-  "reference_status": "pending_extraction",
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_cast_timelines_v1.json",
+  "matched_reference_ids": [
+    "MxFq7TRbvnjGY1hJ-fight35",
+    "cYg4C93QNdqKfPF1-fight18",
+    "farY2cm8JMTB1jGh-fight10"
+  ],
+  "reference_status": "extracted",
   "reference_gaps": {
-    "all_specs": "No matched Nefarian's End 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract.",
-    "blood_death_knight": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "feral_druid_tank": "No WCL reference and no WoWSims fallback (the index has feral_druid_dps only, which is not this spec): status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "survival_hunter, fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Nefarian's End spends time on target swaps (Onyxia, Nefarian, prototypes), pillar travel, kiting and bone-warrior control, so these targets are not encounter-matched.",
-    "phase_scope": "A kill-window DPS includes phase 2 (prototypes only, no Nefarian damage) and the platform travel; a matched WCL kill has the same structure, so no phase exclusion is applied."
+    "all_specs": "Three verified Nefarian's End 10N kills (2024-10-28, 2025-01-31, 2025-01-15) were read on 2026-09-27; every roster spec has at least one matched value, so no spec uses the WoWSims fallback. Target = median across matched references.",
+    "single_sample_specs": "fire_mage (32,243.7, item level 385 player), demonology_warlock (15,923.5), feral_druid_tank (3,042.7, 51% active on Onyxia and bone warriors), assassination_rogue (24,112.0) and elemental_shaman (23,344.6, mean of two in one kill) each rest on one kill.",
+    "gear": "Average item level 359.8, 360 and 375; the bots' gear differs.",
+    "phase_scope": "A kill-window DPS includes phase 2 (prototypes only, no Nefarian damage) and the platform travel; the matched WCL kills have the same structure, so no phase exclusion is applied. Damage-done uses WCL default filtering, which excludes Animated Bone Warriors in every matched reference; native DPS excludes them too (native_dps_excluded_target_entries)."
   },
-  "unmatched_reference_notes": {},
-  "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_cast_timelines_v1.json (actors empty; add wcl_cast_timelines here once extracted)",
+  "unmatched_reference_notes": {
+    "ZgBFT8pH1CnjYxhV-fight36": "10N kill 2024-07-01; events archived behind a WCL subscription, not read."
+  },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
   "actor_dps_ratio": 0.95,
   "actor_dps_metric": "Per actor: mean encounter_window_dps over the label's counted native-clear kills divided by the median actor_dps of the matched references for the same spec. target_dps is that WCL median; the actor passes when ratio >= actor_dps_ratio.",
   "party_dps_ratio": 0.95,
   "party_dps_gating": false,
-  "party_dps_metric": "Mean encounter_window_party_dps over counted native-clear kills divided by the median raid_dps of the matched references. Reported, not gating; no matched reference yet.",
+  "party_dps_metric": "Mean encounter_window_party_dps over counted native-clear kills divided by the median raid_dps of the matched references. Reported, not gating.",
   "clear_rule": {
     "native_clear": true,
     "completion_reason": "validation_route_manifest_complete",
@@ -49,6 +58,14 @@
   "roles_without_dps_target": [
     "healer"
   ],
+  "dps_gate_exempt_specs": [
+    "feral_druid_tank"
+  ],
+  "dps_gate_exempt_decision": {
+    "source": "user decision 2026-09-27",
+    "quote": "Just count blood tank as dps, leave feral out. Feral dps is negligible, but bdk is relevant.",
+    "effect": "feral_druid_tank DPS is recorded and reported as informational: no parity gate, and a missing reference does not fail the verdict. blood_death_knight stays gated against its WCL reference. no_reference_until_wcl / no_reference_specs entries for feral_druid_tank remain as documentation only."
+  },
   "healer_status": "Healers have no DPS target; their status follows the encounter status.",
   "fallback_reference": {
     "source": "wowsims",
@@ -58,7 +75,7 @@
     "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
   },
   "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
-  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass. Specs listed in dps_gate_exempt_specs are the exception (user decision 2026-09-27): their DPS is informational, a missing reference fails nothing, and like a healer their status follows the encounter.",
   "roster": {
     "11005001": {
       "name": "Bwnefnba",

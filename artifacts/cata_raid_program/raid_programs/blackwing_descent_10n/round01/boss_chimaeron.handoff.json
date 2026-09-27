@@ -1,0 +1,76 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:chimaeron",
+  "round": 1,
+  "resolved_inputs": [
+    "encounter_damage_fidelity",
+    "encounter_research"
+  ],
+  "changed_files": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_dps_reference_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+    "tests/test_chimaeron_research_data.py"
+  ],
+  "new_files": [
+    "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json",
+    "tests/test_chimaeron_damage_modifier.py"
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+      "patch": "Replace the value of creatures[\"43296\"] with exactly: {\"name\": \"Chimaeron\", \"raid\": \"blackwing_descent\", \"boss\": \"chimaeron\", \"mode\": \"10N\", \"base_entry\": 43296, \"role\": \"boss\", \"status\": \"calibrated\", \"damage_modifier\": 20.0, \"template_at_audit\": {\"base_attack_time_ms\": 4000, \"unit_class\": 1, \"rank\": 3, \"flags_extra\": 1, \"level\": 88}, \"native_roll_at_modifier_1\": {\"min\": 12142.1, \"max\": 18037.9}, \"evidence\": {\"wcl_report\": \"MxFq7TRbvnjGY1hJ\", \"wcl_fight\": 27, \"wcl_mode\": \"10N\", \"wcl_date\": \"2024-10-28\", \"matched_stage\": \"melee_resolution.after_attacker_bonus_amount\", \"native_roll_at_modifier_1\": {\"min\": 12142.1, \"max\": 18037.9}, \"bounds\": {\"lower\": 19.15, \"upper\": 20.88, \"with_auto_attack_bonus\": {\"lower\": 19.15, \"upper\": 20.67}}, \"bounds_derivation\": \"lower = 345,349 / 18,037.9 (largest hit, unreduced); upper = 253,562 / 12,142.1 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 285,219 / (0.9 * 12,142.1) = 26.10, is looser); m * 1.01 must also stay <= 20.88\", \"cross_check\": \"Mean unreduced U 299,823 / (native mean 15,090.0 * 1.01) = 19.67. Same-fight health derivation 20,699,972 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists (Break/Double Attack deal no damage of their own).\", \"sample_note\": \"Scarlet Fever samples (7) average 294,874 vs 299,823 unreduced, not the expected 10% lower; the bounds do not depend on that interpretation (the envelope extremes are unreduced rows).\", \"derivation_file\": \"sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql\", \"migration_state\": \"staged\", \"test\": \"tests/test_chimaeron_damage_modifier.py\"}, \"wcl_melee_reference\": {\"stage\": \"after_attacker_bonus_amount\", \"u_min\": 253562, \"u_max\": 345349, \"u_mean\": 297784.8, \"u_mean_basis\": \"mean of all 17 landed U values (10 unreduced mean 299,823; 7 under Scarlet Fever mean 294,874)\", \"landed_samples\": 17, \"avoided_samples\": 6, \"meaning\": \"observed sample envelope, not recovered roll endpoints\", \"source_ref\": \"wcl_MxFq7TRbvnjGY1hJ_27\"}, \"ledger\": {\"path\": \"experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json\", \"value_key\": \"boss_melee\", \"samples_field\": \"wcl_10N_samples\"}} . Leave 47774, 47775 and 47776 unchanged (open)."
+    },
+    {
+      "to": "coordinator",
+      "file": "sql/custom/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+      "patch": "Right before the Chimaeron 10N measurement batch (after the registry patch, reading back live creature_template 43296 = DamageModifier 1, BaseAttackTime 4000): git mv sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql sql/custom/world/2026_09_27_00_chimaeron_damage_modifier.sql ; then update tests/test_chimaeron_damage_modifier.py MIGRATION to the new path and the registry evidence derivation_file/migration_state to sql/custom/world/... / applied."
+    },
+    {
+      "to": "research",
+      "file": ".agents/skills/raid-encounter-research/references/reproduce-boss-research.md",
+      "patch": "Under '## Reproduce WCL access and extraction' add: \"GPT-6 Astra's browser surface needs `CUA_REPL_ENABLED_SURFACES=browser` in the environment of `codex exec -m gpt-6-astra` (with stdin closed: `< /dev/null`). Without it the browser tool fails with 'CUA_REPL_ENABLED_SURFACES is required' and plain HTTP gets the Cloudflare page. With it, on 2026-09-27, WCL reports rendered with no verification page. Never click a verification check.\""
+    }
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_*.py tests/test_cata_raid_research_contracts.py tests/test_live_validation_fidelity.py tests/test_raid_scoreboard.py",
+      "result": "106 passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_cata_raid_bwd_quantitative_resolution_audit.py tests/test_raid_scoreboard.py tests/test_raid_program.py tests/test_raid_program_neutrality.py tests/test_live_validation_fidelity.py tests/test_scenario_bootstrap.py tests/test_raid_shard_neutrality.py tests/test_bot_content_ownership_layout.py",
+      "result": "174 passed, 1 failed: test_bwd_quantitative_resolution_audit_reconciles_all_53_ledger_blockers - not relevant to this packet (Nefarian ledger blocker key 'heroic_onyxia_burn_and_magma' vs audit 'pillar_access_and_magma_geometry', from the parallel Nefarian packet's edits; Chimaeron's 9 blocker keys are unchanged)"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m tools.raid_program.derive_encounter_health ~/.cache/chimaeron_wcl/health_captures.json",
+      "result": "derived_max_health 20699972 from 6 intervals (equals native 10N)"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m tools.raid_program.module_size",
+      "result": "pass (boss_chimaeron.cpp 778 lines)"
+    }
+  ],
+  "open_items": [
+    "Coordinator: apply the registry patch and move the staged SQL into sql/custom/world before the Chimaeron batch; until then kills run at DamageModifier 1 (not Blizzlike). Live acceptance: encounter_fidelity.boss_melee after-attacker stage within +-10% of WCL mean 297,785.",
+    "Break/Double Attack after Massacre: WCL shows them swing-bound (every third swing; 13.6 s after the Massacre cast start at 4.8 s swings) vs native 11 s/15 s timers. Not changed: needs an implementation decision (swing-bound vs timer).",
+    "Caustic Slime repeat (native 5 s vs WCL impacts 5.9-6.4 s apart, 2 intervals), Systems Failure probability (no knockout in two short kills), berserk and wake timing remain unresolved.",
+    "No WCL row for fire_mage (died), assassination_rogue, demonology_warlock (WoWSims fallback) or feral_druid_tank (no_reference): the overall scoreboard cannot pass for the Feral tank until a reference exists.",
+    "Publish ~/.cache/chimaeron_wcl (extraction.json, casts.json, health captures; 2.4 MB) through the DVC evidence lifecycle, then delete the local copy.",
+    "Runtime: build, seeded-lockout shard runs and the scoreboard verdict (WCL parity, native clear, 0 boss-window deaths) are still to run."
+  ],
+  "risks": [
+    "Both matched WCL kills are one-tank, one-healer rosters (item level 359.5 and 401.4); the per-spec targets are medians across both. Survival 37,218 is pulled up by the 401-ilvl kill, and the Blood DK target reflects a tank who never swapped.",
+    "Party reference DPS is now 281,112.4 (median of both kills' raid DPS); reported only, not gating.",
+    "DamageModifier 20 raises Chimaeron's melee about 20x; with Break stacks and Double Attack this raises tank-death risk (the WCL tank died to a Mortality swing). The 0 boss-window-death rule may need a Mortality exception.",
+    "The first Caustic Slime moved from 5 s to 15 s: fewer early slimes. This is raid-scoped (boss_chimaeron.cpp only); Stonecore, calibration and Magmaw are untouched.",
+    "Changing the WCL manifest and timelines changes their sha256 in scoreboard verdict bindings (wcl_manifest_sha256/wcl_timelines_sha256), so older Chimaeron verdicts no longer bind.",
+    "atramedes_ledger_v1.json (not owned) says the parallel Chimaeron extraction on 2026-09-27 met the same gate. That was true for the first HTTP attempt only; the browser-surface retry succeeded."
+  ],
+  "validation_neutrality": "Only Chimaeron-scoped files changed: one boss-script timer (first Caustic Slime 15 s) and a staged, not-yet-applied SQL for creature 43296. No shared runtime, class, harness or other-boss file changed, so accepted Stonecore, calibration and legacy Magmaw results stay reproducible. Nothing was built, committed, provisioned or run live."
+}

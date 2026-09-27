@@ -12,7 +12,7 @@
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
-  "unresolved_material_count": 9,
+  "unresolved_material_count": 5,
   "encounter": "atramedes",
   "scope": [
     "10N",
@@ -20,15 +20,17 @@
     "25N",
     "25H"
   ],
-  "research_state": "client_and_native_audited_wcl_blocked_not_live_validated",
-  "research_as_of": "2026-09-25",
+  "research_state": "client_native_and_wcl_10n_audited_not_live_validated",
+  "research_as_of": "2026-09-27",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy",
     "https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot",
     "https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic",
     "https://wago.tools/db2/SpellEffect/csv?build=4.4.2.59185",
     "https://github.com/BigWigsMods/BigWigs_Cataclysm/blob/master/Blackwing/Atramedes.lua",
-    "https://github.com/DeadlyBossMods/DBM-Cataclysm/blob/master/DBM-Raids-Cata/BlackwingDescent/Atramedes.lua"
+    "https://github.com/DeadlyBossMods/DBM-Cataclysm/blob/master/DBM-Raids-Cata/BlackwingDescent/Atramedes.lua",
+    "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32",
+    "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17"
   ],
   "repository_evidence": [
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
@@ -207,20 +209,17 @@
   "known_behavior_summary": [
     "Local Sound Bar starts at engage, marks a player Noisy at max alternate power, and drives Devastation only while a Noisy player exists.",
     "A ground gong manually interrupts Atramedes and applies Vertigo; an air gong redirects Reverberating Flame to the shield and then the gong user.",
-    "Local timing is first Modulation13s, Sonar14.5s, Sonic24s, Searing46s, liftoff91s; after landing, ground events restart with Sonar14s, Modulation13s, Searing51s, Sonic22s, liftoff93s.",
+    "Local timing is first Modulation13s (repeat 16 s since 2026-09-27, WCL 10N 16.2/16.8 s; was 22-26 s), Sonar14.5s, Sonic24s, Searing46s, liftoff91s; after landing, ground events restart with Sonar14s, Modulation13s, Searing51s, Sonic22s, liftoff93s.",
     "Local Heroic Nefarius starts Fiends at30s, repeats35s, stops at liftoff, and restarts30s after landing; the Fiend chooses a random eligible player within100yd and casts Obnoxious after attachment.",
     "Instance mapping is DATA_ATRAMEDES=3; FAIL schedules shield/boss respawn after30s and DONE despawns shields and notifies generic Nefarius.",
     "4.4.2 client and 4.3.4 DBC agree on every encounter spell value; normal Modulation adds no Sound, heroic adds 10.",
     "Sound sources (10N): Sonar Pulse disks +3 per 0.5 s within 5 yd; Sonic Breath +20 per 1 s tick in a 15-degree beam; fire patches +5 (3 yd); air breath +3 per 0.5 s (5 yd); spawned air patches +10 (8 yd); Sonar Bomb +20 (6 yd). A shield strike sets everyone to 0.",
     "Native fixes (2026-09-25): Sound Bar and Noisy! removed on evade/death; intro-flight Vertigo resumes the landing; landing removes the air Sonar Bomb trigger; redirected Reverberating Flame restarts at initial speed; time-to-Searing-Flame/Sonic-Breath/liftoff published through GetTimeUntilEncounterMechanic.",
-    "Devastation (78868) has no DB target restriction; a staged condition limits it to Noisy! holders per both current guides."
+    "Devastation (78868) has no DB target restriction; a staged condition limits it to Noisy! holders per both current guides.",
+    "WCL 10N (MxFq7TRbvnjGY1hJ fight 32, 2026-09-27 read): max health 26,111,168 equals native; boss melee DamageModifier 10.35 staged (sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql); gong Vertigo delays queued events, which explains the first Modulation/Sonar at 22.45 s; Sonic Breath 24.1 s then 43.7 s; Searing Flame 45.1 s; air about 90-129 s; Devastation hit a single player."
   ],
   "unresolved": [
-    "wcl_10n_kill_reference_pending",
-    "boss_melee_damage_modifier_10n",
-    "boss_health_10n",
     "ground_air_phase_timestamps",
-    "modulation_repeat_interval",
     "breath_initial_target_rule",
     "sonar_bomb_count_by_mode",
     "breath_speed_scaling_with_sound",
@@ -233,9 +232,8 @@
     "sonar_bomb_counts_current_wowhead_3_or_6_vs_historical_icy_5_or_8",
     "heroic_fiend_cadence_current_wowhead_30s_vs_local_30_then_35s_vs_historical_twice_ground",
     "heroic_obnoxious_period_current_wowhead_1_5s_vs_local_2_5s",
-    "normal_health_current_wowhead_vs_historical_icy",
     "modulation_sound_current_guides_plus10_vs_client_rows_heroic_only",
-    "addon_bigwigs_classic_modulation16s_air36s_ground85s_vs_native_22_26s_31s_93s"
+    "addon_bigwigs_classic_modulation16s_air36s_ground85s_vs_native_31s_93s;modulation_resolved_16s_by_wcl_10n"
   ],
   "script_readiness": {
     "classification": "source_present_static_gaps_fixed_live_pending",

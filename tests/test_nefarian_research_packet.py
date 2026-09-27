@@ -30,7 +30,7 @@ def test_contract_and_ledger_agree_and_fail_closed() -> None:
     for document in (contract, ledger):
         assert document["fidelity_state"] == "fidelity_blocked"
         assert document["modes"] == MODES
-        assert document["unresolved_material_count"] == len(document["unresolved"]) == 10
+        assert document["unresolved_material_count"] == len(document["unresolved"]) == 8
     ledger_keys = [row["key"] for row in ledger["unresolved"]]
     assert contract["unresolved"] == ledger_keys
     assert all(row["status"] != "resolved" for row in ledger["unresolved"])
@@ -61,20 +61,27 @@ def test_native_health_matches_modifier_arithmetic() -> None:
     assert ten["nefarian"] == 265 * 85892
     assert ten["onyxia"] == 65 * 85892
     assert ten["prototype"] == 21 * 77490
-    assert health["status"] == "conflict"
+    # WCL-derived max health (MxFq7TRbvnjGY1hJ fight 35) equals native in 10N.
+    assert health["status"] == "resolved"
 
 
-def test_wcl_files_are_explicitly_pending() -> None:
+def test_wcl_files_hold_the_verified_10n_kills() -> None:
     dps = load(WCL_DPS)
     casts = load(WCL_CASTS)
     assert dps["schema"] == "nefarian_wcl_dps_reference_v1"
     assert casts["schema"] == "nefarian_wcl_cast_timelines_v1"
     for document in (dps, casts):
-        assert document["status"] == "pending_extraction"
+        assert document["status"] == "extracted"
         assert document["mode"] == "10N"
-    assert dps["references"] == []
-    assert casts["actors"] == []
-    assert len(dps["extraction_plan"]["candidate_reports_to_open_first"]) >= 3
+    ids = [ref["id"] for ref in dps["references"]]
+    assert ids == ["MxFq7TRbvnjGY1hJ-fight35", "cYg4C93QNdqKfPF1-fight18", "farY2cm8JMTB1jGh-fight10"]
+    for ref in dps["references"]:
+        assert ref["mode"] == "10N" and ref["kill"] is True
+        assert all(isinstance(value, float) and value > 0 for value in ref["actor_dps"].values())
+    assert dps["spec_coverage"]["no_wcl_reference"] == []
+    assert casts["reference_id"] == ids[0] and casts["duration_sec"] == 344.1
+    assert casts["actors"] and all(actor["casts"] for actor in casts["actors"])
+    assert [ref["reference_id"] for ref in casts["additional_references"]] == ids[1:]
 
 
 def test_raid_target_matches_the_canonical_nefarian_shard() -> None:
@@ -83,8 +90,9 @@ def test_raid_target_matches_the_canonical_nefarian_shard() -> None:
     boss = next(row for row in composition["bosses"] if row["boss_key"] == "nefarian")
     assert target["schema"] == "raid_target_v1"
     assert target["composition_id"] == composition["composition_id"]
-    assert target["matched_reference_ids"] == []
-    assert target["reference_status"] == "pending_extraction"
+    assert target["matched_reference_ids"] == [ref["id"] for ref in load(WCL_DPS)["references"]]
+    assert target["reference_status"] == "extracted"
+    assert (ROOT / target["wcl_cast_timelines"]).is_file()
     assert (ROOT / target["wcl_reference_manifest"]).is_file()
     assert target["lockout"]["precompleted_boss_keys"] == [
         "magmaw", "omnotron", "chimaeron", "atramedes", "maloriak"]

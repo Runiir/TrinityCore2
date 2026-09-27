@@ -11,10 +11,10 @@
   ],
   "fidelity_state": "fidelity_blocked",
   "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
-  "unresolved_material_count": 9,
+  "unresolved_material_count": 5,
   "encounter": "atramedes",
   "purpose": "source, client-data and native-audit ledger for Atramedes; no live-validation assertion",
-  "research_as_of": "2026-09-25",
+  "research_as_of": "2026-09-27",
   "source_catalog": {
     "wowhead_442": {
       "title": "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -256,6 +256,29 @@
         "Without a mage: kite as long as possible, then gong.",
         "Players with mobility spells are better at air gongs because they outrun the laser longer; maybe 2 gongs per air phase, not 3."
       ]
+    },
+    "wcl_cloudflare_verification_20260927": {
+      "title": "classic.warcraftlogs.com Cloudflare security verification (round-1 retries)",
+      "accessed": "2026-09-27",
+      "claim": "Three round-1 retries through GPT-6 Astra (codex exec), none of which read a WCL value. (1) Headless Playwright: https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy stayed on Cloudflare 'Performing security verification' for 20 s (Ray ID a41776116d37e463); not interacted with. (2) CUA_REPL_ENABLED_SURFACES=browser: the Codex browser tool reported 'Browser is not available: iab' (no in-app browser for codex exec), and the user's Chrome was excluded by the coordinator. (3) A separate Google Chrome with a fresh scratch profile (Playwright launchPersistentContext, headed on :0), under the user's 2026-09-27 rule allowing the one-click check: the WCL 'One Quick Check' button was clicked once and the Cloudflare checkbox once plus one retry, 04:17-04:19 UTC; the page looped back to https://classic.warcraftlogs.com/human-challenge (Ray ID a417b3fcae623148) and the other two reports were also gated. No CAPTCHA puzzle or login form appeared. Raw captures and screenshots are kept under ~/.cache/atramedes_wcl."
+    },
+    "wcl_MxFq7TRbvnjGY1hJ_32": {
+      "title": "Warcraft Logs MxFq7TRbvnjGY1hJ fight 32, Atramedes 10N kill",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32",
+      "publisher": "Warcraft Logs (Cataclysm Classic)",
+      "published": "2024-10-28",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "165.6 s kill, item level 359.9, raid DPS 157,669, no deaths. Captured: damage done per player, 32 Atramedes melee rows with U, Scarlet Fever windows on Atramedes, 23 enemy cast rows, Atramedes self buffs (Vertigo, Searing Flame), damage taken by ability, Devastation events, six health-resource rows, 935 completed player casts. Raw capture: ~/.cache/atramedes_wcl/extraction.json and casts.json (coordinator publishes to DVC)."
+    },
+    "wcl_xAhkN2y9YP3KRmnJ_17": {
+      "title": "Warcraft Logs xAhkN2y9YP3KRmnJ fight 17, Atramedes 10N kill",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17",
+      "publisher": "Warcraft Logs (Cataclysm Classic)",
+      "published": "2025-06-11",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "48.5 s kill before the first liftoff, item level 401.4, raid DPS 538,153, no deaths; roster DPS only (throughput context)."
     }
   },
   "mode_matrix": {
@@ -492,6 +515,329 @@
       ],
       "source": "wowhead_442+icy_cata_classic+local_cpp_spell_id",
       "confidence": "two_current_guides_and_repository_confirmation"
+    },
+    {
+      "key": "boss_melee_damage_modifier_10n",
+      "mode_values": {
+        "10N": {
+          "base_attack_time_ms": 1500,
+          "native_roll_at_damage_modifier_1": {
+            "min": 4553.3,
+            "max": 6764.2
+          }
+        },
+        "25N": {
+          "base_attack_time_ms": 2000
+        },
+        "10H": {
+          "base_attack_time_ms": 2000
+        },
+        "25H": {
+          "base_attack_time_ms": 2000
+        }
+      },
+      "native_derivation": "(gt_npc_damage_by_class_exp3[88].Warrior 2947.9421 x {1, 1.5} + creature_classlevelstats(88,1).attackpower 1226 / 14 x BaseVariance 1) x BaseAttackTime 1.5 s x DamageModifier; the native pipeline adds +1% to auto attacks. Current DamageModifier is the upstream reset value 1.",
+      "unit": "damage per swing before target mitigation (melee_resolution.after_attacker_bonus_amount)",
+      "source_refs": [
+        "tdb_bindings_20260925",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
+      ],
+      "status": "resolved_10N (DamageModifier 10.35, staged)",
+      "calibration_10N": {
+        "damage_modifier": 10.35,
+        "bounds": {
+          "lower": 10.32,
+          "upper": 10.47,
+          "with_auto_attack_bonus": [
+            10.22,
+            10.36
+          ],
+          "combined": [
+            10.32,
+            10.36
+          ]
+        },
+        "staged_sql": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+        "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_damage_calibration_registry_patch_v1.json",
+        "test": "tests/test_atramedes_damage_modifier.py"
+      },
+      "wcl_10N_samples": {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "fight": 32,
+        "mode": "10N",
+        "date": "2024-10-28",
+        "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=damage-taken&view=events&hostility=0&ability=1&options=4098&target=319",
+        "recipient": "Greysnout (Blood Death Knight, took every swing)",
+        "swing_spacing_note": "1.8 s between swings: BaseAttackTime 1.5 s slowed 20% by Frost Fever.",
+        "done_reduction_windows": {
+          "Scarlet Fever 81130": [
+            [
+              6.896,
+              112.077
+            ],
+            [
+              129.143,
+              162.147
+            ]
+          ],
+          "Demoralizing Roar 99": [],
+          "Demoralizing Shout 1160": [],
+          "Vindication 26017": [],
+          "Curse of Weakness 702": []
+        },
+        "landed": [
+          {
+            "t": 2.98,
+            "u": 54383,
+            "amount": 15247,
+            "absorbed": 1414,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": null,
+            "raw": "00:02.980\tAtramedes Melee Greysnout 15247 (A: 1414) (U: 54383, M: 37722, 69.36%)"
+          },
+          {
+            "t": 4.488,
+            "u": 47665,
+            "amount": 13186,
+            "absorbed": 1416,
+            "mitigation_pct": 69.37,
+            "done_reduction_aura": null,
+            "raw": "00:04.488\tAtramedes Melee Greysnout 13186 (A: 1416) (U: 47665, M: 33063, 69.37%)"
+          },
+          {
+            "t": 5.997,
+            "u": 68939,
+            "amount": 21120,
+            "absorbed": null,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": null,
+            "raw": "00:05.997\tAtramedes Melee Greysnout 21120 (U: 68939, M: 47819, 69.36%)"
+          },
+          {
+            "t": 9.416,
+            "u": 56489,
+            "amount": null,
+            "absorbed": 17306,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:09.416\tAtramedes Melee Greysnout (A: 17306) (U: 56489, M: 39183, 69.36%)"
+          },
+          {
+            "t": 11.222,
+            "u": 56997,
+            "amount": 12255,
+            "absorbed": 5207,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:11.222\tAtramedes Melee Greysnout 12255 (A: 5207) (U: 56997, M: 39535, 69.36%)"
+          },
+          {
+            "t": 33.317,
+            "u": 62233,
+            "amount": null,
+            "absorbed": 19065,
+            "mitigation_pct": 69.37,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:33.317\tAtramedes Melee Greysnout (A: 19065) (U: 62233, M: 43168, 69.37%)"
+          },
+          {
+            "t": 40.46,
+            "u": 58231,
+            "amount": null,
+            "absorbed": 17840,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:40.460\tAtramedes Melee Greysnout (A: 17840) (U: 58231, M: 40391, 69.36%)"
+          },
+          {
+            "t": 42.259,
+            "u": 62831,
+            "amount": null,
+            "absorbed": 19249,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:42.259\tAtramedes Melee Greysnout (A: 19249) (U: 62831, M: 43582, 69.36%)"
+          },
+          {
+            "t": 52.715,
+            "u": 53365,
+            "amount": null,
+            "absorbed": 20437,
+            "mitigation_pct": 61.7,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:52.715\tAtramedes Melee Greysnout (A: 20437) (U: 53365, M: 32928, 61.70%)"
+          },
+          {
+            "t": 54.534,
+            "u": 59969,
+            "amount": 7684,
+            "absorbed": 15281,
+            "mitigation_pct": 61.71,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:54.534\tAtramedes Melee Greysnout 7684 (A: 15281) (U: 59969, M: 37004, 61.71%)"
+          },
+          {
+            "t": 56.652,
+            "u": 54185,
+            "amount": 20750,
+            "absorbed": null,
+            "mitigation_pct": 61.71,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "00:56.652\tAtramedes Melee Greysnout 20750 (U: 54185, M: 33435, 61.71%)"
+          },
+          {
+            "t": 60.267,
+            "u": 53080,
+            "amount": 16261,
+            "absorbed": null,
+            "mitigation_pct": 69.37,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:00.267\tAtramedes Melee Greysnout 16261 (U: 53080, M: 36819, 69.37%)"
+          },
+          {
+            "t": 62.082,
+            "u": 56234,
+            "amount": 17228,
+            "absorbed": null,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:02.082\tAtramedes Melee Greysnout 17228 (U: 56234, M: 39006, 69.36%)"
+          },
+          {
+            "t": 63.879,
+            "u": 45877,
+            "amount": 14055,
+            "absorbed": null,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:03.879\tAtramedes Melee Greysnout 14055 (U: 45877, M: 31822, 69.36%)"
+          },
+          {
+            "t": 65.69,
+            "u": 48551,
+            "amount": 5992,
+            "absorbed": 8882,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:05.690\tAtramedes Melee Greysnout 5992 (A: 8882) (U: 48551, M: 33677, 69.36%)"
+          },
+          {
+            "t": 79.528,
+            "u": 61405,
+            "amount": null,
+            "absorbed": 18812,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:19.528\tAtramedes Melee Greysnout (A: 18812) (U: 61405, M: 42593, 69.36%)"
+          },
+          {
+            "t": 82.578,
+            "u": 61865,
+            "amount": null,
+            "absorbed": 18953,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:22.578\tAtramedes Melee Greysnout (A: 18953) (U: 61865, M: 42912, 69.36%)"
+          },
+          {
+            "t": 84.375,
+            "u": 53287,
+            "amount": 14716,
+            "absorbed": 1609,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:24.375\tAtramedes Melee Greysnout 14716 (A: 1609) (U: 53287, M: 36962, 69.36%)"
+          },
+          {
+            "t": 86.181,
+            "u": 52658,
+            "amount": 3008,
+            "absorbed": 13124,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "01:26.181\tAtramedes Melee Greysnout 3008 (A: 13124) (U: 52658, M: 36526, 69.36%)"
+          },
+          {
+            "t": 131.144,
+            "u": 55580,
+            "amount": 17027,
+            "absorbed": null,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "02:11.144\tAtramedes Melee Greysnout 17027 (U: 55580, M: 38553, 69.36%)"
+          },
+          {
+            "t": 132.948,
+            "u": 49201,
+            "amount": 15073,
+            "absorbed": null,
+            "mitigation_pct": 69.36,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "02:12.948\tAtramedes Melee Greysnout 15073 (U: 49201, M: 34128, 69.36%)"
+          },
+          {
+            "t": 134.756,
+            "u": 48990,
+            "amount": 1884,
+            "absorbed": 13124,
+            "mitigation_pct": 69.37,
+            "done_reduction_aura": "Scarlet Fever",
+            "raw": "02:14.756\tAtramedes Melee Greysnout 1884 (A: 13124) (U: 48990, M: 33982, 69.37%)"
+          }
+        ],
+        "avoided": [
+          {
+            "t": 7.611,
+            "hit_type": "dodge"
+          },
+          {
+            "t": 35.599,
+            "hit_type": "dodge"
+          },
+          {
+            "t": 37.401,
+            "hit_type": "parry"
+          },
+          {
+            "t": 44.058,
+            "hit_type": "miss"
+          },
+          {
+            "t": 58.464,
+            "hit_type": "dodge"
+          },
+          {
+            "t": 77.719,
+            "hit_type": "dodge"
+          },
+          {
+            "t": 87.997,
+            "hit_type": "parry"
+          },
+          {
+            "t": 89.801,
+            "hit_type": "dodge"
+          },
+          {
+            "t": 129.343,
+            "hit_type": "parry"
+          },
+          {
+            "t": 142.034,
+            "hit_type": "parry"
+          }
+        ],
+        "limitations": [
+          "Only 3 unreduced rows (before 6.9 s).",
+          "Scarlet Fever rows average 55,317 vs 56,996 unreduced; the bounds use the extremes and hold unless Scarlet Fever is outside U, which leaves no consistent value."
+        ]
+      }
+    },
+    {
+      "key": "atramedes_health_10n_wcl",
+      "10N": 26111168,
+      "source": "wcl_MxFq7TRbvnjGY1hJ_32",
+      "confidence": "derived_with_derive_encounter_health_from_six_consecutive_resource_rows (all six estimates 26,111,168.0); equals native 85,892 x 304 and the historical Icy Veins 26.1M; the Wowhead 32.6M does not match the 4.4.2 log"
     }
   ],
   "timers": [
@@ -654,6 +1000,15 @@
       ],
       "source": "local_cpp:ReverberatingFlameAI",
       "confidence": "implementation_only"
+    },
+    {
+      "key": "wcl_10n_boss_timeline_MxFq7TRbvnjGY1hJ_32",
+      "modes": [
+        "10N"
+      ],
+      "source": "wcl_MxFq7TRbvnjGY1hJ_32",
+      "confidence": "one_10N_kill",
+      "value": "Gong Vertigo 11.8-21.8 s (two clicks) delayed the queued first Modulation (native 13 s) and first Sonar Pulse (native 14.5 s) to 22.45 s together; Sonic Breath 24.06 s (native 24); Searing Flame 45.14 s (native 46, BigWigs 45), gonged at 45.62 s; Modulation 22.45, 38.64, 54.85, 75.92, 148.14, 164.93 (unobstructed repeats 16.2 and 16.8 s; 75.92 is 6.08 s after the Sonic Breath channel ended); Sonar Pulse 22.45, 33.79, 50.90, 66.21, 80.77, 148.72, 164.93 (11.3 s once, then 14.6-17.1 s); Sonic Breath 24.06 and 67.81 (43.7 s), 150.35 (about 21.5 s after landing); last ground melee 89.8 s, tank casts stop at 90.0 s, melee and tank casts resume 129.1-129.3 s (air about 38-39 s including travel); after landing Vertigo 135.2-140.2 and 142.7-147.7 s delayed Modulation/Sonar to 148.1-148.7 s (native 13/14 s after landing)."
     }
   ],
   "targeting_and_scaling": [
@@ -829,7 +1184,8 @@
       "icy_cata_classic": "90s_ground_30s_air",
       "icy_original": "80s_ground_40s_air",
       "local_cpp": "91s_first_liftoff_31s_air_event_93s_later_liftoff_plus_movement",
-      "resolution": "do_not_schedule_exact_client_phase_timestamp"
+      "resolution": "do_not_schedule_exact_client_phase_timestamp",
+      "wcl_10n": "liftoff_about90s;air_about38_39s_including_travel"
     },
     {
       "key": "sonic_breath_cadence",
@@ -837,7 +1193,8 @@
       "icy_cata_classic": "every40s",
       "icy_original": "twice_per_ground_phase",
       "local_cpp": "24s_then_random42_to43s;after_landing22s",
-      "resolution": "local_baseline_only_until_live_validation"
+      "resolution": "native_24s_then42_43s_after_landing22s_consistent",
+      "wcl_10n": "24_1s_then43_7s;21_5s_after_landing"
     },
     {
       "key": "sonic_breath_target",
@@ -877,7 +1234,7 @@
       "key": "normal_health",
       "wowhead_442": "32_6M_10N_97_9M_25N",
       "icy_original": "26_1M_10N_78_3M_25N",
-      "resolution": "unresolved_build_hotfix_provenance"
+      "resolution": "wcl_10n_26_1M_matches_native_and_icy_original (MxFq7TRbvnjGY1hJ fight 32)"
     },
     {
       "key": "modulation_sound",
@@ -891,7 +1248,8 @@
       "key": "addon_timer_bars",
       "bigwigs_classic": "modulation16s;first_modulation11;first_sonar11_3;first_breath22;first_searing45;air36_from_takeoff;ground85",
       "local_cpp": "modulation22_26;first13;sonar14_5;breath24;searing46;air31_after_liftoff_point;ground93",
-      "resolution": "unresolved_until_wcl_boss_cast_timeline"
+      "resolution": "modulation_repeat_16s_adopted_in_native;other_native_timers_consistent_with_the_wcl_kill",
+      "wcl_10n": "modulation16_2_and16_8;first_breath24_1;searing45_1;sonic_breath43_7;air_about38_39_including_travel"
     },
     {
       "key": "sonar_bomb_count_10n",
@@ -951,29 +1309,9 @@
   ],
   "unresolved": [
     {
-      "key": "wcl_10n_kill_reference_pending",
-      "status": "fidelity_blocked",
-      "evidence_gap": "No 10N kill page read (human-verification interstitial, 2026-09-25): per-spec DPS, cast timelines, boss casts."
-    },
-    {
-      "key": "boss_melee_damage_modifier_10n",
-      "status": "fidelity_blocked",
-      "evidence_gap": "DamageModifier of 41442 needs WCL melee U samples; native roll at modifier 1 is 4,553-6,764."
-    },
-    {
-      "key": "boss_health_10n",
-      "status": "conflict",
-      "evidence_gap": "Native 26.1M vs Wowhead 32.6M; needs WCL-derived max HP."
-    },
-    {
       "key": "ground_air_phase_timestamps",
-      "status": "conflict",
-      "evidence_gap": "Native 91/31+travel/93 vs BigWigs 91/36/85 vs DBM 90/31.5/85."
-    },
-    {
-      "key": "modulation_repeat_interval",
-      "status": "conflict",
-      "evidence_gap": "Native 22-26 s vs BigWigs Classic 16 s vs Wowhead 15 s."
+      "status": "partial",
+      "evidence_gap": "WCL 10N: liftoff about 90 s, landing about 129 s (38-39 s air including travel). Native travel time still unmeasured."
     },
     {
       "key": "breath_initial_target_rule",
@@ -983,12 +1321,12 @@
     {
       "key": "sonar_bomb_count_by_mode",
       "status": "conflict",
-      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5."
+      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5. WCL MxFq7TRbvnjGY1hJ fight 32 shows no Sonar Bomb damage taken (all avoided), so the count stays unresolved."
     },
     {
       "key": "breath_speed_scaling_with_sound",
       "status": "unresolved",
-      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill."
+      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill. The WCL 10N kill shows no Resonating Clash cast rows in the enemy Casts view; per-air-phase shield counts are not visible there."
     },
     {
       "key": "heroic_fiend_and_shield_destruction_cadence",
@@ -1244,13 +1582,15 @@
         "10H",
         "25H"
       ],
-      "status": "partial",
-      "known": "Native 91 s first liftoff, 31 s after reaching the liftoff point, 93 s later; BigWigs Classic: 91 / 36 from take-off / 85; DBM 90 / 31.5 / 85.",
-      "next": "Take-off to landing and landing to take-off from a WCL 10N kill (Take Off Anim Kit 86915).",
+      "status": "resolved",
+      "known": "WCL 10N: ground melee stops at 89.8 s and resumes at 129.1 s (about 38-39 s air including travel), consistent with native 91 s liftoff + travel + 31 s + landing travel and BigWigs 36 s from take-off.",
+      "next": "Measure native take-off and landing travel on a live kill.",
       "source_refs": [
         "local_cpp",
         "bigwigs_cataclysm_atramedes",
-        "dbm_cataclysm_atramedes"
+        "dbm_cataclysm_atramedes",
+        "wcl_cloudflare_verification_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1261,12 +1601,14 @@
         "10H",
         "25H"
       ],
-      "status": "conflict",
-      "known": "Native Modulation 22-26 s vs BigWigs 16 s; Sonic Breath 42-43 vs 42; Sonar 11 vs 11.3; first Modulation 13 vs 11; first Searing 46 vs 45; post-landing Searing 51 vs 47.",
-      "next": "Boss cast timeline of a WCL 10N kill; change native timers only with that evidence.",
+      "status": "resolved",
+      "known": "WCL 10N: Modulation repeats 16.2/16.8 s unobstructed (native was 22-26 s; now 16 s, matching BigWigs); Sonic Breath 43.7 s (native 42-43); first Sonic Breath 24.06 (native 24); Searing Flame 45.14 (native 46). Sonar Pulse repeats 11.3 s once then 14.6-17.1 s; native 11 s is kept (the longer gaps are not explained by casts or stuns but come from one kill only).",
+      "next": "Recheck the Sonar Pulse repeat on a second 10N kill before changing it.",
       "source_refs": [
         "local_cpp",
-        "bigwigs_cataclysm_atramedes"
+        "bigwigs_cataclysm_atramedes",
+        "wcl_cloudflare_verification_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1292,13 +1634,14 @@
         "10H",
         "25H"
       ],
-      "status": "partial",
-      "known": "Guides: the 100-Sound player; DB: whole raid.",
-      "next": "The world updater applies the condition at the next worldserver start; a WCL death log with Devastation would confirm single-target.",
+      "status": "resolved",
+      "known": "WCL 10N: Devastation 78868 hit one player (Janderak) twice, 0.56 s apart; the staged single-target (noisy player) condition matches.",
+      "next": "Observe on a live kill.",
       "source_refs": [
         "wowhead_442",
         "icy_cata_classic",
-        "tdb_bindings_20260925"
+        "tdb_bindings_20260925",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1306,12 +1649,14 @@
       "modes": [
         "10N"
       ],
-      "status": "blocked",
-      "known": "Native roll at DamageModifier 1 (BaseAttackTime 1500, gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226): 4,553.3-6,764.2 per swing.",
-      "next": "WCL 10N Atramedes melee U samples and -10% done windows (see atramedes_wcl_dps_reference_v1.json extraction_plan).",
+      "status": "resolved",
+      "known": "Native roll at DamageModifier 1 (BaseAttackTime 1500): 4,553.3-6,764.2 per swing. DamageModifier 10.35 from 22 landed WCL 10N U samples (45,877-68,939; Scarlet Fever 6.9-112.1 and 129.1-162.1 s); bounds 10.32-10.47, 10.22-10.36 with the +1% auto-attack bonus, 10.32-10.36 for both. Staged: sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql.",
+      "next": "Apply the staged SQL before the measurement batch; a live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL mean 55,546.",
       "source_refs": [
         "tdb_bindings_20260925",
-        "wcl_human_verification_20260925"
+        "wcl_human_verification_20260925",
+        "wcl_cloudflare_verification_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1320,13 +1665,15 @@
         "10N",
         "25N"
       ],
-      "status": "conflict",
-      "known": "Native 10N 26,111,168 (85,892 x 304), 25N 78,333,504, 10H 34,786,260, 25H 103,070,400 match historical Icy Veins; Wowhead 2024 says 32.6M / 97.9M normal.",
-      "next": "Derive 10N max HP from a WCL kill with derive_encounter_health.",
+      "status": "resolved",
+      "known": "WCL 10N resource rows derive 26,111,168, equal to native (85,892 x 304). Wowhead's 32.6M is not the 4.4.2 10N value.",
+      "next": "None for 10N; 25N/10H/25H need their own logs.",
       "source_refs": [
         "tdb_bindings_20260925",
         "wowhead_442",
-        "icy_original"
+        "icy_original",
+        "wcl_cloudflare_verification_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1334,11 +1681,13 @@
       "modes": [
         "10N"
       ],
-      "status": "blocked",
-      "known": "Extraction plan and candidate reports recorded.",
-      "next": "Pass-through of the WCL gate by the user, then extract per the plan.",
+      "status": "resolved",
+      "known": "Matched: MxFq7TRbvnjGY1hJ-fight32 (165.6 s, full ground-air-ground cycle). Context only: xAhkN2y9YP3KRmnJ-fight17 (48.5 s, no air phase). WCL targets: blood_death_knight 13,254; survival_hunter 25,513; retribution_paladin 19,930; elemental_shaman 24,949.",
+      "next": "Balance Druid, Fire Mage, Assassination Rogue and Demonology Warlock stay on the WoWSims fallback until a matched kill with those specs is read.",
       "source_refs": [
-        "wcl_human_verification_20260925"
+        "wcl_human_verification_20260925",
+        "wcl_cloudflare_verification_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_32"
       ]
     },
     {
@@ -1393,5 +1742,27 @@
     "Kill attribution (round 5): the native death of Atramedes is accepted by the route (boss death callback gate=accepted, boss_killed, validation_route_manifest_complete), which needs the adaptive route observer (world.validation_route_atramedes_observation) to have bound the engagement; no route_destination_path_control_level_gap on the gong owner's standby or the air-kite ring waypoints; no validation_route_future_encounter_contamination during the spirit packs."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
-  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+  "resolved_claims": [
+    {
+      "key": "wcl_10n_kill_reference_pending",
+      "status": "resolved",
+      "evidence_gap": "Resolved 2026-09-27: MxFq7TRbvnjGY1hJ fight 32 read (DPS, casts, boss casts, melee U, health)."
+    },
+    {
+      "key": "boss_melee_damage_modifier_10n",
+      "status": "resolved",
+      "evidence_gap": "Resolved 2026-09-27: DamageModifier 10.35 staged from WCL MxFq7TRbvnjGY1hJ fight 32."
+    },
+    {
+      "key": "boss_health_10n",
+      "status": "resolved",
+      "evidence_gap": "Resolved 2026-09-27: WCL-derived 26,111,168 equals native."
+    },
+    {
+      "key": "modulation_repeat_interval",
+      "status": "resolved",
+      "evidence_gap": "Resolved 2026-09-27: WCL 10N 16.2/16.8 s; native changed from 22-26 s to 16 s (boss_atramedes.cpp)."
+    }
+  ]
 }

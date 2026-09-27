@@ -273,6 +273,64 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
             'sources': _source_refs(root, sources)}
 
 
+CANONICAL_MODES = frozenset({'10N', '25N', '10H', '25H'})
+
+
+def _mode_claim_refusal(document: dict, mode: str, name: str) -> str | None:
+    """Why ``document`` does not prove every material claim of ``mode`` resolved, or None."""
+    by_mode = document.get('fidelity_state_by_mode')
+    if not isinstance(by_mode, dict) or by_mode.get(mode) != 'accepted':
+        return f'{name} fidelity_state_by_mode[{mode}] is not accepted'
+    unresolved = document.get('unresolved')
+    if not isinstance(unresolved, list) or len(unresolved) != document.get('unresolved_material_count'):
+        return f'{name} unresolved list does not reconcile with unresolved_material_count'
+    for claim in unresolved:
+        modes = claim.get('modes') if isinstance(claim, dict) else None
+        key = claim.get('key') if isinstance(claim, dict) else claim
+        if not isinstance(modes, list) or not modes:
+            return f'{name} unresolved claim {key} has no mode scope, so it covers {mode}'
+        # Type-check before the set lookup: a dict or list member is unhashable and must block, not raise.
+        unknown = [member for member in modes if not isinstance(member, str) or member not in CANONICAL_MODES]
+        if unknown:
+            # A misspelt or null mode could hide a claim on this mode, so it covers every mode.
+            return f'{name} unresolved claim {key} has non-canonical modes {unknown!r}, so it covers {mode}'
+        if mode in modes:
+            return f'{name} unresolved claim {key} covers {mode}'
+    return None
+
+
+def mode_scoped_research_state(root: Path, contract: dict, strategy: dict | None, mode: str) -> tuple[str | None, str | None]:
+    """The research state for ``mode`` from a mode override, or (None, None) when there is no override.
+
+    A raid program runs one mode. By the coordinator's decision (not yet ruled on by the user), a
+    contract that carries fidelity_state_by_mode overrides its contract-level fidelity_state for any
+    mode it names (and entirely, when the field is malformed). The override yields 'accepted' only when
+    the contract and its ledger both say so and neither lists an unresolved material claim whose
+    ``modes`` include this mode; a bare-string claim, one without ``modes`` or one with a
+    non-canonical mode covers every mode. Every other override yields a blocked state with its
+    reason, and never falls back to the contract-level state. Only a contract without the field, or
+    whose field (an object) does not name this mode, falls back; a present null refuses.
+    """
+    if 'fidelity_state_by_mode' not in contract:
+        return None, None
+    by_mode = contract['fidelity_state_by_mode']  # a present null is a malformed, authoritative refusal
+    if isinstance(by_mode, dict) and mode not in by_mode:
+        return None, None
+    declared = by_mode.get(mode) if isinstance(by_mode, dict) else None
+    blocked = declared if isinstance(declared, str) and declared != 'accepted' else 'fidelity_blocked'
+    if not isinstance(by_mode, dict):
+        return blocked, 'contract fidelity_state_by_mode is not a mode-to-state object'
+    ledger_path = contract.get('ledger_path') or (strategy or {}).get('ledger')
+    ledger = read_json(root, Path(ledger_path)) if ledger_path else {}
+    if not ledger:
+        return blocked, 'mode-scoped research needs a readable ledger'
+    for document, name in ((contract, 'contract'), (ledger, 'ledger')):
+        refusal = _mode_claim_refusal(document, mode, name)
+        if refusal:
+            return blocked, refusal
+    return 'accepted', None
+
+
 def _boss_unit(root, raid, mode, token, doc, row, strategy_rows, readiness_raid, composition, composition_boss,
                scenarios, profiles, graphs, identity_known) -> dict:
     key = row['key']
@@ -288,9 +346,13 @@ def _boss_unit(root, raid, mode, token, doc, row, strategy_rows, readiness_raid,
     elif mode not in (strategy.get('modes') or []):
         inputs.append(missing('strategy_mode', f'{slug} does not list {mode}', 'raid-encounter-research', BLOCKS_ACCEPTANCE))
     contract = read_json(root, Path(strategy['contract'])) if strategy and strategy.get('contract') else {}
-    fidelity_state = contract.get('fidelity_state', (strategy or {}).get('fidelity_state'))
+    mode_state, mode_refusal = mode_scoped_research_state(root, contract, strategy, mode)
+    # Only a missing mode override falls back to the contract-level state; a refused one never does.
+    fidelity_state = (mode_state if mode_state is not None
+                      else contract.get('fidelity_state', (strategy or {}).get('fidelity_state')))
     if fidelity_state != 'accepted':
-        inputs.append(missing('encounter_research', f'research contract fidelity_state={fidelity_state}; follow '
+        refusal = f' ({mode_refusal})' if mode_refusal else ''
+        inputs.append(missing('encounter_research', f'research contract fidelity_state={fidelity_state}{refusal}; follow '
                               'raid-encounter-research (WCL references, unresolved claims)', 'raid-encounter-research',
                               BLOCKS_ACCEPTANCE, path=(strategy or {}).get('contract')))
     scripts = {str(e.get('boss')): e for e in readiness_raid.get('encounters') or [] if e.get('boss')}

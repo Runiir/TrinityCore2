@@ -2,9 +2,380 @@
   "schema": "nefarian_wcl_dps_reference_v1",
   "encounter": "nefarian",
   "mode": "10N",
-  "status": "pending_extraction",
-  "status_reason": "classic.warcraftlogs.com answered every request on 2026-09-25 with a 'Human Verification / I am a human and not a bot' interstitial (WebFetch: HTTP 403). An agent may not attest to being human, so no report page was read. No matched reference exists yet; nothing here is a measured value.",
-  "references": [],
+  "status": "extracted",
+  "status_reason": "Three verified Nefarian's End 10N kills read on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session (the earlier headless attempts were stopped by the Cloudflare check; see access_attempts). Values are rendered WCL observations.",
+  "references": [
+    {
+      "id": "MxFq7TRbvnjGY1hJ-fight35",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "kill": true,
+      "duration_sec": 344.1,
+      "raid_dps": 96589.6,
+      "average_item_level": 359.8,
+      "target_scope": "Onyxia, Nefarian and Chromatic Prototypes: WCL's default Nefarian's End damage-done filtering, which excludes Animated Bone Warriors (41918)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "blood_death_knight": 11951.5,
+        "survival_hunter": 19905.9,
+        "retribution_paladin": 17808.7
+      },
+      "excluded_actor_dps": {
+        "survival_hunter:Jägamara": {
+          "dps": 9108.2,
+          "reason": "44.24% active (likely dead for most of the kill); not a throughput sample"
+        },
+        "blood_death_knight:Wongelrainer": {
+          "dps": 4380.1,
+          "reason": "second Blood DK tank at 51.71% active (bone-warrior/off-tank duty); Greysnout (95.35% active) held Onyxia then Nefarian"
+        }
+      },
+      "unmatched_specs": {
+        "combat_rogue": 17651.9,
+        "shadow_priest": 14120.5
+      },
+      "roster": [
+        {
+          "name": "Greysnout",
+          "source_id": 6,
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 11951.5,
+          "active_pct": 95.35
+        },
+        {
+          "name": "Wongelrainer",
+          "source_id": 8,
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 4380.1,
+          "active_pct": 51.71
+        },
+        {
+          "name": "Jägamara",
+          "source_id": 1,
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 9108.2,
+          "active_pct": 44.24
+        },
+        {
+          "name": "Lachina",
+          "source_id": 3,
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 19905.9,
+          "active_pct": 95.03
+        },
+        {
+          "name": "Janderak",
+          "source_id": 15,
+          "class_spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 17808.7,
+          "active_pct": 98.96
+        },
+        {
+          "name": "Adara",
+          "source_id": 2,
+          "class_spec": "shadow_priest",
+          "role": "dps",
+          "dps": 14120.5,
+          "active_pct": 94.34
+        },
+        {
+          "name": "Avéran",
+          "source_id": 9,
+          "class_spec": "combat_rogue",
+          "role": "dps",
+          "dps": 17651.9,
+          "active_pct": 91.75
+        },
+        {
+          "name": "Koakuma",
+          "source_id": 5,
+          "class_spec": "restoration_druid",
+          "role": "healer",
+          "dps": 203.6,
+          "active_pct": 8.23
+        },
+        {
+          "name": "Nevox",
+          "source_id": 7,
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 306,
+          "active_pct": 50.46
+        },
+        {
+          "name": "Sélán",
+          "source_id": 4,
+          "class_spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 1130.4,
+          "active_pct": 51.81
+        }
+      ],
+      "phases_observed": [
+        "P1 Onyxia (0-~43 s; Nefarian lands ~30 s)",
+        "P2 prototypes (Barrage 43-~145 s)",
+        "P3 (~146 s to kill)"
+      ],
+      "limitations": [
+        "DPS is whole-kill DPS as displayed; totals rounded by WCL.",
+        "Same guild night as the Magmaw melee calibration (MxFq7 fight 22).",
+        "Assignments, buffs, gear and phase timing differ from the bot canary."
+      ],
+      "target_scope_evidence": "Inferred: read from the same default type=damage-done view as farY2cm8JMTB1jGh fight 10 (URL above), and WCL applies its encounter filtering per encounter, not per report; this capture did not record the filter note itself. The earlier label 'whole kill including bone warriors' was not supported by the capture."
+    },
+    {
+      "id": "cYg4C93QNdqKfPF1-fight18",
+      "url": "https://classic.warcraftlogs.com/reports/cYg4C93QNdqKfPF1?fight=18&type=damage-done",
+      "mode": "10N",
+      "date": "2025-01-31",
+      "kill": true,
+      "duration_sec": 283.5,
+      "raid_dps": 117185.6,
+      "average_item_level": 360,
+      "target_scope": "Onyxia, Nefarian and Chromatic Prototypes: WCL's default Nefarian's End damage-done filtering, which excludes Animated Bone Warriors (41918)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "fire_mage": 32243.7,
+        "survival_hunter": 29015.6,
+        "demonology_warlock": 15923.5,
+        "blood_death_knight": 12163.6,
+        "feral_druid_tank": 3042.7
+      },
+      "excluded_actor_dps": {},
+      "unmatched_specs": {
+        "arcane_mage": 15559.6,
+        "destruction_warlock": 4644.0
+      },
+      "roster": [
+        {
+          "name": "Néawen",
+          "source_id": 471,
+          "class_spec": "fire_mage",
+          "role": "dps",
+          "dps": 32243.7,
+          "active_pct": 98.05
+        },
+        {
+          "name": "Roiisoleil",
+          "source_id": 463,
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 29015.6,
+          "active_pct": 99.62
+        },
+        {
+          "name": "Djikstrath",
+          "source_id": 466,
+          "class_spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 15923.5,
+          "active_pct": 94.43
+        },
+        {
+          "name": "Néfrann",
+          "source_id": 462,
+          "class_spec": "arcane_mage",
+          "role": "dps",
+          "dps": 15559.6,
+          "active_pct": 90.93
+        },
+        {
+          "name": "Jafurry",
+          "source_id": 467,
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 12163.6,
+          "active_pct": 91.81
+        },
+        {
+          "name": "Nêïl",
+          "source_id": 469,
+          "class_spec": "destruction_warlock",
+          "role": "dps",
+          "dps": 4644,
+          "active_pct": 49.67
+        },
+        {
+          "name": "Selandris",
+          "source_id": 465,
+          "class_spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 4030.6,
+          "active_pct": 98.04
+        },
+        {
+          "name": "Fernandril",
+          "source_id": 460,
+          "class_spec": "feral_druid_tank",
+          "role": "tank",
+          "dps": 3042.7,
+          "active_pct": 51.17
+        },
+        {
+          "name": "Naîra",
+          "source_id": 470,
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 403.7,
+          "active_pct": 76.28
+        },
+        {
+          "name": "Ellox",
+          "source_id": 468,
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 158.4,
+          "active_pct": 57.65
+        }
+      ],
+      "limitations": [
+        "Found through the Nefarian's End 10N rankings (discovery index); verified on the fight page.",
+        "Dated 2025-01-31, before the 2025-02-20 hotfix cutoff.",
+        "WCL labels the Feral tank spec Guardian; the Feral tank was 51.17% active (Onyxia then bone warriors), so its DPS is a duty-matched low figure.",
+        "Player item levels range 324-387 (fire mage 385, hunter 387).",
+        "Report ZgBFT8pH1CnjYxhV fight 36 (10N kill, 2024-07-01) was checked first; its events are archived behind a subscription."
+      ],
+      "target_scope_evidence": "Inferred: read from the same default type=damage-done view as farY2cm8JMTB1jGh fight 10 (URL above), and WCL applies its encounter filtering per encounter, not per report; this capture did not record the filter note itself. The earlier label 'whole kill including bone warriors' was not supported by the capture."
+    },
+    {
+      "id": "farY2cm8JMTB1jGh-fight10",
+      "url": "https://classic.warcraftlogs.com/reports/farY2cm8JMTB1jGh?fight=10&type=damage-done",
+      "mode": "10N",
+      "date": "2025-01-15",
+      "kill": true,
+      "duration_sec": 250.6,
+      "raid_dps": 132563.4,
+      "average_item_level": 375,
+      "target_scope": "Onyxia, Nefarian and Chromatic Prototypes: WCL's default Nefarian's End damage-done filtering, which excludes Animated Bone Warriors (41918)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "elemental_shaman": 23344.6,
+        "assassination_rogue": 24112.0,
+        "retribution_paladin": 21865.1,
+        "blood_death_knight": 12054.2
+      },
+      "actor_dps_notes": {
+        "elemental_shaman": "mean of the kill's two Elemental Shamans, Drakaish 24,785.2 (96.16% active) and Fazzu 21,903.9 (94.72% active)"
+      },
+      "excluded_actor_dps": {
+        "blood_death_knight:Mojov": {
+          "dps": 7077.7,
+          "reason": "second Blood DK at 60.03% active; tanked Onyxia (her melee rows target Mojov), not the Nefarian tank"
+        },
+        "arms_warrior:Akyrian": {
+          "dps": null,
+          "reason": "in the roster but no damage-done row"
+        }
+      },
+      "unmatched_specs": {
+        "frost_mage": 18500.6
+      },
+      "roster": [
+        {
+          "name": "Drakaish",
+          "source_id": 63,
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 24785.2,
+          "active_pct": 96.16,
+          "item_level": 380
+        },
+        {
+          "name": "Smjör",
+          "source_id": 90,
+          "class_spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 24112,
+          "active_pct": 87.93,
+          "item_level": 386
+        },
+        {
+          "name": "Fazzu",
+          "source_id": 11,
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 21903.9,
+          "active_pct": 94.72,
+          "item_level": 375
+        },
+        {
+          "name": "Billbuyerrss",
+          "source_id": 6,
+          "class_spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 21865.1,
+          "active_pct": 96.05,
+          "item_level": 377
+        },
+        {
+          "name": "Drásne",
+          "source_id": 94,
+          "class_spec": "frost_mage",
+          "role": "dps",
+          "dps": 18500.6,
+          "active_pct": 96.3,
+          "item_level": 370
+        },
+        {
+          "name": "Dethrender",
+          "source_id": 62,
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 12054.2,
+          "active_pct": 78.94,
+          "item_level": 366
+        },
+        {
+          "name": "Mojov",
+          "source_id": 1,
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 7077.7,
+          "active_pct": 60.03,
+          "item_level": 385
+        },
+        {
+          "name": "Shoxxen",
+          "source_id": 5,
+          "class_spec": "discipline_priest",
+          "role": "healer",
+          "dps": 1727.4,
+          "active_pct": 31.38,
+          "item_level": 378
+        },
+        {
+          "name": "Tofayla",
+          "source_id": 2,
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 408.9,
+          "active_pct": 72.68,
+          "item_level": 373
+        },
+        {
+          "name": "Akyrian",
+          "source_id": 12,
+          "class_spec": "arms_warrior",
+          "role": "dps",
+          "dps": null,
+          "active_pct": null,
+          "item_level": 360
+        }
+      ],
+      "limitations": [
+        "Found through the Assassination/Elemental per-spec Nefarian's End 10N rankings (discovery index); verified on the fight page.",
+        "Higher gear than the other two kills (average item level 375).",
+        "Short kill (4:10)."
+      ],
+      "target_scope_evidence": "Recorded on the farY2cm8JMTB1jGh capture (limitation: 'Damage-done values use the default encounter filtering, which excludes damage to Animated Bone Warriors')."
+    }
+  ],
   "extraction_plan": {
     "required_match": "Cataclysm Classic Blackwing Descent Nefarian's End (encounter 1026, boss 41376), 10-player Normal, a kill (not a wipe), post-4.2 tuning era, dated before or at the 2025-02-20T23:00:00Z hotfix cutoff where possible, verified on the fight page (boss, difficulty, size, date, duration, roster). Prefer a kill with all three phases observed and at least two Electrocutes in phase 1.",
     "wanted_specs": [
@@ -46,7 +417,128 @@
     }
   },
   "consumers": [
-    "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json (matched_reference_ids stays empty until a verified entry exists)",
-    "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json (unresolved: wcl_10n_kill_references_and_timelines_pending, creature_melee_damage_modifier_uncalibrated, health_guide_vs_native_conflict)"
-  ]
+    "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json (matched_reference_ids)",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json"
+  ],
+  "access_attempts": [
+    {
+      "retrieved_utc_date": "2026-09-25",
+      "agent": "WebFetch",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/*"
+      ],
+      "http_status": 403,
+      "outcome": "human-verification interstitial; stopped"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (headless Playwright)",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ"
+      ],
+      "http_status": null,
+      "outcome": "Cloudflare 'Performing security verification' (title 'Just a moment...'); stopped without interacting; 0 rows"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (plain HTTP)",
+      "urls": [
+        "https://www.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+        "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+        "https://www.warcraftlogs.com/api/docs"
+      ],
+      "http_status": 403,
+      "outcome": "Cloudflare interstitial on each; stopped without interacting"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (plain HTTP)",
+      "urls": [
+        "https://www.warcraftlogs.com/api/v2/client"
+      ],
+      "http_status": 404,
+      "outcome": "No WCL client credentials present in env or ~/.config; unauthenticated probe returned 404; no event data"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (Wayback availability API)",
+      "urls": [
+        "https://archive.org/wayback/available?url=classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+        "https://archive.org/wayback/available?url=classic.warcraftlogs.com/zone/rankings/1023"
+      ],
+      "http_status": 200,
+      "outcome": "no archived snapshots"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (Codex Chrome plugin, user Chrome profile Runiir, own tab)",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35",
+        "https://classic.warcraftlogs.com/reports/cYg4C93QNdqKfPF1?fight=18"
+      ],
+      "http_status": 200,
+      "outcome": "loaded without a challenge; summary, damage-taken, aura and cast event views read; both tabs closed"
+    },
+    {
+      "retrieved_utc_date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra (Codex Chrome plugin, own tab)",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/farY2cm8JMTB1jGh?fight=10",
+        "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35&type=resources&hostility=1"
+      ],
+      "http_status": 200,
+      "outcome": "third kill and MxFq7 fight 35 health/resources/deaths read; tab closed"
+    }
+  ],
+  "spec_coverage": {
+    "wcl_matched": [
+      "assassination_rogue",
+      "blood_death_knight",
+      "demonology_warlock",
+      "elemental_shaman",
+      "feral_druid_tank",
+      "fire_mage",
+      "retribution_paladin",
+      "survival_hunter"
+    ],
+    "no_wcl_reference": [],
+    "per_spec_values": {
+      "assassination_rogue": [
+        24112.0
+      ],
+      "blood_death_knight": [
+        11951.5,
+        12163.6,
+        12054.2
+      ],
+      "demonology_warlock": [
+        15923.5
+      ],
+      "elemental_shaman": [
+        23344.6
+      ],
+      "feral_druid_tank": [
+        3042.7
+      ],
+      "fire_mage": [
+        32243.7
+      ],
+      "retribution_paladin": [
+        17808.7,
+        21865.1
+      ],
+      "survival_hunter": [
+        19905.9,
+        29015.6
+      ]
+    },
+    "note": "Every roster spec has at least one matched 10N WCL value; the raid target uses the per-spec median across matched references."
+  },
+  "melee_samples": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
+  "enemy_scope_consistency": {
+    "rule": "All matched references were read from WCL's default Nefarian's End damage-done view. Only farY2cm8JMTB1jGh recorded that this view excludes Animated Bone Warriors (41918); for the other two the exclusion is inferred (same view; WCL filters per encounter; raid DPS x duration within 0.031% of combined boss health in all three kills, per the round-1 review).",
+    "native_side": "The raid target lists 41918 in native_dps_excluded_target_entries, so the scoreboard computes each bot's encounter_window_dps (and party DPS) without bone-warrior damage, from the analyzer's damage_by_target_entry. A run analysed without that breakdown fails closed.",
+    "why_not_rederive": "The raw captures (~/.cache/nef_wcl3-5, DVC archive wcl_raw_captures_bwd10n_20260927) hold only default-filtered damage-done totals, with no per-target split, so bone-warrior-inclusive DPS cannot be re-derived without a new WCL read.",
+    "decided_utc": "2026-09-27"
+  }
 }

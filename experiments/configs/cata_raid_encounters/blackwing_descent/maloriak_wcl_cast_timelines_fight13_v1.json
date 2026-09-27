@@ -1,0 +1,2935 @@
+{
+  "schema": "maloriak_wcl_cast_timelines_v1",
+  "encounter": "maloriak",
+  "mode": "10N",
+  "status": "extracted",
+  "status_reason": "Extracted on 2026-09-27 (GPT-6 Astra, Codex Chrome plugin). Supplementary to maloriak_wcl_cast_timelines_v1.json: only the Feral tank and the two Demonology Warlocks, whose specs are absent from fight 34.",
+  "reference_id": "VL3fW9wNm2PRJDYt-fight13",
+  "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13&type=casts&view=events",
+  "duration_sec": 209.6,
+  "target_scope": "Maloriak, Aberrations and Prime Subjects",
+  "source_note": "Completed Cast rows (Begin Cast excluded) per player, single page each; abilities are names only (spell link ids truncated).",
+  "actors": [
+    {
+      "actor_id": "VL3fW9wNm2PRJDYt-source1",
+      "class_spec": "demonology_warlock",
+      "observed_dps": 19314.1,
+      "source_id": 1,
+      "source_name": "Xenass",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Metamorphosis",
+          "t": 0.043,
+          "target": null
+        },
+        {
+          "ability": "Immolation Aura",
+          "t": 0.065,
+          "target": null
+        },
+        {
+          "ability": "Doom",
+          "t": 1.262,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 2.462,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 5.233,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 6.677,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Summon Doomguard",
+          "t": 6.709,
+          "target": null
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 7.892,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 10.873,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 12.661,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 14.452,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 16.245,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 18.027,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 18.027,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 20.657,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 21.441,
+          "target": null
+        },
+        {
+          "ability": "Corruption",
+          "t": 25.695,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Immolate",
+          "t": 28.718,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Agony",
+          "t": 28.718,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Summon Felguard",
+          "t": 35.371,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 37.227,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Corruption",
+          "t": 37.227,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 39.971,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 41.874,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Corruption",
+          "t": 41.917,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Immolate",
+          "t": 44.804,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Agony",
+          "t": 44.804,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Corruption",
+          "t": 49.368,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 52.247,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Doom",
+          "t": 52.356,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 55.066,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 55.42,
+          "target": null
+        },
+        {
+          "ability": "Life Tap",
+          "t": 56.801,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 59.984,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 61.979,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 61.996,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Immolate",
+          "t": 64.906,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Agony",
+          "t": 64.906,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 67.449,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 68.752,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 70.053,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 71.674,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 75.11,
+          "target": null
+        },
+        {
+          "ability": "Corruption",
+          "t": 76.432,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 78.983,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 80.654,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 81.028,
+          "target": null
+        },
+        {
+          "ability": "Doom",
+          "t": 83.383,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 84.666,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 87.538,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 89.021,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 90.639,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 93.999,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Immolate",
+          "t": 96.876,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Agony",
+          "t": 96.983,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 100.762,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 102.524,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Corruption",
+          "t": 103.758,
+          "target": "Aberration 9"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 104.983,
+          "target": null
+        },
+        {
+          "ability": "Darkflight",
+          "t": 106.743,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 110.42,
+          "target": "Aberration 9"
+        },
+        {
+          "ability": "Immolate",
+          "t": 112.421,
+          "target": "Aberration 8"
+        },
+        {
+          "ability": "Corruption",
+          "t": 113.02,
+          "target": "Aberration 8"
+        },
+        {
+          "ability": "Corruption",
+          "t": 118.052,
+          "target": "Aberration 10"
+        },
+        {
+          "ability": "Immolate",
+          "t": 121.128,
+          "target": "Aberration 10"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 122.844,
+          "target": "Aberration 10"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 123.629,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 126.869,
+          "target": "Aberration 10"
+        },
+        {
+          "ability": "Metamorphosis",
+          "t": 128.826,
+          "target": null
+        },
+        {
+          "ability": "Immolation Aura",
+          "t": 128.826,
+          "target": null
+        },
+        {
+          "ability": "Dark Soul",
+          "t": 129.115,
+          "target": null
+        },
+        {
+          "ability": "Lifeblood",
+          "t": 129.115,
+          "target": null
+        },
+        {
+          "ability": "Doom",
+          "t": 130.057,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Volcanic Power",
+          "t": 130.504,
+          "target": null
+        },
+        {
+          "ability": "Corruption",
+          "t": 131.073,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 133.154,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 134.522,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 135.768,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 136.69,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 136.775,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 138.995,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 140.205,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 141.411,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 142.589,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 143.807,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 145.007,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 146.475,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 147.678,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 147.802,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 150.005,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 151.146,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 152.56,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 153.981,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 153.981,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 156.472,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 157.963,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 159.455,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 159.455,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 161.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 163.364,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 164.783,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 166.208,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 167.921,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 168.126,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 170.543,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 170.789,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 173.871,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 175.764,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 176.079,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 178.8,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 180.822,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 182.654,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 184.512,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 186.483,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 186.993,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 190.075,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 192.013,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 192.98,
+          "target": null
+        },
+        {
+          "ability": "Corruption",
+          "t": 194.209,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 196.933,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 197.059,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 200.154,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 200.225,
+          "target": null
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 202.953,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 204.437,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 205.919,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 207.388,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 209.14,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "VL3fW9wNm2PRJDYt-source23",
+      "class_spec": "demonology_warlock",
+      "observed_dps": 17145.5,
+      "source_id": 23,
+      "source_name": "Tsubii",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Incinerate",
+          "t": 1.3,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 2.729,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 2.729,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Doom",
+          "t": 3.813,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Leap",
+          "t": 4.889,
+          "target": null
+        },
+        {
+          "ability": "Immolation Aura",
+          "t": 6.406,
+          "target": null
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 7.484,
+          "target": null
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 9.875,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Summon Felhunter",
+          "t": 9.875,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 12.596,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Chaos Brand",
+          "t": 12.596,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Summon Doomguard",
+          "t": 13.675,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 16.387,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 18.098,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 19.72,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 19.731,
+          "target": null
+        },
+        {
+          "ability": "Corruption",
+          "t": 22.764,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 26.046,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 28.866,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 30.37,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 30.629,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Corruption",
+          "t": 31.878,
+          "target": "Aberration 2"
+        },
+        {
+          "ability": "Corruption",
+          "t": 33.109,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 36.245,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 36.245,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 39.518,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 41.616,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 43.483,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 45.362,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 47.228,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Corruption",
+          "t": 47.67,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 50.626,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 52.13,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 52.13,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 53.377,
+          "target": null
+        },
+        {
+          "ability": "Immolate",
+          "t": 56.298,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 57.786,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soulburn",
+          "t": 58.173,
+          "target": null
+        },
+        {
+          "ability": "Summon Felguard",
+          "t": 58.621,
+          "target": null
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 59.446,
+          "target": null
+        },
+        {
+          "ability": "Volcanic Power",
+          "t": 59.554,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 61.912,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 63.78,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 65.654,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Doom",
+          "t": 65.654,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 69.493,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Corruption",
+          "t": 69.493,
+          "target": "Aberration 5"
+        },
+        {
+          "ability": "Corruption",
+          "t": 70.747,
+          "target": "Aberration 4"
+        },
+        {
+          "ability": "Corruption",
+          "t": 71.997,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 75.11,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 76.983,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 78.849,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 80.827,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Immolate",
+          "t": 82.714,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 82.714,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 85.853,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 87.35,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 88.845,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 90.345,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 92.466,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 94.886,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hellfire",
+          "t": 95.526,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 98.654,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Corruption",
+          "t": 98.654,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Corruption",
+          "t": 99.907,
+          "target": "Aberration 9"
+        },
+        {
+          "ability": "Corruption",
+          "t": 101.148,
+          "target": "Aberration 8"
+        },
+        {
+          "ability": "Doom",
+          "t": 102.39,
+          "target": "Aberration 8"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 105.14,
+          "target": "Aberration 8"
+        },
+        {
+          "ability": "Hellfire",
+          "t": 105.14,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 108.277,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 110.699,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 110.699,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Metamorphosis",
+          "t": 111.045,
+          "target": null
+        },
+        {
+          "ability": "Doom",
+          "t": 112.012,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 114.927,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolation Aura",
+          "t": 114.927,
+          "target": null
+        },
+        {
+          "ability": "Demonic Leap",
+          "t": 116.839,
+          "target": null
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 120.009,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 120.01,
+          "target": null
+        },
+        {
+          "ability": "Demonic Circle: Teleport",
+          "t": 122.717,
+          "target": null
+        },
+        {
+          "ability": "Life Tap",
+          "t": 125.975,
+          "target": null
+        },
+        {
+          "ability": "Hellfire",
+          "t": 126.969,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 132.072,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 132.073,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 133.019,
+          "target": null
+        },
+        {
+          "ability": "Dark Soul",
+          "t": 133.019,
+          "target": null
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 133.731,
+          "target": null
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 136.265,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 137.52,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 138.763,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 139.673,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 141.927,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 143.172,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 144.433,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 145.688,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolation Aura",
+          "t": 145.688,
+          "target": null
+        },
+        {
+          "ability": "Life Tap",
+          "t": 146.875,
+          "target": null
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 147.872,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 149.768,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 149.895,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 151.776,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 152.772,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soulburn",
+          "t": 152.835,
+          "target": null
+        },
+        {
+          "ability": "Summon Felhunter",
+          "t": 153.437,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 155.463,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 156.472,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 157.542,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 157.542,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hand of Gul'dan",
+          "t": 159.76,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Immolate",
+          "t": 161.037,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 161.037,
+          "target": null
+        },
+        {
+          "ability": "Incinerate",
+          "t": 163.458,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 164.464,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incinerate",
+          "t": 165.473,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 166.625,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 167.777,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 168.933,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 170.079,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 171.576,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 171.877,
+          "target": null
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 174.392,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 175.886,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 177.37,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 177.37,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Doom",
+          "t": 178.626,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 181.375,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 182.869,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 184.366,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 185.87,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 187.369,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 188.861,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 190.434,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 191.924,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 195.166,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 196.664,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 198.158,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 199.652,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Corruption",
+          "t": 199.652,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 200.901,
+          "target": null
+        },
+        {
+          "ability": "Soulburn",
+          "t": 201.324,
+          "target": null
+        },
+        {
+          "ability": "Soul Fire",
+          "t": 201.905,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 204.765,
+          "target": null
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 207.684,
+          "target": null
+        },
+        {
+          "ability": "Metamorphosis",
+          "t": 207.684,
+          "target": null
+        }
+      ]
+    },
+    {
+      "actor_id": "VL3fW9wNm2PRJDYt-source9",
+      "class_spec": "feral_druid_tank",
+      "observed_dps": 16202.0,
+      "source_id": 9,
+      "source_name": "Labraizz",
+      "role": "tank",
+      "casts": [
+        {
+          "ability": "Wild Charge",
+          "t": 0.043,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Ravage!",
+          "t": 0.511,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Primal Fury",
+          "t": 0.511,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 1.507,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Bear Form",
+          "t": 2.512,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 3.984,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 5.121,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Growl",
+          "t": 5.796,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Faerie Fire (Feral)",
+          "t": 6.63,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 7.336,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 7.63,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 9.576,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Enrage",
+          "t": 10.137,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 10.707,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 11.075,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 12.582,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 13.699,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 14.252,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 15.759,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 16.765,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 17.872,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 19.693,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 21.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 21.894,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 23.028,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Growl",
+          "t": 25.41,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 28.234,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 29.738,
+          "target": null
+        },
+        {
+          "ability": "Thrash",
+          "t": 31.246,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 32.762,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 33.454,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 34.264,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 35.763,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 37.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 37.596,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 39.943,
+          "target": null
+        },
+        {
+          "ability": "Faerie Fire (Feral)",
+          "t": 41.444,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 42.437,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 44.061,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 45.567,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 46.313,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 48.519,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 51.815,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 52.186,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 53.33,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 54.827,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 55.463,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 59.678,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 60.142,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 61.183,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 62.692,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 63.657,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 64.874,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 66.384,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 66.853,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 67.882,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Faerie Fire (Feral)",
+          "t": 69.874,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 71.36,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Enrage",
+          "t": 71.888,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 72.099,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 72.868,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 74.363,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 75.86,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 76.192,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 77.383,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Pulverize",
+          "t": 78.887,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 82.165,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 82.905,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 83.665,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 85.165,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 86.684,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 88.171,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 88.564,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 89.683,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 91.179,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 92.703,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 94.403,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 94.993,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 96.726,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 97.407,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 98.233,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 99.739,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 100.408,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Faerie Fire (Feral)",
+          "t": 101.671,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 102.67,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 103.419,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 104.183,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 105.777,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 106.501,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Incapacitating Roar",
+          "t": 107.405,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 108.908,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 111.72,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Skull Bash",
+          "t": 112.589,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 113.442,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 114.943,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 116.446,
+          "target": null
+        },
+        {
+          "ability": "Swipe",
+          "t": 117.98,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 119.481,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 122.434,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 124.007,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wild Charge",
+          "t": 124.933,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 126.832,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 127.223,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Berserk",
+          "t": 127.758,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 128.33,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 129.843,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 131.342,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 131.651,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 132.845,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 134.363,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 134.748,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 135.862,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 137.37,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 137.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 138.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 140.374,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 141.885,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 142.137,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 143.382,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 144.883,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 145.473,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 146.387,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 147.89,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 148.697,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 149.389,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 150.896,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 152.396,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 152.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Enrage",
+          "t": 153.661,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 153.902,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 155.406,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 155.88,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 156.918,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 158.42,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 159.209,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 161.14,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 162.928,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earthen Armor",
+          "t": 163.736,
+          "target": null
+        },
+        {
+          "ability": "Swipe",
+          "t": 164.611,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 166.123,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 166.61,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 167.632,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 169.12,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 169.608,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 170.68,
+          "target": null
+        },
+        {
+          "ability": "Wild Charge",
+          "t": 172.999,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 173.263,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 175.033,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 177.653,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 178.092,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 179.161,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Survival Instincts",
+          "t": 179.978,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 181.161,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 181.752,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 183.246,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 184.165,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Swipe",
+          "t": 185.87,
+          "target": null
+        },
+        {
+          "ability": "Mangle",
+          "t": 187.306,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 190.803,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 191.467,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 192.299,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 193.813,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 194.486,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 195.311,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wild Charge",
+          "t": 196.511,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 197.404,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 198.906,
+          "target": null
+        },
+        {
+          "ability": "Maul",
+          "t": 199.539,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Barkskin",
+          "t": 200.379,
+          "target": null
+        },
+        {
+          "ability": "Swipe",
+          "t": 200.611,
+          "target": null
+        },
+        {
+          "ability": "Lacerate",
+          "t": 202.093,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 202.536,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 203.603,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lacerate",
+          "t": 205.107,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Maul",
+          "t": 205.543,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mangle",
+          "t": 206.615,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Thrash",
+          "t": 208.128,
+          "target": null
+        }
+      ]
+    }
+  ],
+  "boss_timeline": [
+    {
+      "t": 12.582,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 13.07,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 15.821,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 17.324,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 17.452,
+      "source": "Maloriak",
+      "ability": "Throw Red Bottle",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 17.949,
+      "source": "Maloriak",
+      "ability": "Throw Red Bottle",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 20.699,
+      "source": "Aberration 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 20.699,
+      "source": "Aberration 2",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 20.699,
+      "source": "Aberration 3",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 25.562,
+      "source": "Maloriak",
+      "ability": "Fire Imbued",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 27.986,
+      "source": "Aberration 3",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 33.642,
+      "source": "Maloriak",
+      "ability": "Consuming Flames",
+      "event": "Cast",
+      "target": "Tsubii"
+    },
+    {
+      "t": 36.87,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 38.483,
+      "source": "Maloriak",
+      "ability": "Scorching Blast",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 41.728,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 42.231,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 43.327,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 44.955,
+      "source": "Maloriak",
+      "ability": "Consuming Flames",
+      "event": "Cast",
+      "target": "Labraizz"
+    },
+    {
+      "t": 49.82,
+      "source": "Maloriak",
+      "ability": "Scorching Blast",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 53.082,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 54.58,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 57.938,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 57.938,
+      "source": "Aberration 4",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 58.326,
+      "source": "Aberration 5",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 58.441,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 58.733,
+      "source": "Aberration 6",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 61.174,
+      "source": "Maloriak",
+      "ability": "Scorching Blast",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 64.397,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 67.63,
+      "source": "Maloriak",
+      "ability": "Throw Blue Bottle",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 68.123,
+      "source": "Maloriak",
+      "ability": "Throw Blue Bottle",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 75.726,
+      "source": "Maloriak",
+      "ability": "Frost Imbued",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 87.06,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 88.564,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 88.655,
+      "source": "Maloriak",
+      "ability": "Biting Chill",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 91.898,
+      "source": "Aberration 7",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 91.898,
+      "source": "Aberration 8",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 91.903,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 92.397,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 92.703,
+      "source": "Aberration 9",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 93.516,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 100.001,
+      "source": "Maloriak",
+      "ability": "Biting Chill",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 104.884,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 105.37,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 108.131,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 109.641,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 111.357,
+      "source": "Maloriak",
+      "ability": "Biting Chill",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 112.978,
+      "source": "Aberration 10",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 113.796,
+      "source": "Aberration 12",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 113.796,
+      "source": "Aberration 11",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 117.832,
+      "source": "Maloriak",
+      "ability": "Throw Green Bottle",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 118.329,
+      "source": "Maloriak",
+      "ability": "Throw Green Bottle",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 125.122,
+      "source": "Maloriak",
+      "ability": "Slime Imbued",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 129.162,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 129.674,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 132.386,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 134.01,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 143.729,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 144.219,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 151.798,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 153.308,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 156.668,
+      "source": "Aberration 13",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 157.473,
+      "source": "Aberration 14",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 157.473,
+      "source": "Aberration 15",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 158.295,
+      "source": "Maloriak",
+      "ability": "Release All Minions",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 159.779,
+      "source": "Maloriak",
+      "ability": "Release All Minions",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 162.721,
+      "source": "Aberration 16",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 162.74,
+      "source": "Aberration 17",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 163.125,
+      "source": "Prime Subject 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 163.138,
+      "source": "Aberration 18",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 163.938,
+      "source": "Prime Subject 2",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 164.745,
+      "source": "Aberration 17",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 165.55,
+      "source": "Aberration 18",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 166.358,
+      "source": "Maloriak",
+      "ability": "Unstable Mix",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 169.829,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 171.83,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 172.827,
+      "source": "Maloriak",
+      "ability": "Acid Nova",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 177.268,
+      "source": "Prime Subject 2",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Orageux"
+    },
+    {
+      "t": 177.674,
+      "source": "Maloriak",
+      "ability": "Absolute Zero",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 179.293,
+      "source": "Prime Subject 1",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Orageux"
+    },
+    {
+      "t": 182.233,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 184.215,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 185.756,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 188.991,
+      "source": "Maloriak",
+      "ability": "Absolute Zero",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 193.425,
+      "source": "Prime Subject 2",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Orageux"
+    },
+    {
+      "t": 193.652,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 195.66,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 200.295,
+      "source": "Maloriak",
+      "ability": "Absolute Zero",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 203.129,
+      "source": "Prime Subject 2",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Orageux"
+    },
+    {
+      "t": 203.533,
+      "source": "Maloriak",
+      "ability": "Acid Nova",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 205.464,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 207.467,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 208.396,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    }
+  ]
+}

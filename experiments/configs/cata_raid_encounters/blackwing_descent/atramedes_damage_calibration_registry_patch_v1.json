@@ -1,0 +1,76 @@
+{
+  "schema": "atramedes_damage_calibration_registry_patch_v1",
+  "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+  "apply": "Replace target.creatures['41442'] with creatures['41442'] verbatim. Leave 49583/49584/49585 (25N/10H/25H, open) unchanged.",
+  "owner": "coordinator",
+  "staged_sql": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+  "staged_sql_apply": "Move the staged file to sql/custom/world/ (or apply with mysql) right before the Atramedes measurement batch, after reading back the live creature_template row 41442 (expected DamageModifier 1, BaseAttackTime 1500). A live kill must then show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL reference.",
+  "creatures": {
+    "41442": {
+      "name": "Atramedes",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41442,
+      "role": "boss",
+      "status": "calibrated",
+      "damage_modifier": 10.35,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 513,
+        "level": 88
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 32,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 10.32,
+          "upper": 10.47,
+          "with_auto_attack_bonus": {
+            "lower": 10.22,
+            "upper": 10.36
+          },
+          "combined": {
+            "lower": 10.32,
+            "upper": 10.36
+          }
+        },
+        "bounds_derivation": "lower = 62,831 / (0.9 * 6,764.2) = 10.32 (largest hit under Scarlet Fever; the largest unreduced hit gives 68,939 / 6,764.2 = 10.19); upper = 47,665 / 4,553.3 = 10.47 (smallest unreduced hit; the smallest under Scarlet Fever, 45,877 / (0.9 * 4,553.3) = 11.20, is looser); with the native +1% auto-attack bonus 10.22 <= m <= 10.36; the value must satisfy both, so 10.32-10.36",
+        "cross_check": "Pooled mean of the 22 landed U is 55,546 vs a native expectation of 54,045 at 10.35 for the 3 unreduced / 19 Scarlet Fever mix (+2.8%). Treating Scarlet Fever as outside U leaves no consistent value (10.19 > 10.08). Same-fight health derivation 26,111,168 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists.",
+        "sample_note": "Only 3 unreduced rows (before Scarlet Fever at 6.9 s). Scarlet Fever rows average 55,317 vs 56,996 unreduced, smaller than the expected 10% (as in the Chimaeron sample); the bounds hold under either reading except the no-aura one, which has no solution.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_atramedes_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 45877,
+        "u_max": 68939,
+        "u_mean": 55546.1,
+        "u_mean_basis": "mean of all 22 landed U values (3 unreduced mean 56,996; 19 under Scarlet Fever mean 55,317)",
+        "landed_samples": 22,
+        "avoided_samples": 10,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_32"
+      },
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+        "value_key": "boss_melee_damage_modifier_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    }
+  }
+}

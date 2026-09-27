@@ -63,15 +63,26 @@ def test_ledger_resolves_client_values_and_records_the_native_audit() -> None:
     assert audit["intro_vertigo_resume"] == "fixed"
     assert audit["devastation_targets_raid"] == "promoted"
     completion = {row["key"]: row["status"] for row in ledger["research_completion"]}
-    assert completion["wcl_dps_references"] == "blocked"
-    assert completion["boss_melee_damage_modifier_10n"] == "blocked"
+    assert completion["wcl_dps_references"] == "resolved"
+    assert completion["boss_melee_damage_modifier_10n"] == "resolved"
+    assert completion["boss_health_10n"] == "resolved"
     assert ledger["acceptance_observations"]
 
 
-def test_wcl_placeholders_carry_no_measured_value() -> None:
+def test_wcl_references_are_the_extracted_10n_kills() -> None:
     dps, casts = load(WCL_DPS), load(WCL_CASTS)
-    assert dps["status"] == casts["status"] == "pending_extraction"
-    assert dps["references"] == [] and casts["actors"] == []
+    assert dps["status"] == casts["status"] == "extracted"
+    references = {ref["id"]: ref for ref in dps["references"]}
+    assert set(references) == {"MxFq7TRbvnjGY1hJ-fight32", "xAhkN2y9YP3KRmnJ-fight17"}
+    matched = references["MxFq7TRbvnjGY1hJ-fight32"]
+    assert matched["mode"] == "10N" and matched["duration_sec"] == 165.6
+    # Active tank only (the off-tank is excluded); Survival is the median of two hunters.
+    assert matched["actor_dps"]["blood_death_knight"] == 13254
+    assert matched["actor_dps"]["survival_hunter"] == 25513.05
+    assert references["xAhkN2y9YP3KRmnJ-fight17"]["reference_class"] == "short_fight_throughput_context"
+    assert casts["reference_id"] == "MxFq7TRbvnjGY1hJ-fight32"
+    assert len(casts["actors"]) == 8
+    assert all(actor["complete"] and actor["row_count"] == len(actor["casts"]) for actor in casts["actors"])
     plan = dps["extraction_plan"]
     assert {"summary", "casts", "boss_casts", "boss_melee", "health"} <= set(plan["views"])
     assert plan["candidate_reports_to_open_first"]
@@ -85,16 +96,19 @@ def test_raid_target_is_scoreboard_loadable_and_honest() -> None:
     from tools.raid_program import scoreboard_core
 
     target = scoreboard_core.load_target(ROOT, "blackwing_descent_10n_atramedes")
-    assert target["matched_reference_ids"] == []
+    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight32"]
     assert (ROOT / target["wcl_reference_manifest"]).is_file()
-    assert "wcl_cast_timelines" not in target  # added only once actors exist
+    assert (ROOT / target["wcl_cast_timelines"]).is_file()
     references = scoreboard_core.reference_targets(ROOT, target)
-    assert all(ref["basis"] == "wowsims_fallback" for ref in references.values())
-    # Blood has neither a WCL reference nor a WoWSims fallback; the Survival
-    # hunter has the WoWSims fallback.
-    assert "blood_death_knight" not in references
+    for spec in ("blood_death_knight", "survival_hunter", "retribution_paladin", "elemental_shaman"):
+        assert references[spec]["basis"] == "wcl", spec
+    for spec in ("balance_druid", "fire_mage", "assassination_rogue", "demonology_warlock"):
+        assert references[spec]["basis"] == "wowsims_fallback", spec
     assert target["roster"]["11003003"]["spec"] == "survival_hunter"
-    assert references["survival_hunter"]["basis"] == "wowsims_fallback"
+    # Every non-healer roster spec now has a target.
+    for actor in target["roster"].values():
+        if actor["role"] != "healer":
+            assert actor["spec"] in references, actor
     assert target["encounter_route_node_id"] == "bwd.atramedes.encounter"
     assert target["lockout"]["precompleted_boss_keys"] == ["magmaw", "omnotron"]
     assert target["run_plan"]["requires_seeded_lockout"] is True

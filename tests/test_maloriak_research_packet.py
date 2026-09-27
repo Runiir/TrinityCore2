@@ -58,7 +58,7 @@ def test_ledger_sources_and_completion_rows_are_traceable() -> None:
     for row in ledger["values"]:
         for ref in row.get("source_refs", []):
             assert ref in catalog, (row["key"], ref)
-    # WCL-dependent values stay blocked while no report was read.
+    # Health, adds and the other modes still lack matched WCL values.
     health = next(row for row in ledger["research_completion"] if row["key"] == "health_and_melee_damage")
     assert health["status"] == "blocked"
 
@@ -72,16 +72,32 @@ def test_client_values_keep_the_extracted_numbers() -> None:
     assert "4,553.3-6,764.2" in values["native_melee_roll_modifier_1"]["value"]
 
 
-def test_wcl_placeholders_hold_no_measured_values() -> None:
+def test_wcl_reference_and_timelines_are_the_extracted_fight() -> None:
     reference, timelines = load(DPS_REFERENCE), load(CAST_TIMELINES)
     assert reference["schema"] == "maloriak_wcl_dps_reference_v1"
-    assert reference["status"] == "pending_extraction" and reference["references"] == []
+    assert reference["status"] == "extracted"
+    ref, longer = reference["references"]
+    assert longer["id"] == "VL3fW9wNm2PRJDYt-fight13" and longer["duration_sec"] == 209.6
+    # The only Feral (Labraizz) tanked Maloriak; a boss-tank reference is not matched for the
+    # roster's add-tanking Feral, so it is recorded but kept out of actor_dps.
+    assert "feral_druid_tank" not in longer["actor_dps"]
+    assert longer["excluded_actor_dps"]["feral_druid_tank"]["dps"] == 16202.0
+    assert "blood_death_knight" not in longer["actor_dps"]  # the add-tank DK is excluded
+    assert ref["id"] == "MxFq7TRbvnjGY1hJ-fight34" and ref["mode"] == "10N" and ref["duration_sec"] == 125.1
+    assert ref["actor_dps"]["blood_death_knight"] == 11681.9  # main tank, not the add off-tank
+    assert ref["actor_dps"]["survival_hunter"] == 25375.4  # median of two Survival Hunters
+    assert "holy_paladin" not in ref["actor_dps"]
     plan = reference["extraction_plan"]
     assert {row["report"] for row in plan["candidate_reports_to_open_first"]} >= {
         "Y8ajQ7dbmKMG1RZy", "MxFq7TRbvnjGY1hJ"}
     assert "1025" in plan["required_match"]
     assert timelines["schema"] == "maloriak_wcl_cast_timelines_v1"
-    assert timelines["actors"] == [] and timelines["reference_id"] is None
+    assert timelines["reference_id"] == ref["id"] and timelines["duration_sec"] == ref["duration_sec"]
+    actors = timelines["actors"]
+    assert len(actors) == 9 and sum(len(actor["casts"]) for actor in actors) == 818
+    blood = [actor["source_name"] for actor in actors if actor["class_spec"] == "blood_death_knight"]
+    assert blood == ["Greysnout", "Wongelrainer"]  # the comparator takes the first actor per spec
+    assert all(cast["t"] <= ref["duration_sec"] for actor in actors for cast in actor["casts"])
 
 
 def test_raid_target_matches_the_canonical_maloriak_shard() -> None:
@@ -107,11 +123,20 @@ def test_raid_target_matches_the_canonical_maloriak_shard() -> None:
     assert specs == sorted(expected)
     assert sum(row["role"] == "tank" for row in roster.values()) == 2
     assert sum(row["role"] == "healer" for row in roster.values()) == 2
-    for spec in ("blood_death_knight", "feral_druid_tank"):
-        assert spec in target["reference_gaps"]
-    # The Survival hunter (canonical since 2026-09-26) has a WoWSims fallback, so it is no gap.
-    assert "survival_hunter" not in target["reference_gaps"]
-    assert "survival_hunter" in target["reference_gaps"]["with_wowsims_fallback"]
+    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight34", "VL3fW9wNm2PRJDYt-fight13"]
+    assert (ROOT / target["wcl_cast_timelines"]).is_file()
+    # Only Fire Mage and Assassination Rogue fall back to WoWSims; the Feral add tank has no reference.
+    for spec in ("fire_mage", "assassination_rogue"):
+        assert spec in target["reference_gaps"]["with_wowsims_fallback"]
+    matched = set()
+    for reference in load(DPS_REFERENCE)["references"]:
+        matched |= set(reference["actor_dps"])
+    for spec in ("blood_death_knight", "survival_hunter", "retribution_paladin",
+                 "elemental_shaman", "demonology_warlock"):
+        assert spec in specs and spec in matched
+    # The add-tanking Feral has no role-matched reference: an honest no_reference gap.
+    assert "feral_druid_tank" in specs and "feral_druid_tank" not in matched
+    assert target["reference_gaps"]["no_reference_until_wcl"] == ["feral_druid_tank"]
 
 
 def test_dossier_carries_the_contract_and_its_blockers() -> None:
@@ -128,16 +153,19 @@ def test_damage_registry_patch_is_schema_valid_and_honest() -> None:
     patch = load(ENCOUNTERS / "maloriak_damage_calibration_registry_patch_v1.json")
     registry = load_registry(ROOT)
     assert patch["target"] == "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
-    assert patch["staged_sql"] is None
+    assert patch["staged_sql"] == "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql"
     creatures = patch["creatures"]
     for entry, row in creatures.items():
         assert entry.isdigit() and row["status"] in REGISTRY_STATUSES
         assert row["role"] in ("boss", "add") and row["mode"] in ("10N", "25N", "10H", "25H")
         assert row["boss"] == "maloriak" and isinstance(row["base_entry"], int)
-        assert row["damage_modifier"] is None  # nothing is calibrated without a matched sample
-        assert row.get("open_reason") if row["status"] == "open" else row.get("reason")
         if entry in registry["creatures"]:
-            assert registry["creatures"][entry] == row  # applied verbatim, never edited
+            assert registry["creatures"][entry] == row, entry  # applied verbatim, never edited
+        if entry == "41378":  # calibrated from WCL MxFq7TRbvnjGY1hJ fight 34 (10N)
+            assert row["status"] == "calibrated" and row["damage_modifier"] == 9.5
+            continue
+        assert row["damage_modifier"] is None  # nothing else has a matched same-mode sample
+        assert row.get("open_reason") if row["status"] == "open" else row.get("reason")
     bosses = {entry: row["mode"] for entry, row in creatures.items() if row["role"] == "boss"}
     assert bosses == {"41378": "10N", "49974": "25N", "49980": "10H", "49986": "25H"}
     assert creatures["41378"]["native_roll_at_modifier_1"] == {"min": 4553.3, "max": 6764.2}

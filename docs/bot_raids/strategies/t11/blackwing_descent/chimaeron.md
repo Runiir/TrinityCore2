@@ -1,16 +1,20 @@
 # Chimaeron (Blackwing Descent)
 
-Status (2026-09-25, round 2): research packet, native script audit and the 10N bot
-strategy are done. Warcraft Logs (WCL) extraction is blocked by a human-verification
-gate, so every WCL-dependent value is still open. Fidelity state: `fidelity_blocked`.
+Status (2026-09-27, raid program round 1): research packet, native script audit and the 10N bot
+strategy are done. Warcraft Logs (WCL) 10N data from two kills now resolves health, the boss
+melee DamageModifier (20, staged), the first Caustic Slime timer and the DPS references (see
+"WCL 10N observations"). Other claims stay unresolved, so the fidelity state is still
+`fidelity_blocked`.
 The fidelity target is Cataclysm Classic 4.4.2 (build 59185); the execution client is
 4.3.4 (build 15595). This page separates encounter truth, current repository behavior
 and the bot tactic. Machine-readable files:
 
 - contract: `experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json`
 - claim ledger: `experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json`
-- WCL reference and cast timelines (empty until extraction): `chimaeron_wcl_dps_reference_v1.json`,
+- WCL reference and cast timelines: `chimaeron_wcl_dps_reference_v1.json`,
   `chimaeron_wcl_cast_timelines_v1.json` in the same directory
+- melee calibration: `sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql` and the
+  registry patch `chimaeron_damage_calibration_registry_patch_v1.json` (same directory as the ledger)
 - raid target: `experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json`
 
 ## Sources
@@ -25,6 +29,8 @@ and the bot tactic. Machine-readable files:
 | Wowhead, [Chimaeron Strategy Guide](https://www.wowhead.com/cata/guide/raids/blackwing-descent/chimaeron-strategy), Beanna, updated 2024-06-04, read 2026-09-25 | current guide | tactics, health |
 | Icy Veins, [Chimaeron Encounter Guide](https://www.icy-veins.com/cataclysm-classic/chimaeron-encounter-guide-strategy-abilities-loot), Abide, updated 2024-07-29, read 2026-09-25 | current guide | tactics, swing interval |
 | repository `boss_chimaeron.cpp`, `blackwing_descent.cpp`, `instance_blackwing_descent.cpp` | implementation | native behavior |
+| WCL [MxFq7TRbvnjGY1hJ fight 27](https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27), 10N kill, 2024-10-28, read 2026-09-27 | observed kill | melee U samples, health, boss timeline, DPS, casts |
+| WCL [xAhkN2y9YP3KRmnJ fight 14](https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14), 10N kill, 2025-06-11, read 2026-09-27 | observed kill | Massacre/Mortality timing, DPS, casts |
 
 ## Encounter truth (10N unless stated)
 
@@ -35,7 +41,8 @@ and the bot tactic. Machine-readable files:
   the nearest player within 70 yd (native: 23 s after the gossip; BigWigs shows 30 s).
 - **Boss.** Level 88 boss, BaseAttackTime 4000 ms (Icy Veins also reports a 4 s swing), combat
   reach 20 yd (display 33308), so both tank spots and the melee spots are inside his reach.
-- **Caustic Slime** (82871 → 82913 → 82935): every 5 s, 2 random players (the current victim
+- **Caustic Slime** (82871 → 82913 → 82935): first cast 15 s after engage (WCL impacts at 17.2 s,
+  BigWigs 15 s), then every 5 s, 2 random players (the current victim
   excluded) take 235,200 Nature damage split among players within 6 yd of the impact, plus
   -75% hit chance for 2.5 s. The 25-player row is 270,480, which is the value in Wowhead's ability
   table. Since the 4.0.6 hotfix, Break-affected players are only chosen when too few others remain.
@@ -63,18 +70,19 @@ and the bot tactic. Machine-readable files:
 | 25H | 47776 | 126,776,592 | 126.8M | 2.0 s | 270,480 | 4 |
 
 Native health is `gt_npc_total_hp_exp3[88].Warrior` 85,892 × HealthModifier. The heroic values match
-the guide. Both normal values are exactly the guide value divided by 1.25. This is **unresolved**
-until a WCL health derivation.
+the guide. Both normal values are exactly the guide value divided by 1.25. For 10N the WCL derivation
+settles it: six consecutive resource rows of MxFq7TRbvnjGY1hJ fight 27 give exactly 20,699,972 (WCL
+shows "20.7m"), the native value. The guide's 25.9M is not what Classic ran. 25N is still unobserved.
 
 ## Timers: native versus pinned addons
 
 | Event | Native | Addons | State |
 | --- | --- | --- | --- |
 | Massacre | 26 s, then 30 s | DBM 26/30, BigWigs 25 | agree |
-| Break and Double Attack | 5 s, then 15 s | DBM 4.5/15, BigWigs 4.8/14.2 | agree |
-| Break after Massacre start | 11 s | DBM 14, BigWigs 13.6 | conflict, waits for WCL |
-| Caustic Slime after Massacre start | 19 s | DBM 19 | agree |
-| First Caustic Slime after engage | 5 s | BigWigs 15 | conflict |
+| Break and Double Attack | 5 s, then 15 s | DBM 4.5/15, BigWigs 4.8/14.2; WCL 4.6 s, then every third swing (14.4 s) | agree within a swing |
+| Break after Massacre start | 11 s | DBM 14, BigWigs 13.6; WCL 13.6 s twice, on a swing | conflict (open, see below) |
+| Caustic Slime after Massacre start | 19 s | DBM 19; WCL impacts at +21.5 s (flight) | agree |
+| First Caustic Slime after engage | 15 s (was 5 s until 2026-09-27) | BigWigs 15; WCL impacts at 17.2 s | agree (repaired) |
 | Knockout | 40/60/80/100% per Massacre | DBM: after the 2nd or 3rd, the 3rd always | conflict |
 | Wake-up after gossip | 23 s | BigWigs 30 | conflict |
 | Berserk | none | 450 s (DBM marks it heroic) | unresolved |
@@ -96,10 +104,21 @@ Round-2 repairs in `boss_chimaeron.cpp`:
 4. `GetTimeUntilEncounterMechanic(82848)` publishes the native Massacre schedule for observers
    (0 while casting or overdue). This is observation only.
 
-These are deferred until WCL evidence exists. We do not change the native code on addon data alone:
-Break and Double Attack at 13.6-14 s after a Massacre, the first Slime at 15 s after engage, the
-knockout rule, normal health, and the boss melee DamageModifier (still the upstream value 1; at
-modifier 1 a 10N swing rolls 12,142-18,038 before the +1% auto-attack bonus).
+5. (2026-09-27) The first Caustic Slime is scheduled at 15 s instead of 5 s. BigWigs and the WCL
+   kill agree: the first impacts land at 17.2/17.5 s, after the missile flight, and none earlier.
+
+Still deferred:
+
+- Break and Double Attack after a Massacre. In WCL they land on a melee swing: every third swing,
+  and on the second swing after Massacre's swing reset (13.6 s after the cast start at 4.8 s
+  swings). The native code uses 11 s/15 s timers. A fixed 13.6 s timer would only match one swing
+  speed, so this needs an implementation decision (swing-bound or timer), not a constant swap.
+- The knockout rule.
+- The Slime repeat: native 5 s, while the WCL impacts are 5.9-6.4 s apart (2 intervals).
+
+The boss melee DamageModifier for 10N is 20, derived from WCL. The migration is staged, not yet
+applied. At modifier 1 a 10N swing rolls 12,142-18,038 before the +1% auto-attack bonus; 20 gives
+245-364k at the WCL U stage.
 
 ## Bot strategy (canonical 10N composition)
 
@@ -198,17 +217,38 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   victim whenever Weakened Soul allows and uses Pain Suppression on a failing tank unless it was cast
   within its 3 minute cooldown. Absorbs still work.
 
+## WCL 10N observations (2026-09-27)
+
+GPT-6 Astra read both kills through its browser surface (`codex exec -m gpt-6-astra` with
+`CUA_REPL_ENABLED_SURFACES=browser`). No verification page appeared and none was clicked. Plain
+HTTP requests still get the Cloudflare page. Report `Y8ajQ7dbmKMG1RZy` has no Chimaeron encounter.
+
+| Kill | Duration | Item level | Raid DPS | Roster | Massacres | Mortality | Deaths |
+| --- | ---: | ---: | ---: | --- | ---: | ---: | --- |
+| MxFq7TRbvnjGY1hJ fight 27 | 95.3 s | 359.5 | 217,144.7 | 1 tank (Blood DK), 1 healer (Holy Paladin), 8 DPS | 2 (26.0, 56.0 s) | 78.1 s | tank, Mortality melee at 93 s |
+| xAhkN2y9YP3KRmnJ fight 14 | 60.0 s | 401.4 | 345,080.1 | 1 tank (Blood DK), 1 healer (Restoration Shaman), 8 DPS | 1 (26.0 s) | 50.2 s | Fire Mage, Cauterize at 35 s |
+
+- **Melee.** Fight 27 has 23 Chimaeron melee rows on the only tank: 17 landed, with U values of
+  253,562-345,349, plus 4 parries, 1 dodge and 1 miss. U does not change with Break stacks (only
+  WCL's mitigation % does), so it is the attacker-side stage. Scarlet Fever was up 5.2-34.3 s and
+  52.5-81.5 s. The bounds are 19.3757 (largest reduced hit 314,547 / (0.9 x native max)) and 20.88
+  (smallest unreduced hit / native min), or 19.1838-20.67 once the +1% auto-attack bonus is
+  included. DamageModifier 20 is staged.
+- **Neither kill had a Systems Failure or Feud** (two Massacres and one). Neither is long enough
+  to test the 450 s berserk.
+- **Single-tank kills.** Both groups tanked Chimaeron with one Blood DK. He held 4 Break stacks
+  without a swap and died to a Mortality swing just before the kill. The canonical bot roster keeps
+  two tanks and the taunt exchange. The matched DPS targets (median across both kills) are Blood DK
+  25,888.5, Survival Hunter 37,218.05 and Retribution Paladin 25,345.0. Fire Mage, Assassination
+  Rogue and Demonology Warlock keep the WoWSims fallback, and the Feral tank has no reference.
+
 ## Open items (unresolved)
 
-- WCL 10N references:
-  - per-spec DPS, roster and duration;
-  - cast timelines;
-  - melee U samples for the DamageModifier calibration;
-  - health derivation;
-  - Systems Failure frequency;
-  - post-Massacre Break timing.
-
-  The planned reports are in the ledger's `wcl_extraction_plan`.
+- WCL 10N: Systems Failure frequency (longer kills), post-Massacre Break timing (swing-bound
+  versus timer), Slime repeat, berserk, and a kill that covers Fire Mage, Assassination Rogue,
+  Demonology Warlock or a Feral tank.
+- Apply the staged DamageModifier and the registry patch (coordinator), then confirm on a live kill
+  that `encounter_fidelity.boss_melee` is within ±10% of WCL.
 - The 4.4.2 client rows for the spell chain (`extract_442_client_spell_rows --follow-triggers`).
 - Heroic behavior (Shadow Whip delay, Mocking Shadows), the 25N/10H Slime target mapping, and
   retail reset, loot and achievement persistence.

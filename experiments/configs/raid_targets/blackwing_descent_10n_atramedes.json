@@ -15,15 +15,12 @@
     "unseeded_prerequisites": "The eight dwarven spirits (spawn groups 435/436) and the Ancient Bell stay native: the route kills the spirits, waits for the bell to become selectable, rings it and waits for the intro landing."
   },
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
-  "matched_reference_ids": [],
-  "reference_status": "pending_extraction",
-  "reference_gaps": {
-    "all_specs": "No matched Atramedes 10N WCL kill has been read: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 that an agent may not pass. The manifest lists the reports and views to extract.",
-    "blood_death_knight": "No WCL reference and no WoWSims fallback in the promotion index: status no_reference until a matched kill is extracted.",
-    "with_wowsims_fallback": "balance_druid, survival_hunter (the canonical hunter since 2026-09-26, user decision; Beast Mastery had no fallback), fire_mage, retribution_paladin, assassination_rogue, elemental_shaman and demonology_warlock are judged against 0.90 x verified WoWSims DPS until a matched WCL reference exists. WoWSims is a single-target patchwerk reference; Atramedes costs movement (Sonar Pulse, Sonic Breath, air phase), so these targets are not encounter-matched."
-  },
-  "unmatched_reference_notes": {},
-  "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json (actors empty; add wcl_cast_timelines here once extracted)",
+  "matched_reference_ids": ["MxFq7TRbvnjGY1hJ-fight32"],
+  "reference_status": {"state": "matched_wcl_references", "reason": "Atramedes 10N kill MxFq7TRbvnjGY1hJ fight 32 extracted 2026-09-27 (atramedes_wcl_dps_reference_v1.json).", "wcl_matched": {"blood_death_knight": 13254, "elemental_shaman": 24949.4, "retribution_paladin": 19929.9, "survival_hunter": 25513.05}, "wowsims_fallback_available": ["balance_druid", "fire_mage", "assassination_rogue", "demonology_warlock"], "no_reference_until_wcl": [], "healers_without_dps_target": ["holy_paladin", "discipline_priest"]},
+  "reference_gaps": {"with_wowsims_fallback": "balance_druid, fire_mage, assassination_rogue and demonology_warlock are absent from the matched kill and are judged against 0.90 x verified WoWSims DPS. WoWSims is a single-target patchwerk reference; Atramedes costs movement (Sonar Pulse, Sonic Breath, air phase), so these targets are not encounter-matched."},
+  "unmatched_reference_notes": {"xAhkN2y9YP3KRmnJ-fight17": "48.5 s kill at item level 401.4 that ends before the first liftoff (no air phase, no Searing Flame); throughput context only, never a target."},
+  "reference_matching_rationale": "Fight 32 is the only extracted 10N kill that covers the whole encounter (ground, one air phase with Roaring Flame Breath and Tracking, landing, Searing Flame, Devastation). Its blood_death_knight value is the active tank only (Greysnout, 13,254); the off-tank Wongelrainer (3,965, 39% active) is excluded because the canonical roster has one tank. Survival Hunter is the median of two players.",
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json",
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
   "actor_dps_ratio": 0.95,
@@ -39,6 +36,8 @@
   "max_boss_window_deaths": 0,
   "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass. Dwarven-spirit trash deaths that recover do not gate.",
   "roles_without_dps_target": ["healer"],
+  "dps_gate_exempt_specs": ["feral_druid_tank"],
+  "dps_gate_exempt_decision": {"source": "user decision 2026-09-27", "quote": "Just count blood tank as dps, leave feral out. Feral dps is negligible, but bdk is relevant.", "effect": "feral_druid_tank DPS is recorded and reported as informational: no parity gate, and a missing reference does not fail the verdict. blood_death_knight stays gated against its WCL reference. This roster fields a Balance druid for Atramedes, so the field is declared for consistency across the BWD 10N targets."},
   "healer_status": "Healers have no DPS target; their status follows the encounter status.",
   "fallback_reference": {
     "source": "wowsims",
@@ -48,7 +47,7 @@
     "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
   },
   "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
-  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass. Specs listed in dps_gate_exempt_specs are the exception (user decision 2026-09-27): their DPS is informational, a missing reference fails nothing, and like a healer their status follows the encounter.",
   "roster": {
     "11003001": {"name": "Bwatrnba", "spec": "blood_death_knight", "role": "tank"},
     "11003002": {"name": "Bwatrnbb", "spec": "balance_druid", "role": "dps"},

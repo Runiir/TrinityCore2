@@ -47,11 +47,12 @@ def _spell_queues(report: dict[str, Any]) -> Iterator[dict[str, Any]]:
             yield {**(bot.get("identity") or {}), **queue}
 
 
-def summarize(run_dir: Path, timeline_path: Path, label: str, binary_sha256: str) -> dict[str, Any]:
+def summarize(run_dir: Path, timeline_path: Path, label: str, binary_sha256: str,
+              encounter_node: str = ENCOUNTER) -> dict[str, Any]:
     report = json.loads((run_dir / "report.json").read_text())
     analysis = json.loads((run_dir / "combat_analysis.json").read_text())
     timeline = json.loads(timeline_path.read_text())
-    encounter = next(row for row in analysis["encounters"] if row.get("route_node_id") == ENCOUNTER)
+    encounter = next(row for row in analysis["encounters"] if row.get("route_node_id") == encounter_node)
     outcome = report.get("native_gameplay_outcome") or {}
 
     wcl_by_guid = {int(actor["bot_guid"]): actor for actor in timeline["actors"]}

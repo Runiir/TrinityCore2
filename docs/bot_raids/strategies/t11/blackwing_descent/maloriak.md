@@ -9,7 +9,7 @@ bot does not treat the disputed value as exact.
 
 Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json`
 (contract) and `maloriak_ledger_v1.json` (values, sources, research completion). WCL references
-(pending): `maloriak_wcl_dps_reference_v1.json`, `maloriak_wcl_cast_timelines_v1.json`. Finish line:
+(fight 34 extracted): `maloriak_wcl_dps_reference_v1.json`, `maloriak_wcl_cast_timelines_v1.json`. Finish line:
 `experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json`.
 
 ## Contract
@@ -172,8 +172,8 @@ Repaired:
    `TimeUntilScheduledEvent` helper, replayed against the production EventMap). Wiring it into the
    blackboard is a coordinator patch.
 
-Patch requested: `SpellMgrCorrectionsPart04.cpp` assigns Biting Chill EFFECT_0 `TargetA` twice. The
-second assignment was meant for `TargetB`.
+Applied in c0efb93a61: `SpellMgrCorrectionsPart04.cpp` used to assign Biting Chill EFFECT_0 `TargetA`
+twice. The second assignment now writes `TargetB`, as intended.
 
 Open native fidelity items (recorded, not changed):
 
@@ -307,9 +307,9 @@ Every creature template runs at DamageModifier 1 (upstream reset
 - Vile Swill: 6,027-8,975.
 
 Historically the 10N melee was about 25k per boss hit and 5k per Aberration hit, and about 20k
-per Prime Subject hit. Calibration needs same-mode WCL melee U samples; the WCL extraction plan
-lists the reports and views. No value is staged until then (registry entries are requested as
-`open`, with the non-melee helpers `not_applicable`).
+per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5, staged; see finding
+7 below). The other boss modes and the adds stay `open`, and the non-melee helpers are
+`not_applicable`.
 
 ## Sources
 
@@ -330,18 +330,39 @@ lists the reports and views. No value is staged until then (registry entries are
    - the TDB 434.22011 dump, the gt tables in `sql/updates/world/4.3.4/2025_06_07_0{0,1}_world.sql`
      and the historical script bindings;
    - the pinned 669 navmesh and the round-1 proof archive.
-6. Warcraft Logs was behind a human-verification gate on 2026-09-25, and no report was read.
+6. Warcraft Logs was behind a human-verification gate on 2026-09-25 and on agent-browser retries on
+   2026-09-27. It was then read through GPT-6 Astra in the user's verified Chrome session:
+   report MxFq7TRbvnjGY1hJ fight 34 (Maloriak 10N kill, 2024-10-28, 125.1 s). That gave the boss
+   melee sample, per-spec DPS (`maloriak_wcl_dps_reference_v1.json`), 818 player casts
+   (`maloriak_wcl_cast_timelines_v1.json`) and the Red/Blue/phase-two boss timeline (ledger
+   `wcl_10N_boss_timeline_fight34`). The kill has no Green phase. A second kill, VL3fW9wNm2PRJDYt
+   fight 13 (2024-10-21, 209.6 s), adds a Guardian tank (who tanked Maloriak, so it is not a matched reference for the
+   add-tanking bot Feral, which stays no_reference), two Demonology Warlocks and a Green phase
+   (ledger `wcl_10N_boss_timeline_fight13`). Its phase two repeats Magma Jets about every 11.8 s,
+   Acid Nova 30.7 s and Absolute Zero 11.3 s. The native script used 6, 20 and 7 s; it now uses the
+   WCL values on 10N only (first Absolute Zero 11.3 s). 25N, 10H and 25H keep 6, 20 and 7 s
+   and the 8.4 s first Absolute Zero, because only 10N was observed. Remedy keeps being cast in phase two in the log,
+   but not natively (open).
+7. Maloriak 10N melee: 29 landed swings with U 40,559-63,630 (Scarlet Fever on the boss for all but
+   3 of them). Against the native roll 4,553.3-6,764.2 the bounds are 9.41-9.71 with the +1%
+   auto-attack bonus. DamageModifier 9.5 is staged in
+   `sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql`. Aberration and Prime Subject
+   stay open because the log does not show their Growth Catalyst stacks.
+8. Full-route run r11 (2026-09-27) killed Maloriak natively, but it recorded no Maloriak melee swings
+   and was not the Maloriak shard.
 
 ## Unresolved (fidelity blockers)
 
 - Maloriak-specific hotfix carryover to the 2025-02-20 cutoff.
-- Live and WCL vial and ability cadence in all modes.
-- Biting Chill target counts (native 60 yd pick vs 10 yd range; guides disagree) and the SpellMgr
-  target patch.
+- Live vial and ability cadence in all modes; WCL cadence beyond the one 10N kill (Green phase,
+  heroic, 25-player).
+- Biting Chill target counts (native 60 yd pick vs 10 yd range; guides disagree). The SpellMgr
+  target correction is applied (c0efb93a61).
 - The Green-phase length: 21 s plus a 15 s transition (2012 guide), the next vial 30 s after the
   15 s slime (2024 guide), or 40 s after the Green imbue (native).
 - Normal health (native vs Wowhead 4.4.2) and the enrage timer.
-- Heroic Prime Subject Fixate and Rend.
+- Heroic Prime Subject Fixate, and Rend (seen in the 10N log; spell id and cadence unknown).
 - A live observation of a random first vial, including after a wipe and re-pull.
 - A live read-back of the historical script bindings and `spell_custom_attr`.
-- Melee calibration (Maloriak, Aberration, Prime Subject) from matched WCL U samples.
+- Melee calibration of Aberration and Prime Subject (Growth Catalyst stacks unknown) and of every
+  25N/10H/25H template. Maloriak 10N: 9.5 staged, awaiting a live +-10% check.

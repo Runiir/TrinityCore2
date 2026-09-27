@@ -28,6 +28,9 @@ from tools.raid_program.scoreboard_core import (
     KILL_SCHEMA, RNG_ATTACHMENT_SCHEMA, append_record, file_sha256, healer_roles, label_kills, legacy_kill_id,
     load_records, load_target, roster, spec_targets, target_for_records, utc_now,
 )
+from tools.raid_program.scoreboard_core import (
+    NATIVE_SCOPE_KEY, dps_enemy_scope, dps_gate_exempt_specs, is_dps_gate_exempt, native_excluded_entries,
+)
 
 SUMMARY_SCHEMA = "magmaw_spell_queue_run_summary_v1"
 CLEAR_COMPLETION = "validation_route_manifest_complete"
@@ -110,13 +113,14 @@ def death_evidence(run_dir: Path | None, encounter_node: str, route_deaths: int 
 
 
 def ranked_gaps(actors: list[dict[str, Any]], targets: dict[str, float], timeline: dict[str, Any] | None,
-                healers: set[str], limit: int = 3) -> list[dict[str, Any]]:
+                healers: set[str], limit: int = 3, exempt_specs: set[str] = frozenset()) -> list[dict[str, Any]]:
     """Largest DPS shortfalls to the WCL target, with timeline hints for where to look."""
     hints = {str(row.get("bot_guid")): row for row in (timeline or {}).get("actors") or []}
     window = float(((timeline or {}).get("comparison_window") or {}).get("common_window_sec") or 0.0)
     gaps = []
     for actor in actors:
-        target = targets.get(actor["spec"]) if actor["role"] not in healers else None
+        gated = actor["role"] not in healers and not is_dps_gate_exempt(set(exempt_specs), actor["spec"], actor["role"])
+        target = targets.get(actor["spec"]) if gated else None
         dps = float(actor["encounter_window_dps"] or 0.0)
         if not target or dps >= target:
             continue
@@ -129,7 +133,9 @@ def ranked_gaps(actors: list[dict[str, Any]], targets: dict[str, float], timelin
             gap["largest_owner_gap"] = {key: largest[key] for key in ("gap_sec", "from_t", "from_ability", "to_ability")} if largest else None
             gap["wcl_only_abilities"] = [row["ability"] for row in hint.get("wcl_only_abilities") or []][:3]
             casts = (hint.get("wcl") or {}).get("completed_casts")
-            gap["wcl_casts_per_minute"] = round(casts / (window / 60.0), 2) if casts and window else None
+            # A supplemental (additional_references) actor's casts cover its own fight's common window.
+            actor_window = float(hint.get("reference_common_window_sec") or window)
+            gap["wcl_casts_per_minute"] = round(casts / (actor_window / 60.0), 2) if casts and actor_window else None
         gaps.append(gap)
     gaps.sort(key=lambda row: -row["gap_dps"])
     return gaps[:limit]
@@ -142,6 +148,13 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
     """Convert one run summary into the compact per-kill scoreboard line. Specs come from the target roster."""
     refuse_play(summary, f"scoreboard record {kill_id}")
     node = target["encounter_route_node_id"]
+    excluded = native_excluded_entries(target)
+    if excluded and (any(actor.get(NATIVE_SCOPE_KEY) != excluded for actor in summary.get("actors") or [])
+                     or (summary.get("encounter") and summary["encounter"].get(NATIVE_SCOPE_KEY) != excluded)):
+        raise ValueError(f"summary {kill_id} is not scoped to the target's native DPS enemy set "
+                         f"(excluding entries {excluded}); re-summarize the run")
+    # Persisted only for targets with exclusions, so every other target's records are unchanged.
+    scope = {"dps_enemy_scope": dps_enemy_scope(excluded)} if excluded else {}
     expected = roster(target_for_records(root, target, [summary]))
     encounter = summary.get("encounter")
     actors = []
@@ -157,6 +170,8 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
             "damage_uptime": actor.get("damage_uptime"),
             "casts_per_minute": actor.get("casts_per_minute"),
             "hps": actor.get("hps"),
+            **({"encounter_window_dps_all_targets": actor.get("encounter_window_dps_all_targets")} if scope else {}),
+            **scope,
         })
     if reached_encounter is None:
         reached_encounter = bool(encounter) or any(
@@ -187,9 +202,13 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
             "duration_sec": encounter["duration_sec"],
             "encounter_window_party_dps": encounter["encounter_window_party_dps"],
             "party_hps": encounter.get("party_hps"),
+            **({"encounter_window_party_dps_all_targets": encounter.get("encounter_window_party_dps_all_targets")}
+               if scope else {}),
+            **scope,
         } if encounter else None,
         "actors": actors,
-        "ranked_gaps": ranked_gaps(actors, spec_targets(root, target), timeline, healer_roles(target)),
+        "ranked_gaps": ranked_gaps(actors, spec_targets(root, target), timeline, healer_roles(target),
+                                   exempt_specs=dps_gate_exempt_specs(target)),
         **{key: summary[key] for key in (*MEASUREMENT_KEYS, *INFO_KEYS) if summary.get(key) is not None},
     }
 
@@ -296,30 +315,103 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_nod
             "encounter": None, "actors": []}
 
 
+def scope_native_dps(summary: dict[str, Any], encounter: dict[str, Any], excluded: list[int]) -> None:
+    """Recompute each actor's encounter_window_dps (and the party's) without damage to ``excluded`` entries.
+
+    The WCL references' damage-done leaves those enemies out, so the native side must too. The
+    breakdown is the analyzer's damage_by_target_entry; a run analysed before it existed fails closed.
+    """
+    duration = float(encounter["duration_sec"])
+    by_guid = {int(row["actor_guid"]): row for row in encounter.get("actors") or []}
+    removed_total = 0
+    for actor in summary.get("actors") or []:
+        breakdown = (by_guid.get(int(actor["bot_guid"])) or {}).get("damage_by_target_entry")
+        if not isinstance(breakdown, dict):
+            raise ValueError("combat_analysis has no damage_by_target_entry; native DPS cannot be scoped to "
+                             f"the reference enemy set (excluding entries {excluded})")
+        removed = sum(int(breakdown.get(str(entry), 0)) for entry in excluded)
+        removed_total += removed
+        actor["encounter_window_dps_all_targets"] = actor["encounter_window_dps"]
+        actor["encounter_window_dps"] = round((float(actor["damage"]) - removed) / duration, 3)
+        if "ratio_to_wcl" in actor:
+            # The WCL side is scoped too, so the ratio compares scoped DPS; the old one keeps an explicit name.
+            wcl_dps = float(actor.get("wcl_observed_dps") or 0.0)
+            actor["ratio_to_wcl_all_targets"] = actor["ratio_to_wcl"]
+            actor["ratio_to_wcl"] = round(actor["encounter_window_dps"] / wcl_dps, 3) if wcl_dps else None
+        actor[NATIVE_SCOPE_KEY] = excluded
+    scoped = summary.get("encounter")
+    if isinstance(scoped, dict):
+        scoped["encounter_window_party_dps_all_targets"] = scoped["encounter_window_party_dps"]
+        scoped["encounter_window_party_dps"] = round((float(scoped["party_damage"]) - removed_total) / duration, 3)
+        scoped[NATIVE_SCOPE_KEY] = excluded
+
+
 def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
-                      worldserver_sha256: str | None, encounter_node: str) -> dict[str, Any]:
-    """Summary of a closed run; a run without the encounter keeps only its outcome."""
+                      worldserver_sha256: str | None, encounter_node: str,
+                      excluded_entries: list[int] | None = None) -> dict[str, Any]:
+    """Summary of a closed run; a run without the encounter keeps only its outcome.
+
+    ``excluded_entries`` (a target's native_dps_excluded_target_entries) scopes native DPS to the
+    WCL references' enemy set; empty or None leaves the summary exactly as before.
+    """
     summary = outcome_summary(run_dir, worldserver_sha256, encounter_node)
     analysis_path = run_dir / "combat_analysis.json"
     if not summary["report_present"] or not analysis_path.exists():
         return summary
-    if not any(row.get("route_node_id") == encounter_node for row in json.loads(analysis_path.read_text()).get("encounters") or []):
+    analysis = json.loads(analysis_path.read_text())
+    encounter = next((row for row in analysis.get("encounters") or [] if row.get("route_node_id") == encounter_node), None)
+    if encounter is None:
         return summary
     from experiments.magmaw_spell_queue_summary import summarize
     with tempfile.TemporaryDirectory(prefix="scoreboard-stub-") as temp:
         if timeline_path is None:  # no comparison: keep the actors; specs come from the roster
             timeline_path = Path(temp) / "timeline.json"
             timeline_path.write_text('{"actors": []}')
-        full = summarize(run_dir, timeline_path, label, summary["worldserver_sha256"] or "")
+        full = summarize(run_dir, timeline_path, label, summary["worldserver_sha256"] or "", encounter_node)
+    if excluded_entries:
+        scope_native_dps(full, encounter, sorted(excluded_entries))
     kept = ("report_present", "worldserver_sha256", "report_binary_sha256", *MEASUREMENT_KEYS, *INFO_KEYS)
     return full | {key: summary[key] for key in kept if key in summary}
 
 
-def write_timeline(run_dir: Path, manifest: Path, output: Path) -> Path | None:
-    """Run the WCL timeline comparison; None when it cannot be computed."""
-    from tools.bot_ml.compare_magmaw_timelines import compare_timelines
+def timeline_reference_exclusions(root: Path, target: dict[str, Any]) -> frozenset[tuple[str, str]]:
+    """(report code, actor name) pairs the matched DPS references exclude; they cannot be cast baselines.
+
+    Keys of excluded_actor_dps are "spec:Name", or a spec whose value names the actor.
+    """
+    manifest_path = target.get("wcl_reference_manifest")
+    if not manifest_path:
+        return frozenset()
+    manifest = json.loads((root / manifest_path).read_text())
+    wanted = set(target.get("matched_reference_ids") or [])
+    excluded = set()
+    for reference in manifest.get("references") or []:
+        if reference.get("id") not in wanted:
+            continue
+        report = str(reference["id"]).split("-fight", 1)[0]
+        for key, value in (reference.get("excluded_actor_dps") or {}).items():
+            name = key.split(":", 1)[1] if ":" in key else (value or {}).get("actor")
+            if name:
+                excluded.add((report, str(name)))
+    return frozenset(excluded)
+
+
+def write_timeline(run_dir: Path, manifest: Path, output: Path,
+                   encounter_node: str = "bwd.magmaw.encounter",
+                   excluded_actors: frozenset[tuple[str, str]] = frozenset(),
+                   excluded_entries: list[int] | None = None) -> Path | None:
+    """Run the WCL timeline comparison on the target's own encounter node; None when it cannot be computed.
+
+    Magmaw keeps its pinned target entries (its accepted verdict binds that output); any other
+    node compares bot damage on every creature target of that node.
+    """
+    from tools.bot_ml.compare_magmaw_timelines import ENCOUNTER_ROUTE, ENCOUNTER_TARGET_ENTRIES, compare_timelines
     try:
-        result = compare_timelines(run_dir, manifest)
+        result = compare_timelines(
+            run_dir, manifest, route_node_id=encounter_node,
+            target_entries=ENCOUNTER_TARGET_ENTRIES if encounter_node == ENCOUNTER_ROUTE else None,
+            excluded_reference_actors=excluded_actors,
+            excluded_target_entries=frozenset(excluded_entries or ()))
     except Exception as error:  # a failed comparison only loses hints, never the kill
         print(f"timeline comparison skipped for {run_dir}: {type(error).__name__}: {error}")
         return None
@@ -333,7 +425,7 @@ def record_from_run_dir(root: Path, target: dict[str, Any], *, scenario: str, la
                         worldserver_sha256: str | None = None, evidence_pointer: str | None = None,
                         summary_output: Path | None = None) -> dict[str, Any]:
     node = target["encounter_route_node_id"]
-    summary = summarize_run_dir(run_dir, timeline_path, label, worldserver_sha256, node)
+    summary = summarize_run_dir(run_dir, timeline_path, label, worldserver_sha256, node, native_excluded_entries(target))
     if summary_output is not None:
         summary_output.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     timeline = json.loads(timeline_path.read_text()) if timeline_path is not None else None
@@ -439,7 +531,9 @@ def ingest(root: Path, args) -> int:
             records.append(record_from_run_dir(root, target, timeline_path=Path(timelines[0]), **options))
         else:
             with tempfile.TemporaryDirectory(prefix="scoreboard-timeline-") as temp:
-                timeline = write_timeline(run_dir, root / target["wcl_cast_timelines"], Path(temp) / "timeline.json")
+                timeline = write_timeline(run_dir, root / target["wcl_cast_timelines"], Path(temp) / "timeline.json",
+                                          target["encounter_route_node_id"], timeline_reference_exclusions(root, target),
+                                          native_excluded_entries(target))
                 records.append(record_from_run_dir(root, target, timeline_path=timeline, **options))
     else:
         for path, timeline, pointer, commit in zip(args.summary, timelines, pointers, commits):

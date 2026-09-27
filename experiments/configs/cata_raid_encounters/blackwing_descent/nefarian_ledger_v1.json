@@ -12,7 +12,7 @@
   "fidelity_state": "fidelity_blocked",
   "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
-  "unresolved_material_count": 10,
+  "unresolved_material_count": 8,
   "encounter": "nefarian",
   "instance": "blackwing_descent",
   "purpose": "Sourced values, timers, lifecycle and completion inventory for Nefarian's End; source truth, repository behavior and bot tactic are separate fields. No live assertion.",
@@ -24,7 +24,7 @@
   ],
   "repository_revision_audited": "1aedfb4f6cf2b453604d7c0163e8d22c97629aeb",
   "historical_repository_claim_revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-  "retrieved_utc_date": "2026-09-25",
+  "retrieved_utc_date": "2026-09-27",
   "fidelity_target": {
     "build": "4.4.2.59185",
     "locale": "enUS",
@@ -118,9 +118,9 @@
       "id": "wcl_10n_pending",
       "title": "Warcraft Logs Cataclysm Classic Nefarian's End 10N kill (not yet read)",
       "url": "https://classic.warcraftlogs.com/zone/rankings/1023",
-      "accessed": "2026-09-25",
+      "accessed": "2026-09-27",
       "authority": "rank 2 combat log",
-      "claim": "Blocked: human-verification interstitial on 2026-09-25. Plan: nefarian_wcl_dps_reference_v1.json."
+      "claim": "Superseded 2026-09-27 by the three read kills below (the 2026-09-25 human-verification block is recorded in nefarian_wcl_dps_reference_v1.json access_attempts)."
     },
     {
       "id": "package_t_platform_probe",
@@ -149,6 +149,30 @@
       "accessed": "2026-09-26",
       "authority": "execution client data",
       "claim": "sha256 7a081d35774f7deac595a983946bc8693e8acfa16256ac1f5cd8fedc997a774b; LiquidType 19 (WMO Magma, overridden to 404 by area 5094); surface flat at world z 2.7713 at the pillars, the centre, the board point and the ring; re-derived by tests/test_nefarian_magma.py when the .vmo is present."
+    },
+    {
+      "id": "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2024-10-28, 344.1 s)",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS, all Nefarian/Onyxia melee rows with U and 80 bone-warrior rows, Scarlet Fever and Empower windows, all enemy casts, 7 player cast timelines, breath ticks, Electrocute casts, Hit Points resource rows (max HP), hostile deaths. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
+    },
+    {
+      "id": "wcl_10n_cYg4C93QNdqKfPF1_18",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2025-01-31, 283.5 s)",
+      "url": "https://classic.warcraftlogs.com/reports/cYg4C93QNdqKfPF1?fight=18",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS, all Nefarian/Onyxia melee rows with U, Scarlet Fever and Curse of Weakness windows, 5 player cast timelines. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
+    },
+    {
+      "id": "wcl_10n_farY2cm8JMTB1jGh_10",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2025-01-15, 250.6 s)",
+      "url": "https://classic.warcraftlogs.com/reports/farY2cm8JMTB1jGh?fight=10",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS (Assassination Rogue, two Elemental Shamans), all Nefarian/Onyxia melee rows with U, Scarlet Fever windows, all enemy casts, 6 player cast timelines. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
     }
   ],
   "values": [
@@ -179,14 +203,15 @@
       },
       "unit": "hit points",
       "source_refs": [
-        "wowhead_cata_npc_pages",
         "tdb_434_22011",
-        "wowhead_cata_classic"
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wowhead_cata_classic",
+        "wowhead_cata_npc_pages"
       ],
       "repository_observation": "HealthModifier x gt_npc_total_hp_exp3 equals the Wowhead NPC pages exactly (Nefarian 265 x 85892, Onyxia 65 x 85892, Prototype 21 x 77490 at level 85).",
-      "source_truth": "Wowhead guide reports about 1.25x for Onyxia and Nefarian normal and 6.9M prototypes; no WCL-derived max HP yet.",
-      "status": "conflict",
-      "implementation_consequence": "No health change; derive max HP from a matched WCL kill with derive_encounter_health."
+      "source_truth": "WCL-derived max health (derive_encounter_health on 11 consecutive Hit Points rows each, MxFq7TRbvnjGY1hJ fight 35): Onyxia 5,582,980, Nefarian 22,761,380, Chromatic Prototype 1,627,290, equal to native in 10N. The Wowhead guide figures are wrong for 10N.",
+      "status": "resolved",
+      "implementation_consequence": "No health change in 10N."
     },
     {
       "key": "melee_swing_at_damage_modifier_1",
@@ -208,11 +233,37 @@
       },
       "unit": "damage per swing before armor",
       "source_refs": [
-        "tdb_434_22011"
+        "tdb_434_22011",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_cYg4C93QNdqKfPF1_18",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
       "repository_observation": "Every creature has DamageModifier 1 since sql/updates/world/4.3.4/2025_06_18_06_world.sql; Nefarian/Onyxia class 1 level 88 BaseAttackTime 1500, bone warrior class 4 level 85 BaseAttackTime 2000 BaseVariance 0.5. Old TDB DamageModifier was 90 (10N) and 6 (warrior) under the previous formula.",
-      "status": "unresolved",
-      "implementation_consequence": "Calibrate from WCL U samples (after_attacker_bonus_amount) before any staged DamageModifier."
+      "status": "resolved_10n_dragons_staged",
+      "implementation_consequence": "Staged sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql (41376 = 12.75) and 2026_09_27_01_nefarian_onyxia_damage_modifier.sql (41270 = 10.34375); registry rows via the coordinator patch. 41918 and the 25N/10H/25H templates stay open.",
+      "wcl_10N_samples": {
+        "landed": 201,
+        "miss_or_parry": 65,
+        "unmitigated_estimate_min": 52977,
+        "unmitigated_estimate_max": 85806,
+        "unmitigated_estimate_mean": 67076.7,
+        "under_minus_10pct_aura": 164,
+        "fully_absorbed_rows": 34,
+        "meaning": "observed sample range over three 10N kills, not recovered roll endpoints",
+        "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json"
+      },
+      "wcl_10N_onyxia_samples": {
+        "landed": 37,
+        "miss_or_parry": 27,
+        "unmitigated_estimate_min": 42883,
+        "unmitigated_estimate_max": 65353,
+        "unmitigated_estimate_mean": 54464.0,
+        "under_minus_10pct_aura": 35,
+        "fully_absorbed_rows": 15,
+        "meaning": "observed sample range over three 10N kills, not recovered roll endpoints",
+        "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json"
+      },
+      "source_truth": "Registry-method bounds on DamageModifier x 1.01: Nefarian 12.818-12.928 (DamageModifier 12.691-12.800), Onyxia 10.314-10.465 (10.212-10.361). Bone warriors not derived (Empower stacks mix in the rows)."
     },
     {
       "key": "melee_reach",
@@ -240,15 +291,17 @@
       },
       "unit": "shadowflame per tick",
       "source_refs": [
-        "client_442_59185_extract",
         "client_434_dbc_15595",
+        "client_442_59185_extract",
         "repo_spell_corrections",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
         "wowhead_cata_classic"
       ],
       "source_truth": "1 s cast, 0.5 s ticks for 1.5 s (3 ticks, 105k in 10N per Wowhead), 60-degree cone, 60 yd; refills bone warriors in the cone.",
       "repository_observation": "SpellMgr sets the aura period to 1500 (one tick); no DBC cone angle, so the 90-degree default applies.",
-      "status": "conflict",
-      "implementation_consequence": "Bots treat the wider native 90-degree cone as the hazard; the tick count is a WCL question (breath_ticks view)."
+      "status": "resolved_native_mismatch",
+      "implementation_consequence": "Coordinator patch: drop the SpellMgrCorrectionsPart04 AuraPeriod 1500 override for 77826 so the client 0.5 s period gives 3 ticks (difficulty variants 94124-94126 keep it until same-mode evidence). Bots already treat the cone as the hazard; the tank takes 3 x 35k before mitigation per breath.",
+      "wcl_observation": "MxFq7 fight 35: 11 breaths, 9 with 3 ticks at about 0.5 s (U 35,000 each, 10N), 2 fully resisted; native gives one tick."
     },
     {
       "key": "tail_lash",
@@ -378,13 +431,16 @@
       },
       "unit": "cast time and fire damage per 2 s tick for 30 s, room-wide",
       "source_refs": [
+        "client_434_dbc_15595",
         "client_442_59185_extract",
-        "client_434_dbc_15595"
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
       "source_truth": "interruptible (silence prevention), 200 yd radius",
       "repository_observation": "same rows",
       "status": "resolved",
-      "implementation_consequence": "One 10-second interrupter per pillar suffices at the native 13 s repeat; the backup acts after 1.8 s of the 4 s cast or when the primary is gone."
+      "implementation_consequence": "One 10-second interrupter per pillar suffices at the native 13 s repeat; the backup acts after 1.8 s of the 4 s cast or when the primary is gone.",
+      "wcl_observation": "Per-prototype Begin Cast repeat 12.5-13.0 s (MxFq7 fight 35: 19 casts; farY2 fight 10: 9 casts), matching native 13 s; Wowhead 8 s is not observed."
     },
     {
       "key": "shadowflame_barrage",
@@ -410,12 +466,15 @@
       "source_refs": [
         "client_442_59185_extract",
         "repo_spell_corrections",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10",
         "wowhead_cata_classic"
       ],
       "source_truth": "2 s cast; Wowhead: 10 players every 3 s",
-      "repository_observation": "SpellMgr caps targets at 4 (10-player) / 8 (25-player); repeat 2.5 s",
-      "status": "conflict",
-      "implementation_consequence": "Healers per pillar; no bot tactic depends on the cap."
+      "repository_observation": "SpellMgr caps targets at 4 (10-player) / 8 (25-player); repeat repaired from 2.5 s to 3.2 s on 10N only (boss_nefarians_end.cpp EVENT_SHADOWFLAME_BARRAGE selects 3.2 s for RAID_DIFFICULTY_10MAN_NORMAL); 25N/10H/25H keep 2.5 s until same-mode evidence exists.",
+      "status": "cadence_resolved_repaired_target_count_open",
+      "implementation_consequence": "Phase 2 survival model regenerated at 3.2 s (default pillar-2 death risk 44% -> 9%). Target count per cast not captured.",
+      "wcl_observation": "Begin Cast intervals 3.2-3.3 s (31 in MxFq7 fight 35, 18 in farY2 fight 10, one 2.8 s), 2 s cast."
     },
     {
       "key": "electrical_charge",
@@ -449,12 +508,15 @@
       "source_refs": [
         "client_442_59185_extract",
         "tdb_434_22011",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10",
         "wowhead_cata_classic"
       ],
       "source_truth": "one summon per 78684 impact (24-26.5k within 10 yd normal); Wowhead: 12 (6 x 2, no mode)",
       "repository_observation": "impacts target the seven 42844 stalkers (conditions)",
-      "status": "conflict",
-      "implementation_consequence": "Controller assignment scales with the observed count."
+      "status": "resolved",
+      "implementation_consequence": "Controller assignment for 4 warriors in 10N.",
+      "wcl_observation": "Four Animate Bones 78122 casts (warriors 1-4, 15.1-33.0 s) in both MxFq7 fight 35 and farY2 fight 10: 10N count 4 as the client periods give."
     },
     {
       "key": "bone_warrior_energy",
@@ -465,12 +527,14 @@
       },
       "source_refs": [
         "client_434_dbc_15595",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
         "wowhead_cata_classic"
       ],
       "source_truth": "Wowhead: 2% per second, collapse after 50 s",
       "repository_observation": "Animate Bones 78123 SpellPower 3640 costs 3 energy per tick; Full Power No Regen 78120 stops regeneration: about 33 s",
       "status": "conflict",
-      "implementation_consequence": "Controllers hold a warrior until it collapses; no fixed timer."
+      "implementation_consequence": "Controllers hold a warrior until it collapses; no fixed timer.",
+      "wcl_observation": "MxFq7 fight 35: all four warriors die at 41.6 s (phase 2 start); reanimated in phase 3 they last 44-70 s between Empower application and the next death, with breath and Shadowblaze refills in between, so the 33 s vs 50 s question stays open."
     },
     {
       "key": "empower",
@@ -651,9 +715,12 @@
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13",
         "dbm_cataclysm_4b02efe",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "consistent_pending_wcl"
+      "status": "consistent",
+      "wcl_observation": "First Nefarian melee 33.5 s (MxFq7) and 32.3 s (farY2) after the Onyxia pull."
     },
     {
       "key": "onyxia_lightning_discharge",
@@ -667,9 +734,12 @@
       "repository_baseline": "22 s, repeat 22 s, 5 s wind-up then 5 pulses",
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "consistent_pending_wcl"
+      "status": "consistent",
+      "wcl_observation": "First cast 23.8 s (MxFq7) and 24.6 s (farY2); Onyxia died before a second."
     },
     {
       "key": "tail_lash",
@@ -686,9 +756,12 @@
         "bigwigs_cataclysm_v11_0_13",
         "dbm_cataclysm_4b02efe",
         "wowhead_cata_classic",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "conflict"
+      "status": "conflict",
+      "wcl_observation": "Onyxia: first 15.7 s / 12.9 s, repeats 21.0; 13.3, 17.8 s. Nefarian phase 3: repeats 11.3-21.0 s (16 intervals, mean about 16 s) vs native 15-22 s; first about 16 s after the phase 3 engage estimate (native 1 s). Nefarian phase 1 lasted under 15 s in every read kill (the Onyxia burn), so no phase 1 Tail Lash was observed."
     },
     {
       "key": "shadowflame_breath",
@@ -703,9 +776,12 @@
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13",
         "dbm_cataclysm_4b02efe",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "consistent_pending_wcl"
+      "status": "observed_small_sample",
+      "wcl_observation": "Onyxia first Begin Cast 20.6 s / 19.8 s, repeat 17.8 / 16.2 s (native 11-12 then 13-17). Nefarian phase 3 repeats 11.7-21.1 s (16 intervals) vs native 17-22 s."
     },
     {
       "key": "blast_nova",
@@ -721,9 +797,12 @@
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13",
         "wowhead_cata_classic",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "conflict"
+      "status": "resolved",
+      "wcl_observation": "Repeat 12.5-13.0 s per prototype; first 9.7-12 s after the first Barrage cast."
     },
     {
       "key": "phase_two_window",
@@ -752,9 +831,12 @@
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13",
         "dbm_cataclysm_4b02efe",
-        "repo_nefarians_end"
+        "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ],
-      "status": "resolved_repaired"
+      "status": "resolved_repaired",
+      "wcl_observation": "Spark intervals 30, 25, 20, then 15 s (MxFq7: 10 intervals; farY2: 6), matching the repaired native schedule."
     },
     {
       "key": "berserk",
@@ -851,21 +933,21 @@
       "location": "boss_nefarians_end.cpp EVENT_TAIL_LASH phase 1 Repeat(5s)",
       "finding": "every 5 s",
       "evidence": "addons 10-20 s, Wowhead about 15 s; WCL cast timeline pending",
-      "action": "fidelity_blocked; repair after the WCL Nefarian 77827 intervals"
+      "action": "fidelity_blocked; no phase 1 Tail Lash in three WCL kills (Nefarian phase 1 under 15 s with the Onyxia burn)"
     },
     {
       "key": "breath_tick_period",
       "location": "SpellMgrCorrectionsPart04.cpp:424-433",
       "finding": "one tick per breath",
-      "evidence": "4.3.4 and 4.4.2 client 0.5 s period (3 ticks); Wowhead 105k total",
-      "action": "fidelity_blocked; WCL breath_ticks view"
+      "evidence": "4.3.4 and 4.4.2 client 0.5 s period (3 ticks); Wowhead 105k total; WCL 10N: 3 ticks per breath (MxFq7 fight 35, 9 of 11 breaths, 2 resisted)",
+      "action": "patch request to the coordinator: drop the 77826 AuraPeriod 1500 override (SpellMgrCorrectionsPart04.cpp:424-433)"
     },
     {
       "key": "onyxia_charge_period",
       "location": "SpellMgrCorrectionsPart04.cpp:435-439",
       "finding": "3 s period",
       "evidence": "client 1 s; Wowhead +1 per 2 s",
-      "action": "fidelity_blocked; WCL resources view"
+      "action": "fidelity_blocked; the WCL resources pane has no Electrical Charge series"
     },
     {
       "key": "default_cone_angle",
@@ -873,6 +955,13 @@
       "finding": "90-degree cones for Breath and 77836",
       "evidence": "4.4.2 client ConeDegrees 60",
       "action": "fidelity_blocked; shared core rule, not a Nefarian script change"
+    },
+    {
+      "key": "shadowflame_barrage_cadence",
+      "location": "boss_nefarians_end.cpp EVENT_SHADOWFLAME_BARRAGE",
+      "finding": "repeat 2.5 s",
+      "evidence": "WCL 10N Begin Cast intervals 3.2-3.3 s (49 intervals in two kills)",
+      "action": "repaired on 10N only: repeat 3.2 s for RAID_DIFFICULTY_10MAN_NORMAL; 25N/10H/25H keep 2.5 s"
     }
   ],
   "research_completion": [
@@ -966,10 +1055,12 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Thresholds, damage, native +17 and 3 s period.",
-      "next": "WCL: Onyxia resources pane or charge-driven outcome in a matched kill.",
+      "known": "Thresholds, damage, native +17 and 3 s period. WCL: 9 Electrocute 81272 casts per kill (MxFq7, farY2); the Onyxia resources pane offers no Electrical Charge series.",
+      "next": "Charge-driven outcome: a kill where the charge reaches 100 (Onyxia not burned), or the 4.4.2 alternate-power rows.",
       "source_refs": [
         "repo_nefarians_end",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10",
         "wowhead_cata_classic"
       ]
     },
@@ -982,11 +1073,13 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Count by client periods, 38.7M health, immunities, 3 energy/s, Empower.",
-      "next": "WCL: warrior count and active duration in a 10N kill.",
+      "known": "10N count 4 (WCL, two kills); 38.7M health, immunities, 3 energy/s, Empower; phase 3 lifetimes 44-70 s with refills.",
+      "next": "Lifetime without refills (33 s native vs 50 s Wowhead).",
       "source_refs": [
         "client_434_dbc_15595",
         "tdb_434_22011",
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_farY2cm8JMTB1jGh_10",
         "wowhead_cata_classic"
       ]
     },
@@ -1032,12 +1125,14 @@
         "25N",
         "25H"
       ],
-      "status": "blocked",
-      "known": "Native rolls at DamageModifier 1.",
-      "next": "WCL melee U samples for Nefarian, Onyxia and bone warriors.",
+      "status": "partial",
+      "known": "Nefarian 41376 and Onyxia 41270 10N derived from 201 / 37 WCL U rows and staged (12.75, 10.34375).",
+      "next": "Bone warrior 41918: stack-matched samples (Empower 79330); live: encounter_fidelity.boss_melee within +-10% of WCL for 41376 and 41270.",
       "source_refs": [
         "tdb_434_22011",
-        "wcl_10n_pending"
+        "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+        "wcl_10n_cYg4C93QNdqKfPF1_18",
+        "wcl_10n_farY2cm8JMTB1jGh_10"
       ]
     },
     {
@@ -1058,44 +1153,34 @@
   "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. Native execution of those observations is a separate validation milestone.",
   "unresolved": [
     {
-      "key": "wcl_10n_kill_references_and_timelines_pending",
-      "status": "fidelity_blocked",
-      "evidence_gap": "classic.warcraftlogs.com human-verification interstitial (2026-09-25); DPS references, cast timelines, breath ticks and melee samples not read."
-    },
-    {
       "key": "creature_melee_damage_modifier_uncalibrated",
-      "status": "fidelity_blocked",
-      "evidence_gap": "Nefarian 41376/51104-51106, Onyxia 41270/51116-51118 and Animated Bone Warrior 41918 run at DamageModifier 1; no matched U samples."
-    },
-    {
-      "key": "health_guide_vs_native_conflict",
-      "status": "fidelity_blocked",
-      "evidence_gap": "Native equals Wowhead NPC pages; Wowhead guide is about 1.25x for Onyxia/Nefarian normal and 6.9M prototypes."
+      "status": "partial_staged",
+      "evidence_gap": "Nefarian 41376 (12.75) and Onyxia 41270 (10.34375) 10N staged from WCL U samples; Animated Bone Warrior 41918 (Empower stacks) and the 25N/10H/25H templates 51104-51106, 51116-51118 stay at DamageModifier 1."
     },
     {
       "key": "dragon_tail_lash_breath_cadence_and_cone_geometry",
       "status": "fidelity_blocked",
-      "evidence_gap": "Nefarian phase 1 Tail Lash every 5 s natively vs 10-20 s sources; breath one tick natively vs three; cones 90 natively vs 60 in 4.4.2."
+      "evidence_gap": "Breath: WCL shows 3 ticks (native 1; SpellMgr patch requested). Nefarian phase 1 Tail Lash (native every 5 s) is unobserved: phase 1 lasted under 15 s in all three kills. Phase 3 Tail Lash repeats 11.3-21.0 s vs native 15-22 s; cones 90 natively vs 60 in 4.4.2 (not observable in WCL)."
     },
     {
       "key": "onyxia_charge_rate_and_electrocute_increment",
       "status": "fidelity_blocked",
-      "evidence_gap": "Native 3 s period and +17; client 1 s period; guides +25 and +1 per 2 s."
+      "evidence_gap": "Native 3 s period and +17; client 1 s period; guides +25 and +1 per 2 s. WCL has no Electrical Charge series (resources pane, MxFq7 fight 35)."
     },
     {
       "key": "blast_nova_and_barrage_cadence",
       "status": "fidelity_blocked",
-      "evidence_gap": "Native Blast Nova 3.5 s then 13 s vs Wowhead 8 s; Barrage 4 targets every 2.5 s vs Wowhead 10 every 3 s."
+      "evidence_gap": "Cadence resolved by WCL: Blast Nova 13 s (native correct), Barrage 3.2 s (native repaired from 2.5 s on 10N only; other modes keep 2.5 s). Open: Barrage targets per cast (native cap 4 vs Wowhead 10)."
     },
     {
       "key": "shadowblaze_spark_schedule_and_spread",
       "status": "partial_repaired",
-      "evidence_gap": "Floor repaired from addons; first spark offset and spread direction (controller-stalker based) unverified against a combat log."
+      "evidence_gap": "Schedule confirmed by WCL (30/25/20/15/15 s in two kills). Spread direction (controller-stalker based) unverified."
     },
     {
       "key": "hail_of_bones_warrior_count_and_lifetime",
       "status": "fidelity_blocked",
-      "evidence_gap": "Client periods give 4 warriors in 10N vs Wowhead 12; native 33 s energy vs Wowhead 50 s."
+      "evidence_gap": "Count resolved: 4 in 10N (WCL, two kills). Lifetime: native 33 s energy vs Wowhead 50 s; WCL phase 3 lifetimes 44-70 s include refills."
     },
     {
       "key": "heroic_onyxia_burn_and_magma",

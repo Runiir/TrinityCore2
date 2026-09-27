@@ -251,3 +251,21 @@ def test_consuming_flames_only_grows_from_other_magic_damage() -> None:
     assert "DmgClass != SPELL_DAMAGE_CLASS_MAGIC" in body
     assert "DoCheckProc.Register(&spell_maloriak_consuming_flames::CheckProc);" in body
     assert "CalculatePct(eventInfo.GetDamageInfo()->GetDamage(), 50)" in body
+
+
+def test_phase_two_cadence_follows_the_wcl_kills_on_10n_only() -> None:
+    """Magma Jets, Acid Nova and Absolute Zero repeat at the 10N WCL cadence
+    (MxFq7TRbvnjGY1hJ fight 34, VL3fW9wNm2PRJDYt fight 13) on 10N only; the
+    evidence is 10N, so 25N/10H/25H keep the old 8.4 s first Absolute Zero and 6/20/7 s repeats."""
+    source = text(BOSS)
+    assert "bool IsTenNormal() const { return GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL; }" in source
+    mix = source[source.index("case EVENT_UNSTABLE_MIX:"):source.index("case EVENT_MAGMA_JETS:")]
+    assert "ScheduleEvent(EVENT_MAGMA_JETS, 3s + 500ms, 0, PHASE_TWO)" in mix
+    assert "ScheduleEvent(EVENT_ACID_NOVA, 8s + 400ms, 0, PHASE_TWO)" in mix
+    assert ("ScheduleEvent(EVENT_ABSOLUTE_ZERO,\n                        IsTenNormal() ? Milliseconds(11s + 300ms)"
+            " : Milliseconds(8s + 400ms), 0, PHASE_TWO)") in mix
+    for event, ten, other in (("EVENT_MAGMA_JETS", "11s + 800ms", "6s"), ("EVENT_ACID_NOVA", "30s + 700ms", "20s"),
+                              ("EVENT_ABSOLUTE_ZERO", "11s + 300ms", "7s")):
+        start = source.index(f"case {event}:")
+        body = source[start:source.index("break;", start)]
+        assert f"events.Repeat(IsTenNormal() ? Milliseconds({ten}) : Milliseconds({other}));" in body, event

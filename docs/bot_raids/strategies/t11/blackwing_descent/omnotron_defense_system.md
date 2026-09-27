@@ -206,11 +206,69 @@ Not implemented, deliberately:
    against client 1; other modes' health and damage.
 10. `static_shock_center_attacker_or_construct`.
 
-Open research questions that do not change a material value (ledger
-`open_questions`): whether 4.4.2 Power Conversion procs on a non-damaging
-interrupt or taunt; whether DoTs can break the 10N Barrier.
+Open research questions (ledger `open_questions`): whether 4.4.2 Power
+Conversion procs on a non-damaging interrupt or taunt, now also the material
+claim `power_conversion_no_damage_proc`; whether DoTs can break the 10N
+Barrier.
 
-WCL extraction plan once the gate is cleared:
+## Raid-program round 1 (2026-09-27): WCL 10N results
+
+The first attempt of the day was still gated: HTTP 403 with the Cloudflare
+challenge page. GPT-6 Astra then read three 10-player Normal kills through
+the Codex Chrome plugin in the user's Chrome:
+`MxFq7TRbvnjGY1hJ` fight 24 (2024-10-28), `Y8ajQ7dbmKMG1RZy` fight 24
+(2025-05-15) and `xAhkN2y9YP3KRmnJ` fight 12 (2025-06-11). The values are in
+the ledger (source `wcl_omnotron_10n_20260927`), the DPS reference manifest
+and the cast timeline manifest.
+
+- **Construct melee.** 136 landed rows carry U. Rows inside Power Generator
+  windows are excluded. The unreduced range is 51,220-75,687; the smallest
+  value under Scarlet Fever or Vindication is 46,798. The native roll at
+  DamageModifier 1 is 4,520.5-6,731.4, plus the +1% auto-attack bonus. That
+  bounds the effective multiplier to 11.244-11.331. DamageModifier **11.2**
+  (effective 11.312) is staged in
+  `sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql`
+  for 42166, 42178, 42179 and 42180. The registry rows are a coordinator patch.
+  Difficulty entries stay open.
+- **Shared health, 10N.** The WCL health tooltip at pull reads 25,767,600 in
+  all three kills. In the Y8aj kill, damage on the two constructs totals
+  25.77m. The native value is right, and the guide's 32.2M does not apply.
+- **Timers after Activated (78740).** Activations come 44.1 s apart. Shields
+  start 50-51.6 s after activation. First casts: Chemical Bomb 11.1-11.3 s,
+  Poison Protocol 22.4-22.6 s (repeat 45.3 s), Lightning Conductor 15.9 s
+  (repeat 26 s), Power Generator 12.9-15.9 s (repeat 30.75 s), Incineration
+  10.0-11.1 s, Acquiring Target 21.4 s (repeat 40 s). The native normal-mode
+  timers in `boss_omnotron_defense_system.cpp` now match: Chemical Bomb 11 s,
+  Poison Protocol 22.5 s, Lightning Conductor repeat 26 s, Power Generator
+  repeat 30 s. Heroic timers are unchanged because there is no heroic sample.
+- **Electrical Discharge.** Each cast hits 3 players, all with U
+  23,432-24,581. Damage does not ramp between jumps, and the first target
+  varies.
+- **Barrier.** DoT ticks were absorbed for 267,864 over the full 10 s without
+  a break or Backdraft. That is below both the client's 300,000 and
+  Wowhead's 900,000, so the absorb amount stays unresolved.
+- **Poison Bombs.** Five bombs were killed in each of MxFq and xAhk. No
+  Poison Bomb 80092 damage was logged, so killed bombs do not explode, which
+  matches the native despawn. The single Static Shock hit landed on the
+  paladin tanking Electron.
+- **DPS references.** The raid target matches Y8aj fight 24 and xAhk
+  fight 12 (item level 395-401). MxFq fight 24 (item level 360) is context
+  only. The WCL references cover the Blood DK, Fire mage, Elemental shaman
+  and Survival hunter. Retribution, Assassination and Demonology use the
+  WoWSims fallback. The Feral tank has no reference.
+
+10N research is not complete: `fidelity_state_by_mode` keeps 10N
+`fidelity_blocked` because three 10N material claims stay open (each
+`unresolved` entry lists its modes). `barrier_absorb_amount`: 267,864
+absorbed without a break is below both 300,000 and 900,000, so it cannot
+tell them apart. `static_shock_center_attacker_or_construct`: the one hit
+landed on the attacking tank beside Electron, which both centres explain.
+`power_conversion_no_damage_proc`: no WCL row shows whether a non-damaging
+interrupt grants Converted Power. The two heroic items also remain.
+Full-raid run r11 killed the council natively; its
+`encounter_fidelity.boss_melee` recorded no construct swings.
+
+WCL extraction plan (executed 2026-09-27; kept for heroic and 25-player follow-ups):
 
 - **Reports.** Start from the BWD 10N reports already used for Magmaw:
   `MxFq7TRbvnjGY1hJ` (2024-10-28), `Y8ajQ7dbmKMG1RZy` and `xAhkN2y9YP3KRmnJ`.

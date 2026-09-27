@@ -66,12 +66,47 @@ def test_ledger_retains_client_rotation_and_native_roll() -> None:
     assert values["kill_credit_and_route_attribution"]["modes"]["10N"] == "credit creature 42180 Toxitron"
 
 
-def test_wcl_files_declare_the_gate_instead_of_values() -> None:
+def test_wcl_manifests_hold_three_verified_10n_kills() -> None:
     reference, timelines = load(WCL_REFERENCE), load(WCL_TIMELINES)
-    assert reference["status"] == timelines["status"] == "blocked_wcl_human_verification"
-    assert reference["references"] == [] and timelines["timelines"] == []
-    assert {row["report"] for row in reference["extraction_plan"]["candidate_reports"]} >= {
-        "MxFq7TRbvnjGY1hJ", "Y8ajQ7dbmKMG1RZy"}
+    assert reference["status"] == "references_extracted" and timelines["status"] == "extracted"
+    ids_ = {row["id"] for row in reference["references"]}
+    assert ids_ == {"MxFq7TRbvnjGY1hJ-fight24", "Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"}
+    for row in reference["references"]:
+        assert row["mode"] == "10N" and row["difficulty_text"] == "Normal (10 Player)"
+        assert row["duration_sec"] > 0 and row["raid_dps"] > 0 and row["actor_dps"]
+        for spec, dps in row["actor_dps"].items():
+            best = max(p["dps"] for p in row["players"] if p["class_spec"] == spec and p["role"] != "healer")
+            assert dps == best
+    assert timelines["reference_id"] in ids_ and timelines["duration_sec"] > 0
+    specs = [actor["class_spec"] for actor in timelines["actors"]]
+    assert len(specs) == len(set(specs)) and set(specs) == {
+        "survival_hunter", "fire_mage", "elemental_shaman", "blood_death_knight"}
+    assert all(actor["casts"] for actor in timelines["actors"])
+    assert set(timelines["enemy_cast_timelines"]) == ids_
+
+
+def test_wcl_evidence_is_sourced_and_open_10n_claims_stay_blocked() -> None:
+    ledger, contract = load(LEDGER), load(CONTRACT)
+    assert "wcl_omnotron_10n_20260927" in ledger["source_catalog"]
+    assert "wcl_omnotron_10n_20260927" in {row["id"] for row in contract["source_catalog"]}
+    rows = {row["key"]: row for row in ledger["research_completion"]}
+    for key in ("construct_melee_calibration_10n", "wcl_actor_references_10n", "health_10n",
+                "construct_abilities_10n", "damage_scaling_electrical_discharge", "poison_bomb_death"):
+        assert rows[key]["status"] == "resolved", key
+        assert "wcl_omnotron_10n_20260927" in rows[key]["source_refs"]
+    # One unbroken 267,864 Barrier, one Static Shock hit on the attacking tank and no
+    # interrupt/Converted Power pairing leave three 10N material claims open.
+    open_10n = {item["key"] for item in ledger["unresolved"] if "10N" in item["modes"]}
+    assert open_10n == {"barrier_absorb_amount", "static_shock_center_attacker_or_construct",
+                        "power_conversion_no_damage_proc"}
+    assert all(item["key"].startswith("heroic_") for item in ledger["unresolved"] if item["key"] not in open_10n)
+    assert all(item["modes"] and set(item["modes"]) <= {"10N", "10H", "25N", "25H"} for item in ledger["unresolved"])
+    assert rows["barrier_periodic_break"]["status"] == "open"
+    for document in (ledger, contract):
+        assert set(document["fidelity_state_by_mode"].values()) == {"fidelity_blocked"}
+    values = {row["key"]: row for row in ledger["values"]}
+    health = values["shared_health_and_construct_count"]["wcl_10N_derivation"]["max_health_tooltip_at_pull"]
+    assert set(health.values()) == {values["shared_health_and_construct_count"]["native_calculated_mode_values"]["10N"]}
 
 
 def test_raid_target_follows_the_canonical_omnotron_selection() -> None:
@@ -81,7 +116,10 @@ def test_raid_target_follows_the_canonical_omnotron_selection() -> None:
     assert target["encounter_route_node_id"] == "bwd.omnotron.encounter"
     manifest = load(ROOT / target["wcl_reference_manifest"])
     assert set(target["matched_reference_ids"]) <= {row["id"] for row in manifest["references"]}
-    assert "wcl_cast_timelines" not in target  # set once matched timelines exist
+    assert target["matched_reference_ids"] == ["Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"]
+    assert set(target["unmatched_reference_notes"]) == {"MxFq7TRbvnjGY1hJ-fight24"}
+    assert (ROOT / target["wcl_cast_timelines"]) == WCL_TIMELINES
+    assert "wcl_cast_timelines_pending" not in target
     boss = next(row for row in composition["bosses"] if row["boss_key"] == "omnotron")
     assert target["cohort_id"] == ids.cohort_id("blackwing_descent", "10N", "omnotron", 0)
     expected = {}
@@ -208,16 +246,23 @@ def test_damage_calibration_registry_patch_is_schema_valid_and_honest() -> None:
     patch = load(ENCOUNTERS / "omnotron_defense_system_damage_calibration_registry_patch_v1.json")
     registry = load_registry(ROOT)
     assert patch["target"] == "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
-    assert patch["staged_sql"] is None
+    assert (ROOT / patch["staged_sql"]).is_file()
     creatures = patch["creatures"]
     for entry, row in creatures.items():
         assert entry.isdigit() and row["status"] in REGISTRY_STATUSES
         assert row["role"] in ("boss", "add") and row["mode"] in ("10N", "25N", "10H", "25H")
         assert row["boss"] == "omnotron_defense_system" and isinstance(row["base_entry"], int)
-        assert row["damage_modifier"] is None  # nothing is calibrated without a matched sample
-        assert row.get("open_reason") if row["status"] == "open" else row.get("reason")
+        if row["status"] == "calibrated":
+            assert entry in ("42166", "42178", "42179", "42180") and row["damage_modifier"] == 11.2
+            assert row["evidence"]["wcl_mode"] == "10N"
+        else:
+            assert row["damage_modifier"] is None  # nothing else has a matched sample
+            assert row.get("open_reason") if row["status"] == "open" else row.get("reason")
         if entry in registry["creatures"]:
-            assert registry["creatures"][entry] == row  # applied verbatim, never edited
+            current = registry["creatures"][entry]
+            # Applied verbatim; the four calibrated rows may still be the open rows until the
+            # coordinator applies this packet's registry patch together with the staged SQL.
+            assert current == row or (row["status"] == "calibrated" and current["status"] == "open")
     bosses_10n = {entry for entry, row in creatures.items() if row["role"] == "boss" and row["mode"] == "10N"}
     assert bosses_10n == {"42166", "42178", "42179", "42180", "42186"}
     assert all(creatures[entry]["template_at_audit"]["base_attack_time_ms"] == 1500

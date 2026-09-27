@@ -14,80 +14,81 @@
   },
   "results": {
     "default": {
-      "death_probability": 0.435,
-      "mean_phase_seconds": 52.2,
-      "median_first_death_seconds": 42.9
+      "death_probability": 0.088,
+      "mean_phase_seconds": 49.1,
+      "median_first_death_seconds": 43.8
     },
     "option_a_burn": {
       "death_probability": 1.0,
       "mean_phase_seconds": 77.5,
-      "median_first_death_seconds": 27.9
+      "median_first_death_seconds": 34.2
     },
     "option_a_burn_offheal": {
-      "death_probability": 1.0,
+      "death_probability": 0.988,
       "mean_phase_seconds": 77.5,
-      "median_first_death_seconds": 42.9
+      "median_first_death_seconds": 53.4
     },
     "tank_pillar": {
-      "death_probability": 0.918,
-      "mean_phase_seconds": 75.5,
-      "median_first_death_seconds": 35.4
+      "death_probability": 0.675,
+      "mean_phase_seconds": 63.3,
+      "median_first_death_seconds": 40.6
     },
     "default_dps_x1.25": {
-      "death_probability": 0.125,
-      "mean_phase_seconds": 42.6,
-      "median_first_death_seconds": 37.9
+      "death_probability": 0.023,
+      "mean_phase_seconds": 42.0,
+      "median_first_death_seconds": 40.6
     },
     "default_dps_x1.5": {
-      "death_probability": 0.02,
-      "mean_phase_seconds": 37.8,
-      "median_first_death_seconds": 35.4
+      "death_probability": 0.005,
+      "mean_phase_seconds": 37.7,
+      "median_first_death_seconds": 34.2
     },
     "user_tank_pillar_glyphed": {
       "death_probability": 0.0,
       "mean_phase_seconds": 75.9,
       "median_first_death_seconds": null,
-      "helper_death_probability": 0.002,
-      "home_pillar_death_probability": 0.5
+      "helper_death_probability": 0.0,
+      "home_pillar_death_probability": 0.183
     },
     "user_tank_pillar_unglyphed": {
       "death_probability": 0.0,
       "mean_phase_seconds": 75.9,
       "median_first_death_seconds": null,
-      "helper_death_probability": 0.002,
-      "home_pillar_death_probability": 0.5
+      "helper_death_probability": 0.0,
+      "home_pillar_death_probability": 0.183
     },
     "user_tank_pillar_glyphed_no_help": {
-      "death_probability": 0.27,
-      "mean_phase_seconds": 109.6,
-      "median_first_death_seconds": 87.9
+      "death_probability": 0.033,
+      "mean_phase_seconds": 105.7,
+      "median_first_death_seconds": 95.0
     },
     "user_tank_pillar_with_offhealer": {
-      "death_probability": 0.162,
-      "mean_phase_seconds": 59.8,
-      "median_first_death_seconds": 47.9,
-      "helper_death_probability": 0.003,
-      "home_pillar_death_probability": 0.03
+      "death_probability": 0.03,
+      "mean_phase_seconds": 59.0,
+      "median_first_death_seconds": 50.2,
+      "helper_death_probability": 0.0,
+      "home_pillar_death_probability": 0.0
     },
     "user_tank_pillar_with_offhealer_and_warlock": {
-      "death_probability": 0.745,
-      "mean_phase_seconds": 53.6,
-      "median_first_death_seconds": 45.4,
+      "death_probability": 0.225,
+      "mean_phase_seconds": 53.4,
+      "median_first_death_seconds": 47.0,
       "helper_death_probability": 0.0,
       "home_pillar_death_probability": 0.0
     }
   },
   "layout_search": "The exhaustive 2/2/6 layout search of the first model (no layout materially better than the default) was not re-run on the corrected model: the coordinator stopped model refinement; the live run decides.",
   "sensitivity_death_probability": {
-    "barrage_and_magma_10pct_mitigation": 0.195,
-    "barrage_and_magma_20pct_mitigation": 0.04,
-    "mana_40000": 0.745,
-    "mana_120000": 0.213,
-    "regen_0": 0.447,
-    "regen_300": 0.363,
-    "no_dk_self_heal": 0.568,
-    "no_preparation": 0.663
+    "barrage_and_magma_10pct_mitigation": 0.017,
+    "barrage_and_magma_20pct_mitigation": 0.0,
+    "mana_40000": 0.422,
+    "mana_120000": 0.017,
+    "regen_0": 0.142,
+    "regen_300": 0.063,
+    "no_dk_self_heal": 0.163,
+    "no_preparation": 0.278
   },
   "sensitivity_source": "The second re-review's variants (GPT-6 Astra: damage reduction, mana pool, mana regeneration, Death Strike self-heal, no preparation), re-run on the corrected model with the default layout.",
-  "note": "This is not a native estimate. The model's default pillar-2 death risk moves from about 4% to 75% under plausible changes of single assumptions (sensitivity_death_probability), and it does not model Blast Nova interrupts. It ranks layouts; the live run decides whether the healerless pillar is viable."
+  "note": "This is not a native estimate. The model's default pillar-2 death risk moves from about 4% to 75% under plausible changes of single assumptions (sensitivity_death_probability), and it does not model Blast Nova interrupts. It ranks layouts; the live run decides whether the healerless pillar is viable.",
+  "barrage_period_note": "Barrage period 3.2 s from the WCL 10N Begin Cast interval (report MxFq7TRbvnjGY1hJ fight 35, 31 intervals, 2026-09-27); results regenerated from 2.5 s."
 }

@@ -20,7 +20,7 @@ def _magmaw_contracts() -> dict[str, dict[str, object]]:
     }
 
 
-def test_two_tank_full_raid_enables_the_native_sweltering_armor_swap() -> None:
+def test_legacy_route_keeps_the_swap_and_the_mirrored_full_raid_is_single_tank() -> None:
     contracts = _magmaw_contracts()
     assert set(contracts) == {
         "blackwing_descent_10n", "blackwing_descent_10n_magmaw_diagnostic",
@@ -33,16 +33,24 @@ def test_two_tank_full_raid_enables_the_native_sweltering_armor_swap() -> None:
     assert contract["tank_swap_trigger"] == "debuff_stacks"
     assert contract["tank_swap_aura_id"] == 78199
     assert contract["tank_swap_aura_stacks"] == 1
-    # The accepted Magmaw shard and its canonical c0 copy are a single Blood tank: no swap is declared.
-    for single in ("blackwing_descent_10n_magmaw_diagnostic", "blackwing_descent_10n_magmaw_c0_diagnostic"):
+    # The accepted Magmaw shard, its canonical c0 copy and the end-to-end cohort
+    # are a single Blood tank: no swap is declared.
+    for single in ("blackwing_descent_10n_magmaw_diagnostic", "blackwing_descent_10n_magmaw_c0_diagnostic",
+                   "blackwing_descent_10n_full_c0"):
         shard = contracts[single]
         assert not any(key.startswith("tank_swap") or key.endswith("tank_roster_slot") for key in shard)
-    # The canonical end-to-end cohort keeps the swap on its own roster: Blood DK (slot 1) main
-    # tank, Feral druid (slot 2) off tank.
-    full = contracts["blackwing_descent_10n_full_c0"]
-    assert (full["main_tank_roster_slot"], full["off_tank_roster_slot"]) == (1, 2)
-    assert {key: value for key, value in full.items() if not key.endswith("tank_roster_slot")} == {
-        key: value for key, value in contract.items() if not key.endswith("tank_roster_slot")}
+    # af4e7d9f4b mirrors every boss shard into the end-to-end cohort exactly, so
+    # its Magmaw contract equals the c0 shard's; the druid switches to Balance
+    # (a dps role) before Magmaw. This route cleared natively in full-raid r11.
+    assert contracts["blackwing_descent_10n_full_c0"] == contracts["blackwing_descent_10n_magmaw_c0_diagnostic"]
+    payload = json.loads(CONFIG.read_text(encoding="utf-8"))
+    full = next(row for row in payload["scenarios"] if row["id"] == "blackwing_descent_10n_full_c0")
+    nodes = [step.get("node_id") for step in full["route"]]
+    switch = full["route"][nodes.index("bwd.spec_switch.magmaw")]
+    assert nodes.index("bwd.spec_switch.magmaw") < nodes.index("bwd.magmaw.encounter")
+    druid = next(member for member in switch["spec_contract"] if member["character_key"] == "druid")
+    assert (druid["class_spec"], druid["role"]) == ("balance_druid", "dps")
+    assert [member["role"] for member in switch["spec_contract"]].count("tank") == 1
 
 
 def _production_debuff_gate(source: str) -> str:

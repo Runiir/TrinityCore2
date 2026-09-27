@@ -2,9 +2,252 @@
   "schema": "maloriak_wcl_dps_reference_v1",
   "encounter": "maloriak",
   "mode": "10N",
-  "status": "pending_extraction",
-  "status_reason": "classic.warcraftlogs.com answered with a 'Human Verification / I am a human and not a bot' interstitial on 2026-09-25 (WebFetch: HTTP 403). An agent may not attest to being human, so no report page was read. No matched reference exists yet; nothing in this file is a measured value.",
-  "references": [],
+  "status": "extracted",
+  "status_reason": "Extracted on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's verified Chrome session (one own tab; no verification challenge appeared). Earlier agent-browser attempts on 2026-09-25 and 2026-09-27 had been stopped by the Cloudflare check (access_attempts).",
+  "references": [
+    {
+      "id": "MxFq7TRbvnjGY1hJ-fight34",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "duration_sec": 125.1,
+      "raid_dps": 162483.3,
+      "average_item_level": 359.9,
+      "target_scope": "all targets: Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "MxFq7TRbvnjGY1hJ",
+        "fight": 34,
+        "title": "10er WT feat. Wongel",
+        "owner": "Amaraaa",
+        "guild": "Ist auch dabei",
+        "realm": "Everlook (EU)"
+      },
+      "actor_dps": {
+        "survival_hunter": 25375.4,
+        "elemental_shaman": 23356.4,
+        "combat_rogue": 21105.2,
+        "retribution_paladin": 19708.8,
+        "shadow_priest": 19292.8,
+        "balance_druid": 15955.5,
+        "blood_death_knight": 11681.9
+      },
+      "actors": [
+        {
+          "name": "Jägamara",
+          "wcl_actor_id": 1,
+          "spec": "survival_hunter",
+          "role": "dps",
+          "damage_displayed": "3.18m",
+          "dps_displayed": 25422.4
+        },
+        {
+          "name": "Lachina",
+          "wcl_actor_id": 3,
+          "spec": "survival_hunter",
+          "role": "dps",
+          "damage_displayed": "3.17m",
+          "dps_displayed": 25328.4
+        },
+        {
+          "name": "Sélán",
+          "wcl_actor_id": 4,
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "damage_displayed": "2.92m",
+          "dps_displayed": 23356.4
+        },
+        {
+          "name": "Avéran",
+          "wcl_actor_id": 9,
+          "spec": "combat_rogue",
+          "role": "dps",
+          "damage_displayed": "2.64m",
+          "dps_displayed": 21105.2
+        },
+        {
+          "name": "Janderak",
+          "wcl_actor_id": 15,
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "damage_displayed": "2.46m",
+          "dps_displayed": 19708.8
+        },
+        {
+          "name": "Adara",
+          "wcl_actor_id": 2,
+          "spec": "shadow_priest",
+          "role": "dps",
+          "damage_displayed": "2.41m",
+          "dps_displayed": 19292.8
+        },
+        {
+          "name": "Koakuma",
+          "wcl_actor_id": 5,
+          "spec": "balance_druid",
+          "role": "dps",
+          "damage_displayed": "2.00m",
+          "dps_displayed": 15955.5
+        },
+        {
+          "name": "Greysnout",
+          "wcl_actor_id": 6,
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "damage_displayed": "1.46m",
+          "dps_displayed": 11681.9
+        },
+        {
+          "name": "Wongelrainer",
+          "wcl_actor_id": 8,
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "damage_displayed": "54.1k",
+          "dps_displayed": 432.7
+        },
+        {
+          "name": "Nevox",
+          "wcl_actor_id": 7,
+          "spec": "holy_paladin",
+          "role": "healer",
+          "damage_displayed": "11.0k",
+          "dps_displayed": 88.0
+        }
+      ],
+      "phase_coverage": "Red vial 18.5 s, Blue vial 68.3 s, 25% transition (Release All Minions) 101.8-103.3 s, phase-two Magma Jets/Acid Nova/Absolute Zero to the kill at 125.1 s. No Green phase. Heroism at 106.4 s (after the transition).",
+      "limitations": [
+        "survival_hunter is the median (mean) of two Survival Hunters, 25,422.4 and 25,328.4.",
+        "blood_death_knight is the main tank Greysnout (all 40 Maloriak swings). The add off-tank Wongelrainer (Blood DK, 432.7 DPS) is excluded: the bot roster's add tank is a Feral Druid.",
+        "No Fire Mage, Assassination Rogue, Demonology Warlock or Feral tank in the WCL roster; those bot specs keep their WoWSims fallback or no_reference.",
+        "Short 2:05 kill without a Green phase: DPS context, not coverage of every vial.",
+        "Displayed duration and DPS are rounded observations. Assignments, buffs, cooldown coverage, gear (ilvl 359.9) and phase coverage differ from the bot canary.",
+        "The values are comparison context, not a controlled pass threshold."
+      ]
+    },
+    {
+      "id": "VL3fW9wNm2PRJDYt-fight13",
+      "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-21",
+      "duration_sec": 209.6,
+      "raid_dps": 118895.0,
+      "average_item_level": 355.6,
+      "target_scope": "all targets: Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "VL3fW9wNm2PRJDYt",
+        "fight": 13,
+        "title": "TotFW / BWD / BoT",
+        "owner": "- GRZ -",
+        "guild": "Les Cénobites Tranquille",
+        "realm": "Auberdine (EU)"
+      },
+      "actor_dps": {
+        "retribution_paladin": 20230.9,
+        "demonology_warlock": 18229.8,
+        "survival_hunter": 16145.0,
+        "frost_death_knight": 15748.3,
+        "shadow_priest": 12425.0
+      },
+      "actors": [
+        {
+          "name": "Ûnstûff",
+          "wcl_actor_id": 4,
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "damage_displayed": "4.24m",
+          "dps_displayed": 20230.9
+        },
+        {
+          "name": "Xenass",
+          "wcl_actor_id": 1,
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "damage_displayed": "4.05m",
+          "dps_displayed": 19314.1
+        },
+        {
+          "name": "Tsubii",
+          "wcl_actor_id": 23,
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "damage_displayed": "3.59m",
+          "dps_displayed": 17145.5
+        },
+        {
+          "name": "Labraizz",
+          "wcl_actor_id": 9,
+          "spec": "feral_druid_tank",
+          "role": "tank",
+          "damage_displayed": "3.40m",
+          "dps_displayed": 16202.0
+        },
+        {
+          "name": "Scrotome",
+          "wcl_actor_id": 5,
+          "spec": "survival_hunter",
+          "role": "dps",
+          "damage_displayed": "3.38m",
+          "dps_displayed": 16145.0
+        },
+        {
+          "name": "Thedarkus",
+          "wcl_actor_id": 2,
+          "spec": "frost_death_knight",
+          "role": "dps",
+          "damage_displayed": "3.30m",
+          "dps_displayed": 15748.3
+        },
+        {
+          "name": "Deevor",
+          "wcl_actor_id": 8,
+          "spec": "shadow_priest",
+          "role": "dps",
+          "damage_displayed": "2.60m",
+          "dps_displayed": 12425.0
+        },
+        {
+          "name": "Orageux",
+          "wcl_actor_id": 3,
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "damage_displayed": "234.1k",
+          "dps_displayed": 1117.2
+        },
+        {
+          "name": "Boboops",
+          "wcl_actor_id": 7,
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "damage_displayed": "95.9k",
+          "dps_displayed": 457.8
+        },
+        {
+          "name": "Elfîheal",
+          "wcl_actor_id": 6,
+          "spec": "restoration_druid",
+          "role": "healer",
+          "damage_displayed": "22.9k",
+          "dps_displayed": 109.3
+        }
+      ],
+      "phase_coverage": "Red vial 17.5 s, Blue 67.6 s, Green 117.8 s (Maloriak at 59.6% around the throw), Release All Minions 158.3 s, phase two to the kill at 209.6 s.",
+      "limitations": [
+        "feral_druid_tank Labraizz (Guardian, 16,202.0 DPS) tanked Maloriak here (Growl on Maloriak at 5.8 and 25.4 s) and is excluded from actor_dps (see excluded_actor_dps): the bot roster's Feral tanks the adds, and a boss-tank reference does not match that role. The Blood DK Orageux (1,117.2 DPS) took the adds and Prime Subjects (Rend on Orageux) and is also excluded, because the bot roster's Blood DK tanks Maloriak.",
+        "demonology_warlock is the median of two Demonology Warlocks, 19,314.1 and 17,145.5.",
+        "No Fire Mage or Assassination Rogue in the roster.",
+        "Found through the Maloriak 10N rankings (Guardian Druid tanks); ranking rows were only a discovery index and the fight page was verified. An earlier candidate, grvCj8pxDF1qPJmY fight 12 (2024-06-06), had archived event data.",
+        "Displayed duration and DPS are rounded observations. The values are comparison context, not a controlled pass threshold."
+      ],
+      "excluded_actor_dps": {
+        "feral_druid_tank": {
+          "dps": 16202.0,
+          "actor": "Labraizz",
+          "reason": "boss_tank_role_mismatch: the Guardian tanked Maloriak himself; the bot roster's Feral tanks the adds, so a boss-tank reference is not matched for the add-tank role"
+        }
+      }
+    }
+  ],
   "extraction_plan": {
     "required_match": "Cataclysm Classic Blackwing Descent Maloriak (DungeonEncounter 1025, experiments/configs/raid_prerequisites/blackwing_descent.json), 10-player Normal, a kill (not a wipe), post-4.2 tuning era, preferably 2024-10 or later, verified on the fight page: boss, difficulty, size, date, duration, roster. Prefer a kill with at least one Red, one Blue and one Green vial phase before 25% (about 2 min 30 s or longer); a shorter kill can serve DPS context but not the vial/add timing claims.",
     "wanted_specs": [
@@ -50,5 +293,42 @@
   "consumers": [
     "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json (matched_reference_ids stays empty until a verified entry exists)",
     "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json (unresolved: wcl_matched_melee_damage_stage_for_damage_modifier_calibration, normal_health_and_enrage_values, live_timer_and_movement_confirmation_for_10N_10H_25N_25H)"
+  ],
+  "access_attempts": [
+    {
+      "date": "2026-09-25",
+      "route": "WebFetch",
+      "url": "https://classic.warcraftlogs.com/reports/*",
+      "result": "HTTP 403 human-verification interstitial; not clicked",
+      "source_ref": "wcl_gate_20260925"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra (codex exec) headless Playwright Chromium",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+      "result": "Cloudflare 'Performing security verification' held for 15 s (Ray ID a41777e45f9ee4b6); not interacted with; 0 rows",
+      "source_ref": "wcl_gate_20260927"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra (codex exec) headful Google Chrome, DISPLAY :0",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+      "result": "Cloudflare verification held for 45 s; not interacted with; 0 rows; the other two candidate reports and the rankings fallback were not opened",
+      "source_ref": "wcl_gate_20260927"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra (codex exec) via the Codex Chrome plugin in the user's verified Chrome session",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34",
+      "result": "loaded without a challenge; fight 34 melee, auras, damage done, casts, interrupts and Heroism read",
+      "source_ref": "wcl_MxFq7TRbvnjGY1hJ_34"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra (codex exec) via the Codex Chrome plugin, shared WCL tab under ~/.cache/wcl_tab.lock",
+      "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13",
+      "result": "loaded; Guardian-tank kill found via rankings; summary, damage done, enemy casts and three players' casts read",
+      "source_ref": "wcl_VL3fW9wNm2PRJDYt_13"
+    }
   ]
 }

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from tools.raid_program.capture_environment_validation import snapshot_receipt_bound_artifacts
 from tools.raid_program.capture_checkpoint_controller import (
     checkpoint_controller_dialect,
     magmaw_transfer_checkpoint_arm_command,
@@ -665,6 +666,9 @@ def test_prompt_loop_stops_with_full_batch_failure_precedence(
     binary = tmp_path / "worldserver"
     config = tmp_path / "worldserver.conf"
     binary.write_bytes(b"fixture")
+    cache_path = tmp_path / "build/CMakeCache.txt"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_bytes(b"fixture")
     config.write_bytes(b"fixture")
     setup = CaptureSetup(
         args=SimpleNamespace(
@@ -694,7 +698,12 @@ def test_prompt_loop_stops_with_full_batch_failure_precedence(
         controller_route_hold_scheduler=scheduler,
         drudge_observed=False, drudge_required=False,
         drudge_navmesh_preflight={"required": False, "all_passed": None},
-        drudge_frozen_anchors={}, build_provenance={"valid": True},
+        drudge_frozen_anchors={},
+        build_provenance={
+            "valid": True,
+            "artifact_snapshots": {"accepted_final": snapshot_receipt_bound_artifacts(binary, tmp_path)},
+        },
+        runtime_asset_closure={"complete": True, "status": "runtime_asset_closure_complete"},
     )
 
     class FakeProcess:
@@ -749,6 +758,12 @@ def test_prompt_loop_stops_with_full_batch_failure_precedence(
     )
     monkeypatch.setattr(
         "tools.raid_program.capture_live_run.validate_forced_combat_log_bundle",
+        lambda *args, **kwargs: {"gate_passed": True, "rejections": []},
+    )
+    # The terminal pending-trace drain (b5bb98493a) postdates this fixture; the
+    # fake worldserver emits no trace pages, so stub it like the bundle gates.
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.drain_pending_trace_batches",
         lambda *args, **kwargs: {"gate_passed": True, "rejections": []},
     )
     monkeypatch.setattr(

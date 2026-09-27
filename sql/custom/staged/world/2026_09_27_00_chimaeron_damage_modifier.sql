@@ -1,0 +1,59 @@
+-- Chimaeron 10N (creature_template 43296): restore melee damage with DamageModifier 20.
+--
+-- Staged. Move to sql/custom/world/ (or apply with mysql) right before the
+-- Chimaeron measurement batch; see sql/custom/staged/README.md.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set
+-- DamageModifier = 1 for every creature, "pending re-evaluation".
+--
+-- Native formula (Creature.cpp UpdateLevelDependantStats and
+-- CreatureStatSystem.cpp CalculateMinMaxDamage):
+--   base = gt_npc_damage_by_class_exp3[level 88].Warrior = 2947.9421
+--          (unit_class 1, HealthScalingExpansion 3, rank 3, Rate.Creature.Elite.WORLDBOSS.Damage 1)
+--   weapon min/max = base, base * 1.5
+--   AP term = creature_classlevelstats(88, 1).attackpower 1226 / 14 * BaseVariance 1 = 87.57
+--   swing = (weapon + AP term) * BaseAttackTime 4.0 s * DamageModifier * TOTAL_PCT
+--   At DamageModifier 1, one swing is 12,142.1 to 18,037.9.
+--
+-- Matched stage: WCL "U" (unmitigatedAmount) = melee_resolution.after_attacker_bonus_amount
+-- (before the target's armor, block, damage-taken reductions such as Break 82881, and absorbs).
+-- U does not follow Break: the tank carried 0-4 Break stacks while U stayed 253-345k and only
+-- WCL's mitigation percentage moved.
+--
+-- WCL MxFq7TRbvnjGY1hJ fight 27 (Chimaeron, 10N kill, 2024-10-28, 95.3 s, one Blood DK tank):
+-- 23 melee rows (ability 1), 17 landed with U, 4 parries, 1 dodge, 1 miss.
+-- Scarlet Fever 81130 was on Chimaeron 5.2-34.3 s and 52.5-81.5 s; no Demoralizing
+-- Roar/Shout or Vindication was applied.
+--   unreduced U (10): 253,562-345,349
+--   U under Scarlet Fever (7): 285,219-314,547
+--   largest hit unreduced    : 345,349 / 18,037.9            = 19.15 (looser lower bound)
+--   largest under -10%       : 314,547 / (0.9 * 18,037.9)    = 19.3757 (lower bound)
+--   smallest hit unreduced   : 253,562 / 12,142.1            = 20.88 (upper bound)
+--   smallest under -10%      : 285,219 / (0.9 * 12,142.1)    = 26.10 (looser upper bound)
+-- The native pipeline adds +1% to auto-attacks (Unit::MeleeDamageBonusDone), so the value
+-- must satisfy 19.3757 <= m * 1.01 <= 20.88, i.e. 314,547 / (0.9 * 18,037.9 * 1.01)
+-- = 19.1838 <= m <= 20.67. 20 is inside (20 * 1.01 = 20.2). The sample means agree: unreduced mean U 299,823 / native mean 15,090.0
+-- / 1.01 = 19.67.
+-- At 20 the native U-stage envelope is 245,269-364,366 unreduced and 220,743-327,930 under
+-- a -10% done aura; every observed row is inside.
+-- Health cross-check: the same fight's resource rows derive max health 20,699,972, equal to
+-- the native 10N health (85,892 x HealthModifier 241), so this sample reflects the tuning the
+-- repository runs.
+-- No weapon-percent ability exists for a second cross-check: Break and Double Attack carry no
+-- damage of their own (Double Attack adds one extra swing of the same roll).
+--
+-- Scope. Only 10N entry 43296. Spell damage (Caustic Slime, Massacre) does not read
+-- DamageModifier. The 25N, 10H and 25H templates 47774, 47775 and 47776 keep DamageModifier 1
+-- and use BaseAttackTime 2000, not 4000. There are no same-mode melee samples for them, so
+-- they stay open, not copied. The worldserver loads creature_template at startup.
+--
+-- The migration is idempotent. The reverse is the commented block at the end, not a separate
+-- file (the auto-updater would apply a separate revert file immediately). It only restores 1
+-- when the value is still this migration's 20.
+
+UPDATE `creature_template` SET `DamageModifier` = 20 WHERE `entry` = 43296;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 43296 AND `DamageModifier` = 20;
+-- END REVERSE MIGRATION

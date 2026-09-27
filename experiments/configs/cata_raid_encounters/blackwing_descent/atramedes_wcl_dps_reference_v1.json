@@ -2,9 +2,206 @@
   "schema": "atramedes_wcl_dps_reference_v1",
   "encounter": "atramedes",
   "mode": "10N",
-  "status": "pending_extraction",
-  "status_reason": "classic.warcraftlogs.com answered every request on 2026-09-25 with a 'Human Verification / I am a human and not a bot' interstitial (WebFetch: HTTP 403). An agent may not attest to being human, so no report page was read. No matched reference exists yet; nothing here is a measured value.",
-  "references": [],
+  "status": "extracted",
+  "status_reason": "Read 2026-09-27 04:23-04:33 UTC through codex exec -m gpt-6-astra driving one tab of the user's running Chrome session (coordinator route); no verification page appeared. Earlier routes the same day (headless Playwright, the Codex browser surface, a scratch-profile Chrome) were gated by Cloudflare; see access_attempts.",
+  "references": [
+    {
+      "id": "MxFq7TRbvnjGY1hJ-fight32",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "duration_sec": 165.6,
+      "raid_dps": 157668.5,
+      "average_item_level": 359.9,
+      "target_scope": "All Enemies (Atramedes and Reverberating Flame)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "blood_death_knight": 13254,
+        "combat_rogue": 21521.9,
+        "elemental_shaman": 24949.4,
+        "retribution_paladin": 19929.9,
+        "shadow_priest": 20078.6,
+        "survival_hunter": 25513.05
+      },
+      "roster": [
+        {
+          "name": "Greysnout",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 13254,
+          "wcl_actor_id": 6
+        },
+        {
+          "name": "Wongelrainer",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 3965.2,
+          "wcl_actor_id": 8
+        },
+        {
+          "name": "Jägamara",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 25959.2,
+          "wcl_actor_id": 1
+        },
+        {
+          "name": "Lachina",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 25066.9,
+          "wcl_actor_id": 3
+        },
+        {
+          "name": "Janderak",
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 19929.9,
+          "wcl_actor_id": 15
+        },
+        {
+          "name": "Adara",
+          "spec": "shadow_priest",
+          "role": "dps",
+          "dps": 20078.6,
+          "wcl_actor_id": 2
+        },
+        {
+          "name": "Avéran",
+          "spec": "combat_rogue",
+          "role": "dps",
+          "dps": 21521.9,
+          "wcl_actor_id": 9
+        },
+        {
+          "name": "Sélán",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 24949.4,
+          "wcl_actor_id": 4
+        },
+        {
+          "name": "Koakuma",
+          "spec": "restoration_druid",
+          "role": "healer",
+          "dps": 2782.7,
+          "wcl_actor_id": 5
+        },
+        {
+          "name": "Nevox",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps": 95.7,
+          "wcl_actor_id": 7
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "Two Blood DKs: Greysnout tanked every swing (13,254 DPS); Wongelrainer was an off-tank with 39% activity (3,965 DPS) and is excluded from blood_death_knight, which matches the canonical single tank.",
+        "One full ground-air-ground cycle: liftoff about 90 s, landing about 129 s, kill at 165.6 s; the gongs were used at pull (two Vertigo 11.8-21.8 s), at Searing Flame and three times after landing.",
+        "Average item level 359.9; one Restoration Druid and one Holy Paladin healer, six DPS and two tanks.",
+        "Displayed DPS are rounded observations over All Enemies. Actor DPS per spec is the median of that spec's players (two Survival Hunters)."
+      ]
+    },
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight17",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17&type=damage-done",
+      "mode": "10N",
+      "date": "2025-06-11",
+      "duration_sec": 48.5,
+      "raid_dps": 538152.7,
+      "average_item_level": 401.4,
+      "target_scope": "All Enemies (Atramedes)",
+      "reference_class": "short_fight_throughput_context",
+      "actor_dps": {
+        "affliction_warlock": 61684.6,
+        "arms_warrior": 71411.6,
+        "blood_death_knight": 33304.8,
+        "elemental_shaman": 57685.6,
+        "enhancement_shaman": 49097.5,
+        "fire_mage": 81123.2,
+        "survival_hunter": 63079.9
+      },
+      "roster": [
+        {
+          "name": "Catamara",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 33304.8,
+          "wcl_actor_id": 11
+        },
+        {
+          "name": "Tristu",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 61120.9,
+          "wcl_actor_id": 6
+        },
+        {
+          "name": "Vitarâ",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 65038.9,
+          "wcl_actor_id": 16
+        },
+        {
+          "name": "Thorsmage",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps": 81123.2,
+          "wcl_actor_id": 12
+        },
+        {
+          "name": "Catorì",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 47795.8,
+          "wcl_actor_id": 2
+        },
+        {
+          "name": "Heutnich",
+          "spec": "enhancement_shaman",
+          "role": "dps",
+          "dps": 49097.5,
+          "wcl_actor_id": 5
+        },
+        {
+          "name": "Schastnerak",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 67575.4,
+          "wcl_actor_id": 7
+        },
+        {
+          "name": "Schlabunsen",
+          "spec": "affliction_warlock",
+          "role": "dps",
+          "dps": 61684.6,
+          "wcl_actor_id": 10
+        },
+        {
+          "name": "Noho",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps": 71411.6,
+          "wcl_actor_id": 20
+        },
+        {
+          "name": "Awì",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "dps": null,
+          "wcl_actor_id": 3
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "48.5 s kill: it ends before the first liftoff (about 91 s), so it has no air phase and no Searing Flame; not encounter-matched.",
+        "Average item level 401.4, eight DPS, one tank, one healer.",
+        "Throughput context only; not in the raid target's matched_reference_ids."
+      ]
+    }
+  ],
   "extraction_plan": {
     "required_match": "Cataclysm Classic Blackwing Descent Atramedes, 10-player Normal, a kill (not a wipe), post-4.2 tuning era, preferably 2024-10 or later, verified on the fight page (boss, difficulty, size, date, duration, roster).",
     "wanted_specs": [
@@ -46,5 +243,59 @@
   "consumers": [
     "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json (matched_reference_ids stays empty until a verified entry exists)",
     "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json (unresolved: wcl_10n_kill_reference_pending, boss_melee_damage_modifier_10n, boss_health_10n)"
-  ]
+  ],
+  "access_attempts": [
+    {
+      "date": "2026-09-25",
+      "route": "WebFetch",
+      "result": "HTTP 403, 'One Quick Check - I am a human and not a bot' interstitial; not clicked",
+      "source_ref": "wcl_human_verification_20260925"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra headless Playwright",
+      "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy",
+      "result": "Cloudflare 'Performing security verification' held for 20 s (Ray ID a41776116d37e463); not interacted with",
+      "source_ref": "wcl_cloudflare_verification_20260927"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra, CUA_REPL_ENABLED_SURFACES=browser",
+      "result": "'Browser is not available: iab'; the user's Chrome was excluded by the coordinator; no page read",
+      "source_ref": "wcl_cloudflare_verification_20260927"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra, separate Google Chrome with a scratch profile (Playwright, headed)",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+      "result": "One Quick Check clicked once and the Cloudflare checkbox once plus one retry (user rule 2026-09-27); looped back to /human-challenge (Ray ID a417b3fcae623148); Y8ajQ7dbmKMG1RZy and xAhkN2y9YP3KRmnJ also gated; no CAPTCHA puzzle or login form",
+      "source_ref": "wcl_cloudflare_verification_20260927"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra, Chrome plugin, one own tab in the user's running Chrome (profile Runiir)",
+      "result": "all views rendered; no check, CAPTCHA or login; tab closed afterwards",
+      "source_ref": "wcl_MxFq7TRbvnjGY1hJ_32"
+    }
+  ],
+  "report_search": {
+    "MxFq7TRbvnjGY1hJ": "fight 32 Atramedes 10N kill (2024-10-28, 2:45)",
+    "Y8ajQ7dbmKMG1RZy": "fight 28 Atramedes Heroic 10 kill only; excluded (mode)",
+    "xAhkN2y9YP3KRmnJ": "fight 17 Atramedes 10N kill (2025-06-11, 0:48)"
+  },
+  "canonical_spec_coverage": {
+    "wcl_matched": {
+      "blood_death_knight": 13254,
+      "elemental_shaman": 24949.4,
+      "retribution_paladin": 19929.9,
+      "survival_hunter": 25513.05
+    },
+    "wowsims_fallback": [
+      "balance_druid",
+      "fire_mage",
+      "assassination_rogue",
+      "demonology_warlock"
+    ],
+    "note": "fire_mage appears only in the unmatched short kill (81,123 DPS at item level 401.4)."
+  }
 }

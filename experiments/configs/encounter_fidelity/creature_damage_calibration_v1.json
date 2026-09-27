@@ -45,6 +45,7 @@
       "damage_modifier": 16.0,
       "template_at_audit": {"base_attack_time_ms": 2500, "unit_class": 1, "rank": 1, "flags_extra": 1, "level": 88},
       "evidence": {
+        "target_era_check": {"wcl_report": "Y8ajQ7dbmKMG1RZy", "wcl_fight": 22, "wcl_mode": "10N", "wcl_date": "2025-05-15", "reduced_samples": 18, "u_min": 109914, "u_max": 153626, "attacker_reduction": "Vindication 26017 / Scarlet Fever 81130 continuous 0:03.375-1:51.287", "bounds": {"lower": 15.14, "upper": 16.09}, "combined_bounds": {"lower": 15.84, "upper": 16.09}, "verdict": "damage_modifier 16 consistent"},
         "wcl_report": "MxFq7TRbvnjGY1hJ",
         "wcl_fight": 22,
         "wcl_mode": "10N",
@@ -178,8 +179,8 @@
       "mode": "10N",
       "base_entry": 41442,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 10.35,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,
@@ -187,17 +188,55 @@
         "flags_extra": 513,
         "level": 88
       },
-      "open_reason": "No matched 10N WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: atramedes_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2.",
-      "ledger": {
-        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
-        "value_key": "boss_melee_damage_modifier_10n",
-        "samples_field": "wcl_10N_samples"
-      },
       "native_roll_at_modifier_1": {
         "min": 4553.3,
         "max": 6764.2
       },
-      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Atramedes ledger adds that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 32,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 10.32,
+          "upper": 10.47,
+          "with_auto_attack_bonus": {
+            "lower": 10.22,
+            "upper": 10.36
+          },
+          "combined": {
+            "lower": 10.32,
+            "upper": 10.36
+          }
+        },
+        "bounds_derivation": "lower = 62,831 / (0.9 * 6,764.2) = 10.32 (largest hit under Scarlet Fever; the largest unreduced hit gives 68,939 / 6,764.2 = 10.19); upper = 47,665 / 4,553.3 = 10.47 (smallest unreduced hit; the smallest under Scarlet Fever, 45,877 / (0.9 * 4,553.3) = 11.20, is looser); with the native +1% auto-attack bonus 10.22 <= m <= 10.36; the value must satisfy both, so 10.32-10.36",
+        "cross_check": "Pooled mean of the 22 landed U is 55,546 vs a native expectation of 54,045 at 10.35 for the 3 unreduced / 19 Scarlet Fever mix (+2.8%). Treating Scarlet Fever as outside U leaves no consistent value (10.19 > 10.08). Same-fight health derivation 26,111,168 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists.",
+        "sample_note": "Only 3 unreduced rows (before Scarlet Fever at 6.9 s). Scarlet Fever rows average 55,317 vs 56,996 unreduced, smaller than the expected 10% (as in the Chimaeron sample); the bounds hold under either reading except the no-aura one, which has no solution.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_atramedes_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 45877,
+        "u_max": 68939,
+        "u_mean": 55546.1,
+        "u_mean_basis": "mean of all 22 landed U values (3 unreduced mean 56,996; 19 under Scarlet Fever mean 55,317)",
+        "landed_samples": 22,
+        "avoided_samples": 10,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_32"
+      },
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+        "value_key": "boss_melee_damage_modifier_10n",
+        "samples_field": "wcl_10N_samples"
+      }
     },
     "49583": {
       "name": "Atramedes (1)",
@@ -565,8 +604,8 @@
       "mode": "10N",
       "base_entry": 43296,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 20.0,
       "template_at_audit": {
         "base_attack_time_ms": 4000,
         "unit_class": 1,
@@ -574,10 +613,45 @@
         "flags_extra": 1,
         "level": 88
       },
-      "open_reason": "No matched 10N WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Plan: chimaeron_ledger_v1 research_completion boss_melee_damage_fidelity (Chimaeron melee, ability 1, U on the Double Attack tank without Break stacks). Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.9421, AP 1226, BaseAttackTime 4000): 12,142.1-18,037.9 before the +1% auto-attack bonus.",
       "native_roll_at_modifier_1": {
         "min": 12142.1,
         "max": 18037.9
+      },
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 27,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 12142.1,
+          "max": 18037.9
+        },
+        "bounds": {
+          "lower": 19.3757,
+          "upper": 20.88,
+          "with_auto_attack_bonus": {
+            "lower": 19.1838,
+            "upper": 20.67
+          }
+        },
+        "bounds_derivation": "effective lower = max(largest unreduced 345,349 / 18,037.9 = 19.146, largest reduced 314,547 / (0.9 * 18,037.9) = 19.3757) = 19.3757; effective upper = min(smallest unreduced 253,562 / 12,142.1 = 20.883, smallest reduced 285,219 / (0.9 * 12,142.1) = 26.10) = 20.88; with the +1% auto-attack bonus m * 1.01 must lie in 19.3757-20.88, i.e. 314,547 / (0.9 * 18,037.9 * 1.01) = 19.1838 <= m <= 20.67",
+        "cross_check": "Mean unreduced U 299,823 / (native mean 15,090.0 * 1.01) = 19.67. Same-fight health derivation 20,699,972 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists (Break/Double Attack deal no damage of their own).",
+        "sample_note": "Scarlet Fever samples (7) average 294,874 vs 299,823 unreduced, not the expected 10% lower. The lower bound is set by the largest reduced row (314,547 under -10%), the upper bound by the smallest unreduced row; at 20 every unreduced row lies in the native envelope and every reduced row in the -10% envelope.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_chimaeron_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 253562,
+        "u_max": 345349,
+        "u_mean": 297784.8,
+        "u_mean_basis": "mean of all 17 landed U values (10 unreduced mean 299,823; 7 under Scarlet Fever mean 294,874)",
+        "landed_samples": 17,
+        "avoided_samples": 6,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_27"
       },
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
@@ -646,8 +720,8 @@
       "mode": "10N",
       "base_entry": 41378,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 9.5,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,
@@ -660,10 +734,46 @@
         "min": 4553.3,
         "max": 6764.2
       },
-      "open_reason": "No same-mode (10N) Maloriak melee U sample: classic.warcraftlogs.com was behind a human-verification gate on 2026-09-25. Extract ability-1 rows from Maloriak with Scarlet Fever/Demoralizing windows per maloriak_wcl_dps_reference_v1.json (views.boss_melee), first from reports MxFq7TRbvnjGY1hJ and Y8ajQ7dbmKMG1RZy. Historical 10N guide: about 25k per hit after tank mitigation, every 1.5-2 s. Template values come from the TDB dump; read back the live creature_template row before staging.",
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 34,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 9.41,
+          "upper": 9.81,
+          "with_auto_attack_bonus": {
+            "lower": 9.41,
+            "upper": 9.71
+          }
+        },
+        "bounds_derivation": "lower = 63,630 / 6,764.2 (largest hit, unreduced); upper = 44,663 / 4,553.3 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 40,559 / (0.9 * 4,553.3) = 9.90, is looser); m * 1.01 must also stay <= 9.81",
+        "cross_check": "Mean of the 26 Scarlet Fever rows 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. At 9.5 the native U-stage envelope 43,689-64,903 (39,320-58,412 under -10%) contains every observed row. No weapon-percent ability exists for a second cross-check.",
+        "sample_note": "Scarlet Fever 81130 was on Maloriak 3.9-100.2 s and 102.9-125.0 s, so only 3 of 29 landed rows are unreduced; Demoralizing Roar/Shout and Vindication had no events.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_maloriak_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 40559,
+        "u_max": 63630,
+        "u_mean": 48573.5,
+        "u_mean_basis": "mean of all 29 landed U values (3 unreduced mean 51,209.3; 26 under Scarlet Fever mean 48,269.4)",
+        "landed_samples": 29,
+        "avoided_samples": 11,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_34"
+      },
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
-        "value_key": "native_melee_roll_modifier_1"
+        "value_key": "boss_melee",
+        "samples_field": "wcl_10N_samples"
       }
     },
     "49974": {
@@ -874,8 +984,8 @@
       "mode": "10N",
       "base_entry": 42166,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 11.2,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 4,
@@ -883,11 +993,68 @@
         "level": 88,
         "flags_extra": 2097153
       },
-      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
         "value_key": "construct_melee_native_roll_10n",
         "samples_field": "wcl_10N_samples"
+      },
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 24,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "wcl_reports": [
+          {
+            "report": "MxFq7TRbvnjGY1hJ",
+            "fight": 24,
+            "date": "2024-10-28"
+          },
+          {
+            "report": "Y8ajQ7dbmKMG1RZy",
+            "fight": 24,
+            "date": "2025-05-15"
+          },
+          {
+            "report": "xAhkN2y9YP3KRmnJ",
+            "fight": 12,
+            "date": "2025-06-11"
+          }
+        ],
+        "retrieved": "2026-09-27",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4520.5,
+          "max": 6731.4
+        },
+        "native_auto_attack_bonus": 1.01,
+        "bounds_derivation": "pooled over the four constructs (identical template inputs): lower = 75,687 / 6,731.4 (largest unreduced U, Magmatron); upper = min(51,220 / 4,520.5 = 11.331 (smallest unreduced U, Toxitron before Scarlet Fever), 46,798 / (0.9 * 4,520.5) = 11.503 (smallest U under Scarlet Fever)); DamageModifier 11.2 * 1.01 = 11.312 is inside",
+        "exclusions": "20 rows in Arcanotron Power Generator windows (79624 cast + 60 s; +50% damage) excluded; Scarlet Fever 81130 and Vindication 26017 windows read per construct; Demoralizing Roar/Shout and Curse of Weakness absent",
+        "cross_check": "native swing at 11.312 is 51,136-76,146 (mean 63,641) vs WCL unreduced-equivalent mean 63,254 over 116 rows (-0.6%)",
+        "this_construct_fights": [
+          "MxFq7TRbvnjGY1hJ-24",
+          "Y8ajQ7dbmKMG1RZy-24"
+        ],
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_omnotron_defense_system_damage_modifier.py",
+        "bounds": {
+          "lower": 11.133,
+          "upper": 11.219
+        },
+        "bounds_note": "DamageModifier bounds after the native +1% auto-attack bonus (effective 11.244-11.331); wcl_report/wcl_fight name this construct's main sample, wcl_reports lists all three kills",
+        "bounds_effective_multiplier": {
+          "lower": 11.244,
+          "upper": 11.331
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 48334,
+        "u_max": 75575,
+        "u_mean": 62605.9,
+        "landed_samples": 8,
+        "meaning": "this construct's landed U envelope and mean across the listed 10N kills, Power Generator windows excluded, attacker -10% rows included",
+        "source_ref": "wcl_omnotron_10n_20260927"
       }
     },
     "42178": {
@@ -897,8 +1064,8 @@
       "mode": "10N",
       "base_entry": 42178,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 11.2,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 4,
@@ -906,11 +1073,68 @@
         "level": 88,
         "flags_extra": 2097153
       },
-      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
         "value_key": "construct_melee_native_roll_10n",
         "samples_field": "wcl_10N_samples"
+      },
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 24,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "wcl_reports": [
+          {
+            "report": "MxFq7TRbvnjGY1hJ",
+            "fight": 24,
+            "date": "2024-10-28"
+          },
+          {
+            "report": "Y8ajQ7dbmKMG1RZy",
+            "fight": 24,
+            "date": "2025-05-15"
+          },
+          {
+            "report": "xAhkN2y9YP3KRmnJ",
+            "fight": 12,
+            "date": "2025-06-11"
+          }
+        ],
+        "retrieved": "2026-09-27",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4520.5,
+          "max": 6731.4
+        },
+        "native_auto_attack_bonus": 1.01,
+        "bounds_derivation": "pooled over the four constructs (identical template inputs): lower = 75,687 / 6,731.4 (largest unreduced U, Magmatron); upper = min(51,220 / 4,520.5 = 11.331 (smallest unreduced U, Toxitron before Scarlet Fever), 46,798 / (0.9 * 4,520.5) = 11.503 (smallest U under Scarlet Fever)); DamageModifier 11.2 * 1.01 = 11.312 is inside",
+        "exclusions": "20 rows in Arcanotron Power Generator windows (79624 cast + 60 s; +50% damage) excluded; Scarlet Fever 81130 and Vindication 26017 windows read per construct; Demoralizing Roar/Shout and Curse of Weakness absent",
+        "cross_check": "native swing at 11.312 is 51,136-76,146 (mean 63,641) vs WCL unreduced-equivalent mean 63,254 over 116 rows (-0.6%)",
+        "this_construct_fights": [
+          "MxFq7TRbvnjGY1hJ-24",
+          "xAhkN2y9YP3KRmnJ-12"
+        ],
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_omnotron_defense_system_damage_modifier.py",
+        "bounds": {
+          "lower": 11.133,
+          "upper": 11.219
+        },
+        "bounds_note": "DamageModifier bounds after the native +1% auto-attack bonus (effective 11.244-11.331); wcl_report/wcl_fight name this construct's main sample, wcl_reports lists all three kills",
+        "bounds_effective_multiplier": {
+          "lower": 11.244,
+          "upper": 11.331
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 46798,
+        "u_max": 75687,
+        "u_mean": 61373.2,
+        "landed_samples": 33,
+        "meaning": "this construct's landed U envelope and mean across the listed 10N kills, Power Generator windows excluded, attacker -10% rows included",
+        "source_ref": "wcl_omnotron_10n_20260927"
       }
     },
     "42179": {
@@ -920,8 +1144,8 @@
       "mode": "10N",
       "base_entry": 42179,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 11.2,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 4,
@@ -929,11 +1153,67 @@
         "level": 88,
         "flags_extra": 2097153
       },
-      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
         "value_key": "construct_melee_native_roll_10n",
         "samples_field": "wcl_10N_samples"
+      },
+      "evidence": {
+        "wcl_report": "Y8ajQ7dbmKMG1RZy",
+        "wcl_fight": 24,
+        "wcl_mode": "10N",
+        "wcl_date": "2025-05-15",
+        "wcl_reports": [
+          {
+            "report": "MxFq7TRbvnjGY1hJ",
+            "fight": 24,
+            "date": "2024-10-28"
+          },
+          {
+            "report": "Y8ajQ7dbmKMG1RZy",
+            "fight": 24,
+            "date": "2025-05-15"
+          },
+          {
+            "report": "xAhkN2y9YP3KRmnJ",
+            "fight": 12,
+            "date": "2025-06-11"
+          }
+        ],
+        "retrieved": "2026-09-27",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4520.5,
+          "max": 6731.4
+        },
+        "native_auto_attack_bonus": 1.01,
+        "bounds_derivation": "pooled over the four constructs (identical template inputs): lower = 75,687 / 6,731.4 (largest unreduced U, Magmatron); upper = min(51,220 / 4,520.5 = 11.331 (smallest unreduced U, Toxitron before Scarlet Fever), 46,798 / (0.9 * 4,520.5) = 11.503 (smallest U under Scarlet Fever)); DamageModifier 11.2 * 1.01 = 11.312 is inside",
+        "exclusions": "20 rows in Arcanotron Power Generator windows (79624 cast + 60 s; +50% damage) excluded; Scarlet Fever 81130 and Vindication 26017 windows read per construct; Demoralizing Roar/Shout and Curse of Weakness absent",
+        "cross_check": "native swing at 11.312 is 51,136-76,146 (mean 63,641) vs WCL unreduced-equivalent mean 63,254 over 116 rows (-0.6%)",
+        "this_construct_fights": [
+          "Y8ajQ7dbmKMG1RZy-24"
+        ],
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_omnotron_defense_system_damage_modifier.py",
+        "bounds": {
+          "lower": 11.133,
+          "upper": 11.219
+        },
+        "bounds_note": "DamageModifier bounds after the native +1% auto-attack bonus (effective 11.244-11.331); wcl_report/wcl_fight name this construct's main sample, wcl_reports lists all three kills",
+        "bounds_effective_multiplier": {
+          "lower": 11.244,
+          "upper": 11.331
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 47053,
+        "u_max": 67565,
+        "u_mean": 57543.7,
+        "landed_samples": 31,
+        "meaning": "this construct's landed U envelope and mean across the listed 10N kills, Power Generator windows excluded, attacker -10% rows included",
+        "source_ref": "wcl_omnotron_10n_20260927"
       }
     },
     "42180": {
@@ -943,8 +1223,8 @@
       "mode": "10N",
       "base_entry": 42180,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 11.2,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 4,
@@ -952,11 +1232,68 @@
         "level": 88,
         "flags_extra": 2097153
       },
-      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan). Kill-credit creature of instance encounter 1027.",
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
         "value_key": "construct_melee_native_roll_10n",
         "samples_field": "wcl_10N_samples"
+      },
+      "evidence": {
+        "wcl_report": "xAhkN2y9YP3KRmnJ",
+        "wcl_fight": 12,
+        "wcl_mode": "10N",
+        "wcl_date": "2025-06-11",
+        "wcl_reports": [
+          {
+            "report": "MxFq7TRbvnjGY1hJ",
+            "fight": 24,
+            "date": "2024-10-28"
+          },
+          {
+            "report": "Y8ajQ7dbmKMG1RZy",
+            "fight": 24,
+            "date": "2025-05-15"
+          },
+          {
+            "report": "xAhkN2y9YP3KRmnJ",
+            "fight": 12,
+            "date": "2025-06-11"
+          }
+        ],
+        "retrieved": "2026-09-27",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4520.5,
+          "max": 6731.4
+        },
+        "native_auto_attack_bonus": 1.01,
+        "bounds_derivation": "pooled over the four constructs (identical template inputs): lower = 75,687 / 6,731.4 (largest unreduced U, Magmatron); upper = min(51,220 / 4,520.5 = 11.331 (smallest unreduced U, Toxitron before Scarlet Fever), 46,798 / (0.9 * 4,520.5) = 11.503 (smallest U under Scarlet Fever)); DamageModifier 11.2 * 1.01 = 11.312 is inside",
+        "exclusions": "20 rows in Arcanotron Power Generator windows (79624 cast + 60 s; +50% damage) excluded; Scarlet Fever 81130 and Vindication 26017 windows read per construct; Demoralizing Roar/Shout and Curse of Weakness absent",
+        "cross_check": "native swing at 11.312 is 51,136-76,146 (mean 63,641) vs WCL unreduced-equivalent mean 63,254 over 116 rows (-0.6%)",
+        "this_construct_fights": [
+          "MxFq7TRbvnjGY1hJ-24",
+          "xAhkN2y9YP3KRmnJ-12"
+        ],
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_omnotron_defense_system_damage_modifier.py",
+        "bounds": {
+          "lower": 11.133,
+          "upper": 11.219
+        },
+        "bounds_note": "DamageModifier bounds after the native +1% auto-attack bonus (effective 11.244-11.331); wcl_report/wcl_fight name this construct's main sample, wcl_reports lists all three kills",
+        "bounds_effective_multiplier": {
+          "lower": 11.244,
+          "upper": 11.331
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 46809,
+        "u_max": 73519,
+        "u_mean": 58316.8,
+        "landed_samples": 44,
+        "meaning": "this construct's landed U envelope and mean across the listed 10N kills, Power Generator windows excluded, attacker -10% rows included",
+        "source_ref": "wcl_omnotron_10n_20260927"
       }
     },
     "42186": {
@@ -1317,8 +1654,8 @@
       "mode": "10N",
       "base_entry": 41376,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 12.75,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,
@@ -1326,17 +1663,58 @@
         "flags_extra": 8193,
         "level": 88
       },
-      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2. The TDB value 90 belonged to the previous damage formula and must not be reused.",
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 35,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "additional_wcl_reports": [
+          {
+            "report": "cYg4C93QNdqKfPF1",
+            "fight": 18,
+            "date": "2025-01-31"
+          },
+          {
+            "report": "farY2cm8JMTB1jGh",
+            "fight": 10,
+            "date": "2025-01-15"
+          }
+        ],
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 12.691,
+          "upper": 12.8
+        },
+        "bounds_derivation": "effective lower = max(largest reduced U 78,033 / (0.9 x 6,764.2), largest unreduced U 85,806 / 6,764.2); effective upper = smallest reduced U 52,977 / (0.9 x 4,553.3); -10% auras: Scarlet Fever 81130, Curse of Weakness 702; DamageModifier bounds = effective bounds / 1.01",
+        "cross_check": "sample mean 67,076.7 implies an effective 12.907 with the observed aura mix; chosen effective 12.8775",
+        "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_nefarian_damage_modifier.py",
+        "bounds_effective_with_native_1pct": {
+          "lower": 12.818,
+          "upper": 12.928
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 52977,
+        "u_max": 85806,
+        "u_mean": 67076.7,
+        "landed_samples": 201,
+        "avoided_samples": 65,
+        "meaning": "observed sample envelope over three 10N kills, not recovered roll endpoints",
+        "source_ref": "nefarian_wcl_melee_samples_v1"
+      },
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
         "value_key": "melee_swing_at_damage_modifier_1",
         "samples_field": "wcl_10N_samples"
-      },
-      "native_roll_at_modifier_1": {
-        "min": 4553.3,
-        "max": 6764.2
-      },
-      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Nefarian ledger adds wcl_10N_samples to that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+      }
     },
     "51104": {
       "name": "Nefarian (1)",
@@ -1399,8 +1777,8 @@
       "mode": "10N",
       "base_entry": 41270,
       "role": "boss",
-      "status": "open",
-      "damage_modifier": null,
+      "status": "calibrated",
+      "damage_modifier": 10.34375,
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,
@@ -1408,17 +1786,58 @@
         "flags_extra": 1073741824,
         "level": 88
       },
-      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2. The TDB value 90 belonged to the previous damage formula and must not be reused.",
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 35,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "additional_wcl_reports": [
+          {
+            "report": "cYg4C93QNdqKfPF1",
+            "fight": 18,
+            "date": "2025-01-31"
+          },
+          {
+            "report": "farY2cm8JMTB1jGh",
+            "fight": 10,
+            "date": "2025-01-15"
+          }
+        ],
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 4553.3,
+          "max": 6764.2
+        },
+        "bounds": {
+          "lower": 10.212,
+          "upper": 10.361
+        },
+        "bounds_derivation": "effective lower = max(largest reduced U 62,791 / (0.9 x 6,764.2), largest unreduced U 65,353 / 6,764.2); effective upper = smallest reduced U 42,883 / (0.9 x 4,553.3); -10% auras: Scarlet Fever 81130; DamageModifier bounds = effective bounds / 1.01",
+        "cross_check": "sample mean 54,464.0 implies an effective 10.63 with the observed aura mix; chosen effective 10.4472; the upper bound rests on fully absorbed rows whose U is a WCL estimate (two read 42,883), so confirm live",
+        "samples_file": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_01_nefarian_onyxia_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_nefarian_damage_modifier.py",
+        "bounds_effective_with_native_1pct": {
+          "lower": 10.314,
+          "upper": 10.465
+        }
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 42883,
+        "u_max": 65353,
+        "u_mean": 54464.0,
+        "landed_samples": 37,
+        "avoided_samples": 27,
+        "meaning": "observed sample envelope over three 10N kills, not recovered roll endpoints",
+        "source_ref": "nefarian_wcl_melee_samples_v1"
+      },
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
         "value_key": "melee_swing_at_damage_modifier_1",
-        "samples_field": "wcl_10N_samples"
-      },
-      "native_roll_at_modifier_1": {
-        "min": 4553.3,
-        "max": 6764.2
-      },
-      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Nefarian ledger adds wcl_10N_samples to that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+        "samples_field": "wcl_10N_onyxia_samples"
+      }
     },
     "51116": {
       "name": "Onyxia (1)",
@@ -1491,7 +1910,7 @@
         "level": 85,
         "base_variance": 0.5
       },
-      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. One template serves every difficulty (no difficulty entries). Native roll at modifier 1 before Empower 79330 stacks (gt_npc_damage_by_class_exp3[85].Rogue 2704.75, AP 851, BaseVariance 0.5, BaseAttackTime 2000): 5,470.3-8,175.0. Samples must record the attacker's Empower stack count (+100% damage per stack in normal).",
+      "open_reason": "WCL 10N rows exist (80, MxFq7TRbvnjGY1hJ fight 35, in nefarian_wcl_melee_samples_v1.json bone_warrior_rows_not_calibrated) but mix Empower 79330 stack counts (+100% per stack), so no stack-matched roll bound is derived yet. Native roll at modifier 1 before Empower (gt_npc_damage_by_class_exp3[85].Rogue 2704.75, AP 851, BaseVariance 0.5, BaseAttackTime 2000): 5,470.3-8,175.0.",
       "ledger": {
         "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
         "value_key": "melee_swing_at_damage_modifier_1",

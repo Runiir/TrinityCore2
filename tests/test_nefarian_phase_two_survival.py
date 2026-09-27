@@ -9,8 +9,9 @@ test checks the recorded numbers are what the model gives (a regression shows
 as a changed risk), not that the risk is small: the risk is the finding.
 
 Model (every number sourced or stated as an assumption):
-- Shadowflame Barrage (78621): cast every 2.5 s from 2.5 s after the lift-off
-  (EVENT_SHADOWFLAME_BARRAGE, boss_nefarians_end.cpp), a 2 s cast, then 4
+- Shadowflame Barrage (78621): cast every 3.2 s from 2.5 s after the lift-off
+  (EVENT_SHADOWFLAME_BARRAGE, boss_nefarians_end.cpp; 3.2 s is the WCL 10N
+  Begin Cast interval, report MxFq7TRbvnjGY1hJ fight 35), a 2 s cast, then 4
   random living players of the 10 (SpellMgr target cap 4 in 10N) are hit when
   the missile arrives at 30 yd/s, 16,199-19,800 shadow each (4.4.2 client
   row, 10N). In phase 2 Nefarian holds NefarianElevatorLiftOffPosition
@@ -68,6 +69,7 @@ CONTRACT = ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent/ne
 PROTOTYPE = 1_627_290
 BARRAGE = (16_199.0, 19_800.0)
 BARRAGE_CAST = 2.0
+BARRAGE_PERIOD_STEPS = 32  # 3.2 s in 0.1 s steps
 MISSILE_SPEED = 30.0
 LIFT_OFF_HEIGHT = 35.63 - 3.06
 PILLAR_RADIUS = 40.5
@@ -266,10 +268,10 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
             for member in members.values():
                 if member["pillar"] == 2 and not member["dead"]:
                     hit(member, 5000.0 + 250.0 * tick)
-        # A Barrage cast starts every 2.5 s from 2.5 s after the lift-off; its
+        # A Barrage cast starts every 3.2 s from 2.5 s after the lift-off; its
         # targets are chosen when the 2 s cast completes, and each missile
         # lands after its flight.
-        if step >= 37 and (step - 37) % 25 == 0:
+        if step >= 37 and (step - 37) % BARRAGE_PERIOD_STEPS == 0:
             alive = [name for name, member in members.items() if not member["dead"]]
             for name in rnd.sample(alive, min(4, len(alive))):
                 arrival = step + round(missile_seconds() * 10.0)

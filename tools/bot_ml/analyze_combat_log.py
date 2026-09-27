@@ -116,6 +116,14 @@ def _rounded(value: float | None, digits: int) -> float | None:
     return None if value is None else round(value, digits)
 
 
+def _damage_by_target_entry(rows: list[dict[str, Any]]) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    for row in rows:
+        entry = str(int(row.get("target_entry") or 0))
+        totals[entry] = totals.get(entry, 0) + _originated_amount(row)
+    return dict(sorted(totals.items(), key=lambda item: int(item[0])))
+
+
 def _ability_rows(
     rows: list[dict[str, Any]],
     total_damage: int,
@@ -669,6 +677,9 @@ def analyze_combat_log(
                 # actor damage-bearing `active_dps`.
                 "encounter_window_dps": round(total_damage / duration_sec, 3),
                 "encounter_window_dps_basis": "originated_damage_over_duration_sec",
+                # Originated damage done per target creature entry (0 = no entry), so a
+                # consumer can scope native DPS to a reference's enemy set.
+                "damage_by_target_entry": _damage_by_target_entry(done),
                 "raw_event_damage": raw_event_damage,
                 "raw_event_dps": round(raw_event_damage / max(1, len(raw_event_damage_seconds)), 3),
                 "friendly_damage": friendly_damage,

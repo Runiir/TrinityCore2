@@ -1,0 +1,43 @@
+-- Nefarian 10N (creature_template 41376): restore melee damage with DamageModifier 12.75.
+--
+-- Staged, not active: move this file to sql/custom/world/ (or apply it with
+-- mysql ... world < file) right before the measurement batch that should use it.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set
+-- DamageModifier = 1 for every creature. The TDB value 90 belonged to the
+-- previous damage formula and is not reused.
+--
+-- Native roll (Creature.cpp UpdateLevelDependantStats, CreatureStatSystem.cpp
+-- CalculateMinMaxDamage): gt_npc_damage_by_class_exp3[88].Warrior 2947.94
+-- (unit_class 1, rank 3), weapon 2947.94-4421.91, AP term 1226 / 14 * 1 = 87.57,
+-- BaseAttackTime 1.5 s. At DamageModifier 1 one swing is 4,553.3-6,764.2 before
+-- the native unconditional +1% auto-attack bonus (Unit::MeleeDamageBonusDone).
+--
+-- Matched stage: WCL U (unmitigatedAmount) = melee_resolution.after_attacker_bonus_amount.
+-- Samples: experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json,
+-- three 10N kills: MxFq7TRbvnjGY1hJ fight 35 (2024-10-28), cYg4C93QNdqKfPF1
+-- fight 18 (2025-01-31), farY2cm8JMTB1jGh fight 10 (2025-01-15).
+--   201 landed rows with U (164 under a -10% done aura: Scarlet Fever 81130 or
+--   Curse of Weakness 702; 37 unreduced), U 52,977-85,806, mean 67,077; 65 avoided.
+-- Bounds on the effective multiplier (DamageModifier x 1.01):
+--   lower = largest reduced U 78,033 / (0.9 x 6,764.2)             = 12.818 (binding)
+--           largest unreduced U 85,806 / 6,764.2                   = 12.685
+--   upper = smallest reduced U 52,977 / (0.9 x 4,553.3)            = 12.928 (binding)
+--   DamageModifier range after the +1%: 12.691-12.800. Chosen 12.75
+--   (effective 12.8775; exactly representable in the FLOAT column).
+-- Cross-check: the sample mean implies an effective 12.907 with the observed
+-- aura mix (mean / (5,658.75 x (37 + 0.9 x 164) / 201)); 12.8775 is 0.2% lower.
+-- A Curse of Weakness reading as unreduced would put its 35 cYg4 rows at <= 11.63,
+-- below the 12.685 unreduced lower bound, so it is a -10% aura here (it also
+-- replaces Scarlet Fever exactly, sharing the exclusive category).
+--
+-- Scope: only 10N entry 41376. Its difficulty templates 51104-51106 keep 1
+-- (no same-mode samples). Spell damage does not read DamageModifier.
+-- The worldserver loads creature_template at startup. Idempotent.
+
+UPDATE `creature_template` SET `DamageModifier` = 12.75 WHERE `entry` = 41376;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41376 AND `DamageModifier` = 12.75;
+-- END REVERSE MIGRATION

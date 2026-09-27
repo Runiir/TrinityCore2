@@ -22,7 +22,7 @@ def project(ledger: dict, key: str | None = None) -> dict:
             result["warning"] = "No completion inventory; an empty unresolved list does not prove completeness."
         return result
     result["claims"] = {
-        section: [row for row in ledger.get(section, []) if row.get("key") == key]
+        section: [row for row in ledger.get(section, []) if isinstance(row, dict) and row.get("key") == key]
         for section in ("values", "timers", "lifecycle", "unresolved", "research_completion")
     }
     result["claims"] = {section: rows for section, rows in result["claims"].items() if rows}
@@ -32,7 +32,9 @@ def project(ledger: dict, key: str | None = None) -> dict:
                   for source in row.get("source_refs", [])}
     source_ids.update(row.get("client_59185_reference", {}).get("source_ref")
                       for rows in result["claims"].values() for row in rows)
-    result["sources"] = [row for row in ledger.get("source_catalog", []) if row["id"] in source_ids]
+    catalog = ledger.get("source_catalog", [])
+    rows = [dict(value, id=name) for name, value in catalog.items()] if isinstance(catalog, dict) else catalog
+    result["sources"] = [row for row in rows if row.get("id") in source_ids]
     return result
 
 

@@ -15,7 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    COMPARISON_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, exclusion_reason, healer_roles,
+    COMPARISON_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, dps_gate_exempt_specs, exclusion_reason, is_dps_gate_exempt,
+    healer_roles,
     kills_per_batch, label_kills, load_records, load_target, mean_sd, roster, target_for_records,
 )
 
@@ -187,12 +188,14 @@ def compare_labels(root: Path, scenario: str, new_label: str, old_label: str,
     new_rows, old_rows = actor_rows(new_clears), actor_rows(old_clears)
     actor_ids = list(dict.fromkeys([*roster(target), *new_rows, *old_rows]))
     healers = healer_roles(target)
+    exempt = dps_gate_exempt_specs(target)
     actors = {}
     for actor_id in sorted(actor_ids, key=lambda key: (0, int(key)) if key.isdigit() else (1, key)):
         spec, role, name = actor_identity(target, actor_id, new_rows.get(actor_id) or old_rows.get(actor_id) or [])
         change = judged([float(row["encounter_window_dps"]) for row in new_rows.get(actor_id, [])],
                         [float(row["encounter_window_dps"]) for row in old_rows.get(actor_id, [])])
-        actors[actor_id] = {"spec": spec, "role": role, "name": name, "gating": role not in healers, **change}
+        actors[actor_id] = {"spec": spec, "role": role, "name": name,
+                            "gating": role not in healers and not is_dps_gate_exempt(exempt, spec, role), **change}
     deaths = {"new": _deaths_per_kill(new_counted, "route_deaths"), "old": _deaths_per_kill(old_counted, "route_deaths")}
     boss_deaths = {"new": boss_deaths_per_kill(new_kills)[0], "old": boss_deaths_per_kill(old_kills)[0]}
     keep = keep_decision(party, actors, new_label=new_label, old_label=old_label, new_kills=new_kills,

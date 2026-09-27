@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_compare import batch_shortfall, compare_labels
+from tools.raid_program.scoreboard_core import dps_gate_exempt_specs, is_dps_gate_exempt
 from tools.raid_program.scoreboard_core import (
     actor_rows, clear_kills, detectable_delta, exclusion_reason, kills_per_batch, label_kills, latest_label,
     load_baseline, load_records, load_target, mean_sd, target_for_records,
@@ -247,7 +248,8 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
         out += [text for _, text in rng_mix_warnings(mix, old_mix)]
     out.append("")
     bases = [actor.get("reference_basis") for actor in verdict["actors"].values()
-             if actor["role"] not in set(target.get("roles_without_dps_target", ["healer"]))]
+             if actor["role"] not in set(target.get("roles_without_dps_target", ["healer"]))
+             and not is_dps_gate_exempt(dps_gate_exempt_specs(target), actor["spec"], actor["role"])]
     basis_text = ", ".join(f"{bases.count(key)} {text}" for key, text in (
         ("wcl", "WCL"), ("wowsims_fallback", "WoWSims fallback"), ("none", "no reference")) if bases.count(key))
     out.append(f"verdict: {verdict['status']}" + (f" [references: {basis_text}]" if basis_text else "")

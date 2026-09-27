@@ -1,0 +1,88 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:atramedes",
+  "round": 1,
+  "changed_files": [
+    "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+    "tests/test_atramedes_research_packet.py"
+  ],
+  "new_files": [
+    "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_damage_calibration_registry_patch_v1.json",
+    "tests/test_atramedes_damage_modifier.py"
+  ],
+  "resolved_inputs": [
+    "encounter_damage_fidelity"
+  ],
+  "open_items": [
+    {
+      "input": "encounter_research",
+      "state": "fidelity_blocked",
+      "reason": "Contract and ledger go from 9 to 5 material unresolved claims. Resolved from WCL MxFq7TRbvnjGY1hJ fight 32 (10N kill, 2024-10-28): wcl_10n_kill_reference_pending, boss_melee_damage_modifier_10n, boss_health_10n (26,111,168 = native), modulation_repeat_interval. Still open: ground_air_phase_timestamps (WCL air about 90-129 s; native travel time unmeasured), breath_initial_target_rule, sonar_bomb_count_by_mode (the kill took no Sonar Bomb damage), breath_speed_scaling_with_sound (no Resonating Clash rows in the enemy Casts view), heroic_fiend_and_shield_destruction_cadence. fidelity_state stays fidelity_blocked; 'accepted' requires live validation."
+    },
+    {
+      "item": "live_confirmation",
+      "state": "pending_build_and_run",
+      "reason": "Apply the staged SQL before the Atramedes batch. Rebuild for the Modulation change. The first live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL mean 55,546 and about 16 s between Modulations."
+    },
+    {
+      "item": "wowsims_fallback_specs",
+      "state": "open",
+      "reason": "The matched kill has no balance_druid, fire_mage, assassination_rogue or demonology_warlock, so those four keep the 0.90 x WoWSims fallback. fire_mage appears only in the unmatched 48.5 s kill."
+    }
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+      "patch": "Replace creatures['41442'] verbatim with creatures['41442'] from experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_damage_calibration_registry_patch_v1.json: status calibrated, damage_modifier 10.35, wcl_melee_reference u_min 45877, u_max 68939, u_mean 55546.1, 22 landed and 10 avoided, source wcl_MxFq7TRbvnjGY1hJ_32, derivation_file sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql, migration_state staged. Leave 49583/49584/49585 (25N/10H/25H) open. This supersedes this packet's earlier open_reason wording request."
+    },
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/cata_raid_strategy_catalog_v1.json",
+      "patch": "In raids.blackwing_descent.bosses[3] (boss_slug atramedes) set \"contract_unresolved_material_count\": 5 and \"ledger_unresolved_material_count\": 5 (were 9). fidelity_state stays fidelity_blocked. This fixes tests/test_atramedes_research_packet.py::test_ledger_and_contract_agree_with_the_catalog and tests/test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed."
+    },
+    {
+      "to": "coordinator",
+      "file": "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+      "patch": "No edit. Move it to sql/custom/world/ (or apply with mysql) right before the Atramedes measurement batch, after reading back creature_template 41442 (expected DamageModifier 1, BaseAttackTime 1500). The reverse block uses ABS(DamageModifier - 10.35) < 0.001 because the column is FLOAT."
+    },
+    {
+      "to": "coordinator",
+      "file": "~/.cache/atramedes_wcl (DVC publish)",
+      "patch": "Publish extraction.json (9.9 MB), casts.json, health_captures.json, health_derived.json, run_r4.log, shots/, attempt0927a-c/ and task_r3.md (the reusable shared-tab task; rerun per RERUN.md under flock ~/.cache/wcl_tab.lock). The scratch profile/ was deleted."
+    }
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_atramedes_*.py tests/test_cata_raid_research_contracts.py tests/test_chimaeron_damage_modifier.py tests/test_magmaw_damage_modifier.py",
+      "result": "61 passed, 2 failed. Both failures are relevant and expected: tests/test_atramedes_research_packet.py::test_ledger_and_contract_agree_with_the_catalog and tests/test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed compare the catalog's atramedes counts (still 9) with the contract and ledger (now 5). They pass once the catalog patch request is applied."
+    },
+    {
+      "command": "tests/test_atramedes_damage_modifier.py (new, inside the run above)",
+      "result": "passed: single scoped UPDATE, idempotent, the reverse restores 1 and does not clobber a retune, the value fits the WCL envelope both as written and after +1%, a FLOAT-tolerant reverse, registry patch parity, and Magmaw 16 / Chimaeron rows unchanged"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.encounter_research_view <atramedes ledger> --key <k>",
+      "result": "TypeError: the tool expects source_catalog as a list, but the Atramedes ledger stores a dict. This is a tooling defect, not a test failure, and it only affects research ergonomics."
+    }
+  ],
+  "risks": [
+    "Native change: Modulation now repeats every 16 s (was 22-26 s), so there is about 40% more raid-wide Shadow damage over the ground phases. Healer load rises; boss-window deaths must be watched on the first run.",
+    "DamageModifier 10.35 rests on 3 unreduced and 19 Scarlet Fever rows from one kill. As in the Chimaeron sample, the Scarlet Fever rows are not 10% lower. The bounds hold unless Scarlet Fever is outside U, and that reading has no consistent value at all.",
+    "The blood_death_knight WCL target (13,254) is the active main tank only; the off-tank was excluded. Survival Hunter is the median of two players.",
+    "The Sonar Pulse repeat was 11.3 s once and then 14.6-17.1 s in WCL. Native 11 s is kept pending a second kill."
+  ],
+  "validation_neutrality": "Atramedes-scoped only. The DamageModifier stays staged (not in sql/custom/world), so no run changes until the coordinator applies it. The Modulation change is inside boss_atramedes.cpp and does not affect Stonecore, calibration, legacy Magmaw or other BWD bosses. The 25N/10H/25H templates are untouched.",
+  "raw_captures": {
+    "dir": "~/.cache/atramedes_wcl",
+    "contents": "extraction.json, casts.json, health_captures.json, health_derived.json, run_r4.log, shots/, attempt0927a-c/, task_r3.md, RERUN.md; profile/ deleted"
+  },
+  "wcl_access": "Read 2026-09-27 04:23-04:33 UTC through GPT-6 Astra driving one own tab in the user's Chrome (coordinator route at the time), and that tab was closed. No check, CAPTCHA or login appeared. Saved tasks were rewritten to the shared-tab/flock rules; the stop-on-check lines were removed."
+}

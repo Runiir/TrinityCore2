@@ -1,0 +1,65 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:maloriak",
+ "round": 1,
+ "changed_files": [
+  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json",
+  "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+  "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+  "tests/test_maloriak_research_packet.py",
+  "tests/test_maloriak_native_script.py"
+ ],
+ "new_files": [
+  "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+  "tests/test_maloriak_damage_modifier.py",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_fight13_v1.json"
+ ],
+ "resolved_inputs": [
+  "encounter_damage_fidelity"
+ ],
+ "open_items": [
+  "encounter_damage_fidelity is resolved for 41378 once the registry patch below is applied. Stage the SQL before the Maloriak batch (move it to sql/custom/world/ or apply with mysql; the live row read back 2026-09-27 is DamageModifier 1, BaseAttackTime 1500). One live kill must show encounter_fidelity.boss_melee after-attacker stage within +-10% of WCL U 40,559-63,630. The full-route r11 recorded 0 Maloriak swings, so the shard run needs combat-log binding.",
+  "encounter_research: fidelity_state stays fidelity_blocked (25N/10H/25H cadence and melee, 10N health derivation, heroic Fixate). The 10N research is much narrower now: two matched WCL kills, per-spec DPS for every roster spec except fire_mage and assassination_rogue (WoWSims fallback), 818+449 player casts, and Red/Blue/Green/phase-two boss timelines.",
+  "Open native fidelity items (ledger native_fidelity_items): phase_two_remedy (WCL casts Remedy in phase two, native does not), pre_vial_release_aberrations (one kill cast Release Aberrations at 15.8 s before the first vial), biting_chill_target_selection (live counts).",
+  "Aberration 41440 and Prime Subject 41841 stay open: their melee U includes Growth Catalyst stacks that WCL rows do not show (Aberration min U 5,960 is already at the native minimum roll at modifier 1). All 25N/10H/25H templates stay open.",
+  "The ledger's unresolved keys are pinned to experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json (coordinator file), so they were left unchanged even where the melee calibration now narrows them."
+ ],
+ "patch_requests": [
+  {
+   "to": "coordinator",
+   "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+   "patch": "In experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json replace the exact existing block\n<<<OLD\n    \"41378\": {\n      \"name\": \"Maloriak\",\n      \"raid\": \"blackwing_descent\",\n      \"boss\": \"maloriak\",\n      \"mode\": \"10N\",\n      \"base_entry\": 41378,\n      \"role\": \"boss\",\n      \"status\": \"open\",\n      \"damage_modifier\": null,\n      \"template_at_audit\": {\n        \"base_attack_time_ms\": 1500,\n        \"unit_class\": 1,\n        \"rank\": 1,\n        \"flags_extra\": 1,\n        \"level\": 88,\n        \"base_variance\": 1.0\n      },\n      \"native_roll_at_modifier_1\": {\n        \"min\": 4553.3,\n        \"max\": 6764.2\n      },\n      \"open_reason\": \"No same-mode (10N) Maloriak melee U sample: classic.warcraftlogs.com was behind a human-verification gate on 2026-09-25. Extract ability-1 rows from Maloriak with Scarlet Fever/Demoralizing windows per maloriak_wcl_dps_reference_v1.json (views.boss_melee), first from reports MxFq7TRbvnjGY1hJ and Y8ajQ7dbmKMG1RZy. Historical 10N guide: about 25k per hit after tank mitigation, every 1.5-2 s. Template values come from the TDB dump; read back the live creature_template row before staging.\",\n      \"ledger\": {\n        \"path\": \"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json\",\n        \"value_key\": \"native_melee_roll_modifier_1\"\n      }\n    }\n>>>\nwith\n<<<NEW\n    \"41378\": {\n      \"name\": \"Maloriak\",\n      \"raid\": \"blackwing_descent\",\n      \"boss\": \"maloriak\",\n      \"mode\": \"10N\",\n      \"base_entry\": 41378,\n      \"role\": \"boss\",\n      \"status\": \"calibrated\",\n      \"damage_modifier\": 9.5,\n      \"template_at_audit\": {\n        \"base_attack_time_ms\": 1500,\n        \"unit_class\": 1,\n        \"rank\": 1,\n        \"flags_extra\": 1,\n        \"level\": 88,\n        \"base_variance\": 1.0\n      },\n      \"native_roll_at_modifier_1\": {\n        \"min\": 4553.3,\n        \"max\": 6764.2\n      },\n      \"evidence\": {\n        \"wcl_report\": \"MxFq7TRbvnjGY1hJ\",\n        \"wcl_fight\": 34,\n        \"wcl_mode\": \"10N\",\n        \"wcl_date\": \"2024-10-28\",\n        \"matched_stage\": \"melee_resolution.after_attacker_bonus_amount\",\n        \"native_roll_at_modifier_1\": {\n          \"min\": 4553.3,\n          \"max\": 6764.2\n        },\n        \"bounds\": {\n          \"lower\": 9.41,\n          \"upper\": 9.81,\n          \"with_auto_attack_bonus\": {\n            \"lower\": 9.41,\n            \"upper\": 9.71\n          }\n        },\n        \"bounds_derivation\": \"lower = 63,630 / 6,764.2 (largest hit, unreduced); upper = 44,663 / 4,553.3 (smallest hit, unreduced; the smallest hit under Scarlet Fever, 40,559 / (0.9 * 4,553.3) = 9.90, is looser); m * 1.01 must also stay <= 9.81\",\n        \"cross_check\": \"Mean of the 26 Scarlet Fever rows 48,269 / 0.9 / (native mean 5,658.7 * 1.01) = 9.38, 1.2% below 9.5. At 9.5 the native U-stage envelope 43,689-64,903 (39,320-58,412 under -10%) contains every observed row. No weapon-percent ability exists for a second cross-check.\",\n        \"sample_note\": \"Scarlet Fever 81130 was on Maloriak 3.9-100.2 s and 102.9-125.0 s, so only 3 of 29 landed rows are unreduced; Demoralizing Roar/Shout and Vindication had no events.\",\n        \"derivation_file\": \"sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql\",\n        \"migration_state\": \"staged\",\n        \"test\": \"tests/test_maloriak_damage_modifier.py\"\n      },\n      \"wcl_melee_reference\": {\n        \"stage\": \"after_attacker_bonus_amount\",\n        \"u_min\": 40559,\n        \"u_max\": 63630,\n        \"u_mean\": 48573.5,\n        \"u_mean_basis\": \"mean of all 29 landed U values (3 unreduced mean 51,209.3; 26 under Scarlet Fever mean 48,269.4)\",\n        \"landed_samples\": 29,\n        \"avoided_samples\": 11,\n        \"meaning\": \"observed sample envelope, not recovered roll endpoints\",\n        \"source_ref\": \"wcl_MxFq7TRbvnjGY1hJ_34\"\n      },\n      \"ledger\": {\n        \"path\": \"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json\",\n        \"value_key\": \"boss_melee\",\n        \"samples_field\": \"wcl_10N_samples\"\n      }\n    }\n>>>\n(= creatures['41378'] of maloriak_damage_calibration_registry_patch_v1.json verbatim; every other Maloriak key is already verbatim. After applying, tests/test_maloriak_research_packet.py::test_damage_registry_patch_is_schema_valid_and_honest passes.)"
+  }
+ ],
+ "risks": [
+  "Staging DamageModifier 9.5 raises Maloriak's 10N melee from 4.6-6.8k to 43.7-64.9k per swing (U stage) every ~1.8 s. That is Blizzlike, but it is a large jump in tank and healer pressure compared with every earlier Maloriak run, including full-route r11. Expect the first staged batch to test the Blood DK and the healers.",
+  "The phase-two cadence change (Magma Jets 6->11.8 s, Acid Nova 20->30.7 s, Absolute Zero 7->11.3 s, first Absolute Zero 8.4->11.3 s) makes phase two less punishing and applies to all modes (the script has no mode branch). Only 10N was observed. It needs the coordinator build and review, and changes the full-route Maloriak node versus r11.",
+  "WCL targets now replace the WoWSims fallback for several specs: demonology_warlock moves from WoWSims 38,038 x 0.90 to WCL 18,229.8 x 0.95, and survival_hunter is median(25,375.4, 16,145.0) = 20,760.2. feral_druid_tank 16,202.0 comes from a Guardian who tanked Maloriak, while the bot's Feral tanks adds, so that target may be high for an add tank.",
+  "tests/test_maloriak_research_packet.py::test_damage_registry_patch_is_schema_valid_and_honest fails until the coordinator applies the registry patch. This is intentional: it enforces that the patch file and the shared registry match. A simulated application in scratch showed no remaining mismatch.",
+  "WCL data came from the rendered accessibility tree: spell link ids and WCL actor ids in the melee rows were truncated (null). Hit types are parsed from the visible result, and 'hit' rows could include crits WCL marks only by styling. Raw captures (row text and checksums) are in ~/.cache/maloriak_wcl/task2_result.json, task3_result.json and task4_result.json (3.2M, not DVC-published)."
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_maloriak_*.py tests/test_cata_raid_research_contracts.py",
+   "result": "50 passed, 2 failed. test_maloriak_research_packet.py::test_damage_registry_patch_is_schema_valid_and_honest: relevant, expected, fixed by the registry patch_request (simulated application: 0 mismatches). test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed: not relevant, the Atramedes catalog row says 9 unresolved while another agent's in-progress atramedes_v1.json has 5."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_maloriak_*.py (first pass of this resume)",
+   "result": "33 passed before the edits; after the calibration edits, 38 passed until the strict registry equality check was restored, then 1 expected failure (above)"
+  },
+  {
+   "command": "pixi run python -m tools.raid_program.module_size",
+   "result": "no violations; boss_maloriak.cpp 932 lines"
+  },
+  {
+   "command": "python -c reference_targets/party_reference_dps (tools.raid_program.scoreboard_core) on the Maloriak target",
+   "result": "WCL targets: blood_death_knight 11,681.9, feral_druid_tank 16,202.0, survival_hunter 20,760.2, retribution_paladin 19,969.85, elemental_shaman 23,356.4, demonology_warlock 18,229.8; WoWSims fallback: fire_mage, assassination_rogue; party 140,689.15"
+  }
+ ],
+ "validation_neutrality": "Maloriak-scoped only. The DamageModifier is staged, not applied (sql/custom/staged is outside the auto-updater), so runs stay at modifier 1 until the coordinator moves it for the Maloriak batch. The C++ change touches only boss_maloriak.cpp phase-two timers. Stonecore, calibration and legacy Magmaw inputs are untouched; the test replay confirms Magmaw 41570 stays 16. No build, server, commit or DVC action was taken. WCL runs used GPT-6 Astra with the Codex Chrome plugin; each opened and closed only its own tab (task4 ran under the shared-tab lock protocol then in force). No codex or browser process is left running."
+}

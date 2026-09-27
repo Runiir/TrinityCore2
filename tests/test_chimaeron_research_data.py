@@ -1,4 +1,4 @@
-"""Chimaeron research packet, raid target, WCL placeholders and native script repairs."""
+"""Chimaeron research packet, raid target, WCL references and native script repairs."""
 from __future__ import annotations
 
 import json
@@ -69,10 +69,14 @@ def test_research_completion_covers_the_10n_obligations_with_known_sources() -> 
     for section in ("values", "timers"):
         for row in ledger[section]:
             assert set(row["source_refs"]) <= sources, row["key"]
-    # WCL-dependent work is declared open, never promoted.
-    assert rows["wcl_dps_reference"]["status"] == "blocked_wcl_access"
-    assert rows["boss_melee_damage_fidelity"]["status"] == "blocked_wcl_access"
-    assert ledger["wcl_extraction_plan"]["status"] == "blocked_wcl_human_verification"
+    # WCL-dependent work is promoted only with a WCL source attached.
+    assert rows["wcl_dps_reference"]["status"] == "resolved_two_kills"
+    assert rows["boss_melee_damage_fidelity"]["status"] == "calibrated_staged"
+    assert rows["boss_health"]["status"] == "resolved_10N"
+    for key in ("wcl_dps_reference", "boss_melee_damage_fidelity", "boss_health"):
+        assert "wcl_MxFq7TRbvnjGY1hJ_27" in rows[key]["source_refs"], key
+    assert rows["berserk"]["status"] == "unresolved"
+    assert ledger["wcl_extraction_plan"]["status"] == "extracted_2026_09_27"
 
 
 def test_ledger_values_reproduce_the_native_formulas() -> None:
@@ -81,7 +85,8 @@ def test_ledger_values_reproduce_the_native_formulas() -> None:
     total_hp_88_warrior = 85892
     modifiers = {"10N": 241, "25N": 844, "10H": 422, "25H": 1476}
     assert health == {mode: total_hp_88_warrior * modifier for mode, modifier in modifiers.items()}
-    assert values["health"]["status"] == "conflict"
+    assert values["health"]["status"].startswith("resolved_10N")
+    assert values["health"]["wcl_10N_derivation"]["derived_max_health"] == health["10N"]
     roll = values["boss_melee"]["mode_values"]["10N"]["native_roll_at_damage_modifier_1"]
     base, ap_term, speed = 2947.9421, 1226 / 14, 4.0
     assert roll["min"] == round((base + ap_term) * speed, 1)
@@ -119,14 +124,26 @@ def test_recorded_values_match_the_execution_client_rows() -> None:
     assert durations[spells[82881][13]] == 60000  # Break
 
 
-def test_wcl_placeholders_are_explicitly_blocked() -> None:
+def test_wcl_references_and_timelines_are_extracted() -> None:
     reference, timelines = load(WCL_REFERENCE), load(WCL_TIMELINES)
     assert reference["schema"] == "chimaeron_wcl_dps_reference_v1"
-    assert reference["references"] == [] and reference["extraction_status"] == "blocked_wcl_human_verification"
-    assert {row["report"] for row in reference["planned_extraction"]["candidate_reports"]} == {
-        "MxFq7TRbvnjGY1hJ", "Y8ajQ7dbmKMG1RZy", "xAhkN2y9YP3KRmnJ"}
+    assert reference["extraction_status"] == "extracted"
+    ids_ = [row["id"] for row in reference["references"]]
+    assert ids_ == ["MxFq7TRbvnjGY1hJ-fight27", "xAhkN2y9YP3KRmnJ-fight14"]
+    for row in reference["references"]:
+        assert row["mode"] == "10N" and row["duration_sec"] > 0 and row["raid_dps"] > 0
+        assert row["limitations"] and row["url"].startswith("https://classic.warcraftlogs.com/reports/")
+        healers = {r["spec"] for r in row["roster"] if r["role"] == "healer"}
+        assert not healers & set(row["actor_dps"])
+    fight27 = reference["references"][0]["actor_dps"]
+    assert fight27["survival_hunter"] == pytest.approx((26557.1 + 29102.4) / 2)
     assert timelines["schema"] == "chimaeron_wcl_cast_timelines_v1"
-    assert timelines["actors"] == [] and timelines["reference_id"] is None
+    assert timelines["reference_id"] == "MxFq7TRbvnjGY1hJ-fight27"
+    for actor in timelines["actors"]:
+        assert actor["row_count"] == len(actor["casts"]) > 0
+        assert all(cast["ability"] != "Begin Cast" for cast in actor["casts"])
+    massacre = [e["t"] for e in timelines["boss_events"] if e["spell_id"] == 82848 and e["event"] == "Begin Cast"]
+    assert massacre == [25.966, 55.958]
 
 
 def test_raid_target_roster_is_the_canonical_chimaeron_copy() -> None:
@@ -135,7 +152,7 @@ def test_raid_target_roster_is_the_canonical_chimaeron_copy() -> None:
     assert target["encounter_route_node_id"] == "bwd.chimaeron.encounter"
     assert target["wcl_reference_manifest"] == WCL_REFERENCE.relative_to(ROOT).as_posix()
     assert target["wcl_cast_timelines"] == WCL_TIMELINES.relative_to(ROOT).as_posix()
-    assert target["matched_reference_ids"] == []
+    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight27", "xAhkN2y9YP3KRmnJ-fight14"]
     assert target["actor_dps_ratio"] == 0.95 and target["fallback_reference"]["ratio"] == 0.90
     assert target["roles_without_dps_target"] == ["healer"] and target["max_boss_window_deaths"] == 0
     assert target["shard"]["lockout"]["precompleted_boss_keys"] == ["magmaw", "omnotron"]
@@ -164,7 +181,9 @@ def test_raid_target_reads_through_the_scoreboard_with_declared_gaps() -> None:
         assert spec not in references
     for spec in declared["wowsims_fallback_available"]:
         assert references[spec]["basis"] == "wowsims_fallback"
-    assert scoreboard_core.party_reference_dps(ROOT, target) is None
+    for spec, dps in declared["wcl_matched"].items():
+        assert references[spec] == {"dps": pytest.approx(dps), "basis": "wcl", "ratio": 0.95}
+    assert scoreboard_core.party_reference_dps(ROOT, target) == pytest.approx((217144.7 + 345080.1) / 2)
 
 
 def test_dossier_discloses_sources_state_and_strategy() -> None:
@@ -191,6 +210,8 @@ def test_native_script_repairs_are_in_place() -> None:
     assert "SetMortalityTauntImmunity(false);" in evade
     engage = function_body(source, "void JustEngagedWith(Unit* who) override")
     assert "_killedPlayerCount = 0;" in engage
+    # WCL 10N: the first Caustic Slime impacts land at 17.2 s (15 s cast + flight).
+    assert "events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 15s, 0, PHASE_1);" in engage
     timer = function_body(source, "uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override")
     assert "spellId != SPELL_MASSACRE" in timer
     assert "events.GetTimeUntilEvent(EVENT_MASSACRE)" in timer

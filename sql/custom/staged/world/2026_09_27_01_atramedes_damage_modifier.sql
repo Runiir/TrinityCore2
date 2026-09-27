@@ -1,0 +1,63 @@
+-- Atramedes 10N (creature_template 41442): restore melee damage with DamageModifier 10.35.
+--
+-- Staged. Move to sql/custom/world/ (or apply with mysql) right before the
+-- Atramedes measurement batch; see sql/custom/staged/README.md.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set
+-- DamageModifier = 1 for every creature, "pending re-evaluation".
+--
+-- Native formula (Creature.cpp UpdateLevelDependantStats and
+-- CreatureStatSystem.cpp CalculateMinMaxDamage):
+--   base = gt_npc_damage_by_class_exp3[level 88].Warrior = 2947.9421
+--          (unit_class 1, HealthScalingExpansion 3, Rate.Creature.*.Damage 1)
+--   weapon min/max = base, base * 1.5
+--   AP term = creature_classlevelstats(88, 1).attackpower 1226 / 14 * BaseVariance 1 = 87.57
+--   swing = (weapon + AP term) * BaseAttackTime 1.5 s * DamageModifier * TOTAL_PCT
+--   At DamageModifier 1, one swing is 4,553.3 to 6,764.2.
+--
+-- Matched stage: WCL "U" (unmitigatedAmount) = melee_resolution.after_attacker_bonus_amount
+-- (before the target's armor, block, damage-taken reductions and absorbs).
+--
+-- WCL MxFq7TRbvnjGY1hJ fight 32 (Atramedes, 10N kill, 2024-10-28, 165.6 s, Blood DK
+-- Greysnout tanked every swing): 32 melee rows (ability 1), 22 landed with U, 6 dodges,
+-- 3 parries, 1 miss. Swing spacing 1.8 s (1.5 s base slowed 20% by Frost Fever).
+-- Scarlet Fever 81130 was on Atramedes 6.9-112.1 s and 129.1-162.1 s; no Demoralizing
+-- Roar/Shout, Vindication or Curse of Weakness was applied.
+--   unreduced U (3, before 6.9 s): 47,665-68,939
+--   U under Scarlet Fever (19)    : 45,877-62,831
+--   largest hit unreduced     : 68,939 / 6,764.2            = 10.19 (lower bound)
+--   largest hit under -10%    : 62,831 / (0.9 * 6,764.2)    = 10.32 (tighter lower bound)
+--   smallest hit unreduced    : 47,665 / 4,553.3            = 10.47 (upper bound)
+--   smallest hit under -10%   : 45,877 / (0.9 * 4,553.3)    = 11.20 (looser upper bound)
+-- The registry method requires the value inside the bounds both as written and after the
+-- native +1% auto-attack bonus (Unit::MeleeDamageBonusDone): 10.32 <= m <= 10.47 and
+-- 10.32 <= m * 1.01 <= 10.47 (m 10.22-10.36), together 10.32-10.36. 10.35 is inside
+-- (10.35 * 1.01 = 10.4535).
+-- If Scarlet Fever were not inside U, no single value would fit (10.19 > 45,877 / 4,553.3
+-- = 10.08), so the sample supports the method's aura interpretation.
+-- At 10.35 the native U-stage envelope is 47,598-70,709 unreduced and 42,838-63,638 under a
+-- -10% done aura; every observed row is inside. Means: the 22 landed U average 55,546;
+-- the native expectation for this 3/19 mix is 54,045 (+2.8%).
+-- Health cross-check: the same fight's resource rows derive max health 26,111,168, equal to
+-- the native 10N health (85,892 x 304), so this sample reflects the tuning the repository
+-- runs.
+-- No weapon-percent ability exists for a second cross-check (Atramedes' abilities are
+-- spell damage).
+--
+-- Scope. Only 10N entry 41442. Spell damage (Modulation, Sonic Breath, Searing Flame,
+-- Roaring Flame Breath, Sonar Pulse/Bomb, Devastation) does not read DamageModifier. The 25N,
+-- 10H and 25H templates 49583, 49584 and 49585 keep DamageModifier 1 and use
+-- BaseAttackTime 2000, not 1500. There are no same-mode melee samples for them, so they
+-- stay open, not copied. The worldserver loads creature_template at startup.
+--
+-- The migration is idempotent. The reverse is the commented block at the end, not a separate
+-- file (the auto-updater would apply a separate revert file immediately). It only restores 1
+-- when the value is still this migration's 10.35. The column is FLOAT, so the reverse compares
+-- with a tolerance: an exact `= 10.35` would never match the stored single-precision value.
+
+UPDATE `creature_template` SET `DamageModifier` = 10.35 WHERE `entry` = 41442;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41442 AND ABS(`DamageModifier` - 10.35) < 0.001;
+-- END REVERSE MIGRATION

@@ -8,27 +8,43 @@
   "composition": "experiments/configs/raid_compositions/blackwing_descent_10n.json",
   "encounter_route_node_id": "bwd.omnotron.encounter",
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
-  "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
-  "wcl_cast_timelines_note": "Set wcl_cast_timelines to the pending file once it holds matched timelines; it is empty while WCL is gated.",
-  "matched_reference_ids": [],
+  "matched_reference_ids": [
+    "Y8ajQ7dbmKMG1RZy-fight24",
+    "xAhkN2y9YP3KRmnJ-fight12"
+  ],
   "reference_status": {
-    "state": "no_matched_wcl_reference",
-    "reason": "classic.warcraftlogs.com human-verification gate on 2026-09-25; see the reference manifest's extraction_plan.",
+    "state": "matched_wcl_references",
+    "retrieved": "2026-09-27",
+    "wcl_specs": {
+      "blood_death_knight": [
+        27851.8,
+        32643
+      ],
+      "fire_mage": [
+        48982,
+        35203.7
+      ],
+      "elemental_shaman": [
+        51668.9,
+        40901.5
+      ],
+      "survival_hunter": [
+        45475.8
+      ]
+    },
     "wowsims_fallback_specs": [
-      "survival_hunter",
-      "fire_mage",
       "retribution_paladin",
       "assassination_rogue",
-      "elemental_shaman",
       "demonology_warlock"
     ],
     "no_reference_specs": [
-      "blood_death_knight",
       "feral_druid_tank"
     ],
-    "consequence": "scoreboard verdict reports no_reference for Blood DK and Feral tank (the Survival hunter, canonical since 2026-09-26, has a WoWSims fallback); the overall status stays fail until matched WCL references exist."
+    "consequence": "Blood DK, Fire mage, Elemental shaman and Survival hunter are judged against the median matched WCL DPS; Retribution, Assassination and Demonology fall back to WoWSims (ratio 0.9); the Feral tank has no reference (no matched 10N Omnotron kill had a Feral tank); its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so that no longer fails the verdict."
   },
-  "unmatched_reference_notes": {},
+  "unmatched_reference_notes": {
+    "MxFq7TRbvnjGY1hJ-fight24": "Item level 359.9, about 35-40 below the matched kills; 133.2 s with three constructs. Context only (and the source of the Retribution observation 22,905 DPS), never a target."
+  },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
   "actor_dps_ratio": 0.95,
@@ -46,6 +62,14 @@
   "roles_without_dps_target": [
     "healer"
   ],
+  "dps_gate_exempt_specs": [
+    "feral_druid_tank"
+  ],
+  "dps_gate_exempt_decision": {
+    "source": "user decision 2026-09-27",
+    "quote": "Just count blood tank as dps, leave feral out. Feral dps is negligible, but bdk is relevant.",
+    "effect": "feral_druid_tank DPS is recorded and reported as informational: no parity gate, and a missing reference does not fail the verdict. blood_death_knight stays gated against its WCL reference. no_reference_until_wcl / no_reference_specs entries for feral_druid_tank remain as documentation only."
+  },
   "healer_status": "Healers have no DPS target; their status follows the encounter status.",
   "fallback_reference": {
     "source": "wowsims",
@@ -55,7 +79,7 @@
     "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
   },
   "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
-  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass. Specs listed in dps_gate_exempt_specs are the exception (user decision 2026-09-27): their DPS is informational, a missing reference fails nothing, and like a healer their status follows the encounter.",
   "roster": {
     "11001001": {
       "name": "Bwomnnba",
@@ -171,5 +195,6 @@
     ],
     "shard_run_plan": "experiments/configs/shard_runs/bwd_10n_round2_canonical_c0_v1.json",
     "argv_template_note": "Single-shard scoreboard form; the round-2 parallel run goes through shard_coordinator with the shard run plan. Provisioning of the canonical c0 cohort is package M's guarded apply path."
-  }
+  },
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json"
 }

@@ -52,8 +52,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 10,
-          "ledger_unresolved_material_count": 10
+          "contract_unresolved_material_count": 5,
+          "ledger_unresolved_material_count": 5
         },
         {
           "boss_slug": "maloriak",
@@ -72,8 +72,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 9,
-          "ledger_unresolved_material_count": 9
+          "contract_unresolved_material_count": 5,
+          "ledger_unresolved_material_count": 5
         },
         {
           "boss_slug": "chimaeron",
@@ -92,8 +92,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 10,
-          "ledger_unresolved_material_count": 10
+          "contract_unresolved_material_count": 8,
+          "ledger_unresolved_material_count": 8
         }
       ]
     },

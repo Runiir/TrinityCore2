@@ -12,7 +12,7 @@
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
-  "unresolved_material_count": 10,
+  "unresolved_material_count": 5,
   "encounter": "omnotron_defense_system",
   "instance": "blackwing_descent",
   "scope": [
@@ -21,7 +21,7 @@
     "25N",
     "25H"
   ],
-  "research_state": "10N_ready_for_diagnostic_shard_wcl_blocked",
+  "research_state": "10N_research_complete_wcl_matched",
   "script_readiness": "source_present_ready_for_diagnostic_shard",
   "fidelity_policy": "Do not schedule values marked fidelity_blocked; bots act on observed auras, casts and summons, never on encounter timers.",
   "evidence_rule": "Behavior-changing claims require two independent strategy sources or one credible strategy source plus repository confirmation.",
@@ -238,6 +238,44 @@
       "accessed": "2026-09-25",
       "claim": "Every WCL page redirected to /human-challenge ('One Quick Check'). Per coordinator instruction no agent attests to being human; WCL-dependent claims stay open until the user clears the gate.",
       "id": "wcl_human_verification_gate_20260925"
+    },
+    {
+      "title": "Warcraft Logs access re-attempt through GPT-6 Astra (codex exec)",
+      "publisher": "Warcraft Logs",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+      "accessed": "2026-09-27",
+      "method": "codex exec -m gpt-6-astra (workspace-write sandbox with network access): web fetch, curl -L of the report URL, and the unified-computer-use browser tool.",
+      "claim": "WCL stays gated. curl returned HTTP 403 with the Cloudflare challenge page (title 'Just a moment...', 'Enable JavaScript and cookies to continue'); the web fetch tool returned 'not accessible via this tool'; the browser tool failed to start in codex exec ('CUA_REPL_ENABLED_SURFACES is required', also with the variable exported). No check was clicked or attempted and no value was read. Wowhead Cata Classic NPC pages (42166, 42180) also returned 403 to direct fetch and exposed no 10N health. Superseded the same day: the Codex Chrome plugin on the user's Chrome (profile Runiir) read the reports (source wcl_omnotron_10n_20260927).",
+      "id": "wcl_access_attempt_20260927"
+    },
+    {
+      "title": "BWD 10N full-raid run r11 (end-to-end native clear)",
+      "publisher": "repository DVC artifact",
+      "path": "artifacts/cata_raid_program/full_raid_clear_r11_20260927.tar.gz (md5 3681b75f20f55db37cda8f7509bf945e), member bwd10n-full-r11c-20260927T024402Z/shards/blackwing_descent_10n_full_c0/report.json",
+      "revision": "e19a1127c2e02f5e0c77209486fc0727330c9234",
+      "accessed": "2026-09-27",
+      "claim": "native_gameplay_outcome.real_boss_kill_evidence lists bwd.omnotron.encounter (route generation 9); native_clear true, completion_reason validation_route_manifest_complete. encounter_fidelity.boss_melee recorded 0 swings for every boss of the run (42166/42178/42179/42180 included), so the run carries no native melee stage sample for this calibration. Full-raid roster and spec switches, not the c0 scoreboard cohort; not a DPS measurement.",
+      "id": "full_raid_r11_20260927"
+    },
+    {
+      "title": "Omnotron Defense System 10-player Normal kills on Warcraft Logs (three reports)",
+      "publisher": "Warcraft Logs",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=24",
+        "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=24",
+        "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=12"
+      ],
+      "dates": {
+        "MxFq7TRbvnjGY1hJ-24": "2024-10-28",
+        "Y8ajQ7dbmKMG1RZy-24": "2025-05-15",
+        "xAhkN2y9YP3KRmnJ-12": "2025-06-11"
+      },
+      "accessed": "2026-09-27",
+      "method": "GPT-6 Astra (codex exec) driving the user's Chrome (profile Runiir) through the Codex Chrome plugin; rendered table innerText with raw row text retained (scratch ~/.cache/omnotron_wcl_r2, regenerable from the URLs)",
+      "mode": "10N (fight pages show 'Normal (10 Player)')",
+      "scope": "damage-done per player, construct melee damage-taken with mitigation detail (options=4098), enemy casts, 78740 Activated auras, attacker -10% debuffs (81130, 99, 1160, 26017, 702), Electrical Discharge/Static Shock/Lightning Conductor/Flamethrower/Poison Bomb/Backdraft damage, Barrier windows and absorbed amounts, player debuffs, interrupts",
+      "authority": "same-mode live observations of the 4.4.2 Classic servers; used for the 10N DamageModifier, DPS references and first-cast timers",
+      "id": "wcl_omnotron_10n_20260927"
     }
   ],
   "repository_evidence": [
@@ -252,7 +290,10 @@
     "Reset/FAIL/DONE paths remove encounter debuffs and forward DONE credit",
     "round 2: Electrical Discharge starts on a random player through the 95499 trigger",
     "round 2: two Acquiring Targets and two Poison Protocols per activation; Toxitron shields at 50/40 s like the other constructs",
-    "route kill attribution needs the credit creature 42180 as route source_entry"
+    "route kill attribution needs the credit creature 42180 as route source_entry",
+    "full-raid r11 (2026-09-27): native council kill with real_boss_kill_evidence on bwd.omnotron.encounter; no native melee stage captured",
+    "round 1 (2026-09-27): normal-mode native timers set from WCL 10N (Chemical Bomb 11 s, Poison Protocol 22.5 s, Lightning Conductor repeat 26 s, Power Generator repeat 30 s); heroic unchanged",
+    "round 1 (2026-09-27): construct DamageModifier 11.2 staged (sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql)"
   ],
   "phase_graph": {
     "prepull": "Controller summons four inactive constructs (Inactive 78726, Powered Down 82265, not selectable); 10 s after reset the first queued construct recharges (45 s normal) and then walks its patrol, attackable, without Activated.",
@@ -317,7 +358,9 @@
       "arcane_targeting": "one random target",
       "lightning_conductor_s": 10,
       "heroic_controller": false,
-      "fidelity_status": "client_rows_resolved_wcl_blocked"
+      "fidelity_status": "wcl_resolved",
+      "activation_rotation_wcl_s": 44.1,
+      "construct_damage_modifier": 11.2
     },
     "10H": {
       "shared_health_reported": "54.1M",
@@ -382,20 +425,69 @@
     "bots: no area spell (Divine Storm, Blood Boil, Death and Decay, Fan of Knives, Hellfire, Living Bomb spread) hits a construct during its shield"
   ],
   "unresolved": [
-    "wcl_matched_10n_kill_references",
-    "construct_melee_damage_modifier_10n",
-    "shared_health_10n_wcl_derivation",
-    "electrical_discharge_chain_damage_scaling",
-    "poison_bomb_death_explosion",
-    "barrier_absorb_amount",
-    "normal_mode_first_cast_and_repeat_timers",
-    "heroic_nefarius_selection_order_and_cadence",
-    "heroic_poison_bomb_count_and_non_10n_scaling",
-    "static_shock_center_attacker_or_construct"
+    {
+      "key": "barrier_absorb_amount",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "10N: the only WCL Barrier (MxFq7TRbvnjGY1hJ fight 24) absorbed 267,864 over the full 10 s without breaking, which is below both the client 300,000 and Wowhead 900,000, so it cannot tell them apart. Needs a 10N Barrier that breaks (Backdraft 79617 with the absorbed total) or absorbs more than 300,000 without breaking. Heroic: client 150,000 vs Wowhead 450,000, no sample."
+    },
+    {
+      "key": "static_shock_center_attacker_or_construct",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "10N: the single WCL Static Shock 79912 hit (Y8ajQ7dbmKMG1RZy fight 24, U 29,930) landed on the attacking tank, who was also within 6 yd of Electron, so an attacker-centred blast (native, tooltip) and a construct-centred one (Wowhead text) both explain it. Needs a hit on a player more than 6 yd from Electron, or a ranged attacker's proc that reaches or misses melee players."
+    },
+    {
+      "key": "power_conversion_no_damage_proc",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "Whether 4.4.2 Power Conversion 79729 grants Converted Power 79735 for a landed interrupt or taunt that deals no damage. Native: yes (spell_proc SpellTypeMask 0). No WCL row pairs a SPELL_INTERRUPT of 79710 under 79729 with a 79735 application; guides only say to stop attacking."
+    },
+    {
+      "key": "heroic_nefarius_selection_order_and_cadence",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "Heroic only: Lord Victor Nefarius upgrade order and cadence (guide about every 35 s vs the local 30 s cooldown); needs a heroic WCL kill."
+    },
+    {
+      "key": "heroic_poison_bomb_count_and_non_10n_scaling",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "Heroic Poison Bombs per tick (client one vs Wowhead two) and the 25N/10H/25H health and damage values rest on client rows and guides only; no same-mode WCL kill."
+    }
   ],
   "status_labels": {
     "fidelity_blocked": "Conflicting or unverified value; do not use as a fixed bot timer.",
     "repository_observed": "Current checkout behavior; confirms implementation only.",
     "guide_reported": "External strategy report; not automatically 4.4.2 truth."
-  }
+  },
+  "fidelity_state_by_mode": {
+    "10N": "fidelity_blocked",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "No mode is accepted. 10N keeps three unresolved material claims (barrier_absorb_amount, static_shock_center_attacker_or_construct, power_conversion_no_damage_proc; see each unresolved entry's modes); the other modes also keep heroic or non-10N claims. Construct melee, shared health, timers, Electrical Discharge and Poison Bomb death are resolved for 10N from three matched WCL kills."
 }

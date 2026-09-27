@@ -547,7 +547,11 @@ struct boss_nefarians_end : public BossAI
                     break;
                 case EVENT_SHADOWFLAME_BARRAGE:
                     DoCastAOE(SPELL_SHADOWFLAME_BARRAGE);
-                    events.Repeat(2s + 500ms);
+                    // WCL 10N kill MxFq7TRbvnjGY1hJ fight 35: 31 consecutive
+                    // Begin Cast intervals of 3.2-3.3 s. The evidence is 10N
+                    // only, so 25N/10H/25H keep the previous 2.5 s.
+                    events.Repeat(GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL
+                        ? Milliseconds(3s + 200ms) : Milliseconds(2s + 500ms));
                     break;
                 case EVENT_SAY_PHASE_TWO:
                     Talk(SAY_MOLTEN_LAVA);

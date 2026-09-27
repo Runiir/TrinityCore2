@@ -417,6 +417,43 @@
       "source_commit": "36f8ab0bc3b12b33eee7e7c39d3f190082aeacdc",
       "evidence_dvc": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc",
       "claim": "224 swing observations, 217 health links and seven misses without health callbacks; no Magmaw swings because the run failed on preceding Drudges. Capture verifies transport, not boss pressure."
+    },
+    {
+      "id": "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+      "title": "WCL MxFq7TRbvnjGY1hJ fight 22, Magmaw Normal (10 Player) kill 2:11",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22",
+      "publisher": "Warcraft Logs (Classic), report '10er WT feat. Wongel' by Amaraaa, Ist auch dabei, Everlook (EU)",
+      "report_date": "2024-10-28 (displayed creation date)",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "era": "before the 4.4.2 target (2025-02-18)",
+      "capture": {
+        "method": "GPT-6 Astra via the Codex Chrome plugin, rendered innerText rows",
+        "raw_file": "MxFq7TRbvnjGY1hJ-f22.json",
+        "raw_location": "~/.cache/magmaw_wcl (local scratch, not yet DVC-tracked; see handoff patch request)",
+        "sha256": "a971c77485a4670c2082373bf55c22d96f41bddc2b6d505b39a45e319b24c343"
+      },
+      "claim": "Enemy deaths, enemy casts, 78199/89773/78941 debuffs, hook/head/vehicle aura views, Magmaw melee and Mangle damage-taken rows with U; Molten Tantrum view."
+    },
+    {
+      "id": "wcl_Y8ajQ7dbmKMG1RZy_22_20260927",
+      "title": "WCL Y8ajQ7dbmKMG1RZy fight 22, Magmaw Normal (10 Player) kill 1:51",
+      "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22",
+      "publisher": "Warcraft Logs (Classic), report 'Dragon Soul' by chani666, C H A O S, Venoxis (EU)",
+      "report_date": "2025-05-15 (displayed creation date)",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "era": "4.4.2 patch, after the 2025-02-20 hotfix cutoff",
+      "capture": {
+        "method": "GPT-6 Astra via the Codex Chrome plugin, rendered innerText rows",
+        "raw_files": {
+          "Y8ajQ7dbmKMG1RZy-f22.json": "f359bce89e12c51c118797617ec83448584d37c986ea1a8c1b1d27be1aeb3611",
+          "Y8ajQ7dbmKMG1RZy-f22-evidence.json": "74d1c077ea1e8871a2e2f7c79a1f8d3c43a360aac7b6bd45682d4fb867f11703",
+          "Y8ajQ7dbmKMG1RZy-f22-attacker-debuffs.json": "869a34700758db5e3b4dd9cdcb6a0f53a1e15579f06325c4e7f392d0fb3e9d7e"
+        },
+        "raw_location": "~/.cache/magmaw_wcl (local scratch, not yet DVC-tracked; see handoff patch request)"
+      },
+      "claim": "Same views as the MxFq7 capture plus attacker-side physical-reduction debuffs on Magmaw (81130, 99, 1160, 26017, 24423, 50256, 702)."
     }
   ],
   "values": [
@@ -1018,6 +1055,18 @@
         "evidence": "magmaw_incoming_timeline_20260912"
       },
       "current_db_damage_modifier": 1,
+      "repository_update_20260927": {
+        "superseded_fields": [
+          "current_db_damage_modifier",
+          "repository_observation"
+        ],
+        "10N_entry_41570_damage_modifier": 16,
+        "migration": "sql/custom/world/2026_09_23_30_magmaw_damage_modifier.sql",
+        "registry": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json creatures.41570 (status calibrated)",
+        "derivation": "Matched stage melee_resolution.after_attacker_bonus_amount against the retained wcl_10N_samples: lower bound 178,540 / 11,273.7 = 15.84, upper bound 111,531 / (0.9 * 7,588.8) = 16.33 under Scarlet Fever; the Mangle 89773 initial-hit U 240,338 / 1.5 cross-checks to a native roll of 10,014 inside 7,589-11,274.",
+        "scope": "10N base entry 41570 only. Difficulty entries 51101-51103 (25N/10H/25H) are not calibrated by this derivation.",
+        "remaining_gap": "The sample envelope comes from one 2024-10-28 log that predates the 4.4.2 target, so it inherits wcl_hotfix_cutoff_compatibility. A fresh extraction to widen the envelope was attempted on 2026-09-27 and not captured (see research_completion boss_melee_pressure attempts)."
+      },
       "repository_observation": "CreatureStatSystem uses template ModDamage, variance, base/AP and attack time. All four configured Magmaw variants have DamageModifier1. Historical custom SQL used120 with variance0.5; that is not an external authority. Migration2025_06_18_06_world.sql globally resets DamageModifier to1. Commit68a3622133 explicitly requires damage reevaluation after formula changes; ancestor of4b24/41266/6882. Current updates table records it applied2026-06-02. This is inherited source history, not a newly introduced patch in that comparison.",
       "implementation_consequence": "Audit effective melee values and defenses before interpreting Vengeance, tank DPS or healer pressure. Do not copy120 or compare U directly with post-defense damage.",
       "acceptance_observation": "Attributable native swing attempts, pre-defense damage, miss/parry/block, armor, absorbs, defensive auras and tank ownership; compare a matched same-mode WCL sample envelope before choosing a correction.",
@@ -1271,12 +1320,12 @@
     {
       "key": "wcl_hotfix_cutoff_compatibility",
       "status": "fidelity_blocked",
-      "evidence_gap": "Build/cutoff pinned. June 2025 log is later, October/November 2024 logs earlier. 4.4.2 notes and the February 21 hotfix archive contain no Magmaw entry, but this bounded search does not prove complete carryover. June 13 2024 official Impale orientation fix predates both longer logs."
+      "evidence_gap": "Build/cutoff pinned. June 2025 log is later, October/November 2024 logs earlier. 4.4.2 notes and the February 21 hotfix archive contain no Magmaw entry, but this bounded search does not prove complete carryover. June 13 2024 official Impale orientation fix predates both longer logs. 2026-09-27: 10N claim-specific carryover is supported by agreement between a 2024-10-28 and a 2025-05-15 (4.4.2-era) kill; no audit of the 2025-02-20..2025-05-15 hotfix notes yet."
     },
     {
       "key": "mode_scaling",
       "status": "fidelity_blocked",
-      "evidence_gap": "32 native/client base-roll comparisons match; all four boss HP and both heroic construct HP references derived from WCL. Exact-cutoff compatibility and tiny native heroic rounding differences remain distinct. Melee pressure is uncalibrated and blocks tank/healer-performance qualification."
+      "evidence_gap": "32 native/client base-roll comparisons match; all four boss HP and both heroic construct HP references derived from WCL. Exact-cutoff compatibility and tiny native heroic rounding differences remain distinct. Melee pressure is uncalibrated and blocks tank/healer-performance qualification. 2026-09-27: 10N melee DamageModifier 16 is consistent with the 4.4.2-era log (combined bounds 15.84-16.09)."
     },
     {
       "key": "timers",
@@ -1286,7 +1335,7 @@
     {
       "key": "parasite_count",
       "status": "fidelity_blocked",
-      "evidence_gap": "Client/native tick semantics derive9 uninterrupted summons; actual interruption/spawn behavior and historical WCL count still require verification."
+      "evidence_gap": "10N resolved by observation 2026-09-27: 9 per Pillar in a pre-4.4.2 and a 4.4.2-era kill, matching the client/native derivation. 25N/10H/25H counts and interruption cases remain unobserved."
     },
     {
       "key": "hooks",
@@ -1296,7 +1345,7 @@
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal, conflicting with native boarding application. See longer-kill addendum."
+      "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal, conflicting with native boarding application. See longer-kill addendum. 2026-09-27: the 4.4.2-era 10N log Y8ajQ7dbmKMG1RZy also applies Armor at Mangle removal (1:51.297)."
     },
     {
       "key": "shadow_breath",
@@ -1351,8 +1400,15 @@
       "next": "Resolve observed out-of-melee repeat/refresh/expiry; client recovery alone does not prove an AI timer.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "magmaw_baseline_20260912"
-      ]
+        "magmaw_baseline_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N": {
+          "evidence": "The 78403 enemy-buff view is empty in both kills (the tank stayed in melee). No out-of-melee repeat, refresh or expiry is observable in these logs."
+        }
+      }
     },
     {
       "key": "heroic_nefarian_and_constructs",
@@ -1377,15 +1433,46 @@
         "10H",
         "25H"
       ],
-      "status": "blocked",
+      "status": "partial",
       "known": "Two longer logs predate target; official June 2024 Impale orientation fix predates both.",
-      "next": "Obtain target-era mechanic observations or document claim-specific carryover with exact patch coverage.",
+      "next": "Search official 4.4.2 hotfix notes from 2025-02-20 to 2025-05-15 for any Magmaw/Blackwing Descent entry. If none, the 10N claims listed in observations_20260927 can be treated as cutoff-compatible. Other modes still need target-era logs.",
+      "attempts": [
+        {
+          "retrieved_utc_date": "2026-09-27",
+          "agent": "BWD 10N raid program round 1, packet boss:magmaw, browser extraction via codex exec -m gpt-6-astra",
+          "urls": [
+            "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22&type=summons",
+            "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=summons"
+          ],
+          "requested": "report date versus the 4.4.2 window, 10N Lava Parasite count, Magmaw enemy casts, Sweltering Armor 78199 and Molten Tantrum 78403 events",
+          "outcome": "blocked_by_human_verification",
+          "detail": "Both pages rendered the Cloudflare 'Performing security verification' interstitial; the check was not interacted with, no table was captured and no value changed."
+        },
+        {
+          "retrieved_utc_date": "2026-09-27",
+          "agent": "same packet, second attempt via CUA_REPL_ENABLED_SURFACES=browser codex exec -m gpt-6-astra",
+          "urls": [
+            "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ"
+          ],
+          "outcome": "blocked_browser_unavailable",
+          "detail": "The isolated browser surface failed with 'Browser is not available: iab'. The user's personal Chrome profile was not used. No page loaded."
+        }
+      ],
       "source_refs": [
         "magmaw_research_closure_20260912",
         "blizzard_442_notes_20250218",
         "blizzard_hotfix_archive_20250221",
-        "blizzard_magmaw_impale_20240613"
-      ]
+        "blizzard_magmaw_impale_20240613",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_claim_specific_carryover": {
+          "status": "bounded_carryover_evidence",
+          "evidence": "Y8aj is 4.4.2-era (2025-05-15, after the 2025-02-20 cutoff); MxFq7 predates 4.4.2 (2024-10-28). Both agree on the claims compared: 9 parasites per Pillar, Lava Spew as three 77690 casts 2 s apart per sequence, Massive Crash 88253 about 8.1 s after Mangle (MxFq7 begin 1:38.692 after Mangle 1:30.597; Y8aj begin 1:38.325 after Mangle 1:30.241), Armor applied at Mangle removal, melee envelope under modifier 16, and Mangle periodic U inside the client roll.",
+          "limit": "Agreement across logs that straddle the cutoff is evidence of carryover for these claims only. It is not an audit of every 4.4.2 hotfix between 2025-02-20 and 2025-05-15, and it says nothing about unobserved mechanics (hooks, head targetability, heroic)."
+        }
+      }
     },
     {
       "key": "health_guide_reported",
@@ -1435,8 +1522,16 @@
       "next": "Capture parent cast/absorb/native outcomes to explain missing early live damage; external tick times do not identify parent cast failures.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "wcl_FhcbnAmN9v7kr1VP_3"
-      ]
+        "wcl_FhcbnAmN9v7kr1VP_3",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_cadence": {
+          "evidence": "Three 77690 casts 2 s apart per sequence in both logs. Sequence starts: MxFq7 0:23.4, 0:47.3, 1:18.0 (gaps 23.9 s, 30.8 s); Y8aj 0:21.4, 0:50.6, 1:22.9 (gaps 29.1 s, 32.3 s).",
+          "meaning": "observed intervals from two kills, not a cooldown distribution; no parent cast failure information."
+        }
+      }
     },
     {
       "key": "pillar_of_flame",
@@ -1461,13 +1556,38 @@
         "10H",
         "25H"
       ],
-      "status": "partial",
+      "status": "10N_resolved_other_modes_partial",
       "known": "Pinned client and native77973:2500ms/300ms with extra initial period; expected9 uninterrupted77969 summons of41806. Vomit separately summons42321.",
-      "next": "Verify spawned count and interruption/despawn cases in the production path; exact historical count remains distinct from derived expectation.",
+      "next": "10N resolved: 9 per Pillar (two 10N kills, both eras). Native production still has to show 9 summons per Pillar. 25N/10H/25H counts are unobserved.",
+      "attempts": [
+        {
+          "retrieved_utc_date": "2026-09-27",
+          "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22&type=summons",
+          "outcome": "blocked_by_human_verification",
+          "detail": "10N historical summon count not captured; derived 9 uninterrupted summons per Pillar remains a client/native expectation, not an observation."
+        },
+        {
+          "retrieved_utc_date": "2026-09-27",
+          "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=summons",
+          "outcome": "blocked_browser_unavailable",
+          "detail": "The isolated browser surface was unavailable ('Browser is not available: iab'); nothing captured."
+        }
+      ],
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "magmaw_baseline_20260912"
-      ]
+        "magmaw_baseline_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N": {
+          "status": "resolved_observed",
+          "value": "9 Lava Parasites per Pillar of Flame, two Pillars per kill",
+          "evidence": "MxFq7: 18 numbered Lava Parasite deaths (instances 1-18), 9 at 0:39-0:46 and 9 at 1:14-1:17. Y8aj: 18 Lava Parasite death events, 9 at 0:38.4-0:43.4 and 9 at 1:11.7-1:21.2 (WCL reuses labels 1 and 2, so 16 instance links). Neither summon view exposes the creating spell.",
+          "native_comparison": "Matches the client/native derivation of 9 uninterrupted 77969 summons (77973, 2500 ms duration / 300 ms period with extra initial tick).",
+          "limit": "Counted from deaths in two kills where every parasite died; an interrupted Pillar case was not observed."
+        }
+      }
     },
     {
       "key": "mangle",
@@ -1484,8 +1604,16 @@
         "magmaw_research_closure_20260912",
         "wcl_FhcbnAmN9v7kr1VP_3",
         "magmaw_baseline_20260912",
-        "wcl_mangle_damage_20260912"
-      ]
+        "wcl_mangle_damage_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_samples": {
+          "evidence": "MxFq7 initial U 240,338 then 12 ticks U 116,904 (Mangle 1:30.597-1:54.896, 24.3 s). Y8aj initial U 220,181 (47,603 absorbed) then 11 ticks U 123,169, ended by the kill at 1:51.297.",
+          "meaning": "The initial hit alone cannot fix the 150% versus 100% weapon coefficient; both values are consistent with modifier 16 at 150%."
+        }
+      }
     },
     {
       "key": "sweltering_armor_duration",
@@ -1497,13 +1625,24 @@
       ],
       "status": "partial",
       "known": "90s client/native duration; 89.992s WCL lifetime; Armor follows Mangle removal in 10N and 25H.",
-      "next": "Validate release branches: second 25H removal follows Mangled Lifeless damage by 113ms, so do not assume both releases were successful hooks.",
+      "next": "10N apply anchor resolved (Mangle removal, both eras). Route the anchor mismatch to implementation as already specified; the release cause (hook impale versus expiry versus death) is still unobserved in 10N.",
       "source_refs": [
         "magmaw_research_closure_20260912",
         "wcl_FhcbnAmN9v7kr1VP_3",
         "wcl_MxFq7TRbvnjGY1hJ_22",
-        "magmaw_client_59185_20260912"
-      ]
+        "magmaw_client_59185_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_apply_anchor": {
+          "status": "resolved_observed",
+          "value": "Sweltering Armor 78199 is applied on the tank at the same timestamp as the Mangle 89773 debuff removal",
+          "evidence": "MxFq7: Mangle 1:30.597 -> removed 1:54.896; Armor applied 1:54.896 (Wongelrainer). Y8aj (4.4.2 era): Mangle 1:30.241 -> removed 1:51.297 at the kill; Armor applied 1:51.297 (Nexry).",
+          "native_comparison": "Conflicts with the native boarding-time application; the existing Armor release-anchor repair specification applies.",
+          "limit": "Neither 10N log shows the full 90 s Armor lifetime (both kills end before expiry). No 10N hook/impale events are exposed by WCL, so the release cause of Mangle removal is not identified."
+        }
+      }
     },
     {
       "key": "pincers_and_hooks",
@@ -1517,8 +1656,16 @@
       "known": "Native has two pincers and both-hook condition; client hook auras last 3s.",
       "next": "Verify hook arrivals just inside/outside expiry and vehicle seat behavior; retain <1s guide advice as tactic, not constant.",
       "source_refs": [
-        "magmaw_research_closure_20260912"
-      ]
+        "magmaw_research_closure_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N": {
+          "evidence": "In both kills the 77917/77941 hook cast and aura views, 77907 Impale Self and the vehicle-ride auras 89743/94996/77901 were all empty in every hostility/debuff variant. WCL does not expose hook arrival or expiry for these logs.",
+          "consequence": "Hook-expiry tolerance cannot be resolved from WCL. It needs a client combat log with vehicle events or a native observation."
+        }
+      }
     },
     {
       "key": "exposed_head_vulnerability",
@@ -1532,8 +1679,15 @@
       "known": "Distinct NPCs 42347/48270 identified; mirror 79010 excluded; melee activity and DoT tails separated.",
       "next": "Get head/body targetability transitions or replay bounds independent of player reaction; relate hooks, Impale and tank release.",
       "source_refs": [
-        "magmaw_research_closure_20260912"
-      ]
+        "magmaw_research_closure_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N": {
+          "evidence": "Point of Vulnerability 79010: MxFq7 shows only removal at 2:11.058 (the kill); Y8aj shows a refresh at 1:46.839 (Magmaw -> Exposed Head) and removals at 1:51.286/1:51.287. No apply row in either log, so exposure start is not bounded by this view."
+        }
+      }
     },
     {
       "key": "massive_crash",
@@ -1548,8 +1702,15 @@
       "next": "Verify damage/stun radius and target geometry with compatible landed events, including failed hooks.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "wcl_FhcbnAmN9v7kr1VP_3"
-      ]
+        "wcl_FhcbnAmN9v7kr1VP_3",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_timing": {
+          "evidence": "88253 begin cast / success: MxFq7 1:38.692 / 1:39.702; Y8aj 1:38.325 / 1:39.332. Both are about 8.1 s after the Mangle debuff was applied."
+        }
+      }
     },
     {
       "key": "shadow_breath",
@@ -1628,16 +1789,36 @@
         "25N",
         "25H"
       ],
-      "status": "blocked",
+      "status": "10N_calibrated_consistent_in_442_era_other_modes_blocked",
       "known": "Recovered24 native melee callbacks raw4466-8012,sum143845;health20127,17zero-health. WCL10N14landedU estimates111531-178540. Native raw includes taken modifiers; WCL U and native raw have different stages. Current four templates DamageModifier1 from inherited migration68a3622133. No exact correction established. Exact WCL Bone Shield stack/removal rows now accompany the first six melee samples; Scarlet Fever applied8921-37934ms and64577-93594ms. Samples have changing defensive context. Reviewed native stage telemetry now survives full/delta capture and timeline joins. Its first capture stopped on Drudge trash before Magmaw; no boss value added.",
-      "next": "Use isolated boss preparation to capture the missing Magmaw swing with the existing reviewed binary and stage fields. Do not repeat unchanged trash prerequisites. Compare equal calculation stages and defensive contexts against retained WCL; no guessed multiplier.",
+      "next": "10N: DamageModifier 16 is supported by a pre-4.4.2 log and a 4.4.2-era log (bounds 15.84-16.09). It is only formally blocked by the hotfix cutoff (log is after 2025-02-20). 25N/10H/25H: uncalibrated.",
+      "attempts": [
+        {
+          "retrieved_utc_date": "2026-09-27",
+          "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-taken&view=events&by=ability&options=4098&ability=1",
+          "outcome": "blocked_browser_unavailable",
+          "detail": "The isolated GPT-6 Astra browser surface (CUA_REPL_ENABLED_SURFACES=browser) failed with 'Browser is not available: iab'. No page loaded and no value changed."
+        }
+      ],
       "source_refs": [
         "magmaw_baseline_20260912",
         "magmaw_incoming_timeline_20260912",
         "wcl_magmaw_scarlet_fever_20260912",
         "wcl_magmaw_bone_shield_20260912",
-        "native_melee_resolution_20260912"
-      ]
+        "native_melee_resolution_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22_20260927",
+        "wcl_Y8ajQ7dbmKMG1RZy_22_20260927"
+      ],
+      "observations_20260927": {
+        "10N_target_era_check": {
+          "status": "consistent_with_calibrated_modifier_16",
+          "evidence": "Y8aj (2025-05-15): 22 Magmaw melee rows, 19 with U. A -10% attacker-side debuff covers Magmaw from 0:03.375 to 1:51.287 without gaps (Vindication 26017 and Scarlet Fever 81130 alternate; 99/1160/24423/50256/702 absent). 18 reduced samples U 109,914-153,626; one unreduced sample 138,144 at 0:03.352.",
+          "derived_bounds": "Reduced: lower 153,626/(0.9*11,273.7)=15.14, upper 109,914/(0.9*7,588.8)=16.09. Combined with MxFq7 (15.84-16.33): 15.84-16.09. DamageModifier 16 lies inside; the modifier was not changed.",
+          "predicted_envelope_at_16": "unreduced 121,421-180,379; reduced 109,279-162,341; every Y8aj sample falls inside.",
+          "mangle_cross_check": "Y8aj Mangle initial U 220,181 / 1.5 = 146,787 per swing -> native roll 9,174 at modifier 16, inside 7,589-11,274. Mangle periodic U 123,169 (Y8aj) and 116,904 (MxFq7) are inside the pinned 10N client roll 110,464-128,377.",
+          "mxfq7_recapture": "The 2026-09-27 MxFq7 recapture reproduces the retained 14 landed U 111,531-178,540 plus 7 miss/parry."
+        }
+      }
     }
   ],
   "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. Native execution of those observations is a separate validation milestone. Full four-mode fidelity remains blocked by the listed material unknowns.",

@@ -12,7 +12,7 @@
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
-  "unresolved_material_count": 10,
+  "unresolved_material_count": 8,
   "encounter": "nefarian",
   "instance": "blackwing_descent",
   "scope": [
@@ -21,7 +21,7 @@
     "25N",
     "25H"
   ],
-  "research_state": "native_and_client_audited_wcl_pending",
+  "research_state": "native_client_and_wcl_audited",
   "research_revision": {
     "date": "2026-09-25",
     "repository_revision": "1aedfb4f6cf2b453604d7c0163e8d22c97629aeb",
@@ -31,7 +31,7 @@
   "fidelity_policy": "Use observed aura/cast/phase events. Do not schedule values marked fidelity_blocked. Native geometry (cones, reach, platform frame) comes from the loaded 4.3.4 client rows, TDB 434.22011 and SpellMgr corrections; where the 4.4.2 reference differs, the ledger names both.",
   "evidence_rule": "Behavior-changing claims require two independent strategy sources or one credible strategy source plus repository confirmation. Pinned addon releases count as independent sources for timers.",
   "script_readiness_classification": "source_present_ready_for_diagnostic_shard",
-  "script_readiness_note": "Native script audited (boss_nefarians_end*.cpp, instance_blackwing_descent.cpp, spell_custom_attr, conditions, SpellMgr corrections). The Shadowblaze Spark floor was repaired this round; the remaining native deltas are fidelity_blocked on WCL, not engineering blockers. Live readiness also needs package T's transport-surface movement (boarding, pillar ascent, ledge drop).",
+  "script_readiness_note": "Native script audited (boss_nefarians_end*.cpp, instance_blackwing_descent.cpp, spell_custom_attr, conditions, SpellMgr corrections) and compared with three WCL 10N kills (2026-09-27). Repaired: Shadowblaze Spark floor; Shadowflame Barrage repeat 2.5 -> 3.2 s. Patch requested: breath 3 ticks (SpellMgr). Staged: Nefarian/Onyxia 10N DamageModifier. Remaining deltas (phase 1 Tail Lash, charge period, cones, bone-warrior lifetime, heroic) are fidelity_blocked, not engineering blockers.",
   "source_catalog": [
     {
       "id": "client_434_dbc_15595",
@@ -150,6 +150,30 @@
       ],
       "accessed": "2026-09-25",
       "scope_note": "Lifecycle, availability (spawn group 402 after the other five bosses) and respawn."
+    },
+    {
+      "id": "wcl_10n_MxFq7TRbvnjGY1hJ_35",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2024-10-28, 344.1 s)",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS, all Nefarian/Onyxia melee rows with U and 80 bone-warrior rows, Scarlet Fever and Empower windows, all enemy casts, 7 player cast timelines, breath ticks, Electrocute casts, Hit Points resource rows (max HP), hostile deaths. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
+    },
+    {
+      "id": "wcl_10n_cYg4C93QNdqKfPF1_18",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2025-01-31, 283.5 s)",
+      "url": "https://classic.warcraftlogs.com/reports/cYg4C93QNdqKfPF1?fight=18",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS, all Nefarian/Onyxia melee rows with U, Scarlet Fever and Curse of Weakness windows, 5 player cast timelines. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
+    },
+    {
+      "id": "wcl_10n_farY2cm8JMTB1jGh_10",
+      "title": "Warcraft Logs Cataclysm Classic, Nefarian's End 10-player Normal kill (2025-01-15, 250.6 s)",
+      "url": "https://classic.warcraftlogs.com/reports/farY2cm8JMTB1jGh?fight=10",
+      "accessed": "2026-09-27",
+      "authority": "rank 2 combat log",
+      "claim": "10N kill: summary DPS (Assassination Rogue, two Elemental Shamans), all Nefarian/Onyxia melee rows with U, Scarlet Fever windows, all enemy casts, 6 player cast timelines. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
     }
   ],
   "phase_graph": [
@@ -179,7 +203,7 @@
     {
       "id": "phase_2",
       "trigger": "Onyxia dies (only after Nefarian landed)",
-      "native": "Nefarian moves to the centre (2 s), lifts off with 81582 after 1 s, summons three Chromatic Prototypes (0.4 s) that jump onto the pillar tops, lowers the elevator (0.8 s, 13.333 s travel), Shadowflame Barrage every 2.5 s (2 s cast, 4 targets in 10N); prototypes cast Blast Nova 3.5 s after readying and every 13 s (4 s cast, then a 30 s room-wide 2 s tick). Fallback to phase 3 after 150 s.",
+      "native": "Nefarian moves to the centre (2 s), lifts off with 81582 after 1 s, summons three Chromatic Prototypes (0.4 s) that jump onto the pillar tops, lowers the elevator (0.8 s, 13.333 s travel), Shadowflame Barrage every 3.2 s (repaired from 2.5 s to the WCL 10N cadence; 2 s cast, 4 targets in 10N); prototypes cast Blast Nova 3.5 s after readying and every 13 s (4 s cast, then a 30 s room-wide 2 s tick). Fallback to phase 3 after 150 s.",
       "observable": "Onyxia corpse; Nefarian aura 81582; prototypes 41948; elevator z moving down"
     },
     {
@@ -334,11 +358,11 @@
     },
     "phase_2_ascent": "BotNefarianAscent.h and BotNefarianMagma.h, data nefarian_magma_v1.json: walk to the pillar foot (9.5 yd, slot heading) while the floor keeps still; the magma (world 2.7713) covers the ring 5.5 s after the platform starts down; at 1.2 yd depth Float (stop standing on the platform like a client that starts swimming), Swim to the station 6.7 yd from the pillar centre at the float depth, hold; at the lowered stop the top is 0.286 above the surface: Hop (the client jump, 7.95577 yd/s up, at most run speed, checked as the exact MoveSpline MoveJumpWithGravity runs: duration from the 3D segment, the ballistic air time rounded down) onto the rim just above the waterline, Board, walk up to the slot on the flat top (3.0 yd). About 8 s in the magma: 8 ticks = 47,000 fire before resistance (5000 + 250 k per tick). Float, Swim and Hop are package T stages requested in patch N1; without them the plan carries the typed blocker pillar_ascent_unsupported (W1 watchdog terminal). A late swimmer when the floor rises meets it and rides up 0.25 yd/s slower than it, boarding within a band about 2 s long.",
     "phase_3_descent": "Once the floor is back at the raised stop and before Nefarian lands (Shadow of Cowardice 79355 punishes passengers above local 9.5 every 2 s): walk to the rim (5.0 yd), StepOff past the wall, Fall 7-8 yd onto the skirt or ring (below the 14.57 yd fall-damage threshold), Land; package T's existing stages.",
-    "healerless_pillar": "Coordinator default pending the user's answer and the live run: the Elemental shaman off-heals pillar 2 with Healing Surge 8004 (in its action profile) on the lowest teammate it can reach (40 yd, line of sight) under 90%, after its Blast Nova interrupt; before the floor goes under the Disc priest shields everyone and the Holy paladin tops up anyone under 95%, pillar 2 first. Resource-limited model (tests/test_nefarian_phase_two_survival.py, nefarian_phase_two_survival_v1.json: finite mana, 1.5 s casts landing at completion and never across a swim or hop, the Barrage landing after its 2 s cast and a 1.73 s missile flight from Nefarian's phase 2 lift-off position, realised preparation, phase 2 lasting until the last prototype dies; interrupts not modelled): a pillar-2 death before phase 2 ends in 44% of trials (mean phase 52 s), 13% with 1.25x and 2% with 1.5x raid DPS. Alternatives: a pure burn pillar 2 (option A) 100%, a tank pillar 92%; option B (a healer reaching two pillars) is geometrically impossible (nearest pillar tops 62.5 yd apart, heals reach 40). This is not a native estimate: single-assumption changes move the default from about 4% to 75%. The live run decides pillar-2 viability.",
+    "healerless_pillar": "Coordinator default pending the user's answer and the live run: the Elemental shaman off-heals pillar 2 with Healing Surge 8004 (in its action profile) on the lowest teammate it can reach (40 yd, line of sight) under 90%, after its Blast Nova interrupt; before the floor goes under the Disc priest shields everyone and the Holy paladin tops up anyone under 95%, pillar 2 first. Resource-limited model (tests/test_nefarian_phase_two_survival.py, nefarian_phase_two_survival_v1.json: finite mana, 1.5 s casts landing at completion and never across a swim or hop, the Barrage every 3.2 s (WCL 10N cadence, native repaired from 2.5 s) landing after its 2 s cast and a 1.73 s missile flight from Nefarian's phase 2 lift-off position, realised preparation, phase 2 lasting until the last prototype dies; interrupts not modelled): a pillar-2 death before phase 2 ends in 9% of trials (mean phase 49 s), 2% with 1.25x and 0% (0.5%) with 1.5x raid DPS (44% before the Barrage cadence repair). Alternatives: a pure burn pillar 2 (option A) 100%, a tank pillar 68%; option B (a healer reaching two pillars) is geometrically impossible (nearest pillar tops 62.5 yd apart, heals reach 40). This is not a native estimate: single-assumption changes move the default from about 0% to 42%. The live run decides pillar-2 viability.",
     "phase_2_tank_pillar": {
       "self_care": "BotNefarianTankSelfCare.h under Barrage (pillar phases), after the pillar interrupt: Blood DK Death Strike 49998 on its prototype under 80%; Feral Survival Instincts 61336 under 30%; Frenzied Regeneration 22842 under 50% with the Glyph of Frenzied Regeneration (canonical: no rage conversion, so no Enrage), under 60% after Enrage 5229 without it (rage conversion; NativeFacts::UnglyphedFrenziedRegeneration from the bot's aura 54810). Spells the bot does not know are never named; M provisions Enrage, Frenzied Regeneration and Divine Shield for both paladins.",
       "cross_pillar_help": "BotNefarianCrossing.h: the first healer pillar to kill its prototype (the observer's kill order persists it; a dead healer releases it) sends its healer and one damage dealer - one with a magma defensive it actually has ready if any, else the first by slot (the healer heals the pair) - while the platform rests lowered and the tank pillar's prototype keeps >=25%, each at >=80% health. At the rim a ready defensive (Divine Shield 642, Pain Suppression 33206) is cast first, with no movement proposed that decision so it owns the cast lanes; the step waits until it is up with >=6 s left (Forbearance, cooldown and the window are rechecked there). The step into the lava uses the ledge-drop contract's liquid variant (TransportSurfaceMove::LandInLiquid, patch R8_ledge_drop_into_liquid.patch; the dry-ground contract still refuses liquid), then fall, land on the sunken ring, float, swim, hop onto a spare slot of the tank pillar. Until the executor carries LandInLiquid nobody crosses.",
-      "survival_model": "nefarian_phase_two_survival_v1.json user_tank_pillar_* (the literal layout: the tanks alone on the tank pillar; not a native estimate, recorded without deviating on it): a tank-pillar death before phase 2 ends in 0% of trials (mean phase 76 s), a helper death 0.2%, and a death on the pillar the healer left 50%; without the help 27% (110 s); with the Elemental off-healer on the tank pillar 16%, with it and the warlock 75%.",
+      "survival_model": "nefarian_phase_two_survival_v1.json user_tank_pillar_* (the literal layout: the tanks alone on the tank pillar; not a native estimate, recorded without deviating on it): a tank-pillar death before phase 2 ends in 0% of trials (mean phase 76 s), a helper death 0%, and a death on the pillar the healer left 18%; without the help 3% (106 s); with the Elemental off-healer on the tank pillar 3%, with it and the warlock 22% (regenerated with the 3.2 s WCL Barrage cadence; the 2.5 s values were 50%, 27%, 16% and 75%).",
       "frenzied_regeneration_glyph": "The canonical Feral carries Glyph of Frenzied Regeneration (item 40896, spell 54810): Frenzied Regeneration then converts no rage into health but raises healing received by 30%; the self-care handles both (glyph observed on the bot). M owns glyphs."
     }
   },
@@ -419,9 +443,7 @@
     }
   },
   "unresolved": [
-    "wcl_10n_kill_references_and_timelines_pending",
     "creature_melee_damage_modifier_uncalibrated",
-    "health_guide_vs_native_conflict",
     "dragon_tail_lash_breath_cadence_and_cone_geometry",
     "onyxia_charge_rate_and_electrocute_increment",
     "blast_nova_and_barrage_cadence",

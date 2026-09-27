@@ -185,6 +185,120 @@ def test_missing_native_scripts_are_run_blocking_work():
     assert script['blocks'] == 'run' and script['owner_skill'] == 'raid-encounter-implementation'
 
 
+def _set_research(repo: Path, name: str, **fields) -> None:
+    path = repo / 'experiments/configs/cata_raid_encounters/blackwing_descent' / name
+    document = json.loads(path.read_text())
+    for key, value in fields.items():
+        if value is None:
+            document.pop(key, None)
+        else:
+            document[key] = value
+    path.write_text(json.dumps(document))
+
+
+HEROIC_ONLY = [{'key': 'heroic_only_claim', 'modes': ['10H', '25H']}]
+ACCEPTED_10N = {'10N': 'accepted', '10H': 'fidelity_blocked', '25N': 'fidelity_blocked', '25H': 'fidelity_blocked'}
+
+
+def _mode_research(repo: Path, mode: str = '10N') -> tuple[str, str | None]:
+    unit = next(unit for unit in discover_program(repo, 'blackwing_descent', mode)['units'] if unit['boss_key'] == 'magmaw')
+    gate = next((i for i in unit['missing_inputs'] if i['input'] == 'encounter_research'), None)
+    return unit['research']['fidelity_state'], gate['detail'] if gate else None
+
+
+def test_mode_scoped_research_state_cannot_bypass_unresolved_claims(tmp_path):
+    # Coordinator decision: fidelity_state_by_mode[mode] outranks the contract-level state only when
+    # neither the contract nor its ledger lists an unresolved material claim covering that mode.
+    repo = real_copy(tmp_path)
+    contract, ledger = 'magmaw_v1.json', 'magmaw_ledger_v1.json'
+    # The bypass: the contract says 10N accepted while its own unresolved claims carry no mode scope.
+    _set_research(repo, contract, fidelity_state='fidelity_blocked', fidelity_state_by_mode=ACCEPTED_10N)
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'has no mode scope' in detail
+    # A claim scoped to 10N blocks 10N.
+    _set_research(repo, contract, unresolved=[{'key': 'barrier', 'modes': ['10N', '25N']}], unresolved_material_count=1)
+    _set_research(repo, ledger, fidelity_state_by_mode=ACCEPTED_10N, unresolved=HEROIC_ONLY, unresolved_material_count=1)
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'contract unresolved claim barrier covers 10N' in detail
+    # A bare-string claim covers every mode.
+    _set_research(repo, contract, unresolved=['barrier'])
+    assert 'claim barrier has no mode scope' in _mode_research(repo)[1]
+    # The ledger must agree: a 10N claim there blocks even when the contract is clean.
+    _set_research(repo, contract, unresolved=HEROIC_ONLY)
+    _set_research(repo, ledger, unresolved=[{'key': 'static_shock', 'modes': ['10N']}])
+    assert 'ledger unresolved claim static_shock covers 10N' in _mode_research(repo)[1]
+    # So must its per-mode state and its count.
+    _set_research(repo, ledger, unresolved=HEROIC_ONLY, fidelity_state_by_mode=None)
+    assert 'ledger fidelity_state_by_mode[10N] is not accepted' in _mode_research(repo)[1]
+    _set_research(repo, ledger, fidelity_state_by_mode=ACCEPTED_10N, unresolved_material_count=2)
+    assert 'does not reconcile' in _mode_research(repo)[1]
+
+
+def test_mode_scoped_research_state_accepts_a_fully_resolved_mode(tmp_path):
+    repo = real_copy(tmp_path)
+    for name in ('magmaw_v1.json', 'magmaw_ledger_v1.json'):
+        _set_research(repo, name, fidelity_state='fidelity_blocked', fidelity_state_by_mode=ACCEPTED_10N,
+                      unresolved=HEROIC_ONLY, unresolved_material_count=1)
+    assert _mode_research(repo) == ('accepted', None)
+    # Other modes keep the contract-level state: the heroic claim and their own by-mode state block them.
+    for mode in ('10H', '25N'):
+        state, detail = _mode_research(repo, mode)
+        assert state == 'fidelity_blocked' and detail
+    # Without a per-mode state the contract-level state decides, as before.
+    _set_research(repo, 'magmaw_v1.json', fidelity_state_by_mode=None)
+    assert _mode_research(repo)[0] == 'fidelity_blocked'
+
+
+def test_a_refused_mode_override_never_falls_back_to_a_global_accepted(tmp_path):
+    # Re-review repro 1: global accepted must not win over an explicit 10N fidelity_blocked.
+    repo = real_copy(tmp_path)
+    contract, ledger = 'magmaw_v1.json', 'magmaw_ledger_v1.json'
+    for name in (contract, ledger):
+        _set_research(repo, name, fidelity_state='accepted', unresolved=HEROIC_ONLY, unresolved_material_count=1,
+                      fidelity_state_by_mode={**ACCEPTED_10N, '10N': 'fidelity_blocked'})
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'fidelity_state_by_mode[10N] is not accepted' in detail
+    # Re-review repro 2: global accepted must not win over an unresolved 10N claim.
+    for name in (contract, ledger):
+        _set_research(repo, name, fidelity_state_by_mode=ACCEPTED_10N)
+    _set_research(repo, contract, unresolved=[{'key': 'barrier', 'modes': ['10N']}])
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'contract unresolved claim barrier covers 10N' in detail
+    # A malformed override blocks every mode rather than falling back.
+    _set_research(repo, contract, fidelity_state_by_mode=['10N', 'accepted'])
+    assert _mode_research(repo)[0] == 'fidelity_blocked'
+    # A present null is an authoritative refusal too, not an absent field.
+    path = repo / 'experiments/configs/cata_raid_encounters/blackwing_descent' / contract
+    document = json.loads(path.read_text())
+    document['fidelity_state_by_mode'] = None
+    path.write_text(json.dumps(document))
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'not a mode-to-state object' in detail
+    # Only a missing override (or one that does not name the mode) falls back to the global state.
+    _set_research(repo, contract, fidelity_state_by_mode=None)
+    assert _mode_research(repo) == ('accepted', None)
+    _set_research(repo, contract, fidelity_state_by_mode={'25H': 'fidelity_blocked'})
+    assert _mode_research(repo) == ('accepted', None)
+
+
+@pytest.mark.parametrize('modes', [['10n'], [None], ['10N ', '25H'], ['ten_normal'], [10], [{'mode': '10N'}], [['10N']],
+                                   ['25H', {'mode': '10N'}]])
+def test_non_canonical_claim_modes_block_every_mode(tmp_path, modes):
+    repo = real_copy(tmp_path)
+    for name in ('magmaw_v1.json', 'magmaw_ledger_v1.json'):
+        _set_research(repo, name, fidelity_state='fidelity_blocked', fidelity_state_by_mode=ACCEPTED_10N,
+                      unresolved=HEROIC_ONLY, unresolved_material_count=1)
+    _set_research(repo, 'magmaw_ledger_v1.json', unresolved=[{'key': 'hidden_10n_claim', 'modes': modes}])
+    state, detail = _mode_research(repo)
+    assert state == 'fidelity_blocked' and 'hidden_10n_claim has non-canonical modes' in detail
+
+
+def test_real_bwd_contracts_do_not_claim_an_accepted_10n_mode():
+    # Omnotron 10N keeps Barrier absorb, Static Shock centre and Power Conversion open.
+    for unit in discover_program(REAL, 'blackwing_descent', '10N')['units']:
+        assert unit['research']['fidelity_state'] != 'accepted', unit['boss_key']
+
+
 def _full_raid(repo: Path, **overrides) -> dict:
     """Force a full_raid cohort (row and profile included) into the copied data; returns the entry."""
     composition_path = repo / 'experiments/configs/raid_compositions/blackwing_descent_10n.json'

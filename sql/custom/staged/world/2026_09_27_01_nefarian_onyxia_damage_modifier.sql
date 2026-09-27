@@ -1,0 +1,39 @@
+-- Onyxia 10N in Nefarian's End (creature_template 41270): restore melee damage
+-- with DamageModifier 10.34375.
+--
+-- Staged, not active: move this file to sql/custom/world/ (or apply it with
+-- mysql ... world < file) right before the measurement batch that should use it.
+--
+-- Why the value is 1 today: upstream sql/updates/world/4.3.4/2025_06_18_06_world.sql
+-- (commit 68a3622133) set DamageModifier = 1 for every creature.
+--
+-- Native roll: same class (1), level 88 and BaseAttackTime 1.5 s as Nefarian:
+-- 4,553.3-6,764.2 per swing at DamageModifier 1, before the native +1%
+-- auto-attack bonus.
+--
+-- Matched stage: WCL U = melee_resolution.after_attacker_bonus_amount.
+-- Samples (nefarian_wcl_melee_samples_v1.json), three 10N kills (MxFq7TRbvnjGY1hJ
+-- fight 35, cYg4C93QNdqKfPF1 fight 18, farY2cm8JMTB1jGh fight 10): 37 landed rows
+-- with U (35 under Scarlet Fever 81130, 2 unreduced), U 42,883-65,353, mean 54,464;
+-- 27 avoided.
+-- Bounds on the effective multiplier (DamageModifier x 1.01):
+--   lower = largest reduced U 62,791 / (0.9 x 6,764.2)   = 10.314 (binding)
+--           largest unreduced U 65,353 / 6,764.2         =  9.662
+--   upper = smallest reduced U 42,883 / (0.9 x 4,553.3)  = 10.465 (binding)
+--   DamageModifier range after the +1%: 10.212-10.361. Chosen 10.34375
+--   (effective 10.4472; exactly representable in the FLOAT column), in the upper
+--   part of the range because the sample mean implies an effective 10.63.
+-- Caveat: the binding upper bound comes from fully absorbed rows whose U is a WCL
+-- estimate; two of them in different kills both read 42,883. Rows with a displayed
+-- amount alone give 10.314-11.144. Rows with no amount skew low and rows with an
+-- amount skew high, so the mean lies above the extreme-value range. Confirm on a
+-- live kill that encounter_fidelity.boss_melee is within +-10% of WCL.
+--
+-- Scope: only 10N entry 41270. Difficulty templates 51116-51118 keep 1.
+-- Idempotent.
+
+UPDATE `creature_template` SET `DamageModifier` = 10.34375 WHERE `entry` = 41270;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41270 AND `DamageModifier` = 10.34375;
+-- END REVERSE MIGRATION

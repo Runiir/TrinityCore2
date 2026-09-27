@@ -2,49 +2,259 @@
   "schema": "chimaeron_wcl_dps_reference_v1",
   "encounter": "chimaeron",
   "mode": "10N",
-  "extraction_status": "blocked_wcl_human_verification",
+  "extraction_status": "extracted",
   "extraction_attempt": {
-    "date": "2026-09-25",
-    "observation": "classic.warcraftlogs.com redirected every shared preview tab to /human-challenge ('One Quick Check ... I am a human and not a bot'); WebFetch returned HTTP 403. No agent attestation was made; the coordinator asked the user to pass the check once."
+    "date": "2026-09-27",
+    "observation": "Read through codex exec -m gpt-6-astra with CUA_REPL_ENABLED_SURFACES=browser (Astra's browser surface in the user's browser session). No verification page appeared and none was clicked. Plain HTTP/headless requests on the same day still returned Cloudflare 'Just a moment...' (403). The 2026-09-25 attempt was blocked by the human-verification gate.",
+    "report_search": {
+      "MxFq7TRbvnjGY1hJ": "fight 27 Chimaeron 10N kill",
+      "Y8ajQ7dbmKMG1RZy": "no Chimaeron encounter",
+      "xAhkN2y9YP3KRmnJ": "fight 14 Chimaeron 10N kill"
+    }
   },
-  "references": [],
+  "references": [
+    {
+      "id": "MxFq7TRbvnjGY1hJ-fight27",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27&type=summary",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "duration_sec": 95.3,
+      "raid_dps": 217144.7,
+      "average_item_level": 359.5,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "balance_druid": 19930.5,
+        "blood_death_knight": 20526.6,
+        "combat_rogue": 27621.1,
+        "elemental_shaman": 25970.3,
+        "retribution_paladin": 25345,
+        "shadow_priest": 21687.6,
+        "survival_hunter": 27829.75,
+        "unholy_death_knight": 19258.7
+      },
+      "roster": [
+        {
+          "name": "Wongelrainer",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "item_level": 365,
+          "dps": 20526.6
+        },
+        {
+          "name": "Greysnout",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "item_level": 355,
+          "dps": 19258.7
+        },
+        {
+          "name": "Koakuma",
+          "spec": "balance_druid",
+          "role": "dps",
+          "item_level": 362,
+          "dps": 19930.5
+        },
+        {
+          "name": "Jägamara",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "item_level": 357,
+          "dps": 26557.1
+        },
+        {
+          "name": "Lachina",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "item_level": 363,
+          "dps": 29102.4
+        },
+        {
+          "name": "Janderak",
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "item_level": 357,
+          "dps": 25345
+        },
+        {
+          "name": "Adara",
+          "spec": "shadow_priest",
+          "role": "dps",
+          "item_level": 360,
+          "dps": 21687.6
+        },
+        {
+          "name": "Avéran",
+          "spec": "combat_rogue",
+          "role": "dps",
+          "item_level": 357,
+          "dps": 27621.1
+        },
+        {
+          "name": "Sélán",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "item_level": 362,
+          "dps": 25970.3
+        },
+        {
+          "name": "Nevox",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "item_level": 357,
+          "dps": 864.5
+        }
+      ],
+      "deaths": [
+        {
+          "player": "Wongelrainer",
+          "time_sec": 93,
+          "killing_ability": "Melee"
+        }
+      ],
+      "limitations": [
+        "One tank (Blood DK, no taunt swap; died to a Mortality melee 2 s before the kill) and one healer; the canonical roster has two tanks and three healers.",
+        "Average item level 359.5, well below the Magmaw matched reference (395.3).",
+        "Two Massacres, no Systems Failure/Feud; Mortality at 78.1 s.",
+        "Displayed duration and DPS are rounded observations over All Enemies (Chimaeron is the only hostile).",
+        "Actor DPS per spec is the median of that spec's players in this kill (two Survival Hunters)."
+      ]
+    },
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight14",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14&type=summary",
+      "mode": "10N",
+      "date": "2025-06-11",
+      "duration_sec": 60.0,
+      "raid_dps": 345080.1,
+      "average_item_level": 401.4,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "short_fight_throughput_context",
+      "actor_dps": {
+        "affliction_warlock": 50668.1,
+        "arms_warrior": 51245.7,
+        "blood_death_knight": 31250.4,
+        "elemental_shaman": 40131.35,
+        "enhancement_shaman": 36474.1,
+        "survival_hunter": 46606.35
+      },
+      "roster": [
+        {
+          "name": "Catamara",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "item_level": 407,
+          "dps": 31250.4
+        },
+        {
+          "name": "Tristu",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "item_level": 403,
+          "dps": 47808.7
+        },
+        {
+          "name": "Vitarâ",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "item_level": 403,
+          "dps": 45404
+        },
+        {
+          "name": "Thorsmage",
+          "spec": "fire_mage",
+          "role": "dps",
+          "item_level": 400,
+          "dps": null
+        },
+        {
+          "name": "Catorì",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "item_level": 392,
+          "dps": 32792.5
+        },
+        {
+          "name": "Heutnich",
+          "spec": "enhancement_shaman",
+          "role": "dps",
+          "item_level": 396,
+          "dps": 36474.1
+        },
+        {
+          "name": "Schastnerak",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "item_level": 406,
+          "dps": 47470.2
+        },
+        {
+          "name": "Schlabunsen",
+          "spec": "affliction_warlock",
+          "role": "dps",
+          "item_level": 403,
+          "dps": 50668.1
+        },
+        {
+          "name": "Noho",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "item_level": 401,
+          "dps": 51245.7
+        },
+        {
+          "name": "Awì",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "item_level": 403,
+          "dps": 1966.4
+        }
+      ],
+      "deaths": [
+        {
+          "player": "Thorsmage",
+          "time_sec": 35,
+          "killing_ability": "Cauterize"
+        }
+      ],
+      "limitations": [
+        "Short 60 s kill with one Massacre; Mortality at 50.2 s.",
+        "One tank (Blood DK) and one Restoration Shaman healer; eight DPS.",
+        "Average item level 401.4 (above the fight 27 raid).",
+        "The Fire Mage died at 35 s (Cauterize) and has no Damage Done row: fire_mage keeps the WoWSims fallback.",
+        "Actor DPS per spec is the median of that spec's players in this kill (two Survival Hunters)."
+      ]
+    }
+  ],
+  "canonical_spec_coverage": {
+    "matched": [
+      "blood_death_knight",
+      "survival_hunter",
+      "retribution_paladin"
+    ],
+    "absent_or_no_row": {
+      "fire_mage": "present only in fight 14, died at 35 s without a Damage Done row",
+      "feral_druid_tank": "absent",
+      "assassination_rogue": "absent (fight 27 has Combat)",
+      "demonology_warlock": "absent (fight 14 has Affliction)"
+    }
+  },
   "planned_extraction": {
     "candidate_reports": [
       {
         "report": "MxFq7TRbvnjGY1hJ",
-        "why": "10N raid night of the calibrated Magmaw melee sample; open its Chimaeron kill"
+        "why": "10N raid night of the calibrated Magmaw melee sample; Chimaeron fight 27 extracted"
       },
       {
         "report": "Y8ajQ7dbmKMG1RZy",
-        "why": "10N raid night of the matched Magmaw DPS reference"
+        "why": "10N raid night of the matched Magmaw DPS reference; no Chimaeron encounter"
       },
       {
         "report": "xAhkN2y9YP3KRmnJ",
-        "why": "second Magmaw 10N reference night"
+        "why": "second Magmaw 10N reference night; Chimaeron fight 14 extracted"
       }
     ],
-    "fallback": "Chimaeron 10-player normal rankings; verify date and mode after opening the report",
-    "fields_per_reference": [
-      "id",
-      "url",
-      "mode",
-      "duration_sec",
-      "raid_dps",
-      "average_item_level",
-      "target_scope",
-      "reference_class",
-      "actor_dps (per canonical spec)",
-      "limitations"
-    ],
-    "canonical_specs_needed": [
-      "blood_death_knight",
-      "feral_druid_tank",
-      "survival_hunter",
-      "fire_mage",
-      "retribution_paladin",
-      "assassination_rogue",
-      "demonology_warlock"
-    ],
+    "fallback": "Chimaeron 10-player normal rankings, for a kill with Fire Mage, Assassination Rogue, Demonology Warlock or a Feral tank",
     "matching_rule": "Same mode (10N) and a kill that reaches Mortality; prefer rosters with two tanks and three healers. A spec absent from every matched kill keeps the WoWSims fallback (0.90) or no_reference."
   }
 }

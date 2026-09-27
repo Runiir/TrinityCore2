@@ -1,0 +1,55 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:magmaw",
+  "round": 1,
+  "changed_files": [
+    "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md"
+  ],
+  "new_files": [],
+  "resolved_inputs": [],
+  "open_items": [
+    "encounter_research stays open and the contract stays fidelity_blocked (8 unresolved material rows). Not every material 10N claim is resolved, so nothing was marked accepted. The gate policy remains the coordinator's call (see patch_requests).",
+    "Resolved for 10N from WCL (MxFq7TRbvnjGY1hJ f22, 2024-10-28, pre-4.4.2; Y8ajQ7dbmKMG1RZy f22, 2025-05-15, 4.4.2-era post-cutoff). parasite_count: 9 per Pillar, two Pillars per kill, matching the client/native derivation. Sweltering Armor apply anchor: applied at Mangle removal in both logs, which conflicts with native boarding application; that is the already-specified repair. Boss melee: the calibrated DamageModifier 16 is consistent with the 4.4.2-era log. In Y8aj a continuous -10% (Vindication/Scarlet Fever) covers Magmaw from 0:03.4 to the kill, and its 18 reduced samples U 109,914-153,626 bound the modifier to 15.14-16.09; combined with MxFq7 the bounds are 15.84-16.09. The modifier was not changed. New timing observations: Lava Spew is three 77690 casts 2 s apart per sequence; Massive Crash begins about 8.1 s after Mangle in both kills. Molten Tantrum: none observed.",
+    "wcl_hotfix_cutoff_compatibility moved from blocked to partial. The two logs straddle the cutoff and agree on every compared claim, which is claim-specific carryover evidence. Still required: audit the official 4.4.2 hotfix notes from 2025-02-20 to 2025-05-15 for any Magmaw/BWD entry (web research; Astra can do it).",
+    "Still open for 10N and not answerable from WCL: hook-expiry timing (both logs show no 77917/77941/77907/vehicle events in any view), exposure-start of the head (79010 has no apply row), the cause of Mangle removal, and retail credit/loot/achievements. Hooks need a client combat log with vehicle events or a native observation.",
+    "Browser-route history: attempt 1 (headless) hit the human check and was not clicked. Attempt 2 (CUA_REPL_ENABLED_SURFACES=browser) failed with 'Browser is not available: iab'. The MxFq7 capture then ran in its own new tab of the user's Chrome and closed it. The Y8aj main capture ran under the interim shared-existing-tab/flock instruction; its log does not show which tab the plugin drove. The Y8aj attacker-debuff follow-up used its own new tab per the final instructions. No CAPTCHA or login appeared.",
+    "The 10N scoreboard already passes: magmaw:tuning_07 verdict b5-d1898555.",
+    "28 Magmaw focused tests fail, the same set as before any of this packet's edits; see tests.",
+    "Not from this packet: tests/test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed now fails because omnotron_defense_system_v1.json (another packet's dirty edit) has unresolved_material_count 2 while the catalog row says 10. Magmaw counts are unchanged (8/8)."
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "tools/raid_program/raid_program_inputs.py",
+      "patch": "Policy decision required; this is the proposed exact change. The encounter_research gate (lines ~291-295) can never pass under the repository's fail-closed research invariant (all contracts fidelity_blocked, enforced by tests/test_cata_raid_research_contracts.py and cata_raid_acceptance_policy_v1 research_rule). Either (a) keep research reported but not acceptance-blocking for the scoreboard finish line, replacing\n    if fidelity_state != 'accepted':\n        inputs.append(missing('encounter_research', f'research contract fidelity_state={fidelity_state}; follow '\n                              'raid-encounter-research (WCL references, unresolved claims)', 'raid-encounter-research',\n                              BLOCKS_ACCEPTANCE, path=(strategy or {}).get('contract')))\nwith\n    if fidelity_state != 'accepted':\n        inputs.append(missing('encounter_research', f'research contract fidelity_state={fidelity_state}; follow '\n                              'raid-encounter-research (WCL references, unresolved claims)', 'raid-encounter-research',\n                              'fidelity', path=(strategy or {}).get('contract')))\n(and teach consumers that blocks='fidelity' is reported, not gating), or (b) keep it gating, and accept that no BWD unit can be accepted until the research invariant and tests are changed to allow a per-mode accepted state. Magmaw 10N research cannot honestly be marked accepted under either option today."
+    },
+    {
+      "to": "coordinator",
+      "file": "artifacts/cata_raid_program/magmaw_wcl_20260927 (new DVC-tracked archive)",
+      "patch": "Archive the raw WCL captures the ledger cites from ~/.cache/magmaw_wcl into a DVC-tracked tarball, e.g. `tar czf artifacts/cata_raid_program/magmaw_wcl_20260927.tar.gz -C ~/.cache/magmaw_wcl MxFq7TRbvnjGY1hJ-f22.json Y8ajQ7dbmKMG1RZy-f22.json Y8ajQ7dbmKMG1RZy-f22-evidence.json Y8ajQ7dbmKMG1RZy-f22-attacker-debuffs.json && dvc add artifacts/cata_raid_program/magmaw_wcl_20260927.tar.gz && dvc push`. Expected sha256: MxFq7TRbvnjGY1hJ-f22.json a971c77485a4670c2082373bf55c22d96f41bddc2b6d505b39a45e319b24c343; Y8ajQ7dbmKMG1RZy-f22.json f359bce89e12c51c118797617ec83448584d37c986ea1a8c1b1d27be1aeb3611; Y8ajQ7dbmKMG1RZy-f22-evidence.json 74d1c077ea1e8871a2e2f7c79a1f8d3c43a360aac7b6bd45682d4fb867f11703; Y8ajQ7dbmKMG1RZy-f22-attacker-debuffs.json 869a34700758db5e3b4dd9cdcb6a0f53a1e15579f06325c4e7f392d0fb3e9d7e. Then set the two source_catalog entries' capture.raw_location (ids wcl_MxFq7TRbvnjGY1hJ_22_20260927, wcl_Y8ajQ7dbmKMG1RZy_22_20260927) in magmaw_ledger_v1.json to that .dvc pointer and delete the local copies."
+    },
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+      "patch": "Optional evidence addition, no value change. Under creatures.41570.evidence add: \"target_era_check\": {\"wcl_report\": \"Y8ajQ7dbmKMG1RZy\", \"wcl_fight\": 22, \"wcl_mode\": \"10N\", \"wcl_date\": \"2025-05-15\", \"reduced_samples\": 18, \"u_min\": 109914, \"u_max\": 153626, \"attacker_reduction\": \"Vindication 26017 / Scarlet Fever 81130 continuous 0:03.375-1:51.287\", \"bounds\": {\"lower\": 15.14, \"upper\": 16.09}, \"combined_bounds\": {\"lower\": 15.84, \"upper\": 16.09}, \"verdict\": \"damage_modifier 16 consistent\"}"
+    }
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_cata_raid_research_contracts.py tests/test_encounter_research_view.py tests/test_magmaw_damage_modifier.py",
+      "result": "19 passed, 1 failed: test_all_catalog_triplets_reconcile_identity_and_fail_closed. Not relevant to Magmaw: another packet's dirty omnotron_defense_system_v1.json has unresolved_material_count 2 against catalog 10. The Magmaw triplet reconciles (8/8). This test passed earlier in this round, before that external edit."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_magmaw_*.py",
+      "result": "28 failed, 375 passed; the same 28 failures seen before any edit in this packet. None read the ledger/contract/dossier, so they are not relevant to this change but do matter for Magmaw test hygiene. test_magmaw_transfer_prestart_bundle.py (13): magmaw_transfer_ledger_manifest_mismatch. test_magmaw_transfer_checkpoint_capture.py (9): CaptureSetup requires runtime_asset_closure, plus the import-graph bound. test_magmaw_personal_escape_live_admission.py (3): KeyError in retained receipts. test_magmaw_scoped_chain_lightning.py (1): 4 contracts instead of 2 after af4e7d9f4b. test_magmaw_tank_swap_contract.py (1): KeyError main_tank_roster_slot. test_magmaw_movement_intent_collection.py (1): kernel fixture SIGABRT."
+    }
+  ],
+  "risks": [
+    "The 4.4.2-era evidence is after the 2025-02-20 cutoff; until the hotfix notes for that window are audited, carryover rests on agreement across two logs.",
+    "The Sweltering Armor anchor now has target-era support and conflicts with the native script. Repairing it changes live tank-swap behavior and would need a new scoreboard batch; it must not be folded into the accepted b5-d1898555 label.",
+    "Raw captures live only in ~/.cache/magmaw_wcl until the coordinator archives them to DVC."
+  ],
+  "validation_neutrality": "Research-document change only: ledger observations and sources, the contract's unresolved detail text (count unchanged at 8, fidelity_blocked), and the dossier. No SQL, C++, strategy, raid target, fidelity registry, DamageModifier or roster changed, so Stonecore, calibration, legacy Magmaw and the accepted magmaw:tuning_07 verdict b5-d1898555 stay reproducible."
+}

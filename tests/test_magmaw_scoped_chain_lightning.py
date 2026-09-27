@@ -23,7 +23,9 @@ def _magmaw_contracts() -> list[dict[str, object]]:
 
 def test_magmaw_scoped_area_exception_is_narrow_and_quarantined() -> None:
     contracts = _magmaw_contracts()
-    assert len(contracts) == 2
+    # The legacy full route, the accepted shard, its canonical c0 copy and the
+    # shard-mirrored end-to-end cohort (af4e7d9f4b) all carry the same scope.
+    assert len(contracts) == 4
     for contract in contracts:
         assert contract["allow_area_damage"] is False
         assert contract["area_damage_spell_allowlist"] == [421, 48505, 55050]

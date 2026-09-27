@@ -16,9 +16,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.raid_program.scoreboard_core import dps_enemy_scope, native_excluded_entries
 from tools.raid_program.scoreboard_core import (
-    VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, default_label, exclusion_reason,
-    fallback_index_path, file_sha256, healer_roles, label_kills, load_records, load_target, mean_sd,
+    VERDICT_SCHEMA, actor_identity, actor_rows, default_label, exclusion_reason,
+    dps_gate_exempt_specs, is_dps_gate_exempt, fallback_index_path, file_sha256, healer_roles, label_kills, load_records, load_target, mean_sd,
     party_reference_dps, reference_targets, roster, target_for_records, target_path,
 )
 
@@ -33,7 +34,7 @@ REASON_ORDER = (
     "no_kills", "non_clear_kill", "missing_encounter_data", "boss_window_deaths_unknown", "boss_window_deaths",
     "mixed_binaries", "mixed_commits", "roster_incomplete", "insufficient_kills", "below_target",
     "encounter_failed", "no_reference", "voided", "interrupted", "infrastructure_failure", "no_evidence",
-    "postprocess_error", "no_measurement_validity", "stalled_boss_window", "play_mode_run",
+    "postprocess_error", "no_measurement_validity", "stalled_boss_window", "play_mode_run", "enemy_scope_mismatch",
 )
 
 
@@ -132,8 +133,27 @@ def _encounter_verdict(target, kills, clears, party_wcl, reasons: _Reasons) -> d
     }
 
 
-def _kill_detail(record: dict[str, Any]) -> dict[str, Any]:
-    reason = exclusion_reason(record)
+def _scope_mismatch(record: dict[str, Any], excluded: list[int]) -> bool:
+    """True when a target scopes native DPS and the record lacks its exact dps_enemy_scope marker."""
+    if not excluded:
+        return False
+    expected = dps_enemy_scope(excluded)
+    encounter = record.get("encounter")
+    parts = ([encounter] if isinstance(encounter, dict) else []) + list(record.get("actors") or [])
+    return not parts or any(part.get("dps_enemy_scope") != expected for part in parts)
+
+
+def _eligibility(record: dict[str, Any], excluded: list[int]) -> str | None:
+    """The single counting decision for aggregation and kills_detail (None = counted).
+
+    Existing exclusions take precedence; an otherwise-eligible record whose DPS is not scoped to the
+    target's enemy set is enemy_scope_mismatch.
+    """
+    return exclusion_reason(record) or ("enemy_scope_mismatch" if _scope_mismatch(record, excluded) else None)
+
+
+def _kill_detail(record: dict[str, Any], excluded: list[int]) -> dict[str, Any]:
+    reason = _eligibility(record, excluded)
     return {key: record.get(key) for key in (
         "kill_id", "recorded_at", "worldserver_sha256", "source_commit", "evidence_dvc_pointer", "native_clear")
     } | {"counted": reason is None, "exclusion_reason": reason}
@@ -153,13 +173,23 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         print(f"verdict label: {label} ({source})", file=sys.stderr)
     all_kills = label_kills(records, label)
     target = target_for_records(root, target, all_kills)
-    kills = counted_kills(all_kills)
-    clears = clear_kills(all_kills)
+    reasons = _Reasons()
+    # A target whose references leave enemies out (Nefarian's bone warriors) only accepts records whose
+    # native DPS was scoped the same way. One eligibility decision feeds the means and kills_detail;
+    # existing exclusions (voided, no evidence, ...) take precedence over the scope check.
+    excluded_entries = native_excluded_entries(target)
+    eligibility = {id(record): _eligibility(record, excluded_entries) for record in all_kills}
+    unscoped = [_kill_name(record) for record in all_kills if eligibility[id(record)] == "enemy_scope_mismatch"]
+    for kill_id in unscoped:
+        reasons.add("enemy_scope_mismatch", f"kill {kill_id} is not scoped to the target's enemy set "
+                    f"(excluding entries {excluded_entries}); it is not counted")
+    kills = [record for record in all_kills if eligibility[id(record)] is None]
+    clears = [record for record in kills if record.get("native_clear") and record.get("encounter")]
     required = int(target["kills_per_measurement"])
     minimum = float(target["actor_dps_ratio"])
     references = reference_targets(root, target)
     healers = healer_roles(target)
-    reasons = _Reasons()
+    exempt = dps_gate_exempt_specs(target)
     encounter = _encounter_verdict(target, kills, clears, party_reference_dps(root, target), reasons)
     missing = encounter.pop("_missing")
 
@@ -179,6 +209,11 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         ratio = mean / target_dps if target_dps and mean is not None else None
         reason = None
         if role in healers:
+            status = encounter["status"]
+            reason = "encounter_failed" if status == "fail" else None
+        elif is_dps_gate_exempt(exempt, spec, role):
+            # DPS recorded for information only (target dps_gate_exempt_specs): never gated, and a
+            # missing reference is not a failure. Like a healer, the status follows the encounter.
             status = encounter["status"]
             reason = "encounter_failed" if status == "fail" else None
         elif target_dps is None:
@@ -203,21 +238,24 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
             "required_ratio": required_ratio,
             "required_dps": _round(target_dps * required_ratio) if target_dps else None,
             "ratio": _round(ratio, 3), "status": status, "reason": reason,
+            **({"dps_gate": "informational"} if is_dps_gate_exempt(exempt, spec, role) and role not in healers else {}),
         }
 
-    non_healers = [actor for actor in actors.values() if actor["role"] not in healers]
-    if encounter["status"] == "fail" or any(actor["status"] in ("fail", "no_reference") for actor in non_healers):
+    non_healers = [actor for actor in actors.values()
+                   if actor["role"] not in healers and not is_dps_gate_exempt(exempt, actor["spec"], actor["role"])]
+    if unscoped or encounter["status"] == "fail" or any(
+            actor["status"] in ("fail", "no_reference") for actor in non_healers):
         status = "fail"
     elif encounter["status"] == "insufficient_kills" or not kills:
         status = "insufficient_kills"
     else:
         status = "pass"
-    details = [_kill_detail(record) for record in all_kills]
+    details = [_kill_detail(record, excluded_entries) for record in all_kills]
     if status != "pass":
         if not all_kills:
             reasons.add("no_kills", f"no kills recorded for label {label!r}" if label else "no kills recorded")
         for detail in details:
-            if detail["exclusion_reason"]:
+            if detail["exclusion_reason"] and detail["exclusion_reason"] != "enemy_scope_mismatch":  # added above
                 reasons.add(detail["exclusion_reason"],
                             f"kill {detail['kill_id']} not counted: {detail['exclusion_reason']}")
     binaries = {record.get("worldserver_sha256") for record in kills}

@@ -421,9 +421,11 @@ void SpellMgrCorrections::ApplyPart04()
         spellInfo->AttributesEx2 |= SPELL_ATTR2_NO_INITIAL_THREAT;
     });
 
-    // Shadowflame Breath
+    // Shadowflame Breath: 10N 77826 keeps the client 0.5 s period (3 ticks of
+    // 35,000), as three WCL 10N kills show (MxFq7TRbvnjGY1hJ fight 35: 9 of 11
+    // breaths with 3 ticks, 2 resisted). The other difficulties keep one tick
+    // until same-mode evidence exists.
     ApplySpellFix({
-        77826,
         94124,
         94125,
         94126,

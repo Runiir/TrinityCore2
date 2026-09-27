@@ -4,9 +4,49 @@ Scope: Cataclysm Classic 4.4.2 behavior (client build 4.4.2.59185, hotfix
 cutoff 2025-02-20 23:00 UTC) for 10N, 10H, 25N and 25H, with the 10N bot
 strategy for the canonical composition. State: `fidelity_blocked`. Client data,
 the native script and the database were audited on 2026-09-25 (repository
-revision `a570b44369`). Warcraft Logs (WCL) values are still unresolved: the
-report pages showed a human-verification interstitial that an agent may not
-pass. Nothing here is a live-validation result.
+revision `a570b44369`). The report pages showed a human-verification interstitial that an agent could not
+pass on 2026-09-25. On 2026-09-27 the Warcraft Logs (WCL) 10N kill MxFq7TRbvnjGY1hJ fight 32 was read. It was
+opened through the user's running Chrome, after the headless and scratch-profile routes looped on
+Cloudflare. That read resolved the boss melee DamageModifier (10.35, staged), the 10N max health
+(26,111,168, equal to native), the WCL DPS references and the Modulation repeat (16 s).
+Nothing here is a live-validation result.
+
+## WCL 10N kill (MxFq7TRbvnjGY1hJ fight 32, 2024-10-28, read 2026-09-27)
+
+- 165.6 s kill, item level 359.9, raid DPS 157,669, no deaths. Two Blood DK
+  tanks (Greysnout took every swing), one Restoration Druid and one Holy Paladin,
+  two Survival Hunters, Retribution, Shadow, Combat and Elemental.
+- **Melee and DamageModifier.** 22 landed swings, U 45,877–68,939, every 1.8 s
+  (1.5 s base slowed by Frost Fever). Scarlet Fever covered 6.9–112.1 s and
+  129.1–162.1 s. The registry bounds method gives 10.32–10.47, or
+  10.22–10.36 after the native +1% auto-attack bonus, so 10.32–10.36 for both.
+  The staged value is 10.35
+  (`sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql`,
+  `atramedes_damage_calibration_registry_patch_v1.json`,
+  `tests/test_atramedes_damage_modifier.py`). The 25N, 10H and 25H templates stay open.
+- **Health.** `tools.raid_program.derive_encounter_health` on six consecutive
+  resource rows gives 26,111,168. This equals native (85,892 x 304). Wowhead's 32.6M is not the
+  4.4.2 10N value.
+- **Timeline.**
+  - Two pull gongs (Vertigo 11.8–21.8 s) held the queued first Modulation and Sonar Pulse, which both
+    fired at 22.45 s. The native 13 s and 14.5 s first timers are consistent with that.
+  - Sonic Breath came at 24.1 s, then 43.7 s later, and again about 21.5 s after landing.
+  - Searing Flame came at 45.1 s and was gonged at 45.6 s.
+  - Modulation repeated after 16.2 s and 16.8 s when nothing blocked it. The native repeat changed
+    from 22–26 s to 16 s in `boss_atramedes.cpp`, which agrees with BigWigs.
+  - Sonar Pulse repeated after 11.3 s once, then after 14.6–17.1 s. Native 11 s is kept until a
+    second kill confirms the longer gaps.
+  - Ground melee stopped at 89.8 s and resumed at 129.1 s. The air phase lasted about 38–39 s
+    including travel.
+  - Devastation hit one player, twice.
+- **DPS references.**
+  - Matched: fight 32. Blood DK 13,254 (the active tank), Survival Hunter 25,513
+    (median of two), Retribution 19,930 and Elemental 24,949.
+  - Balance, Fire, Assassination and Demonology keep the WoWSims fallback.
+  - xAhkN2y9YP3KRmnJ fight 17 (48.5 s, item level 401.4) ends before the first
+    liftoff. It is throughput context only.
+- Captures: `atramedes_wcl_dps_reference_v1.json`, `atramedes_wcl_cast_timelines_v1.json`
+  (8 actors, 935 casts, boss events) and the ledger `wcl_10N_samples`.
 
 Machine-readable sources: the contract `atramedes_v1.json` and the ledger
 `atramedes_ledger_v1.json` (client values, native audit, completion rows,
@@ -72,7 +112,7 @@ Fire (heroic 29,250–30,750).
   - The server's `SpellMgrCorrectionsPart04.cpp` sets 10 for all four
     variants, so the running server caps at 10.
 - **Phases (native).**
-  - Ground: Modulation 13 s, then every 22–26 s. Sonar Pulse 14.5 s, then every
+  - Ground: Modulation 13 s, then every 16 s (22–26 s before 2026-09-27). Sonar Pulse 14.5 s, then every
     11 s. Sonic Breath 24 s, then every 42–43 s. Searing Flame 46 s (once).
     Liftoff 91 s.
   - Air: the land event comes 31 s after he reaches the liftoff point.
@@ -80,8 +120,8 @@ Fire (heroic 29,250–30,750).
     Searing Flame 51 s, liftoff 93 s.
 - **Addon bars (BigWigs Classic).** Modulation 11 s, then every 16 s. Sonar
   11.3 s. Breath 22 s, then every 42 s. Searing 45 s. Air 36 s from take-off,
-  then 85 s of ground. The difference is recorded as a conflict. Native timers
-  change only with WCL evidence.
+  then 85 s of ground. The WCL 10N kill confirmed the 16 s Modulation, and the
+  native timer was changed. The other native timers agree with that kill.
 
 ## Native audit (fixed 2026-09-25)
 
@@ -587,12 +627,13 @@ whether the native flame speed is too high.
 
 ## Unresolved (fidelity_blocked)
 
-`wcl_10n_kill_reference_pending`, `boss_melee_damage_modifier_10n` (native
-roll at modifier 1: 4,553–6,764 per 1.5 s swing), `boss_health_10n`
-(native 26,111,168 vs Wowhead 32.6M), `ground_air_phase_timestamps`,
-`modulation_repeat_interval`, `breath_initial_target_rule`,
-`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3),
-`breath_speed_scaling_with_sound` (which includes shields per air phase against the native flame speed), `heroic_fiend_and_shield_destruction_cadence`.
+`ground_air_phase_timestamps` (WCL: about 90 s liftoff, 129 s landing; native
+travel time unmeasured), `breath_initial_target_rule`,
+`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3; the WCL kill took no Sonar
+Bomb damage), `breath_speed_scaling_with_sound` (which includes shields per air
+phase against the native flame speed), `heroic_fiend_and_shield_destruction_cadence`.
+Resolved on 2026-09-27 from WCL: `wcl_10n_kill_reference_pending`,
+`boss_melee_damage_modifier_10n`, `boss_health_10n`, `modulation_repeat_interval`.
 
 ## Sources
 
@@ -614,3 +655,7 @@ roll at modifier 1: 4,553–6,764 per 1.5 s swing), `boss_health_10n`
 6. Repository: `boss_atramedes*.{cpp,h}`, `instance_blackwing_descent.cpp`,
    `blackwing_descent.cpp`, `SpellMgrCorrectionsPart04.cpp`, the 4.3.4 DBC in `data/dbc/enUS`,
    and the TDB 434.22011 dump (templates, conditions, spellclicks, spawn groups 400/435/436).
+7. Warcraft Logs, Cataclysm Classic report MxFq7TRbvnjGY1hJ fight 32 (Atramedes 10N kill,
+   2024-10-28): <https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32>, and
+   xAhkN2y9YP3KRmnJ fight 17 (10N kill, 2025-06-11): <https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17>.
+   Read 2026-09-27. Used for melee U, health, boss timeline, Devastation target, DPS and cast timelines.

@@ -566,22 +566,31 @@ struct boss_maloriak : public BossAI
                     DoCastSelf(SPELL_UNSTABLE_MIX);
                     me->ClearUnitState(UNIT_STATE_ROOT);
                     me->SetReactState(REACT_AGGRESSIVE);
+                    // Phase-two cadence from 10N WCL kills (ledger
+                    // wcl_10N_boss_timeline_*): after Unstable Mix, Magma Jets
+                    // begin 3.5 s / 4.6 s, Acid Nova 6.5 s / 8.1 s, Absolute
+                    // Zero 11.3 s in both kills. Repeats: Magma Jets
+                    // begin-to-begin 12.4, 11.4, 11.8 s; Acid Nova 30.7 s;
+                    // Absolute Zero 11.3, 11.3 s (VL3fW9wNm2PRJDYt fight 13).
+                    // The evidence is 10N only: 25N/10H/25H keep the previous
+                    // 8.4 s first Absolute Zero and 6/20/7 s repeats.
                     events.ScheduleEvent(EVENT_MAGMA_JETS, 3s + 500ms, 0, PHASE_TWO);
                     events.ScheduleEvent(EVENT_ACID_NOVA, 8s + 400ms, 0, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_ABSOLUTE_ZERO, 8s + 400ms, 0, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_ABSOLUTE_ZERO,
+                        IsTenNormal() ? Milliseconds(11s + 300ms) : Milliseconds(8s + 400ms), 0, PHASE_TWO);
                     break;
                 case EVENT_MAGMA_JETS:
                     DoCastAOE(SPELL_MAGMA_JETS_SCRIPT_EFFECT);
-                    events.Repeat(6s);
+                    events.Repeat(IsTenNormal() ? Milliseconds(11s + 800ms) : Milliseconds(6s));
                     break;
                 case EVENT_ACID_NOVA:
                     DoCastAOE(SPELL_ACID_NOVA);
-                    events.Repeat(20s);
+                    events.Repeat(IsTenNormal() ? Milliseconds(30s + 700ms) : Milliseconds(20s));
                     break;
                 case EVENT_ABSOLUTE_ZERO:
                     if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true))
                         DoCast(target, SPELL_ABSOLUTE_ZERO);
-                    events.Repeat(7s);
+                    events.Repeat(IsTenNormal() ? Milliseconds(11s + 300ms) : Milliseconds(7s));
                     break;
                 case EVENT_ENGULFING_DARKNESS:
                     if (me->GetReactState() == REACT_PASSIVE)
@@ -610,6 +619,9 @@ private:
     // True from the cauldron facing until the imbued buff schedules the
     // vial's abilities (or phase two cancels the visit).
     bool _vialSequenceActive;
+
+    // Phase-two cadence evidence comes from 10N WCL kills only.
+    bool IsTenNormal() const { return GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL; }
 
     // The vial pipeline events carry no phase mask. A 25% crossing during a
     // cauldron visit must not finish that visit (walk, drink, colored imbue,

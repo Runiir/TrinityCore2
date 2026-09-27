@@ -100,6 +100,38 @@ def healer_roles(target: dict[str, Any]) -> set[str]:
     return set(target.get("roles_without_dps_target", HEALER_ROLES))
 
 
+# The user's decision (2026-09-27) exempts only the Feral tank; any other value is a config error.
+ALLOWED_DPS_GATE_EXEMPT_SPECS = frozenset({"feral_druid_tank"})
+
+
+class TargetConfigError(ValueError):
+    """A raid target field is malformed; the verdict refuses rather than passing."""
+
+
+def dps_gate_exempt_specs(target: dict[str, Any]) -> set[str]:
+    """Specs whose DPS is recorded but informational: no parity gate, and no reference needed.
+
+    Declared per target (dps_gate_exempt_specs), like roles_without_dps_target for healers. The field
+    must be a list of strings drawn from ALLOWED_DPS_GATE_EXEMPT_SPECS; only actors whose roster role
+    is tank are exempt (see is_dps_gate_exempt).
+    """
+    if "dps_gate_exempt_specs" not in target:
+        return set()
+    value = target["dps_gate_exempt_specs"]
+    if not isinstance(value, list) or not all(isinstance(spec, str) for spec in value):
+        raise TargetConfigError(f"dps_gate_exempt_specs must be a list of spec strings, got {value!r}")
+    unknown = sorted(set(value) - ALLOWED_DPS_GATE_EXEMPT_SPECS)
+    if unknown:
+        raise TargetConfigError(f"dps_gate_exempt_specs may only name {sorted(ALLOWED_DPS_GATE_EXEMPT_SPECS)}; "
+                                f"got {unknown}")
+    return set(value)
+
+
+def is_dps_gate_exempt(exempt: set[str], spec: str, role: str) -> bool:
+    """An actor is exempt only when its spec is exempt and its roster role is tank."""
+    return spec in exempt and role == "tank"
+
+
 def roster(target: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Expected actors: actor id -> {spec, role, name}."""
     return {str(actor_id): row for actor_id, row in (target.get("roster") or {}).items()}
@@ -194,13 +226,51 @@ def fallback_targets(root: Path, target: dict[str, Any]) -> dict[str, float]:
     return {spec: statistics.median(dps) for spec, dps in values.items()}
 
 
+NATIVE_SCOPE_KEY = "native_dps_excluded_target_entries"
+
+
+def dps_enemy_scope(excluded: list[int]) -> dict[str, Any]:
+    """The normalized enemy-scope marker a scoped record carries (and the verdict requires)."""
+    return {"excluded_target_entries": sorted(int(entry) for entry in excluded), "scoped": True}
+
+
+def native_excluded_entries(target: dict[str, Any]) -> list[int]:
+    """Creature entries a target's WCL references leave out of damage-done (e.g. Nefarian's bone warriors)."""
+    return sorted({int(entry) for entry in target.get(NATIVE_SCOPE_KEY) or []})
+
+
+def declared_no_reference_specs(target: dict[str, Any]) -> set[str]:
+    """Specs a target declares without a reference: no_reference_until_wcl (top level, or under
+    reference_status/reference_gaps) and its alias reference_status.no_reference_specs (Omnotron)."""
+    specs = set(target.get("no_reference_until_wcl") or [])
+    for parent in ("reference_status", "reference_gaps"):
+        block = target.get(parent)
+        if isinstance(block, dict):
+            specs.update(block.get("no_reference_until_wcl") or [])
+    status = target.get("reference_status")
+    if isinstance(status, dict):
+        specs.update(status.get("no_reference_specs") or [])
+    return {str(spec) for spec in specs}
+
+
 def reference_targets(root: Path, target: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Per spec: {"dps", "basis", "ratio"}. Matched WCL wins; WoWSims is the fallback."""
+    """Per spec: {"dps", "basis", "ratio"}. Matched WCL wins; WoWSims is the fallback.
+
+    A spec declared no_reference_until_wcl never qualifies on the WoWSims fallback: it stays
+    no_reference until a role-matched WCL reference exists (and the declaration is then removed).
+    """
+    blocked = declared_no_reference_specs(target)
+    wcl = spec_targets(root, target)
+    # An exempt spec (dps_gate_exempt_specs) is informational, so its declaration can never fail anything.
+    contradicted = sorted((blocked & set(wcl)) - dps_gate_exempt_specs(target))
+    if contradicted:
+        raise ValueError(f"{target.get('scenario')}: {contradicted} declared no_reference_until_wcl but has a "
+                         "matched WCL reference; remove the declaration or the reference")
     references = {spec: {"dps": dps, "basis": "wowsims_fallback",
                          "ratio": float(target["fallback_reference"]["ratio"])}
-                  for spec, dps in fallback_targets(root, target).items()}
+                  for spec, dps in fallback_targets(root, target).items() if spec not in blocked}
     references.update({spec: {"dps": dps, "basis": "wcl", "ratio": float(target["actor_dps_ratio"])}
-                       for spec, dps in spec_targets(root, target).items()})
+                       for spec, dps in wcl.items()})
     return references
 
 

@@ -2,17 +2,390 @@
   "schema": "omnotron_defense_system_wcl_dps_reference_v1",
   "boss": "omnotron_defense_system",
   "mode": "10N",
-  "status": "blocked_wcl_human_verification",
-  "status_note": "On 2026-09-25 every classic.warcraftlogs.com page redirected to /human-challenge. No agent attests to being human, so no report was opened and no DPS value was read. References stay empty until the user clears the gate; the raid target then lists them in matched_reference_ids.",
-  "references": [],
+  "status": "references_extracted",
+  "status_note": "Read on 2026-09-27 from the rendered WCL pages through GPT-6 Astra driving the user's Chrome (profile Runiir); three 10-player Normal kills. The raid target matches Y8ajQ7dbmKMG1RZy-fight24 and xAhkN2y9YP3KRmnJ-fight12 (item level 395-401, like the Magmaw matched reference from the same Y8aj night); MxFq7TRbvnjGY1hJ-fight24 is low-item-level context.",
+  "retrieved_utc": "2026-09-27T04:28:33.633255+00:00",
+  "access_attempts": [
+    {
+      "date": "2026-09-25",
+      "result": "every page redirected to /human-challenge ('One Quick Check')"
+    },
+    {
+      "date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra",
+      "result": "curl -L: HTTP 403 Cloudflare challenge ('Just a moment...'); web fetch: not accessible; browser tool: failed to start ('CUA_REPL_ENABLED_SURFACES is required'). No check clicked, no value read."
+    },
+    {
+      "date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra, Chrome plugin on the user's Chrome",
+      "result": "reports loaded; values read"
+    }
+  ],
+  "actor_dps_rule": "one number per class_spec per reference: the highest DPS among that spec's non-healer actors in the kill (tanks included); healers omitted",
+  "references": [
+    {
+      "id": "MxFq7TRbvnjGY1hJ-fight24",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=24&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "difficulty_text": "Normal (10 Player)",
+      "duration_sec": 133.2,
+      "raid_dps": 199698.1,
+      "average_item_level": 359.9,
+      "pets_merged": true,
+      "target_scope": "Arcanotron, Magmatron, Toxitron and Poison Bombs (Electron activated 0.8 s before the kill)",
+      "reference_class": "context_only_low_item_level",
+      "actor_dps": {
+        "balance_druid": 17519.8,
+        "blood_death_knight": 18801.5,
+        "combat_rogue": 25648.8,
+        "elemental_shaman": 24496.8,
+        "retribution_paladin": 22905,
+        "shadow_priest": 21078,
+        "survival_hunter": 30854.6
+      },
+      "players": [
+        {
+          "name": "Jägamara",
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 30854.6,
+          "total_display": "4.11m",
+          "item_level": 357
+        },
+        {
+          "name": "Avéran",
+          "class_spec": "combat_rogue",
+          "role": "dps",
+          "dps": 25648.8,
+          "total_display": "3.42m",
+          "item_level": 357
+        },
+        {
+          "name": "Sélán",
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 24496.8,
+          "total_display": "3.26m",
+          "item_level": 362
+        },
+        {
+          "name": "Lachina",
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 24293.6,
+          "total_display": "3.24m",
+          "item_level": 363
+        },
+        {
+          "name": "Janderak",
+          "class_spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 22905,
+          "total_display": "3.05m",
+          "item_level": 357
+        },
+        {
+          "name": "Adara",
+          "class_spec": "shadow_priest",
+          "role": "dps",
+          "dps": 21078,
+          "total_display": "2.81m",
+          "item_level": 360
+        },
+        {
+          "name": "Wongelrainer",
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 18801.5,
+          "total_display": "2.50m",
+          "item_level": 365
+        },
+        {
+          "name": "Koakuma",
+          "class_spec": "balance_druid",
+          "role": "dps",
+          "dps": 17519.8,
+          "total_display": "2.33m",
+          "item_level": 362
+        },
+        {
+          "name": "Greysnout",
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 13201.1,
+          "total_display": "1.76m",
+          "item_level": 359
+        },
+        {
+          "name": "Nevox",
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 762.3,
+          "total_display": "101.5k",
+          "item_level": 357
+        }
+      ],
+      "limitations": [
+        "Average item level 359.9, about 35-40 below the matched references; context only, never a target.",
+        "Two Survival hunters and two Blood DK tanks: actor_dps keeps the higher DPS of each spec; players lists every actor.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
+      ]
+    },
+    {
+      "id": "Y8ajQ7dbmKMG1RZy-fight24",
+      "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=24&type=damage-done",
+      "mode": "10N",
+      "date": "2025-05-15",
+      "difficulty_text": "Normal (10 Player)",
+      "duration_sec": 88.1,
+      "raid_dps": 292375.1,
+      "average_item_level": 395.33,
+      "pets_merged": true,
+      "target_scope": "Electron and Arcanotron (Magmatron and Toxitron never activated; no Poison Bombs)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "affliction_warlock": 47307.5,
+        "arms_warrior": 42037,
+        "balance_druid": 46219.7,
+        "blood_death_knight": 27851.8,
+        "elemental_shaman": 51668.9,
+        "fire_mage": 48982,
+        "protection_paladin": 10851.7
+      },
+      "players": [
+        {
+          "name": "Roostertours",
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 51668.9,
+          "total_display": "4.55m",
+          "item_level": 399
+        },
+        {
+          "name": "Sethra",
+          "class_spec": "fire_mage",
+          "role": "dps",
+          "dps": 48982,
+          "total_display": "4.32m",
+          "item_level": 395
+        },
+        {
+          "name": "Næñï",
+          "class_spec": "affliction_warlock",
+          "role": "dps",
+          "dps": 47307.5,
+          "total_display": "4.17m",
+          "item_level": 394
+        },
+        {
+          "name": "Inkar",
+          "class_spec": "balance_druid",
+          "role": "dps",
+          "dps": 46219.7,
+          "total_display": "4.07m",
+          "item_level": 401
+        },
+        {
+          "name": "Bloodstaín",
+          "class_spec": "arms_warrior",
+          "role": "dps",
+          "dps": 42037,
+          "total_display": "3.70m",
+          "item_level": 396
+        },
+        {
+          "name": "Nexry",
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 27851.8,
+          "total_display": "2.45m",
+          "item_level": 393
+        },
+        {
+          "name": "Luxferre",
+          "class_spec": "discipline_priest",
+          "role": "healer",
+          "dps": 17153.1,
+          "total_display": "1.51m",
+          "item_level": 400
+        },
+        {
+          "name": "Schanilá",
+          "class_spec": "protection_paladin",
+          "role": "tank",
+          "dps": 10851.7,
+          "total_display": "956.4k",
+          "item_level": 397
+        },
+        {
+          "name": "Korotan",
+          "class_spec": "holy_paladin",
+          "role": "healer",
+          "dps": 303.4,
+          "total_display": "26.7k",
+          "item_level": 383
+        }
+      ],
+      "limitations": [
+        "Nine players although the fight is 10-player Normal.",
+        "88.1 s kill with two constructs; short-fight throughput.",
+        "No Survival hunter, Retribution paladin, Assassination rogue, Demonology warlock or Feral tank.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
+      ]
+    },
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight12",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=12&type=damage-done",
+      "mode": "10N",
+      "date": "2025-06-11",
+      "difficulty_text": "Normal (10 Player)",
+      "duration_sec": 78.8,
+      "raid_dps": 333204.4,
+      "average_item_level": 401.4,
+      "pets_merged": true,
+      "target_scope": "Toxitron, Magmatron and Poison Bombs",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "affliction_warlock": 43730.3,
+        "arms_warrior": 35899.4,
+        "blood_death_knight": 32643,
+        "elemental_shaman": 40901.5,
+        "enhancement_shaman": 34528.3,
+        "fire_mage": 35203.7,
+        "survival_hunter": 45475.8
+      },
+      "players": [
+        {
+          "name": "Vitarâ",
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 45475.8,
+          "total_display": "3.58m",
+          "item_level": 403
+        },
+        {
+          "name": "Schlabunsen",
+          "class_spec": "affliction_warlock",
+          "role": "dps",
+          "dps": 43730.3,
+          "total_display": "3.45m",
+          "item_level": 403
+        },
+        {
+          "name": "Schastnerak",
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 40901.5,
+          "total_display": "3.22m",
+          "item_level": 406
+        },
+        {
+          "name": "Tristu",
+          "class_spec": "survival_hunter",
+          "role": "dps",
+          "dps": 37407.1,
+          "total_display": "2.95m",
+          "item_level": 403
+        },
+        {
+          "name": "Noho",
+          "class_spec": "arms_warrior",
+          "role": "dps",
+          "dps": 35899.4,
+          "total_display": "2.83m",
+          "item_level": 401
+        },
+        {
+          "name": "Thorsmage",
+          "class_spec": "fire_mage",
+          "role": "dps",
+          "dps": 35203.7,
+          "total_display": "2.78m",
+          "item_level": 400
+        },
+        {
+          "name": "Heutnich",
+          "class_spec": "enhancement_shaman",
+          "role": "dps",
+          "dps": 34528.3,
+          "total_display": "2.72m",
+          "item_level": 396
+        },
+        {
+          "name": "Catamara",
+          "class_spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 32643,
+          "total_display": "2.57m",
+          "item_level": 407
+        },
+        {
+          "name": "Catorì",
+          "class_spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 25810.3,
+          "total_display": "2.03m",
+          "item_level": 392
+        },
+        {
+          "name": "Awì",
+          "class_spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 1605.1,
+          "total_display": "126.5k",
+          "item_level": 403
+        }
+      ],
+      "limitations": [
+        "78.8 s kill with two constructs and eight DPS; short-fight throughput.",
+        "Two Survival hunters and two Elemental shamans: actor_dps keeps the higher DPS of each spec; players lists every actor.",
+        "No Retribution paladin, Assassination rogue, Demonology warlock or Feral tank.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
+      ]
+    }
+  ],
   "extraction_plan": {
     "candidate_reports": [
-      {"report": "MxFq7TRbvnjGY1hJ", "date": "2024-10-28", "mode": "10N", "why": "BWD 10N night already used for Magmaw fidelity; select its Omnotron Defense System kill fight"},
-      {"report": "Y8ajQ7dbmKMG1RZy", "mode": "10N", "why": "BWD 10N Magmaw reference night; select its Omnotron kill"},
-      {"report": "xAhkN2y9YP3KRmnJ", "date": "2025-06-11", "mode": "10N", "why": "later 10N night; select its Omnotron kill"}
+      {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "date": "2024-10-28",
+        "mode": "10N",
+        "why": "BWD 10N night already used for Magmaw fidelity; select its Omnotron Defense System kill fight"
+      },
+      {
+        "report": "Y8ajQ7dbmKMG1RZy",
+        "mode": "10N",
+        "why": "BWD 10N Magmaw reference night; select its Omnotron kill"
+      },
+      {
+        "report": "xAhkN2y9YP3KRmnJ",
+        "date": "2025-06-11",
+        "mode": "10N",
+        "why": "later 10N night; select its Omnotron kill"
+      }
     ],
     "fallback_discovery": "WCL Cataclysm Classic rankings for encounter 1027 (Omnotron Defense System), 10-player normal; open a kill whose roster covers the canonical specs",
-    "per_reference_fields": ["id (<report>-fight<id>)", "url", "mode", "duration_sec", "raid_dps", "average_item_level", "target_scope (four constructs and Poison Bombs)", "actor_dps per class_spec", "limitations"],
-    "specs_needed": ["blood_death_knight", "feral_druid_tank", "survival_hunter", "fire_mage", "retribution_paladin", "assassination_rogue", "elemental_shaman", "demonology_warlock"]
+    "per_reference_fields": [
+      "id (<report>-fight<id>)",
+      "url",
+      "mode",
+      "duration_sec",
+      "raid_dps",
+      "average_item_level",
+      "target_scope (four constructs and Poison Bombs)",
+      "actor_dps per class_spec",
+      "limitations"
+    ],
+    "specs_needed": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "survival_hunter",
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "elemental_shaman",
+      "demonology_warlock"
+    ]
   }
 }

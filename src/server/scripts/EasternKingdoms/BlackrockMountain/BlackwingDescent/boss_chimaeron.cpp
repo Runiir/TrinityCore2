@@ -194,7 +194,10 @@ struct boss_chimaeron : public BossAI
         _killedPlayerCount = 0;
         me->SetReactState(REACT_AGGRESSIVE);
         events.SetPhase(PHASE_1);
-        events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 5s, 0, PHASE_1);
+        // First Caustic Slime at 15 s (BigWigs); WCL MxFq7TRbvnjGY1hJ fight 27
+        // (10N) shows the first two 82935 impacts at 17.2/17.5 s after the
+        // missile flight, and no earlier slime. Repeat stays 5 s.
+        events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 15s, 0, PHASE_1);
         events.ScheduleEvent(EVENT_BREAK, 5s, 0, PHASE_1);
         events.ScheduleEvent(EVENT_DOUBLE_ATTACK, 5s, 0, PHASE_1);
         events.ScheduleEvent(EVENT_MASSACRE, 26s, 0, PHASE_1);

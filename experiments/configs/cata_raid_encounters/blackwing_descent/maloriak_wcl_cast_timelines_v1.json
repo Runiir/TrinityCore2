@@ -2,13 +2,13 @@
   "schema": "maloriak_wcl_cast_timelines_v1",
   "encounter": "maloriak",
   "mode": "10N",
-  "status": "pending_extraction",
-  "status_reason": "Blocked with the DPS reference by the classic.warcraftlogs.com human-verification interstitial (2026-09-25). No report was read.",
-  "reference_id": null,
-  "url": null,
-  "duration_sec": null,
+  "status": "extracted",
+  "status_reason": "Extracted on 2026-09-27 from report MxFq7TRbvnjGY1hJ fight 34 (GPT-6 Astra, Codex Chrome plugin, user's verified Chrome session).",
+  "reference_id": "MxFq7TRbvnjGY1hJ-fight34",
+  "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34&type=casts&view=events",
+  "duration_sec": 125.1,
   "target_scope": "Maloriak, Aberrations, Prime Subjects and Flash Freeze blocks",
-  "source_note": "When extracted: completed Cast rows from the matched fight's Casts > Events view per DPS actor (Begin Cast rows excluded), same shape as magmaw_wcl_cast_timelines_v1.json (actor_id, class_spec, observed_dps, source_id, source_name, casts[{ability, t, target}]).",
+  "source_note": "Completed Cast rows from each non-healer's Casts > Events view (Begin Cast rows excluded); single page each, no next-page control. Spell link ids were truncated in the accessibility view, so abilities are names only. Main tank Greysnout is listed before the add off-tank Wongelrainer.",
   "boss_timeline_wanted": [
     "First Throw Red/Blue Bottle after the pull (native: face the cauldron at 15.5 s, throw +1.3 s) and every later vial throw (native: 40 s after the imbue; heroic Black 90 s)",
     "Arcane Storm 77896 cast starts per vial (native: Red 15.5 s, Blue 6 s, Green 5 s after the imbue, then every 15.5-17 s) and the interrupting player and spell",
@@ -19,5 +19,4668 @@
     "The 25% transition: Release All Minions 77991, Drink All Bottles 95662, then Magma Jets 78194, Acid Nova 78225 and Absolute Zero 78223 cadence (native 6 s, 20 s, 7 s; guides about 6-10 s, 30 s, 10 s)",
     "Raid haste (Bloodlust 2825, Heroism 32182, Time Warp 80353, Ancient Hysteria 90355) time relative to the 25% transition"
   ],
-  "actors": []
+  "actors": [
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source1",
+      "class_spec": "survival_hunter",
+      "observed_dps": 25422.4,
+      "source_id": 1,
+      "source_name": "Jägamara",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Black Arrow",
+          "t": 0.599,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 0.599,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Serpent Sting",
+          "t": 1.592,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 2.605,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 3.072,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 5.263,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rapid Fire",
+          "t": 5.311,
+          "target": null
+        },
+        {
+          "ability": "Hyperspeed Acceleration",
+          "t": 5.453,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 5.529,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 7.264,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 7.278,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 7.329,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 8.434,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Ice Trap",
+          "t": 8.449,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 9.0,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 9.459,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 10.455,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 10.737,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 11.453,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 12.465,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 13.625,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 14.204,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 14.93,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 14.93,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 15.936,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 15.936,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 17.328,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 17.677,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 18.099,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 18.099,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 19.439,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 20.283,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 20.304,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 21.196,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 21.312,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 22.317,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 23.327,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 23.674,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Disengage",
+          "t": 24.015,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 26.545,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 26.608,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 28.879,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 28.879,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 29.082,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 31.513,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 31.528,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 33.17,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 33.17,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 34.006,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 35.237,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 35.832,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 36.484,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 37.476,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 37.476,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 38.947,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 40.128,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 40.128,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 41.419,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 42.788,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 42.788,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 43.795,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 43.889,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 46.359,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 46.45,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 48.244,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 48.819,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 49.891,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 51.292,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 51.547,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 51.547,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 52.561,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 53.761,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 55.207,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 55.207,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 56.218,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 57.86,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 57.86,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 58.689,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 60.505,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 61.155,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 61.519,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 62.141,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 63.627,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 63.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 63.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 64.938,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 65.951,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 66.094,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 66.95,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 68.564,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 69.591,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 69.591,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 71.029,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 72.736,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 72.814,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 73.499,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 75.456,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 75.526,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 75.961,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 76.162,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 77.176,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 78.431,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 79.819,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 79.819,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hyperspeed Acceleration",
+          "t": 80.141,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 80.905,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 81.002,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 83.333,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 83.626,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 85.255,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 85.763,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 86.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 86.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 87.923,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 88.191,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 89.498,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 89.498,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 90.609,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 92.11,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 93.03,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 93.737,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 93.737,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 95.491,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 96.395,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 96.395,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 97.392,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 97.968,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 100.038,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 100.423,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Ice Trap",
+          "t": 101.188,
+          "target": null
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 102.317,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 102.906,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 103.988,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 105.378,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 106.766,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 106.766,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 107.786,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 107.842,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 108.784,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 109.734,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 111.05,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Kill Shot",
+          "t": 111.05,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 111.636,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Kill Shot",
+          "t": 112.064,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 113.078,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 113.545,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 114.083,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 115.095,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 115.441,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Tol'vir Agility",
+          "t": 115.513,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 117.351,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 117.513,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 118.764,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 119.07,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 119.242,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 120.236,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 121.128,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 121.609,
+          "target": null
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 122.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 123.047,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Tranquilizing Shot",
+          "t": 123.3,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Kill Shot",
+          "t": 124.298,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 124.936,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source3",
+      "class_spec": "survival_hunter",
+      "observed_dps": 25328.4,
+      "source_id": 3,
+      "source_name": "Lachina",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Explosive Shot",
+          "t": 1.381,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 1.381,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Serpent Sting",
+          "t": 2.388,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 3.404,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 3.846,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 5.891,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 6.028,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 6.297,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 7.365,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 7.454,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 8.468,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 8.752,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 9.472,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 11.215,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 11.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 12.174,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 13.669,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 14.644,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 16.032,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 16.115,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 16.133,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 17.599,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 18.14,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 18.578,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 19.138,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 20.146,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 21.03,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 22.16,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 23.486,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 25.505,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 25.945,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 27.845,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 28.396,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 30.124,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 30.266,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 30.851,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 31.259,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 32.508,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 33.3,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 33.732,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 33.946,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 34.954,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 38.981,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 40.143,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 40.208,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 41.231,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 41.446,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 43.717,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 43.717,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 43.889,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 46.343,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 49.146,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 50.502,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 50.965,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 50.965,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 51.6,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 51.984,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 55.108,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 55.148,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 57.563,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 57.929,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 59.504,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 59.504,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 60.008,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 60.505,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 62.465,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 63.247,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 67.217,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 67.938,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 68.471,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 68.819,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 69.67,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 70.95,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 70.95,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 72.126,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 72.171,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 73.177,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 74.591,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 76.201,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 77.053,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 78.89,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 79.506,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 80.561,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 80.673,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 81.97,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 83.156,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 83.481,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 84.406,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 85.979,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 86.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 87.659,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 88.678,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 89.326,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 91.152,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 91.415,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 91.773,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 92.627,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 92.852,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 93.863,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 94.235,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 94.865,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 96.695,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 97.355,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 97.356,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 99.142,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 99.826,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 101.522,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Trap Launcher",
+          "t": 101.522,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 101.608,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Ice Trap",
+          "t": 102.763,
+          "target": null
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 103.424,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 104.051,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 105.565,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 105.565,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 106.519,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 106.575,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 107.583,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 108.409,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 109.734,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 110.083,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 110.307,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rapid Fire",
+          "t": 111.097,
+          "target": null
+        },
+        {
+          "ability": "Kill Shot",
+          "t": 111.67,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 112.184,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Kill Shot",
+          "t": 112.671,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 113.545,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 114.507,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Black Arrow",
+          "t": 114.851,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 114.894,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 116.247,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 116.682,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 116.957,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lock and Load",
+          "t": 117.559,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 117.585,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 118.764,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 118.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 119.274,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 120.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 120.301,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 121.296,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 121.657,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Arcane Shot",
+          "t": 122.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 123.006,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Cobra Shot",
+          "t": 124.109,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Auto Shot",
+          "t": 124.362,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Explosive Shot",
+          "t": 124.736,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source4",
+      "class_spec": "elemental_shaman",
+      "observed_dps": 23356.4,
+      "source_id": 4,
+      "source_name": "Sélán",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Flame Shock",
+          "t": 0.093,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Elemental Mastery",
+          "t": 0.992,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 1.345,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 3.614,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Fire Elemental Totem",
+          "t": 3.923,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 6.174,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 7.419,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 8.672,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 8.91,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 10.975,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 12.186,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 13.394,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 14.624,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wind Shear",
+          "t": 14.759,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 16.749,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 18.191,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 19.857,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 21.072,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 22.567,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 22.7,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 25.754,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 25.754,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 28.474,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 29.97,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 30.105,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 32.575,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 32.968,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 34.25,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Surge!",
+          "t": 37.194,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 37.598,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 39.086,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 40.576,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 41.829,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 42.256,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wind Shear",
+          "t": 43.749,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 45.761,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Shield",
+          "t": 47.174,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 47.793,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 47.865,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 51.032,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 51.304,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 53.781,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 55.395,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 57.015,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 57.273,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 59.92,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 59.964,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 61.836,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Shield",
+          "t": 62.955,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 63.887,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 65.138,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 66.767,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 68.213,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 69.655,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 71.211,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 71.211,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Surge!",
+          "t": 71.82,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 73.939,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 75.289,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 77.022,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 77.215,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 79.943,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 81.434,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 82.916,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 84.546,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Elemental Mastery",
+          "t": 84.785,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 84.977,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 87.26,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 87.389,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 89.674,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 89.843,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 92.11,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Purge",
+          "t": 93.57,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 95.642,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 97.006,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 98.369,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Surge!",
+          "t": 99.02,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 99.734,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 101.327,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 102.819,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 103.131,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 106.004,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Surge!",
+          "t": 106.435,
+          "target": null
+        },
+        {
+          "ability": "Heroism",
+          "t": 106.435,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 108.752,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 110.046,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 110.186,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 112.304,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 113.421,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 114.672,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 115.787,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 116.977,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 117.923,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Shield",
+          "t": 118.002,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 119.094,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 119.169,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lava Surge!",
+          "t": 121.296,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 121.343,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 121.581,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 122.862,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 124.075,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source9",
+      "class_spec": "combat_rogue",
+      "observed_dps": 21105.2,
+      "source_id": 9,
+      "source_name": "Avéran",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Synapse Springs",
+          "t": 1.485,
+          "target": null
+        },
+        {
+          "ability": "Adrenaline Rush",
+          "t": 1.913,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 1.997,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 3.008,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Slice and Dice",
+          "t": 4.018,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 5.033,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 6.028,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 7.039,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 8.048,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 9.053,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 10.056,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 11.059,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 12.059,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 13.068,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 14.073,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Killing Spree",
+          "t": 15.082,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 17.161,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 18.182,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 19.198,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 22.133,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 23.137,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 24.132,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 25.143,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 26.866,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 27.9,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 30.57,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Slice and Dice",
+          "t": 32.404,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 33.403,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 34.974,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 36.466,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 38.672,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 40.143,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 42.256,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 43.267,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 45.908,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 48.022,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 49.119,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 51.113,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 52.152,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 53.16,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 54.32,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 55.911,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Slice and Dice",
+          "t": 57.119,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 58.357,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 61.079,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 62.684,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 63.904,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 66.241,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 67.247,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 69.213,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 71.359,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 72.392,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 73.614,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 75.549,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 78.3,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 80.483,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 81.492,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 84.546,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 86.029,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Tol'vir Agility",
+          "t": 87.451,
+          "target": null
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 87.693,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 88.002,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 89.516,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 91.08,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 92.092,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Slice and Dice",
+          "t": 93.622,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 94.637,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 96.171,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 97.816,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Killing Spree",
+          "t": 98.821,
+          "target": null
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 101.112,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Adrenaline Rush",
+          "t": 102.083,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 102.337,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 103.327,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 104.337,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 105.333,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 106.347,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 107.356,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 108.368,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 109.372,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 110.364,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 111.521,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 112.528,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 113.53,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 115.11,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 116.124,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 117.111,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 118.122,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eviscerate",
+          "t": 119.297,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 120.313,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 121.319,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Revealing Strike",
+          "t": 122.329,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sinister Strike",
+          "t": 123.329,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Gouge",
+          "t": 124.34,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source15",
+      "class_spec": "retribution_paladin",
+      "observed_dps": 19708.8,
+      "source_id": 15,
+      "source_name": "Janderak",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Judgement",
+          "t": 2.406,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 3.903,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Guardian of Ancient Kings",
+          "t": 6.359,
+          "target": null
+        },
+        {
+          "ability": "Avenging Wrath",
+          "t": 6.479,
+          "target": null
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "t": 7.685,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 9.191,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 10.405,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 11.904,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 13.273,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 14.783,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rebuke",
+          "t": 14.954,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Zealotry",
+          "t": 17.062,
+          "target": null
+        },
+        {
+          "ability": "Inquisition",
+          "t": 17.194,
+          "target": null
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "t": 18.408,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 19.92,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 23.9,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "t": 25.407,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 28.953,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 31.188,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 32.692,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 34.2,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 35.705,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Holy Wrath",
+          "t": 37.907,
+          "target": null
+        },
+        {
+          "ability": "Exorcism",
+          "t": 39.157,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 40.412,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 41.921,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 43.188,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 44.691,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Inquisition",
+          "t": 48.044,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 49.295,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 51.623,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 53.335,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 55.094,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 57.1,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Holy Wrath",
+          "t": 59.013,
+          "target": null
+        },
+        {
+          "ability": "Judgement",
+          "t": 60.243,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rebuke",
+          "t": 61.465,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 61.929,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Inquisition",
+          "t": 63.805,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 65.572,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 69.108,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 70.95,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 75.189,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 77.618,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 79.114,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 80.619,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 82.125,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 83.626,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 85.136,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Holy Wrath",
+          "t": 87.923,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 89.278,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 91.677,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 93.054,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rebuke",
+          "t": 95.026,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 97.025,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 98.534,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 100.038,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 101.261,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 102.763,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 104.925,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 106.425,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Inquisition",
+          "t": 108.368,
+          "target": null
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "t": 109.372,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 110.887,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Judgement",
+          "t": 112.671,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Inquisition",
+          "t": 114.287,
+          "target": null
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 115.339,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 116.829,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "t": 118.348,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Exorcism",
+          "t": 120.034,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "t": 122.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Crusader Strike",
+          "t": 123.785,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source2",
+      "class_spec": "shadow_priest",
+      "observed_dps": 19292.8,
+      "source_id": 2,
+      "source_name": "Adara",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Devouring Plague",
+          "t": 1.081,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 2.374,
+          "target": null
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 4.049,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 5.263,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 5.263,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 7.439,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Archangel",
+          "t": 10.001,
+          "target": null
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 10.303,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 13.952,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 13.952,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 16.189,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 19.857,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 19.889,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 22.174,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 25.392,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 25.883,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Devouring Plague",
+          "t": 29.733,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 30.984,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 34.528,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 34.681,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 38.212,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 38.212,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 40.64,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 42.964,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 46.841,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 47.307,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Dispel Magic",
+          "t": 48.861,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 50.039,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 53.28,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Devouring Plague",
+          "t": 53.429,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 55.825,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 55.825,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 58.256,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 60.848,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Shadowfiend",
+          "t": 63.199,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 65.584,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 65.584,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 69.361,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 69.361,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 73.369,
+          "target": null
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 74.832,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 79.202,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 79.305,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 82.924,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 82.987,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 85.34,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 88.356,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 88.356,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 90.654,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 96.548,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 99.103,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Devouring Plague",
+          "t": 99.166,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 100.423,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Archangel",
+          "t": 103.044,
+          "target": null
+        },
+        {
+          "ability": "Shadow Word: Death",
+          "t": 103.797,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 104.965,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 107.997,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 108.108,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 109.822,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 111.941,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "t": 114.672,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Blast",
+          "t": 115.981,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 116.096,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 117.873,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 119.814,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 121.71,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Flay",
+          "t": 123.633,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source5",
+      "class_spec": "balance_druid",
+      "observed_dps": 15955.5,
+      "source_id": 5,
+      "source_name": "Koakuma",
+      "role": "dps",
+      "casts": [
+        {
+          "ability": "Moonfire",
+          "t": 0.654,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 1.82,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 4.594,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Faerie Fire",
+          "t": 4.594,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 7.251,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 8.763,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 10.278,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 11.797,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 13.317,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 13.411,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 14.54,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 17.433,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eclipse (Lunar)",
+          "t": 17.433,
+          "target": null
+        },
+        {
+          "ability": "Starsurge",
+          "t": 17.677,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 21.336,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 23.748,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 24.872,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 28.912,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 30.951,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 33.002,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 35.047,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 37.088,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 39.128,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 39.128,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 40.442,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 44.094,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 46.45,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eclipse (Solar)",
+          "t": 46.45,
+          "target": null
+        },
+        {
+          "ability": "Starfire",
+          "t": 48.935,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 50.684,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sunfire",
+          "t": 50.684,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 51.826,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 54.467,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 55.986,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 57.497,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 59.013,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 60.528,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 62.039,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 63.704,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 65.224,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 66.729,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 67.109,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 68.404,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 71.468,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 73.208,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 74.95,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 75.988,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 77.306,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 80.351,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eclipse (Lunar)",
+          "t": 80.351,
+          "target": null
+        },
+        {
+          "ability": "Wrath",
+          "t": 82.088,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 84.433,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 86.778,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 89.131,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 91.466,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 93.828,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 96.16,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 98.515,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Force of Nature",
+          "t": 99.142,
+          "target": null
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 100.466,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 101.608,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 104.373,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 106.48,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Starfire",
+          "t": 108.044,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Eclipse (Solar)",
+          "t": 108.044,
+          "target": null
+        },
+        {
+          "ability": "Starfire",
+          "t": 109.638,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 110.792,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sunfire",
+          "t": 110.792,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 112.96,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 112.96,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Sunfire",
+          "t": 113.985,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 116.139,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 117.327,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 118.493,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 119.662,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 120.835,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 121.985,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 123.161,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Wrath",
+          "t": 124.34,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source6",
+      "class_spec": "blood_death_knight",
+      "observed_dps": 11681.9,
+      "source_id": 6,
+      "source_name": "Greysnout",
+      "role": "tank",
+      "casts": [
+        {
+          "ability": "Dark Command",
+          "t": 0.245,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 1.345,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 3.17,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 5.518,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 7.304,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Horn of Winter",
+          "t": 8.796,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 10.303,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Bone Shield",
+          "t": 12.544,
+          "target": null
+        },
+        {
+          "ability": "Mind Freeze",
+          "t": 14.783,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 16.165,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 17.668,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 19.274,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 28.135,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 29.634,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 31.528,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 33.454,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 35.662,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 37.167,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 38.716,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 40.287,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 42.256,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Mind Freeze",
+          "t": 43.62,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 45.485,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 47.055,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 49.264,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 51.779,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 53.613,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 58.357,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 61.079,
+          "target": null
+        },
+        {
+          "ability": "Mind Freeze",
+          "t": 61.372,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 63.082,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 65.3,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 67.169,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 76.61,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 79.0,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 81.049,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 82.805,
+          "target": null
+        },
+        {
+          "ability": "Bone Shield",
+          "t": 84.406,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 85.922,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 87.433,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 89.052,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 91.194,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 92.738,
+          "target": null
+        },
+        {
+          "ability": "Mind Freeze",
+          "t": 94.992,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Horn of Winter",
+          "t": 98.9,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 101.398,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 102.906,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 104.734,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Dancing Rune Weapon",
+          "t": 107.672,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 108.763,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 109.905,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 111.433,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 112.936,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 114.432,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 116.65,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 119.341,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 120.844,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 123.006,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 124.504,
+          "target": "Maloriak"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source8",
+      "class_spec": "blood_death_knight",
+      "observed_dps": 432.7,
+      "source_id": 8,
+      "source_name": "Wongelrainer",
+      "role": "tank",
+      "casts": [
+        {
+          "ability": "Outbreak",
+          "t": 3.876,
+          "target": "Maloriak"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 3.876,
+          "target": null
+        },
+        {
+          "ability": "Anti-Magic Shell",
+          "t": 38.542,
+          "target": null
+        },
+        {
+          "ability": "Death and Decay",
+          "t": 42.928,
+          "target": null
+        },
+        {
+          "ability": "Dark Command",
+          "t": 44.419,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 45.319,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 47.281,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Pestilence",
+          "t": 48.564,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 50.239,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Blood Tap",
+          "t": 50.239,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 51.742,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 53.255,
+          "target": "Aberration 3"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 56.205,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 63.308,
+          "target": null
+        },
+        {
+          "ability": "Dark Command",
+          "t": 64.027,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Pestilence",
+          "t": 67.421,
+          "target": "Aberration 1"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 68.536,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 68.705,
+          "target": "Aberration 2"
+        },
+        {
+          "ability": "Death Grip",
+          "t": 70.104,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 71.092,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 72.591,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 76.387,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 81.743,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 85.387,
+          "target": "Aberration 6"
+        },
+        {
+          "ability": "Death and Decay",
+          "t": 92.975,
+          "target": null
+        },
+        {
+          "ability": "Dark Command",
+          "t": 93.987,
+          "target": "Aberration 7"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 94.992,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 98.022,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 104.695,
+          "target": null
+        },
+        {
+          "ability": "Icebound Fortitude",
+          "t": 107.212,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 108.108,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 111.504,
+          "target": null
+        },
+        {
+          "ability": "Dark Command",
+          "t": 114.8,
+          "target": "Aberration 18"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 116.391,
+          "target": null
+        },
+        {
+          "ability": "Death Grip",
+          "t": 119.107,
+          "target": "Prime Subject 1"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 120.593,
+          "target": "Prime Subject 1"
+        },
+        {
+          "ability": "Pestilence",
+          "t": 122.049,
+          "target": "Prime Subject 1"
+        }
+      ]
+    }
+  ],
+  "boss_timeline": [
+    {
+      "t": 13.143,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 13.646,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 16.385,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 18.014,
+      "source": "Maloriak",
+      "ability": "Throw Red Bottle",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 18.514,
+      "source": "Maloriak",
+      "ability": "Throw Red Bottle",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 26.105,
+      "source": "Maloriak",
+      "ability": "Fire Imbued",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 34.2,
+      "source": "Maloriak",
+      "ability": "Consuming Flames",
+      "event": "Cast",
+      "target": "Lachina"
+    },
+    {
+      "t": 37.451,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 38.96,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 42.32,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 42.32,
+      "source": "Aberration 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 42.33,
+      "source": "Aberration 2",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 42.716,
+      "source": "Aberration 3",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 42.825,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 44.344,
+      "source": "Aberration 2",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 45.555,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 47.174,
+      "source": "Maloriak",
+      "ability": "Scorching Blast",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 50.415,
+      "source": "Maloriak",
+      "ability": "Consuming Flames",
+      "event": "Cast",
+      "target": "Lachina"
+    },
+    {
+      "t": 55.268,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 56.77,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 60.122,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 60.122,
+      "source": "Aberration 4",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 60.122,
+      "source": "Aberration 5",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 60.528,
+      "source": "Aberration 6",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 60.626,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 62.955,
+      "source": "Maloriak",
+      "ability": "Scorching Blast",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 67.813,
+      "source": "Maloriak",
+      "ability": "Throw Blue Bottle",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 68.313,
+      "source": "Maloriak",
+      "ability": "Throw Blue Bottle",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 75.908,
+      "source": "Maloriak",
+      "ability": "Frost Imbued",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 87.241,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 88.745,
+      "source": "Maloriak",
+      "ability": "Release Aberrations",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 88.867,
+      "source": "Maloriak",
+      "ability": "Biting Chill",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 92.11,
+      "source": "Maloriak",
+      "ability": "Remedy",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 92.505,
+      "source": "Aberration 7",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 92.919,
+      "source": "Aberration 8",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 92.919,
+      "source": "Aberration 9",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 93.716,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 94.222,
+      "source": "Maloriak",
+      "ability": "Arcane Storm",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 100.175,
+      "source": "Maloriak",
+      "ability": "Biting Chill",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 101.792,
+      "source": "Maloriak",
+      "ability": "Release All Minions",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 103.295,
+      "source": "Maloriak",
+      "ability": "Release All Minions",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.623,
+      "source": "Aberration 10",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 11",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 12",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 13",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 14",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 15",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 16",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.637,
+      "source": "Aberration 17",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.663,
+      "source": "Prime Subject 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 106.663,
+      "source": "Aberration 18",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 107.451,
+      "source": "Prime Subject 2",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 108.665,
+      "source": "Aberration 14",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 108.669,
+      "source": "Aberration 17",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 109.068,
+      "source": "Aberration 16",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 109.068,
+      "source": "Aberration 18",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 109.086,
+      "source": "Prime Subject 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 109.888,
+      "source": "Maloriak",
+      "ability": "Unstable Mix",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 110.687,
+      "source": "Aberration 17",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 113.53,
+      "source": "Prime Subject 1",
+      "ability": "Growth Catalyst",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 114.531,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Begin Cast",
+      "target": null
+    },
+    {
+      "t": 116.523,
+      "source": "Maloriak",
+      "ability": "Magma Jets",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 117.982,
+      "source": "Maloriak",
+      "ability": "Acid Nova",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 121.218,
+      "source": "Maloriak",
+      "ability": "Absolute Zero",
+      "event": "Cast",
+      "target": null
+    },
+    {
+      "t": 121.218,
+      "source": "Prime Subject 1",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Wongelrainer"
+    },
+    {
+      "t": 123.65,
+      "source": "Prime Subject 2",
+      "ability": "Rend",
+      "event": "Cast",
+      "target": "Wongelrainer"
+    }
+  ],
+  "interrupts": [
+    {
+      "source": "Greysnout",
+      "ability": "Arcane Storm",
+      "count": 3
+    },
+    {
+      "source": "Sélán",
+      "ability": "Arcane Storm",
+      "count": 1
+    }
+  ],
+  "raid_haste": {
+    "ability": "Heroism",
+    "spell_id": 32182,
+    "t": 106.435,
+    "source": "Sélán"
+  }
 }

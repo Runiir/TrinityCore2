@@ -1,0 +1,80 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:omnotron",
+  "round": 1,
+  "changed_files": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_damage_calibration_registry_patch_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+    "tests/test_omnotron_research_packet.py"
+  ],
+  "new_files": [
+    "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+    "tests/test_omnotron_defense_system_damage_modifier.py"
+  ],
+  "resolved_inputs": [
+    "encounter_damage_fidelity"
+  ],
+  "open_items": [
+    "encounter_damage_fidelity closes once the coordinator applies the registry patch (42166/42178/42179/42180 -> calibrated, DamageModifier 11.2) and moves the staged SQL into sql/custom/world before the Omnotron batch. Both must land together: the registry says 'the world DB must hold exactly this value'.",
+    "encounter_research: all 10N material claims are resolved from three matched 10N WCL kills (MxFq7TRbvnjGY1hJ-fight24, Y8ajQ7dbmKMG1RZy-fight24, xAhkN2y9YP3KRmnJ-fight12); the contract and ledger carry fidelity_state_by_mode 10N=accepted. The whole-contract fidelity_state stays fidelity_blocked because two heroic items remain (heroic_nefarius_selection_order_and_cadence, heroic_poison_bomb_count_and_non_10n_scaling) and test_cata_raid_research_contracts requires fidelity_blocked for every catalog contract. raid_program_inputs reads only the contract-level state, so the input stays open until the coordinator accepts the mode-scoped patch below or decides otherwise.",
+    "Raid target: matched_reference_ids = Y8ajQ7dbmKMG1RZy-fight24 and xAhkN2y9YP3KRmnJ-fight12 (item level 395-401; the same Y8aj night as Magmaw's matched reference). WCL medians: Blood DK 30,247, Fire 42,093, Elemental 46,285, Survival 45,476. Retribution, Assassination and Demonology use the WoWSims fallback. The Feral tank has no reference (none of the three kills had one), so the verdict stays fail for that actor until a reference exists. MxFq fight 24 (item level 360) is unmatched context. wcl_cast_timelines is bound (xAhk fight 12: 4 canonical-spec actors plus 2 additional; enemy casts for all three kills).",
+    "Native normal-mode timers in boss_omnotron_defense_system.cpp now follow the WCL observations (heroic unchanged): Chemical Bomb first 11 s (was 27), Poison Protocol first 22.5 s (was 16), Lightning Conductor repeat 26 s (was 21), Power Generator repeat 30 s (was 20). This needs the round build; no compile was run.",
+    "Acceptance still needs 3 counted c0 native clears with 0 boss-window deaths, measured with the DamageModifier applied. Constructs will hit about 11x harder than in any earlier Omnotron run: expect more tank and healer pressure, and more Vengeance.",
+    "WCL scratch captures (1.2 MB, raw row text) are in ~/.cache/omnotron_wcl_r2 (resultA-D.json, melee_rows.json). They are regenerable from the URLs; DVC them or delete them at the coordinator's discretion."
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+      "patch": "Replace creatures['42166'], creatures['42178'], creatures['42179'] and creatures['42180'] with the objects under the same keys in experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_damage_calibration_registry_patch_v1.json (status calibrated, damage_modifier 11.2, evidence with wcl_report/wcl_fight/wcl_mode 10N/bounds 11.133-11.219/derivation_file, wcl_melee_reference, ledger value_key construct_melee_native_roll_10n). Leave every other key unchanged. Apply together with moving sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql to sql/custom/world/ right before the Omnotron measurement batch. tests/test_omnotron_defense_system_damage_modifier.py::test_registry_patch_rows_satisfy_the_registry_contract pre-checks the rows against the test_encounter_fidelity_registry rules; after the move, update that file's test_file_is_staged_not_auto_applied and MIGRATION path."
+    },
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/cata_raid_strategy_catalog_v1.json",
+      "patch": "In raids.blackwing_descent.bosses[boss_slug=omnotron_defense_system] set \"contract_unresolved_material_count\": 2 and \"ledger_unresolved_material_count\": 2 (was 10). This fixes the failing tests/test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed (10 == 2)."
+    },
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json",
+      "patch": "In bosses[boss_slug=omnotron_defense_system] remove the 8 blockers resolved by source wcl_omnotron_10n_20260927: wcl_matched_10n_kill_references, construct_melee_damage_modifier_10n, shared_health_10n_wcl_derivation, electrical_discharge_chain_damage_scaling, poison_bomb_death_explosion, barrier_absorb_amount, normal_mode_first_cast_and_repeat_timers, static_shock_center_attacker_or_construct (all class still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence). Set ledger_unresolved_material_count 2. Re-index the ledger_refs of the two remaining heroic blockers to the ledger's unresolved[0] and unresolved[1]. Omnotron's share of the totals: scope.blocker_count, resolution_counts.total_blockers, still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence and external_evidence_required each drop by 8. Adjust the hardcoded 53/44 in tests/test_cata_raid_bwd_quantitative_resolution_audit.py to match, combined with the other packets' changes (Atramedes also changed: 9 vs 5)."
+    },
+    {
+      "to": "coordinator",
+      "file": "tools/raid_program/raid_program_inputs.py",
+      "patch": "In _boss_unit replace\n    fidelity_state = contract.get('fidelity_state', (strategy or {}).get('fidelity_state'))\nwith\n    by_mode = contract.get('fidelity_state_by_mode') if isinstance(contract.get('fidelity_state_by_mode'), dict) else {}\n    fidelity_state = by_mode.get(mode) or contract.get('fidelity_state', (strategy or {}).get('fidelity_state'))\n(Reason: a raid program is one mode; Omnotron 10N research is complete while the four-mode contract stays fidelity_blocked for heroic-only items.)"
+    },
+    {
+      "to": "coordinator",
+      "file": "tools/raid_program/encounter_research_view.py",
+      "patch": "In project(): replace\n        section: [row for row in ledger.get(section, []) if row.get(\"key\") == key]\nwith\n        section: [row for row in ledger.get(section, []) if isinstance(row, dict) and row.get(\"key\") == key]\nand replace\n    result[\"sources\"] = [row for row in ledger.get(\"source_catalog\", []) if row[\"id\"] in source_ids]\nwith\n    catalog = ledger.get(\"source_catalog\", [])\n    rows = [dict(value, id=name) for name, value in catalog.items()] if isinstance(catalog, dict) else catalog\n    result[\"sources\"] = [row for row in rows if row.get(\"id\") in source_ids]\n(Reason: `--key` crashes on the Omnotron ledger, where `unresolved` is a list of strings and `source_catalog` is a dict.)"
+    }
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_omnotron_*.py",
+      "result": "41 passed. Earlier in the round: 34 at baseline, then 35 before the WCL data; the gate-reattempt test was replaced by the extraction and calibration tests."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_cata_raid_research_contracts.py tests/test_encounter_fidelity_registry.py tests/test_raid_scoreboard.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py tests/test_raid_program.py tests/test_raid_program_neutrality.py tests/test_scenario_bootstrap.py tests/test_graph_acceptance.py tests/test_raid_shard_neutrality.py",
+      "result": "288 passed, 2 failed. RELEVANT test_cata_raid_research_contracts::test_all_catalog_triplets_reconcile_identity_and_fail_closed: the catalog count for Omnotron is stale (10 vs 2); fix is in patch_requests. PARTLY RELEVANT test_cata_raid_bwd_quantitative_resolution_audit::test_bwd_quantitative_resolution_audit_reconciles_all_53_ledger_blockers: it first fails on Atramedes (9 vs 5, another packet), and Omnotron (10 vs 2) needs the same audit reconciliation; fix is in patch_requests."
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.encounter_research_view <omnotron ledger> --key <claim>",
+      "result": "fails (AttributeError, pre-existing tool bug with this ledger's shape); patch_request filed"
+    }
+  ],
+  "risks": [
+    "DamageModifier 11.2 raises construct melee from about 4.5-6.7k to about 51-76k per swing (1.8 s effective interval under Frost Fever-type slows). Canonical tanks must survive it. Earlier kills at modifier 1 are not comparable for tank or healer metrics.",
+    "Bounds are tight (effective 11.244-11.331). The upper bound comes from one unreduced Toxitron row (51,220) that is assumed to carry no unlogged -10% aura (such as a hunter pet's Demoralizing Screech, not checked). If it did, the upper bound loosens to 11.503, and 11.2 stays valid either way.",
+    "The timer changes apply to 25N normal as well (DBM normal values do not distinguish size); heroic is untouched. The C++ was edited without a compile (no build allowed): the ternaries use same-type chrono literals.",
+    "Matched references are short kills (78.8 s and 88.1 s) with two constructs each. The DPS targets reflect short-fight throughput, as with Magmaw's matched reference.",
+    "The full-raid r11 report recorded 0 boss melee swings for every boss, so live fidelity confirmation needs a shard run that captures melee_resolution."
+  ],
+  "validation_neutrality": "The staged SQL is not auto-applied (sql/custom/staged). The registry is unchanged until the coordinator applies the patch. The native timer edits are in the Omnotron script only, and they only take effect after a build. Stonecore, calibration, legacy Magmaw and other bosses are untouched. Research JSON, the raid target and tests are Omnotron-owned."
+}

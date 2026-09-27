@@ -31,7 +31,7 @@ The guide's 33.5M normal health must not override the measured 10N reference. Th
 
 All 32 checked native base/dice rolls across nine damage events match the pinned client mode rows. The [mode table and longer-log observations](../../../magmaw_longer_wcl_20260912.md#client-values-by-mode) retain the values. This does not check every final modifier. In particular, native `SpellMgrCorrectionsPart04.cpp` changes Mangle's initial weapon hit from 150% to 100%; that hit is separate from periodic Mangle damage.
 
-Boss melee is an unresolved material input. The retained 10N run has 24 Magmaw melee events totaling 20,127 health damage to Mgwtankb. The [historical 10N WCL melee view](https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-taken&view=events&ability=1&options=4098&target=282) has 14 landed U estimates ranging from 111,531 to 178,540, plus seven misses/parries. These are different damage fields and tank setups. Current native templates all use DamageModifier1, making effective melee damage a priority audit. The inherited migration `2025_06_18_06_world.sql` reset all creature damage multipliers to 1 because formula changes required reevaluation. Commit `68a3622133` is an ancestor of all three compared canary sources; it is not a newly introduced patch between them. The current database updater receipt records application. Do not copy an old multiplier or use this run to qualify Vengeance, tank DPS or healer pressure.
+Boss melee is an unresolved material input. The retained 10N run has 24 Magmaw melee events totaling 20,127 health damage to Mgwtankb. The [historical 10N WCL melee view](https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-taken&view=events&ability=1&options=4098&target=282) has 14 landed U estimates ranging from 111,531 to 178,540, plus seven misses/parries. These are different damage fields and tank setups. Since `sql/custom/world/2026_09_23_30_magmaw_damage_modifier.sql`, the 10N entry 41570 uses DamageModifier 16. That value is fitted to this WCL envelope at the attacker-bonus stage (bounds 15.84-16.33) and cross-checked against Mangle's initial hit; see `experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json`. The 25N/10H/25H entries are still uncalibrated. The envelope comes from a single 2024-10-28 log, so it is still subject to the target-era gap. The inherited migration `2025_06_18_06_world.sql` reset all creature damage multipliers to 1 because formula changes required reevaluation. Commit `68a3622133` is an ancestor of all three compared canary sources; it is not a newly introduced patch between them. The current database updater receipt records application. Do not copy an old multiplier or use this run to qualify Vengeance, tank DPS or healer pressure.
 
 The September 12 incoming-timeline repair recovers all 24 melee callbacks from the original a4b9 stream, including 17 with zero health damage. Their native `raw_amount` ranges from 4,466 to 8,012 (mean 5,993.542). The original stream has 8,367 events, 189 accepted delta responses and no gaps. The 29 retained tank snapshots report armor 40,530 throughout, consistent with the seven positive health/raw ratios of 0.445586-0.445727 under the ordinary-hit armor calculation. Snapshot Vengeance ranges from 0 to 1,131 AP against cap 14,738; these are not same-swing aura observations or a Vengeance implementation verdict. This is an analysis repair, not a new pull or a damage adjustment. The [incoming replay publication](../../../../../artifacts/cata_raid_program/magmaw_incoming_timeline_20260912.publication.json) binds the reconstructed view to that immutable run.
 
@@ -67,6 +67,31 @@ Measure the same pull-to-death interval with originated hostile damage, owned pe
 Reset and completion require production checks: legitimate engage and prerequisites; wipe ejects passengers and cleans owned summons/auras; a second pull rebuilds body parts; death yields instance DONE/credit; save/load preserves progression and does not respawn the defeated boss. The current source/loader/instance implements those paths, but source presence is not live proof. Loot and achievement parity remain separately unresolved and must not silently block a bounded combat repair or qualify full content parity.
 
 A completion watchdog ends on clear or a typed failure. Report encounter clear, requested repair and overall performance separately. Research evidence and development canaries are not automatically training data.
+
+### Research state for the BWD 10N raid program (2026-09-27)
+
+The 10N scoreboard already passes: label `b5-d1898555` shows WCL parity for every non-healer actor, native clears and no boss-window deaths. That result does not make the research contract `accepted`, and the contract remains `fidelity_blocked`.
+
+On 2026-09-27 GPT-6 Astra read two 10N kills through the user's Chrome. The raw captures, with their SHA-256 hashes, are listed in the ledger `source_catalog`.
+
+- [`MxFq7TRbvnjGY1hJ` fight 22](https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22): 2024-10-28, before 4.4.2, kill in 2:11.
+- [`Y8ajQ7dbmKMG1RZy` fight 22](https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22): 2025-05-15, 4.4.2 patch but after the February 20 cutoff, kill in 1:51.
+
+What the two kills establish for 10N:
+
+- **Parasites:** 9 per Pillar of Flame, two Pillars per kill, in both logs. This matches the client/native derivation of 9 uninterrupted summons.
+- **Sweltering Armor:** applied at the same timestamp as the Mangle debuff is removed, in both logs. The native script applies it at boarding; that mismatch is the already-specified repair.
+- **Boss melee:** in Y8aj, Vindication and Scarlet Fever together keep a -10% debuff on Magmaw from 0:03.4 to the kill. Its 18 reduced samples (U 109,914-153,626) bound the modifier to 15.14-16.09. Combined with MxFq7, the bounds are 15.84-16.09, so the calibrated DamageModifier 16 stands. Mangle's initial hit and periodic U agree with it.
+- **Timings:** Lava Spew is three 77690 casts 2 s apart per sequence. Massive Crash begins about 8.1 s after Mangle in both kills.
+- **Molten Tantrum:** none observed.
+
+Still open for 10N:
+
+- **Hotfix cutoff:** the agreement between two logs that straddle the cutoff is claim-specific evidence only. The official hotfix notes from 2025-02-20 to 2025-05-15 have not been audited.
+- **Hooks:** WCL shows no hook, impale or vehicle events, so hook-expiry timing needs a client combat log or a native observation.
+- **Head exposure:** its start is not bounded.
+- **Mangle release:** what ends Mangle is not identified.
+- **Retail credit, loot and achievements:** not researched.
 
 ### Magmaw-side prerequisite trash
 

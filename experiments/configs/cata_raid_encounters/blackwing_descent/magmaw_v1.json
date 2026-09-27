@@ -321,7 +321,7 @@
     {"key": "heroic_shadow_breath", "modes": ["10H", "25H"], "strategy": "at 30%; roughly 1s", "repository": "below 30%; first +9s then repeat 1.2s", "status": "mixed_unresolved"}
   ],
   "unresolved": [
-    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Patch 4.4.2 notes establish the version/date but contain no Magmaw tuning; original Cataclysm hotfixes are not proof of Classic carryover."},
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Patch 4.4.2 notes establish the version/date but contain no Magmaw tuning; original Cataclysm hotfixes are not proof of Classic carryover. 2026-09-27: a 2025-05-15 (4.4.2-era, post-cutoff) 10N kill agrees with a 2024-10-28 kill on parasite count, Spew/Crash timing, Armor anchor and the melee envelope; the hotfix notes between the cutoff and that date are not audited."},
     {"key": "live_timers_all_modes", "status": "fidelity_blocked", "detail": "Guide timers conflict with repository intervals for Spit, Spew, Pillar, Mangle/Crash, Blazing Inferno, and Shadow Breath."},
     {
       "key": "mode_damage_and_health_scaling",
@@ -331,7 +331,7 @@
     {
       "key": "parasite_spawn_count_and_scaling",
       "status": "fidelity_blocked",
-      "detail": "Pinned client/native period, duration and extra-initial flag derive9 uninterrupted summons. Actual spawn/interruption behavior remains unverified."
+      "detail": "Pinned client/native period, duration and extra-initial flag derive 9 uninterrupted summons. 10N observed 2026-09-27: 9 per Pillar in two 10N kills (MxFq7TRbvnjGY1hJ, Y8ajQ7dbmKMG1RZy). 25N/10H/25H counts and interruption cases remain unverified."
     },
     {
       "key": "hook_player_count_and_tolerance",
@@ -341,7 +341,7 @@
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "detail": "90s client/native duration corroborated by89.992s historical WCL. Outstanding issue is boarding versus gameplay-release anchor and target-cutoff compatibility, not missing lifetime evidence."
+      "detail": "90s client/native duration corroborated by 89.992s historical WCL. 10N apply anchor observed 2026-09-27 in a pre-4.4.2 and a 4.4.2-era kill: Armor is applied at Mangle removal, which conflicts with native boarding application. The release cause and target-cutoff compatibility remain open."
     },
     {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
     {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}

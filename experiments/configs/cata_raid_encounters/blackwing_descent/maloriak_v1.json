@@ -21,7 +21,7 @@
     "25H"
   ],
   "research_state": "researched_client_rows_native_repaired_not_live_validated",
-  "research_as_of": "2026-09-25",
+  "research_as_of": "2026-09-27",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
     "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
@@ -156,7 +156,7 @@
     "DamageTaken enters phase two at 25% in every mode, cancels any unfinished cauldron visit, releases all remaining minions (two Prime Subjects included) and drinks all bottles.",
     "The boss publishes read-only mechanic timers (GetTimeUntilEncounterMechanic) for the bot blackboard; publication into the blackboard is a coordinator patch.",
     "Scorching Blast damage is split among targets by spell_custom_attr (77679, SHARE_DAMAGE).",
-    "SpellMgrCorrectionsPart04.cpp overwrites Biting Chill EFFECT_0 TargetA twice (TargetB intended); patch requested.",
+    "SpellMgrCorrectionsPart04.cpp used to overwrite Biting Chill EFFECT_0 TargetA twice; the TargetB correction was applied in c0efb93a61.",
     "Biting Chill picks a random target within 60 yd but has a 10-yd cast range, so ranged picks fail natively (open native fidelity item; live target counts pending).",
     "Runtime 4.3.4 DBC rows match the 4.4.2 client rows for every Maloriak spell apart from radius indices (ledger dbc_434_parity_20260925)."
   ],
@@ -210,10 +210,14 @@
   },
   "unresolved_status": {
     "exact_442_client_build_and_hotfix_cutoff": "build and cutoff pinned, Maloriak client rows extracted; Maloriak-specific hotfix carryover unproven",
-    "live_timer_and_cauldron_movement_confirmation_all_modes": "native schedule published; no live or WCL cadence (WCL gated 2026-09-25)",
-    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved and runtime DBC parity closed (radius indices only); target counts (Biting Chill), the SpellMgr target patch and WCL sample compatibility open",
+    "live_timer_and_cauldron_movement_confirmation_all_modes": "native schedule published; one 10N WCL kill (MxFq7TRbvnjGY1hJ fight 34) gives Red/Blue/phase-two cadence (ledger wcl_10N_boss_timeline_fight34); no Green phase, no live native timer observation, heroic and 25-player cadence absent",
+    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved and runtime DBC parity closed (radius indices only); target counts (Biting Chill), WCL sample compatibility open",
     "normal_health_and_enrage_due_current_vs_historical_guide_conflict": "native normal health matches the 2012 guide, conflicts with the 4.4.2 Wowhead page; enrage absent",
     "heroic_prime_subject_fixate_implementation": "no spell data",
     "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source: the Default Group respawn builds a new AI, so counters never survived; Reset is defensive; the random first vial awaits a live observation"
-  }
+  },
+  "native_damage_calibration_20260927": "Maloriak 10N 41378 DamageModifier 9.5 staged (sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql) from WCL MxFq7TRbvnjGY1hJ fight 34 melee U (bounds 9.41-9.71); registry patch requested. 25N/10H/25H and the adds stay open.",
+  "native_repairs_20260927": [
+    "phase_two_cadence: Magma Jets / Acid Nova / Absolute Zero repeat 11.8 / 30.7 / 11.3 s (was 6 / 20 / 7 s), first Absolute Zero 11.3 s after Unstable Mix (was 8.4 s), from WCL 10N fights VL3fW9wNm2PRJDYt 13 and MxFq7TRbvnjGY1hJ 34 (ledger phase_two_wcl_10N)."
+  ]
 }

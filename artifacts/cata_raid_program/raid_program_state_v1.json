@@ -1,0 +1,525 @@
+{
+  "schema": "cata_raid_program_state_v1",
+  "version": 1,
+  "coordinator_worktree": "/home/runiir/Games/trinity-cata",
+  "focus": "program",
+  "active_program": "blackwing_descent:10N",
+  "programs": {
+    "blackwing_descent:10N": {
+      "program_id": "blackwing_descent:10N",
+      "raid": "blackwing_descent",
+      "mode": "10N",
+      "name": "Blackwing Descent",
+      "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
+      "created_utc": "2026-09-27T03:32:10Z",
+      "revision": 8,
+      "stage": "build",
+      "round": 1,
+      "bootstrap_sources": {
+        "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
+        "experiments/configs/cata_raid_strategy_catalog_v1.json": "a9f43adea13476362e196c2276faefc8aa29a0d44feb00d71a980e843da0421a",
+        "experiments/configs/cata_raid_script_readiness_v1.json": "47bdeb5a3ba6972843e75f293cdcc7bc6a535d2021d7037d4fe5836232f95d67",
+        "experiments/configs/validation_scenarios_cata_001.json": "fcd9334af56142b480c4b62fd7bea1d390398d1cd1267c2aa7c25b07319085be",
+        "dataset/bot_runtime_profiles/profiles.json": "75bff40076502904f742b0212014c44f8ff59f1e675d63c57c255a6a3f08454f",
+        "experiments/configs/raid_compositions/blackwing_descent_10n.json": "a9d6aeb0f4ab333415373d3ee6c300f4d2793814d9c5fe584790b26188bb1afb",
+        "experiments/configs/raid_route_compositions/blackwing_descent_10n.json": "609ea65007b911b1f9d7548a720d0c4a30d0875adf0dfeb67988a5f27c9c3449"
+      },
+      "units": {
+        "magmaw": {
+          "unit_id": "raid:blackwing_descent:10N:magmaw",
+          "boss_key": "magmaw",
+          "boss_scenario": "blackwing_descent:magmaw:10N",
+          "cohort_id": "blackwing_descent_10n_magmaw_c0",
+          "scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic",
+          "status": "open",
+          "results": []
+        },
+        "omnotron": {
+          "unit_id": "raid:blackwing_descent:10N:omnotron",
+          "boss_key": "omnotron",
+          "boss_scenario": "blackwing_descent:omnotron_defense_system:10N",
+          "cohort_id": "blackwing_descent_10n_omnotron_c0",
+          "scenario_id": "blackwing_descent_10n_omnotron_c0_diagnostic",
+          "status": "open",
+          "results": []
+        },
+        "chimaeron": {
+          "unit_id": "raid:blackwing_descent:10N:chimaeron",
+          "boss_key": "chimaeron",
+          "boss_scenario": "blackwing_descent:chimaeron:10N",
+          "cohort_id": "blackwing_descent_10n_chimaeron_c0",
+          "scenario_id": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+          "status": "open",
+          "results": []
+        },
+        "atramedes": {
+          "unit_id": "raid:blackwing_descent:10N:atramedes",
+          "boss_key": "atramedes",
+          "boss_scenario": "blackwing_descent:atramedes:10N",
+          "cohort_id": "blackwing_descent_10n_atramedes_c0",
+          "scenario_id": "blackwing_descent_10n_atramedes_c0_diagnostic",
+          "status": "open",
+          "results": []
+        },
+        "maloriak": {
+          "unit_id": "raid:blackwing_descent:10N:maloriak",
+          "boss_key": "maloriak",
+          "boss_scenario": "blackwing_descent:maloriak:10N",
+          "cohort_id": "blackwing_descent_10n_maloriak_c0",
+          "scenario_id": "blackwing_descent_10n_maloriak_c0_diagnostic",
+          "status": "open",
+          "results": []
+        },
+        "nefarian": {
+          "unit_id": "raid:blackwing_descent:10N:nefarian",
+          "boss_key": "nefarian",
+          "boss_scenario": "blackwing_descent:nefarian:10N",
+          "cohort_id": "blackwing_descent_10n_nefarian_c0",
+          "scenario_id": "blackwing_descent_10n_nefarian_c0_diagnostic",
+          "status": "open",
+          "results": []
+        }
+      },
+      "e2e": {
+        "unit_id": "raid:blackwing_descent:10N:e2e",
+        "status": "open",
+        "results": []
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "planned_utc": "2026-09-27T03:32:34Z",
+          "plan_commit": "e19a1127c2e02f5e0c77209486fc0727330c9234",
+          "packets": {
+            "boss:magmaw": {
+              "packet_id": "boss:magmaw",
+              "units": [
+                "raid:blackwing_descent:10N:magmaw"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+                "sql/custom/staged/world/*magmaw*",
+                "tests/test_magmaw_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_magmaw_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_magmaw.handoff.json",
+                "sha256": "7d8461721df73810385fa94838f0ca82b4c6ab329e1c147bf0a677b87deddad9",
+                "recorded_utc": "2026-09-27T08:19:01Z",
+                "patch_requests": 3,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json"
+                ]
+              }
+            },
+            "boss:omnotron": {
+              "packet_id": "boss:omnotron",
+              "units": [
+                "raid:blackwing_descent:10N:omnotron"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+                "sql/custom/staged/world/*omnotron_defense_system*",
+                "tests/test_omnotron_defense_system_*.py",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_omnotron.json",
+                "sql/custom/staged/world/*omnotron*",
+                "tests/test_omnotron_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_omnotron_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json"
+                },
+                {
+                  "input": "encounter_damage_fidelity",
+                  "detail": "not calibrated or not_applicable: 42166, 42178, 42179, 42180",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_omnotron.handoff.json",
+                "sha256": "b510b15094872644b3e5ff6cb344c308a234bfc699ae0ee7c25bb7ba081f7fe9",
+                "recorded_utc": "2026-09-27T08:19:01Z",
+                "patch_requests": 5,
+                "resolved_inputs": [
+                  "encounter_damage_fidelity"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_damage_calibration_registry_patch_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+                  "sql/custom/staged/world/2026_09_27_00_omnotron_defense_system_damage_modifier.sql",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+                  "tests/test_omnotron_defense_system_damage_modifier.py",
+                  "tests/test_omnotron_research_packet.py"
+                ]
+              }
+            },
+            "boss:chimaeron": {
+              "packet_id": "boss:chimaeron",
+              "units": [
+                "raid:blackwing_descent:10N:chimaeron"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+                "sql/custom/staged/world/*chimaeron*",
+                "tests/test_chimaeron_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_chimaeron_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json"
+                },
+                {
+                  "input": "encounter_damage_fidelity",
+                  "detail": "not calibrated or not_applicable: 43296",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_chimaeron.handoff.json",
+                "sha256": "c592cf958bd493ee72f44f5bce0cf17157199c9394a54e4477575e95d0e0f629",
+                "recorded_utc": "2026-09-27T08:19:01Z",
+                "patch_requests": 3,
+                "resolved_inputs": [
+                  "encounter_damage_fidelity",
+                  "encounter_research"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+                  "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+                  "tests/test_chimaeron_damage_modifier.py",
+                  "tests/test_chimaeron_research_data.py"
+                ]
+              }
+            },
+            "boss:atramedes": {
+              "packet_id": "boss:atramedes",
+              "units": [
+                "raid:blackwing_descent:10N:atramedes"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+                "sql/custom/staged/world/*atramedes*",
+                "tests/test_atramedes_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_atramedes_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json"
+                },
+                {
+                  "input": "encounter_damage_fidelity",
+                  "detail": "not calibrated or not_applicable: 41442",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_atramedes.handoff.json",
+                "sha256": "08600d25bc5b2052ad35cde2d0d0fc2624bc4718522303c0ac6c6cef495e9190",
+                "recorded_utc": "2026-09-27T08:19:02Z",
+                "patch_requests": 4,
+                "resolved_inputs": [
+                  "encounter_damage_fidelity"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_damage_calibration_registry_patch_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+                  "sql/custom/staged/world/2026_09_27_01_atramedes_damage_modifier.sql",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+                  "tests/test_atramedes_damage_modifier.py",
+                  "tests/test_atramedes_research_packet.py"
+                ]
+              }
+            },
+            "boss:maloriak": {
+              "packet_id": "boss:maloriak",
+              "units": [
+                "raid:blackwing_descent:10N:maloriak"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+                "sql/custom/staged/world/*maloriak*",
+                "tests/test_maloriak_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_maloriak_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json"
+                },
+                {
+                  "input": "encounter_damage_fidelity",
+                  "detail": "not calibrated or not_applicable: 41378",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_maloriak.handoff.json",
+                "sha256": "a7f1564ab66e7c18cb635583bb49e5a55a71d90722865e254d4ed7a4993691d7",
+                "recorded_utc": "2026-09-27T08:19:08Z",
+                "patch_requests": 1,
+                "resolved_inputs": [
+                  "encounter_damage_fidelity"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_fight13_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+                  "sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+                  "tests/test_maloriak_damage_modifier.py",
+                  "tests/test_maloriak_native_script.py",
+                  "tests/test_maloriak_research_packet.py"
+                ]
+              }
+            },
+            "boss:nefarian": {
+              "packet_id": "boss:nefarian",
+              "units": [
+                "raid:blackwing_descent:10N:nefarian"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json",
+                "sql/custom/staged/world/*nefarian*",
+                "tests/test_nefarian_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_nefarian_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json"
+                },
+                {
+                  "input": "encounter_damage_fidelity",
+                  "detail": "not calibrated or not_applicable: 41270, 41376",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+                }
+              ],
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/boss_nefarian.handoff.json",
+                "sha256": "e940b3d0d07f4e738c81e27bf04ca918192632ff29e4fbe2a2c28ffb91ae80ea",
+                "recorded_utc": "2026-09-27T08:19:03Z",
+                "patch_requests": 3,
+                "resolved_inputs": [
+                  "encounter_damage_fidelity"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_phase_two_survival_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_dps_reference_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_wcl_melee_samples_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json",
+                  "sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql",
+                  "sql/custom/staged/world/2026_09_27_01_nefarian_onyxia_damage_modifier.sql",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp",
+                  "tests/test_nefarian_damage_modifier.py",
+                  "tests/test_nefarian_phase_two_survival.py",
+                  "tests/test_nefarian_research_packet.py"
+                ]
+              }
+            }
+          },
+          "build": null,
+          "run_plans": [],
+          "runs": [],
+          "assessment": null
+        }
+      ],
+      "history": [
+        {
+          "revision": 1,
+          "utc": "2026-09-27T03:32:10Z",
+          "action": "created"
+        },
+        {
+          "revision": 2,
+          "utc": "2026-09-27T03:32:34Z",
+          "action": "plan",
+          "round": 1,
+          "packets": [
+            "boss:atramedes",
+            "boss:chimaeron",
+            "boss:magmaw",
+            "boss:maloriak",
+            "boss:nefarian",
+            "boss:omnotron"
+          ]
+        },
+        {
+          "revision": 3,
+          "utc": "2026-09-27T08:19:01Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:magmaw",
+          "abandoned": false,
+          "external": false
+        },
+        {
+          "revision": 4,
+          "utc": "2026-09-27T08:19:01Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:omnotron",
+          "abandoned": false,
+          "external": false
+        },
+        {
+          "revision": 5,
+          "utc": "2026-09-27T08:19:01Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:chimaeron",
+          "abandoned": false,
+          "external": false
+        },
+        {
+          "revision": 6,
+          "utc": "2026-09-27T08:19:02Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:atramedes",
+          "abandoned": false,
+          "external": false
+        },
+        {
+          "revision": 7,
+          "utc": "2026-09-27T08:19:03Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:nefarian",
+          "abandoned": false,
+          "external": false
+        },
+        {
+          "revision": 8,
+          "utc": "2026-09-27T08:19:08Z",
+          "action": "handoff",
+          "round": 1,
+          "packet": "boss:maloriak",
+          "abandoned": false,
+          "external": false
+        }
+      ]
+    }
+  }
+}

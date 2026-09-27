@@ -1,0 +1,75 @@
+-- Omnotron Defense System 10N constructs: restore melee damage with DamageModifier 11.2.
+-- Entries: Arcanotron 42166, Magmatron 42178, Electron 42179, Toxitron 42180
+-- (10N base templates only).
+--
+-- STAGED. This file is in sql/custom/staged/world. Move it to sql/custom/world
+-- (or apply it by hand) right before the Omnotron measurement batch, so that
+-- it cannot leak into a baseline.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) reset
+-- DamageModifier to 1 for every creature (see
+-- sql/custom/world/2026_09_23_30_magmaw_damage_modifier.sql).
+--
+-- Native formula (Creature.cpp UpdateLevelDependantStats and
+-- CreatureStatSystem.cpp CalculateMinMaxDamage). All four constructs share
+-- the same inputs: unit_class 4, level 88, rank 1, HealthScalingExpansion 3,
+-- BaseVariance 1 and BaseAttackTime 1500.
+--   base = gt_npc_damage_by_class_exp3[88] = 2947.9421
+--   weapon min/max = base, base * 1.5
+--   AP term = creature_classlevelstats(88, 4).attackpower 920 / 14
+--   swing = (weapon + AP term) * 1.5 s * DamageModifier * TOTAL_PCT
+--   At DamageModifier 1, one swing is 4,520.5 to 6,731.4.
+--   The native pipeline adds +1% to auto-attacks (Unit::MeleeDamageBonusDone),
+--   so the effective multiplier is DamageModifier * 1.01.
+--
+-- Matched stage. WCL "U" (unmitigatedAmount) corresponds to the native stage
+-- melee_resolution.after_attacker_bonus_amount. Attacker-side -10% physical
+-- done auras are inside both: Scarlet Fever 81130 and Vindication 26017 were
+-- present. Demoralizing Roar 99, Demoralizing Shout 1160 and Curse of Weakness
+-- 702 were checked and absent. Rows inside Power Generator windows (79624
+-- cast by Arcanotron, +50% damage within 5 yd, 60 s) are excluded.
+--
+-- WCL samples: three 10-player Normal kills, read 2026-09-27 through the
+-- user's Chrome session.
+--   MxFq7TRbvnjGY1hJ fight 24 (2024-10-28): Arcanotron, Magmatron, Toxitron
+--   Y8ajQ7dbmKMG1RZy fight 24 (2025-05-15): Arcanotron, Electron
+--   xAhkN2y9YP3KRmnJ fight 12 (2025-06-11): Magmatron, Toxitron
+-- In total there are 136 landed rows with U. 20 fall in Power Generator
+-- windows. Of the other 116, 43 are unreduced and 73 are under a -10% aura.
+-- Every construct has samples.
+--   Unreduced U: 51,220 (Toxitron, xAhk 0:03.97, before Scarlet Fever)
+--   to 75,687 (Magmatron, MxFq 1:27.56).
+--   U under -10%: smallest 46,798 (Magmatron, MxFq 0:05.33, Scarlet Fever).
+-- Bounds on the effective multiplier:
+--   largest unreduced / native max = 75,687 / 6,731.4 = 11.244 (lower)
+--   smallest unreduced / native min = 51,220 / 4,520.5 = 11.331 (upper)
+--   smallest under -10% / (0.9 * native min) = 46,798 / 4,068.5 = 11.503 (upper)
+-- As DamageModifier (divide by the +1% bonus) the range is 11.133-11.219.
+-- DamageModifier 11.2 gives an effective multiplier of 11.312, inside
+-- 11.244-11.331. The native swing becomes 51,136-76,146 with a mean of
+-- 63,641. The WCL unreduced-equivalent mean is 63,254 over the 116 rows.
+-- The four constructs share the same template inputs, and each construct's
+-- own samples also fit.
+--
+-- Scope. Only the four 10N base entries. The 25N, 10H and 25H difficulty
+-- templates (49047-49058) use BaseAttackTime 2000 and have no same-mode
+-- sample, so they stay at 1 (open). Spell damage (Arcane Annihilator,
+-- Electrical Discharge, Flamethrower, Chemical Cloud and others) does not
+-- read DamageModifier. The worldserver loads creature_template at startup.
+--
+-- The migration is idempotent. The reverse is the commented block below. It
+-- restores 1 only while the value is still 11.2. The comparison has a
+-- tolerance because the column is FLOAT.
+
+UPDATE `creature_template` SET `DamageModifier` = 11.2 WHERE `entry` = 42166;
+UPDATE `creature_template` SET `DamageModifier` = 11.2 WHERE `entry` = 42178;
+UPDATE `creature_template` SET `DamageModifier` = 11.2 WHERE `entry` = 42179;
+UPDATE `creature_template` SET `DamageModifier` = 11.2 WHERE `entry` = 42180;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 42166 AND ABS(`DamageModifier` - 11.2) < 0.001;
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 42178 AND ABS(`DamageModifier` - 11.2) < 0.001;
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 42179 AND ABS(`DamageModifier` - 11.2) < 0.001;
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 42180 AND ABS(`DamageModifier` - 11.2) < 0.001;
+-- END REVERSE MIGRATION

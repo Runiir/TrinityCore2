@@ -14,7 +14,7 @@
   "unresolved_material_count": 7,
   "encounter": "maloriak",
   "purpose": "sourced_value_and_timer_ledger; no live assertion",
-  "research_as_of": "2026-09-25",
+  "research_as_of": "2026-09-27",
   "source_catalog": {
     "wowhead_442": {
       "title": "Maloriak Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -320,6 +320,47 @@
         "Refinement (relayed 2026-09-26): human raids usually reach Green before 30%; bots reach 30% sooner with the reserve still full. Kill adds as they come; if adds are still left at 30%, stop DPS on the boss and kill them one by one; once all are dead, kill the boss and dispel Remedy again. With nothing left at 30% there is no pause."
       ],
       "reliability": "user_first_hand_authoritative"
+    },
+    "wcl_gate_20260927": {
+      "title": "Warcraft Logs access retry on 2026-09-27",
+      "publisher": "classic.warcraftlogs.com",
+      "accessed": "2026-09-27",
+      "claim": "Retried through GPT-6 Astra (codex exec -m gpt-6-astra) on 2026-09-27: headless Playwright Chromium (15 s) and headful installed Google Chrome on DISPLAY :0 (45 s) both stayed on Cloudflare 'Performing security verification' (page title 'Just a moment...', Ray ID a41777e45f9ee4b6) for https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ. No verification control was touched and no WCL page was read. No WCL API client credentials are configured on this host.",
+      "next": "The extraction plan in maloriak_wcl_dps_reference_v1.json is unchanged; it needs a browser session that is not challenged, or authorized WCL API credentials."
+    },
+    "spellfix_applied_c0efb93a61": {
+      "title": "Biting Chill SpellMgr correction applied",
+      "publisher": "repository",
+      "path": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp ApplySpellFix({ 77760 }) (commit c0efb93a61, 2026-09-25, from .git/round2_patches/maloriak/maloriak_biting_chill_spellfix.patch)",
+      "accessed": "2026-09-27",
+      "claim": "77760 EFFECT_0 now sets TargetA TARGET_UNIT_TARGET_ENEMY and TargetB 0; the earlier second write to TargetA is gone."
+    },
+    "full_raid_r11_20260927": {
+      "title": "BWD 10N full-route run r11 (bwd10n-full-r11c-20260927T024402Z)",
+      "publisher": "repository run evidence",
+      "path": "artifacts/cata_raid_program/full_raid_clear_r11_20260927.tar.gz.dvc (report.json)",
+      "accessed": "2026-09-27",
+      "claim": "native_gameplay_outcome.native_clear true (native_route_manifest_and_boss_death); real_boss_kill_evidence includes bwd.maloriak.encounter at route generation 13. encounter_fidelity.boss_melee.41378 recorded 0 swings, so the run gives no Maloriak melee roll or damage observation. It is the full route, not the Maloriak shard, and it was not certified (certification_status uncertified)."
+    },
+    "wcl_MxFq7TRbvnjGY1hJ_34": {
+      "title": "Warcraft Logs report MxFq7TRbvnjGY1hJ fight 34: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (report '10er WT feat. Wongel', owner Amaraaa, guild Ist auch dabei, Everlook EU)",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34",
+      "published": "2024-10-28",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 2:05 (125.1 s). Damage Taken events with options=4098 (U, A, M) for ability 1 from Maloriak (40 rows, all on Blood DK tank Greysnout), Aberration (183 loaded, 80 retained) and Prime Subject (8); Scarlet Fever 81130 windows (42 events); Demoralizing Roar 99, Demoralizing Shout 1160 and Vindication 26017 tables loaded with 'No data available in table'; Growth Catalyst 77987 (523 events, 100 retained, no stack counts shown).",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's verified Chrome session, one own tab, rendered accessibility-tree row text; no verification challenge appeared. Actor/spell link ids truncated in the accessibility tree (actor ids null). Raw capture: ~/.cache/maloriak_wcl/task2_result.json (FNV-1a row checksums verified)."
+    },
+    "wcl_VL3fW9wNm2PRJDYt_13": {
+      "title": "Warcraft Logs report VL3fW9wNm2PRJDYt fight 13: Maloriak 10N kill with a Guardian tank",
+      "publisher": "classic.warcraftlogs.com (report 'TotFW / BWD / BoT', owner - GRZ -, guild Les Cénobites Tranquille, Auberdine (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13",
+      "published": "2024-10-21",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 3:29 (209.6 s), Red/Blue/Green vials before 25%. Summary composition, damage done, 92 enemy cast rows, 449 completed casts for Labraizz (Guardian tank), Tsubii and Xenass (Demonology).",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome; discovery through the Maloriak 10N rankings, fight page verified. Raw capture ~/.cache/maloriak_wcl/task4_result.json."
     }
   },
   "mode_matrix": {
@@ -652,9 +693,10 @@
       "key": "client_biting_chill",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
-        "repo_spellmgr_corrections"
+        "repo_spellmgr_corrections",
+        "spellfix_applied_c0efb93a61"
       ],
-      "value": "77760: 10 s aura, 10 yd, targets 53/16 radius 3, period 1000 triggering 77763 frost damage to allies within 3 yd: 5000 (normal) / 10000 (heroic). SpellMgrCorrectionsPart04.cpp overwrites EFFECT_0 TargetA twice (TARGET_UNIT_TARGET_ENEMY then 0), leaving TargetA 0 and the client TargetB: a static defect (patch requested; runtime effect unobserved)."
+      "value": "77760: 10 s aura, 10 yd, targets 53/16 radius 3, period 1000 triggering 77763 frost damage to allies within 3 yd: 5000 (normal) / 10000 (heroic). SpellMgrCorrectionsPart04.cpp used to overwrite EFFECT_0 TargetA twice (TARGET_UNIT_TARGET_ENEMY then 0); commit c0efb93a61 changed the second write to TargetB, so TargetA is TARGET_UNIT_TARGET_ENEMY and TargetB 0 (runtime target count still unobserved)."
     },
     {
       "key": "client_flash_freeze",
@@ -736,6 +778,330 @@
         "native_stats_20260925"
       ],
       "value": "Per swing at DamageModifier 1: Maloriak 10N 41378 (BaseAttackTime 1500, variance 1) 4,553.3-6,764.2; 25N/10H/25H (2000 ms) 6,071.0-9,019.0; Aberration 41440 (2000 ms, variance 0.33) 5,953.7-8,901.6; Prime Subject 41841 (variance 0.4) 5,965.9-8,913.9; Vile Swill 49811 (rank 1, variance 0.75) 6,027.2-8,975.2. Every template runs at DamageModifier 1 today (2025_06_18_06); TDB-era values were 90/120 (boss), 25/36 (Aberration), 75/100 (Prime Subject), 45 (Vile Swill) on the old damage model and are not reused."
+    },
+    {
+      "key": "boss_melee",
+      "source_refs": [
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "native_stats_20260925"
+      ],
+      "value": "Maloriak 10N melee U 40,559-63,630 over 29 landed swings (3 unreduced 44,663-63,630; 26 under Scarlet Fever 40,559-57,319), median swing gap 1.81 s. Bounds against the native roll 4,553.3-6,764.2 give 9.41 <= m <= 9.71 with the +1% auto-attack bonus; DamageModifier 9.5 is staged in sql/custom/staged/world/2026_09_27_10_maloriak_damage_modifier.sql.",
+      "wcl_10N_samples": {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "fight": 34,
+        "mode": "10N",
+        "date": "2024-10-28",
+        "stage": "after_attacker_bonus_amount",
+        "done_reduction_windows_on_maloriak": [
+          [
+            3.876,
+            5.518
+          ],
+          [
+            5.518,
+            100.175
+          ],
+          [
+            102.906,
+            125.004
+          ]
+        ],
+        "landed": [
+          {
+            "t": 1.797,
+            "u": 45335,
+            "hit_type": "hit",
+            "done_reduction_aura": null,
+            "raw": "00:01.797 Maloriak Melee Greysnout 4237 (A: 13124) (U: 45335, M: 27974, 61.71%) Blood Shield"
+          },
+          {
+            "t": 3.298,
+            "u": 63630,
+            "hit_type": "hit",
+            "done_reduction_aura": null,
+            "raw": "00:03.298 Maloriak Melee Greysnout 11243 (A: 13124) (U: 63630, M: 39263, 61.71%) Blood Shield"
+          },
+          {
+            "t": 4.987,
+            "u": 55101,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:04.987 Maloriak Melee Greysnout 21100 (U: 55101, M: 34001, 61.71%)"
+          },
+          {
+            "t": 6.783,
+            "u": 45566,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:06.783 Maloriak Melee Greysnout 17450 (U: 45566, M: 28116, 61.70%)"
+          },
+          {
+            "t": 8.597,
+            "u": 57319,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:08.597 Maloriak Melee Greysnout 17254 (A: 4696) (U: 57319, M: 35369, 61.71%)"
+          },
+          {
+            "t": 29.533,
+            "u": 42036,
+            "hit_type": "absorb",
+            "done_reduction_aura": "81130",
+            "raw": "00:29.533 Maloriak Melee Greysnout (A: 12878) (U: 42036, M: 29158, 69.36%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 31.346,
+            "u": 54674,
+            "hit_type": "absorb",
+            "done_reduction_aura": "81130",
+            "raw": "00:31.346 Maloriak Melee Greysnout (A: 16750) (U: 54674, M: 37924, 69.36%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 34.941,
+            "u": 41714,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:34.941 Maloriak Melee Greysnout 12655 (A: 125) (U: 41714, M: 28934, 69.36%) Bone Shield"
+          },
+          {
+            "t": 36.755,
+            "u": 44607,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:36.755 Maloriak Melee Greysnout 541 (A: 13124) (U: 44607, M: 30942, 69.37%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 40.766,
+            "u": 45886,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:40.766 Maloriak Melee Greysnout 14058 (U: 45886, M: 31828, 69.36%) Bone Shield"
+          },
+          {
+            "t": 45.424,
+            "u": 51039,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:45.424 Maloriak Melee Greysnout 15636 (U: 51039, M: 35403, 69.36%) Bone Shield"
+          },
+          {
+            "t": 47.235,
+            "u": 53836,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:47.235 Maloriak Melee Greysnout 3369 (A: 13124) (U: 53836, M: 37343, 69.36%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 50.843,
+            "u": 47837,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:50.843 Maloriak Melee Greysnout 233 (A: 14422) (U: 47837, M: 33182, 69.36%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 52.635,
+            "u": 40559,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:52.635 Maloriak Melee Greysnout 12426 (U: 40559, M: 28133, 69.36%) Bone Shield"
+          },
+          {
+            "t": 54.449,
+            "u": 47772,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:54.449 Maloriak Melee Greysnout 13830 (A: 806) (U: 47772, M: 33136, 69.36%) Bone Shield"
+          },
+          {
+            "t": 58.579,
+            "u": 55883,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "00:58.579 Maloriak Melee Greysnout 8276 (A: 13124) (U: 55883, M: 34483, 61.71%) Blood Shield"
+          },
+          {
+            "t": 63.188,
+            "u": 48764,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:03.188 Maloriak Melee Greysnout 18674 (U: 48764, M: 30090, 61.71%)"
+          },
+          {
+            "t": 64.985,
+            "u": 53752,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:04.985 Maloriak Melee Greysnout 20584 (U: 53752, M: 33168, 61.71%)"
+          },
+          {
+            "t": 77.538,
+            "u": 45043,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:17.538 Maloriak Melee Greysnout 2459 (A: 14790) (U: 45043, M: 27794, 61.71%) Blood Shield"
+          },
+          {
+            "t": 79.338,
+            "u": 41831,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:19.338 Maloriak Melee Greysnout 16019 (U: 41831, M: 25812, 61.71%)"
+          },
+          {
+            "t": 82.946,
+            "u": 47182,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:22.946 Maloriak Melee Greysnout 18069 (U: 47182, M: 29113, 61.70%)"
+          },
+          {
+            "t": 84.751,
+            "u": 43843,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:24.751 Maloriak Melee Greysnout 13432 (U: 43843, M: 30411, 69.36%) Bone Shield"
+          },
+          {
+            "t": 90.53,
+            "u": 55346,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:30.530 Maloriak Melee Greysnout 3831 (A: 13124) (U: 55346, M: 38391, 69.37%) Bone Shield Blood Shield"
+          },
+          {
+            "t": 92.337,
+            "u": 52432,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:32.337 Maloriak Melee Greysnout 16063 (U: 52432, M: 36369, 69.36%) Bone Shield"
+          },
+          {
+            "t": 98.612,
+            "u": 42094,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "01:38.612 Maloriak Melee Greysnout 12896 (U: 42094, M: 29198, 69.36%) Bone Shield"
+          },
+          {
+            "t": 100.423,
+            "u": 44663,
+            "hit_type": "hit",
+            "done_reduction_aura": null,
+            "raw": "01:40.423 Maloriak Melee Greysnout 13682 (U: 44663, M: 30981, 69.37%) Bone Shield"
+          },
+          {
+            "t": 109.888,
+            "u": 45334,
+            "hit_type": "absorb",
+            "done_reduction_aura": "81130",
+            "raw": "01:49.888 Maloriak Melee Greysnout (A: 17360) (U: 45334, M: 27974, 61.71%) Blood Shield Dancing Rune Weapon"
+          },
+          {
+            "t": 119.596,
+            "u": 47898,
+            "hit_type": "absorb",
+            "done_reduction_aura": "81130",
+            "raw": "01:59.596 Maloriak Melee Greysnout (A: 18342) (U: 47898, M: 29556, 61.71%) Blood Shield Dancing Rune Weapon"
+          },
+          {
+            "t": 121.409,
+            "u": 47656,
+            "hit_type": "hit",
+            "done_reduction_aura": "81130",
+            "raw": "02:01.409 Maloriak Melee Greysnout 1453 (A: 16796) (U: 47656, M: 29407, 61.71%) Blood Shield"
+          }
+        ],
+        "avoided": [
+          {
+            "t": 10.389,
+            "hit_type": "dodge",
+            "raw": "00:10.389 Maloriak Melee Greysnout Dodge"
+          },
+          {
+            "t": 12.186,
+            "hit_type": "dodge",
+            "raw": "00:12.186 Maloriak Melee Greysnout Dodge"
+          },
+          {
+            "t": 27.734,
+            "hit_type": "dodge",
+            "raw": "00:27.734 Maloriak Melee Greysnout Dodge Bone Shield Blood Shield"
+          },
+          {
+            "t": 33.141,
+            "hit_type": "dodge",
+            "raw": "00:33.141 Maloriak Melee Greysnout Dodge Bone Shield"
+          },
+          {
+            "t": 49.035,
+            "hit_type": "miss",
+            "raw": "00:49.035 Maloriak Melee Greysnout Miss Bone Shield"
+          },
+          {
+            "t": 81.138,
+            "hit_type": "parry",
+            "raw": "01:21.138 Maloriak Melee Greysnout Parry"
+          },
+          {
+            "t": 86.552,
+            "hit_type": "parry",
+            "raw": "01:26.552 Maloriak Melee Greysnout Parry Bone Shield"
+          },
+          {
+            "t": 96.814,
+            "hit_type": "parry",
+            "raw": "01:36.814 Maloriak Melee Greysnout Parry Bone Shield"
+          },
+          {
+            "t": 111.688,
+            "hit_type": "dodge",
+            "raw": "01:51.688 Maloriak Melee Greysnout Dodge Blood Shield Dancing Rune Weapon"
+          },
+          {
+            "t": 113.5,
+            "hit_type": "dodge",
+            "raw": "01:53.500 Maloriak Melee Greysnout Dodge Blood Shield Dancing Rune Weapon"
+          },
+          {
+            "t": 123.207,
+            "hit_type": "dodge",
+            "raw": "02:03.207 Maloriak Melee Greysnout Dodge"
+          }
+        ]
+      },
+      "add_melee_envelopes": {
+        "aberration_41440": {
+          "rows_captured": 80,
+          "landed_with_u": 66,
+          "u_min": 5960,
+          "u_max": 11677,
+          "rows_loaded": 183,
+          "note": "Open: every swing carries an unknown number of Growth Catalyst stacks (+10% each in normal, self-applied from 42.3 s); the minimum U 5,960 already equals the native minimum roll at modifier 1 (5,953.7), so a modifier cannot be bounded without stack counts."
+        },
+        "prime_subject_41841": {
+          "rows_captured": 8,
+          "landed_with_u": 7,
+          "u_min": 19983,
+          "u_max": 128119,
+          "note": "Open: 8 rows only, spread 19,983-128,119 by Growth Catalyst stacks and a single phase-two window."
+        }
+      }
+    },
+    {
+      "key": "wcl_10N_boss_timeline_fight34",
+      "source_refs": [
+        "wcl_MxFq7TRbvnjGY1hJ_34"
+      ],
+      "value": "Enemy Begin Cast/Cast rows, MxFq7TRbvnjGY1hJ fight 34 (10N kill, 125.1 s; times are Begin Cast where shown, else Cast). Arcane Storm 13.1, 42.3, 60.1, 93.7 (4 channels stopped: Greysnout 3, Sélán 1). Remedy 16.4, 45.6, 92.1. Throw Red Bottle 18.0 (cast 18.5), Fire Imbued 26.1; Consuming Flames 34.2, 50.4; Scorching Blast 47.2, 63.0. Release Aberrations 37.5, 55.3, 87.2 (three successful casts, Growth Catalyst on 3 new Aberrations each). Throw Blue Bottle 67.8 (cast 68.3), Frost Imbued 75.9; Biting Chill 88.9, 100.2; no Flash Freeze cast row. Release All Minions 101.8-103.3 (9 Aberrations and 2 Prime Subjects gain Growth Catalyst at 106.6-107.5), Unstable Mix 109.9, Magma Jets 114.5 (cast 116.5), Acid Nova 118.0, Absolute Zero 121.2; Prime Subject Rend on the add tank 121.2 and 123.7. Heroism 106.4 (after the 25% transition). No Green phase in this kill.",
+      "native_comparison": "Anchored on the Imbued cast: the next vial throw came 41.7 s after Fire Imbued (native 40 s + 1.3 s throw); Red Release Aberrations 11.4 s (native 11 s), Red Arcane Storm 16.2 s (native 15.5 s), Red Remedy 19.5 s (native 20.5 s). Blue Release 11.3 s (native 14.5 s) and Blue Remedy 16.2 s (native 21.5 s) came earlier than native; one sample only, and the native anchor may be the throw rather than the Imbued cast. The first vial was Red here (native random Red/Blue). Prime Subject Rend exists in the log (spell id truncated in the view)."
+    },
+    {
+      "key": "wcl_10N_boss_timeline_fight13",
+      "source_refs": [
+        "wcl_VL3fW9wNm2PRJDYt_13"
+      ],
+      "value": "Maloriak Begin Cast times, VL3fW9wNm2PRJDYt fight 13 (10N kill, 209.6 s). Vials: Red 17.5, Blue 67.6, Green 117.8 s (50.2 s throw to throw; Fire/Frost Imbued 25.6/75.7 s, next throw 42.1 s after each Imbued; Slime Imbued 125.1 s). Arcane Storm 12.6, 41.7, 57.9, 91.9, 104.9, 129.2, 143.7. Release Aberrations 15.8 (before the first vial), 36.9, 53.1, 87.1, 108.1, 134.0, 151.8. Remedy 43.3, 64.4, 93.5, 132.4, then in phase two 185.8 and 208.4. Consuming Flames 33.6, 45.0; Scorching Blast 38.5, 49.8, 61.2; Biting Chill 88.7, 100.0, 111.4. Release All Minions 158.3, Unstable Mix 166.4; Magma Jets 169.8, 182.2, 193.7, 205.5; Acid Nova 172.8, 203.5; Absolute Zero 177.7, 189.0, 200.3; Prime Subject Rend on the add tank 177.3, 179.3, 193.4, 203.1.",
+      "native_comparison": "Phase two (from Unstable Mix): Magma Jets first 3.5 s (native 3.5 s), repeats 12.4/11.4/11.8 s (native 6 s); Acid Nova first 6.5 s (fight 34: 8.1 s; native 8.4 s), repeat 30.7 s (native 20 s); Absolute Zero first 11.3 s in both kills (native 8.4 s), repeats 11.3/11.3 s (native 7 s). Fixed in boss_maloriak.cpp (first Absolute Zero 11.3 s; repeats 11.8/30.7/11.3 s). Remedy continues in phase two (185.8, 208.4 s) but the native EVENT_REMEDY is phase-one only: open native fidelity item. Release Aberrations was cast at 15.8 s, before the first vial: native schedules it only after an imbue."
     }
   ],
   "timers": [
@@ -923,15 +1289,14 @@
     },
     {
       "key": "phase_two_local_repeat",
-      "value": "magma_jets_6s;acid_nova_20s;absolute_zero_7s",
+      "value": "10N: magma_jets_11.8s;acid_nova_30.7s;absolute_zero_11.3s;first_absolute_zero_11.3s_after_unstable_mix (was 6/20/7 s, first 8.4 s, until 2026-09-27). 25N/10H/25H: unchanged 6/20/7 s, first Absolute Zero 8.4 s (no same-mode evidence)",
       "modes": [
-        "10N",
-        "10H",
-        "25N",
-        "25H"
+        "10N"
       ],
       "source": "local_cpp:UpdateAI",
-      "confidence": "implementation_only"
+      "confidence": "implementation_only",
+      "note": "The script has no mode branch, so 10H/25N/25H inherit the 10N WCL cadence; no other-mode sample exists.",
+      "mode_note": "The WCL cadence is selected only on RAID_DIFFICULTY_10MAN_NORMAL (boss_maloriak.cpp IsTenNormal); other difficulties keep the previous timers."
     },
     {
       "key": "phase_two_guide_approx",
@@ -944,6 +1309,15 @@
       ],
       "source": "wowhead_442",
       "confidence": "current_guide_approximation_conflicts_local"
+    },
+    {
+      "key": "phase_two_wcl_10N",
+      "value": "magma_jets_11.4-12.4s(n=3);acid_nova_30.7s(n=1);absolute_zero_11.3s(n=2);first_after_unstable_mix:magma_jets_3.5/4.6s,acid_nova_6.5/8.1s,absolute_zero_11.3/11.3s",
+      "modes": [
+        "10N"
+      ],
+      "source": "wcl_VL3fW9wNm2PRJDYt_13;wcl_MxFq7TRbvnjGY1hJ_34",
+      "confidence": "observed_begin_cast_intervals_two_kills"
     },
     {
       "key": "vile_swill_dark_sludge_local",
@@ -1207,7 +1581,7 @@
     {
       "key": "exact_spell_coefficients_and_target_counts_by_mode",
       "status": "fidelity_blocked",
-      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). Open: target counts per mode (Biting Chill native_fidelity_items.biting_chill_target_selection, live counts pending), the SpellMgr target patch, and WCL sample compatibility."
+      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). Open: target counts per mode (Biting Chill native_fidelity_items.biting_chill_target_selection, live counts pending) and WCL sample compatibility. The SpellMgr target correction is applied (c0efb93a61)."
     },
     {
       "key": "normal_health_and_enrage_values",
@@ -1283,7 +1657,8 @@
       {
         "key": "biting_chill_target_correction",
         "file": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
-        "defect": "second assignment writes TargetA instead of TargetB"
+        "defect": "second assignment writes TargetA instead of TargetB",
+        "applied_in": "c0efb93a61 (Round 2 integration, 2026-09-25)"
       }
     ],
     "left_unchanged_unresolved": [
@@ -1468,12 +1843,14 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Order resolved (random Red/Blue, other, Green; heroic Black first and after each Green). Native: face 15.5 s after pull, 40 s after each imbue (Black 90 s).",
-      "next": "WCL boss casts: first throw time and throw-to-throw intervals (views in maloriak_wcl_dps_reference_v1.json).",
+      "known": "Order resolved (random Red/Blue, other, Green; heroic Black first and after each Green). Native: face 15.5 s after pull, 40 s after each imbue (Black 90 s). First vial Red: Throw Red Bottle begin 18.0 s (native face 15.5 s + 1.3 s throw = 16.8 s); Blue throw 67.8 s, 41.7 s after Fire Imbued (native 40 s + 1.3 s). WCL fight 13: Red 17.5, Blue 67.6, Green 117.8 s (50.2 s apart; next throw 42.1 s after each Imbued).",
+      "next": "Green-phase cadence and a second kill to size the interval spread.",
       "source_refs": [
         "local_cpp",
         "icy_cata_classic",
-        "icy_original"
+        "icy_original",
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_VL3fW9wNm2PRJDYt_13"
       ]
     },
     {
@@ -1485,11 +1862,12 @@
         "25H"
       ],
       "status": "resolved_values_cadence_partial",
-      "known": "Client 500 ms cast + 6 s channel, 11309 (normal) / 47124 (heroic) per 1 s tick in 80 yd; interrupt every cast.",
-      "next": "WCL cadence and interrupt success timing.",
+      "known": "Client 500 ms cast + 6 s channel, 11309 (normal) / 47124 (heroic) per 1 s tick in 80 yd; interrupt every cast. WCL fight 34: 13.1, 42.3, 60.1, 93.7 s; four channels stopped (Greysnout 3, Sélán 1).",
+      "next": "Interrupt latency after channel start (needs event-level interrupt times).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
-        "icy_cata_classic"
+        "icy_cata_classic",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1501,11 +1879,12 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Client 10 s heal 25000/75000/50000/150000 per s; dispel/spellsteal tactic.",
-      "next": "Observe heal ticks to settle the Wowhead ramp claim.",
+      "known": "Client 10 s heal 25000/75000/50000/150000 per s; dispel/spellsteal tactic. WCL fight 34: Remedy at 16.4, 45.6, 92.1 s.",
+      "next": "Heal ticks and dispels (dispels view) to settle the Wowhead ramp claim.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
-        "wowhead_442"
+        "wowhead_442",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1517,13 +1896,14 @@
         "25H"
       ],
       "status": "partial",
-      "known": "3 per success, 18 reserve, 1.5 s interruptible cast; catalyst radius 10 yd +10/20% damage, -20% taken; guides: slime removes catalyst.",
-      "next": "WCL: successful releases per cycle, add melee U, catalyst removal on slime.",
+      "known": "3 per success, 18 reserve, 1.5 s interruptible cast; catalyst radius 10 yd +10/20% damage, -20% taken; guides: slime removes catalyst. WCL fight 34: three successful Release Aberrations (37.5, 55.3, 87.2 s), three Aberrations each; Release All Minions frees 9 more and 2 Prime Subjects.",
+      "next": "Catalyst removal by Debilitating Slime (needs a kill with a Green phase).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "icy_cata_classic",
         "icy_original",
-        "local_cpp"
+        "local_cpp",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1535,11 +1915,12 @@
         "25H"
       ],
       "status": "resolved_values_cadence_partial",
-      "known": "Scorching Blast split cone and Consuming Flames values per mode.",
-      "next": "WCL split counts and cadence.",
+      "known": "Scorching Blast split cone and Consuming Flames values per mode. WCL fight 34: Consuming Flames 34.2, 50.4 s; Scorching Blast 47.2, 63.0 s.",
+      "next": "Scorching Blast split counts (damage-taken rows per cast).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
-        "repo_spell_custom_attr"
+        "repo_spell_custom_attr",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1551,12 +1932,14 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native Flash Freeze targeting excludes the victim and players attacked by an Aberration; Biting Chill picks within 60 yd but has a 10-yd cast range.",
-      "next": "Live and WCL: Biting Chill target counts per Blue phase (native_fidelity_items.biting_chill_target_selection); apply the SpellMgr target patch.",
+      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native Flash Freeze targeting excludes the victim and players attacked by an Aberration; Biting Chill picks within 60 yd but has a 10-yd cast range. WCL fight 34: Biting Chill cast 88.9 and 100.2 s; no Flash Freeze cast row in 34 s of Blue.",
+      "next": "Biting Chill targets per cast (player debuff rows) and a longer Blue phase for Flash Freeze.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "repo_spellmgr_corrections",
-        "icy_original"
+        "icy_original",
+        "spellfix_applied_c0efb93a61",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1568,11 +1951,12 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd.",
+      "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd. WCL fight 13: Green throw 117.8 s (50.2 s after Blue), Slime Imbued 125.1 s; the 25% transition (158.3 s) came 40.5 s after the Green throw, so the Green-to-next-vial interval is still unobserved.",
       "next": "Observe catalyst removal, kill timing of released adds, and the Green-to-next-vial interval (conflicts.green_duration).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
-        "icy_cata_classic"
+        "icy_cata_classic",
+        "wcl_VL3fW9wNm2PRJDYt_13"
       ]
     },
     {
@@ -1584,12 +1968,14 @@
         "25H"
       ],
       "status": "partial",
-      "known": "25% transition, release all, drink all, Magma Jets / Acid Nova / Absolute Zero values; native 6 / 20 / 7 s cadence; vial pipeline leak repaired.",
-      "next": "WCL cadence (guides 6-10 / 30 / 10 s) and Prime Subject melee/Rend.",
+      "known": "25% transition, release all, drink all, Magma Jets / Acid Nova / Absolute Zero values; native 6 / 20 / 7 s cadence; vial pipeline leak repaired. WCL fight 34: Release All Minions 101.8 s, Magma Jets 114.5 s, Acid Nova 118.0 s, Absolute Zero 121.2 s; Prime Subject Rend on the add tank (121.2, 123.7 s). WCL fight 13 repeats: Magma Jets 11.4-12.4 s, Acid Nova 30.7 s, Absolute Zero 11.3 s; the native 6/20/7 s repeats were corrected in boss_maloriak.cpp.",
+      "next": "Live observation of the corrected phase-two cadence; Remedy in phase two (native_fidelity_items.phase_two_remedy).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "local_cpp",
-        "icy_original"
+        "icy_original",
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_VL3fW9wNm2PRJDYt_13"
       ]
     },
     {
@@ -1615,11 +2001,13 @@
         "25H"
       ],
       "status": "blocked",
-      "known": "Native health and melee rolls at DamageModifier 1 computed; every template at DamageModifier 1.",
-      "next": "WCL health derivation and melee U samples (maloriak_wcl_dps_reference_v1.json views boss_melee and health) to calibrate 41378, 41440, 41841.",
+      "known": "Native health and melee rolls at DamageModifier 1 computed. 41378 10N calibrated from WCL MxFq7TRbvnjGY1hJ fight 34 (m 9.5 staged, bounds 9.41-9.71).",
+      "next": "Stage and observe 41378 at 9.5 live (boss_melee after-attacker stage within +-10% of WCL 40,559-63,630). Open: 10N health derivation, Aberration/Prime Subject modifiers (need Growth Catalyst stack counts), and every 25N/10H/25H template.",
       "source_refs": [
         "native_stats_20260925",
-        "wcl_gate_20260925"
+        "wcl_gate_20260925",
+        "wcl_gate_20260927",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
       ]
     },
     {
@@ -1627,12 +2015,13 @@
       "modes": [
         "10N"
       ],
-      "status": "resolved_patch_requested",
-      "known": "Plateau root cause and the kill-attribution gap for adaptive owners; safe regroup and patrol node computed on the pinned navmesh.",
-      "next": "Apply the scenario-row and route-observer patches; observe regroup -> patrol -> encounter -> native clear.",
+      "status": "resolved_applied_full_route_kill_observed",
+      "known": "Plateau root cause and the kill-attribution gap for adaptive owners; safe regroup and patrol node computed on the pinned navmesh. Both patches are applied: the scenario rows are in validation_scenarios_cata_001.json and SubmitMaloriakKernelCandidates publishes world.validation_route_maloriak_observation. Full-route run r11 killed Maloriak natively (route generation 13).",
+      "next": "Observe regroup -> patrol -> encounter -> native clear in the Maloriak shard itself (the r11 kill was the full route and uncertified).",
       "source_refs": [
         "round1_two_shard_proof_20260925",
-        "navmesh_669_probe_20260925"
+        "navmesh_669_probe_20260925",
+        "full_raid_r11_20260927"
       ]
     }
   ],
@@ -1706,9 +2095,9 @@
     },
     {
       "key": "biting_chill_spellmgr_target",
-      "status": "patch_requested",
-      "native": "SpellMgrCorrectionsPart04.cpp overwrites 77760 EFFECT_0 TargetA twice; the review confirmed TargetB is intended (DBC).",
-      "next": "Apply maloriak_biting_chill_spellfix.patch."
+      "status": "applied",
+      "native": "SpellMgrCorrectionsPart04.cpp overwrote 77760 EFFECT_0 TargetA twice; the review confirmed TargetB is intended (DBC). Commit c0efb93a61 applied maloriak_biting_chill_spellfix.patch.",
+      "next": "Count Biting Chill applications per Blue phase live (biting_chill_target_selection)."
     },
     {
       "key": "consuming_flames_self_proc",
@@ -1727,6 +2116,35 @@
       "status": "observed_native_consistent",
       "native": "Maloriak walks to CauldronMovePosition (-106.68, -475.44) at every vial and, left there by his tank, fights at the rim of the cauldron gameobject 203306 (-105.75, -485.39; displayId 9554 at scale 0.7314, half-extent 8.93 yd, 8.38 yd tall), whose model blocks line of sight across the back half of the room (r04, lines with both ends outside the footprint: blocked at most 8.58 yd from the centre, clear at least 9.02 yd).",
       "next": "Strategy: the main tank holds him at MainTankSpot (-105.8, -449.0) in phase one (and keeps holding it while he is passive or out of melee reach); formation slots and kept ranged places reject any point whose line to him passes within 9.5 yd of the cauldron (0.5 yd over the half-extent), while he himself is outside that radius; the cauldron never holds melee offense."
+    },
+    {
+      "key": "phase_two_cadence",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "Magma Jets / Acid Nova / Absolute Zero repeated every 6 / 20 / 7 s, with Absolute Zero first at 8.4 s after Unstable Mix.",
+      "sources": [
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
+      ],
+      "next": "Observe live on 10N: Magma Jets about 11.8 s apart, Acid Nova about 30.7 s, Absolute Zero about 11.3 s (first at 11.3 s). 25N/10H/25H keep 6/20/7 s and a first Absolute Zero at 8.4 s until same-mode WCL evidence exists."
+    },
+    {
+      "key": "phase_two_remedy",
+      "status": "open",
+      "native": "EVENT_REMEDY is scheduled with PHASE_ONE, so phase two never casts Remedy; WCL fight 13 shows Remedy at 185.8 and 208.4 s in phase two.",
+      "sources": [
+        "wcl_VL3fW9wNm2PRJDYt_13"
+      ],
+      "next": "Confirm with a second long phase two before scheduling Remedy in phase two (bot dispel duties would change)."
+    },
+    {
+      "key": "pre_vial_release_aberrations",
+      "status": "open",
+      "native": "Native schedules Release Aberrations only after an imbue; WCL fight 13 shows one at 15.8 s, before the first vial (fight 34 did not).",
+      "sources": [
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
+      ],
+      "next": "A third kill to see whether the pull cast is regular."
     }
   ]
 }

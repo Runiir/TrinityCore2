@@ -1,0 +1,72 @@
+{
+  "schema": "chimaeron_damage_calibration_registry_patch_v1",
+  "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+  "apply": "Replace target.creatures['43296'] with creatures['43296'] verbatim. Leave 47774/47775/47776 (25N/10H/25H, open) unchanged.",
+  "owner": "coordinator",
+  "staged_sql": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+  "staged_sql_apply": "Move the staged file to sql/custom/world/ (or apply with mysql) right before the Chimaeron measurement batch, after reading back the live creature_template row 43296 (expected DamageModifier 1, BaseAttackTime 4000). A live kill must then show encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL reference.",
+  "creatures": {
+    "43296": {
+      "name": "Chimaeron",
+      "raid": "blackwing_descent",
+      "boss": "chimaeron",
+      "mode": "10N",
+      "base_entry": 43296,
+      "role": "boss",
+      "status": "calibrated",
+      "damage_modifier": 20.0,
+      "template_at_audit": {
+        "base_attack_time_ms": 4000,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1,
+        "level": 88
+      },
+      "native_roll_at_modifier_1": {
+        "min": 12142.1,
+        "max": 18037.9
+      },
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 27,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {
+          "min": 12142.1,
+          "max": 18037.9
+        },
+        "bounds": {
+          "lower": 19.3757,
+          "upper": 20.88,
+          "with_auto_attack_bonus": {
+            "lower": 19.1838,
+            "upper": 20.67
+          }
+        },
+        "bounds_derivation": "effective lower = max(largest unreduced 345,349 / 18,037.9 = 19.146, largest reduced 314,547 / (0.9 * 18,037.9) = 19.3757) = 19.3757; effective upper = min(smallest unreduced 253,562 / 12,142.1 = 20.883, smallest reduced 285,219 / (0.9 * 12,142.1) = 26.10) = 20.88; with the +1% auto-attack bonus m * 1.01 must lie in 19.3757-20.88, i.e. 314,547 / (0.9 * 18,037.9 * 1.01) = 19.1838 <= m <= 20.67",
+        "cross_check": "Mean unreduced U 299,823 / (native mean 15,090.0 * 1.01) = 19.67. Same-fight health derivation 20,699,972 equals native 10N health, so the sample is at the repository's tuning. No weapon-percent ability exists (Break/Double Attack deal no damage of their own).",
+        "sample_note": "Scarlet Fever samples (7) average 294,874 vs 299,823 unreduced, not the expected 10% lower. The lower bound is set by the largest reduced row (314,547 under -10%), the upper bound by the smallest unreduced row; at 20 every unreduced row lies in the native envelope and every reduced row in the -10% envelope.",
+        "derivation_file": "sql/custom/staged/world/2026_09_27_00_chimaeron_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_chimaeron_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 253562,
+        "u_max": 345349,
+        "u_mean": 297784.8,
+        "u_mean_basis": "mean of all 17 landed U values (10 unreduced mean 299,823; 7 under Scarlet Fever mean 294,874)",
+        "landed_samples": 17,
+        "avoided_samples": 6,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_27"
+      },
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+        "value_key": "boss_melee",
+        "samples_field": "wcl_10N_samples"
+      }
+    }
+  }
+}

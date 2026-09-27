@@ -412,28 +412,54 @@ def _native_event_input(combat_log: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _wcl_actor(actor: Mapping[str, Any], manifest_path: Path) -> dict[str, Any]:
+    item = dict(actor)
+    csv_path = item.get("csv")
+    if csv_path and not item.get("casts"):
+        path = Path(str(csv_path))
+        if not path.is_absolute():
+            path = manifest_path.parent / path
+        item = {
+            **item,
+            **parse_wcl_csv(
+                path,
+                actor_id=str(item.get("actor_id") or item.get("class_spec") or "unknown"),
+                class_spec=str(item.get("class_spec") or "unknown"),
+            ),
+        }
+    return item
+
+
+# Private keys on actors loaded from additional_references: their own fight and duration.
+REFERENCE_ID_KEY, REFERENCE_DURATION_KEY = "_reference_id", "_reference_duration_sec"
+
+
 def _load_wcl_actors(manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """The main fight's actors, then each additional_references fight's actors.
+
+    Main-fight actors come first, so a spec's first reference stays the main fight;
+    an additional-fight actor keeps its own fight's duration_sec.
+    """
     manifest = _load_json(manifest_path)
-    actors: list[dict[str, Any]] = []
-    for actor in manifest.get("actors", []):
-        if not isinstance(actor, dict):
+    actors = [_wcl_actor(actor, manifest_path) for actor in manifest.get("actors", []) if isinstance(actor, dict)]
+    for reference in manifest.get("additional_references") or []:
+        if not isinstance(reference, dict):
             continue
-        item = dict(actor)
-        csv_path = item.get("csv")
-        if csv_path and not item.get("casts"):
-            path = Path(str(csv_path))
-            if not path.is_absolute():
-                path = manifest_path.parent / path
-            item = {
-                **item,
-                **parse_wcl_csv(
-                    path,
-                    actor_id=str(item.get("actor_id") or item.get("class_spec") or "unknown"),
-                    class_spec=str(item.get("class_spec") or "unknown"),
-                ),
-            }
-        actors.append(item)
+        duration = float(reference.get("duration_sec") or 0.0)
+        if duration <= 0.0:
+            continue
+        for actor in reference.get("actors") or []:
+            if isinstance(actor, dict):
+                actors.append({**_wcl_actor(actor, manifest_path),
+                               REFERENCE_ID_KEY: reference.get("reference_id"),
+                               REFERENCE_DURATION_KEY: duration})
     return manifest, actors
+
+
+def _reference_actor_key(actor: Mapping[str, Any]) -> tuple[str, str]:
+    """(report code, actor name) of a WCL timeline actor, e.g. ("MxFq7TRbvnjGY1hJ", "Jägamara")."""
+    report = str(actor.get("actor_id") or "").split("-source", 1)[0]
+    return report, str(actor.get("source_name") or actor.get("name") or "")
 
 
 def compare_timelines(
@@ -441,8 +467,20 @@ def compare_timelines(
     wcl_manifest_path: Path,
     *,
     include_roles: frozenset[str] = frozenset({"dps", "tank", "healer"}),
+    route_node_id: str = ENCOUNTER_ROUTE,
+    target_entries: frozenset[int] | None = ENCOUNTER_TARGET_ENTRIES,
+    excluded_reference_actors: frozenset[tuple[str, str]] = frozenset(),
+    excluded_target_entries: frozenset[int] = frozenset(),
 ) -> dict[str, Any]:
-    """Build a compact all-actor comparison from one closed bot run."""
+    """Build a compact all-actor comparison from one closed bot run.
+
+    ``route_node_id`` names the encounter node (Magmaw by default). ``target_entries``
+    limits bot damage to those creature entries; None admits every creature target
+    of that node's damage events. ``excluded_reference_actors`` holds (report code, actor name)
+    pairs the DPS reference excludes; such an actor never becomes a cast baseline.
+    ``excluded_target_entries`` drops bot damage on those creature entries (the WCL damage-done
+    scope leaves them out); WCL cast rows are never filtered, since they include casts on them.
+    """
     report = _load_json(bot_run / "report.json")
     from tools.bot_ml.closed_capture_inputs import is_canonical_capture, load_canonical_capture
     canonical = load_canonical_capture(bot_run, report) if is_canonical_capture(report) else None
@@ -450,6 +488,8 @@ def compare_timelines(
     event_input = _native_event_input(combat_log)
     combat_analysis = canonical["combat_analysis"] if canonical is not None else _load_json(bot_run / "combat_analysis.json")
     wcl_manifest, wcl_actors = _load_wcl_actors(wcl_manifest_path)
+    if excluded_reference_actors:
+        wcl_actors = [actor for actor in wcl_actors if _reference_actor_key(actor) not in excluded_reference_actors]
     identities = (
         {
             int(guid): dict(identity)
@@ -462,12 +502,12 @@ def compare_timelines(
         (
             row
             for row in combat_analysis.get("encounters", [])
-            if isinstance(row, dict) and row.get("route_node_id") == ENCOUNTER_ROUTE
+            if isinstance(row, dict) and row.get("route_node_id") == route_node_id
         ),
         None,
     )
     if not isinstance(encounter, dict):
-        raise ValueError(f"closed bot run has no {ENCOUNTER_ROUTE} encounter: {bot_run}")
+        raise ValueError(f"closed bot run has no {route_node_id} encounter: {bot_run}")
     first_at_ms = int(encounter.get("first_at_ms") or 0)
     bot_duration = float(encounter.get("duration_sec") or 0.0)
     if not first_at_ms or bot_duration <= 0.0:
@@ -493,10 +533,12 @@ def compare_timelines(
     for event in raw_events:
         if not isinstance(event, dict):
             continue
-        if event.get("kind") != "damage" or event.get("route_node_id") != ENCOUNTER_ROUTE:
+        if event.get("kind") != "damage" or event.get("route_node_id") != route_node_id:
             continue
         target_entry = int(event.get("target_entry") or 0)
-        if target_entry not in ENCOUNTER_TARGET_ENTRIES:
+        if not target_entry or (target_entries is not None and target_entry not in target_entries):
+            continue
+        if target_entry in excluded_target_entries:
             continue
         amount = float(event.get("originated_amount") or 0.0)
         if amount <= 0.0:
@@ -541,34 +583,40 @@ def compare_timelines(
         )
         references = wcl_by_spec.get(class_spec, [])
         reference = references[0] if references else None
+        # An additional_references actor is compared over its own fight's duration.
+        reference_duration = (
+            float(reference[REFERENCE_DURATION_KEY])
+            if reference is not None and REFERENCE_DURATION_KEY in reference else wcl_duration
+        )
+        actor_window = min(bot_duration, reference_duration)
         reference_reuse_index = None
         if reference is not None:
             reuse_counts[class_spec] += 1
             reference_reuse_index = reuse_counts[class_spec]
         wcl_summary = (
-            _wcl_actor_summary(reference, common_window)
+            _wcl_actor_summary(reference, actor_window)
             if reference is not None
             else None
         )
-        bot_summary = _bot_actor_summary(by_actor.get(guid, []), window_sec=common_window)
+        bot_summary = _bot_actor_summary(by_actor.get(guid, []), window_sec=actor_window)
         bot_summary["event_input_status"] = event_input["status"]
         retained_window_damage = int(bot_summary.get("landed_damage") or 0)
         common_window_damage = (
             retained_window_damage if event_input["status"] != "incomplete" else None
         )
         common_window_dps = (
-            round(common_window_damage / common_window, 3)
+            round(common_window_damage / actor_window, 3)
             if common_window_damage is not None else None
         )
         wcl_common_damage = (
-            _wcl_window_damage(reference, common_window) if reference is not None else None
+            _wcl_window_damage(reference, actor_window) if reference is not None else None
         )
         dps_comparison_status = (
             "incomplete_native_event_input" if event_input["status"] == "incomplete" else
             "missing_wcl_reference" if reference is None else
             "timestamped_common_window" if wcl_common_damage is not None else
             "unmatched_windows_without_wcl_damage_timestamps"
-            if wcl_duration != common_window else
+            if reference_duration != actor_window else
             "unavailable_wcl_damage_timestamps"
         )
         actor_row: dict[str, Any] = {
@@ -587,10 +635,10 @@ def compare_timelines(
             "reference_reused_for_duplicate_local_actor": bool(reference_reuse_index and reference_reuse_index > 1),
             "wcl_observed_dps": reference.get("observed_dps") if reference else None,
             "wcl_observed_dps_basis": "whole_wcl_fight_context_only",
-            "wcl_observed_dps_window_sec": wcl_duration if reference else None,
+            "wcl_observed_dps_window_sec": reference_duration if reference else None,
             "wcl_common_window_damage": wcl_common_damage,
             "wcl_common_window_dps": (
-                round(wcl_common_damage / common_window, 3)
+                round(wcl_common_damage / actor_window, 3)
                 if wcl_common_damage is not None else None
             ),
             "dps_comparison_status": dps_comparison_status,
@@ -647,6 +695,13 @@ def compare_timelines(
             if int(row.get("wcl_completed_casts") or 0) == 0
             and int(row.get("bot_landed_damage_events") or 0) > 0
         ][:8]
+        if reference is not None and REFERENCE_DURATION_KEY in reference:
+            actor_row["reference_fight_id"] = reference.get(REFERENCE_ID_KEY)
+            actor_row["reference_common_window_sec"] = round(actor_window, 3)
+            actor_row["comparison_limitations"].append(
+                "The reference comes from an additional WCL fight (manifest additional_references); "
+                "its window is that fight's duration, not the main reference's."
+            )
         if reference is None:
             actor_row["comparison_limitations"].append(
                 "No same-class/spec WCL cast timeline was supplied; cadence is diagnostic only."
@@ -675,11 +730,15 @@ def compare_timelines(
             "native_gameplay_outcome": report.get("native_gameplay_outcome"),
         },
         "scope": {
-            "route_node_id": ENCOUNTER_ROUTE,
+            "route_node_id": route_node_id,
             "actor_roles": sorted(include_roles),
             "actor_count": len(actors),
             "comparable_actor_count": len(comparable),
             "missing_wcl_reference_actor_count": len(actors) - len(comparable),
+            **({"excluded_reference_actors": sorted("/".join(pair) for pair in excluded_reference_actors)}
+               if excluded_reference_actors else {}),
+            **({"bot_damage_excluded_target_entries": sorted(excluded_target_entries),
+                "wcl_casts_filtered_by_target": False} if excluded_target_entries else {}),
         },
         "comparison_window": {
             "basis": "normalized_first_encounter_event_to_first_event",

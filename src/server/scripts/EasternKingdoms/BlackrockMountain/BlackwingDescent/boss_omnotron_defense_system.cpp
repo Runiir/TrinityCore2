@@ -352,7 +352,10 @@ struct npc_omnotron_electron : public ScriptedAI
                     {
                         Talk(SAY_ANNOUNCE_ABILITY_1, target);
                         DoCast(target, SPELL_LIGHTNING_CONDUCTOR);
-                        _events.Repeat(21s);
+                        // Normal: 26 s. WCL Y8ajQ7dbmKMG1RZy fight 24 (10N)
+                        // casts at 15.9, 41.7 and 67.7 s after Activated; DBM
+                        // expects 25 s. Heroic keeps the old value (no sample).
+                        _events.Repeat(IsHeroic() ? 21s : 26s);
                     }
                     break;
                 case EVENT_ELECTRICAL_DISCHARGE:
@@ -617,8 +620,11 @@ struct npc_omnotron_toxitron : public ScriptedAI
         if (spell->Id == SPELL_ACTIVATED)
         {
             _poisonProtocolCasts = 0;
-            _events.ScheduleEvent(EVENT_CHEMICAL_BOMB, 27s);
-            _events.ScheduleEvent(EVENT_POISON_PROTOCOL, 16s);
+            // Normal first casts from three 10N WCL kills (2026-09-27):
+            // Chemical Bomb 11.1-11.3 s and Poison Protocol 22.4-22.6 s after
+            // Activated (DBM: 11 s and 21 s). Heroic keeps the old values.
+            _events.ScheduleEvent(EVENT_CHEMICAL_BOMB, IsHeroic() ? 27s : 11s);
+            _events.ScheduleEvent(EVENT_POISON_PROTOCOL, IsHeroic() ? 16000ms : 22500ms);
             // Same shield point as the other three constructs: 50 s normal,
             // 40 s heroic (DBM DarkIronGolemCouncil.lua r20241103125714 warns
             // 10 s ahead at 40/30 s; Wowhead reports 40 s on heroic). The old
@@ -796,7 +802,9 @@ struct npc_omnotron_arcanotron : public ScriptedAI
             {
                 case EVENT_POWER_GENERATOR:
                     DoCastAOE(SPELL_POWER_GENERATOR);
-                    _events.Repeat(20s);
+                    // Normal: 30 s (WCL MxFq7TRbvnjGY1hJ fight 24: 12.9 and
+                    // 43.6 s after Activated; DBM 30 s). Heroic unchanged.
+                    _events.Repeat(IsHeroic() ? 20s : 30s);
                     break;
                 case EVENT_ARCANE_ANNIHILATION:
                     me->MakeInterruptable(true);

@@ -2,15 +2,3570 @@
   "schema": "omnotron_defense_system_wcl_cast_timelines_v1",
   "boss": "omnotron_defense_system",
   "mode": "10N",
-  "status": "blocked_wcl_human_verification",
-  "status_note": "No WCL page could be opened on 2026-09-25 (human-verification interstitial). Timelines are added per matched reference once the gate is cleared.",
-  "source_note": "Completed Cast rows from WCL Events pages (Begin Cast excluded), one actor entry per canonical spec, as in magmaw_wcl_cast_timelines_v1.json.",
-  "timelines": [],
+  "status": "extracted",
+  "reference_id": "xAhkN2y9YP3KRmnJ-fight12",
+  "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=12&type=casts&view=events",
+  "duration_sec": 78.8,
+  "target_scope": "Toxitron, Magmatron and Poison Bombs",
+  "source_note": "Completed Cast rows read from the rendered WCL Events pages on 2026-09-27 (GPT-6 Astra driving the user's Chrome); Begin Cast rows excluded. actors holds the highest-DPS actor of each of the four canonical specs in this matched kill; additional_actors holds the second Survival hunter and Elemental shaman.",
+  "access_attempts": [
+    {
+      "date": "2026-09-25",
+      "result": "every page redirected to /human-challenge ('One Quick Check')"
+    },
+    {
+      "date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra",
+      "result": "curl -L: HTTP 403 Cloudflare challenge ('Just a moment...'); web fetch: not accessible; browser tool: failed to start ('CUA_REPL_ENABLED_SURFACES is required'). No check clicked, no value read."
+    },
+    {
+      "date": "2026-09-27",
+      "agent": "codex exec -m gpt-6-astra, Chrome plugin",
+      "result": "read"
+    }
+  ],
+  "actors": [
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source16",
+      "class_spec": "survival_hunter",
+      "observed_dps": 45475.8,
+      "source_id": 16,
+      "source_name": "Vitarâ",
+      "casts": [
+        {
+          "ability": "Serpent Sting",
+          "ability_id": 1978,
+          "t": 0.673,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 1.34,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Black Arrow",
+          "ability_id": 3674,
+          "t": 1.679,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 2.626,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 3.576,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 3.924,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 4.585,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 4.683,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 5.2,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 5.7,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 6.493,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 7.598,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 7.789,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 8.603,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 8.718,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 9.075,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 10.365,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 10.613,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 10.715,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 11.661,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 11.723,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 12.955,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 13.627,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 13.734,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 14.242,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 15.526,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 16.064,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 16.065,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 17.33,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 17.726,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 18.378,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 19.148,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 19.979,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 19.979,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 20.945,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 20.974,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 21.987,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 22.745,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 22.984,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 24.545,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 25.241,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 26.344,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 26.487,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Black Arrow",
+          "ability_id": 3674,
+          "t": 26.487,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 27.989,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 28.159,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 29.953,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 30.248,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 31.143,
+          "target": ""
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 31.497,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 31.768,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 32.741,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 32.741,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 33.573,
+          "target": "Poison Bomb 2"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 33.966,
+          "target": "Poison Bomb 2"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 34.972,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 35.371,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 37.169,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 37.236,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 38.47,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 38.471,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 38.979,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 39.486,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 40.781,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 41.742,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 41.742,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 44.363,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Serpent Sting",
+          "ability_id": 1978,
+          "t": 46.074,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 46.087,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Hunter's Mark",
+          "ability_id": 1130,
+          "t": 47.085,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 47.134,
+          "target": ""
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 48.085,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 48.434,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 49.089,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 50.099,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 50.775,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Black Arrow",
+          "ability_id": 3674,
+          "t": 51.094,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 53.123,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 53.715,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 55.338,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 55.463,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 56.955,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 56.955,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 57.817,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 59.572,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 60.157,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 61.197,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 61.197,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Synapse Springs",
+          "ability_id": 82174,
+          "t": 62.072,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 62.499,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 62.95,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 63.636,
+          "target": ""
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 63.96,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 64.834,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 66.216,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 66.217,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 66.641,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 67.213,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 68.226,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 68.446,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 69.231,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 70.235,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 70.246,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 72.055,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 72.477,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 73.731,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 73.863,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 74.23,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 75.232,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 75.654,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 77.464,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 77.492,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 77.523,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 78.535,
+          "target": "Magmatron"
+        }
+      ]
+    },
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source12",
+      "class_spec": "fire_mage",
+      "observed_dps": 35203.7,
+      "source_id": 12,
+      "source_name": "Thorsmage",
+      "casts": [
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 0.784,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 0.785,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 3.279,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 4.772,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 6.277,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 7.782,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 9.266,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 10.768,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Combustion",
+          "ability_id": 11129,
+          "t": 10.778,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 13.287,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 14.781,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 14.782,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Impact",
+          "ability_id": 64343,
+          "t": 16.841,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 25.027,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 26.53,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Hot Streak",
+          "ability_id": 48108,
+          "t": 27.568,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 28.057,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 28.057,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Pyroblast!",
+          "ability_id": 92315,
+          "t": 29.232,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 32.321,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Hot Streak",
+          "ability_id": 48108,
+          "t": 33.388,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 33.803,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 35.294,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Pyroblast!",
+          "ability_id": 92315,
+          "t": 35.294,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Impact",
+          "ability_id": 64343,
+          "t": 36.343,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 37.762,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Impact",
+          "ability_id": 64343,
+          "t": 38.827,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 39.245,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Replenish Mana",
+          "ability_id": 5405,
+          "t": 39.262,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 41.613,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 41.613,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 44.642,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 46.534,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 50.562,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 51.127,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 55.757,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 57.636,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Hot Streak",
+          "ability_id": 48108,
+          "t": 58.281,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 59.798,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Pyroblast!",
+          "ability_id": 92315,
+          "t": 60.488,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Living Bomb",
+          "ability_id": 44457,
+          "t": 62.232,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 64.843,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 66.478,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 69.632,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 71.195,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Hot Streak",
+          "ability_id": 48108,
+          "t": 72.395,
+          "target": ""
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 74.16,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Pyroblast!",
+          "ability_id": 92315,
+          "t": 75.07,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Fireball",
+          "ability_id": 133,
+          "t": 77.927,
+          "target": "Magmatron"
+        }
+      ]
+    },
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source7",
+      "class_spec": "elemental_shaman",
+      "observed_dps": 40901.5,
+      "source_id": 7,
+      "source_name": "Schastnerak",
+      "casts": [
+        {
+          "ability": "Heroism",
+          "ability_id": 32182,
+          "t": 0.593,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 2.805,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 2.805,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Elemental Mastery",
+          "ability_id": 16166,
+          "t": 3.332,
+          "target": ""
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 3.811,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 5.791,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 6.802,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 7.789,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 8.787,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Earth Shock",
+          "ability_id": 8042,
+          "t": 8.827,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 10.052,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 10.797,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 11.813,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 12.572,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 13.67,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 13.817,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 14.819,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 15.828,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 16.84,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 17.827,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 18.607,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Earth Shock",
+          "ability_id": 8042,
+          "t": 18.89,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 20.892,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 21.047,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 22.209,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 23.364,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 24.232,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 25.501,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 26.66,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 27.82,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 28.981,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 28.981,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 29.944,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 31.134,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 32.291,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 33.163,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 34.182,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 35.174,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 36.174,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 37.474,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 38.33,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 39.638,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 40.803,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 42.305,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 43.806,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Earth Shock",
+          "ability_id": 8042,
+          "t": 43.806,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 46.43,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 48.617,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 50.189,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 51.355,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 51.355,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 52.366,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 54.026,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 55.544,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 57.125,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 58.697,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 60.264,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 61.843,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 63.001,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Earth Shock",
+          "ability_id": 8042,
+          "t": 63.001,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 65.692,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 66.843,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 67.981,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 69.13,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 69.608,
+          "target": ""
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 70.314,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 71.488,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 72.67,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Spiritwalker's Grace",
+          "ability_id": 79206,
+          "t": 72.943,
+          "target": ""
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 73.851,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 75.027,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 76.203,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 77.36,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Chain Lightning",
+          "ability_id": 421,
+          "t": 78.535,
+          "target": "Magmatron"
+        }
+      ]
+    },
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source11",
+      "class_spec": "blood_death_knight",
+      "observed_dps": 32643,
+      "source_id": 11,
+      "source_name": "Catamara",
+      "casts": [
+        {
+          "ability": "Death Grip",
+          "ability_id": 49576,
+          "t": 0.079,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Dark Command",
+          "ability_id": 56222,
+          "t": 1.968,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 2.4,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 3.896,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Synapse Springs",
+          "ability_id": 82174,
+          "t": 4.555,
+          "target": ""
+        },
+        {
+          "ability": "Dancing Rune Weapon",
+          "ability_id": 49028,
+          "t": 5.403,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Outbreak",
+          "ability_id": 77575,
+          "t": 6.404,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 7.412,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 8.921,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 10.412,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 11.928,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 13.422,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 14.942,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 16.437,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Blood Boil",
+          "ability_id": 48721,
+          "t": 17.927,
+          "target": ""
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 18.934,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 20.449,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 21.952,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Blood Tap",
+          "ability_id": 45529,
+          "t": 22.354,
+          "target": ""
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 23.457,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Blood Boil",
+          "ability_id": 48721,
+          "t": 24.953,
+          "target": ""
+        },
+        {
+          "ability": "Death and Decay",
+          "ability_id": 43265,
+          "t": 26.412,
+          "target": ""
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 27.409,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 28.921,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 30.426,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 31.932,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 33.438,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 34.946,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Blood Boil",
+          "ability_id": 48721,
+          "t": 36.453,
+          "target": ""
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 37.445,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 39.088,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 40.585,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 42.103,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 43.601,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 45.19,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Dark Command",
+          "ability_id": 56222,
+          "t": 46.573,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 46.776,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 48.266,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Outbreak",
+          "ability_id": 77575,
+          "t": 49.773,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 51.068,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 52.574,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 54.073,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 55.583,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Blood Boil",
+          "ability_id": 48721,
+          "t": 57.076,
+          "target": ""
+        },
+        {
+          "ability": "Blood Tap",
+          "ability_id": 45529,
+          "t": 58.13,
+          "target": ""
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 58.883,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 60.408,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Death Strike",
+          "ability_id": 49998,
+          "t": 61.888,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Rune Tap",
+          "ability_id": 48982,
+          "t": 62.641,
+          "target": ""
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 63.394,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 64.895,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 66.4,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 67.905,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 69.42,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 70.927,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Rune Strike",
+          "ability_id": 56815,
+          "t": 72.428,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Empower Rune Weapon",
+          "ability_id": 47568,
+          "t": 73.16,
+          "target": ""
+        },
+        {
+          "ability": "Synapse Springs",
+          "ability_id": 82174,
+          "t": 73.161,
+          "target": ""
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 73.933,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 75.435,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Heart Strike",
+          "ability_id": 55050,
+          "t": 76.938,
+          "target": "Magmatron"
+        }
+      ]
+    }
+  ],
+  "additional_actors": [
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source6",
+      "class_spec": "survival_hunter",
+      "observed_dps": 37407.1,
+      "source_id": 6,
+      "source_name": "Tristu",
+      "casts": [
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 0.934,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Black Arrow",
+          "ability_id": 3674,
+          "t": 1.933,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 2.384,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 4.195,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 4.271,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 4.505,
+          "target": ""
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 5.449,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 5.449,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 6.154,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 6.463,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 7.465,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 8.032,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 8.464,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 9.911,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 10.443,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Rapid Fire",
+          "ability_id": 3045,
+          "t": 10.613,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 11.359,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 11.703,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 12.016,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 12.397,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 13.014,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 13.759,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 14.02,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 14.8,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 15.718,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 15.838,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 16.72,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 16.871,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 17.032,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 17.909,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 18.028,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lock and Load",
+          "ability_id": 56453,
+          "t": 18.497,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 18.943,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 19.726,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 19.98,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 20.04,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 21.024,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 21.047,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 22.047,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 22.062,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 23.047,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 23.096,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 24.14,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 24.952,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Trap Launcher",
+          "ability_id": 77769,
+          "t": 25.177,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 25.481,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Ice Trap",
+          "ability_id": 82941,
+          "t": 25.844,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 26.83,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 28.711,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 28.869,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 30.211,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 30.211,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 30.596,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 32.469,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 32.481,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Multi-Shot",
+          "ability_id": 2643,
+          "t": 33.247,
+          "target": ""
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 34.364,
+          "target": "Poison Bomb 2"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 37.062,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 37.236,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 38.192,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 39.112,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 40.453,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Hunter's Mark",
+          "ability_id": 1130,
+          "t": 45.581,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 46.372,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Serpent Sting",
+          "ability_id": 1978,
+          "t": 46.586,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 47.588,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 48.826,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 50.232,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Black Arrow",
+          "ability_id": 3674,
+          "t": 50.232,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 51.264,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 52.862,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 53.715,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 54.495,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 54.496,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 55.508,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 56.168,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 58.143,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 58.617,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 59.783,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 59.783,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 61.058,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 61.519,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 63.496,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 64.149,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 64.149,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 65.169,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 65.953,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Synapse Springs",
+          "ability_id": 82174,
+          "t": 66.389,
+          "target": ""
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 67.527,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 68.404,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 70.177,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 70.177,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 70.852,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 72.811,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 72.811,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 73.302,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Cobra Shot",
+          "ability_id": 77767,
+          "t": 75.653,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 75.653,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 75.744,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Kill Shot",
+          "ability_id": 53351,
+          "t": 76.657,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Explosive Shot",
+          "ability_id": 53301,
+          "t": 77.664,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Auto Shot",
+          "ability_id": 75,
+          "t": 78.187,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Arcane Shot",
+          "ability_id": 3044,
+          "t": 78.672,
+          "target": "Magmatron"
+        }
+      ]
+    },
+    {
+      "actor_id": "xAhkN2y9YP3KRmnJ-source2",
+      "class_spec": "elemental_shaman",
+      "observed_dps": 25810.3,
+      "source_id": 2,
+      "source_name": "Catorì",
+      "casts": [
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 0.576,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 1.593,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Fire Elemental Totem",
+          "ability_id": 2894,
+          "t": 2.921,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 4.987,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 6.113,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 7.244,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 8.404,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 9.418,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 10.657,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 10.787,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 11.915,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Earth Shock",
+          "ability_id": 8042,
+          "t": 11.996,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 13.759,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Unleash Elements",
+          "ability_id": 73680,
+          "t": 14.008,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 14.882,
+          "target": ""
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 17.547,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 17.982,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 20.244,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 21.506,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 22.778,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 24.079,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 25.381,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 26.548,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Shield",
+          "ability_id": 26364,
+          "t": 27.277,
+          "target": "Poison Bomb 1"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 27.957,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 29.161,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 30.371,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 31.584,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 32.77,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 33.977,
+          "target": "Poison Bomb 2"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 36.674,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 38.624,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 40.019,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 41.288,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 42.922,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 43.483,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 44.561,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 46.471,
+          "target": "Toxitron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 48.195,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 50.927,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 51.018,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 52.481,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 57.56,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 60.022,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 61.782,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Surge!",
+          "ability_id": 77762,
+          "t": 62.215,
+          "target": ""
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 63.394,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 65.179,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Flame Shock",
+          "ability_id": 8050,
+          "t": 65.179,
+          "target": "Magmatron"
+        },
+        {
+          "ability": "Lava Burst",
+          "ability_id": 51505,
+          "t": 73.66,
+          "target": "Poison Bomb 2"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "ability_id": 403,
+          "t": 76.79,
+          "target": "Poison Bomb 3"
+        }
+      ]
+    }
+  ],
+  "enemy_cast_timelines": {
+    "MxFq7TRbvnjGY1hJ-fight24": {
+      "casts": [
+        {
+          "t": 0.004,
+          "source": "Magmatron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 10.002,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "begincast"
+        },
+        {
+          "t": 11.501,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "cast"
+        },
+        {
+          "t": 37.529,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "begincast"
+        },
+        {
+          "t": 39.045,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "cast"
+        },
+        {
+          "t": 44.061,
+          "source": "Toxitron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 44.07,
+          "source": "Toxitron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 50.06,
+          "source": "Magmatron",
+          "ability": "Barrier",
+          "id": 79582,
+          "type": "begincast"
+        },
+        {
+          "t": 51.574,
+          "source": "Magmatron",
+          "ability": "Barrier",
+          "id": 79582,
+          "type": "cast"
+        },
+        {
+          "t": 55.317,
+          "source": "Toxitron",
+          "ability": "Chemical Bomb",
+          "id": 80157,
+          "type": "cast"
+        },
+        {
+          "t": 66.66,
+          "source": "Toxitron",
+          "ability": "Poison Protocol",
+          "id": 80053,
+          "type": "cast"
+        },
+        {
+          "t": 69.506,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "begincast"
+        },
+        {
+          "t": 71.013,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "cast"
+        },
+        {
+          "t": 71.523,
+          "source": "Poison Bomb 1",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Adara"
+        },
+        {
+          "t": 73.931,
+          "source": "Poison Bomb 1",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Sélán"
+        },
+        {
+          "t": 77.171,
+          "source": "Poison Bomb 2",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Jägamara"
+        },
+        {
+          "t": 86.09,
+          "source": "Toxitron",
+          "ability": "Chemical Bomb",
+          "id": 80157,
+          "type": "cast"
+        },
+        {
+          "t": 88.201,
+          "source": "Arcanotron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 89.912,
+          "source": "Magmatron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        },
+        {
+          "t": 91.369,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 92.913,
+          "source": "Magmatron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "cast"
+        },
+        {
+          "t": 92.981,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 94.192,
+          "source": "Toxitron",
+          "ability": "Poison Soaked Shell",
+          "id": 79835,
+          "type": "begincast"
+        },
+        {
+          "t": 95.699,
+          "source": "Toxitron",
+          "ability": "Poison Soaked Shell",
+          "id": 79835,
+          "type": "cast"
+        },
+        {
+          "t": 99.458,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 101.072,
+          "source": "Arcanotron",
+          "ability": "Power Generator",
+          "id": 79624,
+          "type": "cast"
+        },
+        {
+          "t": 105.954,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 112.02,
+          "source": "Toxitron",
+          "ability": "Poison Protocol",
+          "id": 80053,
+          "type": "cast"
+        },
+        {
+          "t": 112.425,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 116.851,
+          "source": "Poison Bomb 3",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Sélán"
+        },
+        {
+          "t": 118.864,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 119.276,
+          "source": "Poison Bomb 4",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Nevox"
+        },
+        {
+          "t": 122.512,
+          "source": "Poison Bomb 5",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Wongelrainer"
+        },
+        {
+          "t": 123.328,
+          "source": "Toxitron",
+          "ability": "Chemical Bomb",
+          "id": 80157,
+          "type": "cast"
+        },
+        {
+          "t": 125.35,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 126.859,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "cast",
+          "target": "Sélán"
+        },
+        {
+          "t": 131.822,
+          "source": "Arcanotron",
+          "ability": "Power Generator",
+          "id": 79624,
+          "type": "cast"
+        },
+        {
+          "t": 132.336,
+          "source": "Electron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 133.086,
+          "source": "Arcanotron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        },
+        {
+          "t": 133.114,
+          "source": "Electron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        },
+        {
+          "t": 133.114,
+          "source": "Toxitron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        }
+      ],
+      "activated_78740": [
+        {
+          "t": 0.0,
+          "type": "applybuff",
+          "target": "Magmatron"
+        },
+        {
+          "t": 44.07,
+          "type": "applybuff",
+          "target": "Toxitron"
+        },
+        {
+          "t": 88.209,
+          "type": "applybuff",
+          "target": "Arcanotron"
+        },
+        {
+          "t": 89.912,
+          "type": "removebuff",
+          "target": "Magmatron"
+        },
+        {
+          "t": 132.336,
+          "type": "applybuff",
+          "target": "Electron"
+        },
+        {
+          "t": 133.086,
+          "type": "removebuff",
+          "target": "Arcanotron"
+        },
+        {
+          "t": 133.114,
+          "type": "removebuff",
+          "target": "Electron"
+        },
+        {
+          "t": 133.114,
+          "type": "removebuff",
+          "target": "Toxitron"
+        }
+      ]
+    },
+    "Y8ajQ7dbmKMG1RZy-fight24": {
+      "casts": [
+        {
+          "t": 0.001,
+          "source": "Electron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 5.783,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Luxferre"
+        },
+        {
+          "t": 11.041,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Luxferre"
+        },
+        {
+          "t": 15.882,
+          "source": "Electron",
+          "ability": "Lightning Conductor",
+          "id": 79888,
+          "type": "cast",
+          "target": "Schanilá"
+        },
+        {
+          "t": 17.496,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Luxferre"
+        },
+        {
+          "t": 37.306,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Inkar"
+        },
+        {
+          "t": 41.748,
+          "source": "Electron",
+          "ability": "Lightning Conductor",
+          "id": 79888,
+          "type": "cast",
+          "target": "Næñï"
+        },
+        {
+          "t": 43.372,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Nexry"
+        },
+        {
+          "t": 44.081,
+          "source": "Arcanotron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 44.082,
+          "source": "Arcanotron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 48.619,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 49.836,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Luxferre"
+        },
+        {
+          "t": 51.451,
+          "source": "Electron",
+          "ability": "Unstable Shield",
+          "id": 79900,
+          "type": "begincast"
+        },
+        {
+          "t": 52.957,
+          "source": "Electron",
+          "ability": "Unstable Shield",
+          "id": 79900,
+          "type": "cast"
+        },
+        {
+          "t": 55.098,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 59.951,
+          "source": "Arcanotron",
+          "ability": "Power Generator",
+          "id": 79624,
+          "type": "cast"
+        },
+        {
+          "t": 61.564,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 62.785,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Bloodstaín"
+        },
+        {
+          "t": 67.661,
+          "source": "Electron",
+          "ability": "Lightning Conductor",
+          "id": 79888,
+          "type": "cast",
+          "target": "Bloodstaín"
+        },
+        {
+          "t": 68.063,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 69.56,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "cast",
+          "target": "Schanilá"
+        },
+        {
+          "t": 75.769,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Næñï"
+        },
+        {
+          "t": 76.171,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 82.211,
+          "source": "Electron",
+          "ability": "Electrical Discharge",
+          "id": 79879,
+          "type": "cast",
+          "target": "Roostertours"
+        },
+        {
+          "t": 82.619,
+          "source": "Arcanotron",
+          "ability": "Arcane Annihilator",
+          "id": 79710,
+          "type": "begincast"
+        },
+        {
+          "t": 88.071,
+          "source": "Arcanotron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        },
+        {
+          "t": 88.076,
+          "source": "Electron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        }
+      ],
+      "activated_78740": [
+        {
+          "t": 0.001,
+          "type": "applybuff",
+          "target": "Electron"
+        },
+        {
+          "t": 44.082,
+          "type": "applybuff",
+          "target": "Arcanotron"
+        },
+        {
+          "t": 88.073,
+          "type": "removebuff",
+          "target": "Arcanotron"
+        },
+        {
+          "t": 88.076,
+          "type": "removebuff",
+          "target": "Electron"
+        }
+      ]
+    },
+    "xAhkN2y9YP3KRmnJ-fight12": {
+      "casts": [
+        {
+          "t": 0.001,
+          "source": "Toxitron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 11.085,
+          "source": "Toxitron",
+          "ability": "Chemical Bomb",
+          "id": 80157,
+          "type": "cast"
+        },
+        {
+          "t": 22.42,
+          "source": "Toxitron",
+          "ability": "Poison Protocol",
+          "id": 80053,
+          "type": "cast"
+        },
+        {
+          "t": 27.276,
+          "source": "Poison Bomb 1",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Catorì"
+        },
+        {
+          "t": 30.1,
+          "source": "Poison Bomb 1",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Catamara"
+        },
+        {
+          "t": 33.334,
+          "source": "Poison Bomb 2",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Heutnich"
+        },
+        {
+          "t": 41.841,
+          "source": "Toxitron",
+          "ability": "Chemical Bomb",
+          "id": 80157,
+          "type": "cast"
+        },
+        {
+          "t": 44.089,
+          "source": "Magmatron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 44.09,
+          "source": "Magmatron",
+          "ability": "Activated",
+          "id": 78740,
+          "type": "cast"
+        },
+        {
+          "t": 51.557,
+          "source": "Toxitron",
+          "ability": "Poison Soaked Shell",
+          "id": 79835,
+          "type": "begincast"
+        },
+        {
+          "t": 53.055,
+          "source": "Toxitron",
+          "ability": "Poison Soaked Shell",
+          "id": 79835,
+          "type": "cast"
+        },
+        {
+          "t": 55.208,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "begincast"
+        },
+        {
+          "t": 56.692,
+          "source": "Magmatron",
+          "ability": "Incineration Security Measure",
+          "id": 79023,
+          "type": "cast"
+        },
+        {
+          "t": 67.765,
+          "source": "Toxitron",
+          "ability": "Poison Protocol",
+          "id": 80053,
+          "type": "cast"
+        },
+        {
+          "t": 72.624,
+          "source": "Poison Bomb 2",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Tristu"
+        },
+        {
+          "t": 75.447,
+          "source": "Poison Bomb 3",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Noho"
+        },
+        {
+          "t": 78.683,
+          "source": "Poison Bomb 4",
+          "ability": "Fixate",
+          "id": 80094,
+          "type": "cast",
+          "target": "Thorsmage"
+        },
+        {
+          "t": 78.774,
+          "source": "Magmatron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        },
+        {
+          "t": 78.785,
+          "source": "Toxitron",
+          "ability": "Shutting Down",
+          "id": 78746,
+          "type": "begincast"
+        }
+      ],
+      "activated_78740": [
+        {
+          "t": 0.001,
+          "type": "applybuff",
+          "target": "Toxitron"
+        },
+        {
+          "t": 44.09,
+          "type": "applybuff",
+          "target": "Magmatron"
+        },
+        {
+          "t": 78.774,
+          "type": "removebuff",
+          "target": "Magmatron"
+        },
+        {
+          "t": 78.785,
+          "type": "removebuff",
+          "target": "Toxitron"
+        }
+      ]
+    }
+  },
+  "enemy_cast_note": "Enemy casts (begin cast and cast) and Activated 78740 aura rows for all three 10N kills; t in seconds from fight start. Used for the native first-cast timers (ledger timers).",
   "encounter_events_to_capture": {
-    "enemy_casts": [78746, 79023, 79499, 79582, 79624, 79710, 79729, 79835, 79900, 80053, 80157],
-    "enemy_auras": [78740, 78726, 79628],
-    "player_auras": [79501, 79888, 80011, 80094],
-    "damage_taken": [1, 79879, 79889, 79504, 79035, 79617, 80092, 80097, 79912],
+    "enemy_casts": [
+      78746,
+      79023,
+      79499,
+      79582,
+      79624,
+      79710,
+      79729,
+      79835,
+      79900,
+      80053,
+      80157
+    ],
+    "enemy_auras": [
+      78740,
+      78726,
+      79628
+    ],
+    "player_auras": [
+      79501,
+      79888,
+      80011,
+      80094
+    ],
+    "damage_taken": [
+      1,
+      79879,
+      79889,
+      79504,
+      79035,
+      79617,
+      80092,
+      80097,
+      79912
+    ],
     "anchors": "relative to each construct's 78740 application"
   }
 }

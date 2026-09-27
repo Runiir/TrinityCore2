@@ -22,12 +22,13 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.play_mode_guard import PlayModeEvidenceRefused, refuse_play
+from tools.raid_program.scoreboard_core import native_excluded_entries
 from tools.raid_program.scoreboard_core import (
     ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, clear_kills, exclusion_reason, file_sha256, git_head,
     label_kills, load_records, load_target, scoreboard_path, utc_now,
 )
 from tools.raid_program.scoreboard_record import (
-    fallback_record, kill_line, record_from_run_dir, write_timeline,
+    fallback_record, kill_line, record_from_run_dir, timeline_reference_exclusions, write_timeline,
 )
 
 PIN_DIR = Path("/tmp")
@@ -161,7 +162,9 @@ def _postprocess(root, target, scenario, label, kill, sha, source_commit) -> dic
     try:
         kill["analysis_dir"].mkdir(parents=True, exist_ok=True)
         timeline = write_timeline(kill["output_dir"], root / target["wcl_cast_timelines"],
-                                  kill["analysis_dir"] / "timeline.json") if target.get("wcl_cast_timelines") else None
+                                  kill["analysis_dir"] / "timeline.json", target["encounter_route_node_id"],
+                                  timeline_reference_exclusions(root, target), native_excluded_entries(target),
+                                  ) if target.get("wcl_cast_timelines") else None
         return record_from_run_dir(root, target, timeline_path=timeline,
                                    summary_output=kill["analysis_dir"] / "summary.json", **options)
     except Exception as error:

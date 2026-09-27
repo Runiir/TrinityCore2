@@ -4,14 +4,32 @@ Scope: Blackwing Descent, Nefarian's End, Cataclysm Classic 4.4.2 (build 59185,
 hotfix cutoff 2025-02-20) as the fidelity target, run on the repository's 4.3.4
 (15595) server. Round 2 of the full-raid program focuses on 10N; all four modes
 stay in the packet. State: `fidelity_blocked`. The native script, client rows,
-pinned addons and guides are audited. Warcraft Logs (WCL) was not readable on
-2026-09-25: a human-verification page blocked every request, and an agent must not
-pass it. Every value that needs a combat log is listed as unresolved.
+pinned addons and guides are audited. On 2026-09-27 three Warcraft Logs (WCL) 10N
+kills were read through the user's authorized Chrome session (on 2026-09-25 a
+human-verification page had blocked every request):
+
+- MxFq7TRbvnjGY1hJ fight 35 (2024-10-28, 344.1 s);
+- cYg4C93QNdqKfPF1 fight 18 (2025-01-31, 283.5 s);
+- farY2cm8JMTB1jGh fight 10 (2025-01-15, 250.6 s).
+
+They supply the DPS references, cast timelines, melee samples, max health and the
+cadences below. Values a combat log cannot settle stay unresolved.
+
+All three DPS references were read from WCL's default damage-done view for Nefarian's
+End. Only the farY2 capture recorded that this view leaves out Animated Bone Warriors
+(41918). For MxFq7 and cYg4 the same exclusion is inferred, not observed: they were
+read from the same default view, WCL applies encounter filtering per encounter, and
+the round-1 review found raid DPS x duration within 0.031% of the combined boss
+health in all three kills, which leaves no room for bone-warrior damage. On that
+inferred basis the raid target lists 41918 in `native_dps_excluded_target_entries`,
+and the scoreboard subtracts each bot's bone-warrior damage from its encounter-window
+DPS, so both sides are meant to count the same enemies. The raw captures have no
+per-target split, so bone-warrior-inclusive WCL DPS could not be re-derived.
 
 Machine-readable packet:
 - contract: `experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json`
 - ledger: `experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json`
-- WCL extraction plans: `nefarian_wcl_dps_reference_v1.json` and `nefarian_wcl_cast_timelines_v1.json` in the same directory
+- WCL data: `nefarian_wcl_dps_reference_v1.json`, `nefarian_wcl_cast_timelines_v1.json` and `nefarian_wcl_melee_samples_v1.json` in the same directory
 - raid target: `experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json`
 
 ## 1. Lifecycle (native)
@@ -49,7 +67,7 @@ conflict.
 | Pre-engage | orb, intro | Onyxia feign-dead at the centre (29266) | Onyxia not in combat |
 | 1a Onyxia | start-fight pulse | Hail of Bones: 4 warriors in 10N (one per 6 s tick over 24 s, on the 42844 stalkers). Onyxia's Breath 11–12 s then 13–17 s, Tail Lash 20 s then 17–18 s, Lightning Discharge 22 s then 22 s. | Onyxia in combat, Nefarian flying |
 | 1b both dragons | landing 24 s after engage | Children of Deathwing: +100% attack speed while the dragons are within 50 yd. Nefarian's Breath 9–10 s then 9–14 s, Tail Lash 18 s then **every 5 s**. Electrocute 5 s after each 10% of Nefarian's health, +17 Onyxia charge. | Nefarian landed and attackable |
-| 2 platforms | Onyxia dies | Nefarian lifts off with 81582. Three Chromatic Prototypes jump onto the pillar tops. The elevator sinks for 13.333 s. Shadowflame Barrage every 2.5 s (4 targets in 10N). Blast Nova 3.5 s after the prototypes ready, then every 13 s (4 s cast, then a 30 s room-wide 2 s tick). Fallback to phase 3 after 150 s. | Onyxia's corpse, 81582, prototypes, elevator Z |
+| 2 platforms | Onyxia dies | Nefarian lifts off with 81582. Three Chromatic Prototypes jump onto the pillar tops. The elevator sinks for 13.333 s. Shadowflame Barrage every 3.2 s (4 targets in 10N; repaired from 2.5 s to the WCL cadence). Blast Nova 3.5 s after the prototypes ready, then every 13 s (4 s cast, then a 30 s room-wide 2 s tick). Fallback to phase 3 after 150 s. | Onyxia's corpse, 81582, prototypes, elevator Z |
 | 3 Nefarian | third prototype dies (normal) | The elevator rises; Nefarian lands after about 15.5 s. Shadow of Cowardice punishes transport offset Z > 9.5 (pillar tops). Shadowblaze Spark on a bone warrior 5 s after engage, then 30/25/20/15 s, then 15 s (normal) or 10 s (heroic). Breath 9 s then 17–22 s, Tail Lash 1 s then 15–22 s. | 81582 gone, fires 42595/42596 |
 
 ## 3. Native geometry the bots rely on
@@ -164,15 +182,16 @@ the surface from the model when `data/vmaps` is present.
 
 | Claim | Native | 4.4.2 client / Journal | Pinned addons | Guides | Status |
 |---|---|---|---|---|---|
-| Health 10N (Ony/Nef/Proto) | 5.58M / 22.76M / 1.63M | — | — | Wowhead NPC pages: same values; Wowhead guide: 7.0M / 28.5M / 6.9M | conflict |
-| Breath | 1 tick (SpellMgr 1500 ms), 90° | 3 ticks at 0.5 s, 60° | 12 s CD | Wowhead: 35k ×3 | conflict |
-| Nefarian Tail Lash, phase 1 | every 5 s | −82° rear | BigWigs 12.1 s, DBM 10 s (10–20) | Wowhead ~15 s | conflict |
+| Health 10N (Ony/Nef/Proto) | 5.58M / 22.76M / 1.63M | — | — | Wowhead NPC pages: same values; Wowhead guide: 7.0M / 28.5M / 6.9M; WCL-derived (11 rows each): 5,582,980 / 22,761,380 / 1,627,290 | resolved: native is right |
+| Breath | 1 tick (SpellMgr 1500 ms), 90° | 3 ticks at 0.5 s, 60° | 12 s CD | Wowhead: 35k ×3; WCL: 3 ticks of 35,000 U | ticks resolved (SpellMgr patch requested); cone open |
+| Nefarian Tail Lash, phase 1 | every 5 s | −82° rear | BigWigs 12.1 s, DBM 10 s (10–20) | Wowhead ~15 s; WCL: none in three kills (phase 1 under 15 s); phase 3 repeat 11.3–21.0 s | conflict |
 | Onyxia charge | 1 per 3 s (SpellMgr) + 1 per 2 s from Nefarian, +17 per Electrocute | 78949 period 1 s | charge shown in the BigWigs infobox | +25 per Electrocute (both guides) | conflict |
 | Lightning Discharge | 22 s, 5 s wind-up, 5 pulses, flanks | flanks (Journal) | BigWigs 24/22 s, 5 s cast | turn her 90° at the wing glow | resolved |
-| Blast Nova | 3.5 s then 13 s, 4 s cast | 4 s cast, interruptible | counters only | Wowhead ~8 s | conflict |
+| Blast Nova | 3.5 s then 13 s, 4 s cast | 4 s cast, interruptible | counters only | Wowhead ~8 s; WCL 12.5–13.0 s | resolved: native is right |
+| Shadowflame Barrage | was every 2.5 s, now 3.2 s | 2 s cast | — | Wowhead 3 s; WCL 3.2–3.3 s (49 intervals) | resolved and repaired |
 | Phase 2 window | 150 s fallback | — | DBM Barrage window 150 s | — | resolved |
-| Shadowblaze floor | was 10 s in every mode, now 15 s normal / 10 s heroic | — | BigWigs and DBM: 15 s normal, 10 s heroic | Wowhead 10 s (no mode) | resolved and repaired |
-| Hail of Bones 10N | 4 warriors | 6 s tick over 24 s | BigWigs counts summons | Wowhead 12 | conflict |
+| Shadowblaze floor | was 10 s in every mode, now 15 s normal / 10 s heroic | — | BigWigs and DBM: 15 s normal, 10 s heroic | Wowhead 10 s (no mode); WCL 30/25/20/15/15 s | resolved and repaired |
+| Hail of Bones 10N | 4 warriors | 6 s tick over 24 s | BigWigs counts summons | Wowhead 12; WCL 4 (two kills) | count resolved |
 | Berserk | 10:30, all modes | — | BigWigs all modes, DBM heroic only | — | conflict |
 
 ## 5. Native audit
@@ -193,10 +212,17 @@ the surface from the model when `data/vmaps` is present.
   need a CMake configure.
 - **Unchanged, no effect:** the orb's `GossipSelect` returns false. The option (menu
   11492, option 0) is type 1 with no action menu, so the core sends nothing afterward.
-- **Fidelity-blocked, waiting on WCL** (see the ledger's `native_audit`):
-  - Nefarian's 5-second phase 1 Tail Lash;
-  - the breath tick period (SpellMgr);
-  - Onyxia's charge period (SpellMgr) and the +17 Electrocute increment;
+- **Repaired (2026-09-27):** on 10N, Shadowflame Barrage repeats every 3.2 s, not
+  2.5 s (WCL 10N Begin Cast intervals, 49 in two kills). 25N, 10H and 25H keep
+  2.5 s until same-mode evidence exists. The phase 2 survival model is
+  regenerated at 3.2 s.
+- **Patch requested (SpellMgr, outside this packet):** drop the 77826 `AuraPeriod`
+  1500 override so a breath deals 3 ticks, as WCL shows.
+- **Fidelity-blocked** (see the ledger's `native_audit`):
+  - Nefarian's 5-second phase 1 Tail Lash (no phase 1 Tail Lash in three WCL kills:
+    the Onyxia burn keeps his phase 1 under 15 s);
+  - Onyxia's charge period (SpellMgr) and the +17 Electrocute increment (WCL has no
+    Electrical Charge series);
   - the 90° default cones.
 - **Instance, low priority:** the intro flag is not written to the save.
 
@@ -387,7 +413,7 @@ Two tanks, two healers, six DPS. Roster GUIDs 11005001-11005010.
   - **Pre-ascent care.** Between Onyxia's death and the floor going under, the Disc
     priest shields everyone without Power Word: Shield or Weakened Soul, pillar 2
     first. The Holy paladin tops up (Flash of Light) anyone under 95%, pillar 2 first.
-  - **Barrage on the healerless pillar.** Shadowflame Barrage is cast every 2.5 s
+  - **Barrage on the healerless pillar.** Shadowflame Barrage is cast every 3.2 s
     until the last prototype dies. Each 2 s cast sends missiles at 4 random players,
     which take 1.73 s to arrive. The flight is 52 yd at 30 yd/s from Nefarian's
     phase 2 position (NefarianElevatorLiftOffPosition, z 35.63, over the centre). Pillar 2 is modelled
@@ -406,25 +432,25 @@ Two tanks, two healers, six DPS. Roster GUIDs 11005001-11005010.
 
     | Layout | Pillar-2 death before phase 2 ends |
     |---|---|
-    | Default | 44% (mean phase 52 s) |
-    | Default with 1.25x raid DPS | 13% |
-    | Default with 1.5x raid DPS | 2% |
+    | Default | 9% (mean phase 49 s; 44% at the old 2.5 s Barrage) |
+    | Default with 1.25x raid DPS | 2% |
+    | Default with 1.5x raid DPS | 0.5% |
     | Option A: a pure burn pillar 2 | 100% (pillar 1 slows, so the phase lasts 78 s) |
-    | Both tanks on pillar 2 | 92% |
+    | Both tanks on pillar 2 | 68% |
 
     Changing single assumptions, as in the reviewer's variants, moves the default
     between these values:
 
     | Change | Default death risk |
     |---|---|
-    | 10% damage reduction | 20% |
-    | 20% damage reduction | 4% |
-    | 40k mana pool | 75% |
-    | 120k mana pool | 21% |
-    | No mana regeneration | 45% |
-    | 300 mana/s regeneration | 36% |
-    | No Death Strike self-heal | 57% |
-    | No preparation | 66% |
+    | 10% damage reduction | 2% |
+    | 20% damage reduction | 0% |
+    | 40k mana pool | 42% |
+    | 120k mana pool | 2% |
+    | No mana regeneration | 14% |
+    | 300 mana/s regeneration | 6% |
+    | No Death Strike self-heal | 16% |
+    | No preparation | 28% |
 
     This is not a native estimate. It ranks the layouts; the live run decides
     whether the healerless pillar is viable.
@@ -705,10 +731,13 @@ deviating on it):
 
 | Layout | Tank-pillar death | Mean phase | Helper death | Death on the pillar the healer left |
 |---|---|---|---|---|
-| The literal layout | 0% | 76 s | 0.2% | 50% |
-| No help | 27% | 110 s | - | - |
-| Elemental off-healer on the tank pillar | 16% | - | - | - |
-| Off-healer and warlock on the tank pillar | 75% | - | - | - |
+| The literal layout | 0% | 76 s | 0% | 18% |
+| No help | 3% | 106 s | - | - |
+| Elemental off-healer on the tank pillar | 3% | - | - | - |
+| Off-healer and warlock on the tank pillar | 22% | - | - | - |
+
+Regenerated on 2026-09-27 with the 3.2 s WCL Barrage cadence (the 2.5 s values were
+0.2% helper, 50%, 27%, 16% and 75%).
 
 ## 7c. Round 7 live run (analysed in round 8)
 
@@ -804,19 +833,32 @@ completed and the run ended on the plateau watchdog. Six of the ten bots died.
 
 ## 8. Encounter damage fidelity
 
-Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). None is
-calibrated: that needs WCL `U` melee samples, which the extraction plan lists.
+Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). Nefarian and
+Onyxia 10N are now derived from WCL `U` melee samples of three 10N kills
+(`nefarian_wcl_melee_samples_v1.json`) with the registry method, and staged:
+
+- Nefarian 41376: 201 landed rows, 164 under a -10% done aura (Scarlet Fever 81130 or
+  Curse of Weakness 702). Bounds on DamageModifier x 1.01 are 12.818–12.928, so
+  DamageModifier is 12.691–12.800. Chosen **12.75**; the sample mean implies 12.907
+  effective (12.8775 chosen).
+- Onyxia 41270: 37 landed rows, 35 under Scarlet Fever. Bounds are 10.314–10.465, so
+  DamageModifier is 10.212–10.361. Chosen **10.34375**. The upper bound rests on fully
+  absorbed rows, whose `U` is a WCL estimate; two of them read 42,883 in different kills.
+- Files: `sql/custom/staged/world/2026_09_27_00_nefarian_damage_modifier.sql` and
+  `..._01_nefarian_onyxia_damage_modifier.sql`. Registry rows go through the coordinator.
 
 | Creature | Class, level, attack time | Native swing at DM 1 | Status |
 |---|---|---|---|
-| Nefarian (41376 and difficulty entries) | 1, 88, 1500 ms | 4,553–6,764 | open |
-| Onyxia (41270 and difficulty entries) | 1, 88, 1500 ms | 4,553–6,764 | open |
-| Animated Bone Warrior (41918, one template for all modes) | 4, 85, 2000 ms, BaseVariance 0.5 | 5,470–8,175 | open |
+| Nefarian 41376 (10N) | 1, 88, 1500 ms | 4,553–6,764 | staged 12.75 |
+| Nefarian 51104–51106 | 1, 88, 1500 ms | 4,553–6,764 | open |
+| Onyxia 41270 (10N) | 1, 88, 1500 ms | 4,553–6,764 | staged 10.34375 |
+| Onyxia 51116–51118 | 1, 88, 1500 ms | 4,553–6,764 | open |
+| Animated Bone Warrior (41918, one template for all modes) | 4, 85, 2000 ms, BaseVariance 0.5 | 5,470–8,175 | open (rows mix Empower stacks) |
 | Chromatic Prototype | PassiveAI, never swings | — | not applicable |
 | Lord Victor Nefarius | PassiveAI | — | not applicable |
 | Stalkers | — | — | not applicable |
 
-No staged SQL is written until a matched sample exists.
+The bone warrior and the other modes wait for stack-matched or same-mode samples.
 
 ## 9. Acceptance observations
 
@@ -831,19 +873,22 @@ clear with 0 boss-window deaths.
 
 ## 10. Unresolved (fidelity_blocked)
 
-1. The WCL 10N kill references and timelines are pending (human-verification gate).
-2. The creature melee DamageModifier is uncalibrated (Nefarian, Onyxia, bone warrior).
-3. The guide's health values conflict with native health.
-4. The dragons' Tail Lash and Breath cadence and cone geometry.
-5. Onyxia's charge rate and the Electrocute increment.
-6. Blast Nova and Barrage cadence.
-7. The Shadowblaze Spark schedule and spread (the floor is repaired; the first offset
-   and the spread are unverified).
-8. The Hail of Bones warrior count and lifetime.
-9. Heroic: the user expects the Onyxia burn may not hold on heroic or with lower gear.
+1. The creature melee DamageModifier: Nefarian and Onyxia 10N are staged; the bone
+   warrior and the 25N/10H/25H templates are open.
+2. Nefarian's phase 1 Tail Lash (unobserved) and the cone geometry. Breath ticks are
+   resolved (3; SpellMgr patch requested).
+3. Onyxia's charge rate and the Electrocute increment.
+4. Barrage targets per cast. The cadences are resolved: Blast Nova 13 s (native is
+   right), Barrage 3.2 s (repaired).
+5. The Shadowblaze Spark spread. The schedule is confirmed by WCL.
+6. The bone warrior lifetime. The 10N count of 4 is confirmed by WCL.
+7. Heroic: the user expects the Onyxia burn may not hold on heroic or with lower gear.
    Heroic keeps the Electrocute budget, untested; heroic magma (+2000 per 81118 stack)
    makes the 8.4 s swim cost about 96k per bot.
-10. Heroic Dominion, Cinders, and the end of phase 2.
+8. Heroic Dominion, Cinders, and the end of phase 2.
+
+Resolved by WCL on 2026-09-27: the kill references and timelines, and 10N health (native
+equals the WCL-derived values; the Wowhead guide is wrong).
 
 Resolved this round: pillar access and the magma level (section 3a). The swim float
 depth (1.2 yd) is a modelling choice; the hop stays lawful down to 1.35 yd.
@@ -877,3 +922,8 @@ depth (1.2 yd) is a modelling choice; the hop stays lawful down to 1.35 yd.
    - `SpellMgrCorrectionsPart04.cpp:424-481`, `SpellMgrCorrections.cpp:89-91`;
    - TDB 434.22011 with the `sql/updates/world/4.3.4` deltas: creature_template,
      creature_model_info, summon groups, spawn group 402, spell_custom_attr, conditions.
+9. **Warcraft Logs**, Cataclysm Classic, Nefarian's End 10-player Normal kills, read
+   2026-09-27 through the user's authorized Chrome session:
+   - <https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=35> (2024-10-28);
+   - <https://classic.warcraftlogs.com/reports/cYg4C93QNdqKfPF1?fight=18> (2025-01-31);
+   - <https://classic.warcraftlogs.com/reports/farY2cm8JMTB1jGh?fight=10> (2025-01-15).

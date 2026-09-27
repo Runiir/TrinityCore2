@@ -64,3 +64,13 @@ def test_shadowblaze_spark_floor_is_fifteen_seconds_on_normal() -> None:
     assert "std::max<uint32>(MinimumTriggerTicks(target), _nextTriggerTickNumber - 1)" in spells
     assert "return target->GetMap()->IsHeroic() ? 2 : 3;" in spells
     assert "std::max<uint32>(2, _nextTriggerTickNumber - 1)" not in spells
+
+
+def test_shadowflame_barrage_uses_the_wcl_cadence_on_10n_only() -> None:
+    # MxFq7TRbvnjGY1hJ fight 35: Barrage every 3.2-3.3 s on 10N; no other-mode sample,
+    # so 25N/10H/25H keep the previous 2.5 s.
+    source = (SCRIPTS / "boss_nefarians_end.cpp").read_text(encoding="utf-8")
+    start = source.index("case EVENT_SHADOWFLAME_BARRAGE:")
+    body = source[start:source.index("break;", start)]
+    assert "events.Repeat(GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL\n" in body
+    assert "? Milliseconds(3s + 200ms) : Milliseconds(2s + 500ms));" in body

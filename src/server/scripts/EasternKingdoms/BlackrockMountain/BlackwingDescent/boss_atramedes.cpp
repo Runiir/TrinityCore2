@@ -336,7 +336,10 @@ struct boss_atramedes : public BossAI
                     break;
                 case EVENT_MODULATION:
                     DoCastAOE(SPELL_MODULATION);
-                    events.Repeat(22s, 26s);
+                    // WCL MxFq7TRbvnjGY1hJ fight 32 (10N): unobstructed repeats 16.2 s and
+                    // 16.8 s; BigWigs Classic also bars 16 s. Longer gaps were Vertigo stuns
+                    // or casts delaying the event, not a slower cooldown.
+                    events.Repeat(16s);
                     break;
                 case EVENT_SEARING_FLAME:
                     Talk(SAY_ANNOUNCE_SEARING_FLAME);

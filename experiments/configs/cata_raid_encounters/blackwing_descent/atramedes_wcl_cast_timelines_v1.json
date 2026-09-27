@@ -2,13 +2,13 @@
   "schema": "atramedes_wcl_cast_timelines_v1",
   "encounter": "atramedes",
   "mode": "10N",
-  "status": "pending_extraction",
-  "status_reason": "Blocked with the DPS reference by the classic.warcraftlogs.com human-verification interstitial (2026-09-25). No report was read.",
-  "reference_id": null,
-  "url": null,
-  "duration_sec": null,
+  "status": "extracted",
+  "status_reason": "Read 2026-09-27 through GPT-6 Astra in one tab of the user's Chrome; every actor page complete (row_count equals captured casts).",
+  "reference_id": "MxFq7TRbvnjGY1hJ-fight32",
+  "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events",
+  "duration_sec": 165.6,
   "target_scope": "Atramedes",
-  "source_note": "When extracted: completed Cast rows from the matched fight's Casts > Events view per DPS actor (Begin Cast rows excluded), same shape as magmaw_wcl_cast_timelines_v1.json (actor_id, class_spec, observed_dps, source_id, source_name, casts[{ability, t, target}]).",
+  "source_note": "Completed Cast rows (Begin Cast excluded) from WCL player Casts Events pages of MxFq7TRbvnjGY1hJ fight 32: the six DPS and both Blood DK tanks. boss_events is the enemy Casts view (Cast and Begin Cast) plus Atramedes' self buffs.",
   "boss_timeline_wanted": [
     "Modulation 77612 cast times (native repeat 22-26 s vs BigWigs 16 s)",
     "Sonar Pulse 77672 cast times (native 11 s)",
@@ -17,5 +17,5876 @@
     "Take Off Anim Kit 86915 and the first ground cast after landing (air duration)",
     "Roaring Flame Breath target changes (Tracking 78092 in the air) and Resonating Clash 78168"
   ],
-  "actors": []
+  "actors": [
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source6",
+      "class_spec": "blood_death_knight",
+      "name": "Greysnout",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 13254,
+      "source_id": 6,
+      "source_name": "Greysnout",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=6",
+      "row_count": 68,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Dark Command",
+          "spell_id": 56222,
+          "t": 0.022,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death and Decay",
+          "spell_id": 43265,
+          "t": 1.496,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 2.93,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Darkflight",
+          "spell_id": 68992,
+          "t": 4.488,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 7.057,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 9.945,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 11.88,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 13.391,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 14.898,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 17.154,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 18.685,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 22.858,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 24.956,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 26.53,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 28.328,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 29.843,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 31.63,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Dancing Rune Weapon",
+          "spell_id": 49028,
+          "t": 33.572,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 35.46,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 37.934,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 40.698,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 42.473,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 44.911,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 46.205,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 48.808,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 49.952,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 52.099,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 53.639,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 55.844,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Bone Shield",
+          "spell_id": 49222,
+          "t": 58.345,
+          "target": null
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 59.778,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 61.428,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 62.945,
+          "target": null
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 64.496,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 66.373,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 68.504,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 71.158,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 74.236,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 75.753,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 77.576,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 79.065,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 80.501,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 83.512,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 85.33,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 86.967,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 88.541,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 90.044,
+          "target": null
+        },
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 129.143,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Bone Shield",
+          "spell_id": 49222,
+          "t": 130.714,
+          "target": null
+        },
+        {
+          "ability": "Dancing Rune Weapon",
+          "spell_id": 49028,
+          "t": 132.142,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 133.57,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 135.079,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 136.585,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 138.129,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 139.683,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 141.183,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 143.615,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 145.122,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 146.629,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 148.139,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 149.923,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 155.677,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 157.228,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 158.796,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 160.426,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 161.971,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 163.509,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 165.003,
+          "target": null
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source8",
+      "class_spec": "blood_death_knight",
+      "name": "Wongelrainer",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 3965.2,
+      "source_id": 8,
+      "source_name": "Wongelrainer",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=8",
+      "row_count": 34,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 6.896,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 6.896,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 11.816,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 16.831,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 27.054,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Tap",
+          "spell_id": 45529,
+          "t": 28.474,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 28.567,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Boil",
+          "spell_id": 48721,
+          "t": 30.073,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 31.501,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 45.622,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 50.594,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 56.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 57.899,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Outbreak",
+          "spell_id": 77575,
+          "t": 59.41,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 60.703,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Blood Tap",
+          "spell_id": 45529,
+          "t": 62.063,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 62.199,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 64.207,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 65.704,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 67.009,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 68.311,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 71.888,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 73.425,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 77.343,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 79.153,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 80.662,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Death Strike",
+          "spell_id": 49998,
+          "t": 86.562,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heart Strike",
+          "spell_id": 55050,
+          "t": 88.069,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rune Strike",
+          "spell_id": 56815,
+          "t": 89.579,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 78168,
+          "t": 108.882,
+          "target": null
+        },
+        {
+          "ability": "Bone Shield",
+          "spell_id": 49222,
+          "t": 116.279,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 135.221,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 142.741,
+          "target": null
+        },
+        {
+          "ability": "Resonating Clash",
+          "spell_id": 77611,
+          "t": 158.951,
+          "target": null
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source1",
+      "class_spec": "survival_hunter",
+      "name": "Jägamara",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 25959.2,
+      "source_id": 1,
+      "source_name": "Jägamara",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=1",
+      "row_count": 221,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 0.13,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 0.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Serpent Sting",
+          "spell_id": 1978,
+          "t": 1.142,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 2.154,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Fox",
+          "spell_id": 82661,
+          "t": 2.491,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 2.601,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 4.793,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 5.066,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 6.449,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 7.543,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 8.097,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Hawk",
+          "spell_id": 13165,
+          "t": 8.097,
+          "target": null
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 8.302,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 10.01,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 10.97,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 12.235,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hyperspeed Acceleration",
+          "spell_id": 54758,
+          "t": 12.258,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 12.48,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 13.739,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 14.339,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 14.99,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 14.99,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 16.212,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 17.238,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 17.497,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 18.076,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 18.484,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 18.484,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 19.497,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 19.939,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 20.498,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 21.503,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 21.809,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 22.508,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 23.667,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 24.938,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 24.938,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 25.546,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 27.217,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 27.445,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 28.486,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 29.345,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 29.759,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 29.761,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 31.244,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 32.032,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 33.136,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 33.294,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 33.656,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 34.566,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 34.566,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 35.035,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 36.855,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 36.855,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 36.922,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 37.841,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 38.824,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 38.86,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 39.862,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 40.734,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 40.86,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 42.624,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 43.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 44.406,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 44.531,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 45.822,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 45.824,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 46.428,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 46.861,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 48.326,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 49.134,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 50.231,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 50.399,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 52.042,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 52.042,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 52.125,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 54.592,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 54.698,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 56.495,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 56.495,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 56.652,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 57.068,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 57.497,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 58.505,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 59.511,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 59.533,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 61.999,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 62.159,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 62.159,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 64.46,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 64.815,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 64.815,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 66.931,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 67.465,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 69.112,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 69.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Fox",
+          "spell_id": 82661,
+          "t": 69.465,
+          "target": null
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 69.731,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 71.863,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 72.4,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 72.402,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 74.323,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 75.048,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 75.048,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 76.051,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Hawk",
+          "spell_id": 13165,
+          "t": 76.605,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 76.791,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 79.223,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 79.254,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 80.875,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rapid Fire",
+          "spell_id": 3045,
+          "t": 81.005,
+          "target": null
+        },
+        {
+          "ability": "Tol'vir Agility",
+          "spell_id": 79633,
+          "t": 81.175,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 81.728,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hyperspeed Acceleration",
+          "spell_id": 54758,
+          "t": 81.855,
+          "target": null
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 82.872,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 83.292,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 83.292,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 83.491,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 84.307,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 85.218,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 85.31,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 86.317,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 86.967,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 87.318,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 88.328,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 88.697,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 89.332,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 90.425,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 91.491,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 92.159,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 92.646,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 93.8,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 93.908,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 94.949,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 95.664,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 96.151,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 96.859,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 97.426,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 97.789,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 97.789,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 98.803,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 99.799,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 99.888,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 100.804,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 101.799,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 102.359,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 104.448,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 104.822,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 106.109,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 107.294,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 107.758,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 109.406,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 109.406,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 109.753,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 110.923,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 112.054,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 112.054,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 112.212,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 114.68,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 114.703,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 117.144,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 117.423,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 117.423,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 118.433,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 119.435,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 119.608,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 120.44,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 122.07,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 123.094,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 124.531,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 125.871,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 125.871,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 127.016,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 128.702,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 128.797,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 129.474,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 131.451,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 131.944,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 133.099,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 134.406,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 134.742,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 136.394,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 136.394,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 136.879,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 139.045,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 139.093,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 139.356,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 140.692,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 140.744,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 141.75,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 141.815,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 142.762,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 143.771,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 144.297,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 144.777,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 145.779,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 146.75,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 146.773,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hyperspeed Acceleration",
+          "spell_id": 54758,
+          "t": 147.444,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 149.22,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 149.554,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 151.159,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 151.641,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 152.776,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 152.776,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 153.78,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 154.065,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 154.783,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 156.486,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 157.417,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 157.417,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 158.925,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 160.037,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 161.349,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 161.682,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 162.217,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 163.42,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 163.822,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 164.434,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 164.711,
+          "target": null
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 165.431,
+          "target": "Atramedes"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source3",
+      "class_spec": "survival_hunter",
+      "name": "Lachina",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 25066.9,
+      "source_id": 3,
+      "source_name": "Lachina",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=3",
+      "row_count": 192,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Serpent Sting",
+          "spell_id": 1978,
+          "t": 0.926,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 1.914,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 2.357,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Fox",
+          "spell_id": 82661,
+          "t": 2.647,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 4.793,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 4.842,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 6.318,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 7.258,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 7.925,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Hawk",
+          "spell_id": 13165,
+          "t": 8.55,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 9.722,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 13.148,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 14.73,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 14.73,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 15.059,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 15.753,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 16.759,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 16.948,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Rapid Fire",
+          "spell_id": 3045,
+          "t": 17.753,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 18.828,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 19.473,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 19.746,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 20.192,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 20.751,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 21.533,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 22.726,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 22.887,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 23.581,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 24.229,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 24.601,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 25.584,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 26.415,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 26.933,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 27.585,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 28.266,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 29.568,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 29.624,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 30.553,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 30.985,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 32.331,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 32.88,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 33.232,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 33.686,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 33.926,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 34.926,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 35.58,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 35.934,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 37.469,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 39.357,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 40.997,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 41.251,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 41.583,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 42.581,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 43.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 44.727,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 45.032,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 45.231,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 46.472,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 46.607,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 46.926,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 47.611,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 48.609,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 48.808,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 49.618,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 50.63,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 50.702,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 53.113,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 53.164,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 53.613,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 55.608,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 56.942,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 57.199,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 58.074,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 60.533,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 60.561,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 60.792,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 62.972,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 63.28,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 64.755,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 65.266,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 65.44,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 66.233,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 67.751,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 67.887,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 68.07,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 69.248,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 70.253,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 70.342,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 71.598,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 72.813,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 74.077,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 75.246,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 76.92,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 77.264,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 77.719,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 79.808,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 80.175,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 81.348,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 81.632,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 82.629,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 84.108,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 85.084,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 85.197,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 87.532,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 87.671,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 89.145,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 89.651,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 90.004,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 92.433,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Fox",
+          "spell_id": 82661,
+          "t": 92.433,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 92.456,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 94.611,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 94.911,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 96.282,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 96.662,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 97.363,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 99.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 99.799,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 99.824,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 102.283,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 102.283,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 104.744,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 105.059,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 105.059,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 107.201,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 107.738,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 108.009,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 109.656,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 110.472,
+          "target": null
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 110.481,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 111.614,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 112.113,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 112.619,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 113.631,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 114.564,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 116.107,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 116.167,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 117.018,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 118.646,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 119.484,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 120.537,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 121.425,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 121.944,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 124.253,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 124.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 124.776,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lock and Load",
+          "spell_id": 56453,
+          "t": 126.471,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 126.852,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 127.251,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 127.376,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 128.379,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 129.314,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 129.379,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Aspect of the Hawk",
+          "spell_id": 13165,
+          "t": 129.923,
+          "target": null
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 131.753,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 131.862,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Black Arrow",
+          "spell_id": 3674,
+          "t": 132.129,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 134.211,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 134.62,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 136.095,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 136.358,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 136.679,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 138.829,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 139.123,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 139.138,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 140.147,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 141.582,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 142.638,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 142.901,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 144.046,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 145.486,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 145.944,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 146.499,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 148.564,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Explosive Shot",
+          "spell_id": 53301,
+          "t": 148.909,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 148.949,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Cobra Shot",
+          "spell_id": 77767,
+          "t": 151.386,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 151.386,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 151.405,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 152.388,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 153.563,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 153.851,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Disengage",
+          "spell_id": 781,
+          "t": 156.14,
+          "target": null
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 157.901,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 157.901,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 160.232,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 160.354,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Arcane Shot",
+          "spell_id": 3044,
+          "t": 161.984,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 162.812,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 162.993,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Kill Shot",
+          "spell_id": 53351,
+          "t": 163.999,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Auto Shot",
+          "spell_id": 75,
+          "t": 165.271,
+          "target": "Atramedes"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source15",
+      "class_spec": "retribution_paladin",
+      "name": "Janderak",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 19929.9,
+      "source_id": 15,
+      "source_name": "Janderak",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=15",
+      "row_count": 83,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 1.783,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Zealotry",
+          "spell_id": 85696,
+          "t": 3.533,
+          "target": null
+        },
+        {
+          "ability": "Inquisition",
+          "spell_id": 84963,
+          "t": 3.688,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 4.958,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 6.449,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 7.965,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 9.481,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 10.986,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Guardian of Ancient Kings",
+          "spell_id": 86150,
+          "t": 11.514,
+          "target": null
+        },
+        {
+          "ability": "Avenging Wrath",
+          "spell_id": 31884,
+          "t": 12.846,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 13.235,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 14.73,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "spell_id": 24275,
+          "t": 16.234,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 17.742,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 19.247,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 20.741,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 22.048,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 23.553,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "spell_id": 24275,
+          "t": 25.063,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 26.567,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 28.247,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 29.761,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "spell_id": 24275,
+          "t": 31.267,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Inquisition",
+          "spell_id": 84963,
+          "t": 33.067,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 34.068,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 35.58,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 37.09,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 38.736,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 40.314,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 41.815,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Holy Wrath",
+          "spell_id": 2812,
+          "t": 43.336,
+          "target": null
+        },
+        {
+          "ability": "Consecration",
+          "spell_id": 26573,
+          "t": 44.34,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 45.355,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 46.861,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 48.374,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 49.391,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 50.891,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 52.394,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 54.921,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 58.795,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 60.294,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 61.809,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 63.313,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 64.533,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Holy Wrath",
+          "spell_id": 2812,
+          "t": 66.037,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 68.191,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 70.415,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Inquisition",
+          "spell_id": 84963,
+          "t": 72.096,
+          "target": null
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 73.273,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 74.78,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 78.32,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 79.825,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 82.089,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Holy Wrath",
+          "spell_id": 2812,
+          "t": 84.981,
+          "target": null
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 86.562,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 88.069,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 89.579,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 91.08,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 92.346,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 94.703,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 121.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Inquisition",
+          "spell_id": 84963,
+          "t": 127.504,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 128.702,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 130.214,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 131.717,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 133.207,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 135.795,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 137.296,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 138.573,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Judgement",
+          "spell_id": 20271,
+          "t": 140.062,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "spell_id": 24275,
+          "t": 141.582,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Avenging Wrath",
+          "spell_id": 31884,
+          "t": 142.804,
+          "target": null
+        },
+        {
+          "ability": "Holy Wrath",
+          "spell_id": 2812,
+          "t": 143.09,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 144.343,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 148.117,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Zealotry",
+          "spell_id": 85696,
+          "t": 149.953,
+          "target": null
+        },
+        {
+          "ability": "Inquisition",
+          "spell_id": 84963,
+          "t": 150.291,
+          "target": null
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 151.891,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 155.662,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Templar's Verdict",
+          "spell_id": 85256,
+          "t": 157.265,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Hammer of Wrath",
+          "spell_id": 24275,
+          "t": 162.064,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Exorcism",
+          "spell_id": 879,
+          "t": 163.563,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Crusader Strike",
+          "spell_id": 35395,
+          "t": 164.796,
+          "target": "Atramedes"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source2",
+      "class_spec": "shadow_priest",
+      "name": "Adara",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 20078.6,
+      "source_id": 2,
+      "source_name": "Adara",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=2",
+      "row_count": 93,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Shadow Word: Pain",
+          "spell_id": 589,
+          "t": 0.467,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 1.639,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 1.936,
+          "target": null
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 3.997,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 5.184,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 5.184,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 7.372,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 9.852,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Archangel",
+          "spell_id": 87151,
+          "t": 12.122,
+          "target": null
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 13.456,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 13.55,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 15.303,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 18.157,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 18.337,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 20.498,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 23.377,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 23.419,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 25.129,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 29.647,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 32.798,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 32.928,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 35.08,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 38.133,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 38.842,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 40.652,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 43.687,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 43.827,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 45.676,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 47.455,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 49.412,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 52.521,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 52.582,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 54.515,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 57.536,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 60.78,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 62.214,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 62.337,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 62.761,
+          "target": null
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 63.512,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Shadowfiend",
+          "spell_id": 34433,
+          "t": 65.979,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 67.158,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 69.62,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 73.499,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 74.989,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 75.121,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 77.343,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 79.891,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 83.09,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 83.269,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 85.655,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 87.997,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 91.45,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 91.469,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 94.759,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 96.959,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 99.275,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 101.423,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Shadow Word: Pain",
+          "spell_id": 589,
+          "t": 103.736,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 104.922,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 106.46,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 108.834,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 110.974,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 112.975,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 115.675,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 115.675,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 119.199,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 119.608,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 121.189,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 124.605,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 124.605,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 127.251,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Archangel",
+          "spell_id": 87151,
+          "t": 129.643,
+          "target": null
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 130.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 133.652,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 134.838,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 135.039,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 137.527,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 139.999,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 143.539,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Devouring Plague",
+          "spell_id": 2944,
+          "t": 143.64,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 144.343,
+          "target": null
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 144.905,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 147.275,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Vampiric Touch",
+          "spell_id": 34914,
+          "t": 150.484,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 150.536,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 153.621,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 153.833,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Shadow Word: Death",
+          "spell_id": 32379,
+          "t": 156.626,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Shadow Word: Death",
+          "spell_id": 32379,
+          "t": 157.847,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 159.021,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Blast",
+          "spell_id": 8092,
+          "t": 162.51,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 162.511,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Mind Flay",
+          "spell_id": 15407,
+          "t": 165.022,
+          "target": "Atramedes"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source9",
+      "class_spec": "combat_rogue",
+      "name": "Avéran",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 21521.9,
+      "source_id": 9,
+      "source_name": "Avéran",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=9",
+      "row_count": 107,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Tol'vir Agility",
+          "spell_id": 79633,
+          "t": 0.112,
+          "target": null
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 0.966,
+          "target": null
+        },
+        {
+          "ability": "Adrenaline Rush",
+          "spell_id": 13750,
+          "t": 1.561,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 1.936,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 2.953,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 3.97,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Slice and Dice",
+          "spell_id": 5171,
+          "t": 4.968,
+          "target": null
+        },
+        {
+          "ability": "Killing Spree",
+          "spell_id": 51690,
+          "t": 5.97,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 8.087,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 9.09,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 10.087,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 11.106,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 12.216,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 13.224,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 14.218,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 15.223,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 16.226,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 17.214,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 18.234,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 19.238,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 20.254,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 21.251,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 22.257,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 23.262,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 24.258,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 25.267,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 26.441,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 27.457,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 28.462,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 29.658,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 30.661,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 31.714,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 33.46,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 34.703,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 35.863,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 36.855,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 38.753,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Slice and Dice",
+          "spell_id": 5171,
+          "t": 39.757,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 40.892,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 43.06,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 44.747,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 46.077,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 47.346,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 48.491,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 49.495,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 50.5,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 52.296,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 53.298,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 56.104,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 57.265,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 58.27,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 59.268,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 61.331,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 62.337,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Killing Spree",
+          "spell_id": 51690,
+          "t": 63.348,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 65.582,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 66.698,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 67.709,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 68.696,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 70.517,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 71.525,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 72.514,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 73.531,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 74.185,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 76.063,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 77.653,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 78.879,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Slice and Dice",
+          "spell_id": 5171,
+          "t": 81.042,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 82.047,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 85.092,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 86.377,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 88.837,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 89.844,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 90.849,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sprint",
+          "spell_id": 2983,
+          "t": 129.091,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 130.141,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Adrenaline Rush",
+          "spell_id": 13750,
+          "t": 130.679,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 131.144,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Slice and Dice",
+          "spell_id": 5171,
+          "t": 132.151,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 133.139,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 134.159,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 135.163,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 136.166,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 137.278,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 138.28,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 139.279,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 140.288,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 141.294,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 142.302,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 143.301,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 144.309,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 145.303,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 146.3,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 147.294,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 148.589,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Killing Spree",
+          "spell_id": 51690,
+          "t": 149.593,
+          "target": null
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 151.948,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 153.024,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 154.026,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 155.027,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Gouge",
+          "spell_id": 1776,
+          "t": 156.296,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 157.399,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 158.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 160.075,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Revealing Strike",
+          "spell_id": 84617,
+          "t": 163.38,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Eviscerate",
+          "spell_id": 2098,
+          "t": 164.377,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Sinister Strike",
+          "spell_id": 1752,
+          "t": 165.393,
+          "target": "Atramedes"
+        }
+      ]
+    },
+    {
+      "actor_id": "MxFq7TRbvnjGY1hJ-source4",
+      "class_spec": "elemental_shaman",
+      "name": "Sélán",
+      "report": "MxFq7TRbvnjGY1hJ",
+      "fight": 32,
+      "observed_dps": 24949.4,
+      "source_id": 4,
+      "source_name": "Sélán",
+      "source_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32&type=casts&view=events&source=4",
+      "row_count": 137,
+      "complete": true,
+      "casts": [
+        {
+          "ability": "Elemental Mastery",
+          "spell_id": 16166,
+          "t": 0.718,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 1.183,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 3.463,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 4.777,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 6.028,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 7.287,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Fire Elemental Totem",
+          "spell_id": 2894,
+          "t": 7.682,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 9.905,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Heroism",
+          "spell_id": 32182,
+          "t": 10.323,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 12.122,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 13.269,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 14.281,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 15.401,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 16.442,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 16.573,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 17.252,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 18.726,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 19.681,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 19.73,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 20.868,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 21.845,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 22.465,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 23.262,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 23.593,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 25.739,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 29.867,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 31.812,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 32.953,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 34.239,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 34.451,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 36.08,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 36.59,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Spiritwalker's Grace",
+          "spell_id": 79206,
+          "t": 37.934,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 38.046,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 38.656,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 39.33,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 39.886,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 40.535,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 41.625,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 42.89,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 44.04,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 45.355,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 45.355,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 47.511,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 48.654,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 51.346,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 51.515,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 54.014,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 54.864,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 55.924,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 56.487,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 57.598,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 58.809,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 58.948,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 60.561,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 61.428,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 62.011,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 63.49,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 64.708,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 66.192,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 66.292,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 66.357,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 68.747,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 70.385,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 71.874,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 73.357,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 74.839,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 75.918,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 76.562,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 76.562,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Elemental Mastery",
+          "spell_id": 16166,
+          "t": 77.696,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 78.107,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 80.375,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 81.763,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 83.017,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 83.135,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 85.419,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 87.143,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 88.415,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 89.752,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 91.003,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 92.293,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 93.634,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 93.666,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 96.503,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 98.041,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 99.567,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 101.046,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 102.536,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 104.075,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 104.075,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 106.482,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 107.923,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 109.319,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 111.95,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 113.569,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 114.77,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 115.048,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 117.032,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 118.562,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Synapse Springs",
+          "spell_id": 82174,
+          "t": 119.059,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 121.081,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 122.568,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 124.055,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 125.556,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 127.005,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 127.537,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 128.483,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 129.978,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 131.265,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 131.484,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 134.211,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 135.741,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 137.217,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 137.341,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 140.08,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 141.313,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 142.982,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 144.475,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Surge!",
+          "spell_id": 77762,
+          "t": 144.699,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 145.975,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 147.46,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 148.154,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 148.858,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 150.428,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 151.917,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 153.403,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 155.185,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Elemental Mastery",
+          "spell_id": 16166,
+          "t": 155.185,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 155.437,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Flame Shock",
+          "spell_id": 8050,
+          "t": 156.986,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lava Burst",
+          "spell_id": 51505,
+          "t": 159.359,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 160.685,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 162.267,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Earth Shock",
+          "spell_id": 8042,
+          "t": 162.45,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "spell_id": 403,
+          "t": 164.788,
+          "target": "Atramedes"
+        },
+        {
+          "ability": "Lightning Shield",
+          "spell_id": 26364,
+          "t": 164.944,
+          "target": "Atramedes"
+        }
+      ]
+    }
+  ],
+  "boss_events": [
+    {
+      "t": 22.451,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 22.451,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 24.063,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78075
+    },
+    {
+      "t": 24.074,
+      "event": "Begin Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 26.09,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 33.789,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 38.643,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 45.141,
+      "event": "Cast",
+      "ability": "Searing Flame",
+      "spell_id": 77840
+    },
+    {
+      "t": 50.902,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 54.853,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 66.211,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 67.808,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78075
+    },
+    {
+      "t": 67.846,
+      "event": "Begin Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 69.841,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 75.918,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 80.768,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 148.139,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 148.724,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    },
+    {
+      "t": 150.348,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78075
+    },
+    {
+      "t": 150.362,
+      "event": "Begin Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 152.362,
+      "event": "Cast",
+      "ability": "Sonic Breath",
+      "spell_id": 78098
+    },
+    {
+      "t": 164.928,
+      "event": "Cast",
+      "ability": "Modulation",
+      "spell_id": 77612
+    },
+    {
+      "t": 164.928,
+      "event": "Cast",
+      "ability": "Sonar Pulse",
+      "spell_id": 77672
+    }
+  ]
 }
