@@ -12,9 +12,9 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 16,
-      "stage": "run",
-      "round": 1,
+      "revision": 17,
+      "stage": "plan",
+      "round": 2,
       "bootstrap_sources": {
         "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
         "experiments/configs/cata_raid_strategy_catalog_v1.json": "a9f43adea13476362e196c2276faefc8aa29a0d44feb00d71a980e843da0421a",
@@ -32,7 +32,34 @@
           "cohort_id": "blackwing_descent_10n_magmaw_c0",
           "scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 3,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_magmaw",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "fail",
+                "reasons": [
+                  "below_target"
+                ],
+                "kills": 3,
+                "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "missing_inputs:encounter_research",
+                "verdict:fail"
+              ],
+              "reopened": false
+            }
+          ]
         },
         "omnotron": {
           "unit_id": "raid:blackwing_descent:10N:omnotron",
@@ -41,7 +68,35 @@
           "cohort_id": "blackwing_descent_10n_omnotron_c0",
           "scenario_id": "blackwing_descent_10n_omnotron_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 3,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_omnotron_defense_system",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "fail",
+                "reasons": [
+                  "boss_window_deaths",
+                  "unmeasured_boss_window"
+                ],
+                "kills": 1,
+                "target_sha256": "ded7b29639e39de0d3763148d992568971d3427db69e6dc995c5e0403f44882c",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "missing_inputs:encounter_research",
+                "verdict:fail"
+              ],
+              "reopened": false
+            }
+          ]
         },
         "chimaeron": {
           "unit_id": "raid:blackwing_descent:10N:chimaeron",
@@ -50,7 +105,37 @@
           "cohort_id": "blackwing_descent_10n_chimaeron_c0",
           "scenario_id": "blackwing_descent_10n_chimaeron_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 2,
+              "outcome": "semantic_progress_plateau_watchdog",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_chimaeron",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "fail",
+                "reasons": [
+                  "non_clear_kill",
+                  "boss_window_deaths",
+                  "stalled_boss_window"
+                ],
+                "kills": 2,
+                "target_sha256": "669598fa278b9eb4767adb8b4505dac7fd1dd70f2dc396b4f927a78c14380248",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "outcome:semantic_progress_plateau_watchdog",
+                "missing_inputs:encounter_research",
+                "verdict:fail"
+              ],
+              "reopened": false
+            }
+          ]
         },
         "atramedes": {
           "unit_id": "raid:blackwing_descent:10N:atramedes",
@@ -59,7 +144,34 @@
           "cohort_id": "blackwing_descent_10n_atramedes_c0",
           "scenario_id": "blackwing_descent_10n_atramedes_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 3,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_atramedes",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "fail",
+                "reasons": [
+                  "below_target"
+                ],
+                "kills": 3,
+                "target_sha256": "96527f75004259dd02e02a28fced511132f2732b8f797546f01f52c4db9cd1eb",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "missing_inputs:encounter_research",
+                "verdict:fail"
+              ],
+              "reopened": false
+            }
+          ]
         },
         "maloriak": {
           "unit_id": "raid:blackwing_descent:10N:maloriak",
@@ -68,7 +180,35 @@
           "cohort_id": "blackwing_descent_10n_maloriak_c0",
           "scenario_id": "blackwing_descent_10n_maloriak_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 3,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_maloriak",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "insufficient_kills",
+                "reasons": [
+                  "insufficient_kills",
+                  "unmeasured_boss_window"
+                ],
+                "kills": 2,
+                "target_sha256": "47e03de8a7e4cb4b638e94b228bb5b9c3c8bf40278c0aa97e70eac347c05f345",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "missing_inputs:encounter_research",
+                "verdict:insufficient_kills"
+              ],
+              "reopened": false
+            }
+          ]
         },
         "nefarian": {
           "unit_id": "raid:blackwing_descent:10N:nefarian",
@@ -77,7 +217,35 @@
           "cohort_id": "blackwing_descent_10n_nefarian_c0",
           "scenario_id": "blackwing_descent_10n_nefarian_c0_diagnostic",
           "status": "open",
-          "results": []
+          "results": [
+            {
+              "round": 1,
+              "runs": 3,
+              "clears": 3,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_nefarian",
+                "label": "blackwing_descent_10n-r01-553da85c98",
+                "status": "fail",
+                "reasons": [
+                  "boss_window_deaths_unknown",
+                  "unmeasured_boss_window"
+                ],
+                "kills": 1,
+                "target_sha256": "c25aa9c55b45bdde962f1c68f44210e4ca6b828d8042ea56747ed2c5790fca83",
+                "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "missing_inputs:encounter_research",
+                "verdict:fail"
+              ],
+              "reopened": false
+            }
+          ]
         }
       },
       "e2e": {
@@ -998,7 +1166,177 @@
               }
             }
           ],
-          "assessment": null,
+          "assessment": {
+            "label": "blackwing_descent_10n-r01-553da85c98",
+            "assessed_utc": "2026-09-27T09:44:18Z",
+            "units": {
+              "magmaw": {
+                "round": 1,
+                "runs": 3,
+                "clears": 3,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_magmaw",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "fail",
+                  "reasons": [
+                    "below_target"
+                  ],
+                  "kills": 3,
+                  "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "missing_inputs:encounter_research",
+                  "verdict:fail"
+                ],
+                "reopened": false
+              },
+              "omnotron": {
+                "round": 1,
+                "runs": 3,
+                "clears": 3,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_omnotron_defense_system",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "fail",
+                  "reasons": [
+                    "boss_window_deaths",
+                    "unmeasured_boss_window"
+                  ],
+                  "kills": 1,
+                  "target_sha256": "ded7b29639e39de0d3763148d992568971d3427db69e6dc995c5e0403f44882c",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "missing_inputs:encounter_research",
+                  "verdict:fail"
+                ],
+                "reopened": false
+              },
+              "chimaeron": {
+                "round": 1,
+                "runs": 3,
+                "clears": 2,
+                "outcome": "semantic_progress_plateau_watchdog",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_chimaeron",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "fail",
+                  "reasons": [
+                    "non_clear_kill",
+                    "boss_window_deaths",
+                    "stalled_boss_window"
+                  ],
+                  "kills": 2,
+                  "target_sha256": "669598fa278b9eb4767adb8b4505dac7fd1dd70f2dc396b4f927a78c14380248",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "outcome:semantic_progress_plateau_watchdog",
+                  "missing_inputs:encounter_research",
+                  "verdict:fail"
+                ],
+                "reopened": false
+              },
+              "atramedes": {
+                "round": 1,
+                "runs": 3,
+                "clears": 3,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_atramedes",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "fail",
+                  "reasons": [
+                    "below_target"
+                  ],
+                  "kills": 3,
+                  "target_sha256": "96527f75004259dd02e02a28fced511132f2732b8f797546f01f52c4db9cd1eb",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "missing_inputs:encounter_research",
+                  "verdict:fail"
+                ],
+                "reopened": false
+              },
+              "maloriak": {
+                "round": 1,
+                "runs": 3,
+                "clears": 3,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_maloriak",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "insufficient_kills",
+                  "reasons": [
+                    "insufficient_kills",
+                    "unmeasured_boss_window"
+                  ],
+                  "kills": 2,
+                  "target_sha256": "47e03de8a7e4cb4b638e94b228bb5b9c3c8bf40278c0aa97e70eac347c05f345",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "missing_inputs:encounter_research",
+                  "verdict:insufficient_kills"
+                ],
+                "reopened": false
+              },
+              "nefarian": {
+                "round": 1,
+                "runs": 3,
+                "clears": 3,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_nefarian",
+                  "label": "blackwing_descent_10n-r01-553da85c98",
+                  "status": "fail",
+                  "reasons": [
+                    "boss_window_deaths_unknown",
+                    "unmeasured_boss_window"
+                  ],
+                  "kills": 1,
+                  "target_sha256": "c25aa9c55b45bdde962f1c68f44210e4ca6b828d8042ea56747ed2c5790fca83",
+                  "worldserver_sha256": "92e81f09ba068d99d821f5fcd77e76479ef2252878acb2bd7587835b27f9f253"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "missing_inputs:encounter_research",
+                  "verdict:fail"
+                ],
+                "reopened": false
+              }
+            },
+            "raid_inputs": [
+              "script_readiness_audit"
+            ]
+          },
           "build_attempts": [
             {
               "policy": {
@@ -1498,6 +1836,14 @@
           "label": "blackwing_descent_10n-r01-553da85c98",
           "kills": 6,
           "errors": 0
+        },
+        {
+          "revision": 17,
+          "utc": "2026-09-27T09:44:18Z",
+          "action": "assess",
+          "round": 1,
+          "label": "blackwing_descent_10n-r01-553da85c98",
+          "accepted": []
         }
       ]
     }
