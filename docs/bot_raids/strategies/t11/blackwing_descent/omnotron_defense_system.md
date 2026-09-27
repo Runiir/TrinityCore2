@@ -176,7 +176,9 @@ observed state and capability, never from a roster slot:
 - **Movement**, in priority order: Lightning Conductor isolation, Poison Bomb
   kiting, Acquiring Target cone steering, Flamethrower cone dodge, hazard exit
   (Chemical Cloud, Poison Puddle, bomb blast), clearance from a conductor, tank
-  positioning, then Power Generator stacking for ranged and healers.
+  positioning (generator exit, shield separation, then the centre slot; see
+  round 2 below), healer coverage of every tank, then Power Generator
+  stacking for ranged and healers.
   Destinations stay on a 20 yd disc around the route node. The map 669
   navmesh is walkable on the full 21 yd disc.
 
@@ -267,6 +269,75 @@ landed on the attacking tank beside Electron, which both centres explain.
 interrupt grants Converted Power. The two heroic items also remain.
 Full-raid run r11 killed the council natively; its
 `encounter_fidelity.boss_melee` recorded no construct swings.
+
+## Raid-program round 2 (2026-09-27): positioning and WCL follow-up
+
+Round 1 (label `blackwing_descent_10n-r01-553da85c98`) cleared 3 of 3 but
+counted one kill (102.7 s), with one boss-window death. The two other runs
+lost their combat logs.
+
+- **The death.** The Feral tank died to Magmatron melee at 75.9 s. From 60 s it
+  took Magmatron melee, Incineration, Electrical Discharge and four
+  Flamethrower ticks, with no healer heal (only its own Leader of the Pack).
+  The Blood DK held the pulled Electron about 30 yd north of the arena centre.
+  The Feral tank had waited at Magmatron's southern spawn and tanked it there.
+  Both healers stayed north, 50-57 yd from the Feral tank. The Holy paladin's
+  trace shows Holy Shock `out_of_range` at 48.6 s and 61.2 s and
+  `requires_ally_target` (nobody in range needs a heal) for most of 51-76 s.
+- **DPS runs.** Damage uptime was about 83% for most actors. The gaps sit at the
+  45-50 s focus switch (Electron north to Magmatron south) and the 61-75 s
+  switch back, each a run of about 30 yd.
+- **Shields held.** The window has no Static Shock, Backdraft, Soaked In
+  Poison, Lightning Conductor or Poison Bomb damage. Time Warp was cast
+  (Temporal Displacement 80354 on the pets).
+
+Strategy change (`BotOmnotronPositioning.h`):
+
+- **Centre slots.** Each tank holds its unshielded construct on one of two
+  slots 5 yd west and east of the route node (-324.78, -399.08). Both tanks
+  compute the same pairing from one snapshot (the smaller total walk wins).
+  A tank moves when its construct is more than 6 yd from the slot and walks
+  3.5 yd past it, so the construct following it stops on the slot. A slot
+  inside a Power Generator's reach moves 15 yd out along the line from the
+  generator. A slot in a hazard is not taken. A shielded construct is still
+  dragged 12+ yd from the other one first and walked back after its shield.
+  The 10 yd spacing keeps cleave on both unshielded constructs. The matched
+  WCL kill xAhkN2y9YP3KRmnJ fight 12 (one Blood DK tank) shows this: one Heart
+  Strike at 00:51.069 and one Blood Boil at 00:57.088 each hit both Toxitron
+  and Magmatron, and the Replay at 00:57.085 shows them adjacent. Y8aj fight 24
+  (two tanks) kept Electron and Arcanotron apart.
+- **Healer coverage.** A healer with a living tank beyond 30 yd walks to the
+  nearest clear point around the tanks' centroid that reaches every tank.
+  Clear means outside hazards and outside a Lightning Conductor carrier's
+  reach. If no clear point reaches every tank, it takes the clear point
+  nearest the farthest tank. A healer stands in a Power Generator only if the
+  generator is within 30 yd of every living tank.
+
+WCL round 2 (GPT-6 Astra in the user's Chrome; ledger source
+`wcl_omnotron_10n_r2_20260927`). All three claims stay open:
+
+- **Barrier absorb.** No Backdraft 79617 row in 11 accessible 10N kills, so
+  no Barrier broke; the absorb size stays unresolved.
+- **Static Shock centre.** In zPVW3nfwMhgjGAFr fight 22, single bursts hit a
+  Fire mage, an Elemental shaman and the Blood DK tank together. Overlapping
+  attacks prevent tying a burst to one attacker, so the centre stays
+  unresolved.
+- **Power Conversion on a non-damaging interrupt.** In PGAKmyYbanW3wN9z
+  fight 24, a Wind Shear at 00:57.288 under Power Conversion gave no Converted
+  Power stack within 0.5 s. It landed 139 ms after the previous gain, inside
+  the native 500 ms proc cooldown (spell_proc 79729 Cooldown 500), so it does
+  not decide. The native row is unchanged.
+
+Class evidence from round 1, for the class agents (no class file changed
+here):
+
+- **Elemental.** 39 casts/min against 56 in WCL. No Chain Lightning (15 WCL
+  casts, hitting both constructs), no Elemental Mastery, no Spiritwalker's
+  Grace.
+- **Blood DK.** No Dancing Rune Weapon, Blood Tap, Blood Boil, Outbreak or
+  Empower Rune Weapon. A 12.3 s owner gap from 49.5 s while Electron was
+  shielded.
+- **Demonology.** 66% of the WoWSims fallback with no WCL-only rows to compare.
 
 WCL extraction plan (executed 2026-09-27; kept for heroic and 25-player follow-ups):
 

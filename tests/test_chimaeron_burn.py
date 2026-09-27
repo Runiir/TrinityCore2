@@ -240,6 +240,59 @@ static void TestHoldCap()
         && Latched(healerStore, C::BurnReleasedLatch)->Value == uint64(C::BurnReleaseReason::HealersDown));
 }
 
+// Feud pacifies the boss: with at least 10 s left and both tanks at 80%+ the
+// raid pushes through 20% while he cannot swing (round 1 held 12-27 s here).
+// The release goes through the same handoff. Less Feud left, or a tank below
+// the bar, keeps the hold.
+static void TestFeudWindowRelease()
+{
+    Blackboard board = Board("bwd.chimaeron.encounter", true);
+    EncounterLatchStore store;
+    ReadyBoard(board, 22.0f);
+    for (ActorSnapshot& player : board.Players)
+        player.Auras.clear();
+    Boss(board).Auras.push_back({ C::FeudSpell, Boss(board).Guid, 1, board.ObservedAtMs + 9000 });
+    Publish(board, store);
+    CHECK(!Latched(store, C::BurnReleasedLatch) && Plan(board, ROGUE, &store.View()).SuppressOffense);
+    Boss(board).Auras.back().ExpiresAtMs = board.ObservedAtMs + 20000;
+    P(board, DK).HealthPct = 70.0f;
+    Publish(board, store);
+    CHECK(!Latched(store, C::BurnReleasedLatch));
+    P(board, DK).HealthPct = 85.0f;
+    Publish(board, store);
+    EncounterLatch const* released = Latched(store, C::BurnReleasedLatch);
+    CHECK(released && released->Value == uint64(C::BurnReleaseReason::FeudWindow));
+    // Taunting the pacified boss is harmless: the Feral takes him first.
+    CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_mortality_handoff");
+    CHECK(Plan(board, ROGUE, &store.View()).SuppressReason == "burn_wait_for_mortality_handoff");
+    Boss(board).VictimGuid = G(DRUID);
+    Publish(board, store);
+    CHECK(Latched(store, C::HandoffDoneLatch));
+    CHECK(!Plan(board, ROGUE, &store.View()).SuppressOffense);
+    CHECK(CastOf(Plan(board, MAGE, &store.View())) == 80353);
+}
+
+// Fewer than two living tanks: nobody is left to take the boss fresh into
+// Mortality, so the hold releases at once (round 1's wipe held at 22.5% with
+// both tanks dead while the boss ate the raid).
+static void TestTanksDownRelease()
+{
+    Blackboard board = Board("bwd.chimaeron.encounter", true);
+    EncounterLatchStore store;
+    ReadyBoard(board, 22.0f);
+    P(board, DK).HealthPct = 30.0f;
+    Publish(board, store);
+    CHECK(!Latched(store, C::BurnReleasedLatch));
+    P(board, DRUID).Alive = false;
+    Publish(board, store);
+    EncounterLatch const* released = Latched(store, C::BurnReleasedLatch);
+    CHECK(released && released->Value == uint64(C::BurnReleaseReason::TanksDown));
+    Publish(board, store);
+    CHECK(Latched(store, C::HandoffDoneLatch));
+    CHECK(!Plan(board, ROGUE, &store.View()).SuppressOffense);
+    CHECK(!Plan(board, DK, &store.View()).SuppressOffense);
+}
+
 // The handoff never lands (out of range, line of sight, crowd control, a
 // rejected cast): after one taunt cooldown the non-tanks are released, the
 // Break tank attacks again to keep his threat, and the Feral keeps retrying.
@@ -599,6 +652,8 @@ int main()
     TestBurnWindow();
     TestLastChanceHandoff();
     TestHoldCap();
+    TestFeudWindowRelease();
+    TestTanksDownRelease();
     TestFailedHandoff();
     TestEncounterLatchStore();
     TestBurnReplayFromPostMassacre();

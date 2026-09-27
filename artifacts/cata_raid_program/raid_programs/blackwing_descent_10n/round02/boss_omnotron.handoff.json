@@ -1,0 +1,68 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:omnotron",
+ "round": 2,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronMovement.h",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+  "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md"
+ ],
+ "new_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronPositioning.h",
+  "tests/test_omnotron_positioning.py"
+ ],
+ "resolved_inputs": [],
+ "open_items": [
+  "Boss-window death (r01 kill 6bf52232...): the Feral tank (11001002) died to Magmatron melee at 75.9 s. From 60 s it took Magmatron melee, Incineration, Electrical Discharge and 4 Flamethrower ticks, with no healer heal. The Blood DK held the pulled Electron about 30 yd north of the arena centre. The Feral had waited at Magmatron's southern spawn and tanked it there. Both healers stayed north, 50-57 yd from the Feral. The Holy paladin trace shows Holy Shock out_of_range at 48.6 s and 61.2 s and requires_ally_target for most of 51-76 s. The healer AI and the class are fine; the encounter geometry caused it.",
+  "Fix (encounter-owned, class_native tier, needs build plus reviewer): BotOmnotronPositioning.h.",
+  "  - Tank slots: each tank holds its unshielded construct on one of two slots 5 yd west and east of the route node, 10 yd apart. Both tanks derive the same pairing. A slot moves out of a Power Generator and is never taken inside a hazard. A shielded construct is still dragged 12+ yd apart first.",
+  "  - Healer coverage: a healer walks back when a tank is more than 30 yd away.",
+  "  - Generator stacking: a healer stands in a Power Generator only if it reaches every tank.",
+  "  - Expected effect: 0 boss-window deaths from healer range; melee focus switches of 10 yd instead of 30-40 yd; cleave on both unshielded constructs, matching WCL xAhkN2y9YP3KRmnJ-12.",
+  "DPS shortfalls (counted kill, 102.7 s): encounter-side losses are the target-switch runs (uptime about 83%, gaps at 44-50 s and 61-75 s). Shields were clean: no Static Shock, Backdraft, Soaked In Poison or Conductor hits. Time Warp was cast (80354 on the pets). Arcanotron and Poison Bombs never appeared in this kill, so the interrupt and bomb handling are unmeasured.",
+  "Class evidence for the class agents (no class file edited):",
+  "  - Elemental shaman (73%): 39 casts/min against 56 in WCL. WCL-only: Chain Lightning (15 casts, hitting both constructs), Elemental Mastery, Spiritwalker's Grace.",
+  "  - Blood DK (81%): WCL-only Dancing Rune Weapon, Blood Tap, Blood Boil, Outbreak, Empower Rune Weapon. A 12.3 s owner gap from 49.5 s while Electron was shielded (encounter-correct hold).",
+  "  - Demonology warlock (66% of the WoWSims fallback): no WCL-only rows to diff; rotation owner review needed.",
+  "  - Assassination (89%) and Survival (93%) are near target; Survival lacks Lock and Load and Synapse Springs rows.",
+  "Research (WCL through GPT-6 Astra in the user's Chrome, source wcl_omnotron_10n_r2_20260927). All three claims stay fidelity_blocked:",
+  "  - barrier_absorb_amount: 0 Backdraft rows in 11 accessible 10N kills, so no Barrier broke.",
+  "  - static_shock_center_attacker_or_construct: zPVW3nfwMhgjGAFr-22 bursts hit ranged and tanks together, but no burst can be tied to one attacker.",
+  "  - power_conversion_no_damage_proc: PGAKmyYbanW3wN9z-24 Wind Shear gave no stack within 0.5 s, but it landed 139 ms after a gain, inside the native 500 ms proc cooldown (spell_proc 79729 Cooldown 500), so it does not decide. The native row is unchanged.",
+  "Unmeasured: two of three r01 runs lost combat logs, so the new slot, coverage and cleave acceptance observations (contract) need the round-2 shard kills.",
+  "Review fix (GPT-6 Astra P2, BotOmnotronPositioning.h ProposeTankSlot): the hazard check covered only the slot, while the destination went 3.5 yd further. With a Chemical Cloud 14 yd beyond a clear slot, the trail point landed 10.5 yd from the cloud, inside its 12 yd radius. The final clamped destination is now checked against every hazard; if it is inside one, the tank walks to the slot itself (clear, clamped), otherwise holds. Test test_omnotron_tanks_hold_constructs_on_centre_slots covers the cloud-beyond-the-slot case (move to the slot, outside the cloud) and a cloud reaching the slot (hold)."
+ ],
+ "patch_requests": [],
+ "risks": [
+  "Tank slot walks. The Blood DK drags the pulled construct about 25-30 yd to the west slot at the start, with a few seconds of melee chase. A tank carrying Lightning Conductor still isolates first and the slot pulls it back afterwards. Watch for oscillation between conductor isolation, shield separation and the slot in the trace (mechanics tank_center_slot, tank_shield_separation, lightning_conductor_isolate).",
+  "Cleave on shared health. The 10 yd spacing lets area spells hit both unshielded constructs. When one shields, the offense restriction refuses area spells beside it until the shield drag separates them, so area DPS may dip for about 1-2 s per shield.",
+  "Healer coverage moves a healer mid-fight when a tank is more than 30 yd away. It is priority Mechanic below every survival movement, but a healer walking can delay a cast.",
+  "New header BotOmnotronPositioning.h is header-only, included by BotAdaptiveOmnotronStrategy.h. No CMake change is needed to compile; a re-configure only lists it in the IDE.",
+  "Five failures in the related runtime suite tests/test_cata_raid_runtime_foundation.py read shared runtime/harness sources, route SQL and validation_scenarios_cata_001.json, none of them Omnotron files. They are unrelated to this packet and probably pre-existing or caused by other packets' dirty edits."
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_omnotron_*.py (baseline before edits)",
+   "result": "41 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_omnotron_positioning.py (first run)",
+   "result": "1 failed (healer coverage chose a point inside a Chemical Cloud when no clear point reached both tanks); fixed in BotOmnotronPositioning.h, then 3 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_omnotron_*.py tests/test_cata_raid_research_contracts.py",
+   "result": "57 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_bot_content_ownership_layout.py tests/test_bot_action_arbitration.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py tests/test_encounter_research_view.py tests/test_cata_raid_runtime_foundation.py tests/test_bwd_diagnostic_node_manifests.py",
+   "result": "122 passed, 5 failed in test_cata_raid_runtime_foundation.py (no_pch roster plan, bwd ghost runback, runtime profile reload, phase1 magmaw full wipe policy, phase1 dead member gate). Unrelated: they read shared runtime sources, route SQL and scenario manifests, none of them Omnotron files"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_omnotron_*.py tests/test_cata_raid_research_contracts.py (after the P2 fix)",
+   "result": "57 passed"
+  }
+ ],
+ "validation_neutrality": "Every behaviour change is inside the Omnotron adaptive strategy (Encounters/Omnotron) and applies only on route node bwd.omnotron.encounter while a construct is engaged. No shared runtime, class, SQL or harness file changed, so accepted Stonecore, calibration and Magmaw results are unaffected. No native script, timer or damage value changed; movement stays lawful (logical destinations, native pathing)."
+}

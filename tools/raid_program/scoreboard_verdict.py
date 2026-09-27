@@ -22,6 +22,7 @@ from tools.raid_program.scoreboard_core import (
     dps_gate_exempt_specs, is_dps_gate_exempt, fallback_index_path, file_sha256, healer_roles, label_kills, load_records, load_target, mean_sd,
     party_reference_dps, reference_targets, roster, target_for_records, target_path,
 )
+from tools.raid_program.scoreboard_deaths import death_exemptions
 
 BASIS_TEXT = {"wcl": "WCL", "wowsims_fallback": "WoWSims fallback"}
 
@@ -70,6 +71,20 @@ class _Reasons:
 
 def _kill_name(record: dict[str, Any]) -> str:
     return str(record.get("kill_id"))
+
+
+def _exempt_death_totals(target: dict[str, Any], kills: list[dict[str, Any]]) -> dict[str, Any]:
+    """Per exemption record_key, the counted kills' exempt deaths (target boss_window_death_exemptions only).
+
+    None when a kill lacks the key: it was recorded before the exemption and its boss_window_deaths
+    still includes those deaths (fail-closed until re-recorded).
+    """
+    totals = {}
+    for exemption in death_exemptions(target):
+        key = exemption["record_key"]
+        values = [record.get(key) for record in kills]
+        totals[key] = None if None in values else sum(int(value) for value in values)
+    return totals
 
 
 def _encounter_verdict(target, kills, clears, party_wcl, reasons: _Reasons) -> dict[str, Any]:
@@ -124,6 +139,7 @@ def _encounter_verdict(target, kills, clears, party_wcl, reasons: _Reasons) -> d
         "mean_party_dps": _round(party_dps),
         "mean_duration_sec": _round(duration, 3),
         "boss_window_deaths": None if None in window_deaths else sum(window_deaths),
+        **_exempt_death_totals(target, kills),
         "route_deaths": sum(int(record.get("route_deaths") or 0) for record in kills),
         "party_wcl_dps": party_wcl,
         "party_ratio": _round(party_dps / party_wcl, 3) if party_dps and party_wcl else None,

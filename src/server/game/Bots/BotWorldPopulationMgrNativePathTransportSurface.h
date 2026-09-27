@@ -52,6 +52,12 @@ float PredictFallDamagePct(Player const* bot, float height);
 // Some floor (static or any collision model) within `band` yards above or
 // below the bot's feet.
 bool FloorNear(Player const* bot, float band);
+
+// A range/LOS recovery endpoint for this bot (BotPassengerEndpointFloor.h):
+// true for a non-passenger; for a transport passenger only when a floor
+// (static, any collision model, or its own transport's model) lies within
+// the planner's vertical tolerance of the endpoint.
+bool PassengerEndpointHasFloor(Player const* bot, float x, float y, float z);
 }
 
 #endif

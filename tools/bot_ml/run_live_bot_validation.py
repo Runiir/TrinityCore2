@@ -3861,6 +3861,22 @@ def terminal_catchup_progress_advanced(
     return False
 
 
+def boss_kill_scopes(route: Mapping[str, Any]) -> list[tuple[str, int, int, int]]:
+    """(node, generation, boss identity, entry) of each confirmed boss death in the route status."""
+    scopes = []
+    for row in route.get("boss_death_evidence") or []:
+        if not isinstance(row, Mapping) or str(row.get("result") or "") != "confirmed_unit_death":
+            continue
+        try:
+            scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0),
+                     int(row.get("target_id") or 0), int(row.get("target_entry") or 0))
+        except (TypeError, ValueError):
+            continue
+        if scope[0] and scope[1] > 0 and scope[2]:
+            scopes.append(scope)
+    return scopes
+
+
 def advance_semantic_liveness(
     report: Mapping[str, Any],
     *,
@@ -3876,6 +3892,7 @@ def advance_semantic_liveness(
     last_progress_route_generation: int = 0,
     previous_live_combat_progress: Mapping[str, Any] | None = None,
     previous_terminal_catchup_progress: Mapping[str, Any] | None = None,
+    previous_boss_kill_scopes: list[list[Any]] | None = None,
     emergency_cap_reached: bool = False,
 ) -> dict[str, Any]:
     """Advance the controller-owned liveness clock and emit one compact receipt."""
@@ -3940,6 +3957,17 @@ def advance_semantic_liveness(
             str(scope_row.get("route_node_id") or ""),
             safe_int(scope_row.get("route_generation")),
         )
+
+    # A confirmed native boss death is progress by identity (round 2, BWD 10N
+    # Chimaeron run 6bf52232): the heartbeat counters are windowed, so a kill
+    # after a wipe never raised progress_total above the recovery high-water
+    # mark, and the watchdog stopped 6 s after the respawned boss died while
+    # the node was waiting for its post-kill resurrection.
+    kill_scopes = boss_kill_scopes(route)
+    known_kills = {tuple(scope) for scope in previous_boss_kill_scopes or []}
+    new_kills = [scope for scope in kill_scopes if tuple(scope) not in known_kills]
+    if new_kills:
+        record("boss_kill", new_kills[-1][3], str(new_kills[-1][0]), safe_int(new_kills[-1][1]))
 
     catchup_progress = terminal_catchup_progress_snapshot(dict(report))
     if terminal_catchup_progress_advanced(
@@ -4019,6 +4047,8 @@ def advance_semantic_liveness(
         "last_progress_route_generation": last_progress_route_generation,
         "previous_live_combat_progress": dict(live_progress) if isinstance(live_progress, Mapping) else None,
         "previous_terminal_catchup_progress": catchup_progress,
+        "previous_boss_kill_scopes": sorted(set(tuple(scope) for scope in previous_boss_kill_scopes or [])
+                                            | set(tuple(scope) for scope in kill_scopes)),
         "receipt": receipt,
     }
 
@@ -6792,6 +6822,7 @@ def run_transport_completion_watchdog(
         "last_progress_route_generation": 0,
         "previous_live_combat_progress": None,
         "previous_terminal_catchup_progress": None,
+        "previous_boss_kill_scopes": None,
     }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
@@ -7296,6 +7327,7 @@ def run_worldserver_completion_watchdog(
         "last_progress_route_generation": 0,
         "previous_live_combat_progress": None,
         "previous_terminal_catchup_progress": None,
+        "previous_boss_kill_scopes": None,
     }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0

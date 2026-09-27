@@ -356,3 +356,134 @@ def test_scenario_closure_rule(repo):
     real = fidelity.scenario_damage_fidelity(ROOT, {"raid": "blackwing_descent", "boss": "magmaw", "mode": "10N"})
     assert real["boss_entries"] == {"41570": "calibrated", "42347": "not_applicable", "48270": "not_applicable"}
     assert real["closable"] is True and real["reason"] is None
+
+
+# --- post-enrage exclusion (round 2, BWD 10N: Nefarian Berserk 26662 at 10 min 30 s) -------------
+
+def test_post_enrage_swings_are_excluded_from_the_melee_statistics():
+    registry = json.loads(json.dumps(REGISTRY))
+    registry["creatures"][str(BOSS)]["enrage_after_ms"] = 630000
+    analysis = {"encounters": [{"route_node_id": "t.boss", "first_at_ms": T0, "last_at_ms": T0 + 700000,
+                                "duration_sec": 700.0}]}
+    before = [swing(1000 + index * 2000, "normal", 67000) for index in range(10)]
+    after = [swing(630000 + index * 2000, "normal", 390000) for index in range(10)]
+    # The raid keeps fighting between the boss's swings (Nefarian flies in phase 2): one pull.
+    background = [damage(at, 1000, spell=1) for at in range(0, 700000, 5000)]
+    stats = fidelity.melee_stats(BOSS, before + after, events=background, linked={}, tanks={TANK},
+                                 registry=registry, route_nodes=["t.boss"], combat_analysis=analysis)
+    assert stats["post_enrage_swings_excluded"] == 10
+    assert stats["swings"] == 10
+    assert stats["stages"]["after_attacker_bonus_amount"]["mean"] == 67000.0
+
+    # Without an enrage entry nothing is excluded.
+    plain = fidelity.melee_stats(BOSS, before + after, events=background, linked={}, tanks={TANK}, registry=REGISTRY,
+                                 route_nodes=["t.boss"], combat_analysis=analysis)
+    assert plain["post_enrage_swings_excluded"] == 0 and plain["swings"] == 20
+
+
+def boss_health_hit(at, before_pct, *, maximum=1_000_000, amount=1000, guid=BOSS_GUID):
+    """A party hit on the boss carrying the boss's health before the hit."""
+    return {"kind": "damage", "timestamp_ms": T0 + at, "amount": amount, "source_entry": 0, "source_guid": TANK,
+            "target_entry": BOSS, "target_guid": guid, "actor_guid": TANK, "route_node_id": "t.boss",
+            "landed_damage_observation": {"target_health_before_damage": int(maximum * before_pct / 100),
+                                          "target_max_health": maximum}}
+
+
+def _enrage_registry():
+    registry = json.loads(json.dumps(REGISTRY))
+    registry["creatures"][str(BOSS)]["enrage_after_ms"] = 630000
+    return registry
+
+
+def _long_analysis(last_ms=1_500_000):
+    return {"encounters": [{"route_node_id": "t.boss", "first_at_ms": T0, "last_at_ms": T0 + last_ms,
+                            "duration_sec": last_ms / 1000.0}]}
+
+
+def _swings(first, last, attacker, step=2000):
+    return [swing(at, "normal", attacker) for at in range(first, last + 1, step)]
+
+
+def test_enrage_cutoff_restarts_with_every_confirmed_pull():
+    # A wipe, then a re-engage whose reset the boss's refilled health confirms.
+    pull1 = _swings(1000, 19000, 67000) + _swings(630000, 648000, 390000)
+    pull2 = _swings(710000, 728000, 67000) + _swings(710000 + 630000, 710000 + 638000, 390000)
+    evidence = [boss_health_hit(600000, 40.0), boss_health_hit(712000, 100.0)]
+    stats = fidelity.melee_stats(BOSS, pull1 + pull2, events=evidence, linked={}, tanks={TANK},
+                                 registry=_enrage_registry(), route_nodes=["t.boss"], combat_analysis=_long_analysis())
+    assert stats["post_enrage_swings_excluded"] == 15
+    assert stats["swings"] == 20
+    assert stats["stages"]["after_attacker_bonus_amount"]["mean"] == 67000.0
+
+
+def test_recovery_heals_do_not_start_the_enrage_clock():
+    # Astra round-2 re-review: recovery healing after a wipe started pull 2's clock early. Pull 2
+    # engages at 750 s, so its Berserk cutoff is 1380 s and the swings at 1340-1358 s are kept.
+    pull1 = _swings(1000, 629000, 67000) + _swings(630000, 648000, 390000)
+    heals = [{"kind": "heal", "timestamp_ms": T0 + at, "amount": 5000, "target_guid": TANK}
+             for at in range(700000, 741000, 2000)]
+    pull2 = _swings(750000, 1378000, 67000) + _swings(1380000, 1398000, 390000)
+    evidence = [boss_health_hit(600000, 40.0), boss_health_hit(752000, 100.0)]
+    stats = fidelity.melee_stats(BOSS, pull1 + pull2, events=heals + evidence, linked={}, tanks={TANK},
+                                 registry=_enrage_registry(), route_nodes=["t.boss"], combat_analysis=_long_analysis())
+    assert fidelity._pull_starts(T0, pull1 + pull2 + heals + evidence, {BOSS}) == [T0, T0 + 750000]
+    assert stats["post_enrage_swings_excluded"] == 20
+    kept = {swing_row["timestamp_ms"] - T0 for swing_row in pull2
+            if swing_row["timestamp_ms"] - T0 in range(1340000, 1358001)}
+    assert kept and stats["stages"]["after_attacker_bonus_amount"]["max"] == 67000.0
+
+
+def test_a_truncated_ring_never_invents_a_pull():
+    # Astra round-2 re-review: the ring kept only events from 400 s; the gap before them is missing
+    # telemetry, not a wipe, so the Berserk swings at 630-648 s stay excluded (one pull, v1 window).
+    swings = _swings(400000, 628000, 67000) + _swings(630000, 648000, 390000)
+    stats = fidelity.melee_stats(BOSS, swings, events=[], linked={}, tanks={TANK}, registry=_enrage_registry(),
+                                 route_nodes=["t.boss"], combat_analysis=_long_analysis(700000))
+    assert stats["post_enrage_swings_excluded"] == 10
+    assert stats["stages"]["after_attacker_bonus_amount"]["mean"] == 67000.0
+
+
+def test_one_reset_respawning_several_anchors_is_one_pull():
+    # Astra round-2 v3 review: Onyxia respawns at 750 s (the new pull), Nefarian's fresh object
+    # shows up 30 s later; that is the same pull, so the cutoff stays 1380 s and a Berserk swing
+    # at 1381 s is excluded.
+    onyxia = 900006
+    registry = _enrage_registry()
+    registry["creatures"][str(BOSS)]["enrage_anchor_entries"] = [onyxia, BOSS]
+
+    def onyxia_hit(at, guid):
+        return {"kind": "damage", "timestamp_ms": T0 + at, "amount": 9000, "source_entry": onyxia,
+                "source_guid": guid, "target_guid": TANK, "actor_guid": TANK, "route_node_id": "t.boss"}
+
+    def nefarian_swing(at, attacker, guid):
+        row = swing(at, "normal", attacker)
+        row["source_guid"] = guid
+        return row
+
+    pull1 = [nefarian_swing(at, 67000, 50) for at in range(1000, 629001, 2000)]
+    pull1 += [nefarian_swing(at, 390000, 50) for at in range(630000, 648001, 2000)]
+    onyxia_events = [onyxia_hit(at, 60) for at in range(1000, 100001, 3000)]
+    onyxia_events += [onyxia_hit(at, 61) for at in range(750000, 900001, 3000)]
+    pull2 = [nefarian_swing(at, 67000, 51) for at in range(780000, 1378001, 2000)]
+    pull2 += [nefarian_swing(1381000, 390000, 51)]
+    rows = pull1 + pull2
+    assert fidelity._pull_starts(T0, rows + onyxia_events, {onyxia, BOSS}) == [T0, T0 + 750000]
+    stats = fidelity.melee_stats(BOSS, rows, events=onyxia_events, linked={}, tanks={TANK}, registry=registry,
+                                 route_nodes=["t.boss"], combat_analysis=_long_analysis())
+    assert stats["post_enrage_swings_excluded"] == 11
+    assert stats["stages"]["after_attacker_bonus_amount"]["max"] == 67000.0
+
+
+def test_nefarian_enrage_is_anchored_on_onyxia_and_nefarian():
+    registry = json.loads((ROOT / fidelity.REGISTRY_PATH).read_text(encoding="utf-8"))
+    assert registry["creatures"]["41376"]["enrage_anchor_entries"] == [41270, 41376]
+
+
+def test_nefarian_registry_row_declares_its_berserk():
+    registry = json.loads((ROOT / fidelity.REGISTRY_PATH).read_text(encoding="utf-8"))
+    nefarian = registry["creatures"]["41376"]
+    assert nefarian["enrage_after_ms"] == 630000
+    assert "EVENT_BERSERK" in nefarian["enrage_source"] and "26662" in nefarian["enrage_source"]
+    script = (ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/"
+              "boss_nefarians_end.cpp").read_text(encoding="utf-8")
+    assert "events.ScheduleEvent(EVENT_BERSERK, 10min + 30s);" in script

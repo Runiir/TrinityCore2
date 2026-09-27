@@ -1,0 +1,81 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:nefarian",
+ "round": 2,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscent.h",
+  "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json"
+ ],
+ "new_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianStranded.h",
+  "tests/test_nefarian_stranded.py"
+ ],
+ "resolved_inputs": [],
+ "diagnosis": {
+  "dps_measurement": "Valid. The r01 kill 6bf52232 has a boss window of 1087.7 s, from Onyxia's first hit to Nefarian's death; WCL kills take 250-344 s. The bone-warrior exclusion moves party DPS only from 34.3k to 30.5k. Phase 3 (150-630 s) did 40.6k raid DPS on Nefarian, and about 5k after Berserk (26662 at 10 min 30 s). Three DPS were stranded: (1) the Elemental shaman hovered in the air at local Z 10.3 from 101 s to the end. Her prototype died, she retargeted another pillar's prototype about 70 yd away, and native range recovery walked her off the pillar top; Shadow of Cowardice then hit her 341 times. (2) The rogue stood 1.7 yd above the ring beside pillar 2, 26 yd from Nefarian, for 15 minutes under the platform hold. (3) The warlock stayed on the pillar-1 top through phase 3; the step-off was proposed but never executed, and the rejection reason is not in the evidence.",
+  "boss_window_deaths_unknown": "Correct fail-closed verdict. The scoreboard found 1103 lethal-damage events in the boss window, but the native signals record 0 deaths and 0 resurrections, and alive_count is 10 in all 58 heartbeats. After each lethal hit the next health snapshot is pinned at 50% (or 20%) of max health, with buffs lost. Most likely these are real deaths followed by an in-place revive the observer misses: the bot releases, and Player::RepopAtGraveyard's GetTransport() clause resurrects it at 50% on the Nefarian elevator. The unreconciled basis comes from trash only: encounter_mismatch_count is 0, and the ring buffer dropped 5896 early events.",
+  "melee_fidelity": "Nefarian's flag (ratio 4.35) is caused by Berserk: the pre-Berserk after-attacker mean is 67.6k against 67.1k on WCL, and swings after Berserk are 5.8x that. DamageModifier 12.75 is correct. Onyxia is 1.095."
+ },
+ "patch_requests": [
+  {
+   "to": "coordinator",
+   "file": "tools/bot_ml/live_validation_fidelity.py + experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+   "patch": "In melee_stats(), directly after `swings = sorted(...)`, insert:\n    enrage_row = registry_row(registry, effective or entry) or {}\n    enrage_after_ms = enrage_row.get(\"enrage_after_ms\")\n    post_enrage_excluded = 0\n    if isinstance(enrage_after_ms, (int, float)) and enrage_after_ms > 0:\n        enrage_window = _window(swings, route_nodes, combat_analysis)\n        if enrage_window:\n            cutoff = enrage_window[\"first_at_ms\"] + int(enrage_after_ms)\n            kept = [event for event in swings if _int(event.get(\"timestamp_ms\")) < cutoff]\n            post_enrage_excluded = len(swings) - len(kept)\n            swings = kept\nand add `\"post_enrage_swings_excluded\": post_enrage_excluded,` to the result dict. In the registry row for entry 41376 (Nefarian 10N) add: \"enrage_after_ms\": 630000, \"enrage_source\": \"boss_nefarians_end.cpp DoAction(ACTION_ONYXIA_ENGAGED) schedules EVENT_BERSERK (SPELL_BERSERK 26662) at 10min + 30s\". Test: a synthetic combat log with 10 swings at 67k before first_at_ms+630000 and 10 at 390k after must give after_attacker_bonus mean 67k and post_enrage_swings_excluded 10.",
+   "why": "Encounter-generic fidelity code: the r01 kill ran past Berserk, and the 5.8x swings were mixed into the WCL comparison (mean_outside_10pct), although the calibration matches (67.6k vs 67.1k)."
+  },
+  {
+   "to": "coordinator",
+   "file": "src/server/game/Bots/BotWorldPopulationMgrUpdateDeath.cpp / native recovery signals (shared_runtime); src/server/game/Entities/Player/Player.cpp RepopAtGraveyard",
+   "patch": "(1) Observation: count every Player JUST_DIED and every ResurrectPlayer per cohort bot in native_recovery.members (death_sequence / resurrection_sequence). These must increment even when release and revive happen between two decision ticks. This decides whether the 1103 lethal events are real deaths. (2) If they are: RepopAtGraveyard's `|| GetTransport()` clause resurrects a releasing player at 50% in place. For the Nefarian elevator (GO 207834 in a raid instance) that gives unlimited in-fight revives, which is not Blizzlike. Either gate the clause to non-instanceable maps, or keep boss-window bots from releasing while the encounter is in progress (the native_full_wipe_only gate). Add a test with a dead passenger on an instance transport: it must not come back alive in place during an in-progress encounter.",
+   "why": "The unknown boss-window deaths and the 18-minute fight: the raid kept fighting through about 1100 deaths."
+  },
+  {
+   "to": "coordinator",
+   "file": "generic combat range/LOS recovery movement (candidate_backoff; shared_runtime)",
+   "patch": "Before launching a point spline for an elevator/transport passenger, refuse any endpoint that has no floor within the planner's vertical tolerance. The r01 receipt 10826 (bot 11005009) launched with selected_platform_compatible=false and a floor 168 yd below the endpoint, and was accepted as selected_endpoint_reached. Test: a transport passenger whose range recovery endpoint is over the void gets no Move intent.",
+   "why": "Defence in depth for the stranding. The Nefarian plan no longer targets out-of-reach prototypes, but any range recovery on a transport can still walk a passenger into the air."
+  },
+  {
+   "to": "coordinator",
+   "file": "tools/raid_program scoreboard death basis (encounter-generic)",
+   "patch": "When damage_reconciliation.encounter_mismatch_count == 0, take the boss-window death basis from the encounter-scoped reconciliation, so trash mismatches caused by a dropped ring buffer (recent_events_dropped > 0 before the encounter) do not make it unreconciled. Also report death_signal_conflict when the combat-log lethal count is above 0 while native death_sequence stays 0. Test: a record with trash mismatch_count 3, encounter_mismatch_count 0 and N in-window lethal events yields boss_window_deaths=N, not null.",
+   "why": "r01 kill 6bf52232 had death_basis combat_log_lethal_damage_unreconciled only because of trash mismatches (Ivoroc, Drakeadon Mongrel, Drakonid Slayer)."
+  }
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_nefarian_*.py",
+   "result": "68 passed. Before this reconciliation, the 2 tests in test_nefarian_stranded.py failed after R8 was applied: the melee retarget expectations (lines 216/220) contradicted the crossing. Relevant: they were rewritten as TestPhaseTwoCrossingOnly, which pins exactly 2 departing (healer + 1 DPS), the swim step-off with LandInLiquid, no target while under way, a target on the tank pillar, holds for everyone else and the later finisher sending nobody."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_nefarian_strategy.py -k 'decisions and not sanitizers' -s (TestCrossingHelp)",
+   "result": "1 passed. The 'CROSSING departure checks skipped' line is absent, so the full departure checks ran."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_cata_raid_research_contracts.py tests/test_nefarian_research_packet.py",
+   "result": "19 passed"
+  },
+  {
+   "command": "g++ -fsyntax-only with the compile_commands.json flags for BotWorldPopulationMgrNefarianCandidates.cpp (no objects written)",
+   "result": "exit 0"
+  }
+ ],
+ "open_items": [
+  "Live validation on the next round build: no phase 2 member leaves its pillar after its prototype dies, and a stranded passenger's platform_stranded_fall lands (or is refused by native_ledge_drop_fall_landing_mismatch, which would mean the native floor query does not find the elevator model there).",
+  "Warlock stayed on the pillar-1 top through phase 3 although the replay proposes pillar_descent_step_off. The executor's rejection reason is not in the retained evidence; the next run needs the surface-move outcome per bot in the trace.",
+  "Class agent: in the Nefarian encounter the Demonology warlock cast no damaging spell. Only pet damage appears (Felguard melee, Legion Strike, Felstorm), with 47 casts/min and 0.6% damage uptime; 77 already_casting and 50 global_cooldown rejections. Separately, healers show casts_ok 0 while Flash Heal, Holy Shock and Flash of Light landed (a metric defect).",
+  "Phase 3 deaths before Berserk were mostly bone-warrior melee on the raid from 318 s. The Feral kite with Nature's Grasp (user tactic) needs a live check once the death accounting is fixed.",
+  "The fight must end inside Berserk (10.5 min), and WCL parity needs about 5 min: the next round's DPS gaps can only be judged after the strandings and deaths are gone.",
+  "The research contract stays fidelity_blocked: damage_fidelity (bone warrior samples), bone_warriors lifetime, electrocute charge and dragon separation are partial. Live observations were recorded in the ledger.",
+  "Live: the crossing pair (healer + one DPS) swims and hops onto the tank pillar with LandInLiquid, and no other member leaves its pillar after its prototype dies."
+ ],
+ "risks": [
+  "The stranded fall depends on the native floor query finding the elevator model under the member. Where it does not, the Fall is refused (retryable) every decision, and the member stays stranded as before, now with the Survival lane claimed.",
+  "Every non-crossing member whose prototype died idles on its pillar top until the phase ends, and the crossing DPS deals no damage while swimming. Both are intended: the user's tactic, and no range-recovery walks into the air.",
+  "The descent's Land stage now declares FloorLocalZAt(position) instead of RingLocalZ. This is identical for every pillar rim (radius at least 32.87 >= ramp end 32.43)."
+ ],
+ "validation_neutrality": "All C++ changes are header-only inside the BotEncounter::Nefarian namespace and apply only while ObserveEncounter owns node bwd.nefarian.encounter. No shared runtime, SQL, profile, registry or other encounter file changed, so Stonecore, dummy calibration and Magmaw results stay reproducible. The raid target file is unchanged (target_sha256 is kept).",
+ "phase_two_rule": "Reconciled with the applied R8 LandInLiquid patch and the user's tactic. When a healer pillar kills its prototype, exactly one healer and one damage dealer of the first finishing healer pillar cross to the tank pillar, only by the crossing stages (rim, LandInLiquid step-off, swim, hop). The pair's damage dealer gets no damage target until the tank-pillar prototype is in reach (melee reach or 30 yd): nefarian_crossing_under_way. Every other member whose prototype died holds on its pillar with no target (nefarian_platform_prototype_out_of_reach). The 'nearest reachable other prototype' rule was removed."
+}

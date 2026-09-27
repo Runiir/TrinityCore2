@@ -252,14 +252,28 @@ inline bool ReleaseAdmitted(Observation const& observation)
     return observation.CurrentPhase != Phase::PhaseTwo;
 }
 
-// The switch at 30% (same source): if Aberrations are left at 30%, in the
-// chambers (counted from the native sleeping, unselectable chamber creatures)
-// or loose, every damage dealer stops damaging Maloriak and kills them one
-// at a time until none is left, so phase two starts with only the two Prime
-// Subjects. The Blood DK main tank keeps full damage (Death Strike), and
-// Remedy is left on the boss so his self-heal offsets the tank's damage.
-// The switch is a cohort latch (BotMaloriakLatches.h).
-constexpr float AddSwitchHealthPct = 30.0f;
+// The switch (same source): if Aberrations are left when Maloriak reaches
+// the switch health, in the chambers (counted from the native sleeping,
+// unselectable chamber creatures) or loose, every damage dealer stops
+// damaging Maloriak and kills them one at a time until none is left, so
+// phase two starts with only the two Prime Subjects. The Blood DK main tank
+// keeps full damage (Death Strike), and Remedy is left on the boss so his
+// self-heal offsets the tank's damage. The switch is a cohort latch
+// (BotMaloriakLatches.h).
+//
+// 50%, not 30% (user raid experience 2026-09-27: "Mage should not dispell
+// remedy. If it does maybe thats why it gets over. If not stop dps at 50%").
+// Round 1 (label blackwing_descent_10n-r01-553da85c98, kills 521c17 and
+// 6bf522) removed no Remedy during the 30% hold: his health samples show one
+// full 250,000 Remedy (25,000 per second, 10 s) at 94-104 s inside each hold,
+// and the only stolen Remedy (on the mage, 46-55 s) came before it. He still
+// took 38-48k DPS in the hold (Blood DK 23-31k, the rest DoT ticks and
+// procs) and reached 25% in 25.7 and 32.1 s with the chambers not empty.
+// From 50% the 25 points (4.94M on 10N) last about 235 s against the Blood DK
+// (up to 31k) less Remedy's 10.4k average (250k per 24 s), and still about
+// 130 s if the other 15-17k continued, against a hold of about two minutes
+// (the last release is near 150-165 s in the WCL kills).
+constexpr float AddSwitchHealthPct = 50.0f;
 
 // Threat onto the Feral off-tank for each release (same source): the
 // hunter's Misdirection and the rogue's Tricks of the Trade. Frost Shock is

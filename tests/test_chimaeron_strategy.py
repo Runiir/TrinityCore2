@@ -227,12 +227,16 @@ static void TestDuties()
     CHECK((duties.Ranged == std::vector<ObjectGuid>{ G(HUNTER), G(MAGE), G(HOLY), G(DISC),
         G(SHAMAN), G(LOCK) }));
     CHECK((duties.RangedHealers == std::vector<ObjectGuid>{ G(HOLY), G(DISC), G(SHAMAN) }));
+    // The hunter's shots have a minimum range: he is a standoff member.
+    CHECK((duties.Standoff == std::vector<ObjectGuid>{ G(HUNTER) }));
+    CHECK(C::IsStandoffSpec("beast_mastery_hunter") && !C::IsStandoffSpec("fire_mage"));
     CHECK(duties.LustOwner == G(MAGE) && duties.LustSpell == 80353);
     CHECK(duties.BarrierOwner == G(DISC));
     CHECK(duties.SpiritLinkOwner == G(SHAMAN));
     CHECK(C::DutiesJson(duties) == "{\"break_tank\":11002001,\"double_attack_tank\":11002002,"
         "\"healers\":[11002005,11002007,11002009],\"melee\":[11002006,11002008],"
         "\"ranged\":[11002003,11002004,11002005,11002007,11002009,11002010],"
+        "\"standoff\":[11002003],"
         "\"lust_owner\":11002004,\"barrier_owner\":11002007,\"spirit_link_owner\":11002009}");
 
     // A configured main-tank lease wins over the capability ranking.
@@ -322,8 +326,16 @@ static void TestMixtureSpread()
     {
         CHECK(point.X >= C::ChamberMinX && point.X <= C::ChamberMaxX);
         CHECK(point.Y >= C::ChamberMinY && point.Y <= C::ChamberMaxY);
-        CHECK(C::Distance(point, boss) <= 22.5f);
+        if (guid != HUNTER)
+            CHECK(C::Distance(point, boss) <= 22.5f);
     }
+    // The hunter stands on the 33 yd arc: beyond his minimum range (27.8 yd
+    // against the 20 yd-reach boss) even at the edge of the spread tolerance,
+    // and inside heal range of every healer.
+    CHECK(std::fabs(C::Distance(moves.at(HUNTER), boss) - C::OuterRangedRadius) < 0.01f);
+    CHECK(C::Distance(moves.at(HUNTER), boss) - C::SpreadTolerance > C::StandoffMinimumRange);
+    for (uint32 healer : { HOLY, DISC, SHAMAN })
+        CHECK(C::Distance(moves.at(HUNTER), moves.at(healer)) <= 38.0f);
     for (uint32 melee : { RET, ROGUE })
         CHECK(C::Distance(moves.at(melee), boss) <= 12.0f);
     for (uint32 healer : { HOLY, DISC, SHAMAN })
@@ -411,7 +423,109 @@ static void TestAlternativeRosterSpacing()
 
 static void TestOutageStack()
 {
+    // Canonical roster (Survival Hunter alive): the stack is a column on the
+    // rear axis. Tanks and melee stay inside melee range, the hunter outside
+    // his minimum range, and each band is within the 6 yd Slime split of the
+    // healers and casters in the middle.
+    Blackboard column = Board("bwd.chimaeron.encounter", true);
+    for (ActorSnapshot& player : column.Players)
+        player.Auras.clear();
+    Boss(column).Auras.push_back({ C::FeudSpell, ObjectGuid(), 1, column.ObservedAtMs + 20000 });
+    std::map<uint32, C::Point> const bands = Destinations(column);
+    CHECK(bands.size() == 10);
+    C::Point const home{ HomeX, HomeY };
+    std::vector<uint32> const front = { DK, DRUID, RET, ROGUE };
+    std::vector<uint32> const middle = { MAGE, HOLY, DISC, SHAMAN, LOCK };
+    for (uint32 guid : front)
+        CHECK(C::Distance(bands.at(guid), home) + C::ColumnTolerance < C::MeleeReachAgainstBoss);
+    CHECK(C::Distance(bands.at(HUNTER), home) - C::ColumnTolerance > C::StandoffMinimumRange);
+    for (uint32 guid : middle)
+    {
+        CHECK(C::Distance(bands.at(guid), bands.at(HUNTER)) <= 6.0f);
+        for (uint32 melee : front)
+            CHECK(C::Distance(bands.at(guid), bands.at(melee)) <= 6.0f);
+        CHECK(C::Distance(bands.at(guid), C::StackCentre(home, true)) <= C::StackPresenceYards);
+    }
+    // Neighbouring bands share a Slime even with both members off their
+    // slots by the full tolerance directly away from each other.
+    for (uint32 guid : middle)
+        for (uint32 other : { DK, DRUID, RET, ROGUE, HUNTER })
+            CHECK(C::Distance(bands.at(guid), bands.at(other)) + 2.0f * C::ColumnTolerance
+                <= C::SlimeShareRadius);
+    for (auto const& [guid, point] : bands)
+        P(column, guid).Position = { point.X + 0.4f, point.Y, HomeZ };
+    CHECK(Destinations(column).empty());
+
+    // Worst tolerance corner (review P1): the hunter stops just inside his
+    // tolerance behind his slot and the whole middle band just inside theirs
+    // toward the boss. Nobody moves, and every middle member still shares the
+    // hunter's Slime (the 29.5/24.5 yd bands with a 1 yd tolerance left the
+    // hunter alone here).
+    {
+        Blackboard corner = column;
+        float const edge = C::ColumnTolerance - 0.01f;
+        for (auto const& [guid, point] : bands)
+            P(corner, guid).Position = { point.X, point.Y, HomeZ };
+        P(corner, HUNTER).Position = { bands.at(HUNTER).X, bands.at(HUNTER).Y - edge, HomeZ };
+        for (uint32 guid : middle)
+            P(corner, guid).Position = { bands.at(guid).X, bands.at(guid).Y + edge, HomeZ };
+        CHECK(Destinations(corner).empty());
+        int sharing = 0;
+        for (uint32 guid : Everyone())
+        {
+            C::Point const at{ P(corner, guid).Position.X, P(corner, guid).Position.Y };
+            C::Point const hunter{ P(corner, HUNTER).Position.X, P(corner, HUNTER).Position.Y };
+            if (C::Distance(at, hunter) <= C::SlimeShareRadius)
+                ++sharing;
+        }
+        CHECK(sharing == 6);  // the hunter and the five healers/casters
+        // The mirror corner between the melee band and the middle band.
+        Blackboard front = column;
+        for (auto const& [guid, point] : bands)
+            P(front, guid).Position = { point.X, point.Y, HomeZ };
+        for (uint32 guid : { DK, DRUID, RET, ROGUE })
+            P(front, guid).Position = { bands.at(guid).X, bands.at(guid).Y + edge, HomeZ };
+        for (uint32 guid : middle)
+            P(front, guid).Position = { bands.at(guid).X, bands.at(guid).Y - edge, HomeZ };
+        CHECK(Destinations(front).empty());
+        for (uint32 guid : middle)
+            for (uint32 melee : { DK, DRUID, RET, ROGUE })
+            {
+                C::Point const a{ P(front, guid).Position.X, P(front, guid).Position.Y };
+                C::Point const b{ P(front, melee).Position.X, P(front, melee).Position.Y };
+                CHECK(C::Distance(a, b) <= C::SlimeShareRadius);
+            }
+        // Beyond the tolerance the member is sent back to his slot.
+        P(corner, HUNTER).Position = { bands.at(HUNTER).X, bands.at(HUNTER).Y - 0.6f, HomeZ };
+        CHECK(Destinations(corner).count(HUNTER) == 1);
+    }
+
+    // A wide middle band (every non-tank a caster) is compressed to +/-1.5 yd
+    // and keeps the same guarantee.
+    {
+        Blackboard wide = column;
+        P(wide, RET).ClassSpec = "fire_mage";
+        P(wide, ROGUE).ClassSpec = "shadow_priest";
+        for (ActorSnapshot& player : wide.Players)
+            player.Position = { -114.389f, 43.1875f, 73.9f };
+        std::map<uint32, C::Point> const slots = Destinations(wide);
+        CHECK(slots.size() == 10);
+        C::Point const axis = C::StackCentre(home, true);
+        for (uint32 guid : { MAGE, HOLY, DISC, SHAMAN, LOCK, RET, ROGUE })
+        {
+            CHECK(C::Distance(slots.at(guid), axis) <= C::ColumnBandHalfWidth + 0.01f);
+            for (uint32 other : { DK, DRUID, HUNTER })
+                CHECK(C::Distance(slots.at(guid), slots.at(other)) + 2.0f * C::ColumnTolerance
+                    <= C::SlimeShareRadius + 0.001f);
+        }
+    }
+    // A dead hunter no longer needs the column: the compact stack returns.
+    P(column, HUNTER).Alive = false;
+    CHECK(C::Distance(Destinations(column).at(MAGE), C::StackCentre(home)) <= 1.51f);
+
+    // Without a standoff member the whole raid shares one compact stack.
     Blackboard board = Board("bwd.chimaeron.encounter", true);
+    P(board, HUNTER).ClassSpec = "shadow_priest";
     for (ActorSnapshot& player : board.Players)
         player.Auras.clear();
     Boss(board).Auras.push_back({ C::FeudSpell, ObjectGuid(), 1, board.ObservedAtMs + 20000 });
@@ -509,6 +623,46 @@ static void TestHealingFloor()
     CHECK(Plan(pending, DISC).PriorityHealTarget == G(LOCK));
     CHECK(Plan(pending, SHAMAN).PriorityHealTarget == G(LOCK));
 
+    // Post-Massacre window (native timer: the Massacre landed, the doubled
+    // swing it reschedules is ahead). The victim's floor comes first, then
+    // the tank healer and the first raid healer both pre-heal the soaker; the
+    // third healer takes the raid floor (no Slime before 19 s after the cast).
+    Blackboard massacre = Board("bwd.chimaeron.encounter", true);
+    for (ActorSnapshot& player : massacre.Players)
+    {
+        player.Health = 1;
+        player.HealthPct = 100.0f / 150000.0f;
+    }
+    Boss(massacre).MechanicTimers.push_back({ C::MassacreSpell, 22000, false,
+        FactSource::NativeInstanceState });
+    CHECK(Plan(massacre, HOLY).PriorityHealTarget == G(DK));
+    CHECK(Plan(massacre, DISC).PriorityHealTarget == G(DK));
+    P(massacre, DK).Health = 30000;
+    P(massacre, DK).HealthPct = 20.0f;
+    CHECK(Plan(massacre, HOLY).PriorityHealTarget == G(DRUID));
+    CHECK(Plan(massacre, DISC).PriorityHealTarget == G(DRUID));
+    CHECK(Plan(massacre, SHAMAN).PriorityHealTarget == G(HUNTER));
+    // Soaker above 95%: back to the raid floor.
+    P(massacre, DRUID).Health = 145000;
+    P(massacre, DRUID).HealthPct = 96.7f;
+    CHECK(Plan(massacre, DISC).PriorityHealTarget == G(HUNTER));
+    // Past the swing (the timer shows Slime is near): no double coverage.
+    P(massacre, DRUID).Health = 30000;
+    P(massacre, DRUID).HealthPct = 20.0f;
+    Boss(massacre).MechanicTimers.back().RemainingMs = 12000;
+    CHECK(Plan(massacre, HOLY).PriorityHealTarget == G(DK));
+    CHECK(Plan(massacre, DISC).PriorityHealTarget == G(HUNTER));
+    // During the cast (timer 0) the window is closed too.
+    Boss(massacre).MechanicTimers.back().RemainingMs = 0;
+    CHECK(Plan(massacre, DISC).PriorityHealTarget == G(HUNTER));
+    // No Double Attack tank left: the victim soaks and is healed toward full.
+    Blackboard alone = Board("bwd.chimaeron.encounter", true);
+    P(alone, DRUID).Alive = false;
+    Boss(alone).Auras.push_back({ C::DoubleAttackSpell, Boss(alone).Guid, 1, 0 });
+    P(alone, DK).Health = 90000;
+    P(alone, DK).HealthPct = 60.0f;
+    CHECK(Plan(alone, HOLY).PriorityHealTarget == G(DK));
+
     // Nobody near the floor and tanks healthy: no published target, the
     // default lowest-health selection stays in charge.
     Blackboard healthy = Board("bwd.chimaeron.encounter", true);
@@ -550,7 +704,8 @@ static void TestOutageCooldownsAndMortalityAbsorbs()
     for (ActorSnapshot& player : board.Players)
     {
         player.Auras.clear();
-        player.Position = { HomeX, HomeY - 8.0f, HomeZ };
+        // The healers' band of the outage column (the canonical hunter lives).
+        player.Position = { HomeX, HomeY - C::ColumnMiddleDistance, HomeZ };
     }
     ActorSnapshot& boss = Boss(board);
     boss.Auras.push_back({ C::FeudSpell, boss.Guid, 1, board.ObservedAtMs + 15000 });
@@ -564,7 +719,7 @@ static void TestOutageCooldownsAndMortalityAbsorbs()
     CHECK(CastOf(Plan(board, SHAMAN)) == 98008);
     CHECK(!Plan(board, DISC).Action);
     // Away from the stack nobody drops a stack cooldown.
-    P(board, SHAMAN).Position = { HomeX + 20.0f, HomeY - 8.0f, HomeZ };
+    P(board, SHAMAN).Position = { HomeX + 20.0f, HomeY - C::ColumnMiddleDistance, HomeZ };
     CHECK(!Plan(board, SHAMAN).Action);
 
     Blackboard mortality = Board("bwd.chimaeron.encounter", true);

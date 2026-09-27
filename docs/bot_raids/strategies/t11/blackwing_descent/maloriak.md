@@ -18,8 +18,8 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
 - Tactic source: the user's first-hand raid tactic (2026-09-26) is authoritative and replaces
   the guides where they differ (ledger `user_raid_experience_20260926`, conflicts
   `release_aberrations_interrupts` and `remedy_during_add_switch`).
-- Remedy: above 30%, and again once the chambers are empty and every Aberration is dead, remove
-  it at once (Spellsteal, then Purge, Tranquilizing Shot, priest Dispel Magic). From 30% until
+- Remedy: above 50%, and again once the chambers are empty and every Aberration is dead, remove
+  it at once (Spellsteal, then Purge, Tranquilizing Shot, priest Dispel Magic). From 50% until
   then nobody removes it: his self-heal offsets the tank's damage and keeps him above 25%.
 - Release Aberrations: never interrupted. Every release goes through (10N holds 18 in the
   chambers); kill each Aberration as it comes, one at a time, with no wait for Green (a pack in
@@ -69,13 +69,13 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
 - Green: Debilitating Slime doubles damage taken for 15 s.
 - Aberrations are tanked away from Maloriak, a controlled kite rather than a spread. Growth
   Catalyst reaches 10 yards and buffs Maloriak too.
-- At 30%, if Aberrations are left (in the chambers, counted natively from the sleeping,
+- At 50% (30% until the user's decision of 2026-09-27, below), if Aberrations are left (in the chambers, counted natively from the sleeping,
   unselectable chamber creatures, or loose): every damage dealer (and healer) stops damaging
   Maloriak and the damage dealers kill the Aberrations one at a time, the Feral holding the rest,
   until the chambers are empty and every released one is dead, so phase two starts with only
-  the two Prime Subjects. With nothing left at 30% there is no pause. The Blood DK main tank
+  the two Prime Subjects. With nothing left at 50% there is no pause. The Blood DK main tank
   keeps full damage (Death Strike keeps him healthy). The switch is a cohort latch: Remedy heals
-  him back above 30% without ending it; it ends when the adds are gone, at phase two, after
+  him back above 50% without ending it; it ends when the adds are gone, at phase two, after
   180 s (logged once with his health, the reserve and the loose count) or on a wipe. No DoT is
   started or refreshed on the boss; DoTs already ticking and projectiles already in flight land,
   with whatever aura they carry (a player cannot recall either). For every bot but the main tank the boss is restricted at
@@ -90,6 +90,24 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
   left if the switch could not empty the chambers). The raid stays out of the front. The tank
   steps out of Magma Jets. Everyone
   avoids Absolute Zero spheres and jet fire. Use raid haste here: the nuke phase is a DPS race.
+- User decision (user raid experience 2026-09-27): "Mage should not dispell remedy. If it does
+  maybe thats why it gets over. If not stop dps at 50%". Round 1 removed no Remedy during the 30%
+  hold: his health samples show one full 250,000 Remedy at 94-104 s inside each hold, and the only
+  removal was the Mage's Spellsteal at 46 s, before it. He still reached 25% in 26-32 s because he
+  took 38-48k DPS there (Blood DK 23-31k plus DoT and proc tails). So the hold now starts at 50%.
+  From 50%, 25 points (4.94M) last about 235 s at the Blood DK's damage less Remedy's 10.4k
+  average, and about 130 s even if the tails continued, against a hold of about two minutes.
+- Growth Catalyst reaches 10 yards and buffs Maloriak too, so the off-tank never fetches an add
+  at his side: an add within 12 yards of him is taunted from a post 15 yards out on the add-spot
+  side, and the pack stays there (`BotMaloriakPullPost.h`). In r01 kill 6bf522 eight or nine adds
+  stood within 10 yards of him for 25 s of phase two while the Feral fetched adds off the Blood
+  DK, and melee hits on him fell to about a fifth.
+- A sphere wanders within 10 yards of where it spawned and despawns only when someone triggers
+  it. When spheres block every melee ring point (3.5 yards, or the 5-yard outer ring melee also
+  use), the main tank walks Maloriak 12 yards away from them and he follows
+  (`BotMaloriakSphereDrag.h`). In r01 kill 6bf522 the rogue and the Retribution Paladin landed
+  nothing on him for the last 38 and 25 s, from the second sphere on, and no sphere exploded
+  (the log has no sphere positions, so the ring block is inferred).
 
 ## Mode matrix
 
@@ -293,7 +311,7 @@ below 85%. It yields to the ordinary lowest-health scan while a tank is under 50
 player is more than 10 points lower.
 
 Damage dealers burn Aberrations during the slime window, when six are loose (nine while the native
-timer shows Green within 15 s), or below 30% boss health. In phase two they stay on the boss.
+timer shows Green within 15 s), or below 50% boss health. In phase two they stay on the boss.
 
 ## Encounter damage fidelity
 
@@ -341,8 +359,8 @@ per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5,
    (ledger `wcl_10N_boss_timeline_fight13`). Its phase two repeats Magma Jets about every 11.8 s,
    Acid Nova 30.7 s and Absolute Zero 11.3 s. The native script used 6, 20 and 7 s; it now uses the
    WCL values on 10N only (first Absolute Zero 11.3 s). 25N, 10H and 25H keep 6, 20 and 7 s
-   and the 8.4 s first Absolute Zero, because only 10N was observed. Remedy keeps being cast in phase two in the log,
-   but not natively (open).
+   and the 8.4 s first Absolute Zero, because only 10N was observed. Remedy in phase two: see
+   source 9.
 7. Maloriak 10N melee: 29 landed swings with U 40,559-63,630 (Scarlet Fever on the boss for all but
    3 of them). Against the native roll 4,553.3-6,764.2 the bounds are 9.41-9.71 with the +1%
    auto-attack bonus. DamageModifier 9.5 is in
@@ -350,12 +368,23 @@ per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5,
    stay open because the log does not show their Growth Catalyst stacks.
 8. Full-route run r11 (2026-09-27) killed Maloriak natively, but it recorded no Maloriak melee swings
    and was not the Maloriak shard.
+9. Round 2 (2026-09-27, same Astra route): six more 10N kills, each picked for one Fire Mage or
+   Assassination Rogue with a middle parse (Fire 52/50/50, Assassination 49/57/48). Their
+   all-target DPS (View Unfiltered Damage) gives Fire a median of 18,244.2 and Assassination
+   20,150.2 (`maloriak_wcl_dps_reference_v1.json`; each kill's `actor_dps` holds only that player,
+   so the other specs keep their targets). Their Maloriak cast rows
+   (`maloriak_wcl_boss_timelines_round2_v1.json`) with fights 34 and 13: an Arcane Storm before
+   the first vial in all eight kills (median 14.3 s); Remedy 17.8-21.0 s (median 19.4) after
+   Unstable Mix in all five kills whose phase two lasted that long. Both are now native on 10N
+   (Arcane Storm 14.3 s after engage; phase-two Remedy 19.4 s after Unstable Mix, then every 24 s).
+   A Release Aberrations (two kills) or Remedy (three kills) before the first vial came only on
+   Red openings, with no rule that fits all eight; it stays open.
 
 ## Unresolved (fidelity blockers)
 
 - Maloriak-specific hotfix carryover to the 2025-02-20 cutoff.
-- Live vial and ability cadence in all modes; WCL cadence beyond the one 10N kill (Green phase,
-  heroic, 25-player).
+- Live vial and ability cadence in all modes; heroic and 25-player WCL cadence; the pre-vial
+  Release Aberrations / Remedy on Red openings (10N).
 - Biting Chill target counts (native 60 yd pick vs 10 yd range; guides disagree). The SpellMgr
   target correction is applied (c0efb93a61).
 - The Green-phase length: 21 s plus a 15 s transition (2012 guide), the next vial 30 s after the

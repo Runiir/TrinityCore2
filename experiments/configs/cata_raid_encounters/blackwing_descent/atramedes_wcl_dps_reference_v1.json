@@ -3,7 +3,7 @@
   "encounter": "atramedes",
   "mode": "10N",
   "status": "extracted",
-  "status_reason": "Read 2026-09-27 04:23-04:33 UTC through codex exec -m gpt-6-astra driving one tab of the user's running Chrome session (coordinator route); no verification page appeared. Earlier routes the same day (headless Playwright, the Codex browser surface, a scratch-profile Chrome) were gated by Cloudflare; see access_attempts.",
+  "status_reason": "Read 2026-09-27 04:23-04:33 UTC through codex exec -m gpt-6-astra driving one tab of the user's running Chrome session (coordinator route); no verification page appeared. Earlier routes the same day (headless Playwright, the Codex browser surface, a scratch-profile Chrome) were gated by Cloudflare; see access_attempts. Round 2 (2026-09-27, same route, one plugin tab, no check appeared): five further 10N kills with Balance Druid, Assassination Rogue and Demonology Warlock in the roster (2024-10, 173.6-199.0 s, raid item level 354.2-357.9), read from each fight's damage-done and Summary views; raw extraction wcl_refs.json is scratch only.",
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight32",
@@ -200,6 +200,564 @@
         "Average item level 401.4, eight DPS, one tank, one healer.",
         "Throughput context only; not in the raid target's matched_reference_ids."
       ]
+    },
+    {
+      "id": "PpFW3bgy7m6Kxk1t-fight8",
+      "url": "https://classic.warcraftlogs.com/reports/PpFW3bgy7m6Kxk1t?fight=8&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-05",
+      "duration_sec": 182.4,
+      "raid_dps": 143237.9,
+      "average_item_level": 357.1,
+      "target_scope": "All Enemies (damage-done page, pets included)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "assassination_rogue": 17961.5,
+        "balance_druid": 17785.0,
+        "blood_death_knight": 9328.3,
+        "demonology_warlock": 20709.1,
+        "fire_mage": 22829.3,
+        "survival_hunter": 20409.3,
+        "unholy_death_knight": 14565.45
+      },
+      "roster": [
+        {
+          "name": "Solarâ",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps": 22829.3,
+          "active_pct": 98.75,
+          "parse_percentile": 79
+        },
+        {
+          "name": "Dkjabroni",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps": 21178.0,
+          "active_pct": 90.66,
+          "parse_percentile": 69
+        },
+        {
+          "name": "Exynus",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 20709.1,
+          "active_pct": 97.54,
+          "parse_percentile": 66
+        },
+        {
+          "name": "Ekcko",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 20409.3,
+          "active_pct": 99.99,
+          "parse_percentile": 43
+        },
+        {
+          "name": "Aiada",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 17961.5,
+          "active_pct": 81.53,
+          "parse_percentile": 38
+        },
+        {
+          "name": "Räsgado",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps": 17785.0,
+          "active_pct": 99.49,
+          "parse_percentile": 61
+        },
+        {
+          "name": "Zeroedout",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 9328.3,
+          "active_pct": 84.71,
+          "parse_percentile": 13
+        },
+        {
+          "name": "Rehnquest",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps": 7952.9,
+          "active_pct": 97.52,
+          "parse_percentile": 3
+        },
+        {
+          "name": "Kajuvos",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 4753.1,
+          "active_pct": 98.18,
+          "parse_percentile": 97
+        },
+        {
+          "name": "Mandalorê",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps": 316.5,
+          "active_pct": 50.94,
+          "parse_percentile": 44
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "Kill 182.4 s at average item level 357.1 (Summary view), report date 2024-10-05; covers the full first ground and air phases and part of the second ground phase.",
+        "Displayed DPS over All Enemies with pets attributed to their owners; healers are listed in the roster and excluded from actor_dps.",
+        "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills.",
+        "Two players of unholy_death_knight: actor_dps is their median."
+      ],
+      "source_ref": "wcl_atramedes_10n_round2_20260927",
+      "extraction_notes": "Average raid item level and zero deaths read in the same fight Rankings view; damage table Total Ilvl is a dash. Separate Tricks of the Trade (Aiada), 12.9 DPS, and unassigned Army of the Dead Ghoul, 1.9 DPS, are included in the raid total. Fire parse 79 is above the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+    },
+    {
+      "id": "Bgcm6RavhWK7DLd1-fight34",
+      "url": "https://classic.warcraftlogs.com/reports/Bgcm6RavhWK7DLd1?fight=34&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-12",
+      "duration_sec": 179.3,
+      "raid_dps": 145638.1,
+      "average_item_level": 356.9,
+      "target_scope": "All Enemies (damage-done page, pets included)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "arms_warrior": 19307.8,
+        "assassination_rogue": 23339.0,
+        "balance_druid": 16469.9,
+        "demonology_warlock": 15045.7,
+        "feral_druid_tank": 8808.1,
+        "fire_mage": 12786.0,
+        "frost_death_knight": 24171.6,
+        "retribution_paladin": 22923.1
+      },
+      "roster": [
+        {
+          "name": "Launtüz",
+          "spec": "frost_death_knight",
+          "role": "dps",
+          "dps": 24171.6,
+          "active_pct": 99.16,
+          "parse_percentile": 90
+        },
+        {
+          "name": "Quìck",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 23339.0,
+          "active_pct": 98.57,
+          "parse_percentile": 84
+        },
+        {
+          "name": "Pravus",
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 22923.1,
+          "active_pct": 97.94,
+          "parse_percentile": 78
+        },
+        {
+          "name": "Bubbleclap",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps": 19307.8,
+          "active_pct": 81.97,
+          "parse_percentile": 71
+        },
+        {
+          "name": "Serennitty",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps": 16469.9,
+          "active_pct": 97.94,
+          "parse_percentile": 51
+        },
+        {
+          "name": "Zakhalocka",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 15045.7,
+          "active_pct": 81.36,
+          "parse_percentile": 28
+        },
+        {
+          "name": "Aydelar",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps": 12786.0,
+          "active_pct": 81.5,
+          "parse_percentile": 14
+        },
+        {
+          "name": "Heirborn",
+          "spec": "feral_druid_tank",
+          "role": "tank",
+          "dps": 8808.1,
+          "active_pct": 83.69,
+          "parse_percentile": 27
+        },
+        {
+          "name": "Starchains",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 2160.7,
+          "active_pct": 87.22,
+          "parse_percentile": 80
+        },
+        {
+          "name": "Veraganos",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps": 564.9,
+          "active_pct": 51.38,
+          "parse_percentile": 77
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "Kill 179.3 s at average item level 356.9 (Summary view), report date 2024-10-12; covers the full first ground and air phases and part of the second ground phase.",
+        "Displayed DPS over All Enemies with pets attributed to their owners; healers are listed in the roster and excluded from actor_dps.",
+        "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
+      ],
+      "source_ref": "wcl_atramedes_10n_round2_20260927",
+      "extraction_notes": "Average raid item level read in Summary (356.90); damage table Total Ilvl is a dash. Deaths table has no entries. Separate Tricks of the Trade (Quìck), 61.3 DPS, is included in raid total. Assassination parse 84 and Fire parse 14 are outside the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+    },
+    {
+      "id": "hxz7MH8gW9BYGNdr-fight41",
+      "url": "https://classic.warcraftlogs.com/reports/hxz7MH8gW9BYGNdr?fight=41&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-23",
+      "duration_sec": 199.0,
+      "raid_dps": 131217.2,
+      "average_item_level": 356.5,
+      "target_scope": "All Enemies (damage-done page, pets included)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "assassination_rogue": 13878.0,
+        "balance_druid": 18355.0,
+        "blood_death_knight": 14629.8,
+        "demonology_warlock": 21350.5,
+        "elemental_shaman": 14427.0,
+        "protection_paladin": 4735.4,
+        "retribution_paladin": 17020.2,
+        "survival_hunter": 20412.6
+      },
+      "roster": [
+        {
+          "name": "Skarco",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 21350.5,
+          "active_pct": 99.89,
+          "parse_percentile": 71
+        },
+        {
+          "name": "Aduktai",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 20412.6,
+          "active_pct": 99.22,
+          "parse_percentile": 43
+        },
+        {
+          "name": "Marsiana",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps": 18355.0,
+          "active_pct": 98.05,
+          "parse_percentile": 64
+        },
+        {
+          "name": "Violetred",
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "dps": 17020.2,
+          "active_pct": 79.53,
+          "parse_percentile": 35
+        },
+        {
+          "name": "Drakris",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 14629.8,
+          "active_pct": 98.22,
+          "parse_percentile": 64
+        },
+        {
+          "name": "Jonson",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 14427.0,
+          "active_pct": 97.97,
+          "parse_percentile": 19
+        },
+        {
+          "name": "Droors",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 13878.0,
+          "active_pct": 84.26,
+          "parse_percentile": 11
+        },
+        {
+          "name": "Whis",
+          "spec": "discipline_priest",
+          "role": "healer",
+          "dps": 6205.7,
+          "active_pct": 74.3,
+          "parse_percentile": 81
+        },
+        {
+          "name": "Andremus",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps": 4735.4,
+          "active_pct": 54.34,
+          "parse_percentile": 6
+        },
+        {
+          "name": "Setoph",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps": 165.1,
+          "active_pct": 37.44,
+          "parse_percentile": 21
+        }
+      ],
+      "deaths": [
+        "Andremus at 01:44"
+      ],
+      "limitations": [
+        "Kill 199.0 s at average item level 356.5 (Summary view), report date 2024-10-23; covers the full first ground and air phases and part of the second ground phase.",
+        "Displayed DPS over All Enemies with pets attributed to their owners; healers are listed in the roster and excluded from actor_dps.",
+        "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills.",
+        "Deaths: Andremus at 01:44 (tank; the kill completed)."
+      ],
+      "source_ref": "wcl_atramedes_10n_round2_20260927",
+      "extraction_notes": "Average raid item level (356.50), roles and death read in Summary; damage table Total Ilvl is a dash. Assassination parse 11 is below the preferred range. Header duration is 3:18 while damage Total prints 199.0s. Separate Schurkenhandel (Droors), 38.0 DPS, is included in raid total. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+    },
+    {
+      "id": "jxNrbDtq9BdwAcam-fight30",
+      "url": "https://classic.warcraftlogs.com/reports/jxNrbDtq9BdwAcam?fight=30&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-09",
+      "duration_sec": 194.4,
+      "raid_dps": 134286.3,
+      "average_item_level": 354.2,
+      "target_scope": "All Enemies (damage-done page, pets included)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "arms_warrior": 14061.5,
+        "assassination_rogue": 17469.4,
+        "balance_druid": 18380.1,
+        "demonology_warlock": 16716.5,
+        "enhancement_shaman": 20319.4,
+        "feral_druid_dps": 12067.7,
+        "protection_paladin": 10986.0,
+        "survival_hunter": 20241.0
+      },
+      "roster": [
+        {
+          "name": "Peutetre",
+          "spec": "enhancement_shaman",
+          "role": "dps",
+          "dps": 20319.4,
+          "active_pct": 99.92,
+          "parse_percentile": 71
+        },
+        {
+          "name": "Rubælia",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 20241.0,
+          "active_pct": 99.46,
+          "parse_percentile": 42
+        },
+        {
+          "name": "Prypry",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps": 18380.1,
+          "active_pct": 99.39,
+          "parse_percentile": 65
+        },
+        {
+          "name": "Dopyyø",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 17469.4,
+          "active_pct": 82.49,
+          "parse_percentile": 34
+        },
+        {
+          "name": "Yssarjlock",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 16716.5,
+          "active_pct": 89.48,
+          "parse_percentile": 38
+        },
+        {
+          "name": "Atanael",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps": 14061.5,
+          "active_pct": 93.32,
+          "parse_percentile": 28
+        },
+        {
+          "name": "Worgnfreeman",
+          "spec": "feral_druid_dps",
+          "role": "dps",
+          "dps": 12067.7,
+          "active_pct": 88.42,
+          "parse_percentile": 42
+        },
+        {
+          "name": "Animar",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps": 10986.0,
+          "active_pct": 91.09,
+          "parse_percentile": 51
+        },
+        {
+          "name": "Coucourte",
+          "spec": "discipline_priest",
+          "role": "healer",
+          "dps": 3941.0,
+          "active_pct": 56.26,
+          "parse_percentile": 48
+        },
+        {
+          "name": "Starfallaa",
+          "spec": "restoration_druid",
+          "role": "healer",
+          "dps": 103.8,
+          "active_pct": 6.12,
+          "parse_percentile": 70
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "Kill 194.4 s at average item level 354.2 (Summary view), report date 2024-10-09; covers the full first ground and air phases and part of the second ground phase.",
+        "Displayed DPS over All Enemies with pets attributed to their owners; healers are listed in the roster and excluded from actor_dps.",
+        "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
+      ],
+      "source_ref": "wcl_atramedes_10n_round2_20260927",
+      "extraction_notes": "Average raid item level (354.20), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+    },
+    {
+      "id": "X7tWdbvxYn3MjACD-fight28",
+      "url": "https://classic.warcraftlogs.com/reports/X7tWdbvxYn3MjACD?fight=28&type=damage-done",
+      "mode": "10N",
+      "date": "2024-10-16",
+      "duration_sec": 173.6,
+      "raid_dps": 150438.6,
+      "average_item_level": 357.9,
+      "target_scope": "All Enemies (damage-done page, pets included)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "assassination_rogue": 16945.7,
+        "balance_druid": 20732.0,
+        "blood_death_knight": 13331.5,
+        "demonology_warlock": 20626.1,
+        "feral_druid_dps": 17782.4,
+        "fire_mage": 18718.9,
+        "survival_hunter": 22806.5,
+        "unholy_death_knight": 19036.9
+      },
+      "roster": [
+        {
+          "name": "Galadryîel",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 22806.5,
+          "active_pct": 98.06,
+          "parse_percentile": 64
+        },
+        {
+          "name": "Elionara",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps": 20732.0,
+          "active_pct": 96.16,
+          "parse_percentile": 80
+        },
+        {
+          "name": "Strichcode",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps": 20626.1,
+          "active_pct": 98.42,
+          "parse_percentile": 66
+        },
+        {
+          "name": "Dêathsoul",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps": 19036.9,
+          "active_pct": 97.59,
+          "parse_percentile": 51
+        },
+        {
+          "name": "Lhyanna",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps": 18718.9,
+          "active_pct": 96.35,
+          "parse_percentile": 52
+        },
+        {
+          "name": "Natrix",
+          "spec": "feral_druid_dps",
+          "role": "dps",
+          "dps": 17782.4,
+          "active_pct": 73.81,
+          "parse_percentile": 75
+        },
+        {
+          "name": "Avelîn",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps": 16945.7,
+          "active_pct": 97.44,
+          "parse_percentile": 29
+        },
+        {
+          "name": "Diliny",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps": 13331.5,
+          "active_pct": 99.57,
+          "parse_percentile": 47
+        },
+        {
+          "name": "Onnastria",
+          "spec": "holy_priest",
+          "role": "healer",
+          "dps": 400.3,
+          "active_pct": 6.4,
+          "parse_percentile": 75
+        },
+        {
+          "name": "Imoto",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps": 58.2,
+          "active_pct": 6.37,
+          "parse_percentile": 6
+        }
+      ],
+      "deaths": [],
+      "limitations": [
+        "Kill 173.6 s at average item level 357.9 (Summary view), report date 2024-10-16; covers the full first ground and air phases and part of the second ground phase.",
+        "Displayed DPS over All Enemies with pets attributed to their owners; healers are listed in the roster and excluded from actor_dps.",
+        "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
+      ],
+      "source_ref": "wcl_atramedes_10n_round2_20260927",
+      "extraction_notes": "Average raid item level (357.90), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Balance parse 80 exceeds the preferred range. Assassination, Demonology and Fire are within it. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
     }
   ],
   "extraction_plan": {
@@ -241,8 +799,8 @@
     }
   },
   "consumers": [
-    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json (matched_reference_ids stays empty until a verified entry exists)",
-    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json (unresolved: wcl_10n_kill_reference_pending, boss_melee_damage_modifier_10n, boss_health_10n)"
+    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json (matched_reference_ids: fight 32 and the five round-2 kills)",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json (research_completion wcl_dps_references)"
   ],
   "access_attempts": [
     {
@@ -276,26 +834,47 @@
       "route": "GPT-6 Astra, Chrome plugin, one own tab in the user's running Chrome (profile Runiir)",
       "result": "all views rendered; no check, CAPTCHA or login; tab closed afterwards",
       "source_ref": "wcl_MxFq7TRbvnjGY1hJ_32"
+    },
+    {
+      "date": "2026-09-27",
+      "route": "GPT-6 Astra, Chrome plugin, one own tab in the user's running Chrome (profile Runiir)",
+      "result": "rankings, damage-done, Summary, Rankings and Deaths views rendered for five fights; no check, CAPTCHA or login; tab closed afterwards",
+      "source_ref": "wcl_atramedes_10n_round2_20260927"
     }
   ],
   "report_search": {
     "MxFq7TRbvnjGY1hJ": "fight 32 Atramedes 10N kill (2024-10-28, 2:45)",
     "Y8ajQ7dbmKMG1RZy": "fight 28 Atramedes Heroic 10 kill only; excluded (mode)",
-    "xAhkN2y9YP3KRmnJ": "fight 17 Atramedes 10N kill (2025-06-11, 0:48)"
+    "xAhkN2y9YP3KRmnJ": "fight 17 Atramedes 10N kill (2025-06-11, 0:48)",
+    "PpFW3bgy7m6Kxk1t": "fight 8 Atramedes 10N kill (2024-10-05, 182.4 s)",
+    "Bgcm6RavhWK7DLd1": "fight 34 Atramedes 10N kill (2024-10-12, 179.3 s)",
+    "hxz7MH8gW9BYGNdr": "fight 41 Atramedes 10N kill (2024-10-23, 199.0 s)",
+    "jxNrbDtq9BdwAcam": "fight 30 Atramedes 10N kill (2024-10-09, 194.4 s)",
+    "X7tWdbvxYn3MjACD": "fight 28 Atramedes 10N kill (2024-10-16, 173.6 s)",
+    "discovery_round2": "WCL Cataclysm Classic zone rankings (zone 1023, boss 1022, Normal, size 10) for Balance Druid, filtered to durations of 130-600 s and to raids that also contain Assassination and Demonology; each candidate verified on its fight page. Ranking rows are discovery only."
   },
   "canonical_spec_coverage": {
     "wcl_matched": {
-      "blood_death_knight": 13254,
-      "elemental_shaman": 24949.4,
+      "blood_death_knight": 13292.75,
+      "balance_druid": 18355.0,
+      "survival_hunter": 20412.6,
+      "fire_mage": 18718.9,
       "retribution_paladin": 19929.9,
-      "survival_hunter": 25513.05
+      "assassination_rogue": 17469.4,
+      "elemental_shaman": 19688.2,
+      "demonology_warlock": 20626.1
     },
-    "wowsims_fallback": [
-      "balance_druid",
-      "fire_mage",
-      "assassination_rogue",
-      "demonology_warlock"
-    ],
-    "note": "fire_mage appears only in the unmatched short kill (81,123 DPS at item level 401.4)."
+    "samples": {
+      "blood_death_knight": 4,
+      "balance_druid": 5,
+      "survival_hunter": 5,
+      "fire_mage": 3,
+      "retribution_paladin": 3,
+      "assassination_rogue": 5,
+      "elemental_shaman": 2,
+      "demonology_warlock": 5
+    },
+    "wowsims_fallback": [],
+    "note": "Median over the six matched 10N kills (fight 32 plus the five round-2 kills), one value per kill. elemental_shaman has two samples and fire_mage three; the unmatched 48.5 s kill stays context only."
   }
 }

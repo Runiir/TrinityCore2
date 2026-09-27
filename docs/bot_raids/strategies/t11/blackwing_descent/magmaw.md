@@ -48,7 +48,7 @@ Keep the main body 41570, damage head 42347 and Mangle head 48270 distinct. Excl
 | Pillar | DBM first 30s, 32.5s repeat prediction, author allows 30-40s. Native prefers non-vehicle targets beyond 15yd. | Marker, impact, actor positions/range, summons and evasion; preserve mandatory bait ownership. |
 | Parasites | Client/native77973 duration 2500ms, period 300ms and extra initial tick imply 9 uninterrupted 77969 summons of 41806. Vomit separately summons 42321. | Actual summon count, interruption and cleanup; do not confuse observed WCL actor count with summons per Pillar. |
 | Mangle/Crash | DBM 90s first, 95s repeat. Historical 25H Mangles 95.558s apart; Crashes 99.595/195.151s. | Current victim captured, damage/defenses, Crash evasion and release cause. |
-| Armor | Client/native 90s, -50% armor. WCL lifetime 89.992s and application at Mangle removal; native applies on boarding. | Apply on supported gameplay release, with separate hooks/timeout/reset/death paths. Retain duration and armor readback. |
+| Armor | Client/native 90s, -50% armor. WCL lifetime 89.992s and application at Mangle removal; native applies at the same release boundary since a5c6606d93 (boarding before). | Apply on supported gameplay release, with separate hooks/timeout/reset/death paths. Retain duration and armor readback. |
 | Hooks/head | Two native pincers, both hooks on one target. Both hook auras have 3000ms client duration; guide <1s is coordination advice. Head prediction 30s, +100% damage. | Native seats, hook arrival/expiry, body/head targetability and fresh target return. Player last/first swings only bound activity. |
 | Molten Tantrum | Client/native 78403 is +100% fire damage per stack, cap 10; native duration 10s. Client recovery 1500ms is not an AI recurrence. Native out-of-melee 78068 triggers 78403. | Out-of-melee cadence/refresh/expiry, return to melee and damage scaling. Ordinary kills may not exercise this. |
 | Heroic adds | DBM Inferno 30s first / 35s repeat. Seven 25H construct Ignitions roughly 35.5s apart. Armageddon aura 8s, triggered below 20% in native. | Actual summons, health, threat, fire geometry, Slash and Armageddon outcomes. Its damage coefficient prevents treating it as a simple flat roll. |
@@ -80,7 +80,7 @@ On 2026-09-27 GPT-6 Astra read two 10N kills through the user's Chrome. The raw 
 What the two kills establish for 10N:
 
 - **Parasites:** 9 per Pillar of Flame, two Pillars per kill, in both logs. This matches the client/native derivation of 9 uninterrupted summons.
-- **Sweltering Armor:** applied at the same timestamp as the Mangle debuff is removed, in both logs. The native script applies it at boarding; that mismatch is the already-specified repair.
+- **Sweltering Armor:** applied at the same timestamp as the Mangle debuff is removed, in both logs. The native script already does the same: since a5c6606d93 (2026-09-23) it applies Armor when a living, in-combat Mangle target leaves the seat, not at boarding (source audit 2026-09-27; `tests/test_magmaw_mangle_sweltering_release.py`). Both `b5-d1898555` and round 1 ran that source, so there is nothing to repair. The scoreboard evidence does not retain aura-apply timestamps, so this rests on the source, not a live readback.
 - **Boss melee:** in Y8aj, Vindication and Scarlet Fever together keep a -10% debuff on Magmaw from 0:03.4 to the kill. Its 18 reduced samples (U 109,914-153,626) bound the modifier to 15.14-16.09. Combined with MxFq7, the bounds are 15.84-16.09, so the calibrated DamageModifier 16 stands. Mangle's initial hit and periodic U agree with it.
 - **Timings:** Lava Spew is three 77690 casts 2 s apart per sequence. Massive Crash begins about 8.1 s after Mangle in both kills.
 - **Molten Tantrum:** none observed.
@@ -92,6 +92,15 @@ Still open for 10N:
 - **Head exposure:** its start is not bounded.
 - **Mangle release:** what ends Mangle is not identified.
 - **Retail credit, loot and achievements:** not researched.
+
+### Fire Mage on the canonical roster (round 2, 2026-09-27)
+
+Round 1 (`blackwing_descent_10n-r01-553da85c98`, 3 kills) put the single Fire Mage at 36.4k, 91% of WCL. On `b5-d1898555` the two Fire Mages averaged 42.5k and 46.6k. The retained kills (two b5 kills, all three r01 kills) split the 8-11k loss into two parts:
+
+- **Combustion (class rotation, about -6.7k DPS):** Combustion 83853 dealt 431-469k per r01 kill, against 0.94-1.43M on b5. Its ticks copy the Ignite on the target, and Combustion goes out as soon as the class gate (Ignite at least 10k, plus Living Bomb and a Pyroblast DoT) passes. On b5 the Ignite at the cast was 62-69k; on r01 it was 27-30k. Hit sizes (Fireball, Pyroblast!, Living Bomb) and crit (46-47%) match, so this is Combustion timing, not gear or raid buffs. It belongs to the class owner.
+- **Bait load (roster, about -4.1k DPS):** without Combustion, Fire does 35.0-37.5k on b5 and 29.1-34.0k on r01. The rotation (DPS-064) alternates the Blink bait lane between two Fire Mages, one wave each. With one Fire Mage (`single_mage`) that mage baits both waves. During a bait wave the baiter deals 18-35k (boss plus parasites), against about 37k for a non-baiting mage on b5.
+
+The lane transition needs both a mage and a hunter baiter (`HasAssignedBaiters`, `IsArrived`), and the canonical roster has no second Blink-capable spec. Taking the Fire Mage off alternate waves therefore needs a vacant-mage-slot mode in the lane transition, plus a hook-rider list that stays stable, and a live batch. Otherwise the lowest-GUID free DPS, the Fire Mage, would become hook rider 1. Head-phase uptime does not explain the loss. Every retained kill ended 0-10 s after the first Mangle (about 90 s), before any head exposure.
 
 ### Magmaw-side prerequisite trash
 

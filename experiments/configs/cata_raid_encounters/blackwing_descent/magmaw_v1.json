@@ -196,7 +196,7 @@
       },
       "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw", "magmaw_client_59185_20260912", "repo_magmaw_a4b9ab9bd7"],
       "conflicts": [
-        "Armor lifetime now observed89.992s in25H, consistent with90s client/native. WCL applies at Mangle release; native boarding anchor conflicts. Distinguish hooks, timeout and cleanup."
+        "Armor lifetime now observed89.992s in25H, consistent with90s client/native. WCL applies at Mangle release. Source audit 2026-09-27: since a5c6606d93 the native script also applies it at release (boss_magmaw.cpp PassengerBoarded, seat exit of a living in-combat target; tests/test_magmaw_mangle_sweltering_release.py), so the anchor no longer conflicts; the boarding-time application was the pre-a5c6606d93 source. Distinguish hooks, timeout and cleanup."
       ],
       "confidence": "credible_strategy_plus_repository_for_target_and_phase; damage_unresolved; armor_duration_client_and_native_confirmed"
     },
@@ -341,7 +341,7 @@
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "detail": "90s client/native duration corroborated by 89.992s historical WCL. 10N apply anchor observed 2026-09-27 in a pre-4.4.2 and a 4.4.2-era kill: Armor is applied at Mangle removal, which conflicts with native boarding application. The release cause and target-cutoff compatibility remain open."
+      "detail": "90s client/native duration corroborated by 89.992s historical WCL. 10N apply anchor observed 2026-09-27 in a pre-4.4.2 and a 4.4.2-era kill: Armor is applied at Mangle removal. The native script has applied it at the same release boundary since a5c6606d93 (source audit 2026-09-27; the boarding-time conflict referred to the older source), and every accepted and round-1 scoreboard label ran that source. The 10N release cause and target-cutoff compatibility remain open."
     },
     {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
     {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}

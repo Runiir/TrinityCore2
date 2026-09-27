@@ -8,7 +8,8 @@
 
 
 // The add switch at the native edge (the plan's AddSwitchRestricts; user
-// tactic 2026-09-26: from 30% every damage dealer kills Aberrations until
+// tactic 2026-09-26, threshold 50% since 2026-09-27: from the switch health
+// every damage dealer kills Aberrations until
 // the chambers are empty, the Blood DK main tank alone stays on Maloriak).
 // The dispatch's route-authority hook (SubmitMaloriakRouteAuthority) runs
 // after ConfigureValidationRouteCombatAuthority clears the bot's restriction,

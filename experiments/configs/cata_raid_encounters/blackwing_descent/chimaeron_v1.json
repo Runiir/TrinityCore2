@@ -136,18 +136,20 @@
     ],
     "tank_healer": [
       "best single-target healer",
-      "Double Attack tank toward full while a doubled swing is due",
+      "the Double Attack soaker (the Double Attack tank, or the victim once he is alone) toward 95% while a doubled swing is due, including the window from each Massacre to the swing it reschedules",
       "Break tank above the floor"
     ],
     "raid_healers": [
       "every mixture-protected player above 10000 (bots aim for 20000)",
+      "after a Massacre the first raid healer joins the tank healer on the soaker once the victim is off the floor (no Caustic Slime before 19 s after the cast start)",
       "split the urgency list instead of stacking on one target",
       "outage: health-percentage order; Barrier then Spirit Link on the stack"
     ],
     "dps": [
+      "hunters stand beyond their minimum range (27.8 yd from the boss centre against his 20 yd reach): 33 yd arc while spread",
       "spread 6+ yd while the mixture is up",
-      "stack behind the boss during an outage",
-      "hold damage between 23% and 20% until the raid is safe"
+      "stack behind the boss during an outage (a short column on the rear axis while a hunter lives)",
+      "hold damage between 23% and 20% until the raid is safe, and push during a Feud with 10 s or more left"
     ],
     "heroic": [
       "survive Shadow Whip/Feud melee during outage",
@@ -460,11 +462,11 @@
     "owner": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h",
     "phases": {
       "prewake": "regroup, finkle and wake_wait nodes while the boss sleeps: offense suppressed unless another hostile fights the raid; on wake_wait the Break tank stands 9 yd north of the boss and everyone else at least 16 yd away; the native route keeps the nodes. Back asleep at the encounter node (native reset after a wipe: the boss out of combat, without a victim and REACT_PASSIVE, which the script sets only while he sleeps; never the instance-wide encounter flag) the plan keeps the node, suppresses offense (encounter_reset_boss_asleep) and stages as on wake_wait once the Bile-O-Tron is active again; waking him again needs the route to re-run Finkle's gossip.",
-      "mixture": "slots at least 11 yd apart with a 2 yd arrival tolerance (members stay more than 6 yd apart): Break tank 10 yd north, Double Attack tank 13 yd at -60 degrees, up to three melee 11 yd behind (+/-30 degrees for two), healers then ranged 22 yd behind over +/-75 degrees (six at most), overflow on a 33 yd arc.",
-      "outage": "everyone on a 1.5 yd ring 8 yd behind the boss; Barrier at 16.5-12 s Feud remaining, Spirit Link at 11-7 s.",
+      "mixture": "slots at least 11 yd apart with a 2 yd arrival tolerance (members stay more than 6 yd apart): Break tank 10 yd north, Double Attack tank 13 yd at -60 degrees, up to three melee 11 yd behind (+/-30 degrees for two), healers then ranged 22 yd behind over +/-75 degrees (six at most); hunters (minimum range 27.8 yd against the 20 yd reach) first on the 33 yd arc, then the overflow.",
+      "outage": "without a living hunter everyone on a 1.5 yd ring 8 yd behind the boss; with one, a column on the rear axis (tanks and melee 21.5 yd, inside the 22.8 yd melee range; healers and casters 25.125 yd; hunters 28.75 yd, beyond 27.8 yd; bands at most +/-1.5 yd wide, 0.5 yd arrival tolerance, so neighbouring bands stay within the 6 yd split at the worst tolerance corner); Barrier at 16.5-12 s Feud remaining, Spirit Link at 11-7 s, both cast from the healers' band.",
       "mortality": "no formation, no healing, no taunts; the Break tank stands down behind a living Double Attack tank; Discipline shields the victim whenever Weakened Soul allows and uses Pain Suppression on a failing tank outside its 3 minute cooldown; lust if still unused."
     },
-    "burn_window": "one cohort sequence held -> armed -> handoff -> push: from 23% non-tanks hold, tanks hold below 21.5%; release on readiness (mixture up, no Massacre casting or due within 8 s, both tanks 80%+) or a bounded hold (60 s, or fewer than two living healers); last chance at 21% unreleased arms the handoff anyway (1% is ~12.5 s of residual damage, longer than the 8 s taunt cooldown; dropped again above 20.5% if the boss stops losing health for 16 s while held (longer than the 15 s Bane of Doom tick), so the Break tank keeps Break through a long hold; sticky at or below 20.5%); armed, the Double Attack tank taunts first (even during Feud) and the Break tank stops taunting and stands down; non-tanks go once the handoff lands or after 8 s; a failed handoff lets the Break tank attack again while the Double Attack tank retries; then the lust owner lusts.",
+    "burn_window": "one cohort sequence held -> armed -> handoff -> push: from 23% non-tanks hold, tanks hold below 21.5%; release on readiness (mixture up, no Massacre casting or due within 8 s, both tanks 80%+), on a Feud with 10 s or more left and both tanks 80%+ (the pacified boss cannot swing and Mortality stops Slime and Massacre), on fewer than two living tanks (nobody to hand him to), or on a bounded hold (60 s, or fewer than two living healers); last chance at 21% unreleased arms the handoff anyway (1% is ~12.5 s of residual damage, longer than the 8 s taunt cooldown; dropped again above 20.5% if the boss stops losing health for 16 s while held (longer than the 15 s Bane of Doom tick), so the Break tank keeps Break through a long hold; sticky at or below 20.5%); armed, the Double Attack tank taunts first (even during Feud) and the Break tank stops taunting and stands down; non-tanks go once the handoff lands or after 8 s; a failed handoff lets the Break tank attack again while the Double Attack tank retries; then the lust owner lusts.",
     "duties_by_capability": "Break tank: Blood DK > Protection Paladin > Protection Warrior > Feral; the next tank soaks Double Attack. Tank healer: Holy Paladin > Discipline > Holy Priest > Restoration Druid > Restoration Shaman. Lust: mage (Time Warp) first, then shaman (Bloodlust/Heroism); the runtime casts only a lust spell the owner knows (Player::HasSpell) and otherwise skips it with chimaeron_lust_spell_unknown.",
     "runtime_submission": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp (native cast and offense-suppression candidates, route engagement observation; wired by the coordinator dispatch patch)",
     "prewake_nodes": [
@@ -472,7 +474,8 @@
       "bwd.chimaeron.finkle",
       "bwd.chimaeron.wake_wait"
     ],
-    "latches": "cohort-scoped: src/server/game/Bots/BotEncounterLatches.h (generic store with per-module sub-stores) and module 'chimaeron' in Encounters/Chimaeron/BotChimaeronBurn.h (hold start, release and reason, last chance, handoff done or timed out, Pain Suppression cast); updated once per blackboard publication for the Chimaeron node; reset on a new scope key, boss object or disengage (the native encounter epoch is authoritative only for Magmaw today)."
+    "latches": "cohort-scoped: src/server/game/Bots/BotEncounterLatches.h (generic store with per-module sub-stores) and module 'chimaeron' in Encounters/Chimaeron/BotChimaeronBurn.h (hold start, release and reason, last chance, handoff done or timed out, Pain Suppression cast); updated once per blackboard publication for the Chimaeron node; reset on a new scope key, boss object or disengage (the native encounter epoch is authoritative only for Magmaw today).",
+    "healing": "tiers: 0 the boss victim at or below 20,000; 1 the Double Attack soaker below 95% while the charge is up or in the post-Massacre window (native Massacre timer 26-14 s: from the cast end to one swing after the 11 s reschedule; also the first 12 s after engage); 2 mixture-protected members at or below 20,000; 3 outage by health percentage; 4 tank top-ups. The tank healer takes the first tank entry; the first raid healer doubles on a tier-0 victim, or on a tier-1 soaker inside the post-Massacre window, where the later raid healers start at the head of the raid floor."
   },
   "repository_audit": [
     {

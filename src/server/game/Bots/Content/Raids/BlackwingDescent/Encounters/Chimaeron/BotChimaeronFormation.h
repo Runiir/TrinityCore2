@@ -19,6 +19,15 @@
 //   prescribe this spread while the mixture is up.
 // - Outage (Systems Failure): the raid collapses into one stack behind the boss
 //   so each Slime is split across the whole raid.
+// - Standoff members (hunters, BotChimaeronDutyPlan.h IsStandoffSpec) cannot
+//   shoot inside ~27.8 yd of the boss centre (5 yd minimum range plus the
+//   22.8 yd melee range of a 20 yd-reach boss). They take the 33 yd arc in the
+//   spread, and while one lives the outage stack becomes a short column on
+//   the rear axis: tanks and melee at 21.5 yd (inside the 22.8 yd melee
+//   range), healers and casters at 25.1 yd, standoff members at 28.75 yd, each
+//   band at most +/-1.5 yd wide with a 0.5 yd arrival tolerance. Neighbouring
+//   bands stay within the 6 yd split even at the worst tolerance corner, so a
+//   Slime on either end is still shared by the casters.
 // - Prewake: the Break tank stands closest to the sleeping boss, because the
 //   native wake-up attacks the nearest player within 70 yd.
 namespace BotEncounter::Chimaeron
@@ -59,6 +68,22 @@ constexpr float OuterRangedRadius = 33.0f;
 constexpr float OuterRangedStep = 20.0f;
 constexpr float StackBehindDistance = 8.0f;
 constexpr float StackRingRadius = 1.5f;
+// Outage column bands (distance behind the formation centre), the lateral
+// spacing inside a band (compressed so a band never exceeds +/-1.5 yd) and the
+// column's own arrival tolerance. Spacing and tolerance together guarantee
+// the Slime split: any two members of neighbouring bands, each off its slot
+// by the full tolerance in the worst direction, stay within 6 yd.
+constexpr float ColumnFrontDistance = 21.5f;
+constexpr float ColumnMiddleDistance = 25.125f;
+constexpr float ColumnRearDistance = 28.75f;
+constexpr float ColumnLateralStep = 1.0f;
+constexpr float ColumnBandHalfWidth = 1.5f;
+constexpr float ColumnTolerance = 0.5f;
+constexpr float SlimeShareRadius = 6.0f;
+// Hunter minimum range against Chimaeron, centre to centre: 5 yd spell minimum
+// plus the melee range (1.5 + 20 + 4/3 yd), Spell::GetMinMaxRange.
+constexpr float StandoffMinimumRange = 5.0f + 1.5f + 20.0f + 4.0f / 3.0f;
+constexpr float MeleeReachAgainstBoss = 1.5f + 20.0f + 4.0f / 3.0f;
 constexpr float PrewakeBreakTankDistance = 9.0f;
 constexpr float PrewakeMinimumOthers = 16.0f;
 // Arrival tolerance around a spread slot. The closest two spread slots are
@@ -70,6 +95,21 @@ constexpr float SpreadTolerance = 2.0f;
 static_assert(MinimumSpreadSlotGap - 2.0f * SpreadTolerance > 6.0f,
     "spread tolerance lets two members share a Caustic Slime split");
 constexpr float StackTolerance = 1.0f;
+static_assert(OuterRangedRadius - SpreadTolerance > StandoffMinimumRange,
+    "a standoff member at the edge of the spread tolerance is inside minimum range");
+static_assert(ColumnRearDistance - ColumnTolerance > StandoffMinimumRange,
+    "a standoff member at the edge of the column tolerance is inside minimum range");
+static_assert(ColumnFrontDistance + ColumnTolerance < MeleeReachAgainstBoss,
+    "a melee member at the edge of the column tolerance is out of melee range");
+// Worst case between neighbouring bands: the radial gap and the full lateral
+// spread (2 x half width) nominally, plus both members' tolerance.
+constexpr float ColumnShareBudget = SlimeShareRadius - 2.0f * ColumnTolerance;
+static_assert((ColumnMiddleDistance - ColumnFrontDistance) * (ColumnMiddleDistance - ColumnFrontDistance)
+        + 4.0f * ColumnBandHalfWidth * ColumnBandHalfWidth <= ColumnShareBudget * ColumnShareBudget,
+    "front and middle bands can drift out of one Caustic Slime split");
+static_assert((ColumnRearDistance - ColumnMiddleDistance) * (ColumnRearDistance - ColumnMiddleDistance)
+        + 4.0f * ColumnBandHalfWidth * ColumnBandHalfWidth <= ColumnShareBudget * ColumnShareBudget,
+    "middle and rear bands can drift out of one Caustic Slime split");
 
 inline Point Rotate(Point vector, float degrees)
 {
@@ -138,16 +178,32 @@ inline std::optional<std::size_t> IndexOf(std::vector<ObjectGuid> const& guids, 
     return std::size_t(itr - guids.begin());
 }
 
+inline bool Contains(std::vector<ObjectGuid> const& guids, ObjectGuid guid)
+{
+    return std::find(guids.begin(), guids.end(), guid) != guids.end();
+}
+
 // Members on the ranged arcs, in slot order: healers first (they must stay
 // on the 22 yd arc), then ranged damage, then melee beyond the inner arc.
+// Standoff members are not in it: they own the front of the 33 yd arc.
 inline std::vector<ObjectGuid> RangedSlotOrder(Duties const& duties)
 {
     std::vector<ObjectGuid> order = duties.RangedHealers;
     for (ObjectGuid guid : duties.Ranged)
-        if (std::find(order.begin(), order.end(), guid) == order.end())
+        if (!Contains(order, guid) && !Contains(duties.Standoff, guid))
             order.push_back(guid);
     for (std::size_t index = InnerMeleeCapacity; index < duties.Melee.size(); ++index)
         order.push_back(duties.Melee[index]);
+    return order;
+}
+
+// The 33 yd arc: standoff members, then the overflow of the 22 yd arc.
+inline std::vector<ObjectGuid> OuterSlotOrder(Duties const& duties)
+{
+    std::vector<ObjectGuid> order = duties.Standoff;
+    std::vector<ObjectGuid> const inner = RangedSlotOrder(duties);
+    for (std::size_t index = RangedArcCapacity; index < inner.size(); ++index)
+        order.push_back(inner[index]);
     return order;
 }
 
@@ -169,29 +225,40 @@ inline std::optional<Point> SpreadSlot(Duties const& duties, Point centre, Objec
         return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), MeleeRadius));
     }
     std::vector<ObjectGuid> const order = RangedSlotOrder(duties);
-    std::optional<std::size_t> const index = IndexOf(order, guid);
-    if (!index)
-        return std::nullopt;
-    if (*index < RangedArcCapacity)
+    if (std::optional<std::size_t> const index = IndexOf(order, guid);
+        index && *index < RangedArcCapacity)
     {
         std::size_t const count = std::min(order.size(), RangedArcCapacity);
         float const angle = FanAngle(*index, count, 75.0f);
         return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), RangedRadius));
     }
-    std::size_t const outerCount = order.size() - RangedArcCapacity;
-    float const span = OuterRangedStep * float(outerCount - 1) / 2.0f;
-    float const angle = FanAngle(*index - RangedArcCapacity, outerCount, span);
+    std::vector<ObjectGuid> const outer = OuterSlotOrder(duties);
+    std::optional<std::size_t> const index = IndexOf(outer, guid);
+    if (!index)
+        return std::nullopt;
+    float const span = OuterRangedStep * float(outer.size() - 1) / 2.0f;
+    float const angle = FanAngle(*index, outer.size(), span);
     return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), OuterRangedRadius));
 }
 
-inline Point StackCentre(Point centre)
+// The outage stack is a column while a standoff member lives.
+inline bool UseStandoffColumn(Blackboard const& board, Duties const& duties)
 {
-    return ClampToChamber(Offset(centre, RearDirection(), StackBehindDistance));
+    for (ObjectGuid guid : duties.Standoff)
+        if (IsAlivePlayer(board, guid))
+            return true;
+    return false;
 }
 
-// Everyone, tanks included, stands on a 1.5 yd ring around the stack centre:
-// with a 1 yd arrival tolerance no two members are more than 5 yd apart.
-inline Point StackSlot(Blackboard const& board, Point centre, ObjectGuid guid)
+// The stack reference point (the healers' band in a column): raid cooldowns
+// are placed from it.
+inline Point StackCentre(Point centre, bool column = false)
+{
+    return ClampToChamber(Offset(centre, RearDirection(),
+        column ? ColumnMiddleDistance : StackBehindDistance));
+}
+
+inline std::vector<ObjectGuid> SortedPlayers(Blackboard const& board)
 {
     std::vector<ObjectGuid> members;
     for (ActorSnapshot const& player : board.Players)
@@ -200,6 +267,54 @@ inline Point StackSlot(Blackboard const& board, Point centre, ObjectGuid guid)
         {
             return left.GetRawValue() < right.GetRawValue();
         });
+    return members;
+}
+
+// Column slot: the member's band on the rear axis, spread sideways by
+// ColumnLateralStep (compressed to fit +/-ColumnBandHalfWidth) around the
+// axis in GUID order.
+inline Point ColumnSlot(Blackboard const& board, Duties const& duties, Point centre,
+    ObjectGuid guid)
+{
+    auto band = [&duties](ObjectGuid member)
+    {
+        if (Contains(duties.Standoff, member))
+            return 2;
+        if (member == duties.BreakTank || member == duties.DoubleAttackTank
+            || Contains(duties.Melee, member))
+            return 0;
+        return 1;
+    };
+    int const own = band(guid);
+    std::vector<ObjectGuid> mates;
+    for (ObjectGuid member : SortedPlayers(board))
+        if (band(member) == own)
+            mates.push_back(member);
+    std::size_t const index = IndexOf(mates, guid).value_or(0);
+    float const step = mates.size() > 1
+        ? std::min(ColumnLateralStep, 2.0f * ColumnBandHalfWidth / float(mates.size() - 1))
+        : 0.0f;
+    float const lateral = (float(index) - float(mates.size() - 1) / 2.0f) * step;
+    float const distance = own == 0 ? ColumnFrontDistance
+        : (own == 1 ? ColumnMiddleDistance : ColumnRearDistance);
+    Point const onAxis = Offset(centre, RearDirection(), distance);
+    return ClampToChamber(Offset(onAxis, Rotate(RearDirection(), 90.0f), lateral));
+}
+
+// Without a standoff member everyone, tanks included, stands on a 1.5 yd ring
+// around the stack centre: with a 1 yd arrival tolerance no two members are
+// more than 5 yd apart. With one, the column above (0.5 yd tolerance).
+inline float StackSlotTolerance(Blackboard const& board, Duties const& duties)
+{
+    return UseStandoffColumn(board, duties) ? ColumnTolerance : StackTolerance;
+}
+
+inline Point StackSlot(Blackboard const& board, Duties const& duties, Point centre,
+    ObjectGuid guid)
+{
+    if (UseStandoffColumn(board, duties))
+        return ColumnSlot(board, duties, centre, guid);
+    std::vector<ObjectGuid> const members = SortedPlayers(board);
     Point const stack = StackCentre(centre);
     std::optional<std::size_t> const index = IndexOf(members, guid);
     if (!index || members.size() <= 1)

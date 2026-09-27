@@ -5,6 +5,7 @@
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "ChaseMovementGenerator.h"
 #include "Creature.h"
 #include "GameTime.h"
@@ -235,6 +236,10 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         // against the target's collision model before the movement intent is
         // submitted.
         if (forceRangedReposition && !reference->IsWithinLOS(x, y, z))
+            return false;
+        // A transport passenger (a Nefarian pillar top) never takes an
+        // endpoint over the void (BotPassengerEndpointFloor.h).
+        if (!BotTransportSurfaceMovement::PassengerEndpointHasFloor(bot, x, y, z))
             return false;
         return annotateProfileRangeReceipt(MoveBotToPoint(state, bot, x, y, z,
             false, BotMovementArbitration::Owner::CombatRange,

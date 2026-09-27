@@ -7,18 +7,19 @@
 
 #include <string_view>
 
-// The 30% add switch as a cohort latch (BotEncounterLatches.h), so every bot
+// The add switch (Maloriak::AddSwitchHealthPct, 50% since the user's
+// 2026-09-27 decision) as a cohort latch (BotEncounterLatches.h), so every bot
 // reads one effective state for targeting, Remedy, the native restriction and
 // the cooldown hold.
 //
 // User tactic (user raid experience 2026-09-26): kill the Aberrations as they
-// come; if any are left at 30% (in the chambers or loose), stop damaging
+// come; if any are left at the switch health (in the chambers or loose), stop damaging
 // Maloriak and kill them one at a time; once they are all dead, kill him and
-// dispel Remedy again. With nothing left at 30% there is no pause.
+// dispel Remedy again. With nothing left at that point there is no pause.
 //
 // Remedy is deliberately left on him during the switch, so his health can
-// climb back above 30%: the switch is therefore latched the first time he is
-// at 30% or lower with adds left, and it ends only when the chambers are
+// climb back above the switch health: the switch is therefore latched the first time he is
+// at the switch health or lower with adds left, and it ends only when the chambers are
 // empty and every released Aberration is dead, when phase two starts, or
 // when Maloriak::AddSwitchCapMs has passed since the entry. A disengage
 // (wipe, evade) or a new attempt clears it (module reset, new scope).
@@ -34,7 +35,7 @@ enum class AddSwitchRelease : uint64
     AddsCleared = 1,   // the chambers are empty and every Aberration is dead
     PhaseTwo = 2,
     Cap = 3,
-    NothingLeft = 4    // 30% reached with no Aberration left: no pause at all
+    NothingLeft = 4    // switch health reached with no Aberration left: no pause at all
 };
 
 inline bool AddsRemain(Observation const& observation)

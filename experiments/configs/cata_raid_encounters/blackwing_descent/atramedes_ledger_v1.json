@@ -279,6 +279,27 @@
       "accessed": "2026-09-27",
       "mode": "10N",
       "claim": "48.5 s kill before the first liftoff, item level 401.4, raid DPS 538,153, no deaths; roster DPS only (throughput context)."
+    },
+    "wcl_atramedes_10n_round2_20260927": {
+      "title": "Warcraft Logs Cataclysm Classic, five Atramedes 10N kills (damage-done, Summary, Rankings, Deaths views)",
+      "publisher": "Warcraft Logs",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/PpFW3bgy7m6Kxk1t?fight=8",
+        "https://classic.warcraftlogs.com/reports/Bgcm6RavhWK7DLd1?fight=34",
+        "https://classic.warcraftlogs.com/reports/hxz7MH8gW9BYGNdr?fight=41",
+        "https://classic.warcraftlogs.com/reports/jxNrbDtq9BdwAcam?fight=30",
+        "https://classic.warcraftlogs.com/reports/X7tWdbvxYn3MjACD?fight=28"
+      ],
+      "accessed": "2026-09-27",
+      "route": "codex exec -m gpt-6-astra, Chrome plugin, one own tab in the user's running Chrome (profile Runiir); no check appeared",
+      "use": "DPS references for the canonical specs absent from fight 32"
+    },
+    "bot_live_r01_553da85c98": {
+      "title": "BWD 10N round-1 Atramedes shard kills (label blackwing_descent_10n-r01-553da85c98)",
+      "publisher": "local bot runs",
+      "location": "DVC: artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_atramedes_blackwing_descent_10n-r01-553da85c98-*.tar.gz.dvc",
+      "accessed": "2026-09-27",
+      "use": "native liftoff/landing timing (boss z) and bot diagnosis"
     }
   },
   "mode_matrix": {
@@ -1311,27 +1332,55 @@
     {
       "key": "ground_air_phase_timestamps",
       "status": "partial",
-      "evidence_gap": "WCL 10N: liftoff about 90 s, landing about 129 s (38-39 s air including travel). Native travel time still unmeasured."
+      "evidence_gap": "10N is now measured on both sides; 10H/25N/25H have no log. WCL 10N (six kills, round 2): the first air Tracking lands at 95.1-95.4 s in all six and the first ground cast after the air phase at 138.8-148.1 s (native re-engage + 13-14 s puts the landing at about 125-135 s); fight 32 ground melee stops 89.8 s, resumes 129.1 s. Native (round-1 bot kills): liftoff 91.2-91.5 s, hover from 95-96 s, touch-down 127.8-128.5 s. WCL shows no Take Off Anim Kit row, so liftoff is read from melee and Tracking. Candidate for 10N resolution once the catalog and the BWD quantitative audit are updated together (coordinator-owned).",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "breath_initial_target_rule",
       "status": "unresolved",
-      "evidence_gap": "Sonic Breath and Roaring Flame Breath: random (native, Wowhead) vs highest Sound (historical Icy Veins)."
+      "evidence_gap": "Sonic Breath and Roaring Flame Breath: random (native, Wowhead) vs highest Sound and not the tank (historical Icy Veins). WCL 10N, six kills (34 Tracking applications): the ground Sonic Breath never tracked a tank (19 applications; native excludes the current victim), while the air Roaring Flame Breath tracked a tank twice (Wongelrainer, fight 32; the sole tank Diliny, X7tWdbvxYn3MjACD fight 28), so 'not the tank' does not hold in the air. WCL exposes Sound (alternate power 110) only as gains, not per-player balances, so 'highest Sound' stays untested.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "sonar_bomb_count_by_mode",
       "status": "conflict",
-      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5. WCL MxFq7TRbvnjGY1hJ fight 32 shows no Sonar Bomb damage taken (all avoided), so the count stays unresolved."
+      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5. WCL MxFq7TRbvnjGY1hJ fight 32 shows no Sonar Bomb damage taken (all avoided), so the count stays unresolved. Round 2: five more 10N kills show Sonar Bomb 92553 impact groups every 3 s through the air phase with 1-3 players hit per group; WCL exposes no bomb cast or missile rows, so the launch count (3 vs 5) is still undecidable from damage taken.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "breath_speed_scaling_with_sound",
       "status": "unresolved",
-      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill. The WCL 10N kill shows no Resonating Clash cast rows in the enemy Casts view; per-air-phase shield counts are not visible there."
+      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill. The WCL 10N kill shows no Resonating Clash cast rows in the enemy Casts view; per-air-phase shield counts are not visible there. Round 2: air Resonating Clash 78168 casts per air phase in six 10N kills are 1, 1, 1, 2, 1, 1 (fight 32 1; PpFW3bgy7m6Kxk1t 1; Bgcm6RavhWK7DLd1 1; hxz7MH8gW9BYGNdr 2; jxNrbDtq9BdwAcam 1; X7tWdbvxYn3MjACD 1), the same 1-2 the native mobility replay spends with the 7 s spawn. That matches the observable spend but does not isolate a Sound term in the flame speed.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "heroic_fiend_and_shield_destruction_cadence",
       "status": "unresolved",
-      "evidence_gap": "Fiend period/count and Obnoxious period (1.5 s guide vs 2.5 s native) need a heroic log."
+      "evidence_gap": "Fiend period/count and Obnoxious period (1.5 s guide vs 2.5 s native) need a heroic log.",
+      "modes": [
+        "10H",
+        "25H"
+      ]
     }
   ],
   "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
@@ -1583,14 +1632,15 @@
         "25H"
       ],
       "status": "resolved",
-      "known": "WCL 10N: ground melee stops at 89.8 s and resumes at 129.1 s (about 38-39 s air including travel), consistent with native 91 s liftoff + travel + 31 s + landing travel and BigWigs 36 s from take-off.",
-      "next": "Measure native take-off and landing travel on a live kill.",
+      "known": "WCL 10N: ground melee stops at 89.8 s and resumes at 129.1 s (about 38-39 s air including travel), consistent with native 91 s liftoff + travel + 31 s + landing travel and BigWigs 36 s from take-off. Native (round-1 live kills blackwing_descent_10n-r01-553da85c98, boss z in the combat log): liftoff starts 91.2-91.5 s after the first hit, hover (z 113.2) from 95-96 s, touch-down 127.8-128.5 s: 36.5 s airborne including travel, within 1 s of the WCL 10N kill.",
+      "next": "None for 10N.",
       "source_refs": [
         "local_cpp",
         "bigwigs_cataclysm_atramedes",
         "dbm_cataclysm_atramedes",
         "wcl_cloudflare_verification_20260927",
-        "wcl_MxFq7TRbvnjGY1hJ_32"
+        "wcl_MxFq7TRbvnjGY1hJ_32",
+        "bot_live_r01_553da85c98"
       ]
     },
     {
@@ -1682,12 +1732,13 @@
         "10N"
       ],
       "status": "resolved",
-      "known": "Matched: MxFq7TRbvnjGY1hJ-fight32 (165.6 s, full ground-air-ground cycle). Context only: xAhkN2y9YP3KRmnJ-fight17 (48.5 s, no air phase). WCL targets: blood_death_knight 13,254; survival_hunter 25,513; retribution_paladin 19,930; elemental_shaman 24,949.",
-      "next": "Balance Druid, Fire Mage, Assassination Rogue and Demonology Warlock stay on the WoWSims fallback until a matched kill with those specs is read.",
+      "known": "Matched: MxFq7TRbvnjGY1hJ-fight32 (165.6 s) and five round-2 kills of 2024-10 with Balance, Assassination and Demonology (PpFW3bgy7m6Kxk1t-fight8, Bgcm6RavhWK7DLd1-fight34, hxz7MH8gW9BYGNdr-fight41, jxNrbDtq9BdwAcam-fight30, X7tWdbvxYn3MjACD-fight28; 173.6-199.0 s, raid item level 354.2-357.9), all full ground-air-ground cycles. Context only: xAhkN2y9YP3KRmnJ-fight17 (48.5 s, no air phase). Median WCL targets (samples): blood_death_knight 13,293 (4); balance_druid 18,355 (5); survival_hunter 20,413 (5); fire_mage 18,719 (3); retribution_paladin 19,930 (3); assassination_rogue 17,469 (5); elemental_shaman 19,688 (2); demonology_warlock 20,626 (5).",
+      "next": "None for 10N: no canonical spec uses the WoWSims fallback. Elemental (2) and Fire (3) samples are thin; add kills if a verdict sits near 0.95.",
       "source_refs": [
         "wcl_human_verification_20260925",
         "wcl_cloudflare_verification_20260927",
-        "wcl_MxFq7TRbvnjGY1hJ_32"
+        "wcl_MxFq7TRbvnjGY1hJ_32",
+        "wcl_atramedes_10n_round2_20260927"
       ]
     },
     {

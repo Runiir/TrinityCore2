@@ -20,16 +20,22 @@
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
   "matched_reference_ids": [
     "MxFq7TRbvnjGY1hJ-fight34",
-    "VL3fW9wNm2PRJDYt-fight13"
+    "VL3fW9wNm2PRJDYt-fight13",
+    "ZyH2KkjchMRTdXga-fight33",
+    "XzVpNLkxaAFG3DjW-fight18",
+    "3pvXdMVntcjxygW4-fight13",
+    "h1LaC3FZ8BwPrbXW-fight18",
+    "hmAcWCt3njMR4HFT-fight12",
+    "cCXgM3dx9YGKaDt7-fight28"
   ],
   "reference_status": "extracted",
   "reference_gaps": {
-    "with_wowsims_fallback": "fire_mage and assassination_rogue are absent from both matched kills and are judged against 0.90 x verified WoWSims DPS. WoWSims is a single-target patchwerk reference; Maloriak costs interrupts, Remedy dispels, Flash Freeze breaks, add damage and phase positioning, so these targets are not encounter-matched.",
-    "wcl_matched": "Median over MxFq7TRbvnjGY1hJ fight 34 (2024-10-28, 125.1 s) and VL3fW9wNm2PRJDYt fight 13 (2024-10-21, 209.6 s), all targets: blood_death_knight 11,681.9 (fight 34 main tank only), survival_hunter median(25,375.4, 16,145.0), retribution_paladin median(19,708.8, 20,230.9), elemental_shaman 23,356.4 (fight 34), demonology_warlock 18,229.8 (fight 13, two Warlocks).",
+    "wcl_matched": "Median over MxFq7TRbvnjGY1hJ fight 34 (2024-10-28, 125.1 s) and VL3fW9wNm2PRJDYt fight 13 (2024-10-21, 209.6 s), all targets: blood_death_knight 11,681.9 (fight 34 main tank only), survival_hunter median(25,375.4, 16,145.0), retribution_paladin median(19,708.8, 20,230.9), elemental_shaman 23,356.4 (fight 34), demonology_warlock 18,229.8 (fight 13, two Warlocks). Fire and Assassination (added 2026-09-27, round 2): fire_mage median(18,125.7 h1LaC3FZ8BwPrbXW fight 18, 18,244.2 hmAcWCt3njMR4HFT fight 12, 19,159.7 cCXgM3dx9YGKaDt7 fight 28) = 18,244.2; assassination_rogue median(20,069.4 ZyH2KkjchMRTdXga fight 33, 21,261.6 XzVpNLkxaAFG3DjW fight 18, 20,150.2 3pvXdMVntcjxygW4 fight 13) = 20,150.2. Each kill was picked for one middle-percentile player (Fire parse 52/50/50, Assassination 49/57/48) and its actor_dps holds only that player, so the other specs' targets are unchanged.",
     "no_reference_until_wcl": [
       "feral_druid_tank"
     ],
-    "feral_druid_tank_role": "No role-matched reference: the only Feral in the matched kills (Labraizz, fight 13, 16,202.0 DPS) tanked Maloriak, while the bot's Feral tanks the adds. A boss-tank reference is not treated as matched for the add-tank role, and feral_druid_tank has no verified WoWSims fallback, so it has no DPS target. Its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so the missing reference no longer fails the verdict."
+    "feral_druid_tank_role": "No role-matched reference: the only Feral in the matched kills (Labraizz, fight 13, 16,202.0 DPS) tanked Maloriak, while the bot's Feral tanks the adds. A boss-tank reference is not treated as matched for the add-tank role, and feral_druid_tank has no verified WoWSims fallback, so it has no DPS target. Its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so the missing reference no longer fails the verdict.",
+    "fire_assassination_history": "Until round 2 fire_mage and assassination_rogue had no matched kill and were judged against 0.90 x verified WoWSims DPS (a single-target patchwerk reference: 31,625 required for Fire). Round 1 (label blackwing_descent_10n-r01-553da85c98) read Fire 54% and Assassination 57% of that fallback; against the WCL medians the same kills are 104.5% and 95.3%."
   },
   "unmatched_reference_notes": {
     "MxFq7TRbvnjGY1hJ-fight34:combat_rogue,shadow_priest,balance_druid": "Specs the bot roster does not field; context only.",

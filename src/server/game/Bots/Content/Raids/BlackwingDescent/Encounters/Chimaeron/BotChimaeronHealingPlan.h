@@ -21,6 +21,14 @@
 // healer (best single-target healer) takes the first tank entry, raid healers
 // take the next entries in order. The boss victim at the floor gets two
 // healers because his next swing is at most one attack interval away.
+//
+// After a Massacre everyone sits at 1 health and the next doubled swing lands
+// about 9.5 s after it (13.5 s after the cast start). Both halves strike back
+// to back, so the soaker must hold more than one hit plus the 10,000 floor;
+// round 1 lost both tanks exactly there (the Feral at 34% and the Blood DK at
+// 65% with Break stacks, healers busy on DPS at 1 health). No Caustic Slime
+// lands before 19 s after the cast start, so in that window the first raid
+// healer joins the tank healer on the soaker once the victim is off the floor.
 namespace BotEncounter::Chimaeron
 {
 struct HealUrgency
@@ -30,6 +38,24 @@ struct HealUrgency
     float Key = 0.0f;
     bool Tank = false;
 };
+
+constexpr float SoakerTopUpPct = 95.0f;
+
+// The player who takes the next doubled swing: the Double Attack tank, or the
+// boss victim once no second tank is left to taunt it.
+inline ObjectGuid DoubleAttackSoaker(Blackboard const& board, Observation const& observation,
+    Duties const& duties)
+{
+    if (IsAlivePlayer(board, duties.DoubleAttackTank))
+        return duties.DoubleAttackTank;
+    return observation.Boss ? observation.Boss->VictimGuid : ObjectGuid();
+}
+
+// The window in which healers pre-heal the soaker ahead of the raid floor.
+inline bool SoakWindow(Observation const& observation)
+{
+    return observation.CurrentPhase == Phase::Mixture && observation.PostMassacreSoak;
+}
 
 inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
     Observation const& observation, Duties const& duties)
@@ -41,6 +67,8 @@ inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
     if (phase != Phase::Mixture && phase != Phase::Outage)
         return urgency;
     ObjectGuid const victim = observation.Boss->VictimGuid;
+    ObjectGuid const soaker = DoubleAttackSoaker(board, observation, duties);
+    bool const soakDue = observation.DoubleAttackPending || SoakWindow(observation);
     // In the burn window the Break tank must reach the readiness bar (80%)
     // that releases the push; before it he only needs a buffer (60%).
     float const breakTankTopUpPct = observation.Boss->HealthPct <= BurnHoldMaxPct
@@ -54,16 +82,17 @@ inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
         bool const tank = IsTank(duties, player.Guid) || isVictim;
         bool const atFloor = player.Health <= FloorTargetHealth;
         // Tier 0: boss victim at the floor (next swing within one interval).
-        // Tier 1: Double Attack tank below full while a doubled swing is due.
+        // Tier 1: the soaker below full while a doubled swing is due (the
+        //         charge is up, or a Massacre just rescheduled it).
         // Tier 2: mixture-protected member at the floor (absolute health).
         // Tier 3: outage, by health percentage.
         // Tier 4: tank top-ups while the mixture is up.
         HealUrgency entry{ player.Guid, 255, 0.0f, tank };
         if (isVictim && atFloor)
             entry = { player.Guid, 0, float(player.Health), tank };
-        else if (player.Guid == duties.DoubleAttackTank
-            && (observation.DoubleAttackPending || isVictim)
-            && player.HealthPct < 95.0f)
+        else if (player.Guid == soaker
+            && (soakDue || (isVictim && player.Guid == duties.DoubleAttackTank))
+            && player.HealthPct < SoakerTopUpPct)
             entry = { player.Guid, 1, player.HealthPct, tank };
         else if (atFloor && HasAura(player, FinklesMixtureSpell))
             entry = { player.Guid, 2, float(player.Health), tank };
@@ -116,8 +145,10 @@ inline ObjectGuid SelectPriorityHealTarget(Blackboard const& board,
     if (rank == 0)
         return tankPick.Target;
     // The boss victim at the floor is covered by the tank healer and the
-    // first raid healer.
-    if (rank == 1 && urgency.front().Tier == 0)
+    // first raid healer; so is the soaker in the post-Massacre window, where
+    // the later raid healers then start at the head of the raid floor.
+    bool const soakCover = urgency.front().Tier == 1 && SoakWindow(observation);
+    if (rank == 1 && (urgency.front().Tier == 0 || soakCover))
         return urgency.front().Target;
 
     std::vector<ObjectGuid> remaining;
@@ -126,7 +157,9 @@ inline ObjectGuid SelectPriorityHealTarget(Blackboard const& board,
             remaining.push_back(entry.Target);
     if (remaining.empty())
         return tankPick.Target;
-    return remaining[(rank - 1) % remaining.size()];
+    std::size_t const slot = rank - 1 - (soakCover && tankPick.Target == urgency.front().Target
+        ? 1 : 0);
+    return remaining[slot % remaining.size()];
 }
 }
 

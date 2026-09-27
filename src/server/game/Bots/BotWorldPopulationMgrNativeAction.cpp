@@ -1,5 +1,6 @@
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotNativeLifeEvents.h"
 #include "Bots/BotNativeMovementOutcome.h"
 #include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
@@ -443,6 +444,14 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                     "typed_combat_res_request_unavailable");
             }
 
+            // The target's life edges around the native acceptance, which
+            // runs inside this caster's update (BotNativeLifeEvents.h): its
+            // death, and this revive once the teleport acknowledgement has
+            // run the delayed resurrection, are counted even when neither
+            // falls inside one of the target's own updates.
+            BotNativeLifeEvents::Scope const lifeScope = BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId);
+            BotNativeLifeEvents::Observe(target->GetGUID().GetCounter(), lifeScope,
+                target->IsAlive(), NowMs());
             WorldPacket response(CMSG_RESURRECT_RESPONSE, 9);
             response << bot->GetGUID();
             response << uint8(1);
@@ -461,6 +470,10 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                     target->GetSession()->HandleMoveTeleportAck(ack);
                 }
             }
+            // ResurrectUsingRequestData teleports first and resurrects in the
+            // delayed operation the acknowledgement runs: observe after it.
+            BotNativeLifeEvents::Observe(target->GetGUID().GetCounter(), lifeScope,
+                target->IsAlive(), NowMs());
             if (target->IsAlive())
             {
                 targetState->NativeResurrectionPendingUntilMs = 0;

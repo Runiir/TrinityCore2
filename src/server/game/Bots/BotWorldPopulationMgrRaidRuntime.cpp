@@ -1,8 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotNativeLifeEvents.h"
 #include "Player.h"
-
 #include <map>
 #include <sstream>
 #include <string>
@@ -374,7 +374,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"release_sequence\":" << signal.ReleaseSequence
              << ",\"runback_sequence\":" << signal.RunbackSequence
              << ",\"reentry_sequence\":" << signal.ReentrySequence
-             << ",\"resurrection_sequence\":" << signal.ResurrectionSequence << "}";
+             << ",\"resurrection_sequence\":" << signal.ResurrectionSequence << BotNativeLifeEvents::MemberJsonFields(guid, BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId)) << "}";
     }
     json << "]}"
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""

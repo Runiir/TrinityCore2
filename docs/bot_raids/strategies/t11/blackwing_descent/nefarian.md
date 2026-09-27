@@ -831,6 +831,99 @@ completed and the run ended on the plateau watchdog. Six of the ten bots died.
 
   Fix: patch `R9_stop_frame_zero_rest.patch` for T.
 
+## 7e. BWD 10N raid program, round 1 (analysed in round 2)
+
+Label `blackwing_descent_10n-r01-553da85c98`: three native clears. Two kills
+have no combat log (truncated export, since fixed). The one measured kill,
+6bf52232, is source `live_r01_6bf52232`.
+
+**The DPS numbers are real.** The measurement is not the problem:
+- The boss window, 1087.7 s, runs from Onyxia's first hit to Nefarian's death.
+  WCL kills take 250–344 s.
+- The bone-warrior exclusion lowers party DPS only from 34.3k to 30.5k.
+
+Phase timeline: Onyxia dead at 64 s, prototypes killed 75–126 s, phase 3 from
+about 148 s, Berserk 26662 at 10 min 30 s.
+
+Raid DPS by phase:
+
+| Window | Raid DPS | Low actors |
+|---|---|---|
+| Phase 3, 150–630 s | 40.6k on Nefarian | rogue 1.1k, shaman 1.5k, warlock 0.4k, Feral kiting 0.3k |
+| After Berserk | about 5k | everyone |
+
+Three damage dealers were stranded:
+
+- **Elemental shaman.**
+  1. Her pillar-0 prototype died at 100 s.
+  2. The plan retargeted the nearest other prototype, on pillar 2, about 70 yd
+     away.
+  3. Native range recovery walked her from the pillar top toward it at
+     pillar-top height. It stopped at local (5.9, 19.7), in the air over the
+     lava; the floor under her was 168 yd down.
+  4. An elevator passenger does not fall by itself. She rose with the floor
+     and hovered at local Z 10.3 for 16 minutes.
+  5. In phase 3, Shadow of Cowardice (offset Z over 9.5) hit her 341 times.
+- **Rogue.** He ended phase 2 at local (-18.6, 26.6), Z 3.1: 8 yd from pillar
+  2's centre, outside its 6.05 yd skirt and 1.7 yd above the ring. No floor leg
+  started there, so the platform hold kept him 26 yd from Nefarian for 15
+  minutes.
+- **Demonology warlock.** He stayed on the pillar-1 top (local Z 9.3) through
+  phase 3. The descent was proposed (the replay gives
+  `pillar_descent_step_off`), but he never moved. The executor's rejection
+  reason is not in the evidence.
+  - Class evidence for the class agent: in the encounter he cast nothing that
+    dealt damage. Only pet damage appears (Felguard melee, Legion Strike,
+    Felstorm), with 47 casts per minute and 0.6% damage uptime.
+
+**Deaths.** The scoreboard counts 1103 lethal damage events in the boss window:
+- 341 Shadow of Cowardice on the shaman;
+- bone-warrior melee from 318 s;
+- breath, Tail Lash and Nefarian melee, mostly after Berserk.
+
+The native signals disagree. They record 0 deaths and 0 resurrections, and
+`alive_count` is 10 in every heartbeat. After each lethal hit, the next health
+snapshot is pinned at 50% (or 20%) of maximum health, and buffs are gone (the
+DK's maximum health fell by 8.5%). So either the deaths are real with
+in-place revives that the native observer misses, or the snapshot is wrong.
+`boss_window_deaths_unknown` (unreconciled basis) is the correct fail-closed
+verdict. The reconciliation flags come from trash only
+(`encounter_mismatch_count` 0): the ring buffer dropped 5896 early events.
+
+**Melee fidelity.** Nefarian's harness flag (mean ratio 4.35) is Berserk:
+
+| Nefarian swings | Mean after-attacker damage |
+|---|---|
+| Before Berserk | 67.6k (WCL 67.1k) |
+| After Berserk | 5.8x that |
+
+The calibration is right.
+
+**Round 2 fixes** (`BotNefarianStranded.h`, tests `test_nefarian_stranded.py`):
+- **Phase 2 target** (the user's tactic, authoritative). When a healer pillar
+  kills its prototype, only the crossing pair leaves: exactly one healer and one
+  damage dealer of the first healer pillar to finish swim to the tank pillar.
+  - They go by the swim path only: rim, `LandInLiquid` step-off into the lava,
+    swim, hop.
+  - The pair's damage dealer has no damage target until the tank pillar's
+    prototype is in reach (melee reach, or 30 yd for ranged)
+    (`nefarian_crossing_under_way`). An earlier target would let native range
+    recovery walk it off its pillar.
+  - Everyone else whose prototype died holds on its pillar
+    (`nefarian_platform_prototype_out_of_reach`). Nobody targets another
+    pillar's prototype.
+- **Stranded passenger.** On the resting raised floor, a stationary elevator
+  passenger falls where it stands (`platform_stranded_fall`, Survival, the
+  ledge-drop Fall stage) when it is:
+  - clear of every pillar structure (more than 6.55 yd from a centre);
+  - more than 1 yd above the model floor under it.
+
+  The descent's Land stage now declares the model floor under the member. That
+  is the ring for every pillar rim, as before.
+- **Crossing.** The shared-runtime agent applied patch R8 (`LandInLiquid`) in
+  round 2, so cross-pillar help is live. `CrossingSupported` is true, and
+  TestCrossingHelp runs its departure checks.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). Nefarian and

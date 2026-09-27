@@ -76,7 +76,8 @@ def test_wcl_reference_and_timelines_are_the_extracted_fight() -> None:
     reference, timelines = load(DPS_REFERENCE), load(CAST_TIMELINES)
     assert reference["schema"] == "maloriak_wcl_dps_reference_v1"
     assert reference["status"] == "extracted"
-    ref, longer = reference["references"]
+    by_id = {row["id"]: row for row in reference["references"]}
+    ref, longer = by_id["MxFq7TRbvnjGY1hJ-fight34"], by_id["VL3fW9wNm2PRJDYt-fight13"]
     assert longer["id"] == "VL3fW9wNm2PRJDYt-fight13" and longer["duration_sec"] == 209.6
     # The only Feral (Labraizz) tanked Maloriak; a boss-tank reference is not matched for the
     # roster's add-tanking Feral, so it is recorded but kept out of actor_dps.
@@ -123,16 +124,17 @@ def test_raid_target_matches_the_canonical_maloriak_shard() -> None:
     assert specs == sorted(expected)
     assert sum(row["role"] == "tank" for row in roster.values()) == 2
     assert sum(row["role"] == "healer" for row in roster.values()) == 2
-    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight34", "VL3fW9wNm2PRJDYt-fight13"]
+    assert target["matched_reference_ids"][:2] == ["MxFq7TRbvnjGY1hJ-fight34", "VL3fW9wNm2PRJDYt-fight13"]
     assert (ROOT / target["wcl_cast_timelines"]).is_file()
-    # Only Fire Mage and Assassination Rogue fall back to WoWSims; the Feral add tank has no reference.
-    for spec in ("fire_mage", "assassination_rogue"):
-        assert spec in target["reference_gaps"]["with_wowsims_fallback"]
+    # Round 2: Fire Mage and Assassination Rogue have matched WCL kills, so no roster spec
+    # falls back to WoWSims; the Feral add tank still has no reference.
+    assert "with_wowsims_fallback" not in target["reference_gaps"]
     matched = set()
     for reference in load(DPS_REFERENCE)["references"]:
-        matched |= set(reference["actor_dps"])
+        if reference["id"] in target["matched_reference_ids"]:
+            matched |= set(reference["actor_dps"])
     for spec in ("blood_death_knight", "survival_hunter", "retribution_paladin",
-                 "elemental_shaman", "demonology_warlock"):
+                 "elemental_shaman", "demonology_warlock", "fire_mage", "assassination_rogue"):
         assert spec in specs and spec in matched
     # The add-tanking Feral has no role-matched reference: an honest no_reference gap.
     assert "feral_druid_tank" in specs and "feral_druid_tank" not in matched
@@ -287,3 +289,44 @@ def test_boss_row_keeps_dead_raiders_in_the_instance() -> None:
     walk(scenarios)
     # The policy value is the one the proven Magmaw and Omnotron rows use.
     assert policies and set(policies) == {fields["boss_recovery_policy"]}
+
+
+def test_fire_and_assassination_references_move_only_their_own_targets() -> None:
+    """Round 2: six kills picked for one middle-percentile Fire Mage or Assassination Rogue each.
+    Their actor_dps holds only that player, so every other spec keeps the round-1 median."""
+    import statistics
+
+    target, reference = load(TARGET), load(DPS_REFERENCE)
+    added = target["matched_reference_ids"][2:]
+    assert len(added) == 6
+    by_id = {row["id"]: row for row in reference["references"]}
+    picked = {"fire_mage": [], "assassination_rogue": []}
+    for ref_id in added:
+        row = by_id[ref_id]
+        assert row["mode"] == "10N" and len(row["actor_dps"]) == 1
+        (spec, dps), = row["actor_dps"].items()
+        picked[spec].append(dps)
+        selection, = row["reference_selection"]
+        assert selection["spec"] == spec and 40 <= selection["parse_percentile"] <= 60
+        assert selection["dps_all_targets"] == dps
+    assert sorted(picked["fire_mage"]) == [18125.7, 18244.2, 19159.7]
+    assert sorted(picked["assassination_rogue"]) == [20069.4, 20150.2, 21261.6]
+    medians = reference["fire_assassination_extraction"]["medians"]
+    assert medians == {spec: statistics.median(values) for spec, values in picked.items()}
+    extract = load(ENCOUNTERS / "maloriak_wcl_fire_assassination_extract_v1.json")
+    assert {f"{kill['report']}-fight{kill['fight']}" for kill in extract["kills"]} == set(added)
+
+
+def test_user_add_switch_decision_is_recorded_with_its_evidence() -> None:
+    """User raid experience 2026-09-27: no Remedy dispel in the hold; since round 1 removed none,
+    the hold starts at 50%."""
+    ledger = load(LEDGER)
+    source = ledger["source_catalog"]["user_raid_experience_20260927"]
+    assert "stop dps at 50%" in source["quote"]
+    assert "94-104 s" in source["evidence_check"] and "Branch taken: 50%" in source["evidence_check"]
+    value = next(row for row in ledger["values"] if row["key"] == "add_switch_threshold_50")
+    assert value["source_refs"] == ["user_raid_experience_20260927"]
+    duties = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/"
+              "BotMaloriakDuties.h").read_text(encoding="utf-8")
+    assert "constexpr float AddSwitchHealthPct = 50.0f;" in duties
+    assert "user raid experience 2026-09-27" in DOSSIER.read_text(encoding="utf-8")

@@ -26,6 +26,12 @@ constexpr float FormationHazardMargin = 2.0f;
 // Blue and phase-two spread: 5 yards between ranged slots (Flash Freeze and
 // Biting Chill radii).
 constexpr float SpreadYards = 5.0f;
+// Outer melee ring. Round 1 (r01, two kills): the rogue, the Retribution
+// Paladin and the Blood DK landed melee swings on Maloriak from up to 6.5-6.9
+// yards (centre to centre, not moving). A ring point at 5 yards is in reach
+// with margin, so a sphere that blocks the 3.5-yard ring on one side no
+// longer holds melee while the far side of the outer ring is clear.
+constexpr float MeleeOuterRingRadius = 5.0f;
 
 struct FormationHazard
 {
@@ -163,7 +169,34 @@ inline std::optional<Vector3> SafeFormationSlot(BossFrame const& frame,
     return best;
 }
 
-// True when every point of the melee ring the bot can fight from in this
+// The first clear point of the melee ring (3.5 yards, then the 5-yard outer
+// ring) in this arc, 15 degrees apart, nearest the preferred angle first.
+// Hazards only by default (MeleeRingBlocked: the cauldron never holds melee
+// offense); a formation destination passes inSight, so the point must also
+// see the boss past the cauldron (FormationPointClear).
+inline std::optional<Vector3> ClearMeleeRingPoint(BossFrame const& frame,
+    SlotArc arc, std::vector<FormationHazard> const& hazards,
+    float preferredAngle = Pi, bool inSight = false)
+{
+    for (float radius : { MeleeRingRadius, MeleeOuterRingRadius })
+        for (int shift = 0; shift <= 12; ++shift)
+            for (float sign : { 1.0f, -1.0f })
+            {
+                if (shift == 0 && sign < 0.0f)
+                    continue;
+                float const angle = WrapAngle(preferredAngle
+                    + sign * float(shift) * Pi / 12.0f);
+                if (!ArcAdmits(arc, angle))
+                    continue;
+                Vector3 const point = FramePolar(frame, radius, angle);
+                if (inSight ? FormationPointClear(frame, point, hazards)
+                        : ClearOfHazards(point, hazards))
+                    return point;
+            }
+    return std::nullopt;
+}
+
+// True when every point of the melee rings the bot can fight from in this
 // arc is inside a hazard clearance: melee then holds instead of chasing
 // back into the hazard.
 inline bool MeleeRingBlocked(BossFrame const& frame, SlotArc arc,
@@ -174,15 +207,7 @@ inline bool MeleeRingBlocked(BossFrame const& frame, SlotArc arc,
     // has line of sight past the cauldron).
     if (hazards.empty())
         return false;
-    for (int step = 0; step < 24; ++step)
-    {
-        float const angle = -Pi + float(step) * Pi / 12.0f;
-        if (!ArcAdmits(arc, angle))
-            continue;
-        if (ClearOfHazards(FramePolar(frame, MeleeRingRadius, angle), hazards))
-            return false;
-    }
-    return true;
+    return !ClearMeleeRingPoint(frame, arc, hazards);
 }
 
 // Ranged hysteresis. Slots follow the boss-tank frame, so every tank step

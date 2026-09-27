@@ -1,0 +1,63 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:chimaeron",
+ "round": 2,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFacts.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronBurn.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h",
+  "tests/test_chimaeron_strategy.py",
+  "tests/test_chimaeron_burn.py",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+  "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md"
+ ],
+ "new_files": [],
+ "resolved_inputs": [],
+ "open_items": [
+  "Diagnosis (evidence: the three r01 archives fetched to ~/.cache/chim_r2). The wipe (run 6bf52232, pull 1) had no knockout at Massacres 1 and 2. The doubled swing about 9.5 s after Massacre 2 found the Feral at 83,041/244,890 health: hit 1 left 1 health, hit 2 killed. In those 9.5 s he got about 52k healing while the Discipline Priest and Restoration Shaman healed DPS at 1 health. The next doubled swing, 15 s later, found the Blood DK alone at 146,575 health with 4 Break stacks: 137,363, then lethal. The burn hold at 23% then kept a tankless raid through a Feud into Mortality, and the boss killed it one member at a time down to 8.4%. Batch 1's only death was the Feral to the Mortality doubled swing 1 s before the kill (WCL fight 27: the tank died 2 s before the kill).",
+  "Round-2 changes (owned): (1) Post-Massacre soak. From the native Massacre timer (26-14 s left) the Double Attack soaker (the Double Attack tank, or the victim when alone) is tier 1 toward 95%. The first raid healer joins the tank healer on him once the victim is off the floor. No Slime lands before 19 s after the cast start. (2) Burn release on Feud with 10 s or more left and both tanks at 80%+: batches 1 and 2 held 12-27 s at 20-23% while the boss was pacified. Also release on fewer than two living tanks. (3) Hunters: 33 yd spread arc; the outage stack becomes a 21.5/25.125/28.75 yd column on the rear axis while a hunter lives. Bands are at most +/-1.5 yd wide with a 0.5 yd arrival tolerance; static asserts guarantee the 6 yd Slime split between neighbouring bands at the worst tolerance corner.",
+  "Decision: keep the native Break/Double Attack timers (no swing-bound model). Live doubled swings were 13.5 s after each Massacre cast start and 14.6 s apart; WCL was 13.6 s and 14.4 s, within one swing. The native 11 s Break lands on the Break tank, who holds the boss then. A swing-bound Break would put it on the Double Attack tank's doubled swing. No Break-stack swap: under the mixture a Break-stacked single swing only needs 10,000+ health. No boss-window death in round 1 came from a single swing on the Break tank.",
+  "Survival Hunter 33%: an encounter positioning cause, not class. Hunter shots have a 5 yd minimum range that Spell::GetMinMaxRange extends by the melee range: 27.8 yd from the centre of a 20 yd-reach boss. The spread put him at 22.0 yd and the outage stack at about 8 yd. On the counted kill he had 138 idle min_range_required waits and about 1,395 shot rejections (spender 487, dot 417, auto_attack 296, resource_generator 195), 82 melee swings at 22.8 yd, and 17 Auto Shots. His damage was DoT ticks, the pet and melee. Batches 1 and 2 were mostly outage (knockouts after Massacres 1-3 and 1-4). Fixed by the formation change; needs the live batch to confirm.",
+  "Stall classification: batch 2 (250536fd) was excluded for world-tick stalls. There were 11 native stalls of 0.5-0.73 s (4 attributed to console commands, 7 unattributed), 4.5% of the boss window against a 2% limit, on the shared round worldserver. That is infrastructure, not the encounter. Run 6bf52232's watchdog plateau came after a real kill: pull 2 (respawned boss guid 183) died at T+466.9 to Cobra Shot, then every bot kept validation_route_advance_pending=true with reason boss_killed for 190 s. Route/terminal scope for the coordinator: check the terminal advance after a wipe, a native reset and a second pull that kills a new boss object. The Feral also died on the killing swing.",
+  "Knockout rule is still a fidelity conflict; the native script is unchanged. Native: 40% at Massacre 1 (+20% per miss, back to 40% after a knockout). DBM: never after Massacre 1; after Massacre 2 or 3; Massacre 3 always. Live round 1 knocked out after Massacre 1 in 2 of 4 pulls, then repeatedly; no WCL kill shows one. No source gives the Massacre 2 probability. Needs several longer WCL 10N kills or wipes (Astra extraction). It moves outage share, and so hunter and melee DPS, between runs. encounter_research stays fidelity_blocked (knockout rule, Slime repeat, berserk).",
+  "Mortality deaths: the user notes they are expected (healing -99%), and WCL fight 27's only tank also died there. The target keeps max_boss_window_deaths 0, so a Mortality-phase exception is a scoreboard policy change that needs an explicit user decision and coordinator tooling. Not changed here.",
+  "Class evidence (class agent; no class files edited): Demonology Warlock 31% (counted kill, 1.56M damage): 24 Drain Life channels (75.5k) and 4 Incinerates, no Shadow Bolt filler, 27 idle max_range_exceeded and 33 movement_requires_instant_action waits, 847 mana_gate rejections of its resource generator. It channels Drain Life at low health, which the mixture floor makes unnecessary. Fire Mage 84%: mana-starved (48 idle mana_gate waits, 1,943 resource_generator mana_gate rejections), and another packet has an uncommitted Combustion edit. Blood DK 80%: WCL-only Blood Tap, Dancing Rune Weapon and Empower Rune Weapon; largest gap Melee to Heart Strike 2.7 s. Survival Hunter WCL-only: Cobra Shot, Kill Shot and Lock and Load (range-blocked, see above).",
+  "Review P1 (GPT-6 Astra) fixed in place: the first column (20/24.5/29.5 yd, 1 yd stack tolerance) accepted a corner with the hunter 0.9 yd back and the middle band 0.9 yd forward, where the hunter's Slime had 1 recipient. Now: front 21.5, middle 25.125 and rear 28.75 yd, band half-width capped at 1.5 yd, and a column-only arrival tolerance of 0.5 yd (StackSlotTolerance; the compact 8 yd ring keeps 1 yd). Static asserts: (band gap)^2 + (2 x half-width)^2 <= (6 - 2 x tolerance)^2 for both neighbour pairs; rear - tolerance > 27.83 yd minimum range; front + tolerance < 22.83 yd melee range. New tests: the hunter-back/middle-forward corner (nobody moves, 6 players share the hunter's Slime), the mirror melee/middle corner, re-positioning just beyond the tolerance, and a 7-member middle band compressed to +/-1.5 yd."
+ ],
+ "patch_requests": [],
+ "risks": [
+  "The outage column splits a Slime six to nine ways instead of ten (neighbouring bands are guaranteed within 6 yd, but the melee and hunter ends are not): casters and the hunter take up to 39k from a Slime on the hunter, and melee/tanks up to 26k. Outage healing is by health percentage, with Barrier and Spirit Link cast from the healers' band.",
+  "Post-Massacre double coverage leaves one raid healer on the raid floor for about 10 s. The window closes 16 s after the cast start, 3 s before Slime resumes. Engage 0-12 s is also inside the window (harmless: the soaker is full).",
+  "The Feud-window push enters Mortality with the Bile-O-Tron still offline. It returns 4 s before Feud ends, so the first doubled swing meets the mixture floor as on the ordinary release. If Feud ends mid-Mortality, the Double Attack tank (who taunted during Feud) takes the doubled Mortality swing unhealable, as on any release.",
+  "Hunter geometry relies on the boss staying near home (the formation centre while he is within 12 yd). The rear column slot is 28.75 yd with a 0.5 yd tolerance, 0.42 yd outside the 27.83 yd minimum range. The column's 0.5 yd tolerance may cause a few more corrective moves than the 1 yd stack tolerance. The 6 yd split is checked in 2D on the flat chamber floor; the spell's own radius check also adds combat reach, so it is conservative.",
+  "All changes are header-only in owned Chimaeron files; a build and a live batch are required before any acceptance claim."
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_strategy.py tests/test_chimaeron_burn.py (first run, before test updates)",
+   "result": "1 failed, 4 passed: test_chimaeron_strategy_decisions_replay failed on checks pinning the old geometry (8 yd outage ring, 22.5 yd spread bound for the hunter, DutiesJson without standoff, Barrier position at the 8 yd stack). This is an intended behavior change and the tests were updated. Relevant, resolved."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_*.py tests/test_cata_raid_research_contracts.py (after the P1 fix, first run)",
+   "result": "1 failed, 34 passed: my new wide-band check reused already-positioned members, so Destinations omitted them (std::out_of_range). Test bug, fixed by resetting positions. Relevant, resolved."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_*.py tests/test_cata_raid_research_contracts.py",
+   "result": "35 passed (after the P1 fix)"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_bot_action_arbitration.py tests/test_bot_content_ownership_layout.py tests/test_native_cast_intent_known_spell.py tests/test_raid_support_runtime.py tests/test_bot_route_prepull_setup_gate.py tests/test_bwd_diagnostic_node_manifests.py",
+   "result": "50 passed (after the P1 fix; 63 with test_cata_raid_research_contracts.py before it)"
+  },
+  {
+   "command": "pixi run python -m tools.raid_program.module_size",
+   "result": "passed (BotChimaeronFormation.h 347 lines)"
+  }
+ ],
+ "validation_neutrality": "Only Chimaeron-owned headers under Encounters/Chimaeron, their tests and research files changed. They run only for the bwd.chimaeron.* route nodes and boss entry 43296, so Stonecore, calibration and legacy Magmaw behavior and results are unchanged. There is no native script, SQL, DamageModifier or shared-runtime change. Live effect needs the round build and a Chimaeron batch."
+}

@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatDamageAttribution.h"
+#include "Bots/BotNativeLifeEvents.h"
 #include "Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
 
 #include "Creature.h"
@@ -15,6 +16,7 @@
 #include "SpellMgr.h"
 #include "Totem.h"
 #include "Unit.h"
+#include "WorldSession.h"
 
 #include <algorithm>
 #include <array>
@@ -295,6 +297,14 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 
     if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
+    // The native death edge (BotNativeLifeEvents.h): DealDamage calls this
+    // with the landed, overkill-free amount just before Unit::Kill sets
+    // JUST_DIED, so a hit reaching a living bot's health is its death.
+    if (Player const* victimPlayer = victim->ToPlayer())
+        if (victimPlayer->IsAlive() && damage && damage >= victimPlayer->GetHealth()
+            && victimPlayer->GetSession() && victimPlayer->GetSession()->IsBotSession())
+            BotNativeLifeEvents::ObserveLethal(victimPlayer->GetGUID().GetCounter(),
+                BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId), NowMs());
     if (!attacker)
     {
         if (damageType == uint32(DOT))

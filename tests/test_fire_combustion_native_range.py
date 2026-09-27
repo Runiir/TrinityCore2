@@ -61,6 +61,7 @@ def test_migrated_rows_through_actual_resolver_native_envelope_and_dot_gate(tmp_
             cases.append(f'assert(check({guid},{old[9]}f,40,37.7469f,true)=="max_range_exceeded");')
             cases.append(f'assert(check({guid},{new[9]}f,40,37.7469f,true).empty());')
     cpp=r'''
+#include "Bots/BotRaidFireCombustionPatience.h"
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -70,11 +71,16 @@ struct Range {unsigned Flags=0;};
 struct SpellInfo {Range range;Range* RangeEntry=&range;float maximum=40;float GetMaxRange(bool)const{return maximum;}};
 struct SpellMgr {SpellInfo info;SpellInfo const* GetSpellInfo(unsigned){return &info;}}mgr;
 auto* sSpellMgr=&mgr;
-struct AuraEffect {int GetAmount()const{return 12000;}};
+// A canonical raid admits a 10k Ignite only after the patience budget, so
+// the canonical build defaults to a strong tick for the range cases.
+int igniteTick=CANONICAL_RAID_SCOPE?BotRaidFireCombustionPatience::StrongIgniteTick:12000;
+struct AuraEffect {int GetAmount()const{return igniteTick;}};
+bool pyroDot=true; // the Hot Streak Pyroblast DoT 92315 on the target
+struct Guid {unsigned value=0;operator unsigned()const{return value;}unsigned long long GetRawValue()const{return value;}};
 struct Actor {unsigned guid=0;bool dots=true;AuraEffect ignite;
- unsigned getClass()const{return CLASS_MAGE;}unsigned GetGUID()const{return guid;}
+ unsigned getClass()const{return CLASS_MAGE;}Guid GetGUID()const{return Guid{guid};}
  AuraEffect const* GetAuraEffect(unsigned id,unsigned index,unsigned owner)const{return dots&&id==12654&&index==0&&(owner==30006||owner==130006)?&ignite:nullptr;}
- bool HasAura(unsigned id,unsigned owner)const{return dots&&(id==44457||id==92315)&&(owner==30006||owner==130006);}
+ bool HasAura(unsigned id,unsigned owner)const{return dots&&(id==44457||(id==92315&&pyroDot))&&(owner==30006||owner==130006);}
  float GetSpellMaxRangeForTarget(Actor*,SpellInfo const* info){return info->maximum;}
  float GetMeleeRange(Actor*)const{return 5;}float GetCombatReach()const{return 1.5f;}
 };
@@ -88,6 +94,8 @@ std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ow
  bool selfTarget=false,densityOnly=false;float minRange=0;ResolvedCombatAction action;
  // Raid scope only widens exact 5 yd melee caps; these Fire rows must not care.
  bool const raidRotationScope=RAID_ROTATION_SCOPE;
+ // BWD round 2: canonical-composition raids make the Pyroblast DoT optional.
+ bool const canonicalRaidScope=CANONICAL_RAID_SCOPE;
 ''' + native + '\nfor(int once=0;once<1;++once){\n' + dots + configured + maximum + '\n}\nreturn candidate.RejectReason;\n}\nint main(){\n' + '\n'.join(cases)+r'''
  assert(check(30006,40,40,40,true).empty());
  assert(check(30006,40,40,40.01f,true)=="max_range_exceeded");
@@ -97,6 +105,14 @@ std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ow
  assert(check(30006,30,40,30.01f,true)=="max_range_exceeded"); // other explicit cap preserved
  assert(check(30006,40,40,37.7469f,false)=="combustion_dot_window_not_ready");
  assert(check(30006,40,40,37.7469f,true).empty());
+ // Ignite and Living Bomb without the Pyroblast DoT: only a canonical raid admits it.
+ pyroDot=false;
+ assert(check(30006,40,40,37.7469f,true)==(CANONICAL_RAID_SCOPE?"":"combustion_dot_window_not_ready"));
+ pyroDot=true;
+ // A weak Ignite waits in a canonical raid (the first decision starts the clock).
+ igniteTick=12000;
+ assert(check(30006,40,40,37.7469f,true)==(CANONICAL_RAID_SCOPE?"combustion_ignite_patience":""));
+ igniteTick=CANONICAL_RAID_SCOPE?BotRaidFireCombustionPatience::StrongIgniteTick:12000;
  assert(check(30006,35,30,33,true,2136).empty());
  assert(check(30006,35,30,33.01f,true,2136)=="max_range_exceeded");
 }
@@ -104,8 +120,10 @@ std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ow
     path=tmp_path/'range.cpp';path.write_text(cpp)
     # The accepted legacy Magmaw Fire mages run in a raid: the result must be
     # identical with and without the round 3 raid rotation scope.
-    for scope in (0,1):
-        binary=tmp_path/f'range_{scope}'
-        result=subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',f'-DRAID_ROTATION_SCOPE={scope}',str(path),'-o',str(binary)],capture_output=True,text=True)
+    # Only a canonical-composition raid (never the legacy scenario, never
+    # outside a raid) relaxes the Combustion DoT window.
+    for scope,canonical in ((0,0),(1,0),(1,1)):
+        binary=tmp_path/f'range_{scope}_{canonical}'
+        result=subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',f'-DRAID_ROTATION_SCOPE={scope}',f'-DCANONICAL_RAID_SCOPE={canonical}','-I',str(ROOT/'src/server/game'),'-I',str(ROOT/'src/common'),str(path),'-o',str(binary)],capture_output=True,text=True)
         assert result.returncode==0,result.stderr
         subprocess.run([str(binary)],check=True)

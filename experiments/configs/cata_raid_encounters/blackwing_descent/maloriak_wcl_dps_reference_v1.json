@@ -3,7 +3,7 @@
   "encounter": "maloriak",
   "mode": "10N",
   "status": "extracted",
-  "status_reason": "Extracted on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's verified Chrome session (one own tab; no verification challenge appeared). Earlier agent-browser attempts on 2026-09-25 and 2026-09-27 had been stopped by the Cloudflare check (access_attempts).",
+  "status_reason": "Extracted on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's verified Chrome session (one own tab; no verification challenge appeared). Earlier agent-browser attempts on 2026-09-25 and 2026-09-27 had been stopped by the Cloudflare check (access_attempts). Round 2 (2026-09-27): six more kills for the Fire Mage and the Assassination Rogue, by the same route (fire_assassination_extraction).",
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight34",
@@ -246,6 +246,1191 @@
           "reason": "boss_tank_role_mismatch: the Guardian tanked Maloriak himself; the bot roster's Feral tanks the adds, so a boss-tank reference is not matched for the add-tank role"
         }
       }
+    },
+    {
+      "id": "ZyH2KkjchMRTdXga-fight33",
+      "url": "https://classic.warcraftlogs.com/reports/ZyH2KkjchMRTdXga?fight=33&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-20",
+      "duration_sec": 131.8,
+      "raid_dps": 155480.9,
+      "average_item_level": 359,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "ZyH2KkjchMRTdXga",
+        "fight": 33,
+        "guild": "Neverwhere",
+        "realm": "Pyrewood Village (EU)",
+        "report_date_display": "Sun Oct 20 2024"
+      },
+      "actor_dps": {
+        "assassination_rogue": 20069.4
+      },
+      "reference_selection": [
+        {
+          "spec": "assassination_rogue",
+          "actor": "Duskstep",
+          "parse_percentile": 49,
+          "dps_all_targets": 20069.4,
+          "dps_boss_only": 20069.4,
+          "item_level": 359,
+          "casts": {
+            "Mutilate": 28,
+            "Backstab": 9,
+            "Rupture": 7,
+            "Slice and Dice": 3,
+            "Garrote": 1,
+            "Vendetta": 1,
+            "Sprint": 1,
+            "Cold Blood": 1
+          },
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 26.41,
+              "casts": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 17.67,
+              "casts": 258
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 14.63,
+              "casts": null
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 11.1,
+              "casts": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 10.89,
+              "casts": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 9.29,
+              "casts": null
+            },
+            {
+              "name": "Backstab",
+              "damage_percent": 3.75,
+              "casts": 9
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 3.72,
+              "casts": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 1.99,
+              "casts": 7
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.56,
+              "casts": 1
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Andushmin",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 28906.3,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Konfusion",
+          "spec": "retribution_paladin",
+          "role": "dps",
+          "dps_displayed": 24119.2,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Lime",
+          "spec": "shadow_priest",
+          "role": "dps",
+          "dps_displayed": 23363.8,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Salcilia",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps_displayed": 21698.1,
+          "dps_boss_only": 21697.9,
+          "item_level": 361
+        },
+        {
+          "name": "Duskstep",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps_displayed": 20069.4,
+          "dps_boss_only": 20069.4,
+          "item_level": 359
+        },
+        {
+          "name": "Chillblane",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps_displayed": 15637.4,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Palahele",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 15544.1,
+          "dps_boss_only": null,
+          "item_level": 354
+        },
+        {
+          "name": "Ironfoe",
+          "spec": "protection_warrior",
+          "role": "tank",
+          "dps_displayed": 6030.5,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Hannibelle",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "dps_displayed": 112,
+          "dps_boss_only": null,
+          "item_level": 361
+        },
+        {
+          "name": "Suebi",
+          "spec": "restoration_druid",
+          "role": "healer",
+          "dps_displayed": null,
+          "dps_boss_only": null,
+          "item_level": 358
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 105.301 s of 131.8 s.",
+      "limitations": [
+        "Selected for the assassination_rogue at a middle parse percentile (49); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds).",
+        "Also present but not selected (parse outside the middle band): Salcilia (fire_mage, parse 78)."
+      ]
+    },
+    {
+      "id": "XzVpNLkxaAFG3DjW-fight18",
+      "url": "https://classic.warcraftlogs.com/reports/XzVpNLkxaAFG3DjW?fight=18&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-22",
+      "duration_sec": 159,
+      "raid_dps": 154897.3,
+      "average_item_level": 359.3,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "XzVpNLkxaAFG3DjW",
+        "fight": 18,
+        "guild": null,
+        "realm": "Mirage Raceway (EU)",
+        "report_date_display": "Tue Oct 22 2024"
+      },
+      "actor_dps": {
+        "assassination_rogue": 21261.6
+      },
+      "reference_selection": [
+        {
+          "spec": "assassination_rogue",
+          "actor": "Mastabator",
+          "parse_percentile": 57,
+          "dps_all_targets": 21261.6,
+          "dps_boss_only": 20840.3,
+          "item_level": 359,
+          "casts": {
+            "Mutilate": 40,
+            "Rupture": 8,
+            "Slice and Dice": 3,
+            "Vendetta": 2,
+            "Fan of Knives": 2,
+            "Cold Blood": 2,
+            "Kick": 2,
+            "Synapse Springs": 1,
+            "Garrote": 1,
+            "Tol'vir Agility": 1,
+            "Vanish": 1,
+            "Berserking": 1
+          },
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 26.86,
+              "casts": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 17.56,
+              "casts": 289
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 13.48,
+              "casts": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 13.07,
+              "casts": null
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 9.93,
+              "casts": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 8.12,
+              "casts": null
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 6.32,
+              "casts": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 3,
+              "casts": 8
+            },
+            {
+              "name": "Fan of Knives",
+              "damage_percent": 1.25,
+              "casts": 2
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.42,
+              "casts": 1
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Shoobering",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 26765.4,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Zenjaar",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps_displayed": 24354.4,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Torcture",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 22932.8,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Krumbee",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps_displayed": 21865.9,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Mastabator",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps_displayed": 21261.6,
+          "dps_boss_only": 20840.3,
+          "item_level": 359
+        },
+        {
+          "name": "Hjärngrepp",
+          "spec": "shadow_priest",
+          "role": "dps",
+          "dps_displayed": 15452.8,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Nôxy",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps_displayed": 15361.1,
+          "dps_boss_only": null,
+          "item_level": 362
+        },
+        {
+          "name": "Kladdet",
+          "spec": "feral_druid_tank",
+          "role": "tank",
+          "dps_displayed": 6502.1,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Deruku",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps_displayed": 254.2,
+          "dps_boss_only": null,
+          "item_level": 357
+        },
+        {
+          "name": "Qihanna",
+          "spec": "restoration_druid",
+          "role": "healer",
+          "dps_displayed": 147,
+          "dps_boss_only": null,
+          "item_level": 358
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 133.776 s of 159 s.",
+      "limitations": [
+        "Selected for the assassination_rogue at a middle parse percentile (57); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
+      ]
+    },
+    {
+      "id": "3pvXdMVntcjxygW4-fight13",
+      "url": "https://classic.warcraftlogs.com/reports/3pvXdMVntcjxygW4?fight=13&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-26",
+      "duration_sec": 174.9,
+      "raid_dps": 135601.4,
+      "average_item_level": 358.1,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "3pvXdMVntcjxygW4",
+        "fight": 13,
+        "guild": null,
+        "realm": "Faerlina (US)",
+        "report_date_display": "Sat Oct 26 2024"
+      },
+      "actor_dps": {
+        "assassination_rogue": 20150.2
+      },
+      "reference_selection": [
+        {
+          "spec": "assassination_rogue",
+          "actor": "Teabo",
+          "parse_percentile": 48,
+          "dps_all_targets": 20150.2,
+          "dps_boss_only": 19981,
+          "item_level": 358,
+          "casts": {
+            "Mutilate": 38,
+            "Backstab": 10,
+            "Rupture": 8,
+            "Vendetta": 2,
+            "Slice and Dice": 2,
+            "Cold Blood": 2,
+            "Kick": 1,
+            "Garrote": 1,
+            "Cloak of Shadows": 1
+          },
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 22.35,
+              "casts": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 15.65,
+              "casts": 295
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 14.72,
+              "casts": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 14.61,
+              "casts": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 10.64,
+              "casts": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 8.68,
+              "casts": null
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 5.69,
+              "casts": null
+            },
+            {
+              "name": "Backstab",
+              "damage_percent": 4.24,
+              "casts": 10
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 2.78,
+              "casts": 8
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.65,
+              "casts": 1
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Makâjind",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 23034.6,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Teabo",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps_displayed": 20150.2,
+          "dps_boss_only": 19981,
+          "item_level": 358
+        },
+        {
+          "name": "Kittykijo",
+          "spec": "demonology_warlock",
+          "role": "dps",
+          "dps_displayed": 20060.4,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Shockstraps",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 19316.6,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Firsthunt",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 17666.2,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Inphusion",
+          "spec": "marksmanship_hunter",
+          "role": "dps",
+          "dps_displayed": 12713.2,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Mîght",
+          "spec": "feral_druid_tank",
+          "role": "tank",
+          "dps_displayed": 10746.1,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Bladeelf",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps_displayed": 6841.9,
+          "dps_boss_only": null,
+          "item_level": 353
+        },
+        {
+          "name": "Buusiep",
+          "spec": "discipline_priest",
+          "role": "healer",
+          "dps_displayed": 4657.4,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Sealcurse",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps_displayed": 414.7,
+          "dps_boss_only": null,
+          "item_level": 359
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 142.21 s of 174.9 s.",
+      "limitations": [
+        "Selected for the assassination_rogue at a middle parse percentile (48); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
+      ]
+    },
+    {
+      "id": "h1LaC3FZ8BwPrbXW-fight18",
+      "url": "https://classic.warcraftlogs.com/reports/h1LaC3FZ8BwPrbXW?fight=18&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-01",
+      "duration_sec": 137.5,
+      "raid_dps": 149179,
+      "average_item_level": 361,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "h1LaC3FZ8BwPrbXW",
+        "fight": 18,
+        "guild": "Les vieux casus",
+        "realm": "Sulfuron (EU)",
+        "report_date_display": "Mon Sep 30 2024"
+      },
+      "actor_dps": {
+        "fire_mage": 18125.7
+      },
+      "reference_selection": [
+        {
+          "spec": "fire_mage",
+          "actor": "Mapiti",
+          "parse_percentile": 52,
+          "dps_all_targets": 18125.7,
+          "dps_boss_only": 18125.7,
+          "item_level": 358,
+          "casts": {
+            "Fireball": 48,
+            "Living Bomb": 7,
+            "Hot Streak": 6,
+            "Impact": 6,
+            "Pyroblast!": 5,
+            "Spellsteal": 5,
+            "Fire Blast": 5,
+            "Flame Orb": 2,
+            "Combustion": 2,
+            "Replenish Mana": 1,
+            "Pyroblast": 1,
+            "Mirror Image": 1,
+            "Berserking": 1
+          },
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 44.03,
+              "casts": 48
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 16.36,
+              "casts": null
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 10.98,
+              "casts": 5
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 10.66,
+              "casts": 7
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 6.21,
+              "casts": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 2.59,
+              "casts": null
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 2.49,
+              "casts": 1
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 2.42,
+              "casts": 2
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 1.8,
+              "casts": 1
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 1.3,
+              "casts": 5
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.53,
+              "casts": 2
+            },
+            {
+              "name": "Volcanic Destruction",
+              "damage_percent": 0.47,
+              "casts": null
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.17,
+              "casts": null
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Wanhedaa",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 25812.5,
+          "dps_boss_only": null,
+          "item_level": 363
+        },
+        {
+          "name": "Pergna",
+          "spec": "enhancement_shaman",
+          "role": "dps",
+          "dps_displayed": 23298.6,
+          "dps_boss_only": null,
+          "item_level": 362
+        },
+        {
+          "name": "Sangka",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps_displayed": 22548.2,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Adachi",
+          "spec": "balance_druid",
+          "role": "dps",
+          "dps_displayed": 19460.9,
+          "dps_boss_only": null,
+          "item_level": 361
+        },
+        {
+          "name": "Mapiti",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps_displayed": 18125.7,
+          "dps_boss_only": 18125.7,
+          "item_level": 358
+        },
+        {
+          "name": "Nesca",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 15409.7,
+          "dps_boss_only": null,
+          "item_level": 361
+        },
+        {
+          "name": "Trydk",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps_displayed": 15367.5,
+          "dps_boss_only": null,
+          "item_level": 363
+        },
+        {
+          "name": "Chocola",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps_displayed": 7938.2,
+          "dps_boss_only": null,
+          "item_level": 363
+        },
+        {
+          "name": "Arthëa",
+          "spec": "holy_priest",
+          "role": "healer",
+          "dps_displayed": 974.6,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Strickadine",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps_displayed": 243.1,
+          "dps_boss_only": null,
+          "item_level": 360
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 106.465 s of 137.5 s.",
+      "limitations": [
+        "Selected for the fire_mage at a middle parse percentile (52); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
+      ]
+    },
+    {
+      "id": "hmAcWCt3njMR4HFT-fight12",
+      "url": "https://classic.warcraftlogs.com/reports/hmAcWCt3njMR4HFT?fight=12&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-23",
+      "duration_sec": 153.8,
+      "raid_dps": 148594.5,
+      "average_item_level": 358.4,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "hmAcWCt3njMR4HFT",
+        "fight": 12,
+        "guild": "Les Enfants du Père Noël",
+        "realm": "Auberdine (EU)",
+        "report_date_display": "Wed Oct 23 2024"
+      },
+      "actor_dps": {
+        "fire_mage": 18244.2
+      },
+      "reference_selection": [
+        {
+          "spec": "fire_mage",
+          "actor": "Mugiwaraya",
+          "parse_percentile": 50,
+          "dps_all_targets": 18244.2,
+          "dps_boss_only": 17985.8,
+          "item_level": 358,
+          "casts": {
+            "Fireball": 47,
+            "Living Bomb": 12,
+            "Hot Streak!": 12,
+            "Impact": 9,
+            "Pyroblast!": 8,
+            "Pyroblast": 4,
+            "Flame Orb": 2,
+            "Combustion": 2,
+            "Mirror Image": 1,
+            "Fire Blast": 1,
+            "Blast Wave": 1,
+            "Spellsteal": 1
+          },
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 36.24,
+              "casts": 47
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 15.33,
+              "casts": 12
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 14.88,
+              "casts": null
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 13,
+              "casts": 8
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 6.09,
+              "casts": 4
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 5.46,
+              "casts": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 3.99,
+              "casts": null
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 1.79,
+              "casts": 2
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 1.62,
+              "casts": 1
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.94,
+              "casts": 2
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 0.32,
+              "casts": 1
+            },
+            {
+              "name": "Blast Wave",
+              "damage_percent": 0.18,
+              "casts": 1
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.11,
+              "casts": null
+            },
+            {
+              "name": "Molten Armor",
+              "damage_percent": 0.04,
+              "casts": null
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Jbee",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 28194,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Visdoom",
+          "spec": "shadow_priest",
+          "role": "dps",
+          "dps_displayed": 25195.5,
+          "dps_boss_only": null,
+          "item_level": 357
+        },
+        {
+          "name": "Rîzla",
+          "spec": "assassination_rogue",
+          "role": "dps",
+          "dps_displayed": 22523.9,
+          "dps_boss_only": 22226.2,
+          "item_level": 356
+        },
+        {
+          "name": "Mugiwaraya",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps_displayed": 18244.2,
+          "dps_boss_only": 17985.8,
+          "item_level": 358
+        },
+        {
+          "name": "Eissan",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps_displayed": 17786.5,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Ticlin",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 17223.7,
+          "dps_boss_only": null,
+          "item_level": 354
+        },
+        {
+          "name": "Papabarbu",
+          "spec": "blood_death_knight",
+          "role": "tank",
+          "dps_displayed": 12003.8,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Ezekkiel",
+          "spec": "protection_warrior",
+          "role": "tank",
+          "dps_displayed": 6398.7,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Anøør",
+          "spec": "restoration_druid",
+          "role": "healer",
+          "dps_displayed": 994.6,
+          "dps_boss_only": null,
+          "item_level": 362
+        },
+        {
+          "name": "Paltronas",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps_displayed": 29.5,
+          "dps_boss_only": null,
+          "item_level": 358
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 134.075 s of 153.8 s.",
+      "limitations": [
+        "Selected for the fire_mage at a middle parse percentile (50); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds).",
+        "Also present but not selected (parse outside the middle band): Rîzla (assassination_rogue, parse 70)."
+      ]
+    },
+    {
+      "id": "cCXgM3dx9YGKaDt7-fight28",
+      "url": "https://classic.warcraftlogs.com/reports/cCXgM3dx9YGKaDt7?fight=28&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-11",
+      "duration_sec": 157.9,
+      "raid_dps": 158981.1,
+      "average_item_level": 358.9,
+      "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "report": {
+        "code": "cCXgM3dx9YGKaDt7",
+        "fight": 28,
+        "guild": "Parabelloum guilde",
+        "realm": "Auberdine (EU)",
+        "report_date_display": "Thu Oct 10 2024"
+      },
+      "actor_dps": {
+        "fire_mage": 19159.7
+      },
+      "reference_selection": [
+        {
+          "spec": "fire_mage",
+          "actor": "Halinor",
+          "parse_percentile": 50,
+          "dps_all_targets": 19159.7,
+          "dps_boss_only": 17902.9,
+          "item_level": 358,
+          "casts": {
+            "Fireball": 39,
+            "Scorch": 13,
+            "Living Bomb": 12,
+            "Hot Streak!": 11,
+            "Pyroblast!": 8,
+            "Impact": 5,
+            "Fire Blast": 4,
+            "Flame Orb": 3,
+            "Blast Wave": 3,
+            "Pyroblast": 2,
+            "Combustion": 2,
+            "Flamestrike": 1,
+            "Replenish Mana": 1,
+            "Volcanic Power": 1,
+            "Mirror Image": 1,
+            "Soul Power": 1
+          },
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 29.5,
+              "casts": 39
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 13.82,
+              "casts": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 13.65,
+              "casts": 12
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 10.76,
+              "casts": 8
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 8.76,
+              "casts": null
+            },
+            {
+              "name": "Scorch",
+              "damage_percent": 4.72,
+              "casts": 13
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 3.47,
+              "casts": null
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 3.3,
+              "casts": 2
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 3.22,
+              "casts": 3
+            },
+            {
+              "name": "Blast Wave",
+              "damage_percent": 1.87,
+              "casts": 3
+            },
+            {
+              "name": "Flamestrike",
+              "damage_percent": 1.83,
+              "casts": null
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 1.68,
+              "casts": 1
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 1.14,
+              "casts": 4
+            },
+            {
+              "name": "Flamestrike",
+              "damage_percent": 0.64,
+              "casts": 1
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.61,
+              "casts": 2
+            },
+            {
+              "name": "Volcanic Destruction",
+              "damage_percent": 0.54,
+              "casts": null
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.49,
+              "casts": null
+            },
+            {
+              "name": "Molten Armor",
+              "damage_percent": 0.01,
+              "casts": null
+            }
+          ]
+        }
+      ],
+      "actors": [
+        {
+          "name": "Darkvanas",
+          "spec": "frost_death_knight",
+          "role": "dps",
+          "dps_displayed": 26611.4,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Théalose",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps_displayed": 25848.3,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Kirìtø",
+          "spec": "arms_warrior",
+          "role": "dps",
+          "dps_displayed": 25277.1,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Halinor",
+          "spec": "fire_mage",
+          "role": "dps",
+          "dps_displayed": 19159.7,
+          "dps_boss_only": 17902.9,
+          "item_level": 358
+        },
+        {
+          "name": "Klaasou",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps_displayed": 18567,
+          "dps_boss_only": null,
+          "item_level": 358
+        },
+        {
+          "name": "Dalnarion",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps_displayed": 14613.1,
+          "dps_boss_only": null,
+          "item_level": 359
+        },
+        {
+          "name": "Skoutespuce",
+          "spec": "affliction_warlock",
+          "role": "dps",
+          "dps_displayed": 13891.3,
+          "dps_boss_only": null,
+          "item_level": 357
+        },
+        {
+          "name": "Paperwall",
+          "spec": "feral_druid_tank",
+          "role": "tank",
+          "dps_displayed": 9234.8,
+          "dps_boss_only": null,
+          "item_level": 360
+        },
+        {
+          "name": "Roselys",
+          "spec": "discipline_priest",
+          "role": "healer",
+          "dps_displayed": 5373.9,
+          "dps_boss_only": null,
+          "item_level": 362
+        },
+        {
+          "name": "Goignou",
+          "spec": "holy_paladin",
+          "role": "healer",
+          "dps_displayed": 404.4,
+          "dps_boss_only": null,
+          "item_level": 360
+        }
+      ],
+      "phase_coverage": "Release All Minions (25%) cast completed at 124.771 s of 157.9 s.",
+      "limitations": [
+        "Selected for the fire_mage at a middle parse percentile (50); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
+        "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
+        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
+      ]
     }
   ],
   "extraction_plan": {
@@ -291,7 +1476,7 @@
     }
   },
   "consumers": [
-    "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json (matched_reference_ids stays empty until a verified entry exists)",
+    "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json (matched_reference_ids lists every reference id here)",
     "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json (unresolved: wcl_matched_melee_damage_stage_for_damage_modifier_calibration, normal_health_and_enrage_values, live_timer_and_movement_confirmation_for_10N_10H_25N_25H)"
   ],
   "access_attempts": [
@@ -330,5 +1515,15 @@
       "result": "loaded; Guardian-tank kill found via rankings; summary, damage done, enemy casts and three players' casts read",
       "source_ref": "wcl_VL3fW9wNm2PRJDYt_13"
     }
-  ]
+  ],
+  "fire_assassination_extraction": {
+    "date": "2026-09-27",
+    "route": "GPT-6 Astra (codex exec) through the Codex Chrome plugin in the user's Chrome (profile Runiir), one own tab; no verification challenge appeared",
+    "selection": "WCL Maloriak 10N rankings (zone 1023, encounter 1025) for Fire Mage and Assassination Rogue; three kills per spec whose selected player shows a middle fight Parse % (Fire 52/50/50, Assassination 49/57/48), verified on the fight page (Maloriak, Normal, 10 player, kill). Ranking rows were only a discovery index.",
+    "raw_extract": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_fire_assassination_extract_v1.json",
+    "medians": {
+      "fire_mage": 18244.2,
+      "assassination_rogue": 20150.2
+    }
+  }
 }

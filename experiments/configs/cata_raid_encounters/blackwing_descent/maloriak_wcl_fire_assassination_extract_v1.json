@@ -1,0 +1,1811 @@
+{
+  "schema": "maloriak_wcl_fire_assassination_extract_v1",
+  "source": "GPT-6 Astra through the Codex Chrome plugin (user Chrome, profile Runiir), 2026-09-27; verbatim extraction output",
+  "consumer": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+  "extracted_at": "2026-09-27T09:58:13Z",
+  "kills": [
+    {
+      "report": "ZyH2KkjchMRTdXga",
+      "fight": 33,
+      "url": "https://classic.warcraftlogs.com/reports/ZyH2KkjchMRTdXga?fight=33&type=damage-done",
+      "date": "2024-10-20",
+      "guild": "Neverwhere",
+      "realm": "Pyrewood Village (EU)",
+      "duration_sec": 131.8,
+      "raid_dps": 155480.9,
+      "average_item_level": 359,
+      "rank_percentile_of_target_players": {
+        "Salcilia": 78,
+        "Duskstep": 49
+      },
+      "p2_transition_sec": 105.301,
+      "actors": [
+        {
+          "name": "Andushmin",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "3.81m",
+          "dps_all": 28906.3,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 1
+        },
+        {
+          "name": "Konfusion",
+          "spec": "Paladin-Retribution",
+          "role": "DPS",
+          "damage": "3.18m",
+          "dps_all": 24119.2,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 2
+        },
+        {
+          "name": "Lime",
+          "spec": "Priest-Shadow",
+          "role": "DPS",
+          "damage": "3.08m",
+          "dps_all": 23363.8,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 6
+        },
+        {
+          "name": "Salcilia",
+          "spec": "Mage-Fire",
+          "role": "DPS",
+          "damage": "2.86m",
+          "dps_all": 21698.1,
+          "dps_boss_only": 21697.9,
+          "item_level": 361,
+          "actor_id": 4
+        },
+        {
+          "name": "Duskstep",
+          "spec": "Rogue-Assassination",
+          "role": "DPS",
+          "damage": "2.65m",
+          "dps_all": 20069.4,
+          "dps_boss_only": 20069.4,
+          "item_level": 359,
+          "actor_id": 8
+        },
+        {
+          "name": "Chillblane",
+          "spec": "DeathKnight-Blood",
+          "role": "Tank",
+          "damage": "2.06m",
+          "dps_all": 15637.4,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 9
+        },
+        {
+          "name": "Palahele",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "2.05m",
+          "dps_all": 15544.1,
+          "dps_boss_only": null,
+          "item_level": 354,
+          "actor_id": 3
+        },
+        {
+          "name": "Ironfoe",
+          "spec": "Warrior-Protection",
+          "role": "Tank",
+          "damage": "795.0k",
+          "dps_all": 6030.5,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 7
+        },
+        {
+          "name": "Hannibelle",
+          "spec": "Shaman-Restoration",
+          "role": "Healer",
+          "damage": "14.8k",
+          "dps_all": 112,
+          "dps_boss_only": null,
+          "item_level": 361,
+          "actor_id": 11
+        },
+        {
+          "name": "Suebi",
+          "spec": "Druid-Restoration",
+          "role": "Healer",
+          "damage": null,
+          "dps_all": null,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": null
+        }
+      ],
+      "breakdowns": {
+        "Salcilia": {
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 43.07,
+              "damage": "1.23m",
+              "casts": 51,
+              "hits": 51,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 17.05,
+              "damage": "487.7k",
+              "casts": 8,
+              "hits": "8 (30)",
+              "uptime_percent": 56.24
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 12.83,
+              "damage": "367.1k",
+              "casts": 9,
+              "hits": 50,
+              "uptime_percent": 89.24
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 12.81,
+              "damage": "366.5k",
+              "casts": null,
+              "hits": 28,
+              "uptime_percent": null
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 6.16,
+              "damage": "176.1k",
+              "casts": null,
+              "hits": 12,
+              "uptime_percent": 7.45
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 3.86,
+              "damage": "110.4k",
+              "casts": null,
+              "hits": 9,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 2.17,
+              "damage": "62.1k",
+              "casts": 1,
+              "hits": 33,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 1.42,
+              "damage": "40.7k",
+              "casts": null,
+              "hits": "1 (5)",
+              "uptime_percent": 9.3
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.33,
+              "damage": "9.6k",
+              "casts": 1,
+              "hits": 1,
+              "uptime_percent": null
+            },
+            {
+              "name": "Scorch",
+              "damage_percent": 0.29,
+              "damage": "8.2k",
+              "casts": 1,
+              "hits": 1,
+              "uptime_percent": null
+            },
+            {
+              "name": "Molten Armor",
+              "damage_percent": 0,
+              "damage": "34.0",
+              "casts": null,
+              "hits": 1,
+              "uptime_percent": null
+            }
+          ],
+          "casts": {
+            "Fireball": 51,
+            "Hot Streak": 10,
+            "Living Bomb": 9,
+            "Pyroblast!": 8,
+            "Impact": 6,
+            "Spellsteal": 3,
+            "Counterspell": 3,
+            "Synapse Springs": 2,
+            "Time Warp": 1,
+            "Scorch": 1,
+            "Mirror Image": 1,
+            "Soul Power": 1,
+            "Combustion": 1,
+            "Volcanic Power": 1
+          }
+        },
+        "Duskstep": {
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 26.41,
+              "damage": "698.7k",
+              "casts": null,
+              "hits": 151,
+              "uptime_percent": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 17.67,
+              "damage": "467.5k",
+              "casts": 258,
+              "hits": 206,
+              "uptime_percent": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 14.63,
+              "damage": "387.2k",
+              "casts": null,
+              "hits": 42,
+              "uptime_percent": 97.34
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 11.1,
+              "damage": "293.6k",
+              "casts": null,
+              "hits": 10,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 10.89,
+              "damage": "288.0k",
+              "casts": null,
+              "hits": 25,
+              "uptime_percent": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 9.29,
+              "damage": "245.7k",
+              "casts": null,
+              "hits": 32,
+              "uptime_percent": null
+            },
+            {
+              "name": "Backstab",
+              "damage_percent": 3.75,
+              "damage": "99.3k",
+              "casts": 9,
+              "hits": 8,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 3.72,
+              "damage": "98.5k",
+              "casts": null,
+              "hits": 25,
+              "uptime_percent": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 1.99,
+              "damage": "52.7k",
+              "casts": 7,
+              "hits": 44,
+              "uptime_percent": 67.8
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.56,
+              "damage": "14.8k",
+              "casts": 1,
+              "hits": 6,
+              "uptime_percent": 13.65
+            }
+          ],
+          "casts": {
+            "Mutilate": 28,
+            "Backstab": 9,
+            "Rupture": 7,
+            "Slice and Dice": 3,
+            "Garrote": 1,
+            "Vendetta": 1,
+            "Sprint": 1,
+            "Cold Blood": 1
+          }
+        }
+      },
+      "boss_actor_id": 200,
+      "release_all_minions_events": [
+        {
+          "time": "01:43.801",
+          "type": "Begin Cast",
+          "time_sec": 103.801
+        },
+        {
+          "time": "01:45.301",
+          "type": "Cast",
+          "time_sec": 105.301
+        }
+      ],
+      "report_date_display": "Sun Oct 20 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/ZyH2KkjchMRTdXga?fight=33&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/ZyH2KkjchMRTdXga?fight=33&type=damage-done&target=200",
+      "reference_players": [
+        "Duskstep"
+      ]
+    },
+    {
+      "report": "XzVpNLkxaAFG3DjW",
+      "fight": 18,
+      "url": "https://classic.warcraftlogs.com/reports/XzVpNLkxaAFG3DjW?fight=18&type=damage-done",
+      "date": "2024-10-22",
+      "guild": null,
+      "realm": "Mirage Raceway (EU)",
+      "duration_sec": 159,
+      "raid_dps": 154897.3,
+      "average_item_level": 359.3,
+      "rank_percentile_of_target_players": {
+        "Mastabator": 57
+      },
+      "p2_transition_sec": 133.776,
+      "actors": [
+        {
+          "name": "Shoobering",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "4.26m",
+          "dps_all": 26765.4,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 4
+        },
+        {
+          "name": "Zenjaar",
+          "spec": "DeathKnight-Unholy",
+          "role": "DPS",
+          "damage": "3.87m",
+          "dps_all": 24354.4,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 9
+        },
+        {
+          "name": "Torcture",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "3.65m",
+          "dps_all": 22932.8,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 6
+        },
+        {
+          "name": "Krumbee",
+          "spec": "Warrior-Arms",
+          "role": "DPS",
+          "damage": "3.48m",
+          "dps_all": 21865.9,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 5
+        },
+        {
+          "name": "Mastabator",
+          "spec": "Rogue-Assassination",
+          "role": "DPS",
+          "damage": "3.38m",
+          "dps_all": 21261.6,
+          "dps_boss_only": 20840.3,
+          "item_level": 359,
+          "actor_id": 1
+        },
+        {
+          "name": "Hj\u00e4rngrepp",
+          "spec": "Priest-Shadow",
+          "role": "DPS",
+          "damage": "2.46m",
+          "dps_all": 15452.8,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 2
+        },
+        {
+          "name": "N\u00f4xy",
+          "spec": "DeathKnight-Blood",
+          "role": "Tank",
+          "damage": "2.44m",
+          "dps_all": 15361.1,
+          "dps_boss_only": null,
+          "item_level": 362,
+          "actor_id": 8
+        },
+        {
+          "name": "Kladdet",
+          "spec": "Druid-Guardian",
+          "role": "Tank",
+          "damage": "1.03m",
+          "dps_all": 6502.1,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 7
+        },
+        {
+          "name": "Deruku",
+          "spec": "Paladin-Holy",
+          "role": "Healer",
+          "damage": "40.4k",
+          "dps_all": 254.2,
+          "dps_boss_only": null,
+          "item_level": 357,
+          "actor_id": 20
+        },
+        {
+          "name": "Qihanna",
+          "spec": "Druid-Restoration",
+          "role": "Healer",
+          "damage": "23.4k",
+          "dps_all": 147,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 3
+        }
+      ],
+      "breakdowns": {
+        "Mastabator": {
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 26.86,
+              "damage": "908.1k",
+              "casts": null,
+              "hits": 192,
+              "uptime_percent": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 17.56,
+              "damage": "593.6k",
+              "casts": 289,
+              "hits": 249,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 13.48,
+              "damage": "455.8k",
+              "casts": null,
+              "hits": 37,
+              "uptime_percent": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 13.07,
+              "damage": "441.8k",
+              "casts": null,
+              "hits": 52,
+              "uptime_percent": 99.8
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 9.93,
+              "damage": "335.8k",
+              "casts": null,
+              "hits": 11,
+              "uptime_percent": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 8.12,
+              "damage": "274.7k",
+              "casts": null,
+              "hits": 39,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 6.32,
+              "damage": "213.9k",
+              "casts": null,
+              "hits": 37,
+              "uptime_percent": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 3,
+              "damage": "101.4k",
+              "casts": 8,
+              "hits": 65,
+              "uptime_percent": 82.48
+            },
+            {
+              "name": "Fan of Knives",
+              "damage_percent": 1.25,
+              "damage": "42.2k",
+              "casts": 2,
+              "hits": 11,
+              "uptime_percent": null
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.42,
+              "damage": "14.2k",
+              "casts": 1,
+              "hits": 6,
+              "uptime_percent": 11.32
+            }
+          ],
+          "casts": {
+            "Mutilate": 40,
+            "Rupture": 8,
+            "Slice and Dice": 3,
+            "Vendetta": 2,
+            "Fan of Knives": 2,
+            "Cold Blood": 2,
+            "Kick": 2,
+            "Synapse Springs": 1,
+            "Garrote": 1,
+            "Tol'vir Agility": 1,
+            "Vanish": 1,
+            "Berserking": 1
+          }
+        }
+      },
+      "boss_actor_id": 69,
+      "release_all_minions_events": [
+        {
+          "time": "02:12.301",
+          "type": "Begin Cast",
+          "time_sec": 132.301
+        },
+        {
+          "time": "02:13.776",
+          "type": "Cast",
+          "time_sec": 133.776
+        }
+      ],
+      "report_date_display": "Tue Oct 22 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/XzVpNLkxaAFG3DjW?fight=18&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/XzVpNLkxaAFG3DjW?fight=18&type=damage-done&target=69",
+      "reference_players": [
+        "Mastabator"
+      ]
+    },
+    {
+      "report": "3pvXdMVntcjxygW4",
+      "fight": 13,
+      "url": "https://classic.warcraftlogs.com/reports/3pvXdMVntcjxygW4?fight=13&type=damage-done",
+      "date": "2024-10-26",
+      "guild": null,
+      "realm": "Faerlina (US)",
+      "duration_sec": 174.9,
+      "raid_dps": 135601.4,
+      "average_item_level": 358.1,
+      "rank_percentile_of_target_players": {
+        "Teabo": 48
+      },
+      "p2_transition_sec": 142.21,
+      "actors": [
+        {
+          "name": "Mak\u00e2jind",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "4.03m",
+          "dps_all": 23034.6,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 20
+        },
+        {
+          "name": "Teabo",
+          "spec": "Rogue-Assassination",
+          "role": "DPS",
+          "damage": "3.52m",
+          "dps_all": 20150.2,
+          "dps_boss_only": 19981,
+          "item_level": 358,
+          "actor_id": 7
+        },
+        {
+          "name": "Kittykijo",
+          "spec": "Warlock-Demonology",
+          "role": "DPS",
+          "damage": "3.51m",
+          "dps_all": 20060.4,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 12
+        },
+        {
+          "name": "Shockstraps",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "3.38m",
+          "dps_all": 19316.6,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 6
+        },
+        {
+          "name": "Firsthunt",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "3.09m",
+          "dps_all": 17666.2,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 9
+        },
+        {
+          "name": "Inphusion",
+          "spec": "Hunter-Marksmanship",
+          "role": "DPS",
+          "damage": "2.22m",
+          "dps_all": 12713.2,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 41
+        },
+        {
+          "name": "M\u00eeght",
+          "spec": "Druid-Guardian",
+          "role": "Tank",
+          "damage": "1.88m",
+          "dps_all": 10746.1,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 17
+        },
+        {
+          "name": "Bladeelf",
+          "spec": "Paladin-Protection",
+          "role": "Tank",
+          "damage": "1.20m",
+          "dps_all": 6841.9,
+          "dps_boss_only": null,
+          "item_level": 353,
+          "actor_id": 18
+        },
+        {
+          "name": "Buusiep",
+          "spec": "Priest-Discipline",
+          "role": "Healer",
+          "damage": "814.6k",
+          "dps_all": 4657.4,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 11
+        },
+        {
+          "name": "Sealcurse",
+          "spec": "Paladin-Holy",
+          "role": "Healer",
+          "damage": "72.5k",
+          "dps_all": 414.7,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 4
+        }
+      ],
+      "breakdowns": {
+        "Teabo": {
+          "abilities": [
+            {
+              "name": "Instant Poison",
+              "damage_percent": 22.35,
+              "damage": "787.7k",
+              "casts": null,
+              "hits": 159,
+              "uptime_percent": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 15.65,
+              "damage": "551.5k",
+              "casts": 295,
+              "hits": 227,
+              "uptime_percent": null
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 14.72,
+              "damage": "518.6k",
+              "casts": null,
+              "hits": 15,
+              "uptime_percent": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 14.61,
+              "damage": "514.8k",
+              "casts": null,
+              "hits": 56,
+              "uptime_percent": 98.12
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 10.64,
+              "damage": "375.0k",
+              "casts": null,
+              "hits": 35,
+              "uptime_percent": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 8.68,
+              "damage": "306.0k",
+              "casts": null,
+              "hits": 39,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate Off-Hand",
+              "damage_percent": 5.69,
+              "damage": "200.7k",
+              "casts": null,
+              "hits": 35,
+              "uptime_percent": null
+            },
+            {
+              "name": "Backstab",
+              "damage_percent": 4.24,
+              "damage": "149.6k",
+              "casts": 10,
+              "hits": 10,
+              "uptime_percent": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 2.78,
+              "damage": "97.8k",
+              "casts": 8,
+              "hits": 61,
+              "uptime_percent": 70.26
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 0.65,
+              "damage": "22.8k",
+              "casts": 1,
+              "hits": 6,
+              "uptime_percent": 10.3
+            }
+          ],
+          "casts": {
+            "Mutilate": 38,
+            "Backstab": 10,
+            "Rupture": 8,
+            "Vendetta": 2,
+            "Slice and Dice": 2,
+            "Cold Blood": 2,
+            "Kick": 1,
+            "Garrote": 1,
+            "Cloak of Shadows": 1
+          }
+        }
+      },
+      "boss_actor_id": 99,
+      "release_all_minions_events": [
+        {
+          "time": "02:20.725",
+          "type": "Begin Cast",
+          "time_sec": 140.725
+        },
+        {
+          "time": "02:22.210",
+          "type": "Cast",
+          "time_sec": 142.21
+        }
+      ],
+      "report_date_display": "Sat Oct 26 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/3pvXdMVntcjxygW4?fight=13&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/3pvXdMVntcjxygW4?fight=13&type=damage-done&target=99",
+      "reference_players": [
+        "Teabo"
+      ]
+    },
+    {
+      "report": "h1LaC3FZ8BwPrbXW",
+      "fight": 18,
+      "url": "https://classic.warcraftlogs.com/reports/h1LaC3FZ8BwPrbXW?fight=18&type=damage-done",
+      "date": "2024-10-01",
+      "guild": "Les vieux casus",
+      "realm": "Sulfuron (EU)",
+      "duration_sec": 137.5,
+      "raid_dps": 149179,
+      "average_item_level": 361,
+      "rank_percentile_of_target_players": {
+        "Mapiti": 52
+      },
+      "p2_transition_sec": 106.465,
+      "actors": [
+        {
+          "name": "Wanhedaa",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "3.55m",
+          "dps_all": 25812.5,
+          "dps_boss_only": null,
+          "item_level": 363,
+          "actor_id": 10
+        },
+        {
+          "name": "Pergna",
+          "spec": "Shaman-Enhancement",
+          "role": "DPS",
+          "damage": "3.20m",
+          "dps_all": 23298.6,
+          "dps_boss_only": null,
+          "item_level": 362,
+          "actor_id": 1
+        },
+        {
+          "name": "Sangka",
+          "spec": "DeathKnight-Unholy",
+          "role": "DPS",
+          "damage": "3.10m",
+          "dps_all": 22548.2,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 2
+        },
+        {
+          "name": "Adachi",
+          "spec": "Druid-Balance",
+          "role": "DPS",
+          "damage": "2.68m",
+          "dps_all": 19460.9,
+          "dps_boss_only": null,
+          "item_level": 361,
+          "actor_id": 3
+        },
+        {
+          "name": "Mapiti",
+          "spec": "Mage-Fire",
+          "role": "DPS",
+          "damage": "2.49m",
+          "dps_all": 18125.7,
+          "dps_boss_only": 18125.7,
+          "item_level": 358,
+          "actor_id": 9
+        },
+        {
+          "name": "Nesca",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "2.12m",
+          "dps_all": 15409.7,
+          "dps_boss_only": null,
+          "item_level": 361,
+          "actor_id": 4
+        },
+        {
+          "name": "Trydk",
+          "spec": "DeathKnight-Blood",
+          "role": "Tank",
+          "damage": "2.11m",
+          "dps_all": 15367.5,
+          "dps_boss_only": null,
+          "item_level": 363,
+          "actor_id": 5
+        },
+        {
+          "name": "Chocola",
+          "spec": "Paladin-Protection",
+          "role": "Tank",
+          "damage": "1.09m",
+          "dps_all": 7938.2,
+          "dps_boss_only": null,
+          "item_level": 363,
+          "actor_id": 8
+        },
+        {
+          "name": "Arth\u00eba",
+          "spec": "Priest-Holy",
+          "role": "Healer",
+          "damage": "134.0k",
+          "dps_all": 974.6,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 7
+        },
+        {
+          "name": "Strickadine",
+          "spec": "Paladin-Holy",
+          "role": "Healer",
+          "damage": "33.4k",
+          "dps_all": 243.1,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 6
+        }
+      ],
+      "breakdowns": {
+        "Mapiti": {
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 44.03,
+              "damage": "1.10m",
+              "casts": 48,
+              "hits": 45,
+              "uptime_percent": null
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 16.36,
+              "damage": "407.8k",
+              "casts": null,
+              "hits": 35,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 10.98,
+              "damage": "273.6k",
+              "casts": 5,
+              "hits": "5 (24)",
+              "uptime_percent": 42.69
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 10.66,
+              "damage": "265.7k",
+              "casts": 7,
+              "hits": 34,
+              "uptime_percent": 60.85
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 6.21,
+              "damage": "154.7k",
+              "casts": null,
+              "hits": 27,
+              "uptime_percent": 14.79
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 2.59,
+              "damage": "64.5k",
+              "casts": null,
+              "hits": 5,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 2.49,
+              "damage": "62.0k",
+              "casts": 1,
+              "hits": 40,
+              "uptime_percent": null
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 2.42,
+              "damage": "60.3k",
+              "casts": 2,
+              "hits": 21,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 1.8,
+              "damage": "44.7k",
+              "casts": 1,
+              "hits": "1 (5)",
+              "uptime_percent": 9.44
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 1.3,
+              "damage": "32.5k",
+              "casts": 5,
+              "hits": 4,
+              "uptime_percent": null
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.53,
+              "damage": "13.3k",
+              "casts": 2,
+              "hits": 2,
+              "uptime_percent": null
+            },
+            {
+              "name": "Volcanic Destruction",
+              "damage_percent": 0.47,
+              "damage": "11.8k",
+              "casts": null,
+              "hits": 3,
+              "uptime_percent": null
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.17,
+              "damage": "4.1k",
+              "casts": null,
+              "hits": 1,
+              "uptime_percent": null
+            }
+          ],
+          "casts": {
+            "Fireball": 48,
+            "Living Bomb": 7,
+            "Hot Streak": 6,
+            "Impact": 6,
+            "Pyroblast!": 5,
+            "Spellsteal": 5,
+            "Fire Blast": 5,
+            "Flame Orb": 2,
+            "Combustion": 2,
+            "Replenish Mana": 1,
+            "Pyroblast": 1,
+            "Mirror Image": 1,
+            "Berserking": 1
+          }
+        }
+      },
+      "boss_actor_id": 103,
+      "release_all_minions_events": [
+        {
+          "time": "01:44.953",
+          "type": "Begin Cast",
+          "time_sec": 104.953
+        },
+        {
+          "time": "01:46.465",
+          "type": "Cast",
+          "time_sec": 106.465
+        }
+      ],
+      "report_date_display": "Mon Sep 30 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/h1LaC3FZ8BwPrbXW?fight=18&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/h1LaC3FZ8BwPrbXW?fight=18&type=damage-done&target=103",
+      "reference_players": [
+        "Mapiti"
+      ]
+    },
+    {
+      "report": "hmAcWCt3njMR4HFT",
+      "fight": 12,
+      "url": "https://classic.warcraftlogs.com/reports/hmAcWCt3njMR4HFT?fight=12&type=damage-done",
+      "date": "2024-10-23",
+      "guild": "Les Enfants du P\u00e8re No\u00ebl",
+      "realm": "Auberdine (EU)",
+      "duration_sec": 153.8,
+      "raid_dps": 148594.5,
+      "average_item_level": 358.4,
+      "rank_percentile_of_target_players": {
+        "R\u00eezla": 70,
+        "Mugiwaraya": 50
+      },
+      "p2_transition_sec": 134.075,
+      "actors": [
+        {
+          "name": "Jbee",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "4.34m",
+          "dps_all": 28194,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 1
+        },
+        {
+          "name": "Visdoom",
+          "spec": "Priest-Shadow",
+          "role": "DPS",
+          "damage": "3.87m",
+          "dps_all": 25195.5,
+          "dps_boss_only": null,
+          "item_level": 357,
+          "actor_id": 4
+        },
+        {
+          "name": "R\u00eezla",
+          "spec": "Rogue-Assassination",
+          "role": "DPS",
+          "damage": "3.46m",
+          "dps_all": 22523.9,
+          "dps_boss_only": 22226.2,
+          "item_level": 356,
+          "actor_id": 10
+        },
+        {
+          "name": "Mugiwaraya",
+          "spec": "Mage-Fire",
+          "role": "DPS",
+          "damage": "2.81m",
+          "dps_all": 18244.2,
+          "dps_boss_only": 17985.8,
+          "item_level": 358,
+          "actor_id": 12
+        },
+        {
+          "name": "Eissan",
+          "spec": "Warrior-Arms",
+          "role": "DPS",
+          "damage": "2.74m",
+          "dps_all": 17786.5,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 11
+        },
+        {
+          "name": "Ticlin",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "2.65m",
+          "dps_all": 17223.7,
+          "dps_boss_only": null,
+          "item_level": 354,
+          "actor_id": 8
+        },
+        {
+          "name": "Papabarbu",
+          "spec": "DeathKnight-Blood",
+          "role": "Tank",
+          "damage": "1.85m",
+          "dps_all": 12003.8,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 6
+        },
+        {
+          "name": "Ezekkiel",
+          "spec": "Warrior-Protection",
+          "role": "Tank",
+          "damage": "983.9k",
+          "dps_all": 6398.7,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 3
+        },
+        {
+          "name": "An\u00f8\u00f8r",
+          "spec": "Druid-Restoration",
+          "role": "Healer",
+          "damage": "152.9k",
+          "dps_all": 994.6,
+          "dps_boss_only": null,
+          "item_level": 362,
+          "actor_id": 5
+        },
+        {
+          "name": "Paltronas",
+          "spec": "Paladin-Holy",
+          "role": "Healer",
+          "damage": "4.5k",
+          "dps_all": 29.5,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 7
+        }
+      ],
+      "breakdowns": {
+        "R\u00eezla": {
+          "abilities": [
+            {
+              "name": "Wound Poison",
+              "damage_percent": 27.39,
+              "damage": "948.7k",
+              "casts": null,
+              "hits": 193,
+              "uptime_percent": null
+            },
+            {
+              "name": "Melee",
+              "damage_percent": 17.26,
+              "damage": "597.7k",
+              "casts": 278,
+              "hits": 231,
+              "uptime_percent": null
+            },
+            {
+              "name": "Deadly Poison",
+              "damage_percent": 13.56,
+              "damage": "469.6k",
+              "casts": null,
+              "hits": 49,
+              "uptime_percent": 95.62
+            },
+            {
+              "name": "Envenom",
+              "damage_percent": 12.14,
+              "damage": "420.5k",
+              "casts": null,
+              "hits": 16,
+              "uptime_percent": null
+            },
+            {
+              "name": "Venomous Wound",
+              "damage_percent": 8.58,
+              "damage": "297.2k",
+              "casts": null,
+              "hits": 37,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 6.77,
+              "damage": "234.5k",
+              "casts": null,
+              "hits": 25,
+              "uptime_percent": null
+            },
+            {
+              "name": "Backstab",
+              "damage_percent": 6.68,
+              "damage": "231.4k",
+              "casts": 10,
+              "hits": 10,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mutilate",
+              "damage_percent": 3.77,
+              "damage": "130.4k",
+              "casts": null,
+              "hits": 25,
+              "uptime_percent": null
+            },
+            {
+              "name": "Rupture",
+              "damage_percent": 2.2,
+              "damage": "76.3k",
+              "casts": 8,
+              "hits": 58,
+              "uptime_percent": 75.95
+            },
+            {
+              "name": "Garrote",
+              "damage_percent": 1,
+              "damage": "34.7k",
+              "casts": 2,
+              "hits": 12,
+              "uptime_percent": 23.42
+            },
+            {
+              "name": "Fan of Knives",
+              "damage_percent": 0.61,
+              "damage": "21.3k",
+              "casts": 3,
+              "hits": 7,
+              "uptime_percent": null
+            },
+            {
+              "name": "Shiv",
+              "damage_percent": 0.03,
+              "damage": "1.1k",
+              "casts": null,
+              "hits": 1,
+              "uptime_percent": null
+            }
+          ],
+          "casts": {
+            "Mutilate": 28,
+            "Backstab": 10,
+            "Rupture": 8,
+            "Fan of Knives": 3,
+            "Lifeblood": 2,
+            "Cold Blood": 2,
+            "Kick": 2,
+            "Vendetta": 2,
+            "Garrote": 2,
+            "Vanish": 1,
+            "Sprint": 1,
+            "Tol'vir Agility": 1,
+            "Slice and Dice": 1,
+            "Cloak of Shadows": 1
+          }
+        },
+        "Mugiwaraya": {
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 36.24,
+              "damage": "1.02m",
+              "casts": 47,
+              "hits": 45,
+              "uptime_percent": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 15.33,
+              "damage": "430.0k",
+              "casts": 12,
+              "hits": 54,
+              "uptime_percent": 87.72
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 14.88,
+              "damage": "417.4k",
+              "casts": null,
+              "hits": 44,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 13,
+              "damage": "364.8k",
+              "casts": 8,
+              "hits": "8 (36)",
+              "uptime_percent": 59.89
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 6.09,
+              "damage": "171.0k",
+              "casts": 4,
+              "hits": "4 (11)",
+              "uptime_percent": 18.77
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 5.46,
+              "damage": "153.3k",
+              "casts": null,
+              "hits": 27,
+              "uptime_percent": 13.12
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 3.99,
+              "damage": "112.0k",
+              "casts": null,
+              "hits": 11,
+              "uptime_percent": null
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 1.79,
+              "damage": "50.3k",
+              "casts": 2,
+              "hits": 19,
+              "uptime_percent": null
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 1.62,
+              "damage": "45.5k",
+              "casts": 1,
+              "hits": 44,
+              "uptime_percent": null
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.94,
+              "damage": "26.4k",
+              "casts": 2,
+              "hits": 2,
+              "uptime_percent": null
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 0.32,
+              "damage": "9.0k",
+              "casts": 1,
+              "hits": 1,
+              "uptime_percent": null
+            },
+            {
+              "name": "Blast Wave",
+              "damage_percent": 0.18,
+              "damage": "5.1k",
+              "casts": 1,
+              "hits": 1,
+              "uptime_percent": null
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.11,
+              "damage": "3.1k",
+              "casts": null,
+              "hits": 1,
+              "uptime_percent": null
+            },
+            {
+              "name": "Molten Armor",
+              "damage_percent": 0.04,
+              "damage": "1,000.0",
+              "casts": null,
+              "hits": 3,
+              "uptime_percent": null
+            }
+          ],
+          "casts": {
+            "Fireball": 47,
+            "Living Bomb": 12,
+            "Hot Streak!": 12,
+            "Impact": 9,
+            "Pyroblast!": 8,
+            "Pyroblast": 4,
+            "Flame Orb": 2,
+            "Combustion": 2,
+            "Mirror Image": 1,
+            "Fire Blast": 1,
+            "Blast Wave": 1,
+            "Spellsteal": 1
+          }
+        }
+      },
+      "boss_actor_id": 57,
+      "release_all_minions_events": [
+        {
+          "time": "02:12.584",
+          "type": "Begin Cast",
+          "time_sec": 132.584
+        },
+        {
+          "time": "02:14.075",
+          "type": "Cast",
+          "time_sec": 134.075
+        }
+      ],
+      "report_date_display": "Wed Oct 23 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/hmAcWCt3njMR4HFT?fight=12&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/hmAcWCt3njMR4HFT?fight=12&type=damage-done&target=57",
+      "reference_players": [
+        "Mugiwaraya"
+      ]
+    },
+    {
+      "report": "cCXgM3dx9YGKaDt7",
+      "fight": 28,
+      "url": "https://classic.warcraftlogs.com/reports/cCXgM3dx9YGKaDt7?fight=28&type=damage-done",
+      "date": "2024-10-11",
+      "guild": "Parabelloum guilde",
+      "realm": "Auberdine (EU)",
+      "duration_sec": 157.9,
+      "raid_dps": 158981.1,
+      "average_item_level": 358.9,
+      "rank_percentile_of_target_players": {
+        "Halinor": 50
+      },
+      "p2_transition_sec": 124.771,
+      "actors": [
+        {
+          "name": "Darkvanas",
+          "spec": "DeathKnight-Frost",
+          "role": "DPS",
+          "damage": "4.20m",
+          "dps_all": 26611.4,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 12
+        },
+        {
+          "name": "Th\u00e9alose",
+          "spec": "Shaman-Elemental",
+          "role": "DPS",
+          "damage": "4.08m",
+          "dps_all": 25848.3,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 1
+        },
+        {
+          "name": "Kir\u00ect\u00f8",
+          "spec": "Warrior-Arms",
+          "role": "DPS",
+          "damage": "3.99m",
+          "dps_all": 25277.1,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 8
+        },
+        {
+          "name": "Halinor",
+          "spec": "Mage-Fire",
+          "role": "DPS",
+          "damage": "3.02m",
+          "dps_all": 19159.7,
+          "dps_boss_only": 17902.9,
+          "item_level": 358,
+          "actor_id": 10
+        },
+        {
+          "name": "Klaasou",
+          "spec": "Hunter-Survival",
+          "role": "DPS",
+          "damage": "2.93m",
+          "dps_all": 18567,
+          "dps_boss_only": null,
+          "item_level": 358,
+          "actor_id": 14
+        },
+        {
+          "name": "Dalnarion",
+          "spec": "Paladin-Protection",
+          "role": "Tank",
+          "damage": "2.31m",
+          "dps_all": 14613.1,
+          "dps_boss_only": null,
+          "item_level": 359,
+          "actor_id": 2
+        },
+        {
+          "name": "Skoutespuce",
+          "spec": "Warlock-Affliction",
+          "role": "DPS",
+          "damage": "2.19m",
+          "dps_all": 13891.3,
+          "dps_boss_only": null,
+          "item_level": 357,
+          "actor_id": 4
+        },
+        {
+          "name": "Paperwall",
+          "spec": "Druid-Guardian",
+          "role": "Tank",
+          "damage": "1.46m",
+          "dps_all": 9234.8,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 3
+        },
+        {
+          "name": "Roselys",
+          "spec": "Priest-Discipline",
+          "role": "Healer",
+          "damage": "848.4k",
+          "dps_all": 5373.9,
+          "dps_boss_only": null,
+          "item_level": 362,
+          "actor_id": 9
+        },
+        {
+          "name": "Goignou",
+          "spec": "Paladin-Holy",
+          "role": "Healer",
+          "damage": "63.8k",
+          "dps_all": 404.4,
+          "dps_boss_only": null,
+          "item_level": 360,
+          "actor_id": 13
+        }
+      ],
+      "breakdowns": {
+        "Halinor": {
+          "abilities": [
+            {
+              "name": "Fireball",
+              "damage_percent": 29.5,
+              "damage": "892.2k",
+              "casts": 39,
+              "hits": 38,
+              "uptime_percent": null
+            },
+            {
+              "name": "Ignite",
+              "damage_percent": 13.82,
+              "damage": "417.9k",
+              "casts": null,
+              "hits": 49,
+              "uptime_percent": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 13.65,
+              "damage": "412.7k",
+              "casts": 12,
+              "hits": 60,
+              "uptime_percent": 92
+            },
+            {
+              "name": "Pyroblast!",
+              "damage_percent": 10.76,
+              "damage": "325.5k",
+              "casts": 8,
+              "hits": "7 (32)",
+              "uptime_percent": 47.09
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 8.76,
+              "damage": "265.0k",
+              "casts": null,
+              "hits": 24,
+              "uptime_percent": 13.05
+            },
+            {
+              "name": "Scorch",
+              "damage_percent": 4.72,
+              "damage": "142.8k",
+              "casts": 13,
+              "hits": 13,
+              "uptime_percent": null
+            },
+            {
+              "name": "Living Bomb",
+              "damage_percent": 3.47,
+              "damage": "105.0k",
+              "casts": null,
+              "hits": 8,
+              "uptime_percent": null
+            },
+            {
+              "name": "Pyroblast",
+              "damage_percent": 3.3,
+              "damage": "99.8k",
+              "casts": 2,
+              "hits": "2 (9)",
+              "uptime_percent": 16.07
+            },
+            {
+              "name": "Flame Orb",
+              "damage_percent": 3.22,
+              "damage": "97.3k",
+              "casts": 3,
+              "hits": 34,
+              "uptime_percent": null
+            },
+            {
+              "name": "Blast Wave",
+              "damage_percent": 1.87,
+              "damage": "56.5k",
+              "casts": 3,
+              "hits": 11,
+              "uptime_percent": 3.8
+            },
+            {
+              "name": "Flamestrike",
+              "damage_percent": 1.83,
+              "damage": "55.4k",
+              "casts": null,
+              "hits": "11 (23)",
+              "uptime_percent": 11.77
+            },
+            {
+              "name": "Mirror Image",
+              "damage_percent": 1.68,
+              "damage": "50.8k",
+              "casts": 1,
+              "hits": 27,
+              "uptime_percent": null
+            },
+            {
+              "name": "Fire Blast",
+              "damage_percent": 1.14,
+              "damage": "34.6k",
+              "casts": 4,
+              "hits": 4,
+              "uptime_percent": null
+            },
+            {
+              "name": "Flamestrike",
+              "damage_percent": 0.64,
+              "damage": "19.3k",
+              "casts": 1,
+              "hits": "3 (7)",
+              "uptime_percent": 4.84
+            },
+            {
+              "name": "Combustion",
+              "damage_percent": 0.61,
+              "damage": "18.4k",
+              "casts": 2,
+              "hits": 2,
+              "uptime_percent": null
+            },
+            {
+              "name": "Volcanic Destruction",
+              "damage_percent": 0.54,
+              "damage": "16.5k",
+              "casts": null,
+              "hits": 4,
+              "uptime_percent": null
+            },
+            {
+              "name": "Fire Power",
+              "damage_percent": 0.49,
+              "damage": "14.9k",
+              "casts": null,
+              "hits": 2,
+              "uptime_percent": null
+            },
+            {
+              "name": "Molten Armor",
+              "damage_percent": 0.01,
+              "damage": "278.0",
+              "casts": null,
+              "hits": 1,
+              "uptime_percent": null
+            }
+          ],
+          "casts": {
+            "Fireball": 39,
+            "Scorch": 13,
+            "Living Bomb": 12,
+            "Hot Streak!": 11,
+            "Pyroblast!": 8,
+            "Impact": 5,
+            "Fire Blast": 4,
+            "Flame Orb": 3,
+            "Blast Wave": 3,
+            "Pyroblast": 2,
+            "Combustion": 2,
+            "Flamestrike": 1,
+            "Replenish Mana": 1,
+            "Volcanic Power": 1,
+            "Mirror Image": 1,
+            "Soul Power": 1
+          }
+        }
+      },
+      "boss_actor_id": 118,
+      "release_all_minions_events": [
+        {
+          "time": "02:03.268",
+          "type": "Begin Cast",
+          "time_sec": 123.268
+        },
+        {
+          "time": "02:04.771",
+          "type": "Cast",
+          "time_sec": 124.771
+        }
+      ],
+      "report_date_display": "Thu Oct 10 2024",
+      "boss": "Maloriak",
+      "encounter_id": 1025,
+      "difficulty": "Normal",
+      "size": 10,
+      "kill": true,
+      "all_targets_url": "https://classic.warcraftlogs.com/reports/cCXgM3dx9YGKaDt7?fight=28&type=damage-done&options=8192",
+      "boss_only_url": "https://classic.warcraftlogs.com/reports/cCXgM3dx9YGKaDt7?fight=28&type=damage-done&target=118",
+      "reference_players": [
+        "Halinor"
+      ]
+    }
+  ],
+  "notes": [
+    "Read rendered innerText in one new tab in the already-running Chrome profile Runiir. All six fight pages showed Maloriak Normal (10 Player), Kill; encounter 1025, zone 1023.",
+    "Three primary Fire Mage references: Mapiti 52, Mugiwaraya 50, Halinor 50. Three primary Assassination Rogue references: Duskstep 49, Mastabator 57, Teabo 48. These are the displayed fight Parse % values, not ranking-list positions. Salcilia 78 and R\u00eezla 70 were also present and are included as additional players, not middle-percentile reference selections.",
+    "Default Phase 2 damage tables state: Damage done to Aberrations and Prime Subjects is excluded in the P2 partition. Damage done to non-boss enemies during Phase 2 is excluded. raid_dps, damage, dps_all and ability breakdowns use the rendered View Unfiltered Damage link (options=8192) so all-target damage is included. Percentiles come from the default ranking-filtered view. Boss-only DPS comes from the Maloriak target filter.",
+    "Damage amounts retain the displayed k/m rounding. Duplicate ability names and parenthesized hit counts are preserved as displayed. Hidden collapsed pet child rows were omitted; the visible Mirror Image aggregate is included.",
+    "Null ability casts or uptime means the damage table displayed a dash. The casts dictionaries reproduce only rows shown in the Casts view; missing abilities, including Envenom, have not been inferred from damage hits.",
+    "dps_boss_only is null for specs other than Fire Mage and Assassination Rogue because it was not requested for them.",
+    "Suebi appears in the ZyH2KkjchMRTdXga summary as a Restoration Druid healer at item level 358, but is absent from the unfiltered damage table. Damage, DPS and actor ID are null rather than inferred as zero.",
+    "Guild is null for XzVpNLkxaAFG3DjW and 3pvXdMVntcjxygW4 because the report headers show Personal Logs. Their realm values come from the selected players ranking entries, not a claim that every raid member shares that realm.",
+    "date uses the ranking-entry kill date with the report year. report_date_display preserves the report creation date. Mapiti ranks on Oct 1 in a report created Sep 30; Halinor ranks on Oct 11 in a report created Oct 10 and the fight header shows 12:04 AM.",
+    "p2_transition_sec is the Release All Minions completed Cast event timestamp. Both Begin Cast and Cast timestamps are retained in release_all_minions_events; this avoids inferring an exact health-threshold crossing.",
+    "Supplied discovery reports checked: MxFq7TRbvnjGY1hJ fight 34 has neither requested spec (its Rogue is Combat); VL3fW9wNm2PRJDYt fight 13 has neither requested class; Y8ajQ7dbmKMG1RZy lists no Maloriak encounter; xAhkN2y9YP3KRmnJ lists a 0:53 Maloriak 10-player Normal kill but was not selected. No human-verification or Cloudflare challenge appeared."
+  ]
+}

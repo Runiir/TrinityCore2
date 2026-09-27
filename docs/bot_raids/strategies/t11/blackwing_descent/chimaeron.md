@@ -4,7 +4,13 @@ Status (2026-09-27, raid program round 1): research packet, native script audit 
 strategy are done. Warcraft Logs (WCL) 10N data from two kills now resolves health, the boss
 melee DamageModifier (20, promoted to `sql/custom/world`), the first Caustic Slime timer and the DPS references (see
 "WCL 10N observations"). Other claims stay unresolved, so the fidelity state is still
-`fidelity_blocked`.
+`fidelity_blocked`. Round 2 of the raid program (2026-09-27) diagnoses the round-1 runs (see "Live
+evidence: raid program round 1") and makes these changes:
+
+- It keeps the native Break/Double Attack timers.
+- Healers pre-heal the Double Attack soaker after each Massacre.
+- The raid pushes during Feud and releases the hold when a tank is down.
+- Hunters stand beyond their minimum range.
 The fidelity target is Cataclysm Classic 4.4.2 (build 59185); the execution client is
 4.3.4 (build 15595). This page separates encounter truth, current repository behavior
 and the bot tactic. Machine-readable files:
@@ -80,7 +86,7 @@ shows "20.7m"), the native value. The guide's 25.9M is not what Classic ran. 25N
 | --- | --- | --- | --- |
 | Massacre | 26 s, then 30 s | DBM 26/30, BigWigs 25 | agree |
 | Break and Double Attack | 5 s, then 15 s | DBM 4.5/15, BigWigs 4.8/14.2; WCL 4.6 s, then every third swing (14.4 s) | agree within a swing |
-| Break after Massacre start | 11 s | DBM 14, BigWigs 13.6; WCL 13.6 s twice, on a swing | conflict (open, see below) |
+| Break after Massacre start | 11 s | DBM 14, BigWigs 13.6; WCL 13.6 s twice, on a swing | native timer kept (doubled swing 13.5 s live) |
 | Caustic Slime after Massacre start | 19 s | DBM 19; WCL impacts at +21.5 s (flight) | agree |
 | First Caustic Slime after engage | 15 s (was 5 s until 2026-09-27) | BigWigs 15; WCL impacts at 17.2 s | agree (repaired) |
 | Knockout | 40/60/80/100% per Massacre | DBM: after the 2nd or 3rd, the 3rd always | conflict |
@@ -107,13 +113,26 @@ Round-2 repairs in `boss_chimaeron.cpp`:
 5. (2026-09-27) The first Caustic Slime is scheduled at 15 s instead of 5 s. BigWigs and the WCL
    kill agree: the first impacts land at 17.2/17.5 s, after the missile flight, and none earlier.
 
+Decided (2026-09-27, raid program round 2): Break and Double Attack keep the native 11 s/15 s
+timers. In WCL they land on a melee swing (every third swing, and the second swing after
+Massacre's swing reset, 13.6 s after the cast start at 4.8 s swings). Live round 1 with the native
+timers put the doubled swing 13.5 s after each Massacre cast start and 14.6 s apart otherwise
+(4.87 s swings under Frost Fever), within one swing of WCL. A swing-bound model would change no
+observable 10N timing. The one real difference is when Break lands:
+
+- natively at 11 s, instantly on the current victim, which is the Break tank who holds the boss;
+- with a swing-bound model, on the doubled swing, which after the taunt is the Double Attack tank.
+
+So the timer suits the two-tank exchange. Heroic and 25N (2 s swings) should be rechecked before
+reuse.
+
 Still deferred:
 
-- Break and Double Attack after a Massacre. In WCL they land on a melee swing: every third swing,
-  and on the second swing after Massacre's swing reset (13.6 s after the cast start at 4.8 s
-  swings). The native code uses 11 s/15 s timers. A fixed 13.6 s timer would only match one swing
-  speed, so this needs an implementation decision (swing-bound or timer), not a constant swap.
-- The knockout rule.
+- The knockout rule. Native: 40% at the first Massacre, +20% per miss, back to 40% after a
+  knockout. DBM: never after the first Massacre, after the 2nd or 3rd, the 3rd always. Round 1
+  knocked out after Massacre 1 in 2 of 4 pulls, then kept knocking out (Massacres 1-3 and 1-4 in a
+  row), so the boss was pacified for most of those kills. Neither WCL kill had a knockout at
+  Massacre 1 or 2. No source gives the Massacre 2 probability, so the native rule is unchanged.
 - The Slime repeat: native 5 s, while the WCL impacts are 5.9-6.4 s apart (2 intervals).
 
 The boss melee DamageModifier for 10N is 20, derived from WCL. The migration was promoted to
@@ -160,12 +179,30 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - Double Attack tank 13 yd at -60 degrees;
   - up to three melee 11 yd behind (±30 degrees for two, 60 degrees apart for three);
   - healers, then ranged DPS, 22 yd behind over ±75 degrees (at most six; melee reach against
-    Chimaeron is 22.8 yd); any overflow sits on a 33 yd arc 20 degrees apart.
+    Chimaeron is 22.8 yd);
+  - hunters first on a 33 yd arc 20 degrees apart, then any overflow. A hunter's shots have a
+    5 yd minimum range that `Spell::GetMinMaxRange` extends by the melee range, 27.8 yd from
+    the boss centre against his 20 yd reach. In round 1 the Survival Hunter on the 22 yd arc was
+    rejected with `min_range_required` and meleed instead.
 
   The formation centre is the boss's home while he is tanked in place. Slots are clamped to the
   Bile-O-Tron patrol extent.
-- **Outage** (no mixture): everyone, tanks included, stacks on a 1.5 yd ring 8 yd behind the boss,
-  so every Slime is split across the raid. Healer cooldowns:
+- **Outage** (no mixture): without a living hunter everyone, tanks included, stacks on a 1.5 yd
+  ring 8 yd behind the boss, so every Slime is split across the raid. With one, the stack is a
+  column on the rear axis. Within a band members are 1 yd apart sideways, compressed so the band
+  is at most ±1.5 yd wide:
+  - tanks and melee at 21.5 yd (inside the 22.8 yd melee range);
+  - healers and casters at 25.1 yd;
+  - hunters at 28.75 yd (beyond 27.8 yd).
+
+  The column's arrival tolerance is 0.5 yd, not the stack's 1 yd. With it, two members of
+  neighbouring bands are within 6 yd even when each is off its slot by the full tolerance directly
+  away from the other. Static asserts in `BotChimaeronFormation.h` enforce this, and a test covers
+  the worst corner. A Slime on either end is therefore still shared by six to nine players.
+
+  The first version (bands at 20/24.5/29.5 yd with a 1 yd tolerance) failed that corner in
+  review: with the hunter 0.9 yd back and the middle band 0.9 yd forward, the hunter's Slime had
+  one recipient. Healer cooldowns, cast from the healers' band:
   - the Discipline Priest casts Power Word: Barrier at 16.5-12 s of Feud remaining (Slimes resume);
   - the Restoration Shaman casts Spirit Link Totem at 11-7 s.
 - **Taunt exchange:**
@@ -179,7 +216,16 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - under Mortality nobody taunts.
 - **Healing:**
   - the boss victim at or below 20,000 gets the tank healer and the first raid healer;
-  - the Double Attack tank is healed toward full while a doubled swing is due;
+  - the Double Attack soaker is healed toward 95% while a doubled swing is due. The soaker is the
+    Double Attack tank, or the victim once no second tank lives.
+  - A swing is due while the charge is up, and also in the post-Massacre window. That window uses
+    the native Massacre timer at 26-14 s: from the end of the cast until one swing after the 11 s
+    reschedule. It also covers the first 12 s after engage.
+  - In that window the first raid healer joins the tank healer on the soaker once the victim is
+    off the floor, and the third healer starts on the raid floor. No Caustic Slime lands before
+    19 s after the cast start. Round 1 lost both tanks to exactly this swing: the Feral at 34%
+    health and the Blood DK at 65% with 4 Break stacks. The Discipline Priest and the Restoration
+    Shaman were healing DPS players at 1 health.
   - every mixture-protected player at or below 20,000 health (bot margin over the 10,000 floor) is
     healed in health order, and the healers split that list;
   - during an outage, healers heal by health percentage;
@@ -189,8 +235,13 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - from 23%, non-tanks hold damage; tanks keep attacking above 21.5% (threat, Death Strike) and
     hold below it, so their damage cannot carry the boss into Mortality;
   - the release needs readiness: mixture up, no Massacre casting or due within 8 s, both tanks at
-    80% or more (the Break tank is healed to 80% inside the window). The hold is bounded: after two
-    Massacre cycles (60 s) or with fewer than two living healers it releases anyway;
+    80% or more (the Break tank is healed to 80% inside the window);
+  - a Feud with 10 s or more left also releases, with both tanks at 80% or more. The pacified
+    boss cannot swing, and Mortality stops Slime and Massacre, so this is the safest push. Round 1
+    held 12-27 s at 20-23% during Feud.
+  - fewer than two living tanks also releases: nobody is left to take the boss fresh.
+  - The hold is bounded: after two Massacre cycles (60 s) or with fewer than two living healers it
+    releases anyway;
   - last chance: if damage the hold cannot stop (damage over time, pets) carries the boss to 21%
     unreleased, the handoff arms anyway while the non-tanks keep waiting for the release. The 1%
     margin is about 12.5 s of the hold's residual damage, longer than the 8 s taunt cooldown, so a
@@ -241,6 +292,34 @@ HTTP requests still get the Cloudflare page. Report `Y8ajQ7dbmKMG1RZy` has no Ch
   two tanks and the taunt exchange. The matched DPS targets (median across both kills) are Blood DK
   25,888.5, Survival Hunter 37,218.05 and Retribution Paladin 25,345.0. Fire Mage, Assassination
   Rogue and Demonology Warlock keep the WoWSims fallback, and the Feral tank has no reference.
+
+## Live evidence: raid program round 1 (2026-09-27)
+
+Label `blackwing_descent_10n-r01-553da85c98`, DamageModifier 20 live (`encounter_fidelity.boss_melee`
+mean ratio 0.95-1.01 to WCL). T is the first boss melee.
+
+| Run | Outcome | Massacres with a knockout | Deaths |
+| --- | --- | --- | --- |
+| 521c17d8 | clear, 131.5 s | 1, 2, 3 | Feral in Mortality at T+130.5, 1 s before the kill |
+| 250536fd | clear, 144.1 s, excluded (world-tick stalls 4.5% > 2%) | 1, 2, 3, 4 | none |
+| 6bf52232 | pull 1 wiped at 8.4%; pull 2 killed at T+466.9; watchdog plateau | pull 1: 3; pull 2: 3 | 12 |
+
+- **The wipe (6bf52232 pull 1).** No knockout at Massacres 1 and 2, so the boss kept swinging.
+  1. The doubled swing 9.5 s after Massacre 2 found the Feral at 83,041 health: hit 1 left 1,
+     hit 2 killed.
+  2. The next doubled swing, 15 s later, found the Blood DK alone at 146,575 health with 4 Break
+     stacks: 137,363, then lethal.
+  3. The hold at 23% then kept a tankless raid waiting through a Feud while Mortality came. The
+     boss killed the raid one member at a time down to 8.4%.
+- **Pull 2.** It killed the boss. The route's terminal advance (`boss_killed`) stayed pending for
+  190 s with the Feral dead, and `semantic_progress_plateau_watchdog` ended the run. That is route
+  scope, not this strategy.
+- **Excluded run (250536fd).** The stall was 11 native world-tick stalls of 0.5-0.73 s, 4
+  attributed to console commands, on the shared round worldserver. That is infrastructure.
+- **Survival Hunter at 33%.** He stood on the 22 yd arc in the spread and 8 yd behind the boss in
+  the outage stack. Both are inside his 27.8 yd minimum range, which gave
+  `min_range_required` 138 idle waits and 1,300+ shot rejections, and 82 melee swings at 22.8 yd.
+  Only DoT ticks, the pet and melee did damage. Both runs spent most of the fight in outage.
 
 ## Open items (unresolved)
 

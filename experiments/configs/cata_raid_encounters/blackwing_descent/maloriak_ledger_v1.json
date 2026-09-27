@@ -311,7 +311,7 @@
       "accessed": "2026-09-26",
       "claims": [
         "Never interrupt Release Aberrations: let every release through and kill each pack of 3 as it comes, ideally during Green (Debilitating Slime); 10N has 18 in reserve.",
-        "Hard switch at 30%: every DPS stops damaging Maloriak and kills adds until every Aberration is dead and the chambers are empty; phase two starts with 0 Aberrations and only the two Prime Subjects. No DoTs started or refreshed on him during the switch; ticking DoTs are fine. Pets and guardians switch to adds too.",
+        "Hard switch at 30% (moved to 50% by user_raid_experience_20260927): every DPS stops damaging Maloriak and kills adds until every Aberration is dead and the chambers are empty; phase two starts with 0 Aberrations and only the two Prime Subjects. No DoTs started or refreshed on him during the switch; ticking DoTs are fine. Pets and guardians switch to adds too.",
         "The Blood DK main tank keeps full damage on Maloriak throughout, including the switch (Death Strike keeps him healthy).",
         "Remedy: dispelled above 30% (mage Spellsteal, then Purge, hunter, priest); from 30% until all adds are dead nobody dispels it, so his self-heal offsets the tank's damage and keeps him above 25%; dispelled again once the adds are dead and the reserve is empty.",
         "Hunter Misdirection and rogue Tricks of the Trade on the Feral off-tank, timed for each release.",
@@ -361,6 +361,77 @@
       "mode": "10N",
       "claim": "Maloriak, Normal, 10 players, kill, 3:29 (209.6 s), Red/Blue/Green vials before 25%. Summary composition, damage done, 92 enemy cast rows, 449 completed casts for Labraizz (Guardian tank), Tsubii and Xenass (Demonology).",
       "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome; discovery through the Maloriak 10N rankings, fight page verified. Raw capture ~/.cache/maloriak_wcl/task4_result.json."
+    },
+    "wcl_ZyH2KkjchMRTdXga_33": {
+      "title": "Warcraft Logs report ZyH2KkjchMRTdXga fight 33: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (Neverwhere, Pyrewood Village (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/ZyH2KkjchMRTdXga?fight=33",
+      "published": "2024-10-20",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 131.8 s; selected for Duskstep (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "wcl_XzVpNLkxaAFG3DjW_18": {
+      "title": "Warcraft Logs report XzVpNLkxaAFG3DjW fight 18: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (personal log, Mirage Raceway (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/XzVpNLkxaAFG3DjW?fight=18",
+      "published": "2024-10-22",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 159 s; selected for Mastabator (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "wcl_3pvXdMVntcjxygW4_13": {
+      "title": "Warcraft Logs report 3pvXdMVntcjxygW4 fight 13: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (personal log, Faerlina (US))",
+      "url": "https://classic.warcraftlogs.com/reports/3pvXdMVntcjxygW4?fight=13",
+      "published": "2024-10-26",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 174.9 s; selected for Teabo (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "wcl_h1LaC3FZ8BwPrbXW_18": {
+      "title": "Warcraft Logs report h1LaC3FZ8BwPrbXW fight 18: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (Les vieux casus, Sulfuron (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/h1LaC3FZ8BwPrbXW?fight=18",
+      "published": "2024-10-01",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 137.5 s; selected for Mapiti (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "wcl_hmAcWCt3njMR4HFT_12": {
+      "title": "Warcraft Logs report hmAcWCt3njMR4HFT fight 12: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (Les Enfants du Père Noël, Auberdine (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/hmAcWCt3njMR4HFT?fight=12",
+      "published": "2024-10-23",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 153.8 s; selected for Mugiwaraya (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "wcl_cCXgM3dx9YGKaDt7_28": {
+      "title": "Warcraft Logs report cCXgM3dx9YGKaDt7 fight 28: Maloriak 10N kill",
+      "publisher": "classic.warcraftlogs.com (Parabelloum guilde, Auberdine (EU))",
+      "url": "https://classic.warcraftlogs.com/reports/cCXgM3dx9YGKaDt7?fight=28",
+      "published": "2024-10-11",
+      "accessed": "2026-09-27",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 157.9 s; selected for Halinor (middle parse); all-target and boss-only DPS, ability and cast breakdowns; Maloriak cast timeline.",
+      "extraction": "GPT-6 Astra via the Codex Chrome plugin in the user's Chrome (one own tab, no verification challenge); ranking rows were a discovery index, fight page verified. Raw: maloriak_wcl_fire_assassination_extract_v1.json, maloriak_wcl_boss_timelines_round2_v1.json."
+    },
+    "user_raid_experience_20260927": {
+      "title": "User decision on the Maloriak add-switch threshold (first-hand raid experience), relayed by the coordinator 2026-09-27",
+      "publisher": "project user (authoritative; outranks guides per the project's tactic policy)",
+      "accessed": "2026-09-27",
+      "quote": "Mage should not dispell remedy. If it does maybe thats why it gets over. If not stop dps at 50%",
+      "claims": [
+        "No Remedy dispel or Spellsteal during the add-switch hold (unchanged rule).",
+        "If Remedy was not being removed during the hold, start the hold at 50% instead of 30%: everyone but the Blood DK stops damaging Maloriak, kills each Aberration as the chambers release it, and resumes on the boss once every add is dead."
+      ],
+      "evidence_check": "Round 1 (label blackwing_descent_10n-r01-553da85c98, kills 521c17 and 6bf522): no Remedy was removed during the 30% hold. Maloriak's health samples show one full Remedy (250,000 healing, 25,000 per second for 10 s) at 94-104 s inside each hold (holds 79.5-105.2 s and 82.5-114.6 s). The only removal was the Mage's Spellsteal before the hold: the stolen Remedy ticked on the Mage at 46-55 s in both kills. No Purge, Tranquilizing Shot or offensive Dispel Magic appears in either kill's action outcomes or rejections (the Discipline Priest's Dispel Magic is ally-only in its profile). Branch taken: 50%."
     }
   },
   "mode_matrix": {
@@ -1102,6 +1173,29 @@
       ],
       "value": "Maloriak Begin Cast times, VL3fW9wNm2PRJDYt fight 13 (10N kill, 209.6 s). Vials: Red 17.5, Blue 67.6, Green 117.8 s (50.2 s throw to throw; Fire/Frost Imbued 25.6/75.7 s, next throw 42.1 s after each Imbued; Slime Imbued 125.1 s). Arcane Storm 12.6, 41.7, 57.9, 91.9, 104.9, 129.2, 143.7. Release Aberrations 15.8 (before the first vial), 36.9, 53.1, 87.1, 108.1, 134.0, 151.8. Remedy 43.3, 64.4, 93.5, 132.4, then in phase two 185.8 and 208.4. Consuming Flames 33.6, 45.0; Scorching Blast 38.5, 49.8, 61.2; Biting Chill 88.7, 100.0, 111.4. Release All Minions 158.3, Unstable Mix 166.4; Magma Jets 169.8, 182.2, 193.7, 205.5; Acid Nova 172.8, 203.5; Absolute Zero 177.7, 189.0, 200.3; Prime Subject Rend on the add tank 177.3, 179.3, 193.4, 203.1.",
       "native_comparison": "Phase two (from Unstable Mix): Magma Jets first 3.5 s (native 3.5 s), repeats 12.4/11.4/11.8 s (native 6 s); Acid Nova first 6.5 s (fight 34: 8.1 s; native 8.4 s), repeat 30.7 s (native 20 s); Absolute Zero first 11.3 s in both kills (native 8.4 s), repeats 11.3/11.3 s (native 7 s). Fixed in boss_maloriak.cpp (first Absolute Zero 11.3 s; repeats 11.8/30.7/11.3 s). Remedy continues in phase two (185.8, 208.4 s) but the native EVENT_REMEDY is phase-one only: open native fidelity item. Release Aberrations was cast at 15.8 s, before the first vial: native schedules it only after an imbue."
+    },
+    {
+      "key": "wcl_10N_boss_timelines_round2",
+      "source_refs": [
+        "wcl_ZyH2KkjchMRTdXga_33",
+        "wcl_XzVpNLkxaAFG3DjW_18",
+        "wcl_3pvXdMVntcjxygW4_13",
+        "wcl_h1LaC3FZ8BwPrbXW_18",
+        "wcl_hmAcWCt3njMR4HFT_12",
+        "wcl_cCXgM3dx9YGKaDt7_28",
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_VL3fW9wNm2PRJDYt_13"
+      ],
+      "value": "Maloriak cast rows of six more 10N kills (maloriak_wcl_boss_timelines_round2_v1.json) with fights 34 and 13. Before the first vial (throw begin 17.4-19.6 s): Arcane Storm in all eight kills (begin 10.9, 12.6, 13.1, 14.3, 14.4, 14.4, 14.8, 14.9 s; median 14.3); Remedy in three (16.4, 17.7, 18.0 s), Release Aberrations in two (15.7, 15.8 s), neither in three; all five with an extra cast opened on Red, and the two Blue openings had neither. Phase-two Remedy: 17.8, 19.4, 19.4, 19.4 and 21.0 s after Unstable Mix in the five kills whose phase two lasted that long (fight 13 repeated it 22.6 s later); none in the three that ended 12.3, 15.2 and 18.6 s after Unstable Mix. Absolute Zero explosions on players: 2, 0, 0, 2, 0, 0 damaging hits (plus fully resisted rows in two kills): human raids rarely trigger a sphere.",
+      "native_comparison": "Native (before round 2) cast nothing before the cauldron visit at 15.5 s and scheduled Remedy in phase one only. Round 2 (10N only): an Arcane Storm at 14.3 s after engage (the cauldron visit's events.Reset drops its repeat) and a phase-two Remedy 19.4 s after Unstable Mix, repeating every 24 s (the phase-one repeat). The pre-vial Remedy / Release stays native-absent: it appears in five of eight kills, only on Red openings, with no rule that fits all eight."
+    },
+    {
+      "key": "add_switch_threshold_50",
+      "source_refs": [
+        "user_raid_experience_20260927"
+      ],
+      "value": "Add switch at 50% boss health (was 30%) on the user's decision; everything else in the switch is unchanged (Blood DK keeps full damage, no Remedy dispel until every add is dead and the chambers are empty, Misdirection/Tricks to the Feral, the Feral kites, 180 s cap).",
+      "budget": "From 50% to 25% is 4.94M HP on 10N. Round-1 hold damage was 38-48k DPS (Blood DK 23-31k, the rest DoT ticks and procs from before the hold) against Remedy's 10.4k average (250k every 24 s). With DoTs expired (no refresh in the hold): about 13-21k net, 235 s or more to 25%. Even if the other 15-17k continued: about 130 s. The hold should last about two minutes (WCL last releases at about 150-165 s; 50% comes near 40 s in round 1)."
     }
   ],
   "timers": [
@@ -1564,7 +1658,8 @@
       "key": "remedy_during_add_switch",
       "icy_cata_classic": "purge Remedy or let a mage Spellsteal it",
       "user_raid_experience_20260926": "no Remedy dispel from 30% until the adds are dead and the chambers empty, then dispel again",
-      "resolution": "user tactic adopted (authoritative)"
+      "resolution": "user tactic adopted (authoritative)",
+      "user_raid_experience_20260927": "no Remedy dispel during the hold (confirmed); the hold now starts at 50%"
     }
   ],
   "unresolved": [
@@ -2129,22 +2224,34 @@
     },
     {
       "key": "phase_two_remedy",
-      "status": "open",
+      "status": "fixed_in_owned_script_10n_only",
       "native": "EVENT_REMEDY is scheduled with PHASE_ONE, so phase two never casts Remedy; WCL fight 13 shows Remedy at 185.8 and 208.4 s in phase two.",
       "sources": [
-        "wcl_VL3fW9wNm2PRJDYt_13"
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_ZyH2KkjchMRTdXga_33",
+        "wcl_XzVpNLkxaAFG3DjW_18",
+        "wcl_3pvXdMVntcjxygW4_13",
+        "wcl_h1LaC3FZ8BwPrbXW_18",
+        "wcl_hmAcWCt3njMR4HFT_12",
+        "wcl_cCXgM3dx9YGKaDt7_28"
       ],
-      "next": "Confirm with a second long phase two before scheduling Remedy in phase two (bot dispel duties would change)."
+      "next": "Observe live on 10N: Remedy about 19.4 s after Unstable Mix, then every 24 s; the bot dispels it in phase two (no add switch then). 25N/10H/25H keep phase-one-only Remedy until same-mode evidence exists."
     },
     {
       "key": "pre_vial_release_aberrations",
-      "status": "open",
-      "native": "Native schedules Release Aberrations only after an imbue; WCL fight 13 shows one at 15.8 s, before the first vial (fight 34 did not).",
+      "status": "partially_fixed_in_owned_script_10n_only",
+      "native": "Native schedules Release Aberrations only after an imbue; WCL fight 13 shows one at 15.8 s, before the first vial (fight 34 did not). Round 2 (eight 10N kills): an Arcane Storm begins before the first vial in all eight (median 14.3 s); Release Aberrations precedes the first vial in two and Remedy in three, only on Red openings.",
       "sources": [
         "wcl_VL3fW9wNm2PRJDYt_13",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_ZyH2KkjchMRTdXga_33",
+        "wcl_XzVpNLkxaAFG3DjW_18",
+        "wcl_3pvXdMVntcjxygW4_13",
+        "wcl_h1LaC3FZ8BwPrbXW_18",
+        "wcl_hmAcWCt3njMR4HFT_12",
+        "wcl_cCXgM3dx9YGKaDt7_28"
       ],
-      "next": "A third kill to see whether the pull cast is regular."
+      "next": "The pre-vial Arcane Storm is scheduled natively on 10N (14.3 s). The pre-vial Release/Remedy (5 of 8 kills, Red openings only) stays open until a rule fits every kill."
     }
   ]
 }

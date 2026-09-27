@@ -58,7 +58,7 @@
     "Fire Mage (died in the only kill it appears in), Assassination Rogue and Demonology Warlock keep the WoWSims fallback; the Feral tank has neither a matched WCL reference nor a verified WoWSims fallback; its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so this fails nothing.",
     "Encounter damage fidelity: creature 43296 DamageModifier 20 is derived and promoted to sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql (2026-09-27); the DB updater applies it at worldserver startup, and kills recorded before that ran at the upstream value 1.",
     "Native 10N health 20,699,972 equals the WCL-derived value; kill durations are directly comparable.",
-    "Phase-two (Mortality) tank deaths are Blizzlike: the fight 27 tank died to a Mortality melee 2 s before the kill. The 0 boss-window death rule may need a Mortality exception.",
+    "Phase-two (Mortality) tank deaths are Blizzlike: the fight 27 tank died to a Mortality melee 2 s before the kill. User decision 2026-09-27: deaths after Mortality begins are recorded as mortality_deaths and do not fail a kill (boss_window_death_exemptions); kills recorded before the exemption keep them in boss_window_deaths until re-recorded.",
     "scoreboard run's single-scenario argv cannot seed the lockout; runs go through shard_coordinator and are added with scoreboard ingest."
   ],
   "kills_per_measurement": 3,
@@ -74,7 +74,24 @@
     "basis": "report.json native_gameplay_outcome.native_clear and completion_reason. The harness exit code is informational: diagnostic route runs exit 1 (all_passed=false) even on a clean native clear."
   },
   "max_boss_window_deaths": 0,
-  "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass.",
+  "boss_window_death_exemptions": [
+    {
+      "id": "mortality",
+      "record_key": "mortality_deaths",
+      "source": "user decision 2026-09-27",
+      "rule": "Deaths after Mortality begins (Chimaeron below 20%, healing disabled) do not fail a kill and are recorded as mortality_deaths; deaths before Mortality still count against max_boss_window_deaths.",
+      "native_basis": "boss_chimaeron.cpp DamageTaken: HealthBelowPctDamaged(20) casts SPELL_MORTALITY_1 82890 (AOE) and SPELL_MORTALITY_2 82934 (self)",
+      "spell_ids": [
+        82890,
+        82934
+      ],
+      "boss_entries": [
+        43296
+      ],
+      "health_pct_at_most": 20
+    }
+  ],
+  "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count (or with the encounter node's own killed-hostile reconciliation when only earlier events were dropped). Deaths at or after the first Mortality marker (spell 82890/82934 in the combat log, or Chimaeron 43296 at 20% health or less) count as mortality_deaths instead. Unknown counts never pass.",
   "roles_without_dps_target": [
     "healer"
   ],

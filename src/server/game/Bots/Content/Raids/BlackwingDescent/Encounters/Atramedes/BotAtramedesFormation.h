@@ -134,6 +134,18 @@ inline std::optional<MoveProposal> TankAnchorDrag(Facts const& facts,
     return Positioning(target, "tank_anchor_drag", 300.0f);
 }
 
+// The tank is still dragging Atramedes onto the anchor (the pull, and every
+// landing west of the centre): he is grounded, on the living tank and
+// outside the anchor tolerance, so he is walking.
+inline bool AnchorDragInProgress(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties)
+{
+    if (facts.CurrentPhase != Phase::Ground || !facts.Boss || duties.Tank.IsEmpty()
+        || facts.Boss->VictimGuid != duties.Tank || !FindLivingPlayer(board, duties.Tank))
+        return false;
+    return Geometry::Distance2d(facts.Boss->Position, TankAnchor) > TankAnchorTolerance;
+}
+
 // Ground melee slot: MeleeSlotRadius from the boss centre (just inside melee
 // range), behind him as seen from the tank, melee in GUID order (dead
 // included, so slots do not shift).
@@ -198,6 +210,14 @@ inline std::optional<MoveProposal> FormationMove(Blackboard const& board,
         return TankAnchorDrag(facts, self);
     if (melee)
     {
+        // During the drag the slot "behind him as seen from the tank" is the
+        // trailing side of a boss walking ~7.8 yd/s toward the tank, 20 yd
+        // back: r01 (blackwing_descent_10n-r01-553da85c98) melee flipped to
+        // it at the pull and lost 6-15 s of swings before he stopped at the
+        // anchor. Native melee chase keeps contact until he settles; the
+        // hazard exits above still apply.
+        if (AnchorDragInProgress(board, facts, duties))
+            return std::nullopt;
         std::optional<Vector3> const slot = MeleeSlot(board, facts, duties, self);
         if (!slot || Geometry::Distance2d(*slot, self.Position) <= MeleeSlotTolerance)
             return std::nullopt;

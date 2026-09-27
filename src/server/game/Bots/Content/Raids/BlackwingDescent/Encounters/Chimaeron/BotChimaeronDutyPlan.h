@@ -32,6 +32,10 @@ struct Duties
     // subset, dead members included so slots never reshuffle on a death.
     std::vector<ObjectGuid> Ranged;
     std::vector<ObjectGuid> RangedHealers;
+    // Ranged members whose attacks have a minimum range (hunters): against
+    // Chimaeron's 20 yd combat reach they must stand beyond ~27.8 yd (GUID
+    // order, dead included like Ranged). A subset of Ranged.
+    std::vector<ObjectGuid> Standoff;
     // Raid lust: a mage (Time Warp) first, then a shaman (Bloodlust; the
     // runtime casts Heroism instead when only that variant is known).
     ObjectGuid LustOwner;
@@ -86,6 +90,16 @@ inline bool IsMeleeSpec(ActorSnapshot const& actor)
     return actor.PreferredCombatRange
         && actor.PreferredCombatRange->MaxRange > 0.0f
         && actor.PreferredCombatRange->MaxRange <= 8.0f;
+}
+
+// Hunter shots and Auto Shot carry a 5 yd minimum range that the spell system
+// extends by the melee range (Spell::GetMinMaxRange: 5 + 1.5 + 20 + 4/3 yd
+// against Chimaeron). Round 1: the Survival Hunter on the 22 yd arc and in the
+// 8 yd outage stack was rejected with min_range_required and meleed instead.
+inline bool IsStandoffSpec(std::string_view spec)
+{
+    return spec == "beast_mastery_hunter" || spec == "marksmanship_hunter"
+        || spec == "survival_hunter";
 }
 
 inline bool IsMageSpec(std::string_view spec)
@@ -179,7 +193,11 @@ inline Duties BuildDuties(Blackboard const& board, ObjectGuid botGuid = ObjectGu
         if (IsMeleeSpec(player))
             duties.Melee.push_back(player.Guid);
         else
+        {
             duties.Ranged.push_back(player.Guid);
+            if (IsStandoffSpec(player.ClassSpec))
+                duties.Standoff.push_back(player.Guid);
+        }
     }
 
     auto byGuid = [](ObjectGuid left, ObjectGuid right)
@@ -189,6 +207,7 @@ inline Duties BuildDuties(Blackboard const& board, ObjectGuid botGuid = ObjectGu
     std::sort(duties.Melee.begin(), duties.Melee.end(), byGuid);
     std::sort(duties.Ranged.begin(), duties.Ranged.end(), byGuid);
     std::sort(duties.RangedHealers.begin(), duties.RangedHealers.end(), byGuid);
+    std::sort(duties.Standoff.begin(), duties.Standoff.end(), byGuid);
 
     std::sort(tanks.begin(), tanks.end(),
         [](ActorSnapshot const* left, ActorSnapshot const* right)
@@ -292,6 +311,7 @@ inline std::string DutiesJson(Duties const& duties)
     list("healers", duties.Healers);
     list("melee", duties.Melee);
     list("ranged", duties.Ranged);
+    list("standoff", duties.Standoff);
     json << ",\"lust_owner\":" << duties.LustOwner.GetCounter()
          << ",\"barrier_owner\":" << duties.BarrierOwner.GetCounter()
          << ",\"spirit_link_owner\":" << duties.SpiritLinkOwner.GetCounter() << '}';

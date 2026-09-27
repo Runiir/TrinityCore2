@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "Bots/BotWorldPopulationMgrNativePathTransportLiquid.h"
+#include "Bots/BotPassengerEndpointFloor.h"
 #include "Bots/BotValidationRouteNativeFallSpline.h"
 #include "Bots/BotValidationRouteNativeApproach.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
@@ -327,6 +328,7 @@ Outcome ExecuteStepOff(Player* bot, GameObject* transport, TransportSurfaceMove 
     drop.LandingToleranceYards = action.LandingToleranceYards;
     drop.LandOnTransport = action.LandOnTransport;
     drop.MinHealthAfterFallPct = action.MinHealthAfterFallPct;
+    drop.LandInLiquid = action.LandInLiquid;
 
     // The step is level at the bot's own feet toward the declared step-off
     // point. Like a client, the member falls as soon as its whole body has
@@ -524,5 +526,25 @@ bool FloorNear(Player const* bot, float band)
     float const floor = map->GetHeight(bot->GetPhaseShift(), bot->GetPositionX(),
         bot->GetPositionY(), z + band, true, 2.0f * band);
     return floor > INVALID_HEIGHT && floor >= z - band;
+}
+
+bool PassengerEndpointHasFloor(Player const* bot, float x, float y, float z)
+{
+    BotPassengerEndpointFloor::Probe probe;
+    TransportBase const* passengerOf = bot ? bot->GetTransport() : nullptr;
+    probe.Passenger = passengerOf != nullptr;
+    if (!probe.Passenger)
+        return true;
+    Map* map = bot->IsInWorld() ? bot->GetMap() : nullptr;
+    if (!map)
+        return false;
+    float const tolerance = BotWorldMovement::NativeFloorTolerance;
+    float const floor = map->GetHeight(bot->GetPhaseShift(), x, y, z + tolerance, true,
+        2.0f * tolerance);
+    probe.FloorFound = floor > INVALID_HEIGHT;
+    probe.FloorZ = floor;
+    GameObject const* transport = map->GetGameObject(passengerOf->GetTransportGUID());
+    probe.TransportFloor = transport && TransportFloorAt(bot, transport, x, y, z, tolerance);
+    return BotPassengerEndpointFloor::Admit(probe, z, tolerance);
 }
 }

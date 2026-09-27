@@ -6,6 +6,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronMovement.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronPositioning.h"
 #include <algorithm>
 #include <optional>
 #include <string_view>
@@ -27,7 +28,8 @@
 // - DispelTarget: a Soaked In Poison carrier for a poison dispeller;
 // - OffenseAllowed: the constructs that may be damaged at all;
 // - Movement: Lightning Conductor, Poison Bomb, Flamethrower, hazards, tank
-//   positioning and Power Generator stacking, in that order.
+//   positioning (generator exit, shield separation, centre slot), healer
+//   coverage of every tank and Power Generator stacking, in that order.
 namespace BotEncounter
 {
 struct AdaptiveOmnotronPlan
@@ -177,7 +179,13 @@ private:
         if (auto move = O::ProposeConductorClearance(board, bot))
             return move;
         if (role == "tank")
-            return O::ProposeTankPosition(board, facts, duty, bot);
+        {
+            if (auto move = O::ProposeTankPosition(board, facts, duty, bot))
+                return move;
+            return O::ProposeTankSlot(board, facts, duty, bot);
+        }
+        if (auto move = O::ProposeHealerCoverage(board, facts, duty, bot, role))
+            return move;
         return O::ProposeGeneratorStack(board, facts, duty, bot, role);
     }
 };

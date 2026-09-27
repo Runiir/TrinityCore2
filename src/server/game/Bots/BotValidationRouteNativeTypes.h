@@ -138,8 +138,8 @@ struct ApproachContract
     float LandingZ = 0.0f;
     float LandingToleranceYards = 1.0f;
     bool LandOnTransport = true;
-    // Health fraction left after the predicted native fall damage.
-    float MinHealthAfterFallPct = 0.2f;
+    float MinHealthAfterFallPct = 0.2f; // health left after the predicted native fall damage
+    bool LandInLiquid = false; // ledge_drop: landing under liquid (floats in it); else refused
 };
 
 // Elevators and other GAMEOBJECT_TYPE_TRANSPORT platforms.

@@ -493,7 +493,7 @@ int main()
         CHECK(Plan(board, LOCK).DamageTarget == Boss(board).Guid);
     }
 
-    // User tactic (2026-09-26): the hard switch at 30%. Every damage dealer
+    // User tactic (2026-09-26; 50% since the user decision of 2026-09-27): the hard switch. Every damage dealer
     // leaves the boss for the Aberrations until the chambers are empty and
     // the loose ones are dead; the Blood DK main tank keeps full damage;
     // nobody dispels Remedy during the switch; afterwards Remedy is dispelled
@@ -503,18 +503,20 @@ int main()
         Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
         for (uint32 index = 0; index < 18; ++index)
             board.Summons.push_back(Add(41440, 1000 + index, -140.0f, -430.0f, false, 100.0f));
-        // 31%: no switch; damage dealers stay on the boss, Remedy is stolen.
-        Boss(board).HealthPct = 31.0f;
+        // User decision 2026-09-27: the switch starts at 50%, not 30%.
+        CHECK(M::AddSwitchHealthPct == 50.0f);
+        // 51%: no switch; damage dealers stay on the boss, Remedy is stolen.
+        Boss(board).HealthPct = 51.0f;
         Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
         AdaptiveMaloriakPlan const before = Plan(board, MAGE);
         CHECK(!before.AddSwitchWindow && !before.AddSwitchRestricts);
         CHECK(before.DamageTarget == Boss(board).Guid && !before.SuppressOffense);
         CHECK(before.DispelTarget == Boss(board).Guid);
 
-        // 30% with 12 in the chambers and three loose: every damage dealer on
+        // 50% with 12 in the chambers and three loose: every damage dealer on
         // the adds, the DK on the boss, nobody on Remedy (every dispeller,
         // even after 3 s).
-        Boss(board).HealthPct = 30.0f;
+        Boss(board).HealthPct = 50.0f;
         Boss(board).Auras.back().ExpiresAtMs = board.ObservedAtMs + 5000;
         for (uint32 index = 0; index < 6; ++index)
             board.Summons[index].Alive = index >= 3;
@@ -546,8 +548,8 @@ int main()
             CHECK(plan.AddSwitchRestricts && plan.SuppressOffense);
             CHECK(std::string(plan.SuppressReason) == "add_switch_wait");
         }
-        // The DK keeps damaging through the whole switch, even at 26%.
-        Boss(board).HealthPct = 26.0f;
+        // The DK keeps damaging through the whole switch, even at 46%.
+        Boss(board).HealthPct = 46.0f;
         CHECK(Plan(board, DK).DamageTarget == Boss(board).Guid && !Plan(board, DK).SuppressOffense);
 
         // Loose ones dead, nine still in the chambers: damage dealers wait off
@@ -590,7 +592,7 @@ int main()
     }
 
     // Review P1 (remedy_rebound): the switch is a cohort latch. Remedy is
-    // left on Maloriak, so he heals back above 30%; the switch holds (no
+    // left on Maloriak, so he heals back above 50%; the switch holds (no
     // restriction lift, no purge re-armed) until the adds are gone, and the
     // cap and the reset end it. One effective state for everything.
     {
@@ -599,17 +601,17 @@ int main()
         for (uint32 index = 0; index < 9; ++index)
             board.Summons.push_back(Add(41440, 1300 + index, -140.0f, -430.0f, false, 100.0f));
         Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 5000 });
-        Boss(board).HealthPct = 31.0f;
+        Boss(board).HealthPct = 51.0f;
         Publish(board, store);
         CHECK(!Plan(board, MAGE, &store.View()).AddSwitchWindow);
         CHECK(Plan(board, MAGE, &store.View()).DispelTarget == Boss(board).Guid);
-        Boss(board).HealthPct = 29.9f;
+        Boss(board).HealthPct = 49.9f;
         Publish(board, store, 1000);
         uint64 const enteredAt = board.ObservedAtMs;
         AdaptiveMaloriakPlan const first = Plan(board, MAGE, &store.View());
         CHECK(first.AddSwitchWindow && first.AddSwitchRestricts && !first.DispelTarget);
-        // Remedy heals him to 30.1%: still the switch.
-        Boss(board).HealthPct = 30.1f;
+        // Remedy heals him to 50.1%: still the switch.
+        Boss(board).HealthPct = 50.1f;
         Boss(board).Auras.back().ExpiresAtMs = board.ObservedAtMs + 3000;
         Publish(board, store, 1000);
         AdaptiveMaloriakPlan const rebound = Plan(board, MAGE, &store.View());
@@ -635,20 +637,20 @@ int main()
         Publish(board, store, 1000);
         Boss(board).InCombat = true;
         board.NativeBossState = "in_progress";
-        Boss(board).HealthPct = 29.0f;
+        Boss(board).HealthPct = 49.0f;
         Publish(board, store, 1000);
         AdaptiveMaloriakPlan const again = Plan(board, MAGE, &store.View());
         CHECK(again.AddSwitchWindow && !again.AddSwitchCapReleased);
     }
 
-    // User refinement: the pause at 30% happens only if adds remain. With
-    // the chambers empty and nothing alive at 30%, no pause: burn straight
+    // User refinement: the pause at 50% happens only if adds remain. With
+    // the chambers empty and nothing alive at 50%, no pause: burn straight
     // through and keep dispelling Remedy; it never pauses later either.
     {
         EncounterLatchStore store;
         Blackboard board = Canonical();
         Boss(board).Auras.push_back({ 77912, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
-        Boss(board).HealthPct = 29.0f;
+        Boss(board).HealthPct = 49.0f;
         Publish(board, store);
         AdaptiveMaloriakPlan const mage = Plan(board, MAGE, &store.View());
         CHECK(!mage.AddSwitchWindow && !mage.AddSwitchRestricts);
@@ -672,7 +674,7 @@ int main()
         for (ActorSnapshot& add : board.Summons)
             add.VictimGuid = G(FERAL);
         board.Summons.push_back(Add(41440, 1403, -140.0f, -430.0f, false, 100.0f));
-        Boss(board).HealthPct = 28.0f;
+        Boss(board).HealthPct = 48.0f;
         Publish(board, store);
         for (Slot slot : { HUNTER, MAGE, RET, ROGUE, SHAMAN, LOCK })
         {
@@ -1800,6 +1802,146 @@ int main()
         Blackboard board = Canonical();
         Boss(board).Auras.push_back({ 92966, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
         CHECK(Plan(board, MAGE).DispelTarget == Boss(board).Guid);
+    }
+
+    // Round 2 (r01 kill 6bf522: melee held 25-38 s beside a phase-two
+    // sphere). The main tank drags Maloriak off a sphere that blocks the
+    // melee ring; the outer 5-yard ring keeps melee fighting past a sphere
+    // on one side.
+    {
+        auto phaseTwo = []()
+        {
+            Blackboard board = Canonical();
+            Boss(board).HealthPct = 20.0f;
+            Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+            return board;
+        };
+        // A sphere 2 yd behind the boss: the ring is blocked, the rogue holds
+        // and the Blood DK walks him north, away from the sphere.
+        Blackboard board = phaseTwo();
+        board.Summons.push_back(Add(41961, 830, BossAt.X, BossAt.Y - 2.0f, false, 100.0f));
+        Vector3 const sphere = board.Summons.back().Position;
+        board.Players[ROGUE].Position = { BossAt.X + 11.0f, BossAt.Y - 2.0f, 73.6f };
+        // The tank stands 8 yd from the sphere (outside its 7-yd danger
+        // radius, where its own evade would come first).
+        board.Players[DK].Position = { BossAt.X, BossAt.Y + 6.0f, 73.6f };
+        AdaptiveMaloriakPlan const held = Plan(board, ROGUE);
+        CHECK(held.SuppressOffense && std::string(held.SuppressReason) == "melee_ring_hazard_hold");
+        AdaptiveMaloriakPlan const drag = Plan(board, DK);
+        CHECK(drag.DamageTarget == Boss(board).Guid);
+        CHECK(drag.Movement && drag.Movement->Id.Mechanic == "main_tank_sphere_drag");
+        Vector3 const to = Destination(drag);
+        CHECK(Dist(to, sphere) >= 9.0f);
+        CHECK(Dist(to, BossAt) > 11.0f && Dist(to, BossAt) < 13.0f);
+        CHECK(Dist(to, sphere) > Dist(BossAt, sphere));
+        // Once he has followed (5.5 yd north), the ring is clear again: no
+        // drag, and the rogue fights instead of holding.
+        Boss(board).Position = { BossAt.X, BossAt.Y + 5.5f, 73.6f };
+        board.Players[DK].Position = { BossAt.X, BossAt.Y + 9.0f, 73.6f };
+        AdaptiveMaloriakPlan const settled = Plan(board, DK);
+        CHECK(!settled.Movement || settled.Movement->Id.Mechanic != "main_tank_sphere_drag");
+        CHECK(!Plan(board, ROGUE).SuppressOffense);
+
+        // No drag without a living melee damage dealer, when he is on
+        // someone else, or in phase one.
+        Blackboard noMelee = phaseTwo();
+        noMelee.Summons.push_back(Add(41961, 831, BossAt.X, BossAt.Y - 2.0f, false, 100.0f));
+        noMelee.Players[ROGUE].Alive = false;
+        noMelee.Players[RET].Alive = false;
+        AdaptiveMaloriakPlan const alone = Plan(noMelee, DK);
+        CHECK(!alone.Movement || alone.Movement->Id.Mechanic != "main_tank_sphere_drag");
+        Blackboard offTank = phaseTwo();
+        offTank.Summons.push_back(Add(41961, 832, BossAt.X, BossAt.Y - 2.0f, false, 100.0f));
+        Boss(offTank).VictimGuid = G(RET);
+        AdaptiveMaloriakPlan const taunt = Plan(offTank, DK);
+        CHECK(!taunt.Movement || taunt.Movement->Id.Mechanic != "main_tank_sphere_drag");
+        Blackboard phaseOne = Canonical();
+        phaseOne.Summons.push_back(Add(41961, 833, BossAt.X, BossAt.Y - 2.0f, false, 100.0f));
+        AdaptiveMaloriakPlan const one = Plan(phaseOne, DK);
+        CHECK(!one.Movement || one.Movement->Id.Mechanic != "main_tank_sphere_drag");
+
+        // A sphere 4.8 yd to the boss's side blocks the whole 3.5-yd back
+        // ring but not the far side of the 5-yd ring: the rogue moves there
+        // (in reach, 9 yd from the sphere) instead of holding.
+        Blackboard side = phaseTwo();
+        M::BossFrame const sideFrame = M::ResolveFrame(Boss(side), &side.Players[DK]);
+        Vector3 const sideSphere = M::FramePolar(sideFrame, 4.8f, M::Pi / 2.0f);
+        side.Summons.push_back(Add(41961, 834, sideSphere.X, sideSphere.Y, false, 100.0f));
+        std::vector<M::FormationHazard> const sideHazards = M::CollectFormationHazards(M::Observe(side));
+        bool innerClear = false;
+        for (int step = 0; step < 24; ++step)
+        {
+            float const angle = -M::Pi + float(step) * M::Pi / 12.0f;
+            if (M::ArcAdmits(M::SlotArc::Back, angle)
+                && M::ClearOfHazards(M::FramePolar(sideFrame, M::MeleeRingRadius, angle), sideHazards))
+                innerClear = true;
+        }
+        CHECK(!innerClear);
+        side.Players[ROGUE].Position = { sideSphere.X + 11.0f, sideSphere.Y, 73.6f };
+        AdaptiveMaloriakPlan const outer = Plan(side, ROGUE);
+        CHECK(!outer.SuppressOffense);
+        CHECK(outer.Movement && outer.Movement->Id.Mechanic == "phase_two_spread");
+        CHECK(Dist(Destination(outer), sideSphere) >= 9.0f);
+        CHECK(Dist(Destination(outer), Boss(side).Position) <= M::MeleeOuterRingRadius + 0.01f);
+
+        // Review (GPT-6 Astra, P2): the outer-ring fallback keeps the full
+        // formation clearance. Maloriak at the cauldron rim (-105.8, -475.0),
+        // a sphere at (-111.0, -476.0), the Retribution Paladin at (-98.0,
+        // -474.0): the patched plan sent it to (-101.970, -478.214), where the
+        // cauldron blocks its line to the boss. Any move now sees the boss
+        // past the cauldron and clears every hazard; no move at all (fight
+        // where it stands) is the base behaviour.
+        Blackboard rim = phaseTwo();
+        Boss(rim).Position = { -105.8f, -475.0f, 73.6f };
+        rim.Players[DK].Position = { -105.8f, -469.0f, 73.6f };
+        rim.Summons.push_back(Add(41961, 835, -111.0f, -476.0f, false, 100.0f));
+        rim.Players[RET].Position = { -98.0f, -474.0f, 73.6f };
+        M::BossFrame const rimFrame = M::ResolveFrame(Boss(rim), &rim.Players[DK]);
+        std::vector<M::FormationHazard> const rimHazards = M::CollectFormationHazards(M::Observe(rim));
+        AdaptiveMaloriakPlan const ret = Plan(rim, RET);
+        if (ret.Movement && ret.Movement->Id.Mechanic == "phase_two_spread")
+        {
+            CHECK(M::FormationPointClear(rimFrame, Destination(ret), rimHazards));
+            CHECK(M::CauldronLineClear(Destination(ret), Boss(rim).Position));
+        }
+        CHECK(!(ret.Movement && Dist(Destination(ret), { -101.970f, -478.214f, 73.6f }) < 0.1f));
+    }
+
+    // Round 2 (r01 kill 6bf522, 140-165 s: eight or nine adds within 10 yd
+    // of Maloriak while the Feral fetched adds off the Blood DK). An add at
+    // the boss is taunted from a post 15 yd out; the pack stays there.
+    {
+        Blackboard board = Canonical();
+        Boss(board).HealthPct = 20.0f;
+        Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+        board.Players[FERAL].Position = { -112.0f, -455.0f, 73.6f };
+        for (uint32 counter = 0; counter < 3; ++counter)
+        {
+            board.Summons.push_back(Add(41440, 840 + counter, -113.0f, -455.0f + float(counter), true, 60.0f + float(counter)));
+            board.Summons.back().VictimGuid = G(FERAL);
+        }
+        board.Summons.push_back(Add(41440, 850, BossAt.X, BossAt.Y + 4.0f, true, 90.0f));
+        board.Summons.back().VictimGuid = G(DK);
+        ObjectGuid const onTank = board.Summons.back().Guid;
+        AdaptiveMaloriakPlan const pull = Plan(board, FERAL);
+        CHECK(pull.TauntTarget == onTank);
+        CHECK(pull.DamageTarget == board.Summons[0].Guid);  // the weakest held add
+        CHECK(pull.Movement && pull.Movement->Id.Mechanic == "off_tank_pull_post");
+        Vector3 const post = Destination(pull);
+        CHECK(Dist(post, BossAt) >= 14.5f && Dist(post, BossAt) <= 15.5f);
+        CHECK(Dist(post, board.Summons.back().Position) <= M::TauntReachYards);
+        CHECK(std::string(pull.Duty) == "off_tank_pull_post");
+        // Standing at the post: a renewed hold, never a chase into the boss.
+        board.Players[FERAL].Position = post;
+        AdaptiveMaloriakPlan const hold = Plan(board, FERAL);
+        CHECK(hold.Movement && hold.Movement->Id.Mechanic == "off_tank_pull_post_hold");
+        CHECK(Dist(Destination(hold), post) < 0.01f);
+        CHECK(hold.TauntTarget == onTank);
+        // An add away from the boss is still picked up the ordinary way.
+        board.Summons.back().Position = { -85.0f, -440.0f, 73.6f };
+        AdaptiveMaloriakPlan const chase = Plan(board, FERAL);
+        CHECK(chase.DamageTarget == onTank && !chase.Movement);
+        CHECK(std::string(chase.Duty) == "off_tank_pickup");
     }
 
     return failures == 0 ? 0 : 1;

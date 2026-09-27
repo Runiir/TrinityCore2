@@ -2,6 +2,7 @@
 #define TRINITY_BOT_RAID_ROTATION_OVERRIDES_H
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRaidCanonicalClassRotation.h"
 #include "Bots/BotRaidMajorArmor.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
 
@@ -173,6 +174,7 @@ inline uint32 Apply(BotClassSpecActionProfile& profile)
 //     construct) never saw it. The raid cooldown reservation still holds it
 //     on trash and pre-pull, as it holds every offensive cooldown.
 inline constexpr char const* CanonicalScopeTag = "canonical_raid_rotation_20260926";
+inline constexpr char const* CanonicalClassRotationTag = "canonical_raid_rotation_20260927";
 
 inline bool ApplySurvival(BotActionProfileSpell& spell)
 {
@@ -195,6 +197,13 @@ inline uint32 ApplyCanonical(BotClassSpecActionProfile& profile)
         AppendTag(*upkeep, CanonicalScopeTag);
         return 1;
     }
+    // BWD program round 2: Demonology lane, Fel Flame and Drain Life,
+    // Assassination Fan of Knives disabled (user decision 2026-09-27),
+    // Elemental Mastery
+    // (BotRaidCanonicalClassRotation.h).
+    if (uint32 const classRows = BotRaidCanonicalClassRotation::Apply(profile,
+            [](BotActionProfileSpell& spell) { AppendTag(spell, CanonicalClassRotationTag); }))
+        return classRows;
     if (profile.Role != "dps" || profile.ClassId != 3 || profile.SpecTag != "survival")
         return 0;
     uint32 changed = 0;

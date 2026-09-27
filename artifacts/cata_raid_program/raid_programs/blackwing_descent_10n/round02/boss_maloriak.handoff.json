@@ -1,0 +1,145 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:maloriak",
+ "round": 2,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormation.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormationPlan.h",
+  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+  "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+  "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+  "tests/test_maloriak_strategy.py",
+  "tests/test_maloriak_research_packet.py",
+  "tests/test_maloriak_native_script.py",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakDuties.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakLatches.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakAddSwitch.h",
+  "tests/test_maloriak_add_switch_authority.py"
+ ],
+ "new_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakSphereDrag.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPullPost.h",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_fire_assassination_extract_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_boss_timelines_round2_v1.json"
+ ],
+ "resolved_inputs": [],
+ "open_items": [
+  {
+   "input": "encounter_research",
+   "state": "fidelity_blocked",
+   "reason": "Progress, not closure. WCL references now exist for every gated roster spec: fire_mage median 18,244.2 (h1LaC3FZ8BwPrbXW 18, hmAcWCt3njMR4HFT 12, cCXgM3dx9YGKaDt7 28; parse 52/50/50) and assassination_rogue median 20,150.2 (ZyH2KkjchMRTdXga 33, XzVpNLkxaAFG3DjW 18, 3pvXdMVntcjxygW4 13; parse 49/57/48); each added reference's actor_dps holds only that player, so the other specs keep their round-1 targets. Against them round-1 kills read Fire 104.5% and Assassination 95.3% (was 54%/57% of the WoWSims fallback). phase_two_remedy fixed natively on 10N; pre_vial_release_aberrations partially fixed (pre-vial Arcane Storm, 8/8 kills); the pre-vial Release/Remedy (5/8 kills, Red openings only) stays open. Still open: normal health vs 4.4.2, heroic/25-player cadence, Biting Chill targets, heroic Fixate, Aberration/Prime Subject DamageModifier."
+  },
+  {
+   "input": "verdict",
+   "state": "insufficient_kills",
+   "reason": "Round-2 build needs a fresh batch (3+ counted kills). Recomputed on the r01 label with the new target: demonology_warlock 0.74 is now the largest gap, elemental_shaman 0.950 and assassination_rogue 0.953 are at the line, fire_mage 1.045."
+  },
+  {
+   "input": "demonology_warlock_gap",
+   "state": "open",
+   "reason": "r01: 14.6k / 12.4k vs 18,229.8 WCL. Damage uptime 0.61/0.48, moving fraction 0.48/0.33; in kill 6bf522 the warlock landed only DoT ticks for about 99-114, 141-162 and 166-177 s while its Felguard kept hitting. The strategy issued it only blue_spread moves in the receipts, so the movement is generic combat/range movement: needs one diagnostic run with movement receipts before a change (class/runtime owner)."
+  },
+  {
+   "input": "class_evidence_fire_mage",
+   "state": "routed_to_class_agent",
+   "reason": "Not edited. Combustion: 1 cast in kill 521c17 (at 9 s), 0 in kill 6bf522; each WCL reference cast it twice in 137-158 s. Pyroblast! share 11.7% / 5.4% vs 10.8-13.0% WCL; in 6bf522 no Pyroblast! landed from 36 to 155 s. Living Bomb share 25.7-31.4% (bot, adds included) vs 13.3-19.3%. Rejections: combustion_not_ready on the potion, mana_gate on Scorch/Evocation/Mana Gem, movement_gate on Scorch."
+  },
+  {
+   "input": "class_evidence_assassination_rogue",
+   "state": "routed_to_class_agent",
+   "reason": "Not edited. Envenom 7.9% / 3.6% of damage vs 9.9-14.7% WCL; Instant Poison 17.7% / 15.9% vs 22.4-26.9%; Mutilate (main+off hand) 26.6% / 31.8% vs 14.6-19.8%; no Backstab below 35% (WCL 9-10 casts in two of three kills); Rupture 2.1% / 1.9% vs 2.0-3.0% with 68-82% uptime. Over-builds with Mutilate and under-spends on Envenom."
+  },
+  {
+   "input": "add_switch_threshold",
+   "state": "implemented_per_user_decision",
+   "reason": "User (user raid experience 2026-09-27): \"Mage should not dispell remedy. If it does maybe thats why it gets over. If not stop dps at 50%\". Round-1 check (kills 521c17, 6bf522): no Remedy was removed during the 30% hold. Maloriak's health samples show one full Remedy (250,000, 25,000/s for 10 s) at 94-104 s inside each hold (holds 79.5-105.2 s and 82.5-114.6 s). The only removal was the Mage's Spellsteal at about 46 s (stolen Remedy ticked on the Mage 46-55 s), before the hold. No Purge, Tranquilizing Shot or offensive Dispel Magic submission or rejection appears (Disc Priest Dispel Magic is ally-only). The plan already assigns no dispeller while the switch holds (tested). So AddSwitchHealthPct moved 30 -> 50; the rest of the tactic is unchanged. Budget: 50%->25% is 4.94M; Blood DK 23-31k minus Remedy's 10.4k average gives about 235 s or more (about 130 s even if the 15-17k DoT/proc tails continued) against a hold of about two minutes."
+  }
+ ],
+ "patch_requests": [
+  {
+   "to": "coordinator",
+   "file": "tests/test_scoreboard_native_scope.py",
+   "patch": "In test_a_no_reference_spec_cannot_qualify_on_the_wowsims_fallback, replace\n    monkeypatch.setattr(scoreboard_core, \"fallback_targets\",\n                        lambda root, target: {\"feral_druid_tank\": 9000.0, \"fire_mage\": 30000.0})\n    references = reference_targets(ROOT, target)\nwith\n    monkeypatch.setattr(scoreboard_core, \"fallback_targets\",\n                        lambda root, target: {\"feral_druid_tank\": 9000.0, \"fire_mage\": 30000.0})\n    # Round 2 matched fire_mage to WCL; drop that match so the fallback path is still exercised.\n    real_spec_targets = scoreboard_core.spec_targets\n    monkeypatch.setattr(scoreboard_core, \"spec_targets\",\n                        lambda root, target: {spec: dps for spec, dps in real_spec_targets(root, target).items()\n                                              if spec != \"fire_mage\"})\n    references = reference_targets(ROOT, target)\n(verified in a scratch run: the patched body passes against the round-2 Maloriak target)."
+  }
+ ],
+ "risks": [
+  "Main-tank sphere drag (phase two, melee damage dealers alive, boss on the tank, no Magma Jets cast): the tank walks 12 yd away from spheres that block every melee ring point; the boss frame turns, so the ranged fan re-seats and Magma Jets aim along the new facing. The destination is checked against room bounds, hazard clearances, a sphere at the path midpoint and the cauldron radius, not against the full native path.",
+  "Off-tank pull post: an add within 12 yd of Maloriak is taunted from a post 15 yd out; this assumes the taunt reaches (Growl/Dark Command/Hand of Reckoning/Taunt 30 yd; the dispatch's TryCastCombatSpell revalidates range). With the taunt on cooldown the Feral waits at the post and the add stays where it is. Applies in both phases.",
+  "Outer 5-yd melee ring: melee fight from 5 yd (r01 swings landed up to 6.5-6.9 yd) when the 3.5-yd ring is blocked; the fallback point passes the full formation clearance (hazards and the cauldron line of sight, FormationPointClear) after the GPT-6 Astra P2 review; the hold test (MeleeRingBlocked) stays hazards-only, so the cauldron never holds melee offense.",
+  "Native 10N only: Arcane Storm 14.3 s after engage (an uninterrupted channel delays the first cauldron visit, as in the WCL kills); phase-two Remedy 19.4 s after Unstable Mix then every 24 s (heals 250k per cast if not removed; the dispel roster already covers phase two). boss_maloriak.cpp is now 952 lines (limit 1,000).",
+  "Party WCL median (non-gating) moves to 152,038 because the six new kills' raid_dps join the median.",
+  "Native script and dispatch TU passed -fsyntax-only with the build's compile flags; no build was run.",
+  "50% hold: every damage dealer but the Blood DK leaves the boss from about 40 s until the chambers are empty (about 150-165 s by the WCL release cadence), idles between releases, and holds offensive cooldowns, potions and raid haste until phase two. Expect lower encounter-window DPS for every non-tank until measured; the 180 s cap (AddSwitchCapMs) still bounds the hold."
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (baseline before edits)",
+   "result": "40 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_strategy.py (first run of the new sphere-drag case)",
+   "result": "1 failed: my test placed the tank inside the sphere's 7-yd danger radius, so its own evade won; test fixed (tank 8 yd away), relevant to my change, now passing"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (after the reference change)",
+   "result": "2 failed in test_maloriak_research_packet.py (asserted exactly two references and the WoWSims-fallback gap text); expected from the new references, tests updated, now passing"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (final)",
+   "result": "42 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_cata_raid_research_contracts.py tests/test_encounter_research_view.py tests/test_encounter_timeline_comparator.py tests/test_scoreboard_dps_gate_exempt.py tests/test_scoreboard_native_scope.py tests/test_bot_content_ownership_layout.py tests/test_raid_program_neutrality.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py tests/test_bot_action_arbitration.py",
+   "result": "73 passed, 1 failed: test_scoreboard_native_scope.py::test_a_no_reference_spec_cannot_qualify_on_the_wowsims_fallback asserts fire_mage uses the WoWSims fallback on the Maloriak target; relevant (caused by the new fire_mage WCL reference), not owned, patch requested"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_raid_class_rotation_bwd_r2.py tests/test_shard_coordinator.py tests/test_raid_shard_scenarios.py tests/test_raid_program.py tests/test_bwd_diagnostic_node_manifests.py tests/test_raid_route_composer.py tests/test_shaman_elemental_owner_target.py tests/test_nefarian_heal_guard.py",
+   "result": "200 passed"
+  },
+  {
+   "command": "build/compile_commands.json flags with -fsyntax-only on boss_maloriak.cpp and BotWorldPopulationMgrMaloriakCandidates.cpp",
+   "result": "both clean (only the toolchain's <ciso646> warning)"
+  },
+  {
+   "command": "pixi run python -m tools.raid_program.scoreboard verdict --scenario blackwing_descent_10n_maloriak (read-only, r01 label, new target)",
+   "result": "insufficient_kills; fire_mage 1.045, assassination_rogue 0.953, elemental_shaman 0.950, demonology_warlock 0.740, blood_death_knight 1.711, survival_hunter 1.179, retribution_paladin 1.265"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (first run after moving the threshold to 50%)",
+   "result": "1 failed (test_maloriak_strategy replay: 8 CHECKs at the old 31/30/29.9/30.1% boss health); expected from the user's decision, test values shifted to 51/50/49.9/50.1%, now passing"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (final, with the decision test)",
+   "result": "43 passed"
+  },
+  {
+   "command": "-fsyntax-only on BotWorldPopulationMgrMaloriakCandidates.cpp after the threshold change",
+   "result": "clean"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_strategy.py with the fix reverted (outer-ring fallback hazards-only), to prove the new regression case",
+   "result": "1 failed as intended: Astra's case (boss -105.8,-475.0; sphere -111.0,-476.0; Retribution -98.0,-474.0) sent phase_two_spread to (-101.970,-478.214), failing FormationPointClear and CauldronLineClear; fix restored"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_maloriak_*.py (after the P2 fix)",
+   "result": "43 passed"
+  },
+  {
+   "command": "-fsyntax-only on BotWorldPopulationMgrMaloriakCandidates.cpp after the P2 fix",
+   "result": "clean"
+  }
+ ],
+ "validation_neutrality": "Maloriak-scoped. The new and changed strategy headers are included only by the Maloriak dispatch (Encounters/Maloriak); boss_maloriak.cpp changes are gated by IsTenNormal() and touch only Maloriak's AI. The 50% add-switch threshold is a Maloriak constant (BotMaloriakDuties.h). No shared runtime, class, harness or SQL change. The raid target change moves only fire_mage and assassination_rogue targets (the added references carry only those players in actor_dps) plus the non-gating party median. Magmaw, Stonecore, calibration and the other BWD shards are unaffected.",
+ "review_fixes": [
+  {
+   "reviewer": "GPT-6 Astra",
+   "severity": "P2",
+   "location": "BotMaloriakFormationPlan.h outer-ring fallback",
+   "fix": "ClearMeleeRingPoint gains an inSight flag; the formation fallback passes true, so the outer-ring point uses FormationPointClear (hazards plus the cauldron line of sight); MeleeRingBlocked keeps hazards only. Regression case added to tests/test_maloriak_strategy.py."
+  }
+ ]
+}

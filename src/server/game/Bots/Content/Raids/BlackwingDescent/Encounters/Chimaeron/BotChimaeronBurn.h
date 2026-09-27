@@ -16,7 +16,9 @@
 // Veins 2024-07-29).
 //
 // - Held: from 23% non-tanks hold; tanks hold below 21.5% too.
-// - Release: readiness (mixture up, no Massacre near, both tanks at 80%+), or
+// - Release: readiness (mixture up, no Massacre near, both tanks at 80%+), a
+//   Feud with at least 10 s left and both tanks at 80%+ (the pacified boss is
+//   the safest push), fewer than two living tanks (nobody to hand him to), or
 //   a bounded hold (two Massacre cycles, or fewer than two living healers).
 // - Last chance: damage the hold cannot stop (damage over time, pets) carries
 //   the boss to 21% unreleased. The handoff arms anyway (Feud does not block
@@ -56,7 +58,13 @@ enum class BurnReleaseReason : uint64
     Ready = 1,
     HoldCap = 2,
     HealersDown = 3,
-    Mortality = 4
+    Mortality = 4,
+    // Feud pacifies the boss for long enough to push through 20%: no melee
+    // until it ends, and Mortality stops Caustic Slime and Massacre.
+    FeudWindow = 5,
+    // Fewer than two living tanks: there is no fresh tank to hand the boss
+    // to, so holding only feeds the last tank more Break and Double Attack.
+    TanksDown = 6
 };
 
 // Below this line a held raid also holds its tanks: their damage alone would
@@ -83,6 +91,10 @@ constexpr float StickyLastChancePct = 20.5f;
 constexpr uint64 BurnHoldCapMs = 60000;
 constexpr std::size_t MinimumHealersForHold = 2;
 constexpr uint32 BurnHoldMassacreLeadMs = 8000;
+// Feud time left that still covers the handoff taunt, the non-tank release
+// and the ~3% from the hold line to Mortality before his melee resumes. Round
+// 1 held 12-27 s at 20-23% while Feud pacified him (batches 1 and 2).
+constexpr uint32 FeudPushMinRemainingMs = 10000;
 constexpr uint32 PainSuppressionSpell = 33206;
 constexpr uint64 PainSuppressionCooldownMs = 180000;
 
@@ -105,6 +117,18 @@ inline bool BurnReady(Blackboard const& board, Observation const& observation,
     if (observation.MassacreInMs && *observation.MassacreInMs <= BurnHoldMassacreLeadMs)
         return false;
     return TanksReady(board, duties);
+}
+
+// Feud pacifies the boss with time to spare and both tanks can take the
+// Mortality melee once it resumes (the Bile-O-Tron is back 4 s before Feud
+// ends, so the mixture floor holds as on the ordinary release).
+inline bool FeudPushReady(Blackboard const& board, Observation const& observation,
+    Duties const& duties)
+{
+    return observation.CurrentPhase == Phase::Outage && observation.FeudActive
+        && observation.FeudRemainingMs
+        && *observation.FeudRemainingMs >= FeudPushMinRemainingMs
+        && TanksReady(board, duties);
 }
 
 inline bool InBurnWindow(Observation const& observation)
@@ -216,6 +240,10 @@ inline BurnReleaseReason ReleaseReason(Blackboard const& board, Observation cons
         return BurnReleaseReason::None;
     if (BurnReady(board, observation, duties))
         return BurnReleaseReason::Ready;
+    if (FeudPushReady(board, observation, duties))
+        return BurnReleaseReason::FeudWindow;
+    if (duties.DoubleAttackTank.IsEmpty())
+        return BurnReleaseReason::TanksDown;
     if (duties.Healers.size() < MinimumHealersForHold)
         return BurnReleaseReason::HealersDown;
     if (EncounterLatch const* started = module.Find(HoldStartedLatch);

@@ -46,6 +46,19 @@ constexpr float BurnHoldFloorPct = 20.3f;
 constexpr float BurnReadyTankPct = 80.0f;
 constexpr uint32 FeudDurationMs = 30000;
 constexpr uint32 MassacreCastMs = 4000;
+// Native schedule after a Massacre (boss_chimaeron.cpp EVENT_MASSACRE): the
+// event repeats 30 s after the cast start and reschedules Break and Double
+// Attack 11 s after it; the charge is consumed by the next swing (4 s base,
+// 4.8 s under the tank's attack-speed debuff). The Massacre leaves the Double
+// Attack tank at 1 health like everyone else, so the doubled swing that
+// follows (13.5 s after the cast start live, 13.6 s in WCL) is the fight's
+// lethal moment unless he is healed first. The window runs from the end of
+// the cast until one swing after the reschedule.
+constexpr uint32 MassacreRepeatMs = 30000;
+constexpr uint32 DoubleAttackAfterMassacreMs = 11000;
+constexpr uint32 DoubleAttackSwingAllowanceMs = 5000;
+constexpr uint32 PostMassacreSoakMinRemainingMs =
+    MassacreRepeatMs - DoubleAttackAfterMassacreMs - DoubleAttackSwingAllowanceMs;
 
 constexpr std::string_view RegroupNode = "bwd.chimaeron.regroup";
 constexpr std::string_view FinkleNode = "bwd.chimaeron.finkle";
@@ -181,6 +194,10 @@ struct Observation
     // Authoritative native time to the next Massacre cast when the boss script
     // publishes it (GetTimeUntilEncounterMechanic); empty otherwise.
     std::optional<uint32> MassacreInMs;
+    // A Massacre landed and the doubled swing it reschedules is still ahead
+    // (native timer only; empty timer means false). Also true for the first
+    // 12 s after engage, whose first Double Attack comes at 5 s.
+    bool PostMassacreSoak = false;
 };
 
 inline bool IsPrewakeNode(std::string_view node)
@@ -218,6 +235,9 @@ inline Observation ObserveEncounter(Blackboard const& board)
     if (MechanicTimerSnapshot const* timer = boss.FindMechanicTimer(MassacreSpell))
         if (timer->RemainingMs != std::numeric_limits<uint32>::max())
             observation.MassacreInMs = timer->RemainingMs;
+    observation.PostMassacreSoak = !observation.MassacreCasting && observation.MassacreInMs
+        && *observation.MassacreInMs >= PostMassacreSoakMinRemainingMs
+        && *observation.MassacreInMs <= MassacreRepeatMs - MassacreCastMs;
 
     if (wakeNode)
         observation.CurrentPhase = IsEngaged(boss) ? Phase::None : Phase::Prewake;

@@ -1656,6 +1656,13 @@
       "role": "boss",
       "status": "calibrated",
       "damage_modifier": 12.75,
+      "enrage_after_ms": 630000,
+      "enrage_anchor_entries": [
+        41270,
+        41376
+      ],
+      "enrage_anchor_source": "Onyxia 41270 engaging (boss_nefarians_end.cpp ACTION_ONYXIA_ENGAGED) starts Nefarian's Berserk timer; a pull is confirmed by a respawned or refilled Onyxia or Nefarian",
+      "enrage_source": "boss_nefarians_end.cpp DoAction(ACTION_ONYXIA_ENGAGED) schedules EVENT_BERSERK (SPELL_BERSERK 26662) at 10min + 30s",
       "template_at_audit": {
         "base_attack_time_ms": 1500,
         "unit_class": 1,

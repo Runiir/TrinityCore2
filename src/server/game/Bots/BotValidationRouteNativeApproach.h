@@ -290,8 +290,10 @@ inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
     if (!FallLandsOnDeclaredFloor(true, probe.LandingZ, contract.LandingZ,
             contract.LandingToleranceYards))
         return { false, "ledge_drop_landing_height_mismatch" };
-    if (probe.LandingInLiquid)
+    if (probe.LandingInLiquid && !contract.LandInLiquid)
         return { false, "ledge_drop_lands_in_liquid" };
+    if (contract.LandInLiquid && !probe.LandingInLiquid)
+        return { false, "ledge_drop_into_liquid_lands_dry" };
     if (contract.LandOnTransport ? !probe.LandingOnTransport : !probe.LandingOnStatic)
         return { false, "ledge_drop_landing_surface_mismatch" };
     if (probe.HealthPct - probe.PredictedDamagePct < contract.MinHealthAfterFallPct)
@@ -321,6 +323,7 @@ inline bool StepOffCandidateAdvances(std::string const& reason)
         || reason == "ledge_drop_landing_missing"
         || reason == "ledge_drop_landing_height_mismatch"
         || reason == "ledge_drop_lands_in_liquid"
+        || reason == "ledge_drop_into_liquid_lands_dry"
         || reason == "ledge_drop_landing_surface_mismatch";
 }
 

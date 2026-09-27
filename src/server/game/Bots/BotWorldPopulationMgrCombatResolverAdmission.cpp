@@ -6,6 +6,7 @@
 #include "Bots/BotEncounterCooldownHold.h"
 #include "Bots/BotEncounterInterruptVeto.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
+#include "Bots/BotRaidFireCombustionPatience.h"
 #include "Bots/BotRaidHealthRecoveryGate.h"
 #include "Bots/BotRaidMajorArmor.h"
 #include "Bots/BotRoleSaturationPolicy.h"
@@ -65,6 +66,8 @@ void BotWorldPopulationMgr::AdmitProfileCombatCandidates(
     std::string const& role = admission.Role;
     BotClassSpecActionProfile const& profile = admission.Profile;
     bool const raidRotationScope = admission.RaidRotationScope;
+    bool const canonicalRaidScope = BotRaidFireCombustionPatience::CanonicalScope(
+        raidRotationScope, Cohort().Config.ValidationRouteScenarioId);
     uint32 const targetEntry = admission.TargetEntry;
     bool const solarEclipse = admission.SolarEclipse;
     BotEncounter::MagmawBalanceMushroomState const& mushroomState = admission.MushroomState;
@@ -407,13 +410,18 @@ void BotWorldPopulationMgr::AdmitProfileCombatCandidates(
             // amount is the reliable live proxy available to the bot.  A
             // 10k tick is reachable in raid-normalized P4 gear while avoiding
             // the near-empty Combustions observed in calibration run 225.
+            // Canonical raids: optional Pyroblast DoT, BotRaidFireCombustionPatience.h.
             AuraEffect const* ignite = target->GetAuraEffect(12654, EFFECT_0, bot->GetGUID());
             if (!ignite || ignite->GetAmount() < 10000 || !target->HasAura(44457, bot->GetGUID())
-                || (!target->HasAura(92315, bot->GetGUID()) && !target->HasAura(11366, bot->GetGUID())))
+                || (!canonicalRaidScope
+                    && !target->HasAura(92315, bot->GetGUID()) && !target->HasAura(11366, bot->GetGUID())))
             {
                 candidate.RejectReason = "combustion_dot_window_not_ready";
                 continue;
             }
+            if (canonicalRaidScope && BotRaidFireCombustionPatience::Waits(bot->GetGUID().GetRawValue(),
+                    ignite->GetAmount(), candidate.RejectReason))
+                continue;
         }
         if (candidate.Profile.RequiresInterruptibleTarget && !targetActivelyCasting)
         {

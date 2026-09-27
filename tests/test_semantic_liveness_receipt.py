@@ -205,3 +205,42 @@ def test_process_startup_timeout_persists_final_receipt(tmp_path, monkeypatch) -
     assert (returncode, timed_out) == (124, True)
     assert report["semantic_liveness"]["emergency_cap_reached"] is True
     assert report["completion_reason"] == "emergency_wall_clock_timeout"
+
+
+def _with_kill(report: dict, *, guid: int = 17379576916926791863, generation: int = 4) -> dict:
+    report["status"]["validation_route"]["boss_death_evidence"] = [{
+        "result": "confirmed_unit_death", "route_generation": generation, "route_kind": "boss",
+        "route_node_id": "bwd.magmaw.encounter", "target_entry": 43296, "target_id": guid,
+    }]
+    return report
+
+
+def test_a_confirmed_boss_kill_after_a_wipe_is_progress_by_identity() -> None:
+    # Run 6bf52232 (BWD 10N Chimaeron): the respawned boss died 184 s after the last recorded
+    # progress; the windowed progress_total (6 here) stayed under the recovery high-water mark,
+    # so without an identity-based kill signal the watchdog stopped before the node completed.
+    clock = dict(_initial_clock(), last_progress_total=83)
+    report = _with_kill(_report(damage=100))
+    clock, receipt = _advance(report, clock, now=194.0)
+    assert receipt["last_progress_type"] == "boss_kill"
+    assert receipt["last_progress_value"] == 43296
+    assert receipt["elapsed_no_progress_sec"] == 0.0 and receipt["semantic_progress_expired"] is False
+    assert clock["previous_boss_kill_scopes"] == [("bwd.magmaw.encounter", 4, 17379576916926791863, 43296)]
+
+    # The same kill seen again is not new progress; the clock keeps running from the kill.
+    clock, again = _advance(_with_kill(_report(damage=100)), clock, now=300.0)
+    assert again["last_progress_type"] == "boss_kill" and again["elapsed_no_progress_sec"] == 106.0
+
+
+def test_boss_kill_scopes_ignore_unconfirmed_rows() -> None:
+    route = {"boss_death_evidence": [
+        {"result": "confirmed_unit_death", "route_node_id": "n", "route_generation": 2, "target_id": 9,
+         "target_entry": 5},
+        {"result": "observed", "route_node_id": "n", "route_generation": 2, "target_id": 8, "target_entry": 5},
+        {"result": "confirmed_unit_death", "route_node_id": "", "route_generation": 2, "target_id": 7},
+        "junk",
+    ]}
+    assert validation.boss_kill_scopes(route) == [("n", 2, 9, 5)]
+    # No kill evidence: nothing changes for runs without a kill (Magmaw, Stonecore, calibration).
+    clock, receipt = _advance(_report(damage=100), _initial_clock(), now=149.0)
+    assert receipt["last_progress_type"] == "route_party_damage" and clock["previous_boss_kill_scopes"] == []

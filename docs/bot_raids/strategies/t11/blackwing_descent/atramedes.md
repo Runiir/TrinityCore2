@@ -9,7 +9,7 @@ pass on 2026-09-25. On 2026-09-27 the Warcraft Logs (WCL) 10N kill MxFq7TRbvnjGY
 opened through the user's running Chrome, after the headless and scratch-profile routes looped on
 Cloudflare. That read resolved the boss melee DamageModifier (10.35, promoted to `sql/custom/world`), the 10N max health
 (26,111,168, equal to native), the WCL DPS references and the Modulation repeat (16 s).
-Nothing here is a live-validation result.
+Only the "Round 1 live diagnosis" section reports live runs; it is diagnosis, not acceptance.
 
 ## WCL 10N kill (MxFq7TRbvnjGY1hJ fight 32, 2024-10-28, read 2026-09-27)
 
@@ -42,7 +42,19 @@ Nothing here is a live-validation result.
 - **DPS references.**
   - Matched: fight 32. Blood DK 13,254 (the active tank), Survival Hunter 25,513
     (median of two), Retribution 19,930 and Elemental 24,949.
-  - Balance, Fire, Assassination and Demonology keep the WoWSims fallback.
+  - Round 2 (read 2026-09-27, same route, no check appeared) added five 10N
+    kills of 2024-10 that field Balance, Assassination and Demonology:
+    PpFW3bgy7m6Kxk1t fight 8, Bgcm6RavhWK7DLd1 fight 34, hxz7MH8gW9BYGNdr
+    fight 41, jxNrbDtq9BdwAcam fight 30 and X7tWdbvxYn3MjACD fight 28
+    (173.6–199.0 s, raid item level 354.2–357.9, full ground-air-ground
+    cycles). They were found through the Balance rankings filtered to raids
+    that also field the other two specs and were verified on each fight page.
+  - All six kills are matched. Each spec's target is the median of one value
+    per kill: Blood DK 13,293 (4), Balance 18,355 (5), Survival 20,413 (5),
+    Fire 18,719 (3), Retribution 19,930 (3), Assassination 17,469 (5),
+    Elemental 19,688 (2), Demonology 20,626 (5). No canonical spec uses the
+    WoWSims fallback any more. The wanted specs' parses span 11–84, so the
+    median is not a top-parse target.
   - xAhkN2y9YP3KRmnJ fight 17 (48.5 s, item level 401.4) ends before the first
     liftoff. It is throughput context only.
 - Captures: `atramedes_wcl_dps_reference_v1.json`, `atramedes_wcl_cast_timelines_v1.json`
@@ -259,6 +271,12 @@ from roster slots.
   reach, so the tank stands 10 yd past the anchor. Melee hold slots at
   21.58 yd from his centre (melee range 22.83), behind him, and sidestep
   Sonar Pulse around him at that distance.
+  - While he is still being dragged (grounded, on the living tank, more
+    than 14 yd from the anchor: the pull and each landing), melee take no
+    slot and native melee chase keeps contact. The slot "behind him as seen
+    from the tank" is then his trailing side: in round 1 melee flipped to it
+    at the pull and lost 6-15 s of swings while he walked about 58 yd at
+    ~7.8 yd/s (`AnchorDragInProgress`, round 2). Hazard exits still apply.
 - **Gongs** (native spellclick only, `BotAtramedesGongPolicy.h`):
   - The owner is the best ranged DPS (hunter, then mage, …) and the backup is
     the next.
@@ -621,17 +639,61 @@ Results:
 Without mobility published, the older replay still spends 2–4 shields per
 phase.
 
-**Open question: shields per air phase.** The historical guide reports one per
-air phase; the user's target is 2. A WCL count of Resonating Clash (78168) per air phase would tell
-whether the native flame speed is too high.
+**Shields per air phase.** The historical guide reports one per air phase;
+the user's target is 2. Round 2 counted air Resonating Clash (78168) casts in
+six WCL 10N kills: 1, 1, 1, 2, 1, 1. The native replay's 1–2 with the 7 s
+spawn matches that spend, which does not by itself isolate a Sound term in
+the flame speed (`breath_speed_scaling_with_sound` stays open).
+
+## Round 1 live diagnosis (blackwing_descent_10n-r01-553da85c98, read in round 2)
+
+Three counted native clears, 131.6 ± 1.3 s, 0 boss-window deaths, boss melee
+0.96x WCL. Against the six matched WCL kills every actor passes except the
+Demonology Warlock (7,371 DPS, 0.36). Balance (1.43) and Assassination (1.17)
+failed round 1 only against the patchwerk WoWSims fallback.
+
+- **Phases (native, boss z from the combat log).** Liftoff starts at
+  91.2–91.5 s after the first hit, he hovers at z 113.2 from 95–96 s and
+  touches down at 127.8–128.5 s: 36.5 s airborne including travel. The WCL
+  kill lifts off about 90 s and lands about 129 s. Round-1 kills end 2–4 s
+  after the landing, so the air phase is 27% of the bot window against about
+  23% in fight 32; melee get nothing in it (0.1–0.2M air damage each).
+- **Melee at the pull.** The anchor drag moved him from about (215, -224) to
+  (157, -222) in 12 s. Melee lost 6–15 s of swings (rogue gaps 10.7 s and
+  8.0 s in two kills, Retribution 6.3–10.1 s in all three) chasing their slot
+  on his trailing side. Round 2 leaves melee to native chase until he is
+  within 14 yd of the anchor. Later ground gaps are 2.6–4.1 s (Sonar Pulse
+  sidesteps).
+- **Ranged.** The Fire Mage's first hit comes at 6.1–7.0 s: it walks its arc
+  slot, which follows the dragged boss. Balance moves in 29–61% of its damage
+  events and Elemental keeps casting; no gap over 2.5 s for Balance.
+- **Demonology Warlock (class evidence, not an encounter change).** Only
+  19–48 own damage events per kill and no Shadow Bolt. Its profile
+  (`bot_rotation_profile` 287, `phase8_demonology_hellfire_survival_2026_07_27`)
+  caps every enemy row at `max_range` 18 (Shadowflame 8). The resolver compares
+  that cap with the centre-to-centre distance and intersects it with the native
+  range, so with Atramedes' 20 yd combat reach no legal cast point exists
+  outside his hitbox. On the 32 yd ranged arc Immolate, Incinerate, Hand of
+  Gul'dan and Shadowflame were rejected `max_range_exceeded` 700–1,170 times
+  per kill; the range recovery then fought the arc (`ranged_arc` 150–230
+  movement receipts, `higher_priority_movement_active`,
+  `movement_requires_instant_action` 72). In the same round the Magmaw shard's Demonology Warlock did 32.7k.
+  The fix belongs to the class owner (raid-scoped, so accepted results stay
+  put); moving the arc to 18 yd would put the warlock inside the boss.
 
 ## Unresolved (fidelity_blocked)
 
-`ground_air_phase_timestamps` (WCL: about 90 s liftoff, 129 s landing; native
-travel time unmeasured), `breath_initial_target_rule`,
-`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3; the WCL kill took no Sonar
-Bomb damage), `breath_speed_scaling_with_sound` (which includes shields per air
-phase against the native flame speed), `heroic_fiend_and_shield_destruction_cadence`.
+`ground_air_phase_timestamps` (10N now measured on both sides: native liftoff
+91.2–91.5 s, touch-down 127.8–128.5 s; WCL first air Tracking 95.1–95.4 s in
+six kills; resolving it for 10N needs the catalog and the BWD quantitative
+audit updated together), `breath_initial_target_rule` (six WCL kills: the
+ground breath never tracked a tank in 19 applications, the air breath tracked
+a tank twice in 15; per-player Sound is not exposed),
+`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3; WCL shows impact groups
+every 3 s with 1–3 players hit but no launch rows),
+`breath_speed_scaling_with_sound` (air shields per phase 1–2 in WCL, as native),
+`heroic_fiend_and_shield_destruction_cadence` (heroic only). The ledger's
+unresolved entries now carry their modes.
 Resolved on 2026-09-27 from WCL: `wcl_10n_kill_reference_pending`,
 `boss_melee_damage_modifier_10n`, `boss_health_10n`, `modulation_repeat_interval`.
 
@@ -659,3 +721,8 @@ Resolved on 2026-09-27 from WCL: `wcl_10n_kill_reference_pending`,
    2024-10-28): <https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32>, and
    xAhkN2y9YP3KRmnJ fight 17 (10N kill, 2025-06-11): <https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17>.
    Read 2026-09-27. Used for melee U, health, boss timeline, Devastation target, DPS and cast timelines.
+8. Warcraft Logs, five further Atramedes 10N kills read 2026-09-27 (round 2):
+   PpFW3bgy7m6Kxk1t fight 8, Bgcm6RavhWK7DLd1 fight 34, hxz7MH8gW9BYGNdr fight 41,
+   jxNrbDtq9BdwAcam fight 30, X7tWdbvxYn3MjACD fight 28 (for example
+   <https://classic.warcraftlogs.com/reports/PpFW3bgy7m6Kxk1t?fight=8>). Used for DPS
+   references, Tracking targets, Sonar Bomb impacts and air shield counts.

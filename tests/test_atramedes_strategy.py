@@ -141,6 +141,9 @@ static ActorSnapshot& Member(Blackboard& board, uint32 counter)
 // The boss is the first summon (flames are pushed after it).
 static ActorSnapshot& Boss(Blackboard& board) { return board.Summons.front(); }
 
+// Where r01 kills left him after the drag: 7.6 yd from the anchor.
+static void Settle(Blackboard& board) { Boss(board).Position = { 157.0f, -222.0f, 75.0f }; }
+
 static AdaptiveAtramedesPlan Plan(Blackboard const& board, uint32 counter, char const* role = "dps")
 {
     return AdaptiveAtramedesStrategy().Propose(board, PlayerGuid(counter), role);
@@ -446,8 +449,10 @@ static void TestRound4BellStack()
         assert(Mechanic(Plan(board, slot)) == "ranged_arc");
     for (uint32 slot : { HolyPaladin, Discipline })
         assert(Mechanic(Plan(board, slot, "healer")) == "ranged_arc");
+    // He is dragged to the anchor: melee keep native chase (already inside
+    // his reach here), no slot on his trailing side (TestMeleeDuringAnchorDrag).
     for (uint32 slot : { Retribution, Rogue })
-        assert(Mechanic(Plan(board, slot)) == "melee_max_range");
+        assert(!Plan(board, slot).Movement);
     assert(duties.GongOwner == PlayerGuid(Hunter));
     assert(Mechanic(Plan(board, Hunter)) == "gong_owner_standby");
     // Every non-tank plan damages him.
@@ -1955,7 +1960,58 @@ static void TestFireTankAndArc()
     assert(Mechanic(arc) == "ranged_arc");
     assert(arc.Movement->ActionPriority == BotActionArbitration::Priority::Mechanic);
     assert(!MoveOf(arc)->PreemptCasting);
-    // Melee hold a slot at maximum melee range (TestMeleeMaxRange).
+    // Melee hold a slot at maximum melee range once he stands at the anchor
+    // (TestMeleeMaxRange).
+    Settle(board);
+    assert(Mechanic(Plan(board, Rogue)) == "melee_max_range");
+}
+
+// The anchor drag (r01, blackwing_descent_10n-r01-553da85c98): Atramedes
+// walked from the landing (~215, -224) to (~157, -222) in about 12 s behind
+// the tank. The melee slot, behind him as seen from the tank, was his
+// trailing side, and melee chasing it lost 6-15 s of swings. While he is
+// dragged, melee leave positioning to native chase; the slot returns once he
+// is inside the anchor tolerance, or when no living tank is dragging him.
+static void TestMeleeDuringAnchorDrag()
+{
+    Blackboard board = Board();
+    Vector3 const landing{ 214.531f, -223.918f, 74.7668f };
+    Boss(board).Position = landing;
+    Member(board, Rogue).Position = { 196.0f, -226.0f, 75.0f };
+    Member(board, Retribution).Position = { 233.0f, -222.0f, 75.0f };
+    A::Facts const facts = A::BuildFacts(board);
+    A::DutyPlan const duties = A::BuildDutyPlan(board);
+    assert(A::AnchorDragInProgress(board, facts, duties));
+    assert(Mechanic(Plan(board, Tank, "tank")) == "tank_anchor_drag");
+    for (uint32 slot : { Retribution, Rogue })
+    {
+        AdaptiveAtramedesPlan const plan = Plan(board, slot);
+        assert(plan.OwnsNode && !plan.Movement);
+        assert(plan.DamageTarget == Boss(board).Guid);
+    }
+    // Ranged keep their arc and hazard exits still win during the drag.
+    assert(Mechanic(Plan(board, Balance)) == "ranged_arc");
+    Vector3 const rogue = Member(board, Rogue).Position;
+    float const lane = G::Bearing(landing, rogue);
+    Vector3 const disk = G::PointAt(landing, lane, 4.0f, 75.0f);
+    board.Summons.push_back(MakeUnit(A::SonarPulseEntry, 73, disk.X, disk.Y, ActorKind::Summon));
+    assert(Mechanic(Plan(board, Rogue)) == "sonar_pulse_melee_exit");
+
+    // He is on someone else (or the tank is dead): no drag, slots return.
+    board = Board();
+    Boss(board).Position = landing;
+    Boss(board).VictimGuid = PlayerGuid(Rogue);
+    assert(!A::AnchorDragInProgress(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
+    assert(Mechanic(Plan(board, Retribution)) == "melee_max_range");
+    board = Board();
+    Boss(board).Position = landing;
+    Member(board, Tank).Alive = false;
+    assert(!A::AnchorDragInProgress(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
+
+    // Settled inside the tolerance: the slot at maximum melee range.
+    board = Board();
+    Settle(board);
+    assert(!A::AnchorDragInProgress(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
     assert(Mechanic(Plan(board, Rogue)) == "melee_max_range");
 }
 
@@ -1968,6 +2024,7 @@ static void TestMeleeMaxRange()
 {
     assert(std::fabs(A::MeleeRangeYards - 22.8333f) < 0.001f);
     Blackboard board = Board();
+    Settle(board);
     Vector3 const boss = Boss(board).Position;
     for (uint32 slot : { Retribution, Rogue })
     {
@@ -2036,6 +2093,7 @@ int main()
     TestAirReplayFromEverySlot();
     TestFireTankAndArc();
     TestMeleeMaxRange();
+    TestMeleeDuringAnchorDrag();
     TestRound4BellStack();
     TestAirAbilities();
     TestAirMobilityReplay();

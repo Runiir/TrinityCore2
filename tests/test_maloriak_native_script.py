@@ -269,3 +269,22 @@ def test_phase_two_cadence_follows_the_wcl_kills_on_10n_only() -> None:
         start = source.index(f"case {event}:")
         body = source[start:source.index("break;", start)]
         assert f"events.Repeat(IsTenNormal() ? Milliseconds({ten}) : Milliseconds({other}));" in body, event
+
+
+def test_pre_vial_arcane_storm_and_phase_two_remedy_on_10n_only() -> None:
+    """10N WCL (eight kills, ledger pre_vial_casts / phase_two_remedy): an Arcane Storm before
+    the first vial (median 14.3 s) and a phase-two Remedy about 19.4 s after Unstable Mix."""
+    source = text(BOSS)
+    engage = function_body(source, "void JustEngagedWith(Unit* who) override")
+    assert engage.index("EVENT_FACE_TO_CAULDRON, 15s + 500ms") < engage.index(
+        "if (IsTenNormal())\n            events.ScheduleEvent(EVENT_ARCANE_STORM, 14s + 300ms, 0, PHASE_ONE);")
+    face = source[source.index("case EVENT_FACE_TO_CAULDRON:"):source.index("case EVENT_THROW_VIAL:")]
+    assert "events.Reset();" in face  # drops the pre-vial storm's repeat
+    enter = source[source.index("case EVENT_ENTER_PHASE_TWO:"):source.index("case EVENT_DRINK_ALL_BOTTLES:")]
+    assert "events.CancelEvent(EVENT_REMEDY);" in enter
+    mix = source[source.index("case EVENT_UNSTABLE_MIX:"):source.index("case EVENT_MAGMA_JETS:")]
+    assert "if (IsTenNormal())\n                        events.ScheduleEvent(EVENT_REMEDY, 19s + 400ms, 0, PHASE_TWO);" in mix
+    remedy = source[source.index("case EVENT_REMEDY:"):source.index("break;", source.index("case EVENT_REMEDY:"))]
+    assert "events.Repeat(24s);" in remedy  # Repeat keeps the scheduled phase
+    assert "return phaseTwo && !IsTenNormal() ? Unscheduled : untilEvent(EVENT_REMEDY);" in source
+

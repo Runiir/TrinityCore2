@@ -18,6 +18,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianStranded.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTankSelfCare.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianSurfaceIntent.h"
 #include <cmath>
@@ -176,12 +177,22 @@ private:
                 if (ActorSnapshot const* prototype = PillarPrototype(view,
                         duty.PillarOf(bot.Guid)))
                     plan.DamageTarget = prototype->Guid;
-                else if (ActorSnapshot const* nearest = NearestPrototype(view,
-                        bot))
-                    plan.DamageTarget = nearest->Guid;
-                else
+                else if (view.Prototypes.empty())
                     // Nefarian's Electrocute fires at every 10% he loses.
                     Suppress(plan, "nefarian_platform_no_prototype");
+                else
+                {
+                    // Round 2: never a prototype out of reach (native range
+                    // recovery walked a pillar member into the air toward
+                    // one; BotNefarianStranded.h).
+                    ArenaLayout const layout = BuildArenaLayout(duty);
+                    PhaseTwoHelp const help = PhaseTwoHelpTarget(
+                        MovementContext{ board, view, duty, layout, bot, facts });
+                    if (help.Target)
+                        plan.DamageTarget = help.Target->Guid;
+                    else
+                        Suppress(plan, help.Hold);
+                }
                 return;
             case Phase::NefarianLanding:
                 if (!healer)
@@ -212,17 +223,6 @@ private:
             default:
                 return;
         }
-    }
-
-    static ActorSnapshot const* NearestPrototype(
-        Nefarian::EncounterView const& view, ActorSnapshot const& bot)
-    {
-        ActorSnapshot const* best = nullptr;
-        for (ActorSnapshot const* prototype : view.Prototypes)
-            if (!best || Nefarian::Distance3(prototype->Position, bot.Position)
-                    < Nefarian::Distance3(best->Position, bot.Position))
-                best = prototype;
-        return best;
     }
 
     // The warrior the handler (warden) should hold now: the nearest active
@@ -416,6 +416,25 @@ private:
         plan.Movement = std::move(movement);
     }
 
+    static void ChooseStrandedFall(AdaptiveNefarianPlan& plan,
+        Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        plan.MovementSurface = MakeGoal(context, MovePurpose::PillarDescent,
+            Surface::Floor, BotLocal(context), 3.0f, true);
+        BotNativeAction::Candidate movement;
+        movement.Id.ScopeKey = context.Board.CurrentScope.Key();
+        movement.Id.Strategy = "adaptive_nefarian";
+        movement.Id.Mechanic = "platform_stranded_fall";
+        movement.Id.Actor = context.Bot.Guid;
+        movement.Id.EventGeneration = 201;
+        movement.ActionPriority = BotActionArbitration::Priority::Survival;
+        movement.Utility = 470.0f;
+        movement.ExpiresAtMs = context.Board.ObservedAtMs + 1000;
+        movement.Action = StrandedFall(context);
+        plan.Movement = std::move(movement);
+    }
+
     // A walk already running that would now lead a following warrior deeper
     // into Nefarian's front (he turned, or the warrior did) is validated
     // before any other rule: unless this decision replaces it with a lawful
@@ -561,6 +580,13 @@ private:
             if (falling || (fightOnFloor && OnPillarStructure(context)))
             {
                 ChooseDescent(plan, context);
+                return;
+            }
+            // Round 2: a passenger left standing in the air falls where it
+            // stands (BotNefarianStranded.h); its landing is the descent's.
+            if (fightOnFloor && StrandedAbovePlatform(context))
+            {
+                ChooseStrandedFall(plan, context);
                 return;
             }
         }

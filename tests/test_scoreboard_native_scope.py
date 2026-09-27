@@ -89,6 +89,11 @@ def test_a_no_reference_spec_cannot_qualify_on_the_wowsims_fallback(monkeypatch:
     # Even when a verified WoWSims value exists for the spec, the declared gap stays no_reference.
     monkeypatch.setattr(scoreboard_core, "fallback_targets",
                         lambda root, target: {"feral_druid_tank": 9000.0, "fire_mage": 30000.0})
+    # Round 2 matched fire_mage to WCL; drop that match so the fallback path is still exercised.
+    real_spec_targets = scoreboard_core.spec_targets
+    monkeypatch.setattr(scoreboard_core, "spec_targets",
+                        lambda root, target: {spec: dps for spec, dps in real_spec_targets(root, target).items()
+                                              if spec != "fire_mage"})
     references = reference_targets(ROOT, target)
     assert "feral_druid_tank" not in references
     assert references["fire_mage"]["basis"] == "wowsims_fallback"

@@ -1345,7 +1345,7 @@
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal, conflicting with native boarding application. See longer-kill addendum. 2026-09-27: the 4.4.2-era 10N log Y8ajQ7dbmKMG1RZy also applies Armor at Mangle removal (1:51.297)."
+      "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal; the native script applies it at the same release boundary since a5c6606d93 (source audit 2026-09-27), so the earlier boarding-time conflict is closed in source. See longer-kill addendum. 2026-09-27: the 4.4.2-era 10N log Y8ajQ7dbmKMG1RZy also applies Armor at Mangle removal (1:51.297)."
     },
     {
       "key": "shadow_breath",
@@ -1382,7 +1382,7 @@
     ],
     "mangle_repeat_25H_seconds": 95.558,
     "armor_lifetime_25H_seconds": 89.992,
-    "armor_application": "observed at Mangle removal in both reports; native applies on boarding",
+    "armor_application": "observed at Mangle removal in both reports; native applied on boarding before a5c6606d93 and applies at release since then (source audit 2026-09-27)",
     "implementation_status": "repair_candidate_target_era_compatibility_unproven",
     "head_targetability_windows": "Warrior melee clusters observed on NPC 42347 at 120.340-143.925 and 217.957-240.156s; body returns 165.357/256.025s. These are actor activity bounds, not exact head windows. NPC 48270 is a distinct Mangle head."
   },
@@ -1625,7 +1625,7 @@
       ],
       "status": "partial",
       "known": "90s client/native duration; 89.992s WCL lifetime; Armor follows Mangle removal in 10N and 25H.",
-      "next": "10N apply anchor resolved (Mangle removal, both eras). Route the anchor mismatch to implementation as already specified; the release cause (hook impale versus expiry versus death) is still unobserved in 10N.",
+      "next": "10N apply anchor resolved (Mangle removal, both eras). No implementation work remains for the anchor: the native script applies Armor at release since a5c6606d93 (source audit 2026-09-27; a live aura-apply timestamp is still not retained by the scoreboard evidence). The release cause (hook impale versus expiry versus death) is still unobserved in 10N.",
       "source_refs": [
         "magmaw_research_closure_20260912",
         "wcl_FhcbnAmN9v7kr1VP_3",
@@ -1639,7 +1639,7 @@
           "status": "resolved_observed",
           "value": "Sweltering Armor 78199 is applied on the tank at the same timestamp as the Mangle 89773 debuff removal",
           "evidence": "MxFq7: Mangle 1:30.597 -> removed 1:54.896; Armor applied 1:54.896 (Wongelrainer). Y8aj (4.4.2 era): Mangle 1:30.241 -> removed 1:51.297 at the kill; Armor applied 1:51.297 (Nexry).",
-          "native_comparison": "Conflicts with the native boarding-time application; the existing Armor release-anchor repair specification applies.",
+          "native_comparison": "Matches the current native script: since a5c6606d93 (2026-09-23, before b5-d1898555) boss_magmaw.cpp PassengerBoarded applies 78199 when a living, in-combat Mangle target leaves the seat, and not on death, evade or reset (tests/test_magmaw_mangle_sweltering_release.py). The boarding-time conflict described the older source. Source audit 2026-09-27; no live aura-apply timestamp is retained in the scoreboard evidence.",
           "limit": "Neither 10N log shows the full 90 s Armor lifetime (both kills end before expiry). No 10N hook/impale events are exposed by WCL, so the release cause of Mangle removal is not identified."
         }
       }

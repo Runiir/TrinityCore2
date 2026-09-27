@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 
 import pytest
-from tests.combat_resolver_source import combat_resolver_source
+from tests.combat_resolver_source import ADMISSION, combat_resolver_source
 
 ROOT = Path(__file__).resolve().parents[1]
 BOTS = ROOT / 'src/server/game/Bots'
@@ -139,15 +139,26 @@ def test_actual_resolver_guard_and_unchanged_admission(tmp_path):
             // amount is the reliable live proxy available to the bot.  A
             // 10k tick is reachable in raid-normalized P4 gear while avoiding
             // the near-empty Combustions observed in calibration run 225.
+            // Canonical raids: optional Pyroblast DoT, BotRaidFireCombustionPatience.h.
             AuraEffect const* ignite = target->GetAuraEffect(12654, EFFECT_0, bot->GetGUID());
             if (!ignite || ignite->GetAmount() < 10000 || !target->HasAura(44457, bot->GetGUID())
-                || (!target->HasAura(92315, bot->GetGUID()) && !target->HasAura(11366, bot->GetGUID())))
+                || (!canonicalRaidScope
+                    && !target->HasAura(92315, bot->GetGUID()) && !target->HasAura(11366, bot->GetGUID())))
             {
                 candidate.RejectReason = "combustion_dot_window_not_ready";
                 continue;
             }
+            if (canonicalRaidScope && BotRaidFireCombustionPatience::Waits(bot->GetGUID().GetRawValue(),
+                    ignite->GetAmount(), candidate.RejectReason))
+                continue;
         }
 '''
+    # The relaxation is bound to canonical-composition raid cohorts only; the
+    # legacy accepted Magmaw Fire mages 30006/30007 keep the three-DoT window.
+    admission = ADMISSION.read_text(encoding='utf-8')
+    assert admission.count('    bool const canonicalRaidScope = BotRaidFireCombustionPatience::CanonicalScope(\n'
+                           '        raidRotationScope, Cohort().Config.ValidationRouteScenarioId);\n') == 1
+    assert admission.count('canonicalRaidScope') == 3
     body = r'''
 struct BotActionCandidate {unsigned SpellId=11129;std::string ObservationJson="{}";};
 namespace BotWorldPopulationMgrSpellSemantics {uint64 NowMs(){return 1002;}}

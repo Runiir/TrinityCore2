@@ -200,6 +200,11 @@ struct boss_maloriak : public BossAI
         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
         events.SetPhase(PHASE_ONE);
         events.ScheduleEvent(EVENT_FACE_TO_CAULDRON, 15s + 500ms, 0, PHASE_ONE);
+        // 10N WCL: an Arcane Storm begins before the first vial in all eight
+        // kills (10.9-15.0 s, median 14.3 s; ledger pre_vial_casts). The
+        // cauldron visit's events.Reset() drops its repeat.
+        if (IsTenNormal())
+            events.ScheduleEvent(EVENT_ARCANE_STORM, 14s + 300ms, 0, PHASE_ONE);
 
         if (IsHeroic())
             DoSummon(NPC_LORD_VICTOR_NEFARIUS_MALORIAK, LordVictorNefariusSummonPosition, 0, TEMPSUMMON_MANUAL_DESPAWN);
@@ -394,7 +399,7 @@ struct boss_maloriak : public BossAI
                     return Unscheduled;
                 return untilEvent(EVENT_RELEASE_ABERRATIONS);
             case SPELL_REMEDY:
-                return phaseTwo ? Unscheduled : untilEvent(EVENT_REMEDY);
+                return phaseTwo && !IsTenNormal() ? Unscheduled : untilEvent(EVENT_REMEDY);
             case SPELL_SCORCHING_BLAST:
                 return phaseTwo ? Unscheduled : untilEvent(EVENT_SCORCHING_BLAST);
             case 77786: // Consuming Flames, base id of every difficulty variant
@@ -542,6 +547,9 @@ struct boss_maloriak : public BossAI
                     break;
                 case EVENT_ENTER_PHASE_TWO:
                     CancelVialVisitEvents();
+                    // The phase-one Remedy never runs in phase two; drop it so
+                    // the mechanic timer reports only the phase-two one.
+                    events.CancelEvent(EVENT_REMEDY);
                     // Stop a cauldron (or heroic Black home) walk already in
                     // progress; the chase resumes after Unstable Mix.
                     if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE)
@@ -578,6 +586,12 @@ struct boss_maloriak : public BossAI
                     events.ScheduleEvent(EVENT_ACID_NOVA, 8s + 400ms, 0, PHASE_TWO);
                     events.ScheduleEvent(EVENT_ABSOLUTE_ZERO,
                         IsTenNormal() ? Milliseconds(11s + 300ms) : Milliseconds(8s + 400ms), 0, PHASE_TWO);
+                    // 10N WCL: Remedy continues in phase two, about 19.4 s
+                    // after Unstable Mix (17.8-21.0 s in five kills whose
+                    // phase two lasted that long, none in the three that did
+                    // not; ledger phase_two_remedy); Repeat keeps the phase.
+                    if (IsTenNormal())
+                        events.ScheduleEvent(EVENT_REMEDY, 19s + 400ms, 0, PHASE_TWO);
                     break;
                 case EVENT_MAGMA_JETS:
                     DoCastAOE(SPELL_MAGMA_JETS_SCRIPT_EFFECT);

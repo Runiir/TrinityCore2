@@ -171,6 +171,11 @@ struct TransportSurfaceMove
     float LandingToleranceYards = 1.0f;
     bool LandOnTransport = true;
     float MinHealthAfterFallPct = 0.2f;
+    // StepOff into liquid (round 8, Nefarian's End: a pillar top into the
+    // lava around it): the declared floor lies under liquid the member then
+    // floats in. The dry-ground ledge drop (false) still rejects any landing
+    // in liquid.
+    bool LandInLiquid = false;
     // Float: the liquid depth over the feet at which the member swims.
     float FloatDepthYards = 1.2f;
     // Swim: at most this speed (0: the native swim speed).

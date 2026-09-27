@@ -116,8 +116,8 @@ public:
 
         Point const centre = FormationCentre(board, boss);
         if (observation.CurrentPhase == Phase::Outage)
-            plan.Movement = ProposeMove(board, bot, StackSlot(board, centre, botGuid),
-                StackTolerance, "outage_slime_stack", boss.Guid, 320.0f);
+            plan.Movement = ProposeMove(board, bot, StackSlot(board, duties, centre, botGuid),
+                StackSlotTolerance(board, duties), "outage_slime_stack", boss.Guid, 320.0f);
         else if (observation.CurrentPhase == Phase::Mixture)
             if (std::optional<Point> slot = SpreadSlot(duties, centre, botGuid))
                 plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,

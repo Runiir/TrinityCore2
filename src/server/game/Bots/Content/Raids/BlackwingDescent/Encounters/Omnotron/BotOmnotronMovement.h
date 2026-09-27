@@ -22,6 +22,9 @@ inline constexpr float GeneratorExitDistance = 15.0f;
 inline constexpr float ShieldSeparationDistance = 12.0f;
 inline constexpr float ShieldSeparationMinimumGain = 4.0f;
 inline constexpr float GeneratorApproachRange = 30.0f;
+// Healers keep every living tank within this (heal range 40 yd, minus room for
+// the tank and its construct to move); see BotOmnotronPositioning.h.
+inline constexpr float HealerTankReach = 30.0f;
 inline constexpr uint64 MovementIntentLifetimeMs = 750;
 
 namespace Geometry
@@ -503,7 +506,15 @@ inline std::optional<BotNativeAction::Candidate> ProposeGeneratorStack(
     });
     if (conductorNearby)
         return std::nullopt;
-    if (role != "healer")
+    if (role == "healer")
+    {
+        // A generator that leaves a tank out of heal range is not worth it.
+        for (ActorSnapshot const& player : board.Players)
+            if (player.Alive && player.Role == "tank"
+                && PlanarDistance(player.Position, generator->Position) > HealerTankReach)
+                return std::nullopt;
+    }
+    else
     {
         ConstructFact const* focus = facts.Find(duty.DamageFocus);
         if (!focus || PlanarDistance(focus->Actor->Position, generator->Position) > 35.0f)

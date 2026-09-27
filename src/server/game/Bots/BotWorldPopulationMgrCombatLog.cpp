@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotNativeLifeEvents.h"
 
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeThreatSeedState.h"
 #include "Creature.h"
@@ -297,6 +298,8 @@ void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spe
 void BotWorldPopulationMgr::ResetCombatLog()
 {
     ++Cohort().CombatLogEpoch;
+    // A new lifecycle for the native life-edge counts (BotNativeLifeEvents.h).
+    BotNativeLifeEvents::BeginLifecycle(Cohort().Id);
     Party().CombatLogAbilities.clear();
     Party().CombatLogSecondBuckets.clear();
     Party().CombatActionOutcomes.clear();

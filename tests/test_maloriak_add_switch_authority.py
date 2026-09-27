@@ -1,6 +1,6 @@
-"""Maloriak's 30% add switch at the native edge (user tactic 2026-09-26).
+"""Maloriak's add switch at the native edge (user tactic 2026-09-26; 50% since 2026-09-27).
 
-From 30% every damage dealer leaves Maloriak for the Aberrations until the
+From the switch health every damage dealer leaves Maloriak for the Aberrations until the
 chambers are empty; the Blood DK main tank alone stays on him. In the r05
 holds, with only the target cleared, Maloriak still took 62-73k DPS: casts in
 flight, the Greater Fire Elemental, a Doomguard, the Felguard, a Tentacle of

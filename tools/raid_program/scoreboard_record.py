@@ -24,6 +24,10 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.play_mode_guard import refuse_play
+from tools.raid_program.scoreboard_deaths import (
+    ENCOUNTER_RECONCILED_BASIS, apply_exemptions, death_exemptions, death_signal_fields, encounter_reconciliation,
+    native_death_signal,
+)
 from tools.raid_program.scoreboard_core import (
     KILL_SCHEMA, RNG_ATTACHMENT_SCHEMA, append_record, file_sha256, healer_roles, label_kills, legacy_kill_id,
     load_records, load_target, roster, spec_targets, target_for_records, utc_now,
@@ -69,18 +73,26 @@ def run_dir_reached_encounter(run_dir: Path, node: str) -> bool:
     return False
 
 
-def death_evidence(run_dir: Path | None, encounter_node: str, route_deaths: int | None) -> dict[str, Any]:
+def death_evidence(run_dir: Path | None, encounter_node: str, route_deaths: int | None,
+                   target: dict[str, Any] | None = None) -> dict[str, Any]:
     """Party deaths from lethal landed damage in the native combat log.
 
     A death is a damage event on a party member whose amount reaches the
     target's health before the hit. It is in the boss window when it happens on
     the encounter route node or between the first and last encounter damage.
-    The count is trusted only when it reconciles with the route death count.
+    The count is trusted when it reconciles with the route death count, or
+    (scoreboard_deaths) when the encounter's own killed-hostile reconciliation
+    has no mismatch and the window's events were all retained. Deaths inside a
+    target-declared exempt phase (boss_window_death_exemptions) are counted
+    under the exemption's record_key instead of boss_window_deaths.
     """
+    exemptions = death_exemptions(target)
+    exempt_zero = {row["record_key"]: 0 for row in exemptions}
     if route_deaths == 0:
-        return {"boss_window_deaths": 0, "death_basis": "no_route_deaths", "deaths": []}
+        return {"boss_window_deaths": 0, "death_basis": "no_route_deaths", "deaths": [], **exempt_zero}
     if run_dir is None or not (run_dir / "combat_log.json").exists() or not (run_dir / "combat_analysis.json").exists():
-        return {"boss_window_deaths": None, "death_basis": "unknown_raw_combat_log_unavailable", "deaths": []}
+        return {"boss_window_deaths": None, "death_basis": "unknown_raw_combat_log_unavailable", "deaths": [],
+                **({key: None for key in exempt_zero})}
     analysis = json.loads((run_dir / "combat_analysis.json").read_text())
     log = json.loads((run_dir / "combat_log.json").read_text())
     encounters = analysis.get("encounters") or []
@@ -104,11 +116,32 @@ def death_evidence(run_dir: Path | None, encounter_node: str, route_deaths: int 
             "killed_by": event.get("source_name"), "spell": event.get("spell_name"),
             "in_boss_window": in_window,
         })
+    extra: dict[str, Any] = {}
+    window_deaths = sum(death["in_boss_window"] for death in deaths)
+    if exemptions:
+        window_deaths, exempt_fields = apply_exemptions(deaths, events, exemptions)
+        extra.update(exempt_fields)
     reconciled = route_deaths is not None and len(deaths) == route_deaths and not log.get("recent_events_dropped")
+    basis = "combat_log_lethal_damage" if reconciled else "combat_log_lethal_damage_unreconciled"
+    if not reconciled:
+        scoped = encounter_reconciliation(analysis, log, encounter_node, first)
+        if scoped is not None:
+            extra["encounter_reconciliation"] = scoped
+            if scoped["reconciled"]:
+                reconciled, basis = True, ENCOUNTER_RECONCILED_BASIS
+    if not reconciled:
+        extra.update({key: None for key in exempt_zero})
+    report_path = run_dir / "report.json"
+    try:
+        report = json.loads(report_path.read_text()) if report_path.exists() else None
+    except (OSError, ValueError):
+        report = None
+    extra.update(death_signal_fields(len(deaths), native_death_signal(report)))
     return {
-        "boss_window_deaths": sum(death["in_boss_window"] for death in deaths) if reconciled else None,
-        "death_basis": "combat_log_lethal_damage" if reconciled else "combat_log_lethal_damage_unreconciled",
+        "boss_window_deaths": window_deaths if reconciled else None,
+        "death_basis": basis,
         "deaths": deaths,
+        **extra,
     }
 
 
@@ -431,7 +464,7 @@ def record_from_run_dir(root: Path, target: dict[str, Any], *, scenario: str, la
     timeline = json.loads(timeline_path.read_text()) if timeline_path is not None else None
     return record_from_summary(
         summary, root=root, target=target, scenario=scenario, label=label, kill_id=kill_id,
-        deaths=death_evidence(run_dir, node, summary.get("route_deaths")), timeline=timeline,
+        deaths=death_evidence(run_dir, node, summary.get("route_deaths"), target), timeline=timeline,
         source_commit=source_commit, evidence_pointer=evidence_pointer,
         report_present=summary["report_present"], reached_encounter=run_dir_reached_encounter(run_dir, node))
 
@@ -544,7 +577,7 @@ def ingest(root: Path, args) -> int:
             raw = _find_run_dir(args.evidence_root, summary.get("run_dir"))
             if raw is not None:
                 refuse_play(raw, "scoreboard ingest --evidence-root")
-            deaths = death_evidence(raw, target["encounter_route_node_id"], summary.get("route_deaths"))
+            deaths = death_evidence(raw, target["encounter_route_node_id"], summary.get("route_deaths"), target)
             records.append(record_from_summary(
                 summary, root=root, target=target, scenario=args.scenario, label=args.label,
                 kill_id=legacy_kill_id({"label": args.label, "run_dir": summary.get("run_dir")}), deaths=deaths,

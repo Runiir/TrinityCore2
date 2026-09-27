@@ -76,7 +76,7 @@ inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
     {
         uint32 const remaining = *observation.FeudRemainingMs;
         float const fromStack = Distance(ToPoint(observation.Bot->Position),
-            StackCentre(FormationCentre(board, boss)));
+            StackCentre(FormationCentre(board, boss), UseStandoffColumn(board, duties)));
         if (botGuid == duties.BarrierOwner && fromStack <= StackPresenceYards
             && remaining <= BarrierWindowMaxMs && remaining >= BarrierWindowMinMs
             && !AnyAlivePlayerHasAura(board, PowerWordBarrierAura))

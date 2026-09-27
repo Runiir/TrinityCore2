@@ -262,8 +262,14 @@ inline std::optional<BotNativeAction::Candidate> ProposeFormation(
             plan.Duty = "melee_ring_hazard_hold";
             return std::nullopt;
         }
-        std::optional<Vector3> const shifted = Maloriak::SafeFormationSlot(
+        std::optional<Vector3> shifted = Maloriak::SafeFormationSlot(
             frame, destination, arc, 30.0f, 180.0f, hazards, {}, 0.0f, false);
+        // Only the outer ring is clear: fight from there (still in reach),
+        // with the same clearance as every formation slot (hazards and the
+        // cauldron's line of sight).
+        if (!shifted)
+            shifted = Maloriak::ClearMeleeRingPoint(frame, arc, hazards,
+                Maloriak::ToFramePolar(frame, destination).Angle, true);
         if (!shifted)
             return std::nullopt;
         destination = *shifted;

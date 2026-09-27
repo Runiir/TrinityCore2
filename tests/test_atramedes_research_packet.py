@@ -29,6 +29,8 @@ COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10
 PREREQUISITES = ROOT / "experiments/configs/raid_prerequisites/blackwing_descent.json"
 
 DEVASTATION_IDS = (78868, 92460, 92461, 92462)
+ROUND2_KILLS = ("PpFW3bgy7m6Kxk1t-fight8", "Bgcm6RavhWK7DLd1-fight34", "hxz7MH8gW9BYGNdr-fight41",
+                "jxNrbDtq9BdwAcam-fight30", "X7tWdbvxYn3MjACD-fight28")
 NOISY = 78897
 
 
@@ -73,13 +75,23 @@ def test_wcl_references_are_the_extracted_10n_kills() -> None:
     dps, casts = load(WCL_DPS), load(WCL_CASTS)
     assert dps["status"] == casts["status"] == "extracted"
     references = {ref["id"]: ref for ref in dps["references"]}
-    assert set(references) == {"MxFq7TRbvnjGY1hJ-fight32", "xAhkN2y9YP3KRmnJ-fight17"}
+    assert set(references) == {"MxFq7TRbvnjGY1hJ-fight32", "xAhkN2y9YP3KRmnJ-fight17", *ROUND2_KILLS}
     matched = references["MxFq7TRbvnjGY1hJ-fight32"]
     assert matched["mode"] == "10N" and matched["duration_sec"] == 165.6
     # Active tank only (the off-tank is excluded); Survival is the median of two hunters.
     assert matched["actor_dps"]["blood_death_knight"] == 13254
     assert matched["actor_dps"]["survival_hunter"] == 25513.05
     assert references["xAhkN2y9YP3KRmnJ-fight17"]["reference_class"] == "short_fight_throughput_context"
+    # Round 2: five full-cycle 10N kills that field the specs fight 32 lacks.
+    for ref_id in ROUND2_KILLS:
+        ref = references[ref_id]
+        assert ref["mode"] == "10N" and ref["duration_sec"] >= 130, ref_id
+        assert len(ref["roster"]) == 10, ref_id
+        assert 350 <= ref["average_item_level"] <= 372, ref_id
+        for spec in ("balance_druid", "assassination_rogue", "demonology_warlock"):
+            assert spec in ref["actor_dps"], (ref_id, spec)
+        healers = {row["spec"] for row in ref["roster"] if row["role"] == "healer"}
+        assert not healers & set(ref["actor_dps"]), ref_id
     assert casts["reference_id"] == "MxFq7TRbvnjGY1hJ-fight32"
     assert len(casts["actors"]) == 8
     assert all(actor["complete"] and actor["row_count"] == len(actor["casts"]) for actor in casts["actors"])
@@ -96,14 +108,19 @@ def test_raid_target_is_scoreboard_loadable_and_honest() -> None:
     from tools.raid_program import scoreboard_core
 
     target = scoreboard_core.load_target(ROOT, "blackwing_descent_10n_atramedes")
-    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight32"]
+    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight32", *ROUND2_KILLS]
     assert (ROOT / target["wcl_reference_manifest"]).is_file()
     assert (ROOT / target["wcl_cast_timelines"]).is_file()
     references = scoreboard_core.reference_targets(ROOT, target)
-    for spec in ("blood_death_knight", "survival_hunter", "retribution_paladin", "elemental_shaman"):
+    # Every canonical non-healer spec is judged against the median of the matched WCL kills.
+    expected = {"blood_death_knight": 13292.75, "balance_druid": 18355.0, "survival_hunter": 20412.6,
+                "fire_mage": 18718.9, "retribution_paladin": 19929.9, "assassination_rogue": 17469.4,
+                "elemental_shaman": 19688.2, "demonology_warlock": 20626.1}
+    for spec, dps in expected.items():
         assert references[spec]["basis"] == "wcl", spec
-    for spec in ("balance_druid", "fire_mage", "assassination_rogue", "demonology_warlock"):
-        assert references[spec]["basis"] == "wowsims_fallback", spec
+        assert references[spec]["dps"] == pytest.approx(dps), spec
+    assert target["reference_status"]["wcl_matched"] == expected
+    assert target["reference_status"]["wowsims_fallback_available"] == []
     assert target["roster"]["11003003"]["spec"] == "survival_hunter"
     # Every non-healer roster spec now has a target.
     for actor in target["roster"].values():

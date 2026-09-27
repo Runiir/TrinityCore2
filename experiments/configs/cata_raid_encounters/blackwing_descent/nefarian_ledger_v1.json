@@ -173,6 +173,13 @@
       "accessed": "2026-09-27",
       "authority": "rank 2 combat log",
       "claim": "10N kill: summary DPS (Assassination Rogue, two Elemental Shamans), all Nefarian/Onyxia melee rows with U, Scarlet Fever windows, all enemy casts, 6 player cast timelines. Read by GPT-6 Astra through the Codex Chrome plugin in the user's authorized Chrome session."
+    },
+    {
+      "id": "live_r01_6bf52232",
+      "title": "Live harness kill blackwing_descent_10n-r01-553da85c98-6bf522326602490eb908b11c40de3dc0 (worldserver 92e81f09, source 553da85c98), evidence artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_nefarian_blackwing_descent_10n-r01-553da85c98-6bf522326602490eb908b11c40de3dc0-blackwing_descent_10n_nefarian_c0.tar.gz.dvc",
+      "accessed": "2026-09-27",
+      "authority": "execution server combat log (bot harness)",
+      "claim": "Native clear in 1087.7 s: Onyxia dead at 64 s, prototypes 75-126 s, phase 3 from about 148 s, Berserk 26662 at 10 min 30 s; Nefarian after-attacker melee mean 67.6k over the first 10 minutes (WCL 67.1k) and 5.8x after Berserk; Onyxia 59.6k over 40 swings (WCL 54.5k); a phase 2 member retargeted another pillar's prototype and hovered in the air for the rest of the fight; 1103 lethal damage events against zero native death signals."
     }
   ],
   "values": [
@@ -1092,13 +1099,14 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Pillar tops are transport-local with near-vertical sides; the movement layer walks, steps off and falls but cannot swim or climb; magma is LiquidType 404 (81114).",
-      "next": "Package T: a lawful pillar ascent (swim up through the magma to the pillar lip) and the magma surface height. Until then phase 2 is the typed capability blocker pillar_ascent_unsupported and the watchdog ends the run there (patch W1).",
+      "known": "Pillar tops are transport-local with near-vertical sides; magma is LiquidType 404 (81114). Live r01: the swim-and-hop ascent carries the pillar teams up and phase 2 ends natively in every clear. Two strandings: a member whose prototype died retargeted another pillar's (about 70 yd) and native range recovery walked it into the air at pillar-top height; a passenger left above the floor never falls by itself.",
+      "next": "Live: no member off its pillar in phase 2 after its prototype dies (round 2 target rule), and a stranded passenger's platform_stranded_fall lands. Cross-pillar help stays off until the LandInLiquid ledge-drop patch (R8) is applied.",
       "source_refs": [
-        "repo_nefarians_end",
-        "wowhead_cata_classic",
+        "client_434_dbc_15595",
+        "live_r01_6bf52232",
         "package_t_platform_probe",
-        "client_434_dbc_15595"
+        "repo_nefarians_end",
+        "wowhead_cata_classic"
       ]
     },
     {
@@ -1126,9 +1134,10 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Nefarian 41376 and Onyxia 41270 10N derived from 201 / 37 WCL U rows and staged (12.75, 10.34375).",
-      "next": "Bone warrior 41918: stack-matched samples (Empower 79330); live: encounter_fidelity.boss_melee within +-10% of WCL for 41376 and 41270.",
+      "known": "Nefarian 41376 and Onyxia 41270 10N derived from 201 / 37 WCL U rows and staged (12.75, 10.34375). Live r01 (6bf52232): Nefarian's after-attacker mean is 67.6k over the pre-Berserk swings (WCL 67.1k, ratio 1.01); the harness flag (mean ratio 4.35) comes from the 5.8x swings after Berserk 26662 at 10 min 30 s of an 18-minute kill. Onyxia 59.6k over 40 swings (ratio 1.095, only the minimum outside 10%).",
+      "next": "Bone warrior 41918: stack-matched samples (Empower 79330); harness: compare boss melee only before the boss's Berserk (coordinator patch request, round 2); live: a kill inside the 10.5-minute enrage.",
       "source_refs": [
+        "live_r01_6bf52232",
         "tdb_434_22011",
         "wcl_10n_MxFq7TRbvnjGY1hJ_35",
         "wcl_10n_cYg4C93QNdqKfPF1_18",

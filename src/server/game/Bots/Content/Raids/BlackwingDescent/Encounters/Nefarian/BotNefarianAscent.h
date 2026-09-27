@@ -342,7 +342,9 @@ inline DescentDecision PlanPillarDescent(MovementContext const& context, uint8 s
     LocalPoint const local = BotLocal(context);
     float distance = 0.0f;
     int const pillar = NearestPillar(local, distance);
-    float const landingZ = elevator.OriginZ + RingLocalZ;
+    // The model floor under the member: the ring below every pillar rim, and
+    // the floor under a stranded member's fall (BotNefarianStranded.h).
+    float const landingZ = elevator.OriginZ + FloorLocalZAt(local);
 
     BotNativeAction::TransportSurfaceMove move;
     move.Transport = elevator.Guid;

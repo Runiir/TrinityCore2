@@ -1,0 +1,62 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:atramedes",
+ "round": 2,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h",
+  "tests/test_atramedes_strategy.py",
+  "tests/test_atramedes_research_packet.py",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+  "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+  "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+ ],
+ "new_files": [],
+ "resolved_inputs": [],
+ "open_items": [
+  "WCL references (task 1): five more Atramedes 10N kills were read through GPT-6 Astra in its own plugin tab of the user's Chrome. No check appeared. The kills: PpFW3bgy7m6Kxk1t-fight8, Bgcm6RavhWK7DLd1-fight34, hxz7MH8gW9BYGNdr-fight41, jxNrbDtq9BdwAcam-fight30 and X7tWdbvxYn3MjACD-fight28. All are from 2024-10, last 173.6-199.0 s, have raid item level 354.2-357.9 and cover a full ground-air-ground cycle. Their parses for the three wanted specs range 11-84. Together with fight 32 there are six matched kills. The median targets, with the number of kills behind each: Balance 18,355 (5), Assassination 17,469 (5), Demonology 20,626 (5), Fire 18,719 (3), Survival 20,413 (5), Retribution 19,930 (3), Blood DK 13,293 (4), Elemental 19,688 (2). No canonical spec uses the WoWSims fallback now.",
+  "Re-judging round 1 against the new targets (scoreboard show, read-only): Balance 1.43, Assassination 1.17, Fire 1.85, Survival 1.65, Retribution 1.45, Elemental 1.44 and Blood DK 1.40 pass. Demonology is the only failing actor, at 0.36. Round 1's Balance and Assassination failures came from the patchwerk WoWSims fallback, not from the fight.",
+  "Diagnosis (task 2), from the 3 round-1 kills pulled from DVC into ~/.cache, analysed, then deleted. Native air phase: liftoff 91.2-91.5 s, hover from 95-96 s, touch-down 127.8-128.5 s, so 36.5 s airborne; the WCL kills match within about 1 s. The bot kills last 131.6 s, so the air phase is 27% of the window, against about 23% in fight 32. Melee deal 0.1-0.2M damage in the air, as expected. At the pull, melee lost 6-15 s of swings chasing a max-range slot on the boss's trailing side while the tank dragged him about 58 yd, from (215,-224) to (157,-222), at about 7.8 yd/s. The rogue's gaps were 10.7 s and 8.0 s; Retribution's were 6.3-10.1 s in all three kills. Later ground gaps of 2.6-4.1 s are Sonar Pulse sidesteps. The Fire Mage's first hit comes at 6.1-7.0 s because its arc slot moves with the dragged boss; this is noted, not changed.",
+  "Tuning (task 3): while Atramedes is being dragged to the anchor, melee get no slot and native chase keeps them in contact. 'Dragged' means grounded, on the living tank and more than 14 yd from the anchor: the pull and each landing. The slot at max melee range returns once he settles, and Sonar Pulse, beam and hazard exits still take precedence. Gong, hunter and mage Ice Block duties are unchanged. The expected gain is about +1k DPS for the rogue and Retribution. It is unmeasured and needs a build and a 5-kill batch. Risk tier: class_native, because it is encounter C++, so it needs one independent reviewer, in a separate session, before the build.",
+  "Class evidence for the class agent (Demonology Warlock, 0.36; no class file edited). Demonology profile 287 (phase8_demonology_hellfire_survival_2026_07_27) caps every enemy row at max_range 18 (Shadowflame 8). The resolver checks that cap against centre-to-centre distance and intersects it with the native range (effectiveSpellMaxRange in BotWorldPopulationMgrCombatResolver.cpp). Atramedes' combat reach is 20 yd, so no cast point exists outside his hitbox. At the 32 yd arc, Immolate, Incinerate, Hand of Gul'dan, Shadowflame and Corruption were rejected as max_range_exceeded 500-1,170 times per kill. Shadow Bolt 686 was never cast. The range recovery then fought the arc: 150-230 ranged_arc receipts, wait_for_candidate_backoff higher_priority_movement_active, and 72 movement_requires_instant_action. The result was 19-48 own damage events per kill and 21% activity. The Magmaw shard's warlock did 32.7k in the same round, and Chimaeron is 0.31, consistent with the same cap. Suggested fix: raid-scoped removal of the 18 yd cap (native range) in BotRaidRotationOverrides::ApplyDemonology, keeping Hellfire/Shadowflame self-range. Moving the Atramedes arc to 18 yd would put the warlock inside the boss.",
+  "encounter_research stays fidelity_blocked. The ledger's unresolved entries now carry mode scopes, and the heroic fiend claim is scoped to 10H/25H. The round-2 WCL mechanics read of the six kills (34 Tracking applications, 38 gong casts, Sonar Bomb impacts) is recorded in the ledger. breath_initial_target_rule: the ground breath never tracked a tank (19 applications) and the air breath tracked a tank twice (15 applications); WCL does not expose per-player Sound. sonar_bomb_count_by_mode: impact groups arrive every 3 s and hit 1-3 players, but there are no launch rows, so 3 vs 5 is undecidable. breath_speed_scaling_with_sound: air shields per phase were 1,1,1,2,1,1, which matches the native replay but does not isolate a Sound term. These three 10N claims still block acceptance.",
+  "ground_air_phase_timestamps is now measured for 10N on both sides (native liftoff and touch-down from boss z; the first air Tracking at 95.1-95.4 s in all six WCL kills), but I left its status partial. Resolving it changes unresolved_material_count 5 to 4, which requires matching coordinator edits to experiments/configs/cata_raid_strategy_catalog_v1.json (atramedes contract/ledger counts), experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json and its 42-blocker test. The coordinator decides whether to do that together.",
+  "Scratch to archive (I cannot run dvc push): ~/.cache/atramedes_wcl_r2/wcl_refs.json (sha256 df77f33ce356ca44ab54a2cddab3651c0a82a3d3f93f5adda5ecdd6ceed56982) and wcl_mechanics.json (sha256 65c0e1dcff99cec01f0d65a1b195b4a83ae3c454471aeb5c09f6828177264297). These are the raw Astra extractions behind the manifest and ledger edits. The Astra logs and prompts are in the same directory."
+ ],
+ "patch_requests": [
+  {
+   "to": "coordinator",
+   "file": "docs/bot_raids/error_ledger.md",
+   "patch": "Add an open row after the last DPS row (renumber if DPS-071 is taken): '| DPS-071 | open | Demonology Warlock (canonical BWD roster) | Profile 287 caps every enemy row at max_range 18 yd centre-to-centre (Shadowflame 8), intersected with native range; against Atramedes (combat reach 20) no legal cast point exists outside the hitbox: max_range_exceeded 500-1,170x per kill, no Shadow Bolt, 21% active, 7,371 DPS = 0.36 of WCL 20,626 (r01 blackwing_descent_10n-r01-553da85c98); Chimaeron 0.31 | Class owner: raid-scoped native range for the enemy rows in BotRaidRotationOverrides::ApplyDemonology |'"
+  },
+  {
+   "to": "coordinator",
+   "file": "docs/bot_raids/error_ledger.md",
+   "patch": "Add an open row (renumber if DPS-072 is taken): '| DPS-072 | open | Atramedes melee (Assassination, Retribution) | r01: melee chased a max-range slot on the dragged boss's trailing side at the pull and lost 6-15 s of swings | Round 2: AnchorDragInProgress leaves melee to native chase until he is within 14 yd of the anchor (BotAtramedesFormation.h); measure with a 5-kill batch |'"
+  }
+ ],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_atramedes_strategy.py -x (after the BotAtramedesFormation.h change, before the test update)",
+   "result": "1 failed: test_atramedes_strategy_decisions (assert Mechanic(Plan(board, Rogue)) == \"melee_max_range\" in TestFireTankAndArc). This was expected: the default test board places the boss 22 yd from the anchor, where melee now defer to native chase. The tests were updated to settle the boss at the observed rest point for the slot assertions, and a new TestMeleeDuringAnchorDrag was added. Relevant, and resolved."
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -p no:cacheprovider -q tests/test_atramedes_*.py tests/test_cata_raid_research_contracts.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py",
+   "result": "56 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m tools.raid_program.module_size",
+   "result": "pass (BotAtramedesFormation.h 238 lines)"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m tools.raid_program.scoreboard show --scenario blackwing_descent_10n_atramedes --label blackwing_descent_10n-r01-553da85c98 (read-only)",
+   "result": "loads the 6 matched references; verdict fail only for demonology_warlock 0.357 < 0.95 of WCL"
+  }
+ ],
+ "risks": [
+  "Melee without a slot during the drag stand wherever native chase puts them. That is normally the side they approach from, and hazard exits still apply. If a tank is alive and tanking but never brings him within 14 yd of the anchor, melee keep native chase for that stretch instead of max-range slots.",
+  "The new WCL targets are about 20-50% below the round-1 WoWSims fallbacks. They are encounter-matched medians from mid-parse players at about 357 ilvl. Elemental (2 kills) and Fire (3 kills) are thin samples.",
+  "The research-contract fidelity stays blocked by three 10N claims that WCL damage and cast views cannot decide. The raid target can pass its DPS verdict while encounter_research still blocks acceptance."
+ ],
+ "validation_neutrality": "Atramedes-scoped only. The C++ change is in the Atramedes encounter header, guarded by the Atramedes encounter node, ground phase and dragged-boss condition. No shared runtime, class profile, SQL, DamageModifier, fidelity registry, roster or other boss changed. The raid target and WCL manifest changes alter only the Atramedes verdict basis, and Atramedes is not accepted yet. Magmaw (b5-d1898555), Stonecore, dummy calibration and legacy results stay reproducible. Round-1 DVC evidence was fetched into ~/.cache for analysis and deleted; only the small WCL extraction JSONs remain in ~/.cache/atramedes_wcl_r2 for archiving."
+}

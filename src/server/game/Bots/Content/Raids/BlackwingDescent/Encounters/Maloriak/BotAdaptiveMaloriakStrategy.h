@@ -11,12 +11,15 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakGeometry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakLatches.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPullPost.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakSphereDrag.h"
 
 #include <algorithm>
 #include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 // Maloriak (Blackwing Descent) adaptive encounter owner. Research and
@@ -41,7 +44,7 @@ public:
     // User tactic (user raid experience 2026-09-26): every release goes
     // through and each Aberration is killed as it comes, one at a time
     // (Maloriak::BurnFocus), with no wait for the Green slime window. If
-    // Aberrations are left at 30%, the latched add switch
+    // Aberrations are left at 50% (Maloriak::AddSwitchHealthPct), the latched add switch
     // (BotMaloriakLatches.h) keeps every damage dealer off the boss until
     // they are all dead.
 
@@ -135,6 +138,8 @@ public:
         if (mainTank)
         {
             SelectMainTank(boss, botGuid, plan);
+            if (!plan.Movement)
+                plan.Movement = ProposeSphereDrag(board, observation, frame, *bot);
             if (!plan.Movement)
                 plan.Movement = ProposeTankSpot(board, observation, *bot);
         }
@@ -594,6 +599,26 @@ private:
             // (Growth Catalyst would buff Maloriak).
             if (!pickup->VictimGuid.IsEmpty())
                 plan.TauntTarget = pickup->Guid;
+            // An add at Maloriak is taunted from a post 15 yards out, so
+            // neither the off-tank nor its pack enters Growth Catalyst's
+            // 10 yards around him (Maloriak::CatalystPullPost). A renewed
+            // hold at the post keeps the mechanic movement lease; the
+            // pack's focus stays the damage target meanwhile.
+            if (plan.Movement || pickup->Entry == Maloriak::VileSwillEntry)
+                return;
+            std::optional<Vector3> const post = Maloriak::CatalystPullPost(
+                observation, Maloriak::AddAnchorFor(observation.Boss->Position,
+                    &bot.Position), pickup->Position);
+            if (!post)
+                return;
+            if (ActorSnapshot const* focus = HeldFocus(held))
+                plan.DamageTarget = focus->Guid;
+            plan.Duty = "off_tank_pull_post";
+            bool const atPost = Maloriak::Distance2d(bot.Position, *post)
+                <= Maloriak::PullPostTolerance;
+            plan.Movement = BuildMove(board, atPost ? bot.Position : *post,
+                atPost ? "off_tank_pull_post_hold" : "off_tank_pull_post",
+                pickup->Guid, BotActionArbitration::Priority::Mechanic, 260.0f, false);
             return;
         }
         if (held.empty())
@@ -622,13 +647,7 @@ private:
             return;
         }
 
-        ActorSnapshot const* focus = nullptr;
-        for (ActorSnapshot const* add : held)
-            if (!focus || std::make_tuple(add->Entry == Maloriak::PrimeSubjectEntry,
-                    add->HealthPct, add->Guid.GetRawValue())
-                < std::make_tuple(focus->Entry == Maloriak::PrimeSubjectEntry,
-                    focus->HealthPct, focus->Guid.GetRawValue()))
-                focus = add;
+        ActorSnapshot const* focus = HeldFocus(held);
         plan.DamageTarget = focus->Guid;
         plan.Duty = "off_tank_hold";
         if (plan.Movement)
@@ -653,6 +672,20 @@ private:
         if (Maloriak::Distance2d(bot.Position, anchor) > AddAnchorTolerance)
             plan.Movement = BuildMove(board, anchor, "off_tank_add_anchor",
                 focus->Guid, BotActionArbitration::Priority::Mechanic, 260.0f, false);
+    }
+
+    // The held add the off-tank hits: an Aberration before a Prime Subject,
+    // the weakest first.
+    static ActorSnapshot const* HeldFocus(std::vector<ActorSnapshot const*> const& held)
+    {
+        ActorSnapshot const* focus = nullptr;
+        for (ActorSnapshot const* add : held)
+            if (!focus || std::make_tuple(add->Entry == Maloriak::PrimeSubjectEntry,
+                    add->HealthPct, add->Guid.GetRawValue())
+                < std::make_tuple(focus->Entry == Maloriak::PrimeSubjectEntry,
+                    focus->HealthPct, focus->Guid.GetRawValue()))
+                focus = add;
+        return focus;
     }
 
     static ActorSnapshot const* Nearest(std::vector<ActorSnapshot const*> const& actors,
@@ -715,6 +748,25 @@ private:
         plan.SuppressOffense = true;
         plan.SuppressReason = "add_switch_wait";
         plan.Duty = "add_switch_wait";
+    }
+
+    // Phase two: an Absolute Zero sphere beside Maloriak blocks the melee
+    // ring (Maloriak::SphereDragPoint). While melee damage dealers are alive
+    // and he is on this tank, the tank steps away and he follows.
+    static std::optional<BotNativeAction::Candidate> ProposeSphereDrag(
+        Blackboard const& board, Maloriak::Observation const& observation,
+        Maloriak::BossFrame const& frame, ActorSnapshot const& bot)
+    {
+        ActorSnapshot const& boss = *observation.Boss;
+        if (!boss.ReactAggressive || boss.VictimGuid != bot.Guid
+            || !Maloriak::HasLivingMeleeDamageDealer(board))
+            return std::nullopt;
+        std::optional<Vector3> const point =
+            Maloriak::SphereDragPoint(observation, frame, bot.Position);
+        if (!point)
+            return std::nullopt;
+        return BuildMove(board, *point, "main_tank_sphere_drag", boss.Guid,
+            BotActionArbitration::Priority::Mechanic, 230.0f, false);
     }
 
     // In phase one the main tank walks to MainTankSpot (north of the

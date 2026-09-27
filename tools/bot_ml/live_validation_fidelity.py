@@ -415,6 +415,72 @@ def _window(swings: Sequence[Mapping[str, Any]], nodes: Iterable[str],
     return None
 
 
+# Pulls for the enrage clock come only from boss-engagement evidence on the anchor creatures (the
+# registry row's enrage_anchor_entries, else the boss itself): a respawned anchor object, or an
+# anchor whose health was refilled by more than PULL_RESET_HEALTH_PCT of its maximum between two
+# hits on it (a wipe/evade reset). Silence alone never starts a pull: missing telemetry (a truncated
+# ring) and recovery healing are not engagement. The confirmed new pull starts at the first anchor
+# event after the latest PULL_GAP_MS silence before its reset evidence (the re-engage), else at the
+# reset evidence itself. The first pull starts at the encounter window start (single window).
+PULL_GAP_MS = 30000
+PULL_RESET_HEALTH_PCT = 5.0
+PULL_EVENT_KINDS = frozenset({"damage", "melee_resolution"})
+
+
+def _pull_starts(first_at_ms: int, events: Iterable[Mapping[str, Any]], anchors: set[int]) -> list[int]:
+    rows = sorted((event for event in events
+                   if isinstance(event, Mapping) and event.get("kind") in PULL_EVENT_KINDS
+                   and _int(event.get("timestamp_ms")) >= first_at_ms
+                   and (_int(event.get("source_entry")) in anchors or _int(event.get("target_entry")) in anchors)),
+                  key=lambda event: (_int(event.get("timestamp_ms")), _int(event.get("event_sequence"))))
+    starts = [first_at_ms]
+    previous_at = None
+    reengage_at = None
+    guid_by_entry: dict[int, int] = {}
+    after_pct_by_entry: dict[int, float] = {}
+    # Anchors not yet seen since the last confirmed pull: their first identity and health after it
+    # belong to that same pull (Onyxia and Nefarian both respawn in one reset), so they are adopted
+    # as the new baseline and never confirm another pull.
+    adopting: set[int] = set()
+    for event in rows:
+        at = _int(event.get("timestamp_ms"))
+        if previous_at is not None and at - previous_at >= PULL_GAP_MS:
+            reengage_at = at
+        previous_at = at
+        on_anchor = _int(event.get("target_entry")) in anchors
+        entry = _int(event.get("target_entry") if on_anchor else event.get("source_entry"))
+        guid = _int(event.get("target_guid") if on_anchor else event.get("source_guid"))
+        adopt = entry in adopting
+        adopting.discard(entry)
+        reset = bool(not adopt and guid and guid_by_entry.get(entry) and guid != guid_by_entry[entry])
+        if adopt or (guid and guid != guid_by_entry.get(entry)):
+            after_pct_by_entry.pop(entry, None)
+        if guid:
+            guid_by_entry[entry] = guid
+        observation = event.get("landed_damage_observation") if on_anchor else None
+        if isinstance(observation, Mapping):
+            before = _int(observation.get("target_health_before_damage"))
+            maximum = _int(observation.get("target_max_health"))
+            if before > 0 and maximum > 0:
+                before_pct = before * 100.0 / maximum
+                previous_pct = after_pct_by_entry.get(entry)
+                reset = reset or (previous_pct is not None and before_pct > previous_pct + PULL_RESET_HEALTH_PCT)
+                after_pct_by_entry[entry] = (before - _int(event.get("amount"))) * 100.0 / maximum
+        if reset:
+            start = reengage_at if reengage_at is not None else at
+            if start > starts[-1]:
+                starts.append(start)
+            reengage_at = None
+            adopting = set(anchors) - {entry}
+            for other in adopting:
+                after_pct_by_entry.pop(other, None)
+    return starts
+
+
+def _attempt_start(starts: Sequence[int], at: int) -> int:
+    return max((start for start in starts if start <= at), default=starts[0])
+
+
 def _swing_gaps(swings: Sequence[Mapping[str, Any]]) -> list[int]:
     lanes: dict[tuple[int, Any], list[int]] = {}
     for event in swings:
@@ -452,6 +518,23 @@ def melee_stats(entry: int, swings: Sequence[Mapping[str, Any]], *, events: Sequ
                 route_nodes: Iterable[str] = (), combat_analysis: Mapping[str, Any] | None = None,
                 root: Path = REPO_ROOT) -> dict[str, Any]:
     swings = sorted(swings, key=lambda event: (_int(event.get("timestamp_ms")), _int(event.get("event_sequence"))))
+    # Swings after the boss's scripted enrage (registry enrage_after_ms from the
+    # encounter window start) are not comparable with WCL kills that end before it.
+    enrage_row = registry_row(registry, effective or entry) or {}
+    enrage_after_ms = enrage_row.get("enrage_after_ms")
+    post_enrage_excluded = 0
+    if isinstance(enrage_after_ms, (int, float)) and enrage_after_ms > 0:
+        enrage_window = _window(swings, route_nodes, combat_analysis)
+        if enrage_window:
+            # The enrage timer restarts with every confirmed pull: one cutoff per pull.
+            anchors = {_int(value) for value in enrage_row.get("enrage_anchor_entries") or []} or {
+                _int(effective or entry)}
+            starts = _pull_starts(enrage_window["first_at_ms"], [*swings, *events], anchors)
+            kept = [event for event in swings
+                    if _int(event.get("timestamp_ms")) < _attempt_start(starts, _int(event.get("timestamp_ms")))
+                    + int(enrage_after_ms)]
+            post_enrage_excluded = len(swings) - len(kept)
+            swings = kept
     resolution = [event["melee_resolution"] for event in swings]
     outcomes = Counter(OUTCOME_LABELS.get(str(row.get("hit_outcome_name")), str(row.get("hit_outcome_name")))
                        for row in resolution)
@@ -497,6 +580,7 @@ def melee_stats(entry: int, swings: Sequence[Mapping[str, Any]], *, events: Sequ
         "schema": BOSS_MELEE_SCHEMA, "entry": entry, "effective_entry": entry_for_registry,
         "name": _mode_value(event.get("source_name") for event in swings) or (registered or {}).get("name"),
         "swings": len(swings), "landed": len(landed), "outcomes": dict(sorted(outcomes.items())),
+        "post_enrage_swings_excluded": post_enrage_excluded,
         "tank_target_share": round(sum(_int(event.get("target_guid")) in tanks for event in swings) / len(swings), 3)
         if swings else None,
         "swing_gap_ms": {"count": len(gaps), "median": median_gap, "base_attack_time_ms": base_time,
