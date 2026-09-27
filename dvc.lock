@@ -430,8 +430,8 @@ stages:
     deps:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: d3b4923255139c8a0e75cc656d07c172.dir
-      size: 4061923
+      md5: 1bb853f440f9644b3a891229681562dc.dir
+      size: 4075315
       nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
@@ -447,16 +447,16 @@ stages:
       size: 156525
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: a2cff4e5266f1df5157f91eb7bfe62a7
-      size: 136794
+      md5: 282dc4b9a36ed335eb87f9170c656417
+      size: 149787
     - path: sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
       hash: md5
       md5: d55ce540c300d77f0ddde75a68ec9cfa
       size: 23898
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 75df2cdc2e04c702177c5e07d5f81785
-      size: 75268
+      md5: 2334a79b1b5ab68c0ec95e6328ea27d4
+      size: 78149
     - path: tools/bot_ml/common.py
       hash: md5
       md5: bb0de5d5b481e92f0fcffd74cbf1562e
@@ -464,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: d0c1036377ad685d84d2342823e0a3ec.dir
-      size: 1146744
+      md5: bf1fbd3d4d81f11e2b64920ecb652245.dir
+      size: 1190512
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -1897,8 +1897,8 @@ stages:
       size: 27753
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: a2cff4e5266f1df5157f91eb7bfe62a7
-      size: 136794
+      md5: 282dc4b9a36ed335eb87f9170c656417
+      size: 149787
     - path: experiments/configs/wowsims_cata_dps_reference_requests_v1.json
       hash: md5
       md5: 5297802cf6b3143a77c02fac868b1194
@@ -1961,12 +1961,12 @@ stages:
       size: 14328
     - path: tools/raid_program/raid_loadout_spells.py
       hash: md5
-      md5: 4b57f267190449472b1e46c908143b99
-      size: 14431
+      md5: 4bdcba9a39a5f65c2a205a8157d78d08
+      size: 14607
     - path: tools/raid_program/raid_loadout_sql.py
       hash: md5
-      md5: e4c11e94a5fa1ae8e5411e9322df8905
-      size: 28669
+      md5: 7f0d4bc218baa28525edf11cc38bb105
+      size: 30948
     - path: tools/raid_program/raid_shard_contract.py
       hash: md5
       md5: d9ef3245a281426ef7d51085c75e488b
@@ -1977,8 +1977,8 @@ stages:
       size: 11356
     - path: tools/raid_program/raid_shard_plan.py
       hash: md5
-      md5: af11f0ee750e8f4b0728e2aa6844a596
-      size: 44340
+      md5: 4be189324c0d154611388de7469d4008
+      size: 44604
     - path: tools/raid_program/raid_shard_preflight.py
       hash: md5
       md5: 9d306518c4d8227c1970e67fdb3bc377
@@ -1986,6 +1986,6 @@ stages:
     outs:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: d3b4923255139c8a0e75cc656d07c172.dir
-      size: 4061923
+      md5: 1bb853f440f9644b3a891229681562dc.dir
+      size: 4075315
       nfiles: 4
