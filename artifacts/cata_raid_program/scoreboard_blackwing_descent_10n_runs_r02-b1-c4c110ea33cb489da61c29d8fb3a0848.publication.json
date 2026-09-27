@@ -1,0 +1,21 @@
+{
+  "archive_bytes": 44864539,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_runs_r02-b1-c4c110ea33cb489da61c29d8fb3a0848.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 1666137301,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "11383b542a71ffeb9c1fe887e59f9101",
+  "remote_sha256": "75b1283341d54618aaa89d9fa9a0611edc3e2832b17000b199dc083a77fe9dc0",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/console_journal.jsonl",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/preparation",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/shard_run.json",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/worldserver.console.log",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/worldserver.crash_backtrace.txt",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/worldserver.gdb",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T142315Z/worldserver.validation.conf"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 13
+}
