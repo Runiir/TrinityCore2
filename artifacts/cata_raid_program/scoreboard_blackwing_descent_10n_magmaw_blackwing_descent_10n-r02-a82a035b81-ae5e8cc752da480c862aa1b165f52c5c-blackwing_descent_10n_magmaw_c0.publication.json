@@ -1,0 +1,16 @@
+{
+  "archive_bytes": 3075929,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_magmaw_c0.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 90439452,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "295549be3f246ac9f0935e0be9757e5b",
+  "remote_sha256": "bb8a6f404596c34f625b6934f9222c7203af2df62a496ed9e28359ff6ee8c4b0",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_magmaw_c0",
+    "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_magmaw_c0-analysis"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 13
+}

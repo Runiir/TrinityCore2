@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 29,
+      "revision": 31,
       "stage": "run",
       "round": 2,
       "bootstrap_sources": {
@@ -2305,6 +2305,130 @@
                   "/tmp/blackwing_descent_10n-r02-b1-20260927T131302Z/worldserver.validation.conf"
                 ]
               }
+            },
+            {
+              "path": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shard_run.json",
+              "sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "source_path": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shard_run.json",
+              "run_id": "ae5e8cc752da480c862aa1b165f52c5c",
+              "terminal_reason": "completed",
+              "worldserver_sha256": "8698dcdad05781ac41ae5f68bea8422112e3d451eab6ce132f32b32201190d7b",
+              "isolation": {
+                "cross_cohort_replies": 0,
+                "distinct_instance_ids": true,
+                "foreign_payloads": 0,
+                "instance_ids": {
+                  "blackwing_descent_10n_atramedes_c0": 5,
+                  "blackwing_descent_10n_chimaeron_c0": 1,
+                  "blackwing_descent_10n_magmaw_c0": 9,
+                  "blackwing_descent_10n_maloriak_c0": 6,
+                  "blackwing_descent_10n_nefarian_c0": 7,
+                  "blackwing_descent_10n_omnotron_c0": 20
+                },
+                "refused_commands": 0,
+                "seeded_instances_entered": true
+              },
+              "shards": [
+                {
+                  "cohort_id": "blackwing_descent_10n_magmaw_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_magmaw_c0",
+                  "instance_id": 9,
+                  "completion_reason": "validation_route_manifest_complete",
+                  "native_clear": true,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": null,
+                  "seeded": false
+                },
+                {
+                  "cohort_id": "blackwing_descent_10n_omnotron_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_omnotron_c0",
+                  "instance_id": 20,
+                  "completion_reason": "validation_route_manifest_complete",
+                  "native_clear": true,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": null,
+                  "seeded": false
+                },
+                {
+                  "cohort_id": "blackwing_descent_10n_chimaeron_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_chimaeron_c0",
+                  "instance_id": 1,
+                  "completion_reason": "validation_route_manifest_complete",
+                  "native_clear": true,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": "verified",
+                  "seeded": true
+                },
+                {
+                  "cohort_id": "blackwing_descent_10n_atramedes_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_atramedes_c0",
+                  "instance_id": 5,
+                  "completion_reason": "validation_route_manifest_complete",
+                  "native_clear": true,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": "verified",
+                  "seeded": true
+                },
+                {
+                  "cohort_id": "blackwing_descent_10n_maloriak_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_maloriak_c0",
+                  "instance_id": 6,
+                  "completion_reason": "validation_route_manifest_complete",
+                  "native_clear": true,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": "verified",
+                  "seeded": true
+                },
+                {
+                  "cohort_id": "blackwing_descent_10n_nefarian_c0",
+                  "run_dir": "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shards/blackwing_descent_10n_nefarian_c0",
+                  "instance_id": 7,
+                  "completion_reason": "encounter_reset_loop_watchdog",
+                  "native_clear": false,
+                  "error": "",
+                  "start_refusal": "",
+                  "timed_out": false,
+                  "foreign_payloads": 0,
+                  "cross_cohort_replies": 0,
+                  "lockout_state": "verified",
+                  "seeded": true
+                }
+              ],
+              "recorded_utc": "2026-09-27T14:22:08Z",
+              "batch": 1,
+              "evidence": {
+                "pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_runs_r02-b1-ae5e8cc752da480c862aa1b165f52c5c.tar.gz.dvc",
+                "error": null,
+                "paths": [
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/console_journal.jsonl",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/preparation",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/shard_run.json",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/worldserver.console.log",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/worldserver.crash_backtrace.txt",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/worldserver.gdb",
+                  "/tmp/blackwing_descent_10n-r02-b1-20260927T134747Z/worldserver.validation.conf"
+                ]
+              }
             }
           ],
           "assessment": null,
@@ -2551,6 +2675,66 @@
               "outcome": "clear",
               "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_nefarian_blackwing_descent_10n-r02-a82a035b81-9f22aff78a3d417b99ea7ad76509aae2-blackwing_descent_10n_nefarian_c0.tar.gz.dvc",
               "utc": "2026-09-27T13:47:23Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_magmaw_c0",
+              "boss_key": "magmaw",
+              "scenario": "blackwing_descent_10n_magmaw",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_magmaw_c0",
+              "outcome": "clear",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_magmaw_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:15Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_omnotron_c0",
+              "boss_key": "omnotron",
+              "scenario": "blackwing_descent_10n_omnotron_defense_system",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_omnotron_c0",
+              "outcome": "clear",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_omnotron_defense_system_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_omnotron_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:22Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_chimaeron_c0",
+              "boss_key": "chimaeron",
+              "scenario": "blackwing_descent_10n_chimaeron",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_chimaeron_c0",
+              "outcome": "clear",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_chimaeron_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_chimaeron_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:28Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_atramedes_c0",
+              "boss_key": "atramedes",
+              "scenario": "blackwing_descent_10n_atramedes",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_atramedes_c0",
+              "outcome": "clear",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_atramedes_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_atramedes_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:35Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_maloriak_c0",
+              "boss_key": "maloriak",
+              "scenario": "blackwing_descent_10n_maloriak",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_maloriak_c0",
+              "outcome": "clear",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_maloriak_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_maloriak_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:42Z"
+            },
+            {
+              "run_sha256": "a265a61209d4d346ec70134f8a9cac3f0f58ff585e646c1e80a903aa6be0248c",
+              "cohort_id": "blackwing_descent_10n_nefarian_c0",
+              "boss_key": "nefarian",
+              "scenario": "blackwing_descent_10n_nefarian",
+              "kill_id": "blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_nefarian_c0",
+              "outcome": "gameplay_failure",
+              "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_nefarian_blackwing_descent_10n-r02-a82a035b81-ae5e8cc752da480c862aa1b165f52c5c-blackwing_descent_10n_nefarian_c0.tar.gz.dvc",
+              "utc": "2026-09-27T14:22:50Z"
             }
           ],
           "shard_evidence": []
@@ -2809,6 +2993,23 @@
         {
           "revision": 29,
           "utc": "2026-09-27T13:47:46Z",
+          "action": "ingest",
+          "round": 2,
+          "label": "blackwing_descent_10n-r02-a82a035b81",
+          "kills": 6,
+          "errors": 0
+        },
+        {
+          "revision": 30,
+          "utc": "2026-09-27T14:22:08Z",
+          "action": "run",
+          "round": 2,
+          "batch": 1,
+          "terminal_reason": "completed"
+        },
+        {
+          "revision": 31,
+          "utc": "2026-09-27T14:23:14Z",
           "action": "ingest",
           "round": 2,
           "label": "blackwing_descent_10n-r02-a82a035b81",
