@@ -398,6 +398,27 @@ def test_invalid_window_on_a_wipe(root):
     assert boss["exclusion_reason"] == "stalled_boss_window"  # the freeze may have caused the wipe
 
 
+
+def test_unmeasured_boss_window_is_not_a_stall(root):
+    # A native clear whose combat log never reached the harness (e.g. a truncated terminal
+    # export) has no boss window to measure. It is excluded, but not as a stall.
+    unmeasured = VALID | {"valid_for_dps": False, "reasons": ["combat_log_unavailable", "no_boss_window"],
+                          "stalled_sec": 0, "stall_fraction": None, "max_stall_sec": 0.0}
+    record_all(root, kill("u", "clear", validity=unmeasured))
+    clear, = evaluate_target(root, SCENARIO, "u")["kills_detail"]
+    assert clear["counted"] is False and clear["exclusion_reason"] == "unmeasured_boss_window"
+    assert "unmeasured_boss_window" in evaluate_target(root, SCENARIO, "u")["reasons"]
+    # A stall code anywhere in the reasons still wins, and a wipe without a window still counts.
+    record_all(root, kill("s", "clear", validity=unmeasured | {"reasons": ["no_boss_window",
+                                                                           "boss_window_stall_too_long"]}))
+    assert evaluate_target(root, SCENARIO, "s")["kills_detail"][0]["exclusion_reason"] == "stalled_boss_window"
+    record_all(root, kill("w", "wipe", clear=False, route_deaths=3, validity=unmeasured))
+    assert evaluate_target(root, SCENARIO, "w")["kills_detail"][0]["counted"] is True
+    # An invalid clear without reason codes keeps the historical code.
+    record_all(root, kill("n", "clear", validity=VALID | {"valid_for_dps": False, "reasons": []}))
+    assert evaluate_target(root, SCENARIO, "n")["kills_detail"][0]["exclusion_reason"] == "stalled_boss_window"
+
+
 # --- run path with fake subprocesses ------------------------------------------------------------
 
 def harness_validity(stalled_sec=0.0, max_stall=0.0):

@@ -348,6 +348,10 @@ def label_kills(records: list[dict[str, Any]], label: str | None) -> list[dict[s
 # v2 (bot_measurement_validity_v2) separates the stalled fraction from one long stall.
 BOSS_WINDOW_STALL_REASONS = frozenset({"world_stall_overlaps_boss_window", "boss_window_stall_fraction_exceeded",
                                        "boss_window_stall_too_long"})
+# Harness reason codes for a boss window that was never measured (the combat log did not
+# reach the harness, so there is no encounter window to judge). Not a stall, and not gameplay.
+BOSS_WINDOW_UNMEASURED_REASONS = frozenset({"combat_log_unavailable", "no_boss_window",
+                                            "combat_log_event_window_misses_boss_window"})
 
 
 def exclusion_reason(record: dict[str, Any]) -> str | None:
@@ -373,8 +377,14 @@ def exclusion_reason(record: dict[str, Any]) -> str | None:
         # A clear with an invalid window is not a DPS measurement. A wipe still counts
         # as a gameplay failure unless a stall actually hit the boss window (a trash
         # wipe is invalid only because it has no boss window).
-        if record.get("native_clear") or BOSS_WINDOW_STALL_REASONS & set(validity.get("reasons") or []):
+        reasons = set(validity.get("reasons") or [])
+        if BOSS_WINDOW_STALL_REASONS & reasons:
             return "stalled_boss_window"
+        if record.get("native_clear"):
+            # Only an explicit unmeasured-window code relabels a clear; any other invalid
+            # window keeps the historical stalled_boss_window code.
+            return "unmeasured_boss_window" if reasons and reasons <= BOSS_WINDOW_UNMEASURED_REASONS \
+                else "stalled_boss_window"
     return None
 
 

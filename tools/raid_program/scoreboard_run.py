@@ -257,7 +257,7 @@ def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, k
 
 
 # Exclusions that say nothing about gameplay: the kill may be replaced by a top-up.
-TOP_UP_REASONS = frozenset({"stalled_boss_window", "infrastructure_failure", "interrupted"})
+TOP_UP_REASONS = frozenset({"stalled_boss_window", "unmeasured_boss_window", "infrastructure_failure", "interrupted"})
 
 
 def top_up_plan(existing: list[dict[str, Any]], target: dict[str, Any], worldserver: Path, args) -> tuple[int, str]:

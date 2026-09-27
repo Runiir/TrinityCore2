@@ -244,6 +244,7 @@ class WatchdogOutputBuffer:
         keys = tuple(dict.fromkeys(str(command) for command in heartbeat_commands))
         self._heartbeat_budget_bytes = heartbeat_bytes - len(WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8"))
         self._prefix = BoundedOutputParts(max_bytes=prefix_bytes)
+        self._cleanup_reserved_bytes = cleanup_bytes
         self._cleanup = BoundedOutputParts(max_bytes=cleanup_bytes)
         self._heartbeat: dict[str, BoundedOutputParts] = {}
         self._known_heartbeat_commands = set(keys)
@@ -266,13 +267,29 @@ class WatchdogOutputBuffer:
         # exports grow with the timeline while status remains small; equal
         # partitions truncated a 1376-chunk reply despite unused budget.
         other_bytes = sum(part.written_bytes for name, part in self._heartbeat.items() if name != key)
-        section_bytes = max(0, self._heartbeat_budget_bytes - other_bytes)
+        section_bytes = max(0, self._heartbeat_budget_bytes - other_bytes - self._cleanup_borrowed_bytes())
         section = BoundedOutputParts(max_bytes=section_bytes)
         section.append(value)
         self._heartbeat[key] = section
 
+    def _cleanup_borrowed_bytes(self) -> int:
+        return max(0, self._cleanup.written_bytes - self._cleanup_reserved_bytes)
+
     def append_cleanup(self, value: str) -> None:
-        """Retain final export/stop/shutdown output independently."""
+        """Retain final export/stop/shutdown output independently.
+
+        The terminal combat-log export grows with the encounter's event count
+        and can exceed the reserved cleanup section (an 18-27 MB full export
+        after a multi-boss council or a multi-phase fight).  Cleanup may borrow
+        heartbeat budget the retained heartbeat responses do not use; later
+        heartbeat responses shrink by what was borrowed, so the total output
+        budget stays hard.
+        """
+        heartbeat_used = sum(part.written_bytes for part in self._heartbeat.values())
+        self._cleanup.max_bytes = max(
+            self._cleanup.written_bytes,
+            self._cleanup_reserved_bytes + max(0, self._heartbeat_budget_bytes - heartbeat_used),
+        )
         self._cleanup.append(value)
 
     def render(self) -> str:

@@ -93,6 +93,34 @@ def test_shared_heartbeat_budget_remains_hard_with_cleanup():
     assert len(buffer.render().encode()) <= 1024
 
 
+
+def test_cleanup_combat_log_export_borrows_unused_heartbeat_budget():
+    # BWD 10N r01: Omnotron's and Nefarian's terminal combat-log exports (1111 and 1602
+    # chunks, 18-27 MB) outgrew the 16 MiB cleanup section while the heartbeat section
+    # held only ~14 MB; the truncated export left the clears without a boss window.
+    buffer = capture.WatchdogOutputBuffer(max_bytes=4096, heartbeat_commands=['status', 'trace'])
+    buffer.append('startup\n')
+    buffer.append_heartbeat('status', 's' * 200)
+    buffer.append_heartbeat('trace', 't' * 800)
+    reserved = buffer._cleanup_reserved_bytes
+    export = '$ .botauto combatlog\n' + 'c' * (reserved + 500) + '\n{"action":"botauto_combatlog_complete"}\n'
+    buffer.append_cleanup(export)
+    buffer.append_cleanup('$ .botauto stop\nstopped\n')
+    output = buffer.render()
+    assert not buffer.truncated and capture.WORLDSERVER_OUTPUT_TRUNCATED_MARKER not in output
+    assert export in output and output.endswith('stopped\n')
+    assert len(output.encode()) <= 4096
+    # A later heartbeat cannot reclaim what cleanup borrowed: the total stays hard.
+    buffer.append_heartbeat('trace', 'u' * 4096)
+    buffer.append_heartbeat('late', 'v' * 4096)
+    output = buffer.render()
+    assert export in output and len(output.encode()) <= 4096
+    assert capture.WORLDSERVER_OUTPUT_TRUNCATED_MARKER in output
+    # Cleanup larger than every unused byte is still truncated within the budget.
+    buffer.append_cleanup('x' * 8192)
+    assert buffer.truncated and len(buffer.render().encode()) <= 4096
+
+
 @pytest.mark.parametrize('complete', [False, True])
 def test_final_role_gate_distinguishes_native_transport_loss(monkeypatch, complete):
     called=[]
