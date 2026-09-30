@@ -3,18 +3,18 @@
   "encounter": "maloriak",
   "mode": "10N",
   "status": "extracted",
-  "status_reason": "Extracted on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's verified Chrome session (one own tab; no verification challenge appeared). Earlier agent-browser attempts on 2026-09-25 and 2026-09-27 had been stopped by the Cloudflare check (access_attempts). Round 2 (2026-09-27): six more kills for the Fire Mage and the Assassination Rogue, by the same route (fire_assassination_extraction).",
+  "status_reason": "Extracted on 2026-09-27 by GPT-6 Astra through the Codex Chrome plugin in the user's verified Chrome session (one own tab; no verification challenge appeared). Earlier agent-browser attempts on 2026-09-25 and 2026-09-27 had been stopped by the Cloudflare check (access_attempts). Round 2 (2026-09-27): six more kills for the Fire Mage and the Assassination Rogue, by the same route (fire_assassination_extraction). Round 3 (2026-09-30): the reference set is the tier-11 item-level band (raid item level 352-366, roster phase gear about 359; user decision 2026-09-30), read by GPT-6.1 Sol in the user's Chrome (no check appeared); see t11_reference_set_20260930.",
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight34",
-      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34&type=damage-done",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34&type=damage-done&options=8192",
       "mode": "10N",
       "date": "2024-10-28",
       "duration_sec": 125.1,
       "raid_dps": 162483.3,
       "average_item_level": 359.9,
-      "target_scope": "all targets: Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "target_scope": "all targets (View Unfiltered Damage, options=8192): Maloriak, Aberrations and Prime Subjects (pets merged); re-read 2026-09-30 (wcl_maloriak_10n_post_cutoff_20260930 part_a); the earlier default-view values are kept per actor as dps_default_view",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "MxFq7TRbvnjGY1hJ",
         "fight": 34,
@@ -24,13 +24,10 @@
         "realm": "Everlook (EU)"
       },
       "actor_dps": {
+        "blood_death_knight": 11793.0,
         "survival_hunter": 25375.4,
-        "elemental_shaman": 23356.4,
-        "combat_rogue": 21105.2,
         "retribution_paladin": 19708.8,
-        "shadow_priest": 19292.8,
-        "balance_druid": 15955.5,
-        "blood_death_knight": 11681.9
+        "elemental_shaman": 23356.4
       },
       "actors": [
         {
@@ -39,7 +36,11 @@
           "spec": "survival_hunter",
           "role": "dps",
           "damage_displayed": "3.18m",
-          "dps_displayed": 25422.4
+          "dps_displayed": 25422.4,
+          "dps_default_view": 25422.4,
+          "damage_default_view": "3.18m",
+          "active_pct": 99.09,
+          "item_level": 357
         },
         {
           "name": "Lachina",
@@ -47,7 +48,11 @@
           "spec": "survival_hunter",
           "role": "dps",
           "damage_displayed": "3.17m",
-          "dps_displayed": 25328.4
+          "dps_displayed": 25328.4,
+          "dps_default_view": 25328.4,
+          "damage_default_view": "3.17m",
+          "active_pct": 98.15,
+          "item_level": 363
         },
         {
           "name": "Sélán",
@@ -55,7 +60,11 @@
           "spec": "elemental_shaman",
           "role": "dps",
           "damage_displayed": "2.92m",
-          "dps_displayed": 23356.4
+          "dps_displayed": 23356.4,
+          "dps_default_view": 23356.4,
+          "damage_default_view": "2.92m",
+          "active_pct": 99.88,
+          "item_level": 362
         },
         {
           "name": "Avéran",
@@ -63,7 +72,11 @@
           "spec": "combat_rogue",
           "role": "dps",
           "damage_displayed": "2.64m",
-          "dps_displayed": 21105.2
+          "dps_displayed": 21105.2,
+          "dps_default_view": 21105.2,
+          "damage_default_view": "2.64m",
+          "active_pct": 98.29,
+          "item_level": 357
         },
         {
           "name": "Janderak",
@@ -71,7 +84,11 @@
           "spec": "retribution_paladin",
           "role": "dps",
           "damage_displayed": "2.46m",
-          "dps_displayed": 19708.8
+          "dps_displayed": 19708.8,
+          "dps_default_view": 19708.8,
+          "damage_default_view": "2.46m",
+          "active_pct": 97.34,
+          "item_level": 357
         },
         {
           "name": "Adara",
@@ -79,7 +96,11 @@
           "spec": "shadow_priest",
           "role": "dps",
           "damage_displayed": "2.41m",
-          "dps_displayed": 19292.8
+          "dps_displayed": 19292.8,
+          "dps_default_view": 19292.8,
+          "damage_default_view": "2.41m",
+          "active_pct": 98.96,
+          "item_level": 360
         },
         {
           "name": "Koakuma",
@@ -87,23 +108,35 @@
           "spec": "balance_druid",
           "role": "dps",
           "damage_displayed": "2.00m",
-          "dps_displayed": 15955.5
+          "dps_displayed": 15955.5,
+          "dps_default_view": 15955.5,
+          "damage_default_view": "2.00m",
+          "active_pct": 99.33,
+          "item_level": 362
         },
         {
           "name": "Greysnout",
           "wcl_actor_id": 6,
           "spec": "blood_death_knight",
           "role": "tank",
-          "damage_displayed": "1.46m",
-          "dps_displayed": 11681.9
+          "damage_displayed": "1.47m",
+          "dps_displayed": 11793.0,
+          "dps_default_view": 11681.9,
+          "damage_default_view": "1.46m",
+          "active_pct": 98.67,
+          "item_level": 359
         },
         {
           "name": "Wongelrainer",
           "wcl_actor_id": 8,
           "spec": "blood_death_knight",
           "role": "tank",
-          "damage_displayed": "54.1k",
-          "dps_displayed": 432.7
+          "damage_displayed": "445.1k",
+          "dps_displayed": 3559.0,
+          "dps_default_view": 432.7,
+          "damage_default_view": "54.1k",
+          "active_pct": 95.6,
+          "item_level": 365
         },
         {
           "name": "Nevox",
@@ -111,29 +144,91 @@
           "spec": "holy_paladin",
           "role": "healer",
           "damage_displayed": "11.0k",
-          "dps_displayed": 88.0
+          "dps_displayed": 88.0,
+          "dps_default_view": 88.0,
+          "damage_default_view": "11.0k",
+          "active_pct": 3.64,
+          "item_level": 357
         }
       ],
       "phase_coverage": "Red vial 18.5 s, Blue vial 68.3 s, 25% transition (Release All Minions) 101.8-103.3 s, phase-two Magma Jets/Acid Nova/Absolute Zero to the kill at 125.1 s. No Green phase. Heroism at 106.4 s (after the transition).",
       "limitations": [
         "survival_hunter is the median (mean) of two Survival Hunters, 25,422.4 and 25,328.4.",
-        "blood_death_knight is the main tank Greysnout (all 40 Maloriak swings). The add off-tank Wongelrainer (Blood DK, 432.7 DPS) is excluded: the bot roster's add tank is a Feral Druid.",
+        "blood_death_knight is the main tank Greysnout (all 40 Maloriak swings). The add off-tank Wongelrainer (Blood DK, 3,559.0 DPS unfiltered, 432.7 default) is excluded: the bot roster's add tank is a Feral Druid.",
         "No Fire Mage, Assassination Rogue, Demonology Warlock or Feral tank in the WCL roster; those bot specs keep their WoWSims fallback or no_reference.",
         "Short 2:05 kill without a Green phase: DPS context, not coverage of every vial.",
         "Displayed duration and DPS are rounded observations. Assignments, buffs, cooldown coverage, gear (ilvl 359.9) and phase coverage differ from the bot canary.",
         "The values are comparison context, not a controlled pass threshold."
-      ]
+      ],
+      "actor_dps_round2": {
+        "survival_hunter": 25375.4,
+        "elemental_shaman": 23356.4,
+        "combat_rogue": 21105.2,
+        "retribution_paladin": 19708.8,
+        "shadow_priest": 19292.8,
+        "balance_druid": 15955.5,
+        "blood_death_knight": 11681.9
+      },
+      "item_level": 359.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "blood_death_knight": 359,
+        "survival_hunter": 360.0,
+        "retribution_paladin": 357,
+        "elemental_shaman": 362
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "retribution_paladin": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Greysnout"
+        ],
+        "survival_hunter": [
+          "Jägamara",
+          "Lachina"
+        ],
+        "retribution_paladin": [
+          "Janderak"
+        ],
+        "elemental_shaman": [
+          "Sélán"
+        ]
+      },
+      "excluded_actor_dps": {
+        "blood_death_knight:Wongelrainer": {
+          "dps": 3559.0,
+          "active_pct": 95.6,
+          "reason": "second Blood DK tank; the canonical roster's single Blood DK is the boss tank",
+          "dps_default_view": 432.7
+        }
+      },
+      "deaths": [],
+      "default_view_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=34&type=damage-done",
+      "damage_view": "unfiltered_options_8192",
+      "damage_view_source": "wcl_maloriak_10n_post_cutoff_20260930",
+      "actor_dps_default_view": {
+        "blood_death_knight": 11681.9,
+        "survival_hunter": 25375.4,
+        "retribution_paladin": 19708.8,
+        "elemental_shaman": 23356.4
+      },
+      "raid_dps_view": "default (raid total as first read; party DPS is reported, not gating)"
     },
     {
       "id": "VL3fW9wNm2PRJDYt-fight13",
-      "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13&type=damage-done",
+      "url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13&type=damage-done&options=8192",
       "mode": "10N",
       "date": "2024-10-21",
       "duration_sec": 209.6,
       "raid_dps": 118895.0,
       "average_item_level": 355.6,
-      "target_scope": "all targets: Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "target_scope": "all targets (View Unfiltered Damage, options=8192): Maloriak, Aberrations and Prime Subjects (pets merged); re-read 2026-09-30 (wcl_maloriak_10n_post_cutoff_20260930 part_a); the earlier default-view values are kept per actor as dps_default_view",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "VL3fW9wNm2PRJDYt",
         "fight": 13,
@@ -143,11 +238,9 @@
         "realm": "Auberdine (EU)"
       },
       "actor_dps": {
-        "retribution_paladin": 20230.9,
-        "demonology_warlock": 18229.8,
-        "survival_hunter": 16145.0,
-        "frost_death_knight": 15748.3,
-        "shadow_priest": 12425.0
+        "survival_hunter": 20488.7,
+        "retribution_paladin": 20432.7,
+        "demonology_warlock": 20471.5
       },
       "actors": [
         {
@@ -155,72 +248,108 @@
           "wcl_actor_id": 4,
           "spec": "retribution_paladin",
           "role": "dps",
-          "damage_displayed": "4.24m",
-          "dps_displayed": 20230.9
+          "damage_displayed": "4.28m",
+          "dps_displayed": 20432.7,
+          "dps_default_view": 20230.9,
+          "damage_default_view": "4.24m",
+          "active_pct": 99.9,
+          "item_level": 354
         },
         {
           "name": "Xenass",
           "wcl_actor_id": 1,
           "spec": "demonology_warlock",
           "role": "dps",
-          "damage_displayed": "4.05m",
-          "dps_displayed": 19314.1
+          "damage_displayed": "4.63m",
+          "dps_displayed": 22112.5,
+          "dps_default_view": 19314.1,
+          "damage_default_view": "4.05m",
+          "active_pct": 99.19,
+          "item_level": 360
         },
         {
           "name": "Tsubii",
           "wcl_actor_id": 23,
           "spec": "demonology_warlock",
           "role": "dps",
-          "damage_displayed": "3.59m",
-          "dps_displayed": 17145.5
+          "damage_displayed": "3.95m",
+          "dps_displayed": 18830.5,
+          "dps_default_view": 17145.5,
+          "damage_default_view": "3.59m",
+          "active_pct": 98.75,
+          "item_level": 356
         },
         {
           "name": "Labraizz",
           "wcl_actor_id": 9,
           "spec": "feral_druid_tank",
           "role": "tank",
-          "damage_displayed": "3.40m",
-          "dps_displayed": 16202.0
+          "damage_displayed": "3.42m",
+          "dps_displayed": 16335.2,
+          "dps_default_view": 16202.0,
+          "damage_default_view": "3.40m",
+          "active_pct": 99.07,
+          "item_level": 367
         },
         {
           "name": "Scrotome",
           "wcl_actor_id": 5,
           "spec": "survival_hunter",
           "role": "dps",
-          "damage_displayed": "3.38m",
-          "dps_displayed": 16145.0
+          "damage_displayed": "4.29m",
+          "dps_displayed": 20488.7,
+          "dps_default_view": 16145.0,
+          "damage_default_view": "3.38m",
+          "active_pct": 99.58,
+          "item_level": 355
         },
         {
           "name": "Thedarkus",
           "wcl_actor_id": 2,
           "spec": "frost_death_knight",
           "role": "dps",
-          "damage_displayed": "3.30m",
-          "dps_displayed": 15748.3
+          "damage_displayed": "3.38m",
+          "dps_displayed": 16144.9,
+          "dps_default_view": 15748.3,
+          "damage_default_view": "3.30m",
+          "active_pct": 98.88,
+          "item_level": 342
         },
         {
           "name": "Deevor",
           "wcl_actor_id": 8,
           "spec": "shadow_priest",
           "role": "dps",
-          "damage_displayed": "2.60m",
-          "dps_displayed": 12425.0
+          "damage_displayed": "2.93m",
+          "dps_displayed": 13982.4,
+          "dps_default_view": 12425.0,
+          "damage_default_view": "2.60m",
+          "active_pct": 99.43,
+          "item_level": 359
         },
         {
           "name": "Orageux",
           "wcl_actor_id": 3,
           "spec": "blood_death_knight",
           "role": "tank",
-          "damage_displayed": "234.1k",
-          "dps_displayed": 1117.2
+          "damage_displayed": "1.06m",
+          "dps_displayed": 5040.5,
+          "dps_default_view": 1117.2,
+          "damage_default_view": "234.1k",
+          "active_pct": 94.92,
+          "item_level": 349
         },
         {
           "name": "Boboops",
           "wcl_actor_id": 7,
           "spec": "restoration_shaman",
           "role": "healer",
-          "damage_displayed": "95.9k",
-          "dps_displayed": 457.8
+          "damage_displayed": "96.2k",
+          "dps_displayed": 459.3,
+          "dps_default_view": 457.8,
+          "damage_default_view": "95.9k",
+          "active_pct": 15.49,
+          "item_level": 360
         },
         {
           "name": "Elfîheal",
@@ -228,24 +357,78 @@
           "spec": "restoration_druid",
           "role": "healer",
           "damage_displayed": "22.9k",
-          "dps_displayed": 109.3
+          "dps_displayed": 109.3,
+          "dps_default_view": 109.3,
+          "damage_default_view": "22.9k",
+          "active_pct": 7.33,
+          "item_level": 354
         }
       ],
       "phase_coverage": "Red vial 17.5 s, Blue 67.6 s, Green 117.8 s (Maloriak at 59.6% around the throw), Release All Minions 158.3 s, phase two to the kill at 209.6 s.",
       "limitations": [
-        "feral_druid_tank Labraizz (Guardian, 16,202.0 DPS) tanked Maloriak here (Growl on Maloriak at 5.8 and 25.4 s) and is excluded from actor_dps (see excluded_actor_dps): the bot roster's Feral tanks the adds, and a boss-tank reference does not match that role. The Blood DK Orageux (1,117.2 DPS) took the adds and Prime Subjects (Rend on Orageux) and is also excluded, because the bot roster's Blood DK tanks Maloriak.",
-        "demonology_warlock is the median of two Demonology Warlocks, 19,314.1 and 17,145.5.",
+        "feral_druid_tank Labraizz (Guardian, 16,335.2 DPS unfiltered, 16,202.0 default) tanked Maloriak here (Growl on Maloriak at 5.8 and 25.4 s) and is excluded from actor_dps (see excluded_actor_dps): the bot roster's Feral tanks the adds, and a boss-tank reference does not match that role. The Blood DK Orageux (5,040.5 DPS unfiltered, 1,117.2 default) took the adds and Prime Subjects (Rend on Orageux) and is also excluded, because the bot roster's Blood DK tanks Maloriak.",
+        "demonology_warlock is the median of two Demonology Warlocks, 22,112.5 and 18,830.5 (unfiltered; 19,314.1 and 17,145.5 default).",
         "No Fire Mage or Assassination Rogue in the roster.",
         "Found through the Maloriak 10N rankings (Guardian Druid tanks); ranking rows were only a discovery index and the fight page was verified. An earlier candidate, grvCj8pxDF1qPJmY fight 12 (2024-06-06), had archived event data.",
         "Displayed duration and DPS are rounded observations. The values are comparison context, not a controlled pass threshold."
       ],
       "excluded_actor_dps": {
         "feral_druid_tank": {
-          "dps": 16202.0,
+          "dps": 16335.2,
           "actor": "Labraizz",
-          "reason": "boss_tank_role_mismatch: the Guardian tanked Maloriak himself; the bot roster's Feral tanks the adds, so a boss-tank reference is not matched for the add-tank role"
+          "reason": "boss_tank_role_mismatch: the Guardian tanked Maloriak himself; the bot roster's Feral tanks the adds, so a boss-tank reference is not matched for the add-tank role",
+          "dps_default_view": 16202.0,
+          "active_pct": 99.07
+        },
+        "blood_death_knight:Orageux": {
+          "dps": 5040.5,
+          "reason": "add tank, not the boss tank (current manifest excludes it; a Guardian tanked Maloriak)",
+          "dps_default_view": 1117.2,
+          "active_pct": 94.92
         }
-      }
+      },
+      "actor_dps_round2": {
+        "retribution_paladin": 20230.9,
+        "demonology_warlock": 18229.8,
+        "survival_hunter": 16145.0,
+        "frost_death_knight": 15748.3,
+        "shadow_priest": 12425.0
+      },
+      "item_level": 355.6,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "survival_hunter": 355,
+        "retribution_paladin": 354,
+        "demonology_warlock": 358.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": null,
+        "retribution_paladin": null,
+        "demonology_warlock": null
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Scrotome"
+        ],
+        "retribution_paladin": [
+          "Ûnstûff"
+        ],
+        "demonology_warlock": [
+          "Xenass",
+          "Tsubii"
+        ]
+      },
+      "deaths": [],
+      "default_view_url": "https://classic.warcraftlogs.com/reports/VL3fW9wNm2PRJDYt?fight=13&type=damage-done",
+      "damage_view": "unfiltered_options_8192",
+      "damage_view_source": "wcl_maloriak_10n_post_cutoff_20260930",
+      "actor_dps_default_view": {
+        "survival_hunter": 16145.0,
+        "retribution_paladin": 20230.9,
+        "demonology_warlock": 18229.8
+      },
+      "raid_dps_view": "default (raid total as first read; party DPS is reported, not gating)"
     },
     {
       "id": "ZyH2KkjchMRTdXga-fight33",
@@ -256,7 +439,7 @@
       "raid_dps": 155480.9,
       "average_item_level": 359,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "ZyH2KkjchMRTdXga",
         "fight": 33,
@@ -265,7 +448,12 @@
         "report_date_display": "Sun Oct 20 2024"
       },
       "actor_dps": {
-        "assassination_rogue": 20069.4
+        "blood_death_knight": 15637.4,
+        "survival_hunter": 28906.3,
+        "fire_mage": 21698.1,
+        "retribution_paladin": 24119.2,
+        "assassination_rogue": 20069.4,
+        "elemental_shaman": 15544.1
       },
       "reference_selection": [
         {
@@ -427,7 +615,51 @@
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds).",
         "Also present but not selected (parse outside the middle band): Salcilia (fire_mage, parse 78)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "assassination_rogue": 20069.4
+      },
+      "item_level": 359.0,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "blood_death_knight": 359.0,
+        "survival_hunter": 360.0,
+        "fire_mage": 361.0,
+        "retribution_paladin": 360.0,
+        "assassination_rogue": 359.0,
+        "elemental_shaman": 354.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "fire_mage": null,
+        "retribution_paladin": null,
+        "assassination_rogue": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Chillblane"
+        ],
+        "survival_hunter": [
+          "Andushmin"
+        ],
+        "fire_mage": [
+          "Salcilia"
+        ],
+        "retribution_paladin": [
+          "Konfusion"
+        ],
+        "assassination_rogue": [
+          "Duskstep"
+        ],
+        "elemental_shaman": [
+          "Palahele"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
     },
     {
       "id": "XzVpNLkxaAFG3DjW-fight18",
@@ -438,7 +670,7 @@
       "raid_dps": 154897.3,
       "average_item_level": 359.3,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "XzVpNLkxaAFG3DjW",
         "fight": 18,
@@ -447,7 +679,10 @@
         "report_date_display": "Tue Oct 22 2024"
       },
       "actor_dps": {
-        "assassination_rogue": 21261.6
+        "blood_death_knight": 15361.1,
+        "survival_hunter": 22932.8,
+        "assassination_rogue": 21261.6,
+        "elemental_shaman": 26765.4
       },
       "reference_selection": [
         {
@@ -612,7 +847,41 @@
         "Selected for the assassination_rogue at a middle parse percentile (57); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "assassination_rogue": 21261.6
+      },
+      "item_level": 359.3,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "blood_death_knight": 362.0,
+        "survival_hunter": 360.0,
+        "assassination_rogue": 359.0,
+        "elemental_shaman": 360.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "assassination_rogue": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Nôxy"
+        ],
+        "survival_hunter": [
+          "Torcture"
+        ],
+        "assassination_rogue": [
+          "Mastabator"
+        ],
+        "elemental_shaman": [
+          "Shoobering"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
     },
     {
       "id": "3pvXdMVntcjxygW4-fight13",
@@ -623,7 +892,7 @@
       "raid_dps": 135601.4,
       "average_item_level": 358.1,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "3pvXdMVntcjxygW4",
         "fight": 13,
@@ -632,7 +901,10 @@
         "report_date_display": "Sat Oct 26 2024"
       },
       "actor_dps": {
-        "assassination_rogue": 20150.2
+        "survival_hunter": 17666.2,
+        "assassination_rogue": 20150.2,
+        "elemental_shaman": 21175.6,
+        "demonology_warlock": 20060.4
       },
       "reference_selection": [
         {
@@ -794,7 +1066,42 @@
         "Selected for the assassination_rogue at a middle parse percentile (48); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "assassination_rogue": 20150.2
+      },
+      "item_level": 358.1,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "survival_hunter": 358.0,
+        "assassination_rogue": 358.0,
+        "elemental_shaman": 359.0,
+        "demonology_warlock": 358.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": null,
+        "assassination_rogue": null,
+        "elemental_shaman": null,
+        "demonology_warlock": null
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Firsthunt"
+        ],
+        "assassination_rogue": [
+          "Teabo"
+        ],
+        "elemental_shaman": [
+          "Makâjind",
+          "Shockstraps"
+        ],
+        "demonology_warlock": [
+          "Kittykijo"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
     },
     {
       "id": "h1LaC3FZ8BwPrbXW-fight18",
@@ -805,7 +1112,7 @@
       "raid_dps": 149179,
       "average_item_level": 361,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "h1LaC3FZ8BwPrbXW",
         "fight": 18,
@@ -814,7 +1121,10 @@
         "report_date_display": "Mon Sep 30 2024"
       },
       "actor_dps": {
-        "fire_mage": 18125.7
+        "blood_death_knight": 15367.5,
+        "survival_hunter": 25812.5,
+        "fire_mage": 18125.7,
+        "elemental_shaman": 15409.7
       },
       "reference_selection": [
         {
@@ -995,7 +1305,41 @@
         "Selected for the fire_mage at a middle parse percentile (52); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "fire_mage": 18125.7
+      },
+      "item_level": 361.0,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "blood_death_knight": 363.0,
+        "survival_hunter": 363.0,
+        "fire_mage": 358.0,
+        "elemental_shaman": 361.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "fire_mage": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Trydk"
+        ],
+        "survival_hunter": [
+          "Wanhedaa"
+        ],
+        "fire_mage": [
+          "Mapiti"
+        ],
+        "elemental_shaman": [
+          "Nesca"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
     },
     {
       "id": "hmAcWCt3njMR4HFT-fight12",
@@ -1006,7 +1350,7 @@
       "raid_dps": 148594.5,
       "average_item_level": 358.4,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "hmAcWCt3njMR4HFT",
         "fight": 12,
@@ -1015,7 +1359,11 @@
         "report_date_display": "Wed Oct 23 2024"
       },
       "actor_dps": {
-        "fire_mage": 18244.2
+        "blood_death_knight": 12003.8,
+        "survival_hunter": 17223.7,
+        "fire_mage": 18244.2,
+        "assassination_rogue": 22523.9,
+        "elemental_shaman": 28194.0
       },
       "reference_selection": [
         {
@@ -1201,7 +1549,46 @@
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds).",
         "Also present but not selected (parse outside the middle band): Rîzla (assassination_rogue, parse 70)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "fire_mage": 18244.2
+      },
+      "item_level": 358.4,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "blood_death_knight": 360.0,
+        "survival_hunter": 354.0,
+        "fire_mage": 358.0,
+        "assassination_rogue": 356.0,
+        "elemental_shaman": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "fire_mage": null,
+        "assassination_rogue": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Papabarbu"
+        ],
+        "survival_hunter": [
+          "Ticlin"
+        ],
+        "fire_mage": [
+          "Mugiwaraya"
+        ],
+        "assassination_rogue": [
+          "Rîzla"
+        ],
+        "elemental_shaman": [
+          "Jbee"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
     },
     {
       "id": "cCXgM3dx9YGKaDt7-fight28",
@@ -1212,7 +1599,7 @@
       "raid_dps": 158981.1,
       "average_item_level": 358.9,
       "target_scope": "all targets (View Unfiltered Damage): Maloriak, Aberrations and Prime Subjects (pets merged)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "reference_class": "matched_item_level_band",
       "report": {
         "code": "cCXgM3dx9YGKaDt7",
         "fight": 28,
@@ -1221,7 +1608,9 @@
         "report_date_display": "Thu Oct 10 2024"
       },
       "actor_dps": {
-        "fire_mage": 19159.7
+        "survival_hunter": 18567.0,
+        "fire_mage": 19159.7,
+        "elemental_shaman": 25848.3
       },
       "reference_selection": [
         {
@@ -1430,7 +1819,246 @@
         "Selected for the fire_mage at a middle parse percentile (50); actor_dps holds only that player. Every other actor is context only, so this kill does not move the targets of the specs already matched by MxFq7TRbvnjGY1hJ-fight34 and VL3fW9wNm2PRJDYt-fight13.",
         "dps_displayed is the View Unfiltered Damage table (options=8192): the default Phase 2 partition excludes damage to Aberrations and Prime Subjects, so the unfiltered table is the all-target encounter-window figure the scoreboard compares with.",
         "Displayed duration and DPS are rounded observations; assignments, buffs, gear and the add handling differ from the bot canary (the human raid does not pause at 30% for the adds)."
-      ]
+      ],
+      "actor_dps_round2": {
+        "fire_mage": 19159.7
+      },
+      "item_level": 358.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "actor_item_level": {
+        "survival_hunter": 358.0,
+        "fire_mage": 358.0,
+        "elemental_shaman": 358.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": null,
+        "fire_mage": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Klaasou"
+        ],
+        "fire_mage": [
+          "Halinor"
+        ],
+        "elemental_shaman": [
+          "Théalose"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192"
+    },
+    {
+      "id": "QfJR9AZw13G6kzXP-fight14",
+      "url": "https://classic.warcraftlogs.com/reports/QfJR9AZw13G6kzXP?fight=14&type=damage-done&options=8192",
+      "mode": "10N",
+      "date": "2024-10-19",
+      "duration_sec": 175.7,
+      "raid_dps": 120993.0,
+      "average_item_level": 356.0,
+      "target_scope": "All Enemies: Maloriak, Aberration, Flash Freeze, Prime Subject; pets merged. Default Phase 2 partition excludes damage to Aberrations and Prime Subjects and non-boss enemies during Phase 2. dps_unfiltered was read separately with options=8192.",
+      "report": {
+        "code": "QfJR9AZw13G6kzXP",
+        "fight": 14
+      },
+      "summary_url": "https://classic.warcraftlogs.com/reports/QfJR9AZw13G6kzXP?fight=14&type=summary",
+      "boss_verified": "Maloriak Normal 10 Player Kill",
+      "phase_coverage": {
+        "events_url": "https://classic.warcraftlogs.com/reports/QfJR9AZw13G6kzXP?fight=14&type=casts&view=events&hostility=1",
+        "vials": [
+          {
+            "colour": "Blue",
+            "begin_time": "00:17.708",
+            "cast_time": "00:18.194",
+            "cast_sec": 18.194
+          },
+          {
+            "colour": "Red",
+            "begin_time": "01:07.958",
+            "cast_time": "01:08.446",
+            "cast_sec": 68.446
+          },
+          {
+            "colour": "Green",
+            "begin_time": "01:58.148",
+            "cast_time": "01:58.666",
+            "cast_sec": 118.666
+          }
+        ],
+        "release_all_minions": {
+          "begin_time": "02:14.355",
+          "begin_sec": 134.355,
+          "cast_time": "02:15.846",
+          "cast_sec": 135.846
+        },
+        "all_three_colours": true,
+        "phase_two_observed": [
+          "Magma Jets (02:28.063, 02:39.413, 02:51.996)",
+          "Acid Nova (02:28.880)",
+          "Absolute Zero (02:33.739, 02:45.030)"
+        ]
+      },
+      "notes": "Accepted to fill the single remaining Demonology gap. Edgeshadows has ilvl 359, parse 81, ilvl percentile 81, 99.13% activity, no death; all six DPS have unfiltered activity 99.13-99.85%. Hornetosi has default parse 4 at ilvl 351 and is not a wanted spec. Raid average is 356.0, within band and 3 points from 359. All three vial colours and phase 2 verified. Àltri is present in Summary as a Restoration Druid healer, ilvl 357, but absent from both damage tables, so its damage/activity/parse fields are null. Blood DK tank is present; boss-tank assignment has not yet been independently verified, so this new kill is not credited for Blood DK.",
+      "raid_dps_median_active_pct": 98.8,
+      "actors": [
+        {
+          "name": "Edgeshadows",
+          "class": "Warlock",
+          "spec_key": "demonology_warlock",
+          "role": "dps",
+          "dps": 29447.1,
+          "dps_default_view": 24304.8,
+          "active_pct": 99.13,
+          "item_level": 359,
+          "parse_percentile": 81
+        },
+        {
+          "name": "Onlyhunt",
+          "class": "Hunter",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 25165.0,
+          "dps_default_view": 21472.4,
+          "active_pct": 99.59,
+          "item_level": 354,
+          "parse_percentile": 60
+        },
+        {
+          "name": "Chopelabien",
+          "class": "Paladin",
+          "spec_key": "retribution_paladin",
+          "role": "dps",
+          "dps": 19569.8,
+          "dps_default_view": 17299.6,
+          "active_pct": 99.7,
+          "item_level": 354,
+          "parse_percentile": 35
+        },
+        {
+          "name": "Tsurum",
+          "class": "Shaman",
+          "spec_key": "elemental_shaman",
+          "role": "dps",
+          "dps": 19836.1,
+          "dps_default_view": 16963.2,
+          "active_pct": 98.47,
+          "item_level": 356,
+          "parse_percentile": 41
+        },
+        {
+          "name": "Elømanix",
+          "class": "Warrior",
+          "spec_key": "fury_warrior",
+          "role": "dps",
+          "dps": 16118.0,
+          "dps_default_view": 15262.9,
+          "active_pct": 93.3,
+          "item_level": 355,
+          "parse_percentile": 44
+        },
+        {
+          "name": "Darthkrayt",
+          "class": "Death Knight",
+          "spec_key": "blood_death_knight",
+          "role": "tank",
+          "dps": 15955.0,
+          "dps_default_view": 14800.0,
+          "active_pct": 99.2,
+          "item_level": 361,
+          "parse_percentile": 69
+        },
+        {
+          "name": "Hornetosi",
+          "class": "Priest",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 12749.7,
+          "dps_default_view": 9750.9,
+          "active_pct": 86.38,
+          "item_level": 351,
+          "parse_percentile": 4
+        },
+        {
+          "name": "Âkela",
+          "class": "Druid",
+          "spec_key": "feral_druid_tank",
+          "role": "tank",
+          "dps": 4009.8,
+          "dps_default_view": 1138.6,
+          "active_pct": 46.3,
+          "item_level": 353,
+          "parse_percentile": 12
+        },
+        {
+          "name": "Diviny",
+          "class": "Shaman",
+          "spec_key": "restoration_shaman",
+          "role": "healer",
+          "dps": 0.5,
+          "dps_default_view": 0.5,
+          "active_pct": 0.0,
+          "item_level": 360,
+          "parse_percentile": 10
+        },
+        {
+          "name": "Àltri",
+          "class": "Druid",
+          "spec_key": "restoration_druid",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null
+        }
+      ],
+      "actor_dps": {
+        "blood_death_knight": 15955.0,
+        "survival_hunter": 25165.0,
+        "retribution_paladin": 19569.8,
+        "elemental_shaman": 19836.1,
+        "demonology_warlock": 29447.1
+      },
+      "item_level": 356.0,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "reference_class": "matched_item_level_band",
+      "actor_item_level": {
+        "blood_death_knight": 361.0,
+        "survival_hunter": 354.0,
+        "retribution_paladin": 354.0,
+        "elemental_shaman": 356.0,
+        "demonology_warlock": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 69.0,
+        "survival_hunter": 60.0,
+        "retribution_paladin": 35.0,
+        "elemental_shaman": 41.0,
+        "demonology_warlock": 81.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Darthkrayt"
+        ],
+        "survival_hunter": [
+          "Onlyhunt"
+        ],
+        "retribution_paladin": [
+          "Chopelabien"
+        ],
+        "elemental_shaman": [
+          "Tsurum"
+        ],
+        "demonology_warlock": [
+          "Edgeshadows"
+        ]
+      },
+      "deaths": [],
+      "damage_view": "unfiltered_options_8192",
+      "default_view_url": "https://classic.warcraftlogs.com/reports/QfJR9AZw13G6kzXP?fight=14&type=damage-done"
     }
   ],
   "extraction_plan": {
@@ -1525,5 +2153,101 @@
       "fire_mage": 18244.2,
       "assassination_rogue": 20150.2
     }
+  },
+  "t11_reference_set_20260930": {
+    "source": "~/.cache/wcl_t11_refs/maloriak.json, archived in DVC as artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc",
+    "read": "Read 2026-09-30T10:09:12.596158+00:00 through codex gpt-6.1-sol user Chrome plugin tab; checks seen: none. Scratch captures: ~/.cache/wcl_t11_refs/raw/maloriak_seed.json (current manifests) and maloriak_astra.json (Sol).",
+    "item_level_band": {
+      "min": 352.0,
+      "max": 366.0,
+      "roster_average_item_level": 359,
+      "decision": "user decision 2026-09-30: regear the bots to tier-11 phase gear (~359) so kills exercise the mechanics; references at raid item level 352-366, players 359 +-12",
+      "roster_source": "dataset/validation_gear_profiles/profiles.json average_item_level"
+    },
+    "actor_dps_rule": "(one value per spec per kill, like the existing manifests):\n- blood_death_knight: the boss tank row (role tank). With several Blood DK tanks,\n  the one with the highest active %, then DPS; the others are excluded.\n- other gated specs: rows in the dps role. Several actors of one spec in a kill\n  are averaged.\n- Outliers are excluded (user clarification 2026-09-30: gear match first, parse\n  secondary, competent representative players): an actor who died before 85% of\n  the kill, an actor below max(50%, raid DPS median active % - 20), an extreme parse (95+ or below 10), or an actor\n  whose own item level is more than 12 from the roster's 359 (outside 347-371).\n- Kills whose raid DPS median activity is below 75% (slowed, achievement or\n  carry kills; competent kills at this gear run 90-98%) are context only.\n- Only kills with raid item level 352-366 enter the median; near-band kills are\n  recorded separately and never enter a target.",
+    "reference_item_levels": {
+      "MxFq7TRbvnjGY1hJ-fight34": 359.9,
+      "VL3fW9wNm2PRJDYt-fight13": 355.6,
+      "ZyH2KkjchMRTdXga-fight33": 359.0,
+      "XzVpNLkxaAFG3DjW-fight18": 359.3,
+      "3pvXdMVntcjxygW4-fight13": 358.1,
+      "h1LaC3FZ8BwPrbXW-fight18": 361.0,
+      "hmAcWCt3njMR4HFT-fight12": 358.4,
+      "cCXgM3dx9YGKaDt7-fight28": 358.9,
+      "QfJR9AZw13G6kzXP-fight14": 356.0
+    },
+    "per_spec_median": {
+      "assassination_rogue": 20705.9,
+      "blood_death_knight": 15364.3,
+      "demonology_warlock": 20471.5,
+      "elemental_shaman": 22266.0,
+      "fire_mage": 18701.95,
+      "retribution_paladin": 20070.75,
+      "survival_hunter": 22932.8
+    },
+    "per_spec_samples": {
+      "assassination_rogue": 4,
+      "blood_death_knight": 6,
+      "demonology_warlock": 3,
+      "elemental_shaman": 8,
+      "fire_mage": 4,
+      "retribution_paladin": 4,
+      "survival_hunter": 9
+    },
+    "longer_half_context": {
+      "rule": "context only, not a target: median over in-band kills at or above the boss's median in-band duration",
+      "duration_cut_sec": 157.9,
+      "reference_ids": [
+        "VL3fW9wNm2PRJDYt-fight13",
+        "XzVpNLkxaAFG3DjW-fight18",
+        "3pvXdMVntcjxygW4-fight13",
+        "cCXgM3dx9YGKaDt7-fight28",
+        "QfJR9AZw13G6kzXP-fight14"
+      ],
+      "median": {
+        "blood_death_knight": 15658.05,
+        "survival_hunter": 20488.7,
+        "fire_mage": 19159.7,
+        "retribution_paladin": 20001.25,
+        "assassination_rogue": 20705.9,
+        "elemental_shaman": 23511.95,
+        "demonology_warlock": 20471.5
+      },
+      "samples": {
+        "blood_death_knight": 2,
+        "survival_hunter": 5,
+        "fire_mage": 1,
+        "retribution_paladin": 2,
+        "assassination_rogue": 2,
+        "elemental_shaman": 4,
+        "demonology_warlock": 3
+      }
+    },
+    "changes": "Every reference now carries every gated roster spec it fields (one value per spec, same-spec actors averaged), not only the Fire or Assassination player it was picked for in round 2 (the round-2 single-spec values stay in actor_dps_round2). QfJR9AZw13G6kzXP fight 14 (2024-10-19, 175.7 s, raid item level 356.0; Blue, Red, Green) is added. Specs the roster does not field are dropped from actor_dps.",
+    "rejected": [
+      {
+        "report": "dbRWq7wHJAyj8C6B",
+        "fight": 5,
+        "reason": "Archived report subscription gate prevents access to Summary, damage tables and enemy cast events. Raid ilvl 357.4 is shown in the retained rankings, not independently verified in Summary.",
+        "raid_item_level": 357.4
+      }
+    ],
+    "summary_notes": [
+      "Phase coverage: all 9 kills last 125-210 s (2024-10-01 to 2024-10-28, raid item level 355.6-361.0) and see at least two vial colours before Release All Minions; VL3fW9wNm2PRJDYt f13 and the new QfJR9AZw13G6kzXP f14 (175.7 s) show Red, Blue and Green.",
+      "Eight kills are the current matched references reused unchanged; the new QfJR9AZw13G6kzXP f14 adds Demonology (item level 359, parse 81, 29,447) and values for the other specs, read in View Unfiltered Damage (options=8192).",
+      "VL3fW9wNm2PRJDYt f13's Blood DK (Orageux, 5,040.5 DPS unfiltered, 1,117.2 default) tanked adds, not Maloriak, and stays excluded as in the current manifest.",
+      "The seeded kills have no activity data, so the kill-level and actor activity rules could not be applied to them.",
+      "Round-3 fix (2026-09-30): the two default-view references were re-read unfiltered. Medians moved for Retribution (19,969.85 -> 20,070.75) and Demonology (20,060.4 -> 20,471.5); the other specs are unchanged (fight 34 changes only the Blood DK row, whose median pair is unaffected; fight 13 Survival moves below the Survival median). Every gated spec keeps at least three samples."
+    ],
+    "per_spec_median_before_unfiltered_fix": {
+      "assassination_rogue": 20705.9,
+      "blood_death_knight": 15364.3,
+      "demonology_warlock": 20060.4,
+      "elemental_shaman": 22266.0,
+      "fire_mage": 18701.95,
+      "retribution_paladin": 19969.85,
+      "survival_hunter": 22932.8
+    },
+    "scope_resolution": "Resolved 2026-09-30 (round-3 fix, review finding 6): MxFq7TRbvnjGY1hJ f34 and VL3fW9wNm2PRJDYt f13, first read in the default damage-done view, were re-read with View Unfiltered Damage (options=8192), every player row in both views (wcl_maloriak_10n_post_cutoff_20260930 part_a, archived in artifacts/cata_raid_program/wcl_round3_maloriak_bwd10n_20260930.tar.gz). All nine references now use the unfiltered view the scoreboard compares with (damage_view unfiltered_options_8192); the default values stay per actor (dps_default_view) and per reference (actor_dps_default_view). Fight 34: unfiltered equals default for every DPS player; only the Blood DKs differ (Greysnout 11,793.0 vs 11,681.9). Fight 13: unfiltered is higher (Survival 20,488.7 vs 16,145.0, Retribution 20,432.7 vs 20,230.9, Demonology 22,112.5 / 18,830.5 vs 19,314.1 / 17,145.5)."
   }
 }

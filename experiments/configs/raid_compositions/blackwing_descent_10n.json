@@ -11,6 +11,12 @@
     "decided": "2026-09-25",
     "summary": "One composition per raid that optimizes raid buffs and debuffs; Blood DK tank, Feral druid as second tank, Resto shaman as third healer."
   },
+  "gear_phase": {
+    "phase_id": "cata_t11",
+    "config": "experiments/configs/raid_gear_phases/cata_t11_v1.json",
+    "decided": "2026-09-30",
+    "decision": "User decision: each raid's canonical roster wears that raid's content-phase gear, because bursting at Dragon Soul gear (about 409) skips mechanics such as Atramedes' air phase and Chimaeron's Feud. Blackwing Descent is Tier 11: every character wears the phase profile cata_t11/<spec> (dataset/raid_phase_gear_profiles, DVC stage raid_phase_gear) instead of the catalog's shared profile; the catalog, its shared profiles and every other scope are unchanged."
+  },
   "buff_coverage_declared": {
     "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
     "provider_path": "ui/core/components/inputs/buffs_debuffs.ts",

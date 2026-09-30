@@ -2,7 +2,8 @@
 
 Scope: Cataclysm Classic 4.4.2 behavior (client build 4.4.2.59185, hotfix
 cutoff 2025-02-20 23:00 UTC) for 10N, 10H, 25N and 25H, with the 10N bot
-strategy for the canonical composition. State: `fidelity_blocked`. Client data,
+strategy for the canonical composition. State: `fidelity_blocked`; per mode, 10N is `accepted` (user
+decision 2026-09-30, see Unresolved) and 10H, 25N and 25H stay `fidelity_blocked`. Client data,
 the native script and the database were audited on 2026-09-25 (repository
 revision `a570b44369`). The report pages showed a human-verification interstitial that an agent could not
 pass on 2026-09-25. On 2026-09-27 the Warcraft Logs (WCL) 10N kill MxFq7TRbvnjGY1hJ fight 32 was read. It was
@@ -56,7 +57,8 @@ Only the "Round 1 live diagnosis" section reports live runs; it is diagnosis, no
     WoWSims fallback any more. The wanted specs' parses span 11–84, so the
     median is not a top-parse target.
   - xAhkN2y9YP3KRmnJ fight 17 (48.5 s, item level 401.4) ends before the first
-    liftoff. It is throughput context only.
+    liftoff. It was throughput context only and was dropped in round 3 (outside
+    the tier-11 band; see "Round 3").
 - Captures: `atramedes_wcl_dps_reference_v1.json`, `atramedes_wcl_cast_timelines_v1.json`
   (8 actors, 935 casts, boss events) and the ledger `wcl_10N_samples`.
 
@@ -106,7 +108,7 @@ Fire (heroic 29,250–30,750).
 | Roaring Flame patch (41807 / 42001) | 9,750 + 7,800/s for 4 s | +5 | 3 yd |
 | Roaring Flame Breath (air, 41962) | 15,600–16,400 Fire per 0.5 s (heroic 29,250) | +3 (heroic +10) | 5 yd around the flame |
 | Roaring Flame spawn (78555) | 14,625–15,375 Fire | +10 | 8 yd |
-| Sonar Bomb (air, 5 markers every 3 s) | 20,000 Arcane (heroic 30,000) | +20 (heroic +30) | 6 yd |
+| Sonar Bomb (air, 3 markers every 3 s in 10N; 5 in 10H, 12 in 25-player) | 20,000 Arcane (heroic 30,000) | +20 (heroic +30) | 6 yd |
 
 - **Ancient Dwarven Shields** (spawn group 400: 10 creatures of 8 entries).
   The spellclick casts 77709 from the shield: everyone goes to 0 Sound and
@@ -191,14 +193,17 @@ conflict is recorded (ledger `conflicts`, source
      mage with Ice Block ready stands in reach of a shield, the mage strikes
      (`air_ice_block_rescue`).
    - It then holds still, still casting at the boss (the survival Ice Block
-     cast pre-empts the damage cast). Once the flame tracking it is
-     within 8 yd, it casts Ice Block (45438) and stays for the whole 10 s.
+     cast pre-empts the damage cast). It starts no new cast once the flame
+     could reach 8 yd within one global cooldown, because Ice Block is on the
+     global cooldown. Once the flame tracking it is within 8 yd and Ice Block
+     is castable, it casts Ice Block (45438) and stays for the whole 10 s.
    - On exit (Hypothermia, the flame still on it) it Blinks (1953) away,
      then kites.
    - A chased mage with Ice Block ready blocks by itself (`kiter_ice_block`),
      without a shield.
    - Readiness comes only from the published cooldown (300 s) and the
-     absence of Hypothermia, so the play runs once per fight.
+     absence of Hypothermia, so the play runs once per fight. A global
+     cooldown still running delays the cast but does not cancel the play.
    - Nitro Boots is not modelled: bots have no engineering.
 5. "If we don't have a mage we just kite as much as possible, then gong":
    the time-to-contact rescue remains the fallback, including after the
@@ -297,15 +302,18 @@ from roster slots.
   - **Budget.** Shields for the Searing Flames still expected stay in reserve.
     That is this ground phase's Searing Flame (from the published timer;
     unknown counts as pending), plus the next ground phase's while the boss is
-    above 50% health (on the ground) or 30% (in the air).
+    above 40.8% health (on the ground) or 25.4% (in the air).
     - Searing Flame may always use a shield.
     - A 90-Sound emergency spends down to this phase's Searing Flame, since a
       Devastation death now outranks a Searing Flame 51–82 s away.
     - An air rescue also keeps the next phase's shield.
     - An 80-Sound gong keeps one more spare.
-    - Why 50% and 30%: the next Searing Flame is at least 82 s (ground) or 51 s
-      (air) away. At a 150k raid-DPS floor that removes 47% or 29% of the native
-      10N health, so a boss below the threshold dies first.
+    - Why 40.8% and 25.4%: the next Searing Flame is at least 82 s (ground) or
+      51 s (air) away. At a 130k raid-DPS floor that removes 40.8% or 25.4% of
+      the native 10N health (26,111,168), so a boss below the threshold dies
+      first. The floor is the slowest matched tier-11 kill (131,217 raid DPS,
+      hxz7MH8gW9BYGNdr fight 41; median of the seven 145,174), since round 3
+      (it was 150k from ~409-gear Magmaw runs, 50% and 30%).
   - **Air rescue.** The Reverberating Flame runs 5 yd/s and gains 1 yd/s every
     second (Building Speed, server cap 10); an unbuffed kiter runs 7 yd/s.
     - Time to contact solves the separation d(t) = d0 + c·t − t²/2.
@@ -643,7 +651,8 @@ phase.
 the user's target is 2. Round 2 counted air Resonating Clash (78168) casts in
 six WCL 10N kills: 1, 1, 1, 2, 1, 1. The native replay's 1–2 with the 7 s
 spawn matches that spend, which does not by itself isolate a Sound term in
-the flame speed (`breath_speed_scaling_with_sound` stays open).
+the flame speed (`breath_speed_scaling_with_sound` is bounded for 10N by a user
+decision, not measured: see "Round 3 fix: the kiter Sound bound" below).
 
 ## Round 1 live diagnosis (blackwing_descent_10n-r01-553da85c98, read in round 2)
 
@@ -683,19 +692,365 @@ failed round 1 only against the patchwerk WoWSims fallback.
 
 ## Unresolved (fidelity_blocked)
 
-`ground_air_phase_timestamps` (10N now measured on both sides: native liftoff
-91.2–91.5 s, touch-down 127.8–128.5 s; WCL first air Tracking 95.1–95.4 s in
-six kills; resolving it for 10N needs the catalog and the BWD quantitative
-audit updated together), `breath_initial_target_rule` (six WCL kills: the
-ground breath never tracked a tank in 19 applications, the air breath tracked
-a tank twice in 15; per-player Sound is not exposed),
-`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3; WCL shows impact groups
-every 3 s with 1–3 players hit but no launch rows),
-`breath_speed_scaling_with_sound` (air shields per phase 1–2 in WCL, as native),
-`heroic_fiend_and_shield_destruction_cadence` (heroic only). The ledger's
-unresolved entries now carry their modes.
+The per-mode gate (`fidelity_state_by_mode`) accepts 10N since 2026-09-30 and keeps
+10H, 25N and 25H blocked. No unresolved claim covers 10N any more: two were closed
+for 10N by user decisions, `sonar_bomb_count_by_mode` and
+`breath_speed_scaling_with_sound`.
+
+- **User decision 2026-09-30 (`sonar_bomb_count_10n`).** Question: can 10N be
+  accepted with the native Sonar Bomb count of 5, although no source can confirm 3 or
+  5 for 4.4.2? The user answered: "Switch to 3". Source
+  `user_decision_20260930_atramedes_sonar_bomb_10n` (supporting source: Wowhead 4.4.2,
+  3 bombs per wave in normal). The SpellMgr correction now gives 10N Sonar Bomb 92526
+  three targets (`SpellMgrCorrectionsPart04.cpp`; it was 5). 92532 (10H) stays 5 and
+  92531/92533 (25-player) stay 12. The change is syntax-checked only; it needs a
+  worldserver build before a live run. The bots dodge every bomb marker whatever the
+  count.
+- `sonar_bomb_count_by_mode` (10H, 25N, 25H). Wowhead 4.4.2 says 6 in heroic and 3 in
+  25N, the historical guide 5 in 10-player and 8 in 25-player; native keeps 5 for
+  10H and 12 for 25-player. No same-mode log or count. Why no log settled 10N
+  either: WCL logs no Sonar Bomb launch. In 9Rdhq6BkMXKNw3CP fight 13 every filter
+  on the bomb spell IDs, the names and the summons over 1:25–2:15 is empty. Only
+  the impacts (92553) appear. Impact waves hit 1–2 distinct players in three
+  kills (round 2: 1–3), which fits both 3 and 5. The 4.4.2 client has no
+  MaxTargets row for 92526/92532, so the count is set on the server.
+- **User decision 2026-09-30 (`breath_speed_scaling_with_sound`, 10N).** The review
+  rejected the earlier 10N closure "with bounds": every measured WCL chase had its
+  kiter at 0–10 Sound, so an extra Sound term above 10 was never measured, and
+  nothing kept a 10N kiter in that range. The user answered: "Bound kiter Sound
+  (Recommended): keep the time-only ramp and add a 10N acceptance rule: the tracked
+  kiter stays at 10 Sound or less during the chase". Source
+  `user_decision_20260930_atramedes_kiter_sound_bound`. The native ramp is unchanged;
+  a 10N kill is accepted only with the acceptance observation below.
+- `ground_air_phase_timestamps` and `breath_initial_target_rule` are resolved for
+  10N, and `breath_speed_scaling_with_sound` is bounded for 10N. All three stay open
+  for 10H, 25N and 25H, which have no log.
+- `heroic_fiend_and_shield_destruction_cadence` (heroic only).
+
 Resolved on 2026-09-27 from WCL: `wcl_10n_kill_reference_pending`,
 `boss_melee_damage_modifier_10n`, `boss_health_10n`, `modulation_repeat_interval`.
+
+## Round 3: tier-11 references and the 10N air phase (read 2026-09-30)
+
+The route was `codex exec -m gpt-6.1-sol` in one tab of the user's Chrome (profile
+Runiir). No check appeared. The first read lost the plugin connection after 12
+pages, and two further reads (41 and 46 pages) finished it. Source
+`wcl_atramedes_10n_air_20260930`.
+
+- **References at tier-11 gear.** The roster now wears T11 phase gear (about
+  359, user decision 2026-09-30), so the references are kills at raid item
+  level 352–366.
+  - The six matched kills (354.2–359.9) stay.
+  - 9Rdhq6BkMXKNw3CP fight 13 (356.7, 180 s, full air phase) adds a third
+    Elemental kill and two more Survival hunters.
+  - xAhkN2y9YP3KRmnJ fight 17 (401.4) is dropped.
+  - Two targets change: Elemental 19,688 → 24,949 (3 kills) and Survival
+    20,413 → 21,610 (6 kills). The other six specs are unchanged.
+- **Air-phase timestamps (10N resolved).** Seven kills:
+  - The last ground swing is at 87.9–90.4 s.
+  - The first air Tracking is at 95.1–95.4 s, and the first breath tick about
+    0.5 s later.
+  - Melee resumes at 127.5–133.0 s (median 129.1).
+  - This matches native: liftoff at 91 s, the flame at about 95 s, landing
+    31 s later, touch-down at 127.8–128.5 s and re-engage 0.8 s after it.
+  - The second ground phase's first Tracking comes at 150.3–152.0 s, which
+    is native's landing + 22 s.
+- **Breath target (10N resolved: random).**
+  - Sound at each Tracking was summed from the WCL Alternate Power gains since
+    the last shield strike.
+  - In the 18 applications where the gains show who was loudest, the target
+    was the loudest player only twice. Examples: Jonson 0 vs Andremus 90, and
+    Rubælia 0 vs Worgnfreeman 73.
+  - Sonic Breath never tracked a tank in 22 ground applications. The air
+    flame tracked a tank twice (round 2).
+  - After its target dies, the flame takes another player: Vahan died at
+    1:58.8 and Zuuri was tracked at 1:59.5.
+  - A hunter's Feign Death also dropped the flame (Rubælia, fight 30). Native
+    re-targets only a dead or missing target. No canonical bot uses Feign
+    Death, so the gap is recorded, not fixed.
+- **Flame speed (10N: bounded by the user decision, not measured above 10 Sound).**
+  - WCL logs no Building Speed rows, so the speed comes from catch timing.
+  - The flame spawns on its target (first tick at +0.5 s). The target breaks
+    free and is caught again after 12.0 s (Vahan, Nitro Boosts), 12.0 s
+    (Rubælia, Nitro), 8.5 s (Aduktai, Darkflight), 4.5 s (Jonson, no speed)
+    and 20.0 s (Aiada, from a redirect head start with Nitro and Sprint).
+  - The native ramp (5 yd/s + 1 yd/s per second) in a straight chase predicts
+    12.8–13.2, 12.8–13.2, 7.8–8.8, 4.0 and 16–17 s. Kites that curve around
+    the ring are caught sooner.
+  - Every target had 0–10 Sound, so a flame whose speed depends on Sound alone
+    is ruled out. Two things stay unmeasured: an extra Sound term above that
+    range, and the stack cap (10 on the server, 99 in the client; 0.3 s apart
+    in these chases). The review rejected closing the claim on that alone; the
+    user's bound (below) keeps every accepted 10N chase inside the measured
+    range.
+  - A redirected flame tracks the striker 7.2–7.6 s after the strike. Air
+    strikes per phase in seven kills: 1, 1, 1, 2, 1, 1, 1.
+- **Strategy fix: the Ice Block play survives a global cooldown.**
+  - Ice Block is on the global cooldown (SpellCooldowns 3200:
+    StartRecoveryTime 1500), and the published readiness includes it. A mage
+    casting at the boss therefore read "not ready" for up to 1.5 s after
+    every cast start.
+  - Before the fix, the bait flickered off during each cast start. The mage
+    then ran as the redirect runner, and the air gong decision handed the
+    catch to a second shield.
+  - Now Ice Block counts as available with at most one global cooldown left
+    (`IceBlockAvailable`) and is cast only when ready.
+  - The bait starts no new cast once the flame could reach the trigger
+    distance within one global cooldown (`IceBaitQuietYards`).
+  - A chased mage whose Ice Block waits on the global cooldown keeps kiting
+    without casting, and no shield is spent (`atramedes_ice_block_pending`).
+  - The other air paths were reviewed against the user's tactics: the hunter
+    owns the gong, up to three gongers, the mage's Ice Block once per fight
+    then Blink, and melee at maximum range on the ground and held in the air.
+    No other defect was found.
+
+## Round 3 fix: the kiter Sound bound (user decision 2026-09-30)
+
+**Rule.** In every air-phase Roaring Flame chase the tracked kiter stays at 10 Sound
+or less, the range the WCL chases measured. The native flame keeps its time-only
+ramp. A 10N kill that breaks the rule, or cannot prove it, is not accepted.
+
+**What a chase is.** It starts in the first snapshot in which the Reverberating
+Flame follows a player: its Tracking target, or the iced mage it keeps following
+without one (`BuildFacts` `AirKiter`). It ends when the flame follows another
+player, follows nobody (a gong redirect: the flame waits and flies to the shield),
+or the air phase ends. A redirect back to the same player starts a new chase.
+
+**Server evidence.** `BotAtramedesObservationCounters.h` and
+`BotAtramedesObservationStore.h` keep per-attempt counters:
+- air phases, chases and chase samples;
+- the loudest kiter sample (`max_kiter_sound`) and the samples above 10
+  (`samples_above_10`);
+- the largest sampling gap next to an engagement (`max_sample_gap_ms`).
+
+Every bot decision offers the cohort's encounter snapshot (republished every
+100 ms), and each snapshot is sampled once. The counters are scoped like
+Nefarian's: per cohort, start lifecycle, attempt id and map instance.
+
+`complete` is true only after a sample of the attempt, and only while sampling
+covered it:
+- no gap over 1 s next to the air phase (a breath tick adds 3 Sound every
+  0.5 s);
+- no gap over 5 s inside one ground engagement (an air phase lasts 31 s, so
+  none can pass unseen);
+- no instance change and no clock that went back.
+
+The export is `.botauto status` `raid_runtime.encounter_observations.atramedes`,
+in the same object as Nefarian's block. A cohort that never ran Atramedes, or a
+reused one (Stonecore, calibration, legacy Magmaw), exports byte-identical status.
+
+**Acceptance check.** `tools/raid_program/run_sanity.py`
+(`acceptance_observation`) reads the block of the judged attempt's final status.
+It uses the same attempt and final-window rules as Nefarian. For a counted kill it
+blocks when:
+- any sample is above 10;
+- the evidence is missing or malformed, or its counts contradict each other;
+- `complete` is anything but true;
+- there is no chase although the kill had an air phase (the counters saw one, or
+  the boss window reached 110 s: liftoff is at 91 s and the first chase at about
+  95 s).
+
+The round-2 records predate the counters, so they now block as unproven.
+
+**Strategy (round 3, built after the report-only check).** Before this change the air
+strategy did not keep the bound: the first chase took a random player with whatever Sound it
+carried from the ground (a Sonic Breath tick is +20), a kiter the time-to-contact model expected
+to outrun the flame took breath ticks without a rescue, and the air kite outranked the Sonar Bomb
+(+20) and fire-patch (+5 per second) exits. A shield strike sets every bar to 0 (77709), so the
+bound is kept with native strikes and lawful movement only (`BotAtramedesSoundBound.h`,
+`BotAtramedesKitePath.h`):
+- *Pre-liftoff reset* (`pre_liftoff_sound_reset`). In the last 4 s before the published liftoff,
+  while anyone (the tank included: the air flame may take it) is above 7 Sound, whoever stands
+  nearest a shield strikes the nearest one, a non-relay shield when in reach. Vertigo holds the
+  liftoff for its 5 s and the flame spawns about 4 s after the liftoff, so nothing but the last
+  Sonar Pulse disks can add Sound before the first chase. A chase that starts above 10 cannot be
+  repaired, which is why the reset comes before the flame and not at its spawn.
+- *Chase Sound reset* (`air_kiter_sound_reset`). While the chased player, or during a redirect the
+  striker the flame will track next, is above 7 Sound (one breath tick would pass 10), a strike
+  is due at once. Its mobility and its own Ice Block lower no Sound, so they do not hold the strike
+  back, and a chased player named to strike strikes before casting.
+- *Sound-bound contact* (`air_kiter_sound_bound`). The hits the chased player is about to take
+  count as contact: the next breath tick (within a tick of contact, or still inside the breath
+  while the model expects it to escape) and every fire patch in reach, when they would pass 10.
+- *Shield budget* (`ShieldBudget`). The rest of the fight needs one Searing Flame interrupt per
+  ground phase still to come (this one while pending, the next while the boss lives to reach it:
+  above 40.8% on the ground, 25.4% in the air, since the round-3 dodge fix; 50% and 30% before). Air strikes (rescues, Sound resets, the pre-liftoff
+  reset) spend every other shield; a 90-Sound emergency may spend the next phase's interrupt; an
+  80-Sound gong keeps one more spare. A forbidden strike is withheld and logged
+  (`air_kiter_sound_reset_at_reserve`, `air_kiter_sound_bound_at_reserve`,
+  `pre_liftoff_sound_reset_at_reserve`). Expected spend: 1 per ground phase, 1-2 air catches, plus
+  the pre-liftoff reset when someone is loud.
+- *Gong team.* The Ice Block rescue stays the mage's play once per fight (readiness only from its
+  300 s cooldown and Hypothermia); the pre-liftoff reset is a ground strike and never uses it. The
+  mage waiting for the flame is never chosen to strike again.
+- *Kite path.* The chased player, the redirect runner and leaps (Blink, Disengage) keep the next
+  ring waypoint unless that run crosses a Sonar Bomb zone or a fire patch. Then they take, among
+  the ring waypoints of the next two shields on the rescue lane (4 yd inside the shield) and an
+  inner lane (9 yd, still in click reach, on the hall floor), the one with the least expected
+  Sound: +20 per bomb zone crossed, +5 per second in each patch, and +3 per breath tick the flame
+  would land on that heading before arrival, so leaving a hazard never hands the kiter to the
+  flame. Earlier chases leave their trails on the ring (patches outlast the air phase).
+- *Relays.* The redirected flame flies to the struck shield across the relay station and lays its
+  trail there, and bombs mark relays: a relay holds the clear point in click reach of its own
+  shield nearest its station (`AirStationFor`) and steps there instead of away from the shield
+  (`air_relay_hazard_step`); the Ice Block bait steps out of a bomb zone or patch instead of
+  holding in it.
+
+**Replay** (`tests/test_atramedes_kiter_sound_bound.py`, the strategy test's native replay with the
+production chase counter; kiter samples above 10 per air phase, before -> after this change):
+
+| Scenario | Phases | Above 10 before | Above 10 after | Worst after |
+|---|---|---|---|---|
+| Canonical, phases 1-3 (no mobility published) | 120 | 0 | 0 | 9 |
+| Mobility, native 7 s spawn (first, next) | 58 | 2 | 0 | 9 |
+| Mobility, 3 s stress spawn | 58 | 1 | 1 | 18 |
+| Ground Sound carried (+20 on the target, +6 on two), 7 s spawn | 58 | 58 | 0 | 6 |
+| Ground Sound carried, 3 s spawn | 58 | 58 | 16 | 24 |
+| Sonar Bombs and fire patches, 7 s spawn (3 seeds) | 174 | 97 | 30 | 50 |
+| Sonar Bombs and fire patches, 3 s spawn (3 seeds) | 174 | 111 | 25 | 78 |
+
+Each run also meets the older bounds (one click at a time, the mage's Ice Block at most once per
+fight). The solo runs (no relay alive) still reach 21: the lone kiter is away from every shield
+when the flame spawns on it. The remaining misses are stress cases: with the 3 s spawn in the
+second air phase the pre-liftoff reset has used the one in-range relay shield left and no relay is
+in reach of the spawn catch; with bombs and fire, a bomb landing on a player just re-tracked (+20
+from any Sound, which no strike can undo), a catch on the west side (105 yd without a shield) after
+the kiter spent its mobility, and phases whose shields run out (withheld with the reserve reason).
+The replay's flame spawns on its target (0.5 yd) and patches tick +5 each, both worst cases; the
+spawn burst 78555 is not modelled. Live 10N kills are still judged by the server counters, not by
+this replay.
+
+## Round 3 fix: everyone dodges everything (user raid experience 2026-09-30)
+
+The user, from raid experience (source `user raid experience 2026-09-30`, ledger
+`user_raid_experience_20260930_atramedes_dodge`, authoritative):
+
+> "For atramedes ideally everyone is as close to 0 sound as possible, meaning the bots dodge
+> everything."
+
+In 10N every Sound source can be avoided: Modulation adds no Sound (client rows; only heroic adds
++10), the ground Searing Flame adds none and is interrupted by the gong. The kiter Sound bound
+above still gates only the tracked kiter; this section is about every bot, in both phases.
+
+**Audit** (before this fix; "sees" = the snapshot carries it and a rule reads it).
+
+| Source | Who is exposed | Sees it | Moves out | How early | Cost / gap |
+|---|---|---|---|---|---|
+| Sonar Pulse disk, +3/0.5 s, 5 yd | everyone on a lane from the boss; the tank beside him | once the disk leaves the boss (1.2 s after it spawns; heading unknown before) | ranged step sideways 8.5 yd; melee around the boss at their distance | ~0.5 s after it moves; a melee at 21.6 yd has ~2.4 s | the tank stood on the boss (no time; reached 100 Sound); a step out of one lane often entered the next of the four; melee cut through the boss centre when the tank moved |
+| Sonic Breath, +20/s, 15° cone | the kiter; anyone the beam sweeps | yes (boss cast + Tracking Flames) | the kiter circles; others step behind the beam or run ahead | from the cast (2 s before the first tick) | run-ahead and the kite crossed disk lanes; melee walking through the centre took ticks |
+| Fire patch, +5/s per patch, 3 yd | everyone near a Searing Flame patch or a Roaring Flame trail | yes | radial exit from the nearest patch | next decision; first tick 1 s after spawn | a trail is a band of overlapping patches: the radial exit went along it (ping-pong); slots and walks back to them crossed trails |
+| Sonar Bomb, +20, 6 yd | whoever stands at the marker 2.5 s after it appears | yes (marker 49623) | radial exit from the nearest marker | next decision (~1 s to leave) | three markers per wave land near each other: the exit stepped into the next zone |
+| Roaring Flame Breath, +3/0.5 s, 5 yd | the kiter; bystanders on its path | yes | bystanders keep 9 yd from the flame | at 9 yd | at 10 stacks the flame runs 15 yd/s: a step straight away from it is along its path |
+| Redirected flame (to the struck shield) | relays and spread players on its line | yes | as above | as above | same; the runner (next kiter) ran into old trails on the ring |
+
+Per role: the **tank** had no dodge room on the ground; **melee** stayed in range but crossed
+lanes and the centre; **ranged/healers** ping-ponged between hazards; the **gong relays** walked
+through trails to their stations and the redirect runner through trails on the ring; the **kiter**
+is the kite path of the section above; the **Ice Block mage** waits for the flame on purpose.
+
+**Fix** (`BotAtramedesDodge.h`, lawful native movement only):
+- *One hazard field per bot and snapshot:* bomb zones (7.5 yd), fire patches (4.5 yd), every moving
+  Sonar Pulse lane (7.5 yd, from behind the disk to 60 yd ahead), an unmoved disk's footprint, the
+  Reverberating Flame and 2.5 s of its path (toward the player it chases, or during a redirect toward
+  the struck shield), and the Sonic Breath band (the cone plus 10°).
+- *Shortest safe step:* an exit keeps its own point when that point clears the whole field (all
+  single-hazard behaviour is unchanged); otherwise it takes the nearest clear point on the hall
+  floor, pricing fire crossed on the way (12 yd per second in fire), bomb zones crossed (15 yd) and a
+  walk that meets a moving disk (30 yd, disks at 7 yd/s). Melee and the tank dodge on the ring
+  17.6–21.6 yd from the boss (still in melee range, user raid experience 2026-09-25), air relays
+  within click reach of their own shield.
+- *Tank at maximum melee range:* once Atramedes stands at the anchor, the tank backs out to the melee
+  slot radius (21.6 yd) along its bearing from him; he stays put.
+- *Melee walk around the boss* to their slot (steps of at most 40° on the slot circle), never
+  through his centre where the lanes and the beam start.
+- *Fire-free ground slots:* melee slots, the ranged arc and the tank's spot move along their circle
+  off Searing Flame patches.
+- *Detours:* formation walks (air spread, relay stations, ground slots) go around fire trails and
+  bomb zones, gaining at least 1.5 yd a step (no back and forth); with no detour a bot standing
+  clear holds. The gong approach and the chased kiter's walk to a shield take the least-cost step.
+- *Redirect runner:* detours around trails; when none exists it waits clear of fire, never closer
+  to the flame; standing in fire, the least-cost step out.
+- *Sonic Breath:* the kite and the run-ahead keep their direction but bend their radius and stride
+  around disk lanes (time-aware) and patches; a run-ahead still far from the sweep may wait out a
+  disk. The beam exit resolves against lanes and fire too.
+- *Flame:* bystanders leave the flame's path, not only its position.
+
+**Replay metric** (`tests/test_atramedes_raid_sound.py`, production strategy; before = the same
+program compiled against the headers before this fix). Ground: 12 whole first ground phases
+(seeds 1–12, native disks every 11 s from 14.5 s, Sonic Breaths at 24 and 66 s, Searing Flame at
+46 s with its patches until the gong). Air: 60 first and 60 second air phases (seeds 1–3, every
+first target, flame spawn 7 s or 3 s after liftoff, Sonar Bombs and fire trails, mobility
+published). Sound gained from hazards per player per phase (the kiter's Sound while chased counts
+under "kiter"), mean / max:
+
+| Phase | Tank | Melee | Ranged | Healers | Gong relays | Ice Block mage | Kiter | All roles |
+|---|---|---|---|---|---|---|---|---|
+| Ground, before | 15.1 / 106 | 6.1 / 35 | 2.1 / 12 | 4.3 / 15 | 2.6 / 26 | 1.8 / 6 | 0.2 / 6 | 4.7 / 106 |
+| Ground, after | 1.7 / 12 | 0.6 / 3 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0.3 / 6 | 0.3 / 12 |
+| Air 1 (7 s), before | 7.8 / 65 | 10.8 / 70 | 14.1 / 81 | 12.0 / 48 | 2.1 / 45 | 12.6 / 40 | 4.5 / 23 | 9.8 / 81 |
+| Air 1 (7 s), after | 0.3 / 3 | 0.2 / 3 | 0.3 / 3 | 0.3 / 3 | 0.7 / 20 | 2.4 / 6 | 5.0 / 31 | 0.6 / 20 |
+| Air 1 (3 s), before | 5.0 / 23 | 8.6 / 65 | 9.6 / 105 | 10.0 / 65 | 7.7 / 35 | 4.6 / 25 | 2.7 / 25 | 8.2 / 105 |
+| Air 1 (3 s), after | 0.3 / 3 | 0.2 / 3 | 0.3 / 3 | 0.3 / 3 | 0.2 / 3 | 1.4 / 5 | 2.8 / 25 | 0.4 / 5 |
+| Air 2 (7 s), before | 5.1 / 23 | 10.9 / 71 | 12.1 / 87 | 11.0 / 63 | 13.0 / 55 | 18.3 / 65 | 5.2 / 35 | 11.7 / 87 |
+| Air 2 (7 s), after | 0.3 / 3 | 0.3 / 3 | 0.3 / 3 | 0.3 / 3 | 1.1 / 25 | 1.3 / 10 | 3.1 / 20 | 0.6 / 25 |
+| Air 2 (3 s), before | 4.7 / 23 | 7.8 / 73 | 8.4 / 65 | 9.5 / 60 | 16.5 / 76 | 11.6 / 55 | 8.9 / 68 | 10.1 / 76 |
+| Air 2 (3 s), after | 0.7 / 12 | 0.2 / 3 | 0.3 / 3 | 0.5 / 3 | 1.8 / 23 | 1.2 / 10 | 8.4 / 55 | 0.7 / 23 |
+
+By source per phase (all players): ground Sonar Pulse 33.5 → 4.3, Sonic Breath 13.3 → 0, fire
+2.5 → 1.3; air bystanders: bombs 21–53 → 0–1.3, fire 52–59 → 0–2.8, breath 5.7–10.6 → 2.1–4.2.
+
+*Cost:* seconds moved per player per phase: ground melee 29.8 → 34.0 (dodging around the boss;
+out of melee range 1.7% → 1.8% of the phase), ranged 18.0 → 17.3, healers 19.7 → 18.3, tank 11.5 →
+11.4; air everyone moves less (ranged 16.7–18.5 → 10.5–13.9 s, healers 13.1–15.1 → 9.2–10.0 s),
+because no exit steps into the next hazard.
+
+*Negative control:* the same ground phases with the bots' exits ignored give 42.5 Sound per
+player (disks 387 Sound per phase), so the harness bites; the rule tests each have a no-hazard or
+single-hazard control that keeps the old exit.
+
+**Kiter Sound bound replay** (`tests/test_atramedes_kiter_sound_bound.py`, phases above 10 of 29 or
+87; before -> after): mobility with the 3 s spawn, second phase 1 -> 0; ground Sound carried, 3 s,
+second phase 16 -> 13; bombs and fire, 7 s spawn 14 -> 10 (first) and 16 -> 3 (second); 3 s spawn
+6 -> 5 and 19 -> 16. Over twelve seeds (348 phases each) 41/59/60/53 -> 38/48/44/18. Every
+zero-bound scenario stays at zero. The ratchets in the test now hold these values.
+
+**Shield reserve floor.** The next-Searing-Flame reserve assumed a 150k raid DPS measured on
+Magmaw at ~409 gear. The roster now wears tier-11 gear (~359): the seven matched 10N references
+(`atramedes_wcl_dps_reference_v1.json`, raid item level 354–360) have whole-fight raid DPS
+131,217–157,669 (median 145,174), and the actor targets sum to about 155k (the 0.95 pass line about
+147k). The floor is now 130,000, the slowest matched kill rounded down, so a slower T11 raid does
+not release the reserve too early; the thresholds follow (82 s: 40.8%, 51 s: 25.4%;
+`ReserveRaidDpsFloor` in `BotAtramedesGongPolicy.h`). A lower floor only keeps the reserve longer.
+It is one composition-independent constant: every BWD 10N scenario uses the one canonical T11
+composition, and `tests/test_atramedes_raid_sound.py` fails when a matched reference drops below it.
+
+**Still open.** A disk's heading is unknown for its first 1.2 s at the boss, so melee and the tank
+still take an occasional tick (tank mean 1.7 per ground phase). Bystanders still take a breath tick
+now and then from a 15 yd/s flame. The kiter's own Sound is the bound's business (the stress cases
+above). The replay's flame patches tick +5 each and the spawn burst 78555 is not modelled. Live
+evidence per role is not yet exported by the server (only the kiter's chase counters are).
+
+## Round 3 review fixes (2026-09-30)
+
+- A pre-liftoff Sound reset that the air-strike budget allows now outranks a refused
+  elective high-Sound gong (`pre_liftoff_sound_reset`), so the first kiter starts within the bound.
+- The redirected-flame prediction resolves the struck shield through its runtime identity (GUID in
+  the snapshot, else its entry, excluding shields still standing), never by comparing a GUID counter
+  with a database spawn id.
+- Observation coverage: a gap leaving an engaged phase is checked whatever follows (boss absent,
+  another route); over 5 s after a ground sample or 1 s after an air sample the attempt exports
+  `complete:false`. `max_sample_gap_ms` includes that gap.
+- Ice Block is strictly once per fight: an attempt-scoped guard (cohort, attempt id; not the
+  combat-log lifecycle, so `.botexp start` on an engaged cohort keeps it; `BotAtramedesIceBlockGuard.h`)
+  records the first Ice Block while Atramedes is engaged; later plays (rescue strike, bait, the chased
+  mage's own block) are refused even after the 300 s cooldown. A wipe (Atramedes out of combat, or the
+  wipe generation moving) or a new attempt id clears it. The chased mage relies on its block only if it
+  is castable now or ready before the predicted flame contact (0.25 s margin); otherwise the gong rescue
+  goes ahead.
+- Ground circling and the Sonic Breath run-ahead use one safe-segment predicate (clear end, arena
+  floor, no disk met, no fire or bomb crossed).
+- Observation blocks export `first_observed_at_ms`/`last_observed_at_ms`; the harness requires them
+  to cover the judged boss window within the observer's gap bound.
 
 ## Sources
 

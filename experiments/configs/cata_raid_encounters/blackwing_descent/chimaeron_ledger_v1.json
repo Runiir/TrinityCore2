@@ -14,7 +14,7 @@
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
   "unresolved_material_count": 9,
   "encounter": "chimaeron",
-  "purpose": "Source, value and timer ledger for Chimaeron. Round 2 (2026-09-25) adds execution-client spell rows, TDB rows, pinned addon timers and the native repairs; WCL observations are blocked and listed as open work. Round 1 of the BWD 10N raid program (2026-09-27) adds WCL 10N observations from two kills (MxFq7TRbvnjGY1hJ fight 27, xAhkN2y9YP3KRmnJ fight 14) read through GPT-6 Astra's browser surface: melee U samples, health derivation, boss timeline and per-spec DPS.",
+  "purpose": "Source, value and timer ledger for Chimaeron. Round 2 (2026-09-25) adds execution-client spell rows, TDB rows, pinned addon timers and the native repairs; WCL observations are blocked and listed as open work. Round 1 of the BWD 10N raid program (2026-09-27) adds WCL 10N observations from two kills (MxFq7TRbvnjGY1hJ fight 27, xAhkN2y9YP3KRmnJ fight 14) read through GPT-6 Astra's browser surface: melee U samples, health derivation, boss timeline and per-spec DPS. Round 3 (2026-09-30) applies the tier-11 WCL references, adds the knockout census, the Slime/Feud/Mortality observations and the 4.4.2 client rows, and records the native repairs they justify.",
   "scope": [
     "10N",
     "10H",
@@ -23,7 +23,7 @@
   ],
   "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
   "historical_repository_claim_revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-  "retrieved_utc_date": "2026-09-27",
+  "retrieved_utc_date": "2026-09-30",
   "source_catalog": [
     {
       "id": "wowhead_cata_chimaeron_2024",
@@ -363,6 +363,51 @@
       "accessed": "2026-09-27",
       "authority": "repository behavior under the native script (not retail proof)",
       "notes": "Four pulls in three runs (521c17d8, 250536fd, 6bf52232 pulls 1 and 2). Double Attack swings 13.5 s after each Massacre cast start and 14.6 s apart otherwise (4.87 s swings under Frost Fever). Systems Failure after Massacres 1/2/3 (run 521c17d8), 1/2/3/4 (250536fd), 3 (6bf52232 pull 1) and 3 (pull 2). Pull 1 of 6bf52232 lost the Feral to the doubled swing 9.5 s after Massacre 2 (83,041 health) and the Blood DK to the next one (146,575 health, 4 Break stacks)."
+    },
+    {
+      "id": "wcl_t11_chimaeron_refs_20260930",
+      "title": "Warcraft Logs Chimaeron 10N kills at raid item level 356-361 (tier-11 references)",
+      "publisher": "classic.warcraftlogs.com (Cataclysm Classic)",
+      "published_or_updated": "2024-10-10 to 2024-10-28 (report dates)",
+      "url": "https://classic.warcraftlogs.com/zone/rankings/1023?boss=1023&difficulty=3&size=10&partition=2",
+      "accessed": "2026-09-30",
+      "authority": "same-mode observed kills, T11 era (before the 2025-02-20 cutoff)",
+      "notes": "Nine kills (seven in band plus two near-band backups): JLvtbwNpFrzf6qjQ-14, B4J8vQVnbxFdjf3P-22, HF62ky4w8ThJmrbY-33, AztLjaG8wJh2fvbk-37, TtAL96aBnyHgXNMJ-3, zg18Kt3FkAdyv7jn-11, Qck9GA6KbT4V1arz-32, vkKcwDxZg2BrLJ4Q-3 (+ the reused MxFq7TRbvnjGY1hJ-27). Per kill: roster DPS/activity/item level/parse, deaths, completed Massacre and Feud cast times, Mortality time. Selection preferred kills with a Feud. Read through codex exec -m gpt-6.1-sol in its own tab of the user's Chrome (profile Runiir), 2026-09-30T09:52Z, no verification check. Archive: artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc."
+    },
+    {
+      "id": "wcl_chimaeron_mechanics_census_20260930",
+      "title": "Warcraft Logs Chimaeron 10N knockout census, Slime cadence, Feud and berserk reads",
+      "publisher": "classic.warcraftlogs.com (Cataclysm Classic)",
+      "published_or_updated": "Phase 4.5 partition kills (report dates in the capture)",
+      "url": "https://classic.warcraftlogs.com/zone/rankings/1023?boss=1023&difficulty=3&size=10&search=duration.95.900",
+      "accessed": "2026-09-30",
+      "authority": "same-mode observed kills; unbiased selection (the first 12 distinct kills in ranking order, chosen before reading mechanics)",
+      "notes": "Per kill: enemy casts events filtered to Massacre 82848, Feud 88872 and Mortality 82890. vnwd3D61GcaYfHrg-29 and 9DrAgFWwQj4dV2Tq-53 also: 82935 impacts, Feud aura windows (30.011 s both), Double Attack 88826 aura events, enemy casts/buffs tables (no Berserk). Longest kill found 160 s; Phase 4.5 duration searches 180-420 s and 420-1500 s returned no fights. Route codex exec -m gpt-6.1-sol, own Chrome tab; runs 10:36Z (lost the Chrome connection after two kills), 10:46Z (Chrome was not running; no page loaded) and 10:51-11:17Z (completed after Chrome restarted); no verification check. Local capture ~/.cache/chimaeron_wcl/r3_mechanics.json (to be archived by the coordinator)."
+    },
+    {
+      "id": "client_442_59185_chimaeron_20260930",
+      "title": "Chimaeron spell rows, 4.4.2.59185",
+      "publisher": "wago.tools client database",
+      "url": "https://wago.tools/db2/SpellEffect/csv?build=4.4.2.59185",
+      "accessed": "2026-09-30",
+      "build": "4.4.2.59185",
+      "method": "pixi run python -m tools.raid_program.extract_442_client_spell_rows --follow-triggers --spell-id 82871 82935 88915 88916 88917 82881 82848 88826 82882 82890 82934 95524 88872 82705 91106 88853 88861 90405 91304",
+      "authority": "reference client values; server hotfix parity needs observations",
+      "notes": "4.4.2 folds 88915-88917 and 95524 into DifficultyID rows of 82935 and 82934 (difficulty 0/5: 235,200; 4/6: 270,480; 82934 difficulty 4 has no +10% damage taken). Every 10N value equals the 4.3.4 rows: Massacre 999,999 and 4000 ms cast, Slime 235,200 in 6 yd with -75% hit/spell hit 2.5 s, Break +25%/-15% 4 stacks 60 s, Mortality -99% healing, +10% taken, Pip's Mixture 10,000 floor, Reroute Power 26 s (triggers 82705 and 91106), Feud 30 s pacify. Extract regenerable with the command above; not retained."
+    },
+    {
+      "id": "user_raid_experience_20260930_chimaeron_berserk",
+      "title": "User raid experience: Chimaeron has no berserk on normal or heroic",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-30",
+      "quote": "Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing",
+      "question": "Should Chimaeron 10N normal be treated as having no berserk, which closes the last 10N timer claim, or should 10N research stay blocked until a normal log past 7:30 turns up? (needs_user_decision chimaeron_10n_berserk, round-3 handoff)",
+      "authority": "user raid experience 2026-09-30 (authoritative for the berserk rule per the user)",
+      "used_for": [
+        "berserk (every mode)",
+        "event_cadence (berserk part)"
+      ],
+      "notes": "Resolves the berserk part of event_cadence for every mode: no berserk on normal or heroic; the native script stays unchanged. The soft enrage is Mortality at 20% (82890, -99% healing received). BigWigs Berserk(450) (unconditional) and DBM's commented --Heroic timer are contradicted for normal and heroic. WCL agrees for 10N: no Berserk row in the longest kill found (160.2 s)."
     }
   ],
   "values": [
@@ -799,13 +844,28 @@
       "key": "systems_failure_and_reroute",
       "client": "88853 Systems Failure: permanent stun on the Bile-O-Tron. 88861 Reroute Power: 26000 ms, two periodic triggers at 26000 ms (82705 mixture, 91106 visual).",
       "repository_baseline": {
-        "knockout_chance_sequence_pct": [
-          40,
-          60,
-          80,
-          100
-        ],
-        "reset_after_knockout_pct": 40,
+        "knockout_pct_by_cycle_position_10N": {
+          "1": 0,
+          "2": 50,
+          "3+": 100
+        },
+        "knockout_pct_by_cycle_position_25N_10H_25H": {
+          "1": 40,
+          "2": 60,
+          "3": 80,
+          "4+": 100
+        },
+        "cycle_restart": "after each knockout (and on Reset), every mode",
+        "before_20260930": {
+          "modes": "every mode until 2026-09-30; still the rule of 25N, 10H and 25H (the WCL evidence is 10N only)",
+          "knockout_chance_sequence_pct": [
+            40,
+            60,
+            80,
+            100
+          ],
+          "reset_after_knockout_pct": 40
+        },
         "back_online": "Reroute Power effect 1 removal re-adds 82705 (the tick re-casts 91106)"
       },
       "addon": "DBM: offline for 26 s; 'goes offline after massacre 2~3 cast ... 3rd massacre cast 100%'. BigWigs: 25 s bar.",
@@ -813,16 +873,20 @@
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
         "bigwigs_cataclysm_v11_0_13_chimaeron",
-        "repo_boss_chimaeron"
+        "repo_boss_chimaeron",
+        "wcl_t11_chimaeron_refs_20260930",
+        "wcl_chimaeron_mechanics_census_20260930",
+        "client_442_59185_chimaeron_20260930"
       ],
-      "status": "duration_resolved (26000 ms); knockout probability conflict (native 40% on the first Massacre, DBM never before the second)"
+      "status": "resolved_10N (26000 ms offline; cycle rule 0/50/100%, second position estimated from 11/24)",
+      "wcl_10N": "knockout_census_10N: 0/30, 11/24, 8/8 by cycle position; Feud cast at the Massacre completion, aura 30.011 s (vnwd3D61GcaYfHrg-29, 9DrAgFWwQj4dV2Tq-53)"
     },
     {
       "key": "feud",
       "client": "88872: 30000 ms MOD_PACIFY; description 'unable to perform melee attacks while his heads are fighting each other'.",
       "repository_baseline": {
         "trigger": "successful knockout roll after Massacre",
-        "effect": "_isInFeud; events keep running while pacified"
+        "effect": "_isInFeud; events keep running while pacified; on 10N Break and Double Attack are skipped during it (25N/10H/25H cast them)"
       },
       "source_refs": [
         "client_434_dbc_chimaeron_20260925",
@@ -879,25 +943,32 @@
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13_chimaeron",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "repo_boss_chimaeron"
+        "repo_boss_chimaeron",
+        "user_raid_experience_20260930_chimaeron_berserk",
+        "wcl_chimaeron_mechanics_census_20260930",
+        "wowhead_cata_chimaeron_2024"
       ],
-      "status": "unresolved (normal-mode berserk existence and spell id unknown)"
+      "status": "resolved for every mode by user raid experience 2026-09-30: no berserk on normal or heroic; native has none (unchanged); soft enrage is Mortality at 20%",
+      "wcl_10N": "No Berserk/Enrage row in the enemy casts or buffs tables of vnwd3D61GcaYfHrg-29 (160.2 s, the longest 10N kill found). Phase 4.5 rankings with duration 180-420 s and 420-1500 s return no fights; the Phase 1 query failed to load.",
+      "guides": "Wowhead (Beanna, 2024-06-04, re-read 2026-09-30): no berserk or enrage mentioned.",
+      "user_raid_experience_20260930": "Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing"
     }
   ],
   "timers": [
     {
       "key": "caustic_slime",
-      "native": "first 15 s after engage (repaired 2026-09-27; was 5 s), repeat 5 s, 19 s after Massacre cast start",
+      "native": "first 15 s after engage (repaired 2026-09-27; was 5 s), repeat 6 s on 10N (repaired 2026-09-30; was 5 s, still 5 s on 25N/10H/25H), 19 s after Massacre cast start",
       "addons": "BigWigs: 15 s after engage and after Massacre success; DBM: always 19 s after Massacre (cast start)",
       "guides": "every 5 s",
-      "status": "first cast 15 s (WCL + BigWigs) - native repaired 2026-09-27 from 5 s; post-Massacre 19 s agrees; 5 s repeat vs observed ~6 s impacts left unchanged (2 intervals)",
+      "status": "resolved for 10N: first 15 s, 19 s after the Massacre cast start, repeat 6 s (two volleys per cycle)",
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13_chimaeron",
         "dbm_cataclysm_4b02efe_chimaeron",
         "repo_boss_chimaeron",
-        "wcl_MxFq7TRbvnjGY1hJ_27"
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_chimaeron_mechanics_census_20260930"
       ],
-      "wcl_10N": "MxFq7TRbvnjGY1hJ fight 27: 82935 impacts (debuff+damage, 2 targets) at 17.17/17.52, 23.52/23.61, 47.47/47.62, 53.32/53.58 s; none before 17 s. Massacre begins 25.97 and 55.96 s. Impact 2.2-2.5 s after the cast time implied by 15 s / 19 s after Massacre start (missile flight). Observed repeat 5.9-6.4 s between impacts (2 intervals)."
+      "wcl_10N": "MxFq7TRbvnjGY1hJ fight 27: 82935 impacts (debuff+damage, 2 targets) at 17.17/17.52, 23.52/23.61, 47.47/47.62, 53.32/53.58 s; none before 17 s. Massacre begins 25.97 and 55.96 s. Impact 2.2-2.5 s after the cast time implied by 15 s / 19 s after Massacre start (missile flight). Observed repeat 5.9-6.4 s between impacts (2 intervals). Round 3: vnwd3D61GcaYfHrg-29 (five cycles) and 9DrAgFWwQj4dV2Tq-53 (three cycles): volleys 17.2-17.7 s after each Massacre completion, the second 5.8-6.1 s later, then about 24 s to the next pair; never a third volley; Slime continues during Feud."
     },
     {
       "key": "break",
@@ -943,17 +1014,19 @@
     },
     {
       "key": "systems_failure",
-      "native": "knockout roll on Massacre success 40/60/80/100%; offline 26 s",
+      "native": "knockout on Massacre success by cycle position: 10N 0/50/100% (since 2026-09-30; was 40/60/80/100%), 25N/10H/25H 40/60/80/100%; offline 26 s",
       "addons": "DBM: 26 s; after the 2nd or 3rd Massacre, 3rd always",
-      "status": "duration resolved; probability conflict",
+      "status": "resolved for 10N",
       "source_refs": [
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
         "repo_boss_chimaeron",
         "wcl_MxFq7TRbvnjGY1hJ_27",
-        "wcl_xAhkN2y9YP3KRmnJ_14"
+        "wcl_xAhkN2y9YP3KRmnJ_14",
+        "wcl_t11_chimaeron_refs_20260930",
+        "wcl_chimaeron_mechanics_census_20260930"
       ],
-      "wcl_10N": "No Systems Failure or Feud in either kill (fight 27 had two Massacres, fight 14 one). Consistent with DBM's 'not before the 2nd' and not contradicting native 40/60% rolls; no probability evidence."
+      "wcl_10N": "knockout_census_10N (22 kills): 0/30, 11/24, 8/8; the 2026-09-27 kills (2 and 1 Massacres) had none, consistent."
     },
     {
       "key": "wake_sequence",
@@ -1015,7 +1088,7 @@
         "25N",
         "25H"
       ],
-      "repository": "Disengage, remove boss auras, despawn Bile-O-Tron/Finkle after 30s delay, despawn heroic Nefarius, despawn boss at evade. Since 2026-09-25 Reset() also restores knockout chance 40, killed-player count 0, Feud false and clears the Mortality taunt immunity (a compatibility-mode respawn keeps the AI object).",
+      "repository": "Disengage, remove boss auras, despawn Bile-O-Tron/Finkle after 30s delay, despawn heroic Nefarius, despawn boss at evade. Since 2026-09-25 Reset() also restores the knockout state (chance 40; since 2026-09-30 the Massacre cycle count 0, in every mode), killed-player count 0, Feud false and clears the Mortality taunt immunity (a compatibility-mode respawn keeps the AI object).",
       "source_refs": [
         "repo_boss_chimaeron"
       ],
@@ -1042,47 +1115,92 @@
     {
       "key": "exact_442_build_hotfix_cutoff",
       "status": "fidelity_blocked",
-      "evidence_gap": "Cutoff identity is frozen (4.4.2 build 59185); no 4.4.2 source supplies Chimaeron tuning. The 4.4.2 client rows for the chain are not extracted yet (4.3.4 execution-client rows are recorded)."
+      "evidence_gap": "10N resolved 2026-09-30: the 4.4.2.59185 rows (client_442_59185_chimaeron_20260930) equal the 4.3.4 rows for every 10N value, and server-side 10N behaviour is pinned by T11-era WCL kills. Other modes: difficulty rows extracted, but no same-mode log pins server hotfix state.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "caustic_target_mapping_and_break_exclusion",
       "status": "repository_repaired_retail_unobserved",
-      "evidence_gap": "Break exclusion now follows the official 4.0.6 hotfix text; normal/heroic versus 10/25 target-count mapping still conflicts for 25N/10H and no WCL target observation is pinned."
+      "evidence_gap": "10N resolved: every WCL 10N volley hits 2 players (fight 27 and both census slime kills), as scripted. 25N/10H target counts still conflict (script 4/2, guides 2/4) with no same-mode log.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "bileotron_probability_and_reroute_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Reroute 26000 ms resolved from client rows. Knockout probability conflicts: native 40/60/80/100%, DBM 'after massacre 2~3 cast ... 3rd 100%'. Needs Systems Failure versus Massacre counts from several WCL kills. Two WCL 10N kills (2 and 1 Massacres) show no Systems Failure; more and longer kills are needed."
+      "evidence_gap": "10N resolved 2026-09-30 by knockout_census_10N (22 kills): 0/30 on the first Massacre of a cycle, 11/24 on the second, 8/8 on the third; the cycle restarts after a knockout; Feud 30.011 s cast at the Massacre completion. Native repaired to 0/50/100% by cycle position for 10N only; 25N, 10H and 25H keep the previous 40/60/80/100% roll. No 25N or heroic sample.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "event_cadence",
       "status": "fidelity_blocked",
-      "evidence_gap": "WCL 10N (MxFq7TRbvnjGY1hJ fight 27): Massacre 26/30 s confirmed; first Caustic Slime 15 s confirmed and repaired natively. Open: Break/Double Attack are swing-locked in retail (every 3 swings, 13.6 s after Massacre start at 4.8 s swings) versus native 11 s/15 s timers; slime repeat (5 s native vs ~6 s between impacts); wake-up (native 23 s, BigWigs 30 s)."
+      "evidence_gap": "10N resolved 2026-09-30: Slime repeat resolved (two volleys 5.8-6.1 s apart per cycle, native 6 s on 10N; 25N/10H/25H keep 5 s); Break/Double Attack keep native timers by the round-2 decision and are skipped during Feud on 10N (no Double Attack aura inside either observed Feud window; 25N/10H/25H still cast them); wake time is pre-engage (not material); berserk resolved for every mode (source user_raid_experience_20260930_chimaeron_berserk): \"Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing\" - none on normal or heroic, native unchanged, soft enrage is Mortality at 20%. Open for 10H, 25N and 25H: 2 s swings (BaseAttackTime 2000) need their own logs.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "spell_data",
-      "status": "partial_client_434_rows_recorded",
-      "evidence_gap": "4.3.4 execution-client rows resolve damage, radius, durations, stacks and the mixture threshold. The 4.4.2 reference rows (extract_442_client_spell_rows --follow-triggers) are not extracted in this pass."
+      "status": "partial_442_rows_recorded",
+      "evidence_gap": "4.4.2 rows extracted 2026-09-30 for the 10N/25N chain and equal 4.3.4 (client_442_59185_chimaeron_20260930). Heroic Nefarius spells (Mocking Shadows 91307 chain) not extracted in this pass.",
+      "modes": [
+        "10H",
+        "25H"
+      ]
     },
     {
       "key": "heroic_shadow_whip",
       "status": "fidelity_blocked",
-      "evidence_gap": "Heroic only (out of the 10N scope): delay from Systems Failure and Feud removal still need an observation."
+      "evidence_gap": "Heroic only (out of the 10N scope): delay from Systems Failure and Feud removal still need an observation.",
+      "modes": [
+        "10H",
+        "25H"
+      ]
     },
     {
       "key": "mode_damage_scaling",
       "status": "fidelity_blocked",
-      "evidence_gap": "10N resolved: WCL-derived health 20,699,972 equals native, and melee DamageModifier 20 is staged from 17 WCL U samples. 25N/10H/25H health (25N native 72.49M vs guide 90.6M) and melee (BaseAttackTime 2000) have no same-mode sample."
+      "evidence_gap": "10N resolved: WCL-derived health 20,699,972 equals native, and melee DamageModifier 20 is staged from 17 WCL U samples. 25N/10H/25H health (25N native 72.49M vs guide 90.6M) and melee (BaseAttackTime 2000) have no same-mode sample.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "helper_field_reset",
       "status": "repository_repaired_runtime_unobserved",
-      "evidence_gap": "Reset() now reinitializes knockout chance, killed-player count, Feud state and taunt immunity; a controlled wipe/reset observation is still needed."
+      "evidence_gap": "Reset() reinitializes the knockout cycle count, killed-player count, Feud state and taunt immunity. Needs a wipe and re-pull: a stale cycle count would show as a Systems Failure on the new pull's first Massacre.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "retail_reset_credit_loot",
       "status": "unresolved",
-      "evidence_gap": "Repository DONE/FAIL and encounter 1023 do not establish retail lockout, loot, achievement or reset persistence."
+      "evidence_gap": "Repository DONE/FAIL and encounter 1023 do not establish retail lockout, loot, achievement or reset persistence.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     }
   ],
   "research_completion": [
@@ -1104,14 +1222,15 @@
       "modes": [
         "10N"
       ],
-      "status": "first_cast_resolved_repeat_open",
-      "known": "235200 Nature split within 6 yd, -75% hit 2.5 s, 2 targets in 10-player, victim excluded, Break-affected excluded unless short. WCL 10N: first impacts 17.2 s (cast 15 s + flight), none earlier; native first cast repaired from 5 s to 15 s.",
-      "next": "WCL 10N (another kill): repeat interval between slime casts (native 5 s vs ~6 s between impacts).",
+      "status": "resolved_10N",
+      "known": "235200 Nature split within 6 yd, -75% hit 2.5 s, 2 targets in 10-player, victim excluded, Break-affected excluded unless short. WCL 10N: first impacts 17.2 s (cast 15 s + flight), none earlier; native first cast repaired from 5 s to 15 s. Round 3: repeat 6 s on 10N (two volleys per cycle in three kills, ten cycles; native repaired from 5 s; 25N/10H/25H keep 5 s); Slime continues during Feud.",
+      "next": "Live: two volleys per Massacre cycle about 6 s apart.",
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13_chimaeron",
         "blizzard_406_hotfix_mar29",
         "client_434_dbc_chimaeron_20260925",
-        "wcl_MxFq7TRbvnjGY1hJ_27"
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_chimaeron_mechanics_census_20260930"
       ]
     },
     {
@@ -1149,16 +1268,18 @@
       "modes": [
         "10N"
       ],
-      "status": "duration_resolved_probability_open",
-      "known": "26 s offline (Reroute Power), Feud 30 s pacify, Caustic Slime 19 s after the Massacre cast start. WCL 10N: no Systems Failure in either kill (2 and 1 Massacres). Conflict: native rolls 40% at the first Massacre (+20% per miss, back to 40% after a knockout); DBM's comment says the bot goes offline after Massacre 2 or 3 and never after the first. Live round 1 knocked out after Massacre 1 in 2 of 4 pulls (and after Massacres 1-3 or 1-4 in a row), which makes the boss pacified for most of the fight; neither WCL kill had a knockout at Massacre 1 or 2. No source gives the Massacre 2 probability, so the native rule is unchanged.",
-      "next": "WCL 10N (several longer kills or wipes): Massacre index of every Systems Failure, to replace the native 40/60/80/100 roll (first-Massacre knockouts contradict DBM).",
+      "status": "resolved_10N",
+      "known": "26 s offline (Reroute Power), Feud 30 s pacify (WCL 30.011 s), Caustic Slime continues from 19 s after the Massacre cast start. WCL census (22 kills): never on the first Massacre of a cycle (0/30), 11/24 on the second, 8/8 on the third; the cycle restarts after each knockout. Native repaired 2026-09-30 for 10N only to 0/50/100% by cycle position; on 10N Break and Double Attack are skipped during Feud (WCL: no Double Attack inside a Feud window). 25N/10H/25H keep the previous 40/60/80/100% roll and still cast Break and Double Attack during Feud.",
+      "next": "Live: Systems Failure only at cycle position 2 or 3; no Break or Double Attack during Feud.",
       "source_refs": [
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
         "live_bwd10n_r01_553da85c98",
         "repo_boss_chimaeron",
         "wcl_MxFq7TRbvnjGY1hJ_27",
-        "wcl_xAhkN2y9YP3KRmnJ_14"
+        "wcl_xAhkN2y9YP3KRmnJ_14",
+        "wcl_t11_chimaeron_refs_20260930",
+        "wcl_chimaeron_mechanics_census_20260930"
       ]
     },
     {
@@ -1167,13 +1288,14 @@
         "10N"
       ],
       "status": "resolved_for_10N",
-      "known": "At 20%: -99% healing to players, +10% damage taken, taunt immune (script since 2026-09-25); Slime, Break and Massacre stop; Double Attack 1 ms after entering. Live round 1: the Double Attack every 15 s in Mortality killed the Mortality victim 1 s before the kill (run 521c17d8), as in WCL fight 27 (2 s before the kill).",
+      "known": "At 20%: -99% healing to players, +10% damage taken, taunt immune (script since 2026-09-25); Slime, Break and Massacre stop; Double Attack 1 ms after entering. Live round 1: the Double Attack every 15 s in Mortality killed the Mortality victim 1 s before the kill (run 521c17d8), as in WCL fight 27 (2 s before the kill). Round 3 WCL: no Massacre after Mortality in two kills; Double Attack resumes every ~14.4 s.",
       "next": "Live: taunt attempts after Mortality fail with immunity; no Massacre after the transition.",
       "source_refs": [
         "client_434_dbc_chimaeron_20260925",
         "live_bwd10n_r01_553da85c98",
         "repo_boss_chimaeron_20260925",
-        "wcl_MxFq7TRbvnjGY1hJ_27"
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_chimaeron_mechanics_census_20260930"
       ]
     },
     {
@@ -1208,26 +1330,33 @@
       "modes": [
         "10N"
       ],
-      "status": "resolved_two_kills",
-      "known": "Two 10N kills recorded in chimaeron_wcl_dps_reference_v1.json and matched in the raid target: MxFq7TRbvnjGY1hJ-fight27 (95.3 s, ilvl 359.5) and xAhkN2y9YP3KRmnJ-fight14 (60.0 s, ilvl 401.4). Matched canonical specs: blood_death_knight, survival_hunter, retribution_paladin (fight 27 only). Fire Mage died in fight 14 and has no DPS row; Feral tank, Assassination and Demonology are absent from both kills.",
-      "next": "Optional: a Chimaeron 10N kill with Fire Mage, Assassination Rogue, Demonology Warlock or a Feral tank (rankings) to replace the WoWSims fallback.",
+      "status": "resolved_t11_band_seven_kills",
+      "known": "Round 3 (2026-09-30): seven 10N kills at raid item level 356.3-361.1 (tier-11 band 352-366) in chimaeron_wcl_dps_reference_v1.json and the raid target; 3-5 kills per gated spec, no WoWSims fallback left. Medians: Blood DK 15,316.5 (5), Survival 26,254.9 (4), Fire 24,654.6 (4), Retribution 26,133.6 (4), Assassination 26,350.7 (3), Demonology 23,443.3 (3). xAhkN2y9YP3KRmnJ-fight14 (401.4) dropped.",
+      "next": "None; the Feral tank is DPS-gate exempt.",
       "source_refs": [
         "wcl_MxFq7TRbvnjGY1hJ_27",
         "wcl_xAhkN2y9YP3KRmnJ_14",
-        "wcl_gate_20260925"
+        "wcl_gate_20260925",
+        "wcl_t11_chimaeron_refs_20260930"
       ]
     },
     {
       "key": "berserk",
       "modes": [
-        "10N"
+        "10N",
+        "10H",
+        "25N",
+        "25H"
       ],
-      "status": "unresolved",
-      "known": "Addons list a 450 s berserk (DBM marks it heroic); the native script has none. WCL 10N kills of 95 s and 60 s show no Berserk (too short to test 450 s).",
-      "next": "A long WCL normal kill or wipe past 7:30 would show whether normal mode enrages.",
+      "status": "resolved_by_user_raid_experience",
+      "known": "No berserk on normal or heroic (user raid experience 2026-09-30: \"Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing\"); the native script has none and stays unchanged. Addons disagree (BigWigs Berserk(450) unconditional, DBM heroic-only, commented); Wowhead mentions none. WCL: the longest 10N kill found (vnwd3D61GcaYfHrg-29, 160 s) has no Berserk row.",
+      "next": "None for the berserk. The soft enrage is Mortality at 20% (-99% healing received): live check that the kill finishes before it kills the raid (mortality_burn).",
       "source_refs": [
         "bigwigs_cataclysm_v11_0_13_chimaeron",
-        "dbm_cataclysm_4b02efe_chimaeron"
+        "dbm_cataclysm_4b02efe_chimaeron",
+        "user_raid_experience_20260930_chimaeron_berserk",
+        "wcl_chimaeron_mechanics_census_20260930",
+        "wowhead_cata_chimaeron_2024"
       ]
     }
   ],
@@ -1256,6 +1385,389 @@
       "?fight=<id>&type=damage-taken&view=events&by=ability&options=4098 filtered to ability 1 from Chimaeron (melee U samples)",
       "?fight=<id>&type=resources (boss health for derive_encounter_health)"
     ],
-    "result": "MxFq7TRbvnjGY1hJ fight 27 and xAhkN2y9YP3KRmnJ fight 14 (Chimaeron 10N kills) extracted; Y8ajQ7dbmKMG1RZy has no Chimaeron encounter. Access: codex exec -m gpt-6-astra with CUA_REPL_ENABLED_SURFACES=browser (Astra's browser surface). Plain HTTP/headless requests still get Cloudflare 'Just a moment...' (403)."
+    "result": "MxFq7TRbvnjGY1hJ fight 27 and xAhkN2y9YP3KRmnJ fight 14 (Chimaeron 10N kills) extracted; Y8ajQ7dbmKMG1RZy has no Chimaeron encounter. Access: codex exec -m gpt-6-astra with CUA_REPL_ENABLED_SURFACES=browser (Astra's browser surface). Plain HTTP/headless requests still get Cloudflare 'Just a moment...' (403). Round 3 (2026-09-30): tier-11 references and the knockout census read through codex exec -m gpt-6.1-sol in its own tab of the user's Chrome (profile Runiir); see wcl_t11_chimaeron_refs_20260930 and wcl_chimaeron_mechanics_census_20260930."
+  },
+  "fidelity_state_by_mode": {
+    "10N": "fidelity_blocked",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "knockout_census_10N": {
+    "rule": "Count the completed Massacres since the pull or the last knockout (this one included). A knockout (Systems Failure, then Feud at the Massacre completion) happens at position 2 or 3, never at 1; position 3 always.",
+    "by_cycle_position": {
+      "1": {
+        "knockouts": 0,
+        "massacres": 30
+      },
+      "2": {
+        "knockouts": 11,
+        "massacres": 24
+      },
+      "3": {
+        "knockouts": 8,
+        "massacres": 8
+      }
+    },
+    "second_position_estimate": "11/24 = 46% (95% interval about 26-67%); native uses 50% (DBM 'after massacre 2~3').",
+    "selection_bias_note": "The nine T11 reference kills were selected with a preference for a Feud; every one has 3+ Massacres, so the preference cannot raise the second-position rate (a kill reaching the third Massacre always has a Feud). The twelve Phase 4.5 kills are the first distinct kills in ranking order, chosen before any mechanic was read (second position 4/12).",
+    "kills": [
+      {
+        "kill": "JLvtbwNpFrzf6qjQ-14",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-10",
+        "duration_sec": 123.0,
+        "massacres": [
+          30.002,
+          60.004,
+          90.016
+        ],
+        "feuds": [
+          90.016
+        ],
+        "mortality_sec": 105.371,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "B4J8vQVnbxFdjf3P-22",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-23",
+        "duration_sec": 124.5,
+        "massacres": [
+          29.941,
+          59.952,
+          89.967
+        ],
+        "feuds": [
+          89.967
+        ],
+        "mortality_sec": 107.223,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "HF62ky4w8ThJmrbY-33",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-24",
+        "duration_sec": 122.3,
+        "massacres": [
+          29.916,
+          59.895,
+          89.91
+        ],
+        "feuds": [
+          59.895
+        ],
+        "mortality_sec": 106.368,
+        "cycle_positions": "1- 2K 1-"
+      },
+      {
+        "kill": "AztLjaG8wJh2fvbk-37",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-12",
+        "duration_sec": 143.6,
+        "massacres": [
+          30.003,
+          60.001,
+          90.01,
+          120.017
+        ],
+        "feuds": [
+          60.001
+        ],
+        "mortality_sec": 125.783,
+        "cycle_positions": "1- 2K 1- 2-"
+      },
+      {
+        "kill": "TtAL96aBnyHgXNMJ-3",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-26",
+        "duration_sec": 121.3,
+        "massacres": [
+          29.995,
+          59.996,
+          89.996
+        ],
+        "feuds": [
+          59.996
+        ],
+        "mortality_sec": 105.094,
+        "cycle_positions": "1- 2K 1-"
+      },
+      {
+        "kill": "zg18Kt3FkAdyv7jn-11",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-14",
+        "duration_sec": 163.3,
+        "massacres": [
+          29.981,
+          59.997,
+          89.978,
+          119.99
+        ],
+        "feuds": [
+          59.997,
+          119.99
+        ],
+        "mortality_sec": 140.43,
+        "cycle_positions": "1- 2K 1- 2K"
+      },
+      {
+        "kill": "Qck9GA6KbT4V1arz-32",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-08",
+        "duration_sec": 144.9,
+        "massacres": [
+          29.952,
+          59.958,
+          89.962
+        ],
+        "feuds": [
+          89.962
+        ],
+        "mortality_sec": 117.774,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "vkKcwDxZg2BrLJ4Q-3",
+        "sample": "t11_reference_feud_preferred",
+        "date": "2024-10-17",
+        "duration_sec": 149.0,
+        "massacres": [
+          30.01,
+          60.009,
+          90.006,
+          119.995
+        ],
+        "feuds": [
+          60.009,
+          119.995
+        ],
+        "mortality_sec": 127.715,
+        "cycle_positions": "1- 2K 1- 2K"
+      },
+      {
+        "kill": "MxFq7TRbvnjGY1hJ-27",
+        "sample": "t11_reference_2026_09_27",
+        "date": "2024-10-28",
+        "duration_sec": 95.3,
+        "massacres": [
+          29.97,
+          59.972
+        ],
+        "feuds": [],
+        "mortality_sec": 78.051,
+        "cycle_positions": "1- 2-"
+      },
+      {
+        "kill": "xAhkN2y9YP3KRmnJ-14",
+        "sample": "reference_2026_09_27",
+        "date": "2025-06-11",
+        "duration_sec": 60.0,
+        "massacres": [
+          29.964
+        ],
+        "feuds": [],
+        "mortality_sec": 50.2,
+        "cycle_positions": "1-"
+      },
+      {
+        "kill": "HJA3zYKF2BpDQRCG-26",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-17",
+        "duration_sec": 109,
+        "massacres": [
+          30.022,
+          60.009
+        ],
+        "feuds": [],
+        "mortality_sec": null,
+        "cycle_positions": "1- 2-"
+      },
+      {
+        "kill": "FrXcWZV2JyM9Pg3w-9",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-13",
+        "duration_sec": 102,
+        "massacres": [
+          29.979,
+          59.979
+        ],
+        "feuds": [],
+        "mortality_sec": null,
+        "cycle_positions": "1- 2-"
+      },
+      {
+        "kill": "rzyVkbNmjWtC2BaK-16",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-30",
+        "duration_sec": 119,
+        "massacres": [
+          30.012,
+          59.996,
+          90.013
+        ],
+        "feuds": [
+          90.013
+        ],
+        "mortality_sec": 93.801,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "1yqzfnZ26NHcY47h-25",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-05-29",
+        "duration_sec": 112,
+        "massacres": [
+          30.008,
+          59.996,
+          89.998
+        ],
+        "feuds": [
+          89.998
+        ],
+        "mortality_sec": 92.663,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "xQBRfvqyW6Th9kVm-14",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-02",
+        "duration_sec": 95,
+        "massacres": [
+          29.976,
+          59.959
+        ],
+        "feuds": [
+          59.958
+        ],
+        "mortality_sec": 79.617,
+        "cycle_positions": "1- 2K"
+      },
+      {
+        "kill": "yRkwzpMBtQAFvxVg-30",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-27",
+        "duration_sec": 110,
+        "massacres": [
+          30.002,
+          60.013,
+          90.016
+        ],
+        "feuds": [
+          90.016
+        ],
+        "mortality_sec": 90.686,
+        "cycle_positions": "1- 2- 3K"
+      },
+      {
+        "kill": "Knhbcjr2gftdvJRW-24",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-26",
+        "duration_sec": 97,
+        "massacres": [
+          29.995,
+          60.006
+        ],
+        "feuds": [
+          60.005
+        ],
+        "mortality_sec": 79.74,
+        "cycle_positions": "1- 2K"
+      },
+      {
+        "kill": "vnwd3D61GcaYfHrg-29",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-05-29",
+        "duration_sec": 160,
+        "massacres": [
+          30.005,
+          59.998,
+          90.014,
+          120.019
+        ],
+        "feuds": [
+          90.013
+        ],
+        "mortality_sec": 139.181,
+        "cycle_positions": "1- 2- 3K 1-"
+      },
+      {
+        "kill": "DWrp24THCGZFkL6b-3",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-21",
+        "duration_sec": 100,
+        "massacres": [
+          29.983,
+          59.967
+        ],
+        "feuds": [],
+        "mortality_sec": 84.319,
+        "cycle_positions": "1- 2-"
+      },
+      {
+        "kill": "9DrAgFWwQj4dV2Tq-53",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-05-16",
+        "duration_sec": 117,
+        "massacres": [
+          30.003,
+          60.02,
+          90.009
+        ],
+        "feuds": [
+          60.02
+        ],
+        "mortality_sec": 98.774,
+        "cycle_positions": "1- 2K 1-"
+      },
+      {
+        "kill": "ZkY8wanDzAfgphcj-22",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-05-25",
+        "duration_sec": 106,
+        "massacres": [
+          29.989,
+          59.962,
+          89.964
+        ],
+        "feuds": [
+          59.961
+        ],
+        "mortality_sec": 90.626,
+        "cycle_positions": "1- 2K 1-"
+      },
+      {
+        "kill": "rZTawKqdmYL17hzj-153",
+        "sample": "phase_4_5_unbiased_ranking_order",
+        "date": "2025-06-21",
+        "duration_sec": 120,
+        "massacres": [
+          29.975,
+          59.999,
+          89.978
+        ],
+        "feuds": [
+          89.978
+        ],
+        "mortality_sec": 92.122,
+        "cycle_positions": "1- 2- 3K"
+      }
+    ],
+    "source_refs": [
+      "wcl_t11_chimaeron_refs_20260930",
+      "wcl_chimaeron_mechanics_census_20260930",
+      "wcl_MxFq7TRbvnjGY1hJ_27",
+      "wcl_xAhkN2y9YP3KRmnJ_14",
+      "dbm_cataclysm_4b02efe_chimaeron"
+    ]
+  },
+  "feud_and_mortality_10N": {
+    "feud": "Feud 88872 cast at the Massacre completion (same timestamp), aura 30.011 s in both observed windows; Double Attack buff removed 1 ms after Feud and never applied during it; Caustic Slime volleys continue during Feud (17.3 s and 23.2 s after its start); the next Massacre completes 30 s after the previous one, as Feud ends.",
+    "mortality": "No Massacre (begin or completed) after Mortality in either kill; Double Attack applications resume after Mortality every ~14.4 s (swing-bound), e.g. 2:09.6, 2:24.1, 2:38.5 in vnwd3D61GcaYfHrg-29.",
+    "native": "Feud: on 10N Break and Double Attack skipped while _isInFeud (since 2026-09-30); 25N/10H/25H cast them. Mortality: phase-one events stop; Double Attack 1 ms after the transition, then every 15 s.",
+    "source_refs": [
+      "wcl_chimaeron_mechanics_census_20260930",
+      "bigwigs_cataclysm_v11_0_13_chimaeron"
+    ]
   }
 }

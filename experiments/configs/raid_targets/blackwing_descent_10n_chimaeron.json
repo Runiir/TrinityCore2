@@ -28,22 +28,36 @@
   "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
   "matched_reference_ids": [
     "MxFq7TRbvnjGY1hJ-fight27",
-    "xAhkN2y9YP3KRmnJ-fight14"
+    "JLvtbwNpFrzf6qjQ-fight14",
+    "B4J8vQVnbxFdjf3P-fight22",
+    "HF62ky4w8ThJmrbY-fight33",
+    "AztLjaG8wJh2fvbk-fight37",
+    "TtAL96aBnyHgXNMJ-fight3",
+    "zg18Kt3FkAdyv7jn-fight11"
   ],
-  "unmatched_reference_notes": {},
+  "unmatched_reference_notes": {
+    "xAhkN2y9YP3KRmnJ-fight14": "401.4 raid item level, outside the tier-11 band; dropped round 3"
+  },
   "reference_status": {
     "state": "matched_wcl_references",
-    "reason": "Two Chimaeron 10N kills extracted 2026-09-27 (chimaeron_wcl_dps_reference_v1.json).",
+    "reason": "Seven Chimaeron 10N kills at raid item level 356.3-361.1 (tier-11 band 352-366), read 2026-09-30 (chimaeron_wcl_dps_reference_v1.json); xAhkN2y9YP3KRmnJ-fight14 (401.4) dropped.",
     "wcl_matched": {
-      "blood_death_knight": 25888.5,
-      "survival_hunter": 37218.05,
-      "retribution_paladin": 25345.0
+      "blood_death_knight": 15316.5,
+      "survival_hunter": 26254.9,
+      "fire_mage": 24654.6,
+      "retribution_paladin": 26133.6,
+      "assassination_rogue": 26350.7,
+      "demonology_warlock": 23443.3
     },
-    "wowsims_fallback_available": [
-      "fire_mage",
-      "assassination_rogue",
-      "demonology_warlock"
-    ],
+    "wcl_matched_kill_counts": {
+      "blood_death_knight": 5,
+      "survival_hunter": 4,
+      "fire_mage": 4,
+      "retribution_paladin": 4,
+      "assassination_rogue": 3,
+      "demonology_warlock": 3
+    },
+    "wowsims_fallback_available": [],
     "no_reference_until_wcl": [
       "feral_druid_tank"
     ],
@@ -54,8 +68,9 @@
     ]
   },
   "declared_gaps": [
-    "Matched WCL kills are one-tank, one-healer rosters; the canonical roster has two tanks and three healers, so the Blood DK tank target (median 25,888.5) comes from a tank without taunt swaps.",
-    "Fire Mage (died in the only kill it appears in), Assassination Rogue and Demonology Warlock keep the WoWSims fallback; the Feral tank has neither a matched WCL reference nor a verified WoWSims fallback; its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so this fails nothing.",
+    "Matched WCL kills mostly run one or two tanks with the Blood DK as the boss tank (confirmed from boss melee in damage-taken); the canonical roster exchanges the boss between a Blood DK and a Feral tank, so the Blood DK's boss time differs from the references.",
+    "Every gated spec has 3-5 matched tier-11 kills; the WoWSims fallback is no longer used. The Feral tank has no reference; its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so this fails nothing.",
+    "Six of the seven references were chosen with a preference for kills that include a Feud (full-mechanics coverage); per-spec medians are taken over all seven. The longer-half medians (kills >= 123 s) are context only and sit 3-17% below the full medians for Blood DK, Survival, Fire and Retribution (Assassination equal, Demonology 7% above).",
     "Encounter damage fidelity: creature 43296 DamageModifier 20 is derived and promoted to sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql (2026-09-27); the DB updater applies it at worldserver startup, and kills recorded before that ran at the upstream value 1.",
     "Native 10N health 20,699,972 equals the WCL-derived value; kill durations are directly comparable.",
     "Phase-two (Mortality) tank deaths are Blizzlike: the fight 27 tank died to a Mortality melee 2 s before the kill. User decision 2026-09-27: deaths after Mortality begins are recorded as mortality_deaths and do not fail a kill (boss_window_death_exemptions); kills recorded before the exemption keep them in boss_window_deaths until re-recorded.",
@@ -228,5 +243,23 @@
     ],
     "ingest": "pixi run python -m tools.raid_program.scoreboard ingest --scenario blackwing_descent_10n_chimaeron --label <label> --run-dir <shard run dir>"
   },
-  "reference_matching_rationale": "Both extracted 10N kills satisfy the manifest's matching rule (same mode, reach Mortality). Neither has the canonical two tanks and three healers (both are one tank, one healer, eight DPS). They bracket the gear range (item level 359.5, 95.3 s, two Massacres; 401.4, 60.0 s, one Massacre), so the per-spec target is the median across both kills. Retribution Paladin has only the fight 27 row."
+  "reference_matching_rationale": "Round 3 (2026-09-30): the roster wears tier-11 phase gear (about 359), so references are kills with raid item level 352-366, T11 era (2024-10-10 to 2024-10-28, before the 2025-02-20 cutoff), one value per spec per kill with outliers excluded (actor_dps_rule in the manifest). The seven in-band kills (95-163 s) supply 3-5 values per gated spec; the per-spec target is their median. The six new kills each have 3-4 Massacres, at least one Feud and reach Mortality; MxFq7TRbvnjGY1hJ-fight27 (95 s, two Massacres, no Feud) stays because it is in band.",
+  "reference_item_level": {
+    "band": [
+      352.0,
+      366.0
+    ],
+    "roster_average_item_level": 359,
+    "roster_gear": "tier-11 phase gear (composition gear_phase, experiments/configs/raid_gear_phases/cata_t11_v1.json; user decision 2026-09-30)",
+    "reference_raid_item_levels": {
+      "MxFq7TRbvnjGY1hJ-fight27": 359.5,
+      "JLvtbwNpFrzf6qjQ-fight14": 359.9,
+      "B4J8vQVnbxFdjf3P-fight22": 361.1,
+      "HF62ky4w8ThJmrbY-fight33": 358.2,
+      "AztLjaG8wJh2fvbk-fight37": 359.0,
+      "TtAL96aBnyHgXNMJ-fight3": 358.5,
+      "zg18Kt3FkAdyv7jn-fight11": 356.3
+    },
+    "median_raid_item_level": 359.0
+  }
 }

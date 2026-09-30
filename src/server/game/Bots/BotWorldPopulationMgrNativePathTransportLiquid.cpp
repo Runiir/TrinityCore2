@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrNativePathTransportLiquid.h"
+#include "Bots/BotLiquidBodyClearance.h"
 #include "Bots/BotValidationRouteNativeLiquid.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 
@@ -19,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -26,8 +28,12 @@ using BotActionArbitration::Outcome;
 using BotNativeAction::TransportSurfaceMove;
 namespace Liquid = BotValidationRouteNativeLiquid;
 namespace Boarding = BotValidationRouteBoardingAction;
+namespace Clear = BotLiquidBodyClearance;
 
 constexpr float EndpointToleranceYards = 0.25f;
+// A running swim is the requested one when it ends here at this speed.
+constexpr float SwimSpeedToleranceYardsPerSecond = 0.05f;
+constexpr float TwoPi = 6.28318530717958647692f;
 
 GameObject* ResolveTransport(Player* bot, ObjectGuid guid)
 {
@@ -77,17 +83,32 @@ bool HopInFlight(Player const* bot)
         && bot->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE;
 }
 
-// The body's straight sweep: static and dynamic line of sight at the feet,
-// the waist and the head.
-bool SweepClear(Player const* bot, G3D::Vector3 const& from, G3D::Vector3 const& to)
+// The body's ray query, the step-off fall's own (ProbeFallBody): static and
+// dynamic line of sight, and the platform's model directly (the dynamic tree
+// leaves it out while CONFIG_CHECK_GOBJECT_LOS is off). Used by the whole
+// body proofs of BotLiquidBodyClearance.h.
+struct BodyQuery
 {
-    Map* map = bot->GetMap();
-    float const height = bot->GetCollisionHeight();
-    for (float const lift : { 0.15f, 0.5f * height, 0.9f * height })
-        if (!map->isInLineOfSight(bot->GetPhaseShift(), from.x, from.y, from.z + lift,
-                to.x, to.y, to.z + lift, LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
-            return false;
-    return true;
+    Player const* Bot;
+    GameObject const* Transport;
+
+    bool operator()(G3D::Vector3 const& origin, G3D::Vector3 const& direction, float length) const
+    {
+        G3D::Vector3 const end = origin + direction * length;
+        if (!Bot->GetMap()->isInLineOfSight(Bot->GetPhaseShift(), origin.x, origin.y, origin.z,
+                end.x, end.y, end.z, LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
+            return true;
+        float distance = length;
+        return Transport && Transport->m_model->intersectRay(
+            G3D::Ray::fromOriginAndDirection(origin, direction), distance, true,
+            Bot->GetPhaseShift(), VMAP::ModelIgnoreFlags::Nothing);
+    }
+};
+
+float BodyRadius(Player const* bot)
+{
+    return std::max(bot->GetFloatValue(UNIT_FIELD_BOUNDINGRADIUS),
+        Clear::Body::MinBodyRadiusYards);
 }
 
 // This platform's own model surface within `tolerance` of height `z` at a
@@ -100,6 +121,20 @@ bool TransportFloorAt(Player const* bot, GameObject const* transport, float x, f
     return transport->m_model->intersectRay(
         G3D::Ray::fromOriginAndDirection(origin, G3D::Vector3(0.0f, 0.0f, -1.0f)),
         distance, true, bot->GetPhaseShift(), VMAP::ModelIgnoreFlags::Nothing);
+}
+
+// The height of that surface (its nearest hit from above), if any.
+bool TransportFloorZ(Player const* bot, GameObject const* transport, float x, float y,
+    float z, float tolerance, float& floorZ)
+{
+    G3D::Vector3 const origin(x, y, z + tolerance);
+    float distance = 2.0f * tolerance;
+    if (!transport->m_model->intersectRay(
+            G3D::Ray::fromOriginAndDirection(origin, G3D::Vector3(0.0f, 0.0f, -1.0f)),
+            distance, false, bot->GetPhaseShift(), VMAP::ModelIgnoreFlags::Nothing))
+        return false;
+    floorZ = origin.z - distance;
+    return true;
 }
 
 bool StaticFloorAt(Player const* bot, float x, float y, float z, float tolerance)
@@ -130,7 +165,7 @@ Outcome ExecuteFloat(Player* bot, GameObject* transport, TransportSurfaceMove co
         : Outcome::Submitted("native_liquid_float_submitted");
 }
 
-Outcome ExecuteSwim(Player* bot, TransportSurfaceMove const& action)
+Outcome ExecuteSwim(Player* bot, GameObject const* transport, TransportSurfaceMove const& action)
 {
     if (bot->GetTransport())
         return Outcome::Retryable("native_liquid_swim_still_aboard");
@@ -138,6 +173,17 @@ Outcome ExecuteSwim(Player* bot, TransportSurfaceMove const& action)
         return Outcome::Retryable(busy);
     G3D::Vector3 const from(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
     G3D::Vector3 const to(action.X, action.Y, action.Z);
+    // Slower than the native swim speed when asked (riding up with a rising
+    // floor); never faster.
+    float const swimSpeed = bot->GetSpeed(MOVE_SWIM);
+    float const speed = action.SwimSpeedYardsPerSecond > 0.0f
+        ? std::min(action.SwimSpeedYardsPerSecond, swimSpeed) : swimSpeed;
+    // The swim already running there at that speed was proven at its launch:
+    // re-proving it every decision would cost its whole ray budget again.
+    if (SplineRunning(bot) && !bot->movespline->isParabolic()
+        && (bot->movespline->FinalDestination() - to).length() <= EndpointToleranceYards
+        && std::fabs(bot->movespline->Velocity() - speed) <= SwimSpeedToleranceYardsPerSecond)
+        return Outcome::Submitted("native_liquid_swim_in_progress");
     float const length = (to - from).length();
     if (!(length > 0.05f) || length > Liquid::MaxSwimYards)
         return Outcome::Retryable("native_liquid_swim_length_invalid");
@@ -151,16 +197,17 @@ Outcome ExecuteSwim(Player* bot, TransportSurfaceMove const& action)
             return Outcome::Retryable(i == 0 ? "native_liquid_swim_not_in_liquid"
                 : "native_liquid_swim_leaves_liquid");
     }
-    if (!SweepClear(bot, from, to))
-        return Outcome::Retryable("native_liquid_swim_blocked");
+    // The whole body along the segment and standing at its end
+    // (BotLiquidBodyClearance.h), not only its centre line.
+    Clear::TrajectoryProof const body = Clear::ProveSwim(from, to, BodyRadius(bot),
+        bot->GetCollisionHeight(), BodyQuery{ bot, transport });
+    if (!body.Clear())
+        return Outcome::Retryable(Clear::SwimBodyObstructedReason);
 
     Movement::MoveSplineInit init(bot);
     init.MoveTo(to.x, to.y, to.z, false);
-    // Slower than the native swim speed when asked (riding up with a rising
-    // floor); never faster.
-    float const swimSpeed = bot->GetSpeed(MOVE_SWIM);
     if (action.SwimSpeedYardsPerSecond > 0.0f)
-        init.SetVelocity(std::min(action.SwimSpeedYardsPerSecond, swimSpeed));
+        init.SetVelocity(speed);
     bot->GetMotionMaster()->LaunchMoveSpline(std::move(init), 0, MOTION_SLOT_ACTIVE,
         POINT_MOTION_TYPE);
     if (!SplineRunning(bot) || (bot->movespline->FinalDestination() - to).length()
@@ -175,9 +222,11 @@ Outcome ExecuteHop(Player* bot, GameObject* transport, TransportSurfaceMove cons
         return Outcome::Retryable("native_liquid_hop_still_aboard");
     if (HopInFlight(bot))
     {
+        // The jump runs to the requested landing or to the nearby one the
+        // body proof chose (ChooseClearHop, within MaxLandingShiftYards).
         G3D::Vector3 const end = bot->movespline->FinalDestination();
         G3D::Vector3 const to(action.X, action.Y, action.Z);
-        return (end - to).length() <= EndpointToleranceYards
+        return (end - to).length() <= Clear::MaxLandingShiftYards
             ? Outcome::Progressed("native_liquid_hop_in_flight")
             : Outcome::Retryable("native_liquid_hop_other_jump_in_flight");
     }
@@ -186,40 +235,91 @@ Outcome ExecuteHop(Player* bot, GameObject* transport, TransportSurfaceMove cons
     if (SplineRunning(bot))
         return Outcome::Retryable("native_liquid_hop_moving");
     G3D::Vector3 const from(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-    G3D::Vector3 const to(action.X, action.Y, action.Z);
+    G3D::Vector3 const requested(action.X, action.Y, action.Z);
     LiquidData liquid;
     if (!InLiquidAt(bot, from.x, from.y, from.z, liquid))
         return Outcome::Retryable("native_liquid_hop_not_in_liquid");
-    if (!TransportFloorAt(bot, transport, to.x, to.y, to.z, action.FloorToleranceYards))
-        return Outcome::Retryable("native_liquid_hop_landing_off_platform");
-    if (StaticFloorAt(bot, to.x, to.y, to.z, action.FloorToleranceYards))
-        return Outcome::Retryable("native_liquid_hop_landing_static_floor");
 
-    float const horizontal = std::hypot(to.x - from.x, to.y - from.y);
-    // The jump as the spline MoveJumpWithGravity will run: its duration from
-    // the 3D segment and the velocity passed, its arc the chord plus the
-    // parabola (BotValidationRouteNativeLiquid::PlanSplineJump).
-    Liquid::SplineJump const jump = Liquid::PlanSplineJump(horizontal, to.z - from.z,
-        bot->GetSpeed(MOVE_RUN));
-    if (!jump.Ok)
-        return Outcome::Retryable("native_" + jump.Reason);
+    // The requested landing, then the nearby ones on the same rim, until the
+    // whole jump is proven (BotLiquidBodyClearance.h): the body along the
+    // spline MoveJumpWithGravity will run (its duration from the 3D segment
+    // and the velocity passed, its arc the chord plus the parabola,
+    // BotValidationRouteNativeLiquid::PlanSplineJump), sampled every 5 ms and
+    // reduced to chords, clear of static geometry, every gameobject and the
+    // platform's model, standing clear at the landing with half its inner
+    // footprint on the surface.
+    // A platform that is moving now is refused before any ray is cast.
+    if (!Boarding::TransportStationaryMs(transport))
+        return Outcome::Retryable("native_liquid_hop_transport_moving");
+    float const radius = BodyRadius(bot);
+    float const height = bot->GetCollisionHeight();
+    float const tolerance = action.FloorToleranceYards;
+    BodyQuery const blocked{ bot, transport };
+    // The requested landing is the strategy's; a nearby one stands on the
+    // model's own surface there, out of the liquid.
+    auto landingAt = [&](std::size_t index, G3D::Vector3& landing) -> char const*
+    {
+        landing = Clear::OffsetLanding(from, requested, Clear::HopLandingOffsets[index]);
+        bool onSurface = false;
+        if (index == 0)
+            onSurface = TransportFloorAt(bot, transport, landing.x, landing.y, landing.z, tolerance);
+        else
+        {
+            LiquidData wet;
+            onSurface = TransportFloorZ(bot, transport, landing.x, landing.y, landing.z,
+                    2.0f * tolerance, landing.z)
+                && !InLiquidAt(bot, landing.x, landing.y, landing.z, wet);
+        }
+        if (!onSurface)
+            return "native_liquid_hop_landing_off_platform";
+        if (StaticFloorAt(bot, landing.x, landing.y, landing.z, tolerance))
+            return "native_liquid_hop_landing_static_floor";
+        return nullptr;
+    };
+    auto jumpTo = [&](G3D::Vector3 const& landing)
+    {
+        return Liquid::PlanSplineJump(std::hypot(landing.x - from.x, landing.y - from.y),
+            landing.z - from.z, bot->GetSpeed(MOVE_RUN));
+    };
+    Clear::HopChoice const choice = Clear::ChooseClearHop([&](std::size_t index)
+    {
+        Clear::HopCandidate candidate;
+        G3D::Vector3 landing;
+        if (char const* reason = landingAt(index, landing))
+        {
+            candidate.Reason = reason;
+            return candidate;
+        }
+        Liquid::SplineJump const jump = jumpTo(landing);
+        if (!jump.Ok)
+        {
+            candidate.Reason = "native_" + jump.Reason;
+            return candidate;
+        }
+        candidate.Admissible = true;
+        Clear::TrajectoryProof const proof = Clear::ProveHop(from, landing, jump, radius,
+            height, blocked);
+        candidate.BodyClear = proof.Clear();
+        candidate.Rays = proof.Proof.Rays;
+        for (int32 k = 0; k < Clear::Body::InnerDirections; ++k)
+        {
+            float const angle = TwoPi * float(k) / float(Clear::Body::InnerDirections);
+            ++candidate.InnerPoints;
+            if (TransportFloorAt(bot, transport, landing.x + 0.5f * radius * std::cos(angle),
+                    landing.y + 0.5f * radius * std::sin(angle), landing.z, tolerance))
+                ++candidate.InnerSupported;
+        }
+        return candidate;
+    });
+    if (!choice.Ok)
+        return Outcome::Retryable(choice.Reason);
+    G3D::Vector3 to;
+    landingAt(choice.Index, to);
+    Liquid::SplineJump const jump = jumpTo(to);
     // The platform keeps still for the jump and the boarding report after it.
     if (Boarding::TransportStationaryMs(transport)
         < uint64(jump.DurationMs) + Liquid::BoardLatencyMs)
         return Outcome::Retryable("native_liquid_hop_transport_moving");
-    // That arc, segment by segment, clear of the platform and static geometry.
-    G3D::Vector3 previous = from;
-    for (uint32 i = 1; i <= Liquid::JumpSamples; ++i)
-    {
-        float const t = jump.DurationSeconds * float(i) / float(Liquid::JumpSamples);
-        float const along = t / jump.DurationSeconds;
-        G3D::Vector3 const point(from.x + (to.x - from.x) * along,
-            from.y + (to.y - from.y) * along,
-            Liquid::SplineJumpFeetZ(from.z, to.z - from.z, jump.DurationSeconds, t));
-        if (!SweepClear(bot, previous, point))
-            return Outcome::Retryable("native_liquid_hop_arc_blocked");
-        previous = point;
-    }
 
     bot->GetMotionMaster()->MoveJumpWithGravity(Position(to.x, to.y, to.z,
         bot->GetOrientation()), jump.Velocity, Liquid::JumpGravity);
@@ -250,6 +350,14 @@ Outcome ExecuteEmerge(Player* bot, GameObject* transport, TransportSurfaceMove c
         return Outcome::Retryable("native_liquid_emerge_no_platform_floor");
     if (Boarding::StaticFloorUnderfoot(bot, action.FloorToleranceYards))
         return Outcome::Retryable("native_liquid_emerge_static_floor_underfoot");
+    // The body standing here, knee to head, is empty: a rising surface that
+    // has already passed the knee (or a pillar skirt beside it) is inside the
+    // body, and boarding there would carry the body inside the platform.
+    std::uint32_t rays = 0;
+    if (!Clear::BodyClearAt(G3D::Vector3(bot->GetPositionX(), bot->GetPositionY(),
+            bot->GetPositionZ()), BodyRadius(bot), bot->GetCollisionHeight(),
+            BodyQuery{ bot, transport }, rays))
+        return Outcome::Retryable(Clear::EmergeBodyObstructedReason);
     // A swimmer riding up with the rising floor stops where it is, as a
     // client does, before it reports standing on the floor.
     if (SplineRunning(bot))
@@ -277,9 +385,13 @@ BotActionArbitration::Outcome Execute(Player* bot, TransportSurfaceMove const& a
         return Outcome::Retryable("native_liquid_member_dead");
     if (bot->GetVehicle())
         return Outcome::Retryable("native_liquid_member_in_vehicle");
-    if (action.Kind == TransportSurfaceMove::Stage::Swim)
-        return ExecuteSwim(bot, action);
     GameObject* transport = ResolveTransport(bot, action.Transport);
+    // A swim needs no platform, but one it names is proven against: a named
+    // platform that does not resolve is refused, not left out of the proof.
+    if (action.Kind == TransportSurfaceMove::Stage::Swim)
+        return !transport && !action.Transport.IsEmpty()
+            ? Outcome::Unsafe("native_liquid_transport_invalid")
+            : ExecuteSwim(bot, transport, action);
     if (!transport)
         return Outcome::Unsafe("native_liquid_transport_invalid");
     if (!Boarding::TransportAnimatesOnlyVertically(transport))

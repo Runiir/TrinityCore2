@@ -257,7 +257,14 @@ def test_loadout_defects_fail_closed(config):
     wrong_bag["loadout"]["bag"]["item_id"] = int(druid["equipment"][0]["item_id"])
     assert "bag_not_generic_container" in {row["check"] for row in loadout_failures(wrong_bag, tables)}
     duplicated = Counter(int(row["item"]["item_id"]) for row in druid["loadout"]["physical_items"])
-    item_id = next(item for item, count in duplicated.items() if count > 1)
+    item_id = next((item for item, count in duplicated.items() if count > 1), None)
+    if item_id is None:
+        # The Tier 11 phase loadouts share no item across the druid's two specs; add a second physical copy.
+        physical = druid["loadout"]["physical_items"]
+        extra = copy.deepcopy(physical[0])
+        extra["offset"] = max(int(row["offset"]) for row in physical) + 1
+        physical.append(extra)
+        item_id = int(extra["item"]["item_id"])
     unique_tables = copy.deepcopy(tables)
     unique_tables["items"][item_id]["max_count"] = 1
     assert "unique_item_duplicated_across_specs" in {row["check"] for row in loadout_failures(druid, unique_tables)}
@@ -265,10 +272,11 @@ def test_loadout_defects_fail_closed(config):
 
 def test_active_equipment_must_match_the_selected_spec_profile(config):
     from tools.bot_ml.build_validation_provisioning import load_gear_profiles
+    from tools.bot_ml.phase_gear_profiles import merge_phase_gear_profiles
     druid = copy.deepcopy(_bot(config, CHIMAERON, "druid"))
     druid["equipment"] = druid["equipment"][1:]
     with pytest.raises(LoadoutError, match="active_group_equipment_drift"):
-        materialize_loadout(druid, load_gear_profiles(GEAR, dbc_dir=DBC), DBC)
+        materialize_loadout(druid, merge_phase_gear_profiles(load_gear_profiles(GEAR, dbc_dir=DBC)), DBC)
 
 
 def test_scoped_cohort_sql_keeps_fixed_item_guids_and_names(config, tmp_path):
@@ -317,9 +325,10 @@ def test_plan_sources_record_every_materialization_input():
 
 
 def test_drifted_plan_sources_are_refused(tmp_path):
-    from tools.raid_program.raid_loadout_sql import RaidShardSqlError, materialization_inputs, write_plan_outputs
+    from tools.raid_program.raid_loadout_sql import (
+        RaidShardSqlError, materialization_inputs, plan_uses_phase_profiles, write_plan_outputs)
     plan = _plan()
-    inputs = materialization_inputs(GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")
+    inputs = materialization_inputs(GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl", plan_uses_phase_profiles(plan))
     plan["sources"] = {name: {"sha256": sha} for name, sha in inputs.items()}
     plan["sources"]["spec_catalog"] = {"path": "experiments/configs/all_spec_targets_cata_p4_v1.json"}
     summary = write_plan_outputs(plan, GEAR, DBC, tmp_path)
@@ -351,7 +360,7 @@ def test_plans_without_the_new_source_records_are_refused(drop):
     with pytest.raises(RaidShardSqlError, match="plan_source_unrecorded:trainers"):
         check_plan_sources(malformed, GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")
     assert set(check_plan_sources(_plan(), GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")) == {
-        "trainers", "action_profiles", "gear_profiles", "wowsims_gear_profiles"}
+        "trainers", "action_profiles", "gear_profiles", "wowsims_gear_profiles", "phase_gear_profiles"}
 
 
 def test_generated_sql_warns_that_direct_application_bypasses_the_preflight(config):

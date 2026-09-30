@@ -50,12 +50,17 @@ def _starts() -> dict:
             for boss in ("magmaw", "omnotron", "chimaeron", "atramedes", "maloriak", "nefarian")}
 
 
-def _sources() -> dict:
-    """Materialization source records, as load_plan_inputs writes them (plan_source_unrecorded otherwise)."""
+def _sources(composition: dict | None = None) -> dict:
+    """Materialization source records, as load_plan_inputs writes them (plan_source_unrecorded otherwise).
+
+    A composition bound to a content phase (BWD: cata_t11) also records the phase profiles.
+    """
+    from tools.bot_ml.phase_gear_profiles import composition_gear_phase
     from tools.raid_program.raid_loadout_sql import materialization_inputs
     from tools.raid_program.raid_loadout_spells import DEFAULT_TRAINERS
+    phase = composition_gear_phase(composition or read_json(BWD)) is not None
     return {name: {"sha256": sha} for name, sha in materialization_inputs(
-        ROOT / "dataset/validation_gear_profiles/profiles.json", DEFAULT_TRAINERS).items()}
+        ROOT / "dataset/validation_gear_profiles/profiles.json", DEFAULT_TRAINERS, phase).items()}
 
 
 BOSS_KEYS = ("magmaw", "omnotron", "chimaeron", "atramedes", "maloriak", "nefarian")
@@ -66,7 +71,7 @@ def _plan(copies: int = 1, prerequisites: dict | None = None, composition: dict 
     """The six boss shards (Nefarian c0 anchors them); `full_raid` adds the end-to-end cohort."""
     return build_shard_plan(composition or read_json(BWD), prerequisites or bwd_prerequisites(),
                             copies=copies, starts=_starts(), provisioning_defaults={"default_consumables": []},
-                            sources=_sources(), boss_keys=[*BOSS_KEYS, *(["full"] if full_raid else [])])
+                            sources=_sources(composition), boss_keys=[*BOSS_KEYS, *(["full"] if full_raid else [])])
 
 
 def test_plan_covers_every_boss_with_contract_named_isolated_cohorts():

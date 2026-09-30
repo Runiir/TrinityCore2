@@ -26,6 +26,172 @@
 #include "Transport.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
+#include "GameObject.h"
+#include "GameObjectModel.h"
+#include "Log.h"
+#include "Map.h"
+#include "ModelIgnoreFlags.h"
+#include "PassengerBodyTrajectory.h"
+#include "PassengerSplineCollision.h"
+#include "PassengerWalkProof.h"
+
+#include <G3D/Ray.h>
+
+namespace
+{
+    enum class PassengerClip
+    {
+        NotApplicable,
+        Emitted,
+        Refused
+    };
+
+    // A player passenger's spline (a bot's chase or point path) against its
+    // own transport's collision model (PassengerSplineCollision.h), the
+    // whole body proved along what is kept (PassengerWalkProof.h); a swept
+    // spline is emitted with linear interpolation, as proved; one that moves
+    // nothing (an orientation-only facing, Unit::SetFacingTo*) is emitted as
+    // it is, with no ray cast. Falls, jumps, knockback arcs and animations are
+    // the effects' own trajectories and a vehicle seat is not a surface: those
+    // are left alone, as is every creature. Fail closed: a passenger whose
+    // transport gameobject or model cannot be resolved emits nothing; a model
+    // with collision disabled stops nothing, for a client neither.
+    PassengerClip ClipPassengerSpline(Unit* unit, Movement::MoveSplineInitArgs& args)
+    {
+        if (!unit->IsPlayer() || unit->GetVehicle() || !unit->GetTransport())
+            return PassengerClip::NotApplicable;
+        if (args.flags.Falling || args.flags.Parabolic || args.flags.Animation
+            || args.flags.Cyclic || args.path.size() < 2)
+            return PassengerClip::NotApplicable;
+        TransportBase const* transport = unit->GetTransport();
+        Map* map = unit->IsInWorld() ? unit->GetMap() : nullptr;
+        GameObject const* object = map ? map->GetGameObject(transport->GetTransportGUID()) : nullptr;
+        if (!object || !object->m_model)
+        {
+            TC_LOG_DEBUG("movement.spline", "Passenger spline of %s refused: transport model unavailable",
+                unit->GetGUID().ToString().c_str());
+            return PassengerClip::Refused;
+        }
+        if (!object->m_model->isCollisionEnabled())
+            return PassengerClip::Emitted;
+
+        // The spline's points are transport offsets; the sweep runs in world
+        // space at the transport's current position.
+        std::vector<G3D::Vector3> world(args.path.begin(), args.path.end());
+        for (G3D::Vector3& point : world)
+            transport->CalculatePassengerPosition(point.x, point.y, point.z);
+        GameObjectModel const& model = *object->m_model;
+        PhaseShift const& phase = unit->GetPhaseShift();
+        auto nearestHit = [&model, &phase](G3D::Vector3 const& origin, G3D::Vector3 const& direction,
+            float maxDistance)
+        {
+            float distance = maxDistance;
+            // Not stopAtFirstHit: the first triangle a bounding interval
+            // hierarchy meets need not be the nearest.
+            return model.intersectRay(G3D::Ray::fromOriginAndDirection(origin, direction), distance,
+                false, phase, VMAP::ModelIgnoreFlags::Nothing) ? distance : -1.0f;
+        };
+        using namespace Movement::PassengerCollision;
+        float const radius = unit->GetFloatValue(UNIT_FIELD_BOUNDINGRADIUS);
+        // The whole body along the kept path and at its end
+        // (PassengerWalkProof.h): the end moves back until it is proved,
+        // or nothing is emitted.
+        auto blocked = [&model, &phase](G3D::Vector3 const& origin, G3D::Vector3 const& direction, float length)
+        {
+            float distance = length;
+            return model.intersectRay(G3D::Ray::fromOriginAndDirection(origin, direction), distance,
+                true, phase, VMAP::ModelIgnoreFlags::Nothing);
+        };
+        // A spline that moves nothing (a facing) is neither swept nor proved:
+        // no ray, and a unit standing in a wall can still turn.
+        Movement::PassengerWalk::Settled const settled = Movement::PassengerWalk::ProveWalk(world, radius,
+            unit->GetCollisionHeight(), nearestHit, blocked);
+        if (settled.SweepBlocked)
+        {
+            TC_LOG_DEBUG("movement.spline", "Passenger spline of %s refused: transport collision within %.2f yd",
+                unit->GetGUID().ToString().c_str(), settled.SweepYards);
+            return PassengerClip::Refused;
+        }
+        Result const& proved = settled.Clip;
+        if (proved.Kind == Verdict::Blocked)
+        {
+            TC_LOG_DEBUG("movement.spline", "Passenger spline of %s refused: body meets transport collision within %.2f yd (%u rays%s)",
+                unit->GetGUID().ToString().c_str(), settled.SweepYards, settled.Rays,
+                settled.Escape ? ", standing in it" : "");
+            return PassengerClip::Refused;
+        }
+        // The proof covers the straight segments between the points: the
+        // spline (clipped or not) interpolates exactly those, never a
+        // Catmull-Rom curve that could leave them.
+        EmitProvedPath(args, proved);
+        if (proved.Kind == Verdict::Clipped)
+            TC_LOG_DEBUG("movement.spline", "Passenger spline of %s clipped at transport collision after %.2f yd (%s, %u rays)",
+                unit->GetGUID().ToString().c_str(), proved.KeptYards,
+                settled.BackedOff ? "body proof" : "sweep", settled.Rays);
+        return PassengerClip::Emitted;
+    }
+
+    // A player passenger's fall or jump arc (the Falling and Parabolic
+    // splines ClipPassengerSpline leaves alone: the effect owns the
+    // trajectory, which is not clipped) is launched only if the whole body
+    // stays clear of its transport's model along it and at its end
+    // (PassengerBodyTrajectory.h): sampled as the server will run it, from
+    // the validated arguments. An obstructed one is refused, fail closed, as
+    // an unresolved model is; a fall onto a floor beside a skirt or a wall
+    // must be avoided by whoever launched it (the bots' step-off proves it
+    // first, BotLedgeDropBodyClearance.h). The falling flag and fall time
+    // MotionMaster::MoveFall sets before the launch stay set by a refusal: the
+    // bots' fall launches roll them back (BotFallAdmission.h).
+    PassengerClip ProvePassengerEffectSpline(Unit* unit, Movement::MoveSplineInitArgs const& args)
+    {
+        if (!unit->IsPlayer() || unit->GetVehicle() || !unit->GetTransport())
+            return PassengerClip::NotApplicable;
+        if (!(args.flags.Falling || args.flags.Parabolic) || args.flags.Animation
+            || args.flags.Cyclic || args.path.size() < 2)
+            return PassengerClip::NotApplicable;
+        TransportBase const* transport = unit->GetTransport();
+        Map* map = unit->IsInWorld() ? unit->GetMap() : nullptr;
+        GameObject const* object = map ? map->GetGameObject(transport->GetTransportGUID()) : nullptr;
+        if (!object || !object->m_model)
+        {
+            TC_LOG_DEBUG("movement.spline", "Passenger effect spline of %s refused: transport model unavailable",
+                unit->GetGUID().ToString().c_str());
+            return PassengerClip::Refused;
+        }
+        if (!object->m_model->isCollisionEnabled())
+            return PassengerClip::Emitted;
+
+        using namespace Movement::BodyTrajectory;
+        Movement::MoveSpline run;
+        run.Initialize(args);
+        std::vector<G3D::Vector3> samples = SampleSpline<G3D::Vector3>(run);
+        for (G3D::Vector3& point : samples)
+            transport->CalculatePassengerPosition(point.x, point.y, point.z);
+        Chords const chords = ReduceToChords(samples);
+        std::vector<G3D::Vector3> trajectory;
+        trajectory.reserve(chords.Kept.size());
+        for (std::size_t const index : chords.Kept)
+            trajectory.push_back(samples[index]);
+        GameObjectModel const& model = *object->m_model;
+        PhaseShift const& phase = unit->GetPhaseShift();
+        auto blocked = [&model, &phase](G3D::Vector3 const& origin, G3D::Vector3 const& direction,
+            float length)
+        {
+            float distance = length;
+            return model.intersectRay(G3D::Ray::fromOriginAndDirection(origin, direction), distance,
+                true, phase, VMAP::ModelIgnoreFlags::Nothing);
+        };
+        Proof const proof = ProveTrajectory(trajectory, MakeBody(
+            unit->GetFloatValue(UNIT_FIELD_BOUNDINGRADIUS), unit->GetCollisionHeight(),
+            chords.InflationYards), blocked);
+        if (proof.Clear())
+            return PassengerClip::Emitted;
+        TC_LOG_DEBUG("movement.spline", "Passenger %s spline of %s refused: body meets transport collision %s (piece %u, %u rays)",
+            args.flags.Falling ? "fall" : "jump", unit->GetGUID().ToString().c_str(),
+            proof.Kind == Obstruction::Landing ? "at its end" : "on the way", uint32(proof.Piece), proof.Rays);
+        return PassengerClip::Refused;
+    }
+}
 
 namespace Movement
 {
@@ -110,8 +276,18 @@ namespace Movement
         // correct first vertex
         args.path[0] = real_position;
         args.initialOrientation = real_position.orientation;
+
+        // The emitted path, as the unit would walk it from where it is now,
+        // respects its transport's collision: a wall ends it, as it stops a
+        // client, and a surface in the way at once emits nothing (the unit
+        // stops instead of finishing an older spline into it).
+        if (transport && ClipPassengerSpline(unit, args) == PassengerClip::Refused)
+        {
+            unit->StopMoving();
+            recordLaunch(false);
+            return 0;
+        }
         args.flags.Enter_Cycle = args.flags.Cyclic;
-        move_spline.onTransport = transport;
 
         uint32 moveFlags = unit->m_movementInfo.GetMovementFlags();
         if (!args.flags.Backward)
@@ -144,6 +320,22 @@ namespace Movement
             return 0;
         }
 
+        // A passenger's fall or jump arc, as it will run, keeps the body clear
+        // of its transport, or nothing is launched.
+        if (transport && ProvePassengerEffectSpline(unit, args) == PassengerClip::Refused)
+        {
+            unit->StopMoving();
+            recordLaunch(false);
+            return 0;
+        }
+
+        // Every proof and the validation have passed: only now does the unit's
+        // spline change, frame included. A refusal above stops the unit's
+        // current spline in that spline's own frame (Unit::UpdateSplinePosition
+        // reads onTransport: a world-frame spline read as transport offsets
+        // relocated the unit, (101, 202, 12) to (201, 402, 22) on a transport
+        // at (100, 200, 10)), and a launch that fails leaves it untouched.
+        move_spline.onTransport = transport;
         unit->m_movementInfo.SetMovementFlags(moveFlags);
         move_spline.Initialize(args);
 

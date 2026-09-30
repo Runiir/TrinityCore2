@@ -282,8 +282,12 @@ def load_route_authority(
         if gear_profiles is None:
             from tools.bot_ml.generate_bot_admission_identities import load_gear_profiles
 
-            gear_profiles = load_gear_profiles(ROOT / "dataset/validation_gear_profiles/profiles.json",
-                                               ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json")
+            from tools.bot_ml.phase_gear_profiles import merge_phase_gear_profiles
+
+            # A composition bound to a content phase wears ``<phase>/<spec>`` profiles.
+            gear_profiles = merge_phase_gear_profiles(load_gear_profiles(
+                ROOT / "dataset/validation_gear_profiles/profiles.json",
+                ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"))
         members = members_from_plan_shard(shard, gear_profiles)
     return route_authority_from_rows(rows, scenario_id, members, manifest_sha256=digest)
 

@@ -192,7 +192,11 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
                          f"(excluding entries {excluded}); re-summarize the run")
     # Persisted only for targets with exclusions, so every other target's records are unchanged.
     scope = {"dps_enemy_scope": dps_enemy_scope(excluded)} if excluded else {}
-    expected = roster(target_for_records(root, target, [summary]))
+    # The target as it judges this run: a roster variant's roster and WCL references for a matching shard
+    # identity (the canonical Magmaw c0 shard), the plain target for every other run, so ranked_gaps below
+    # measure the same references the verdict does and legacy records are unchanged.
+    judged = target_for_records(root, target, [summary])
+    expected = roster(judged)
     encounter = summary.get("encounter")
     actors = []
     for actor in summary.get("actors") or []:
@@ -244,8 +248,8 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
             **scope,
         } if encounter else None,
         "actors": actors,
-        "ranked_gaps": ranked_gaps(actors, spec_targets(root, target), timeline, healer_roles(target),
-                                   exempt_specs=dps_gate_exempt_specs(target)),
+        "ranked_gaps": ranked_gaps(actors, spec_targets(root, judged), timeline, healer_roles(judged),
+                                   exempt_specs=dps_gate_exempt_specs(judged)),
         **{key: summary[key] for key in (*MEASUREMENT_KEYS, *INFO_KEYS) if summary.get(key) is not None},
     }
 
@@ -550,6 +554,15 @@ def rng_backfill(root: Path, scenario: str, label: str, evidence_root: Path) -> 
     return 1 if missing else 0
 
 
+def run_dir_shard_record(run_dir: Path) -> dict[str, Any]:
+    """{"shard_identity": ...} from a run dir's report.json (empty when absent), for target_for_records."""
+    try:
+        identity = json.loads((run_dir / "report.json").read_text()).get("shard_identity")
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return {"shard_identity": identity} if isinstance(identity, dict) else {}
+
+
 def ingest(root: Path, args) -> int:
     target = load_target(root, args.scenario)
     count = len(args.summary) if args.summary else 1
@@ -565,14 +578,19 @@ def ingest(root: Path, args) -> int:
         run_dir = args.run_dir.resolve()
         refuse_play(run_dir, "scoreboard ingest --run-dir")
         kill_id = legacy_kill_id({"label": args.label, "run_dir": str(run_dir)})
+        # A roster variant's own WCL cast timelines (VARIANT_REFERENCE_KEYS) for the timeline comparison; the
+        # record resolves the same variant from its shard identity (record_from_summary), so its ranked_gaps
+        # use the variant's DPS references too. Every other run keeps the plain target throughout.
+        timeline_target = target_for_records(root, target, [run_dir_shard_record(run_dir)])
         options = dict(scenario=args.scenario, label=args.label, kill_id=kill_id, run_dir=run_dir,
                        source_commit=commits[0], worldserver_sha256=args.worldserver_sha256, evidence_pointer=pointers[0])
         if timelines[0]:
             records.append(record_from_run_dir(root, target, timeline_path=Path(timelines[0]), **options))
         else:
             with tempfile.TemporaryDirectory(prefix="scoreboard-timeline-") as temp:
-                timeline = write_timeline(run_dir, root / target["wcl_cast_timelines"], Path(temp) / "timeline.json",
-                                          target["encounter_route_node_id"], timeline_reference_exclusions(root, target),
+                timeline = write_timeline(run_dir, root / timeline_target["wcl_cast_timelines"],
+                                          Path(temp) / "timeline.json", target["encounter_route_node_id"],
+                                          timeline_reference_exclusions(root, timeline_target),
                                           native_excluded_entries(target))
                 records.append(record_from_run_dir(root, target, timeline_path=timeline, **options))
     else:

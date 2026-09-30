@@ -3,6 +3,7 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronOffenseAuthority.h"
 
 #include "CharmInfo.h"
@@ -10,6 +11,9 @@
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "SpellHistory.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 
 #include <optional>
@@ -123,7 +127,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
             if (!caster || !caster->IsAlive())
                 return BotActionArbitration::Outcome::NotApplicable(
                     "interrupt_caster_stale");
-            bool submitted = false;
+            uint32 castSpellId = 0;
             {
                 // Arcanotron under Power Conversion is restricted for this
                 // bot; widen the restriction for this one interrupt only.
@@ -140,13 +144,28 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
                     if (context.Bot->HasSpell(spellId)
                         && TryCastCombatSpell(context.Bot, caster, spellId))
                     {
-                        submitted = true;
+                        castSpellId = spellId;
                         break;
                     }
             }
-            if (!submitted)
+            if (!castSpellId)
                 return BotActionArbitration::Outcome::Retryable(
                     "native_interrupt_retryable");
+            // The rotation passes over this bot until its interrupt is back.
+            // The cooldown is the bot's own native remaining cooldown right
+            // after the cast (spell history), which already includes talent
+            // and glyph changes such as Reverberation on Wind Shear; the
+            // instant interrupts start it inside the cast call.
+            if (Cohort().EncounterSnapshot)
+            {
+                SpellInfo const* castInfo = sSpellMgr->GetSpellInfo(castSpellId);
+                uint32 const remainingCooldownMs = castInfo
+                    ? context.Bot->GetSpellHistory()->GetRemainingCooldown(castInfo)
+                    : 0;
+                BotEncounter::Omnotron::InterruptLedger::RecordUse(
+                    *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
+                    context.DecisionNowMs, remainingCooldownMs);
+            }
             context.Situation = "adaptive_omnotron";
             context.Action = "arcane_annihilator_interrupt";
             context.State.LastDecisionHandler = "adaptive_omnotron";

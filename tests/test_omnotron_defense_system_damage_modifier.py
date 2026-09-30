@@ -83,8 +83,12 @@ def _native_range(modifier: float) -> tuple[float, float]:
 
 def test_file_is_applied_under_sql_custom_world() -> None:
     assert MIGRATION.parent == ROOT / "sql/custom/world"
-    assert [path.name for path in (ROOT / "sql/custom/world").glob("*omnotron*")] == [MIGRATION.name]
-    assert not list((ROOT / "sql/custom/staged/world").glob("*omnotron*"))
+    assert [path.name for path in (ROOT / "sql/custom/world").glob("*omnotron*damage_modifier*")] == [MIGRATION.name]
+    # No second (staged) DamageModifier migration; the round-3 Power Conversion spell_proc
+    # row (promoted to sql/custom/world 2026-09-30) is a different table and file.
+    assert [path.name for path in (ROOT / "sql/custom/world").glob("*omnotron*power_conversion*")] == [
+        "2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql"]
+    assert not list((ROOT / "sql/custom/staged/world").glob("*omnotron*damage_modifier*"))
 
 
 def test_forward_updates_exactly_the_four_10n_constructs() -> None:

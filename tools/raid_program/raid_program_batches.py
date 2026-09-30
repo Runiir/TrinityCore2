@@ -33,6 +33,7 @@ worldserver.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -212,6 +213,17 @@ def _next_plan(plans: list[dict], holder: dict, targets: dict, short: set[str]) 
     return next(plan for plan in plans if plan['batch'] == batch), None
 
 
+def _setup_failure(summary: Path) -> str | None:
+    """The error of a shard_run.json that ran no shard (``setup_failed``), else None."""
+    try:
+        data = json.loads(summary.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None  # absent or unreadable: the existing paths report it
+    if not isinstance(data, dict) or data.get('shards') or data.get('terminal_reason') != 'setup_failed':
+        return None
+    return str(data.get('error') or 'no error recorded')
+
+
 def _tail(path: Path, limit: int = 400) -> str:
     try:
         return path.read_text(encoding='utf-8', errors='replace')[-limit:].strip()
@@ -317,7 +329,12 @@ def run_batches(root: Path, label: str, expected_sha256: str | None = None, max_
                     stop, error = 'interrupted', f"{interrupt.reason} during batch {plan['batch']}"
                     break
                 summary = output / 'shard_run.json'
-                if summary.is_file():
+                setup_error = _setup_failure(summary)
+                if setup_error is not None:  # refused before any shard ran: no cohorts to match a plan
+                    reason = f'shard_coordinator setup_failed with no shards: {setup_error} (log {log})'
+                    runs.record_run(root, None, _state_sha(root), failed_batch=plan['batch'], reason=reason[:1000])
+                    row |= {'shard_run': str(summary), 'failed': reason[:1000]}
+                elif summary.is_file():
                     runs.record_run(root, summary, _state_sha(root))
                     row['shard_run'] = str(summary)
                 else:
@@ -374,7 +391,8 @@ NEXT = {
     'no_progress': ('The last batch added no counted kill for a short boss (see batches[-1].gained and the verdict '
                     'reasons): read why (wipes, stalls, void or unmeasured kills) before running more; assess to close '
                     'the round, or fix an infrastructure cause and run program run-batches again.'),
-    'batch_failed': ('The last batch produced no shard_run.json and is recorded as failed (see batches[-1].failed and its '
+    'batch_failed': ('The last batch produced no shard_run.json, or one whose setup failed before any shard ran, and is '
+                     'recorded as failed (see batches[-1].failed and its '
                      'log). An infrastructure cause (DB, headroom, crash): fix it and run program run-batches again; '
                      'otherwise assess.'),
     'ingest_errors': ('ingest reported errors (batches[-1].ingest.errors): resolve each (its retry command), run program '

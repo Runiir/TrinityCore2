@@ -377,6 +377,7 @@
     "No bot damages Nefarian during phase 2 (no Electrocute during phase 2).",
     "Every bot leaves its pillar before Nefarian lands (no Shadow of Cowardice 79353) and takes no fall damage.",
     "No active bone warrior stands in Nefarian's front cone; no warrior is hit by Shadowflame Breath; the Feral casts Nature's Grasp when warriors reach it.",
+    "Round 3 (user tactic: the Feral kites the bone warriors with Nature's Grasp and keeps them out of Nefarian's front): no Animated Bone Warrior 41918 stays active (selectable, without feign death 70628) for more than 45 s, and none stands on a pillar structure (within 7 yd of a pillar centre above local z 3.75). Recorded live as decision-trace actions nefarian_bone_warrior_active_over_45s / nefarian_bone_warrior_on_pillar (BotNefarianWarriorWatch.h); any entry fails the observation.",
     "No bot takes Shadowblaze 81007 damage for more than one tick.",
     "Native clear: boss state done, encounter credit, 0 boss-window deaths."
   ],

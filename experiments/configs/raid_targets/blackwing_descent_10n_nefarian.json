@@ -9,7 +9,7 @@
   "native_dps_excluded_target_entries": [
     41918
   ],
-  "native_dps_scope": "The matched WCL references were read from WCL's default Nefarian's End damage-done view, which excludes Animated Bone Warriors (41918): recorded on farY2, inferred for MxFq7 and cYg4 (see the DPS reference manifest's enemy_scope_consistency). The scoreboard subtracts each bot's damage to 41918 from its encounter-window DPS, and the verdict only counts records marked with that scope.",
+  "native_dps_scope": "The matched WCL references were read from WCL's default Nefarian's End damage-done view, which excludes Animated Bone Warriors (41918): the page note is recorded on the eight kills read 2026-09-30 and on farY2 (2026-09-27, no longer matched), inferred for MxFq7 and cYg4 (see the DPS reference manifest's enemy_scope_consistency). The scoreboard subtracts each bot's damage to 41918 from its encounter-window DPS, and the verdict only counts records marked with that scope.",
   "lockout": {
     "raid": "blackwing_descent",
     "difficulty": "10N",
@@ -29,17 +29,34 @@
   "matched_reference_ids": [
     "MxFq7TRbvnjGY1hJ-fight35",
     "cYg4C93QNdqKfPF1-fight18",
-    "farY2cm8JMTB1jGh-fight10"
+    "Z186QkDJrHATNcVW-fight48",
+    "ap7MNG1nYQcqtyZF-fight29",
+    "8vxjXMR9fzgbJKBa-fight29",
+    "FBvRDV7qHdYQpmxa-fight33",
+    "PkbmWVZ6HrMy1RLB-fight25",
+    "XKF12kztLBgvPn9T-fight11",
+    "wBP9YzgJ73xCNAr4-fight48",
+    "p9Kb2tRF7VwBQPcn-fight18"
   ],
   "reference_status": "extracted",
   "reference_gaps": {
-    "all_specs": "Three verified Nefarian's End 10N kills (2024-10-28, 2025-01-31, 2025-01-15) were read on 2026-09-27; every roster spec has at least one matched value, so no spec uses the WoWSims fallback. Target = median across matched references.",
-    "single_sample_specs": "fire_mage (32,243.7, item level 385 player), demonology_warlock (15,923.5), feral_druid_tank (3,042.7, 51% active on Onyxia and bone warriors), assassination_rogue (24,112.0) and elemental_shaman (23,344.6, mean of two in one kill) each rest on one kill.",
-    "gear": "Average item level 359.8, 360 and 375; the bots' gear differs.",
+    "all_specs": "Ten verified Nefarian's End 10N kills (raid item level 357.3-362.7, 2024-10-28 to 2025-01-31, 284-344 s, all three phases) at tier-11 gear, selected 2026-09-30 for the ~359 tier-11 bot regear; every gated spec has three to five matched values, so no spec uses the WoWSims fallback. Target = median across matched references.",
+    "sample_counts": {
+      "assassination_rogue": 4,
+      "blood_death_knight": 5,
+      "demonology_warlock": 4,
+      "elemental_shaman": 4,
+      "fire_mage": 5,
+      "retribution_paladin": 3,
+      "survival_hunter": 4
+    },
+    "feral_druid_tank": "No matched value (exempt from the DPS gate): the tier-11 actor rule keeps only the boss-tank Blood DK among tanks and the one Feral seen (51% active, Onyxia then bone warriors) is a duty-matched low figure.",
+    "gear": "Average item level 357.3-362.7 (median 359.9), matching the bots' tier-11 phase gear (~359). In cYg4C93QNdqKfPF1 fight 18 the Fire mage (item level 385, 32,243.7) and the Survival hunter (item level 387, 29,015.6) are above the 347-371 player band and are excluded from the targets (gear match first; the reference manifest's excluded_actor_dps holds them).",
     "phase_scope": "A kill-window DPS includes phase 2 (prototypes only, no Nefarian damage) and the platform travel; the matched WCL kills have the same structure, so no phase exclusion is applied. Damage-done uses WCL default filtering, which excludes Animated Bone Warriors in every matched reference; native DPS excludes them too (native_dps_excluded_target_entries)."
   },
   "unmatched_reference_notes": {
-    "ZgBFT8pH1CnjYxhV-fight36": "10N kill 2024-07-01; events archived behind a WCL subscription, not read."
+    "ZgBFT8pH1CnjYxhV-fight36": "10N kill 2024-07-01; events archived behind a WCL subscription, not read.",
+    "farY2cm8JMTB1jGh-fight10": "10N kill 2025-01-15 (raid item level 375): matched until 2026-09-30, retired from the matched set for being outside the 352-366 tier-11 band; its cast timeline is kept under retired_references in the cast-timeline manifest."
   },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,

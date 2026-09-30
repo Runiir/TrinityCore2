@@ -21,7 +21,7 @@
     "25H"
   ],
   "research_state": "client_native_and_wcl_10n_audited_not_live_validated",
-  "research_as_of": "2026-09-27",
+  "research_as_of": "2026-09-30",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy",
     "https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot",
@@ -30,7 +30,11 @@
     "https://github.com/BigWigsMods/BigWigs_Cataclysm/blob/master/Blackwing/Atramedes.lua",
     "https://github.com/DeadlyBossMods/DBM-Cataclysm/blob/master/DBM-Raids-Cata/BlackwingDescent/Atramedes.lua",
     "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=32",
-    "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17"
+    "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17",
+    "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13",
+    "https://classic.warcraftlogs.com/reports/hxz7MH8gW9BYGNdr?fight=41",
+    "https://classic.warcraftlogs.com/reports/jxNrbDtq9BdwAcam?fight=30",
+    "https://classic.warcraftlogs.com/reports/PpFW3bgy7m6Kxk1t?fight=8"
   ],
   "repository_evidence": [
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
@@ -67,7 +71,12 @@
       "fiends": 0,
       "health_native": 26111168,
       "modulation_sound": 0,
-      "sonar_bomb_targets_native": 5
+      "sonar_bomb_targets_native": 3,
+      "ground_air_wcl_10n": "liftoff_91s;first_air_tracking_95_1_to_95_4s;melee_back_127_5_to_133_0s (seven kills, matches native)",
+      "breath_target_10n": "random;ground_excludes_current_victim;air_any_player (WCL Sound balances, 2026-09-30)",
+      "sonar_bomb_targets_wcl": "launch_not_logged;impact_waves_hit_1_to_2_players",
+      "sonar_bomb_targets_native_before_20260930": 5,
+      "sonar_bomb_targets_source": "user decision 2026-09-30 \"Switch to 3\"; Wowhead 4.4.2 says 3 bombs per wave in normal; SpellMgrCorrectionsPart04.cpp 92526 MaxAffectedTargets 3 (92532, 92531, 92533 unchanged)"
     },
     "10H": {
       "health_guide": "34.8M",
@@ -123,7 +132,8 @@
       "single_tank",
       "drag_to_ground_anchor_150_-224.5",
       "max_melee_range_20yd_reach",
-      "no_duty_in_air"
+      "no_duty_in_air",
+      "hold_boss_from_melee_slot_radius_21_58yd_and_dodge_disk_lanes_inside_melee_range"
     ],
     "gong_owner": [
       "best_ranged_by_capability_hunter_then_mage",
@@ -133,7 +143,9 @@
       "air_stand_at_relay_station_in_11_5yd_click_reach_and_in_61_5yd_spell_range",
       "strike_on_searing_flame_channel_start",
       "strike_on_sound_ge_90_down_to_current_phase_searing_reserve",
-      "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_full_reserve"
+      "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_full_reserve",
+      "pre_liftoff_sound_reset_within_4s_of_liftoff_when_anyone_above_7_sound_keeping_searing_reserve",
+      "air_relay_hazard_step_to_the_shortest_clear_point_in_click_reach"
     ],
     "gong_backup": [
       "second_ranged_by_capability",
@@ -155,7 +167,10 @@
       "tank_eligible",
       "spend_ready_mobility_before_any_strike_speed_buffs_from_4s_before_contact_leaps_at_contact",
       "chased_mage_with_ready_ice_block_blocks_itself",
-      "readiness_only_from_published_cooldowns"
+      "readiness_only_from_published_cooldowns",
+      "strike_at_once_above_7_sound_or_when_next_tick_would_pass_10",
+      "kite_path_avoids_sonar_bomb_zones_and_fire_patches",
+      "redirect_runner_waits_clear_of_fire_instead_of_crossing_a_trail"
     ],
     "raid": [
       "leave_sonic_breath_beam_backward_or_run_ahead_of_sweep",
@@ -163,7 +178,10 @@
       "exit_sonar_bomb_markers",
       "avoid_roaring_flame_patches",
       "keep_9yd_from_reverberating_flame",
-      "air_spread_ring_10yd"
+      "air_spread_ring_10yd",
+      "every_exit_to_the_shortest_step_clear_of_all_hazards_bombs_fire_disk_lanes_flame_path_beam",
+      "walk_around_fire_trails_to_slots_and_stations",
+      "leave_the_reverberating_flame_path_not_only_its_position"
     ],
     "healer": [
       "ranged_arc_26yd",
@@ -173,7 +191,8 @@
       "ranged_arc_32yd",
       "melee_slot_21_58yd_behind_boss_inside_22_83yd_melee_range",
       "melee_offense_suppressed_in_air",
-      "melee_dodge_sonar_pulse_around_boss_at_same_distance"
+      "melee_dodge_sonar_pulse_around_boss_at_same_distance",
+      "melee_walk_to_slot_around_the_boss_never_through_its_centre"
     ],
     "gong_third": [
       "most_mobile_remaining_player_by_capability_melee_first_on_ties",
@@ -198,7 +217,9 @@
     "sonic_breath_kite_never_reverses",
     "no_searing_flame_without_shield",
     "no_sound_emergency_withheld_above_current_reserve",
-    "air_catch_struck_within_3s_of_contact"
+    "air_catch_struck_within_3s_of_contact",
+    "air_kiter_sound_at_most_10_during_chase",
+    "raid_wide_avoidable_sound_near_zero"
   ],
   "heroic_gates": [
     "nefarius_extra_ground_shield_destruction",
@@ -216,20 +237,63 @@
     "Sound sources (10N): Sonar Pulse disks +3 per 0.5 s within 5 yd; Sonic Breath +20 per 1 s tick in a 15-degree beam; fire patches +5 (3 yd); air breath +3 per 0.5 s (5 yd); spawned air patches +10 (8 yd); Sonar Bomb +20 (6 yd). A shield strike sets everyone to 0.",
     "Native fixes (2026-09-25): Sound Bar and Noisy! removed on evade/death; intro-flight Vertigo resumes the landing; landing removes the air Sonar Bomb trigger; redirected Reverberating Flame restarts at initial speed; time-to-Searing-Flame/Sonic-Breath/liftoff published through GetTimeUntilEncounterMechanic.",
     "Devastation (78868) has no DB target restriction; a staged condition limits it to Noisy! holders per both current guides.",
-    "WCL 10N (MxFq7TRbvnjGY1hJ fight 32, 2026-09-27 read): max health 26,111,168 equals native; boss melee DamageModifier 10.35 staged (sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql); gong Vertigo delays queued events, which explains the first Modulation/Sonar at 22.45 s; Sonic Breath 24.1 s then 43.7 s; Searing Flame 45.1 s; air about 90-129 s; Devastation hit a single player."
+    "WCL 10N (MxFq7TRbvnjGY1hJ fight 32, 2026-09-27 read): max health 26,111,168 equals native; boss melee DamageModifier 10.35 staged (sql/custom/world/2026_09_27_21_atramedes_damage_modifier.sql); gong Vertigo delays queued events, which explains the first Modulation/Sonar at 22.45 s; Sonic Breath 24.1 s then 43.7 s; Searing Flame 45.1 s; air about 90-129 s; Devastation hit a single player.",
+    "WCL 10N air phase (2026-09-30, seven kills, four read event by event): first air Tracking 95.1-95.4 s, melee back 127.5-133.0 s; breath targets are random (the target was the loudest player in 2 of 18 determinable applications); the flame spawns on its target (first tick +0.5 s) and recatches it on the native time ramp (catches 4.5-12.0 s, 20.0 s from a redirect head start); air strikes 1-2 per phase; a redirected flame re-tracks the striker 7.2-7.6 s after the strike; Feign Death drops the flame (not modelled natively). Sonar Bomb launches are not logged, so no log could settle the 10N count (3 vs 5); the user decided \"Switch to 3\" on 2026-09-30 (Wowhead 4.4.2: 3 in normal) and the native 92526 correction now uses 3. 10H keeps 5 (92532) and 25-player keeps 12; their counts stay open.",
+    "Kiter Sound bound (user decision 2026-09-30, \"Bound kiter Sound\"): the native flame keeps its time-only ramp; the WCL chases measured only kiters at 0-10 Sound, so a 10N kill counts only while the tracked kiter stays at 10 Sound or less in every air-phase chase (raid_runtime.encounter_observations.atramedes, run_sanity acceptance_observation).",
+    "Kiter Sound bound strategy (round 3, user decision 2026-09-30): pre-liftoff Sound reset (ground strike within 4 s of the published liftoff while anyone is above 7 Sound), chase Sound reset (kiter or next kiter above 7) and Sound-bound contact (next breath or fire patch tick would pass 10), each an air-budget strike that keeps every Searing Flame interrupt still expected and is logged *_at_reserve when withheld; the kite path, redirect run, leaps and relay hold points avoid Sonar Bomb zones and fire patches; the mage's Ice Block gong stays once per fight.",
+    "Raid-wide dodging (round 3, user raid experience 2026-09-30: \"For atramedes ideally everyone is as close to 0 sound as possible, meaning the bots dodge everything.\"): every exit takes the shortest step clear of every hazard (bomb zones, fire patches, moving Sonar Pulse lanes, the flame and its path, the Sonic Breath band), melee and the tank inside melee range and relays in click reach; the tank holds from the melee slot radius; formation walks and the redirect runner go around fire trails. Replay: per-role mean Sound per ground phase 0-1.7 (before 1.8-15.1), per air phase 0.2-2.4 (before 2.1-18.3). The next-Searing-Flame shield reserve uses a 130k T11 raid-DPS floor (40.8% ground, 25.4% air)."
   ],
   "unresolved": [
-    "ground_air_phase_timestamps",
-    "breath_initial_target_rule",
-    "sonar_bomb_count_by_mode",
-    "breath_speed_scaling_with_sound",
-    "heroic_fiend_and_shield_destruction_cadence"
+    {
+      "key": "ground_air_phase_timestamps",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_10n_partial_other_modes"
+    },
+    {
+      "key": "breath_initial_target_rule",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_10n_other_modes_unobserved"
+    },
+    {
+      "key": "sonar_bomb_count_by_mode",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "conflict"
+    },
+    {
+      "key": "breath_speed_scaling_with_sound",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_10n_by_user_bound_other_modes_unobserved"
+    },
+    {
+      "key": "heroic_fiend_and_shield_destruction_cadence",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "unresolved"
+    }
   ],
   "conflicts": [
     "ground_air_duration_current_wowhead_85_40_vs_current_icy_90_30_vs_historical_icy_80_40_vs_local_91_31_93",
     "sonic_breath_cadence_current_wowhead_20s_vs_current_icy_40s_vs_local_24_then_42_to_43s",
     "sonic_breath_target_current_random_vs_historical_highest_sound_vs_local_random_excluding_victim",
-    "sonar_bomb_counts_current_wowhead_3_or_6_vs_historical_icy_5_or_8",
+    "sonar_bomb_counts_current_wowhead_3_or_6_vs_historical_icy_5_or_8;10n_resolved_3_by_user_decision_20260930",
     "heroic_fiend_cadence_current_wowhead_30s_vs_local_30_then_35s_vs_historical_twice_ground",
     "heroic_obnoxious_period_current_wowhead_1_5s_vs_local_2_5s",
     "modulation_sound_current_guides_plus10_vs_client_rows_heroic_only",
@@ -240,6 +304,14 @@
     "audited_revision_file": "atramedes_ledger_v1.json native_audit"
   },
   "tactics_sources": [
-    "user_raid_experience_20260925"
-  ]
+    "user_raid_experience_20260925",
+    "user_raid_experience_20260930_atramedes_dodge"
+  ],
+  "fidelity_state_by_mode": {
+    "10N": "accepted",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "10N accepted 2026-09-30: no unresolved claim covers 10N. The last one, sonar_bomb_count_by_mode, was closed for 10N by the user decision \"Switch to 3\" (Wowhead 4.4.2: 3 bombs per wave in normal; native SpellMgr correction for 92526 changed from 5 to 3); Warcraft Logs records only the impacts, so no log could settle it. 10H, 25N and 25H stay blocked: no log, and the count conflict stays open for them. breath_speed_scaling_with_sound was closed for 10N the same day by the user decision \"Bound kiter Sound\" (the review rejected its earlier closure with bounds alone): the native time-only ramp is kept and a 10N kill counts only while the tracked kiter stays at 10 Sound or less in every air-phase chase (acceptance observation), because every measured WCL kiter had 0-10 Sound and an additive Sound term above 10 was never measured."
 }

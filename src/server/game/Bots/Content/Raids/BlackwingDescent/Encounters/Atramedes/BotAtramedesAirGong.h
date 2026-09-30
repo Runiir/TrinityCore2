@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_ATRAMEDES_AIR_GONG_H
 #define TRINITY_BOT_ATRAMEDES_AIR_GONG_H
 
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesArenaFloor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlock.h"
 #include <algorithm>
 #include <cmath>
@@ -331,6 +332,56 @@ inline bool StationInReach(Vector3 const& station, ShieldFact const& shield)
         <= ShieldClickDistance;
 }
 
+// A hold point no Sonar Bomb zone or fire patch reaches, with half a yard
+// more than the exits keep (BombMarkerExit, FirePatchExit), so a relay
+// holding it never steps out again.
+inline bool StationHazardFree(Facts const& facts, Vector3 const& point)
+{
+    for (ActorSnapshot const* bomb : facts.BombMarkers)
+        if (Geometry::Distance2d(bomb->Position, point) < SonarBombRadius + 2.0f)
+            return false;
+    for (ActorSnapshot const* patch : facts.FirePatches)
+        if (Geometry::Distance2d(patch->Position, point) < FirePatchRadius + 2.0f)
+            return false;
+    return true;
+}
+
+// The relay's hold point at `shield`: its station, or, while a Sonar Bomb
+// marker or fire patches cover it (the redirected flame lays its trail across
+// the stations), the clear point in click reach of the same shield nearest
+// to it, in spell range of the hovering boss when one is. A relay pushed off
+// its station by a hazard would otherwise stand out of reach when the catch
+// comes (the kiter Sound bound needs the strike at once).
+inline Vector3 AirStationFor(Facts const& facts, ShieldFact const& shield)
+{
+    Vector3 const station = AirStationPoint(shield);
+    if (StationHazardFree(facts, station))
+        return station;
+    float const toward = Geometry::Bearing(shield.Position, HoverPoint);
+    std::optional<Vector3> best;
+    bool bestInRange = false;
+    float bestDistance = 0.0f;
+    for (float radius : { RelayStationInset, 7.0f, 4.0f })
+        for (float degrees : { 0.0f, 25.0f, -25.0f, 50.0f, -50.0f, 75.0f, -75.0f, 100.0f, -100.0f })
+        {
+            Vector3 const point = Geometry::PointAt(shield.Position,
+                toward + degrees * Geometry::Pi / 180.0f, radius, ArenaCenter.Z);
+            if (!StationHazardFree(facts, point) || !StationInReach(point, shield)
+                || !ArenaFloor::Solid(point.X, point.Y))
+                continue;
+            bool const inRange = StationInRange(point);
+            float const distance = Geometry::Distance2d(point, station);
+            if (!best || (inRange && !bestInRange)
+                || (inRange == bestInRange && distance < bestDistance))
+            {
+                best = point;
+                bestInRange = inRange;
+                bestDistance = distance;
+            }
+        }
+    return best ? *best : station;
+}
+
 // Shields whose relay station is in spell range of the hovering boss and in
 // click reach of its shield, nearest the hover point first. On the native
 // spawns: 250128 (57.5 yd), 250126 (59.1), 250125 (59.5), 250122 (59.7) and
@@ -354,7 +405,7 @@ inline std::vector<ShieldFact> RelayShields(Facts const& facts)
             inRange.push_back(shield);
     }
     if (inRange.empty() && !shields.empty() && shields.size() <= SparseShieldCount
-        && shields.size() > SearingFlameReserve(facts).Total())
+        && BuildShieldBudget(facts).AllowsAirStrike())
         inRange.push_back(shields.front());
     return inRange;
 }
@@ -469,7 +520,7 @@ inline bool RelayInReach(Blackboard const& board, Facts const& facts,
                     <= ShieldClickDistance)
                     return true;
                 float const walk = Geometry::Distance2d(player->Position,
-                    AirStationPoint(*shield)) / Mobility::RunSpeed(*player);
+                    AirStationFor(facts, *shield)) / Mobility::RunSpeed(*player);
                 if (walk + RescueLeadSeconds <= withinSeconds)
                     return true;
             }
@@ -482,7 +533,9 @@ inline bool RelayInReach(Blackboard const& board, Facts const& facts,
 // shield that is not an in-range relay shield (those few stations are every
 // air phase's first catch) earns RelayKeepBonusYards. The kiter (the tank
 // included: in the air Atramedes has no victim) may use shields ahead of it;
-// any other bot but the tank may relay from its own shield.
+// any other bot but the tank may relay from its own shield. The Ice Block
+// rescuer waiting for the flame holds still for its block and never strikes
+// again.
 inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
     GongDecision& decision)
@@ -499,7 +552,8 @@ inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
     for (ActorSnapshot const& player : board.Players)
     {
         bool const isKiter = kiter && player.Guid == kiter->Guid;
-        if (!player.Alive || IsIced(player) || (player.Guid == duties.Tank && !isKiter))
+        if (!player.Alive || IsIced(player) || IceBaiting(board, facts, player)
+            || (player.Guid == duties.Tank && !isKiter))
             continue;
         float const mobility = Mobility::ReadyYards(player);
         for (ShieldFact const& shield : facts.Shields)
@@ -529,7 +583,7 @@ inline bool ChooseIceBlockStrike(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
     GongDecision& decision)
 {
-    ActorSnapshot const* mage = IceMage(board, duties);
+    ActorSnapshot const* mage = IceMage(board, facts, duties);
     if (!mage || (kiter && mage->Guid == kiter->Guid))
         return false;
     std::vector<ShieldFact> const relays = RelayShields(facts);
@@ -556,8 +610,7 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
     GongDecision decision;
-    std::size_t const available = facts.Shields.size();
-    ShieldReserve const reserve = SearingFlameReserve(facts);
+    ShieldBudget const budget = BuildShieldBudget(facts);
     ActorSnapshot const* kiter = FindLivingPlayer(board, facts.AirKiter);
     ActorSnapshot const* flame = kiter ? KiterFlame(facts, *kiter) : nullptr;
     // An iced kiter is immune to the breath: nothing to rescue.
@@ -565,18 +618,39 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     float const timeToContact = kiter && flame && !iced
         ? FlameTimeToContact(*flame, *kiter) : std::numeric_limits<float>::infinity();
     bool contact = timeToContact <= RescueLeadSeconds;
-    // A chased mage with Ice Block ready blocks the breath itself (after its
-    // own rescue strike, or when the flame spawned on it): the once-a-fight
-    // play, and no shield for this catch.
+    // The kiter Sound bound (BotAtramedesSoundBound.h): the chased player
+    // above the no-margin Sound, or about to be hit past the bound (the next
+    // breath tick: within a tick of contact, or still inside the breath while
+    // escaping it), is struck for at once: mobility and its own Ice Block
+    // lower no Sound. During a redirect the same holds for the striker the
+    // flame will track next. The Ice Block rescuer waiting for the flame
+    // blocks it before the breath reaches it.
+    std::string_view bound;
+    if (kiter && flame && !iced && !IceBaiting(board, facts, *kiter))
+        bound = SoundBoundGong(facts, *kiter, timeToContact <= BreathTickSeconds
+            || Geometry::Distance2d(flame->Position, kiter->Position) <= BreathReachYards);
+    else if (!kiter)
+        if (ActorSnapshot const* runner = AirRedirectRunner(board, facts))
+            if (!IceBaiting(board, facts, *runner))
+                bound = SoundBoundGong(facts, *runner, false);
+    // A chased mage with Ice Block available blocks the breath itself (after
+    // its own rescue strike, or when the flame spawned on it): the
+    // once-a-fight play, and no shield for this catch. A global cooldown
+    // still running only delays the block (KiterAbility keeps it kiting), but
+    // only while the block beats the breath: castable now, or ready by the
+    // predicted contact less a decision step (IceBlockInTime). A block that
+    // would come after contact takes breath ticks meanwhile, so the rescue
+    // (or the mage's mobility) goes ahead instead.
     std::optional<Mobility::Extension> extension;
-    if (contact && IceBlockReady(*kiter))
+    if (bound.empty() && contact && IceBlockInTime(facts, *kiter, timeToContact))
     {
         contact = false;
         decision.Withheld = "kiter_ice_block";
     }
     // Otherwise the chased player uses its mobility before anyone strikes,
     // so the catch (and the shield) comes as late as the flame allows.
-    else if (contact && (extension = KiteExtension(*flame, *kiter, timeToContact)))
+    else if (bound.empty() && contact
+        && (extension = KiteExtension(*flame, *kiter, timeToContact)))
     {
         contact = false;
         decision.Withheld = "kiter_mobility_extension";
@@ -586,8 +660,8 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     // in reach the relay strikes at contact instead: no shield is spent early.
     // A kiter with mobility left keeps running instead, and so does one whose
     // relay reaches its station before the flame reaches it.
-    if (kiter && flame && !iced && !contact && decision.Withheld.empty()
-        && Mobility::ReadyAbilities(*kiter).empty() && !IceBlockReady(*kiter)
+    if (bound.empty() && kiter && flame && !iced && !contact && decision.Withheld.empty()
+        && Mobility::ReadyAbilities(*kiter).empty() && !IceBlockUsable(facts, *kiter)
         && !RelayInReach(board, facts, duties, timeToContact))
     {
         int const direction = AirKiteDirection(facts, *kiter);
@@ -599,19 +673,24 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
                 contact = true;
     }
     bool const emergency = facts.MaxSound >= SoundEmergency;
-    bool const rescue = contact && available > reserve.Total();
+    // Air strikes keep every Searing Flame interrupt still expected
+    // (ShieldBudget); the Sound bound spends like a rescue.
+    bool const rescue = (contact || !bound.empty()) && budget.AllowsAirStrike();
     // Both reset every Sound bar, so an emergency still gongs when contact
     // is true but the rescue budget is spent.
-    bool const soundGong = emergency && available > reserve.CurrentPhase;
+    bool const soundGong = emergency && budget.AllowsEmergency();
     if (!rescue && !soundGong)
     {
-        if (contact)
+        if (!bound.empty())
+            decision.Withheld = SoundBoundWithheld(bound);
+        else if (contact)
             decision.Withheld = "air_breath_rescue_at_reserve";
         else if (emergency)
             decision.Withheld = "sound_emergency_at_reserve";
         return decision;
     }
-    decision.Reason = rescue ? "air_breath_rescue" : "sound_emergency";
+    decision.Reason = !rescue ? std::string_view("sound_emergency")
+        : !bound.empty() ? bound : std::string_view("air_breath_rescue");
     decision.Withheld = {};
     decision.Required = true;
     decision.Urgent = true;

@@ -160,7 +160,11 @@ def test_movespline_formulas_the_mirror_depends_on() -> None:
     executor = EXECUTOR.read_text()
     assert "Liquid::PlanSplineJump(" in executor
     assert "jump.Velocity, Liquid::JumpGravity)" in executor
-    assert "Liquid::SplineJumpFeetZ(" in executor
+    # The arc the body proof samples (round 3, BotLiquidBodyClearance.h) is
+    # that mirror, every 5 ms of the spline.
+    assert "Clear::ProveHop(from, landing, jump," in executor
+    clearance = (BOTS / "BotLiquidBodyClearance.h").read_text()
+    assert "Liquid::SplineJumpFeetZ(from.z, to.z - from.z, jump.DurationSeconds," in clearance
     assert "bot->movespline->Duration() != jump.DurationMs" in executor
 
 

@@ -1,0 +1,1797 @@
+{
+ "schema": "magmaw_wcl_dps_reference_v1",
+ "encounter": "magmaw",
+ "mode": "10N",
+ "scope": "Canonical BWD 10N Magmaw targets at tier-11 phase gear (round 3). The legacy magmaw_wcl_dps_reference_v1.json stays byte-identical because the accepted b5-d1898555 verdict pins its sha256.",
+ "status": "extracted",
+ "status_reason": "Read 2026-09-30T08:44:55.991Z through codex gpt-6.1-sol user Chrome plugin tab; checks seen: none. Scratch captures: ~/.cache/wcl_t11_refs/raw/magmaw_seed.json (current manifests) and magmaw_astra.json (Sol).",
+ "source_archive": "artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc (member magmaw.json; raw captures raw/magmaw_astra.json, raw/magmaw_seed.json)",
+ "item_level_band": {
+  "min": 352.0,
+  "max": 366.0,
+  "roster_average_item_level": 359,
+  "decision": "user decision 2026-09-30: regear the bots to tier-11 phase gear (~359) so kills exercise the mechanics; references at raid item level 352-366, players 359 +-12",
+  "roster_source": "dataset/validation_gear_profiles/profiles.json average_item_level"
+ },
+ "actor_dps_rule": "(one value per spec per kill, like the existing manifests):\n- blood_death_knight: the boss tank row (role tank). With several Blood DK tanks,\n  the one with the highest active %, then DPS; the others are excluded.\n- other gated specs: rows in the dps role. Several actors of one spec in a kill\n  are averaged.\n- Outliers are excluded (user clarification 2026-09-30: gear match first, parse\n  secondary, competent representative players): an actor who died before 85% of\n  the kill, an actor below max(50%, raid DPS median active % - 20), an extreme parse (95+ or below 10), or an actor\n  whose own item level is more than 12 from the roster's 359 (outside 347-371).\n- Kills whose raid DPS median activity is below 75% (slowed, achievement or\n  carry kills; competent kills at this gear run 90-98%) are context only.\n- Only kills with raid item level 352-366 enter the median; near-band kills are\n  recorded separately and never enter a target.",
+ "hotfix_cutoff_note": "T11-era kills (before the 2025-02-20T23:00Z 4.4.2 cutoff) are preferred; each reference carries after_hotfix_cutoff_2025_02_20.",
+ "target_scope": "WCL Damage Done over All Enemies (as each reference records in target_scope): Magmaw, Exposed Head of Magmaw and Lava Parasites (41806, 42321). Same scope as the native encounter window (entries 41570, 41806, 42321, 42347, 48270); no target entry is excluded.",
+ "references": [
+  {
+   "id": "MxFq7TRbvnjGY1hJ-fight22",
+   "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=summary",
+   "mode": "10N",
+   "date": "2024-10-28",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 131.1,
+   "raid_dps": 205908.0,
+   "average_item_level": 359.9,
+   "item_level": 359.9,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite; Massive Crash also listed in target selector.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Sélán",
+     "class": "Shaman",
+     "spec": "Elemental",
+     "spec_key": "elemental_shaman",
+     "role": "dps",
+     "dps": 29586.7,
+     "dps_default_view": null,
+     "active_pct": 99.06,
+     "item_level": 362,
+     "parse_percentile": 88,
+     "ilvl_parse_percentile": 75
+    },
+    {
+     "name": "Lachina",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 29208.4,
+     "dps_default_view": null,
+     "active_pct": 98.98,
+     "item_level": 363,
+     "parse_percentile": 86,
+     "ilvl_parse_percentile": 70
+    },
+    {
+     "name": "Jägamara",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 28896.9,
+     "dps_default_view": null,
+     "active_pct": 99.72,
+     "item_level": 357,
+     "parse_percentile": 84,
+     "ilvl_parse_percentile": 92
+    },
+    {
+     "name": "Avéran",
+     "class": "Rogue",
+     "spec": "Combat",
+     "spec_key": "combat_rogue",
+     "role": "dps",
+     "dps": 22855.3,
+     "dps_default_view": null,
+     "active_pct": 97.09,
+     "item_level": 357,
+     "parse_percentile": 49,
+     "ilvl_parse_percentile": 55
+    },
+    {
+     "name": "Janderak",
+     "class": "Paladin",
+     "spec": "Retribution",
+     "spec_key": "retribution_paladin",
+     "role": "dps",
+     "dps": 22489.5,
+     "dps_default_view": null,
+     "active_pct": 98.68,
+     "item_level": 357,
+     "parse_percentile": 40,
+     "ilvl_parse_percentile": 39
+    },
+    {
+     "name": "Adara",
+     "class": "Priest",
+     "spec": "Shadow",
+     "spec_key": "shadow_priest",
+     "role": "dps",
+     "dps": 19918.6,
+     "dps_default_view": null,
+     "active_pct": 98.36,
+     "item_level": 360,
+     "parse_percentile": 40,
+     "ilvl_parse_percentile": 31
+    },
+    {
+     "name": "Wongelrainer",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 19397.4,
+     "dps_default_view": null,
+     "active_pct": 78.55,
+     "item_level": 365,
+     "parse_percentile": 90,
+     "ilvl_parse_percentile": 76
+    },
+    {
+     "name": "Koakuma",
+     "class": "Druid",
+     "spec": "Balance",
+     "spec_key": "balance_druid",
+     "role": "dps",
+     "dps": 19254.4,
+     "dps_default_view": null,
+     "active_pct": 97.67,
+     "item_level": 362,
+     "parse_percentile": 46,
+     "ilvl_parse_percentile": 25
+    },
+    {
+     "name": "Greysnout",
+     "class": "Death Knight",
+     "spec": "Unholy",
+     "spec_key": "unholy_death_knight",
+     "role": "dps",
+     "dps": 13881.6,
+     "dps_default_view": null,
+     "active_pct": 97.82,
+     "item_level": 359,
+     "parse_percentile": 4,
+     "ilvl_parse_percentile": 2
+    },
+    {
+     "name": "Nevox",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 247.7,
+     "dps_default_view": null,
+     "active_pct": 28.39,
+     "item_level": 357,
+     "parse_percentile": 13,
+     "ilvl_parse_percentile": 13
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 19397.4,
+    "balance_druid": 19254.4,
+    "survival_hunter": 29052.7,
+    "retribution_paladin": 22489.5,
+    "elemental_shaman": 29586.7
+   },
+   "actor_item_level": {
+    "blood_death_knight": 365.0,
+    "balance_druid": 362.0,
+    "survival_hunter": 360.0,
+    "retribution_paladin": 357.0,
+    "elemental_shaman": 362.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 90.0,
+    "balance_druid": 46.0,
+    "survival_hunter": [
+     86.0,
+     84.0
+    ],
+    "retribution_paladin": 40.0,
+    "elemental_shaman": 88.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Wongelrainer"
+    ],
+    "balance_druid": [
+     "Koakuma"
+    ],
+    "survival_hunter": [
+     "Lachina",
+     "Jägamara"
+    ],
+    "retribution_paladin": [
+     "Janderak"
+    ],
+    "elemental_shaman": [
+     "Sélán"
+    ]
+   },
+   "excluded_actor_dps": {},
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.597"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "5.69m",
+    "lava_parasite_waves": 2,
+    "lava_parasite_evidence": "Target selector Groups 1 2; 18 instances.",
+    "massive_crash_cast_time": "01:39.702",
+    "events_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=casts&view=events&hostility=1",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:54.896"
+    ],
+    "mangle_target": "Wongelrainer",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=auras&spells=debuffs&view=events&ability=89773",
+    "boss_tank_verified": "Wongelrainer",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "No deaths. All DPS active 97.09-99.72%. Blood boss tank verified by Mangle, but excluded from eligible references because damage activity 78.55% is below the other accepted tanks. Mangle occupied 01:30.597-01:54.896. Unholy player parse 4 is not a wanted reference. Prefer Survival Jägamara ilvl 357 over Lachina 363 for gear proximity.",
+   "raid_dps_median_active_pct": 98.52
+  },
+  {
+   "id": "fDP4rMTd8GCjKNqn-fight30",
+   "url": "https://classic.warcraftlogs.com/reports/fDP4rMTd8GCjKNqn?fight=30&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/fDP4rMTd8GCjKNqn?fight=30&type=summary",
+   "mode": "10N",
+   "date": "2024-10-17",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 146.9,
+   "raid_dps": 185298.8,
+   "average_item_level": 357.9,
+   "item_level": 357.9,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite (41806 and 42321); Massive Crash and Pillar of Flame listed.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Mayniac",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 35783.1,
+     "dps_default_view": null,
+     "active_pct": 96.87,
+     "item_level": 360,
+     "parse_percentile": 99,
+     "ilvl_parse_percentile": 99
+    },
+    {
+     "name": "Blackmethod",
+     "class": "Rogue",
+     "spec": "Assassination",
+     "spec_key": "assassination_rogue",
+     "role": "dps",
+     "dps": 28112.3,
+     "dps_default_view": null,
+     "active_pct": 97.83,
+     "item_level": 359,
+     "parse_percentile": 81,
+     "ilvl_parse_percentile": 73
+    },
+    {
+     "name": "Erithea",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 25766.7,
+     "dps_default_view": null,
+     "active_pct": 98.9,
+     "item_level": 357,
+     "parse_percentile": 67,
+     "ilvl_parse_percentile": 75
+    },
+    {
+     "name": "Kumagawa",
+     "class": "Warrior",
+     "spec": "Fury",
+     "spec_key": "fury_warrior",
+     "role": "dps",
+     "dps": 23991.3,
+     "dps_default_view": null,
+     "active_pct": 87.75,
+     "item_level": 357,
+     "parse_percentile": 80,
+     "ilvl_parse_percentile": 82
+    },
+    {
+     "name": "Moosharman",
+     "class": "Shaman",
+     "spec": "Enhancement",
+     "spec_key": "enhancement_shaman",
+     "role": "dps",
+     "dps": 19235.7,
+     "dps_default_view": null,
+     "active_pct": 97.37,
+     "item_level": 354,
+     "parse_percentile": 22,
+     "ilvl_parse_percentile": 34
+    },
+    {
+     "name": "Whocaares",
+     "class": "Priest",
+     "spec": "Shadow",
+     "spec_key": "shadow_priest",
+     "role": "dps",
+     "dps": 16465.2,
+     "dps_default_view": null,
+     "active_pct": 97.55,
+     "item_level": 357,
+     "parse_percentile": 19,
+     "ilvl_parse_percentile": 18
+    },
+    {
+     "name": "Cacalacur",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 16457.5,
+     "dps_default_view": null,
+     "active_pct": 85.99,
+     "item_level": 361,
+     "parse_percentile": 75,
+     "ilvl_parse_percentile": 59
+    },
+    {
+     "name": "Greenroots",
+     "class": "Druid",
+     "spec": "Feral",
+     "spec_key": "feral_druid_dps",
+     "role": "dps",
+     "dps": 10538.8,
+     "dps_default_view": null,
+     "active_pct": 95.32,
+     "item_level": 358,
+     "parse_percentile": 27,
+     "ilvl_parse_percentile": 20
+    },
+    {
+     "name": "Notkekw",
+     "class": "Priest",
+     "spec": "Discipline",
+     "spec_key": "discipline_priest",
+     "role": "healer",
+     "dps": 8281.6,
+     "dps_default_view": null,
+     "active_pct": 97.59,
+     "item_level": 358,
+     "parse_percentile": 83,
+     "ilvl_parse_percentile": 82
+    },
+    {
+     "name": "Elaylee",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 666.5,
+     "dps_default_view": null,
+     "active_pct": 70.7,
+     "item_level": 358,
+     "parse_percentile": 63,
+     "ilvl_parse_percentile": 60
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 16457.5,
+    "survival_hunter": 25766.7,
+    "assassination_rogue": 28112.3
+   },
+   "actor_item_level": {
+    "blood_death_knight": 361.0,
+    "survival_hunter": 357.0,
+    "assassination_rogue": 359.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 75.0,
+    "survival_hunter": 67.0,
+    "assassination_rogue": 81.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Cacalacur"
+    ],
+    "survival_hunter": [
+     "Erithea"
+    ],
+    "assassination_rogue": [
+     "Blackmethod"
+    ]
+   },
+   "excluded_actor_dps": {
+    "fire_mage:Mayniac": {
+     "dps": 35783.1,
+     "active_pct": 96.87,
+     "item_level": 360.0,
+     "parse_percentile": 99.0,
+     "reason": "extreme top parse (99)"
+    }
+   },
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.197"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "10.59m",
+    "lava_parasite_waves": 2,
+    "lava_parasite_evidence": "Lava Parasite 41806 Groups 1 2; 15 instances. Additional 42321 parasite damaged.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/fDP4rMTd8GCjKNqn?fight=30&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:57.738"
+    ],
+    "mangle_target": "Cacalacur",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/fDP4rMTd8GCjKNqn?fight=30&type=auras&spells=debuffs&view=events&ability=89773",
+    "boss_tank_verified": "Cacalacur",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "Fire Mage present but excluded as a reference because parse 99 is an extreme top outlier. No deaths. Seven DPS active 87.75-98.90%. Sole Blood boss tank activity 85.99% with Mangle.",
+   "raid_dps_median_active_pct": 97.37
+  },
+  {
+   "id": "yq3nVTPJC19mzgwx-fight1",
+   "url": "https://classic.warcraftlogs.com/reports/yq3nVTPJC19mzgwx?fight=1&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/yq3nVTPJC19mzgwx?fight=1&type=summary",
+   "mode": "10N",
+   "date": "2024-10-19",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 171.1,
+   "raid_dps": 161511.6,
+   "average_item_level": 359.5,
+   "item_level": 359.5,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite (41806 and 42321); Massive Crash and Pillar of Flame listed.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Primarul",
+     "class": "Warlock",
+     "spec": "Affliction",
+     "spec_key": "affliction_warlock",
+     "role": "dps",
+     "dps": 25531.8,
+     "dps_default_view": null,
+     "active_pct": 98.45,
+     "item_level": 363,
+     "parse_percentile": 87,
+     "ilvl_parse_percentile": 68
+    },
+    {
+     "name": "Turbotoo",
+     "class": "Shaman",
+     "spec": "Elemental",
+     "spec_key": "elemental_shaman",
+     "role": "dps",
+     "dps": 24775.3,
+     "dps_default_view": null,
+     "active_pct": 99.34,
+     "item_level": 360,
+     "parse_percentile": 67,
+     "ilvl_parse_percentile": 58
+    },
+    {
+     "name": "Matslady",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 23784,
+     "dps_default_view": null,
+     "active_pct": 93.79,
+     "item_level": 364,
+     "parse_percentile": 67,
+     "ilvl_parse_percentile": 22
+    },
+    {
+     "name": "Balanardin",
+     "class": "Paladin",
+     "spec": "Retribution",
+     "spec_key": "retribution_paladin",
+     "role": "dps",
+     "dps": 23388.4,
+     "dps_default_view": null,
+     "active_pct": 98.96,
+     "item_level": 359,
+     "parse_percentile": 46,
+     "ilvl_parse_percentile": 30
+    },
+    {
+     "name": "Cutears",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 23007.8,
+     "dps_default_view": null,
+     "active_pct": 98.17,
+     "item_level": 359,
+     "parse_percentile": 62,
+     "ilvl_parse_percentile": 49
+    },
+    {
+     "name": "Dharagân",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 14936.9,
+     "dps_default_view": null,
+     "active_pct": 99.5,
+     "item_level": 359,
+     "parse_percentile": 62,
+     "ilvl_parse_percentile": 55
+    },
+    {
+     "name": "Potatiz",
+     "class": "Warlock",
+     "spec": "Demonology",
+     "spec_key": "demonology_warlock",
+     "role": "dps",
+     "dps": 14681.5,
+     "dps_default_view": null,
+     "active_pct": 93.56,
+     "item_level": 356,
+     "parse_percentile": 16,
+     "ilvl_parse_percentile": 15
+    },
+    {
+     "name": "Bigtastéy",
+     "class": "Druid",
+     "spec": "Feral",
+     "spec_key": "feral_druid_dps",
+     "role": "dps",
+     "dps": 10243.5,
+     "dps_default_view": null,
+     "active_pct": 99.83,
+     "item_level": 358,
+     "parse_percentile": 25,
+     "ilvl_parse_percentile": 18
+    },
+    {
+     "name": "Dizziee",
+     "class": "Priest",
+     "spec": "Holy",
+     "spec_key": "holy_priest",
+     "role": "healer",
+     "dps": 727.5,
+     "dps_default_view": null,
+     "active_pct": 7.92,
+     "item_level": 359,
+     "parse_percentile": 59,
+     "ilvl_parse_percentile": 49
+    },
+    {
+     "name": "Zzbop",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 434.9,
+     "dps_default_view": null,
+     "active_pct": 21.38,
+     "item_level": 358,
+     "parse_percentile": 34,
+     "ilvl_parse_percentile": 30
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 14936.9,
+    "fire_mage": 23395.9,
+    "retribution_paladin": 23388.4,
+    "elemental_shaman": 24775.3,
+    "demonology_warlock": 14681.5
+   },
+   "actor_item_level": {
+    "blood_death_knight": 359.0,
+    "fire_mage": 361.5,
+    "retribution_paladin": 359.0,
+    "elemental_shaman": 360.0,
+    "demonology_warlock": 356.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 62.0,
+    "fire_mage": [
+     67.0,
+     62.0
+    ],
+    "retribution_paladin": 46.0,
+    "elemental_shaman": 67.0,
+    "demonology_warlock": 16.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Dharagân"
+    ],
+    "fire_mage": [
+     "Matslady",
+     "Cutears"
+    ],
+    "retribution_paladin": [
+     "Balanardin"
+    ],
+    "elemental_shaman": [
+     "Turbotoo"
+    ],
+    "demonology_warlock": [
+     "Potatiz"
+    ]
+   },
+   "excluded_actor_dps": {},
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.171"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "8.95m",
+    "lava_parasite_waves": 3,
+    "lava_parasite_evidence": "41806 selector Groups 1 2 3 (21 instances). 42321 infection parasites have one group (15 instances); Pillar of Flame selector 1 2. Wave count is observed parasite grouping, not independently timed spawn events.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/yq3nVTPJC19mzgwx?fight=1&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:54.850"
+    ],
+    "mangle_target": "Dharagân",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/yq3nVTPJC19mzgwx?fight=1&type=auras&spells=debuffs&view=events&ability=89773",
+    "boss_tank_verified": "Dharagân",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "No deaths; all DPS activity 93.56-99.83%. Prefer Cutears Fire ilvl 359. Demonology parse 16 is above requested bottom cutoff, with 93.56% activity. Infection damage present, but no majority low-activity slowdown.",
+   "raid_dps_median_active_pct": 98.45
+  },
+  {
+   "id": "RtPXnbZxFkpacw1h-fight6",
+   "url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=summary",
+   "mode": "10N",
+   "date": "2024-10-09",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 158.2,
+   "raid_dps": 173523.6,
+   "average_item_level": 354.9,
+   "item_level": 354.9,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite (41806 and 42321); Massive Crash and Pillar of Flame listed.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Booter",
+     "class": "Rogue",
+     "spec": "Assassination",
+     "spec_key": "assassination_rogue",
+     "role": "dps",
+     "dps": 27432.6,
+     "dps_default_view": null,
+     "active_pct": 98.66,
+     "item_level": 354,
+     "parse_percentile": 77,
+     "ilvl_parse_percentile": 96
+    },
+    {
+     "name": "Kulerin",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 23826.3,
+     "dps_default_view": null,
+     "active_pct": 97.77,
+     "item_level": 359,
+     "parse_percentile": 67,
+     "ilvl_parse_percentile": 56
+    },
+    {
+     "name": "Salwho",
+     "class": "Paladin",
+     "spec": "Retribution",
+     "spec_key": "retribution_paladin",
+     "role": "dps",
+     "dps": 23716.1,
+     "dps_default_view": null,
+     "active_pct": 99.4,
+     "item_level": 351,
+     "parse_percentile": 48,
+     "ilvl_parse_percentile": 82
+    },
+    {
+     "name": "Elegirl",
+     "class": "Shaman",
+     "spec": "Elemental",
+     "spec_key": "elemental_shaman",
+     "role": "dps",
+     "dps": 22590.9,
+     "dps_default_view": null,
+     "active_pct": 99.36,
+     "item_level": 356,
+     "parse_percentile": 54,
+     "ilvl_parse_percentile": 61
+    },
+    {
+     "name": "Neisumm",
+     "class": "Warlock",
+     "spec": "Demonology",
+     "spec_key": "demonology_warlock",
+     "role": "dps",
+     "dps": 21805.1,
+     "dps_default_view": null,
+     "active_pct": 99.37,
+     "item_level": 357,
+     "parse_percentile": 56,
+     "ilvl_parse_percentile": 59
+    },
+    {
+     "name": "Symcita",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 17717.4,
+     "dps_default_view": null,
+     "active_pct": 98.34,
+     "item_level": 357,
+     "parse_percentile": 83,
+     "ilvl_parse_percentile": 90
+    },
+    {
+     "name": "Prezydent",
+     "class": "Paladin",
+     "spec": "Protection",
+     "spec_key": "protection_paladin",
+     "role": "tank",
+     "dps": 15055.5,
+     "dps_default_view": null,
+     "active_pct": 99.6,
+     "item_level": 354,
+     "parse_percentile": 93,
+     "ilvl_parse_percentile": 97
+    },
+    {
+     "name": "Fairwein",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 11999.3,
+     "dps_default_view": null,
+     "active_pct": 98.26,
+     "item_level": 353,
+     "parse_percentile": 4,
+     "ilvl_parse_percentile": 4
+    },
+    {
+     "name": "Beckita",
+     "class": "Priest",
+     "spec": "Discipline",
+     "spec_key": "discipline_priest",
+     "role": "healer",
+     "dps": 8765.7,
+     "dps_default_view": null,
+     "active_pct": 93.05,
+     "item_level": 355,
+     "parse_percentile": 88,
+     "ilvl_parse_percentile": 92
+    },
+    {
+     "name": "Dazelita",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 497.9,
+     "dps_default_view": null,
+     "active_pct": 30.42,
+     "item_level": 353,
+     "parse_percentile": 42,
+     "ilvl_parse_percentile": 53
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 17717.4,
+    "fire_mage": 23826.3,
+    "retribution_paladin": 23716.1,
+    "assassination_rogue": 27432.6,
+    "elemental_shaman": 22590.9,
+    "demonology_warlock": 21805.1
+   },
+   "actor_item_level": {
+    "blood_death_knight": 357.0,
+    "fire_mage": 359.0,
+    "retribution_paladin": 351.0,
+    "assassination_rogue": 354.0,
+    "elemental_shaman": 356.0,
+    "demonology_warlock": 357.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 83.0,
+    "fire_mage": 67.0,
+    "retribution_paladin": 48.0,
+    "assassination_rogue": 77.0,
+    "elemental_shaman": 54.0,
+    "demonology_warlock": 56.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Symcita"
+    ],
+    "fire_mage": [
+     "Kulerin"
+    ],
+    "retribution_paladin": [
+     "Salwho"
+    ],
+    "assassination_rogue": [
+     "Booter"
+    ],
+    "elemental_shaman": [
+     "Elegirl"
+    ],
+    "demonology_warlock": [
+     "Neisumm"
+    ]
+   },
+   "excluded_actor_dps": {
+    "survival_hunter:Fairwein": {
+     "dps": 11999.3,
+     "active_pct": 98.26,
+     "item_level": 353.0,
+     "parse_percentile": 4.0,
+     "reason": "extreme bottom parse (4)"
+    }
+   },
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.290"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "10.81m",
+    "lava_parasite_waves": 2,
+    "lava_parasite_evidence": "41806 Groups 1 2, 18 instances; 42321 infection parasites Groups 1 2, 5 instances.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:52.904"
+    ],
+    "mangle_target": "Symcita",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=auras&spells=debuffs&view=events&ability=89773",
+    "boss_tank_verified": "Symcita",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "No deaths; six DPS active 97.77-99.40%. Survival excluded as parse 4. Blood boss tank verified by Mangle target. Retribution ilvl 351 and raid 354.90 are less close to 359; retain as lower-band competent alternative. Rogue ilvl percentile 96 is permitted because overall parse 77.",
+   "raid_dps_median_active_pct": 99.01
+  },
+  {
+   "id": "fTCjtgrnzm4HRwXP-fight27",
+   "url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=summary",
+   "mode": "10N",
+   "date": "2024-10-07",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 166.7,
+   "raid_dps": 167016.6,
+   "average_item_level": 358.8,
+   "item_level": 358.8,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite; Massive Crash listed.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Téné",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 24244.3,
+     "dps_default_view": null,
+     "active_pct": 99.29,
+     "item_level": 359,
+     "parse_percentile": 70,
+     "ilvl_parse_percentile": 59
+    },
+    {
+     "name": "Missfli",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 24038.3,
+     "dps_default_view": null,
+     "active_pct": 98.45,
+     "item_level": 359,
+     "parse_percentile": 54,
+     "ilvl_parse_percentile": 46
+    },
+    {
+     "name": "Qatsi",
+     "class": "Druid",
+     "spec": "Balance",
+     "spec_key": "balance_druid",
+     "role": "dps",
+     "dps": 23781.1,
+     "dps_default_view": null,
+     "active_pct": 98.18,
+     "item_level": 359,
+     "parse_percentile": 77,
+     "ilvl_parse_percentile": 69
+    },
+    {
+     "name": "Edugaru",
+     "class": "Warlock",
+     "spec": "Demonology",
+     "spec_key": "demonology_warlock",
+     "role": "dps",
+     "dps": 23778.1,
+     "dps_default_view": null,
+     "active_pct": 99.16,
+     "item_level": 359,
+     "parse_percentile": 67,
+     "ilvl_parse_percentile": 59
+    },
+    {
+     "name": "Melgario",
+     "class": "Rogue",
+     "spec": "Assassination",
+     "spec_key": "assassination_rogue",
+     "role": "dps",
+     "dps": 20476.3,
+     "dps_default_view": null,
+     "active_pct": 98.66,
+     "item_level": 359,
+     "parse_percentile": 25,
+     "ilvl_parse_percentile": 14
+    },
+    {
+     "name": "Blastz",
+     "class": "Shaman",
+     "spec": "Enhancement",
+     "spec_key": "enhancement_shaman",
+     "role": "dps",
+     "dps": 20078.3,
+     "dps_default_view": null,
+     "active_pct": 97.58,
+     "item_level": 359,
+     "parse_percentile": 28,
+     "ilvl_parse_percentile": 13
+    },
+    {
+     "name": "Renthør",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 15284.5,
+     "dps_default_view": null,
+     "active_pct": 91.13,
+     "item_level": 359,
+     "parse_percentile": 65,
+     "ilvl_parse_percentile": 60
+    },
+    {
+     "name": "Lypa",
+     "class": "Paladin",
+     "spec": "Protection",
+     "spec_key": "protection_paladin",
+     "role": "tank",
+     "dps": 10764.9,
+     "dps_default_view": null,
+     "active_pct": 97.24,
+     "item_level": 357,
+     "parse_percentile": 47,
+     "ilvl_parse_percentile": 51
+    },
+    {
+     "name": "Astreel",
+     "class": "Priest",
+     "spec": "Discipline",
+     "spec_key": "discipline_priest",
+     "role": "healer",
+     "dps": 3054.6,
+     "dps_default_view": null,
+     "active_pct": 25.61,
+     "item_level": 359,
+     "parse_percentile": 18,
+     "ilvl_parse_percentile": 16
+    },
+    {
+     "name": "Zenash",
+     "class": "Shaman",
+     "spec": "Restoration",
+     "spec_key": "restoration_shaman",
+     "role": "healer",
+     "dps": 1479.8,
+     "dps_default_view": null,
+     "active_pct": 24.09,
+     "item_level": 359,
+     "parse_percentile": 55,
+     "ilvl_parse_percentile": 47
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 15284.5,
+    "balance_druid": 23781.1,
+    "survival_hunter": 24038.3,
+    "fire_mage": 24244.3,
+    "assassination_rogue": 20476.3,
+    "demonology_warlock": 23778.1
+   },
+   "actor_item_level": {
+    "blood_death_knight": 359.0,
+    "balance_druid": 359.0,
+    "survival_hunter": 359.0,
+    "fire_mage": 359.0,
+    "assassination_rogue": 359.0,
+    "demonology_warlock": 359.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 65.0,
+    "balance_druid": 77.0,
+    "survival_hunter": 54.0,
+    "fire_mage": 70.0,
+    "assassination_rogue": 25.0,
+    "demonology_warlock": 67.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Renthør"
+    ],
+    "balance_druid": [
+     "Qatsi"
+    ],
+    "survival_hunter": [
+     "Missfli"
+    ],
+    "fire_mage": [
+     "Téné"
+    ],
+    "assassination_rogue": [
+     "Melgario"
+    ],
+    "demonology_warlock": [
+     "Edugaru"
+    ]
+   },
+   "excluded_actor_dps": {},
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.643"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "9.84m",
+    "lava_parasite_waves": 3,
+    "lava_parasite_evidence": "41806 selector Groups 1 2 3, 22 instances.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:56.909"
+    ],
+    "mangle_target": "Renthør",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=auras&spells=debuffs&view=events&ability=89773",
+    "boss_tank_verified": "Renthør",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "Strong gear match: every wanted DPS item level 359, raid 358.80. No deaths; all six DPS active 97.58-99.29%. Blood boss tank verified by Mangle target.",
+   "raid_dps_median_active_pct": 98.56
+  },
+  {
+   "id": "mRGwYjb8gnQ9BaXf-fight6",
+   "url": "https://classic.warcraftlogs.com/reports/mRGwYjb8gnQ9BaXf?fight=6&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/mRGwYjb8gnQ9BaXf?fight=6&type=summary",
+   "mode": "10N",
+   "date": "2024-10-24",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 168.1,
+   "raid_dps": 166942.7,
+   "average_item_level": 358.5,
+   "item_level": 358.5,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite; Massive Crash listed.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Pititom",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 30350.3,
+     "dps_default_view": null,
+     "active_pct": 98.25,
+     "item_level": 359,
+     "parse_percentile": 91,
+     "ilvl_parse_percentile": 91
+    },
+    {
+     "name": "Ysé",
+     "class": "Rogue",
+     "spec": "Assassination",
+     "spec_key": "assassination_rogue",
+     "role": "dps",
+     "dps": 23143.3,
+     "dps_default_view": null,
+     "active_pct": 98.36,
+     "item_level": 360,
+     "parse_percentile": 44,
+     "ilvl_parse_percentile": 28
+    },
+    {
+     "name": "Mélancoly",
+     "class": "Priest",
+     "spec": "Shadow",
+     "spec_key": "shadow_priest",
+     "role": "dps",
+     "dps": 21690.9,
+     "dps_default_view": null,
+     "active_pct": 97.24,
+     "item_level": 361,
+     "parse_percentile": 53,
+     "ilvl_parse_percentile": 22
+    },
+    {
+     "name": "Breizhinette",
+     "class": "Warrior",
+     "spec": "Arms",
+     "spec_key": "arms_warrior",
+     "role": "dps",
+     "dps": 21278.2,
+     "dps_default_view": null,
+     "active_pct": 97.87,
+     "item_level": 356,
+     "parse_percentile": 46,
+     "ilvl_parse_percentile": 49
+    },
+    {
+     "name": "Touum",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 20892.9,
+     "dps_default_view": null,
+     "active_pct": 98.09,
+     "item_level": 358,
+     "parse_percentile": 49,
+     "ilvl_parse_percentile": 34
+    },
+    {
+     "name": "Franaël",
+     "class": "Druid",
+     "spec": "Balance",
+     "spec_key": "balance_druid",
+     "role": "dps",
+     "dps": 20436.1,
+     "dps_default_view": null,
+     "active_pct": 98.66,
+     "item_level": 359,
+     "parse_percentile": 54,
+     "ilvl_parse_percentile": 40
+    },
+    {
+     "name": "Gardêndk",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 18131.4,
+     "dps_default_view": null,
+     "active_pct": 99.02,
+     "item_level": 358,
+     "parse_percentile": 84,
+     "ilvl_parse_percentile": 83
+    },
+    {
+     "name": "Drüudy",
+     "class": "Druid",
+     "spec": "Feral",
+     "spec_key": "feral_druid_dps",
+     "role": "dps",
+     "dps": 8985.3,
+     "dps_default_view": null,
+     "active_pct": 98.79,
+     "item_level": 357,
+     "parse_percentile": 15,
+     "ilvl_parse_percentile": 15
+    },
+    {
+     "name": "Jumancham",
+     "class": "Shaman",
+     "spec": "Restoration",
+     "spec_key": "restoration_shaman",
+     "role": "healer",
+     "dps": 1624.1,
+     "dps_default_view": null,
+     "active_pct": 17.97,
+     "item_level": 360,
+     "parse_percentile": 60,
+     "ilvl_parse_percentile": 53
+    },
+    {
+     "name": "Drasme",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 410.4,
+     "dps_default_view": null,
+     "active_pct": 73.26,
+     "item_level": 357,
+     "parse_percentile": 30,
+     "ilvl_parse_percentile": 33
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 18131.4,
+    "balance_druid": 20436.1,
+    "survival_hunter": 30350.3,
+    "fire_mage": 20892.9,
+    "assassination_rogue": 23143.3
+   },
+   "actor_item_level": {
+    "blood_death_knight": 358.0,
+    "balance_druid": 359.0,
+    "survival_hunter": 359.0,
+    "fire_mage": 358.0,
+    "assassination_rogue": 360.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 84.0,
+    "balance_druid": 54.0,
+    "survival_hunter": 91.0,
+    "fire_mage": 49.0,
+    "assassination_rogue": 44.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Gardêndk"
+    ],
+    "balance_druid": [
+     "Franaël"
+    ],
+    "survival_hunter": [
+     "Pititom"
+    ],
+    "fire_mage": [
+     "Touum"
+    ],
+    "assassination_rogue": [
+     "Ysé"
+    ]
+   },
+   "excluded_actor_dps": {},
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.840"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to named tank.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "9.97m",
+    "lava_parasite_waves": 3,
+    "lava_parasite_evidence": "41806 selector Groups1 2 3,19 instances.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/mRGwYjb8gnQ9BaXf?fight=6&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:55.083"
+    ],
+    "mangle_target": "Gardêndk",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/mRGwYjb8gnQ9BaXf?fight=6&type=auras&spells=debuffs&view=events",
+    "boss_tank_verified": "Gardêndk",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read."
+   },
+   "notes": "No deaths; all seven DPS active 97.24-98.79%. Sole Blood boss tank. Raid 358.50, Balance 359, Survival 359, Fire 358, Assassination 360. Survival parse 91 meets below 95 rule.",
+   "raid_dps_median_active_pct": 98.25
+  },
+  {
+   "id": "YcLpPHZgtzyWQGRX-fight17",
+   "url": "https://classic.warcraftlogs.com/reports/YcLpPHZgtzyWQGRX?fight=17&type=damage-done",
+   "summary_url": "https://classic.warcraftlogs.com/reports/YcLpPHZgtzyWQGRX?fight=17&type=summary",
+   "mode": "10N",
+   "date": "2024-10-21",
+   "kill": true,
+   "boss_verified": "Magmaw Normal 10 Player Kill",
+   "duration_sec": 145.5,
+   "raid_dps": 186409.9,
+   "average_item_level": 356.9,
+   "item_level": 356.9,
+   "in_item_level_band": true,
+   "after_hotfix_cutoff_2025_02_20": false,
+   "target_scope": "All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasite.",
+   "reference_class": "matched_item_level_band",
+   "roster": [
+    {
+     "name": "Armalìte",
+     "class": "Hunter",
+     "spec": "Survival",
+     "spec_key": "survival_hunter",
+     "role": "dps",
+     "dps": 31696.4,
+     "dps_default_view": null,
+     "active_pct": 98.8,
+     "item_level": 358,
+     "parse_percentile": 95,
+     "ilvl_parse_percentile": 96
+    },
+    {
+     "name": "Orendriell",
+     "class": "Paladin",
+     "spec": "Retribution",
+     "spec_key": "retribution_paladin",
+     "role": "dps",
+     "dps": 28336.3,
+     "dps_default_view": null,
+     "active_pct": 98.64,
+     "item_level": 353,
+     "parse_percentile": 80,
+     "ilvl_parse_percentile": 95
+    },
+    {
+     "name": "Nipler",
+     "class": "Warrior",
+     "spec": "Arms",
+     "spec_key": "arms_warrior",
+     "role": "dps",
+     "dps": 25551.7,
+     "dps_default_view": null,
+     "active_pct": 97.89,
+     "item_level": 359,
+     "parse_percentile": 75,
+     "ilvl_parse_percentile": 66
+    },
+    {
+     "name": "Spyydog",
+     "class": "Paladin",
+     "spec": "Retribution",
+     "spec_key": "retribution_paladin",
+     "role": "dps",
+     "dps": 22076.3,
+     "dps_default_view": null,
+     "active_pct": 98.76,
+     "item_level": 359,
+     "parse_percentile": 37,
+     "ilvl_parse_percentile": 21
+    },
+    {
+     "name": "Maizhul",
+     "class": "Warlock",
+     "spec": "Demonology",
+     "spec_key": "demonology_warlock",
+     "role": "dps",
+     "dps": 19496.8,
+     "dps_default_view": null,
+     "active_pct": 98.83,
+     "item_level": 354,
+     "parse_percentile": 42,
+     "ilvl_parse_percentile": 58
+    },
+    {
+     "name": "Zuuri",
+     "class": "Shaman",
+     "spec": "Elemental",
+     "spec_key": "elemental_shaman",
+     "role": "dps",
+     "dps": 18549,
+     "dps_default_view": null,
+     "active_pct": 96.65,
+     "item_level": 358,
+     "parse_percentile": 28,
+     "ilvl_parse_percentile": 18
+    },
+    {
+     "name": "Rottendik",
+     "class": "Death Knight",
+     "spec": "Blood",
+     "spec_key": "blood_death_knight",
+     "role": "tank",
+     "dps": 17833.5,
+     "dps_default_view": null,
+     "active_pct": 97.98,
+     "item_level": 358,
+     "parse_percentile": 83,
+     "ilvl_parse_percentile": 82
+    },
+    {
+     "name": "Fizzledink",
+     "class": "Mage",
+     "spec": "Fire",
+     "spec_key": "fire_mage",
+     "role": "dps",
+     "dps": 16391.3,
+     "dps_default_view": null,
+     "active_pct": 96.39,
+     "item_level": 353,
+     "parse_percentile": 22,
+     "ilvl_parse_percentile": 38
+    },
+    {
+     "name": "Pastornerd",
+     "class": "Priest",
+     "spec": "Discipline",
+     "spec_key": "discipline_priest",
+     "role": "healer",
+     "dps": 5211.8,
+     "dps_default_view": null,
+     "active_pct": 63.6,
+     "item_level": 357,
+     "parse_percentile": 43,
+     "ilvl_parse_percentile": 50
+    },
+    {
+     "name": "Xynthor",
+     "class": "Paladin",
+     "spec": "Holy",
+     "spec_key": "holy_paladin",
+     "role": "healer",
+     "dps": 1266.6,
+     "dps_default_view": null,
+     "active_pct": 41.73,
+     "item_level": 360,
+     "parse_percentile": 92,
+     "ilvl_parse_percentile": 90
+    }
+   ],
+   "actor_dps": {
+    "blood_death_knight": 17833.5,
+    "fire_mage": 16391.3,
+    "retribution_paladin": 25206.3,
+    "elemental_shaman": 18549.0,
+    "demonology_warlock": 19496.8
+   },
+   "actor_item_level": {
+    "blood_death_knight": 358.0,
+    "fire_mage": 353.0,
+    "retribution_paladin": 356.0,
+    "elemental_shaman": 358.0,
+    "demonology_warlock": 354.0
+   },
+   "actor_parse_percentile": {
+    "blood_death_knight": 83.0,
+    "fire_mage": 22.0,
+    "retribution_paladin": [
+     80.0,
+     37.0
+    ],
+    "elemental_shaman": 28.0,
+    "demonology_warlock": 42.0
+   },
+   "actor_names": {
+    "blood_death_knight": [
+     "Rottendik"
+    ],
+    "fire_mage": [
+     "Fizzledink"
+    ],
+    "retribution_paladin": [
+     "Orendriell",
+     "Spyydog"
+    ],
+    "elemental_shaman": [
+     "Zuuri"
+    ],
+    "demonology_warlock": [
+     "Maizhul"
+    ]
+   },
+   "excluded_actor_dps": {
+    "survival_hunter:Armalìte": {
+     "dps": 31696.4,
+     "active_pct": 98.8,
+     "item_level": 358.0,
+     "parse_percentile": 95.0,
+     "reason": "extreme top parse (95)"
+    }
+   },
+   "deaths": [],
+   "phase_coverage": {
+    "mangle_happened": true,
+    "mangle_times": [
+     "01:30.370"
+    ],
+    "mangle_evidence": "Mangle apply/remove debuff events, Magmaw to Rottendik.",
+    "exposed_head_damaged": true,
+    "exposed_head_damage": "8.29m",
+    "lava_parasite_waves": 2,
+    "lava_parasite_evidence": "41806 selector Groups 1 2, 11 instances.",
+    "lava_parasite_wave_count_basis": "WCL Lava Parasite (NPC 41806) target selector group count. This is a grouping-based wave count; exact spawn times were not independently read.",
+    "by_target_url": "https://classic.warcraftlogs.com/reports/YcLpPHZgtzyWQGRX?fight=17&type=damage-done&by=target",
+    "mangle_removal_times": [
+     "01:54.639"
+    ],
+    "mangle_target": "Rottendik",
+    "boss_tank_verified": "Rottendik",
+    "mangle_events_url": "https://classic.warcraftlogs.com/reports/YcLpPHZgtzyWQGRX?fight=17&type=auras&spells=debuffs&view=events&ability=89773"
+   },
+   "notes": "No deaths; all seven DPS active 96.39-98.83%. Prefer Spyydog Ret ilvl 359 / parse 37 over Orendriell ilvl 353 / parse 80. Improves Ret gear match from Salwho ilvl 351 and raid 354.90. Survival Armalìte excluded at parse 95. Sole Blood boss tank.",
+   "raid_dps_median_active_pct": 98.64
+  }
+ ],
+ "near_band": [],
+ "rejected": [
+  {
+   "report": "4fxBrC3bjnwpgZKY",
+   "fight": 9,
+   "reason": "Archived report, fight details inaccessible without Logs Archive subscription.",
+   "raid_item_level": null
+  },
+  {
+   "report": "XgBmwGzd4WD3x2F8",
+   "fight": 22,
+   "raid_item_level": 352.9,
+   "reason": "In band but less representative gear match: raid average 352.90 with item-level-315 Fury DPS (Barrages). Blood tank parse 4 and Shadow DPS parse 8, activity 84.11%. Ret Yidris own ilvl 359 / parse 72 / activity 98.95%, but prefer the already accepted raid compositions closer to 359."
+  },
+  {
+   "report": "Y8r2LxyMqjnmKGNk",
+   "fight": 4,
+   "raid_item_level": null,
+   "reason": "Fight header says 'Magmaw (10 Player) Kill (2:57)' and omits Normal, so difficulty does not meet required header verification. Elemental player Ishne also parse 9 despite 98.54% activity. Raid average not read."
+  }
+ ],
+ "canonical_spec_coverage": {
+  "longer_half_context": {
+   "rule": "context only, not a target: median over in-band kills at or above the boss's median in-band duration",
+   "duration_cut_sec": 158.2,
+   "reference_ids": [
+    "yq3nVTPJC19mzgwx-fight1",
+    "RtPXnbZxFkpacw1h-fight6",
+    "fTCjtgrnzm4HRwXP-fight27",
+    "mRGwYjb8gnQ9BaXf-fight6"
+   ],
+   "median": {
+    "blood_death_knight": 16500.95,
+    "balance_druid": 22108.6,
+    "survival_hunter": 27194.3,
+    "fire_mage": 23611.1,
+    "retribution_paladin": 23552.25,
+    "assassination_rogue": 23143.3,
+    "elemental_shaman": 23683.1,
+    "demonology_warlock": 21805.1
+   },
+   "samples": {
+    "blood_death_knight": 4,
+    "balance_druid": 2,
+    "survival_hunter": 2,
+    "fire_mage": 4,
+    "retribution_paladin": 2,
+    "assassination_rogue": 3,
+    "elemental_shaman": 2,
+    "demonology_warlock": 3
+   }
+  },
+  "wcl_matched": {
+   "blood_death_knight": 17717.4,
+   "balance_druid": 20436.1,
+   "survival_hunter": 27409.7,
+   "fire_mage": 23395.9,
+   "retribution_paladin": 23552.25,
+   "assassination_rogue": 25287.95,
+   "elemental_shaman": 23683.1,
+   "demonology_warlock": 20650.95
+  },
+  "samples": {
+   "blood_death_knight": 7,
+   "balance_druid": 3,
+   "survival_hunter": 4,
+   "fire_mage": 5,
+   "retribution_paladin": 4,
+   "assassination_rogue": 4,
+   "elemental_shaman": 4,
+   "demonology_warlock": 4
+  },
+  "per_spec_values": {
+   "blood_death_knight": [
+    19397.4,
+    16457.5,
+    14936.9,
+    17717.4,
+    15284.5,
+    18131.4,
+    17833.5
+   ],
+   "balance_druid": [
+    19254.4,
+    23781.1,
+    20436.1
+   ],
+   "survival_hunter": [
+    29052.7,
+    25766.7,
+    24038.3,
+    30350.3
+   ],
+   "fire_mage": [
+    23395.9,
+    23826.3,
+    24244.3,
+    20892.9,
+    16391.3
+   ],
+   "retribution_paladin": [
+    22489.5,
+    23388.4,
+    23716.1,
+    25206.3
+   ],
+   "assassination_rogue": [
+    28112.3,
+    27432.6,
+    20476.3,
+    23143.3
+   ],
+   "elemental_shaman": [
+    29586.7,
+    24775.3,
+    22590.9,
+    18549.0
+   ],
+   "demonology_warlock": [
+    14681.5,
+    21805.1,
+    23778.1,
+    19496.8
+   ]
+  },
+  "per_spec_item_levels": {
+   "blood_death_knight": [
+    359.9,
+    357.9,
+    359.5,
+    354.9,
+    358.8,
+    358.5,
+    356.9
+   ],
+   "balance_druid": [
+    359.9,
+    358.8,
+    358.5
+   ],
+   "survival_hunter": [
+    359.9,
+    357.9,
+    358.8,
+    358.5
+   ],
+   "fire_mage": [
+    359.5,
+    354.9,
+    358.8,
+    358.5,
+    356.9
+   ],
+   "retribution_paladin": [
+    359.9,
+    359.5,
+    354.9,
+    356.9
+   ],
+   "assassination_rogue": [
+    357.9,
+    354.9,
+    358.8,
+    358.5
+   ],
+   "elemental_shaman": [
+    359.9,
+    359.5,
+    354.9,
+    356.9
+   ],
+   "demonology_warlock": [
+    359.5,
+    354.9,
+    358.8,
+    356.9
+   ]
+  },
+  "no_kill_in_band": [],
+  "fewer_than_three": []
+ },
+ "current_target_comparison": {
+  "current_matched_reference_ids": [
+   "Y8ajQ7dbmKMG1RZy-fight22"
+  ],
+  "current_reference_item_levels": [
+   395.33
+  ],
+  "per_spec": {
+   "blood_death_knight": {
+    "new_median": 17717.4,
+    "new_samples": 7,
+    "current_wcl_median": 26152.0,
+    "current_samples": 1,
+    "current_item_levels": [
+     395.33
+    ],
+    "change_pct": -32.3
+   },
+   "balance_druid": {
+    "new_median": 20436.1,
+    "new_samples": 3,
+    "current_wcl_median": 41029.1,
+    "current_samples": 1,
+    "current_item_levels": [
+     395.33
+    ],
+    "change_pct": -50.2
+   },
+   "survival_hunter": {
+    "new_median": 27409.7,
+    "new_samples": 4,
+    "current_wcl_median": null,
+    "current_samples": 0,
+    "current_item_levels": [],
+    "change_pct": null
+   },
+   "fire_mage": {
+    "new_median": 23395.9,
+    "new_samples": 5,
+    "current_wcl_median": 40189.9,
+    "current_samples": 1,
+    "current_item_levels": [
+     395.33
+    ],
+    "change_pct": -41.8
+   },
+   "retribution_paladin": {
+    "new_median": 23552.25,
+    "new_samples": 4,
+    "current_wcl_median": null,
+    "current_samples": 0,
+    "current_item_levels": [],
+    "change_pct": null
+   },
+   "assassination_rogue": {
+    "new_median": 25287.95,
+    "new_samples": 4,
+    "current_wcl_median": null,
+    "current_samples": 0,
+    "current_item_levels": [],
+    "change_pct": null
+   },
+   "elemental_shaman": {
+    "new_median": 23683.1,
+    "new_samples": 4,
+    "current_wcl_median": 41866.0,
+    "current_samples": 1,
+    "current_item_levels": [
+     395.33
+    ],
+    "change_pct": -43.4
+   },
+   "demonology_warlock": {
+    "new_median": 20650.95,
+    "new_samples": 4,
+    "current_wcl_median": null,
+    "current_samples": 0,
+    "current_item_levels": [],
+    "change_pct": null
+   }
+  }
+ },
+ "summary_notes": [
+  "Phase coverage: all 7 kills (131-171 s, 2024-10-07 to 2024-10-28, raid item level 354.9-359.9) include Mangle at about 90 s (exact times from debuff events) and Exposed Head of Magmaw damage; no deaths.",
+  "WCL archives reports older than two years: reports from before about 2024-09-30 (e.g. an August 2024 candidate) are no longer readable, so the October 2024 kills are the earliest usable tier-11 references and will themselves archive from October 2026.",
+  "The previous matched reference (Y8ajQ7dbmKMG1RZy f22, raid item level 395.33) is outside this band; every Magmaw spec now has a T11 WCL reference instead of the WoWSims fallback."
+ ]
+}

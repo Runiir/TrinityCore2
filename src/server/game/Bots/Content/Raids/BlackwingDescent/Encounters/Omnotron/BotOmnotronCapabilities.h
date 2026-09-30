@@ -15,6 +15,10 @@ struct InterruptCapability
 {
     uint32 SpellId = 0;
     float RangeYards = 0.0f;
+    // Base client cooldown row. Only orders the rotation (short cooldowns
+    // lead); talents and glyphs change the real one (Reverberation: Wind Shear
+    // 15 s to 5 s), so readiness comes from the bot's own spell history at cast
+    // (InterruptLedger::RecordUse), never from this value.
     uint32 CooldownMs = 0;
     bool Melee = false;
 };

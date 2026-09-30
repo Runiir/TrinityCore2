@@ -38,14 +38,14 @@ def ledger_keys(ledger: dict) -> set[str]:
     return keys
 
 
-def test_bwd_quantitative_resolution_audit_reconciles_all_42_ledger_blockers() -> None:
+def test_bwd_quantitative_resolution_audit_reconciles_all_41_ledger_blockers() -> None:
     report = load(REPORT)
     bosses = report["bosses"]
     assert {boss["boss_slug"] for boss in bosses} == EXPECTED
 
     findings = [finding for boss in bosses for finding in boss["blockers"]]
-    assert len(findings) == report["scope"]["blocker_count"] == 42
-    assert len({(boss["boss_slug"], finding["key"]) for boss in bosses for finding in boss["blockers"]}) == 42
+    assert len(findings) == report["scope"]["blocker_count"] == 41
+    assert len({(boss["boss_slug"], finding["key"]) for boss in bosses for finding in boss["blockers"]}) == 41
 
     for boss in bosses:
         slug = boss["boss_slug"]
@@ -70,16 +70,16 @@ def test_bwd_quantitative_resolution_audit_reconciles_all_42_ledger_blockers() -
 
     counts = Counter(finding["resolution_class"] for finding in findings)
     assert counts == {
-        "resolvable_from_official_cutoff_docs": 3,
+        "resolvable_from_official_cutoff_docs": 2,
         "resolvable_from_client_rows": 3,
-        "resolvable_from_server_db_source": 3,
-        "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": 33,
+        "resolvable_from_server_db_source": 2,
+        "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": 34,
     }
-    assert report["resolution_counts"]["total_blockers"] == 42
+    assert report["resolution_counts"]["total_blockers"] == 41
     for key, count in counts.items():
         assert report["resolution_counts"][key] == count
-    assert report["resolution_counts"]["external_evidence_required"] == 33
-    assert report["resolution_counts"]["partial_repository_or_client_resolutions"] == 9
+    assert report["resolution_counts"]["external_evidence_required"] == 34
+    assert report["resolution_counts"]["partial_repository_or_client_resolutions"] == 7
 
 
 def test_bwd_quantitative_resolution_audit_pins_identity_and_fails_closed() -> None:

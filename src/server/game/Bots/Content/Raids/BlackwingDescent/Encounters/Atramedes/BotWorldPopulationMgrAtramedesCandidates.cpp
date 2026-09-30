@@ -2,6 +2,9 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlockGuard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationExport.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationStore.h"
 
 #include "Creature.h"
 #include "Player.h"
@@ -13,6 +16,25 @@
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
+namespace
+{
+// The acceptance observation of every cohort: per cohort attempt, the Sound
+// of the player the Reverberating Flame chases, bound to its map instance,
+// and the counters the raid_runtime export reads
+// (BotAtramedesObservationStore.h).
+BotEncounter::Atramedes::ObservationStore& Observations()
+{
+    static BotEncounter::Atramedes::ObservationStore store;
+    return store;
+}
+}
+
+std::string BotEncounter::Atramedes::EncounterObservationsJsonField(std::string const& field,
+    std::string const& cohortId, ObservationAttempt attempt, std::string const& routeNodeId)
+{
+    return Observations().JsonField(field, cohortId, attempt, routeNodeId);
+}
+
 // The adaptive Atramedes owner replaces the route adapter on the encounter
 // node, so it must also carry the route's engagement edge, as Magmaw's and
 // Chimaeron's observers do. Round 5 killed Atramedes (26,110,798 damage, no
@@ -23,6 +45,25 @@ using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 // Observation only: it never changes target, focus or movement.
 void BotWorldPopulationMgr::SubmitAdaptiveAtramedesRouteObservation(BotUpdateContext& context)
 {
+    // Acceptance observation (round 3, user decision 2026-09-30 "Bound kiter
+    // Sound"): the observations are live for this cohort attempt (start
+    // lifecycle and attempt id) from the first decision the plan owns, and
+    // every decision offers the cohort's snapshot; the store samples each
+    // snapshot once. Observation only, before the route observer below.
+    BotEncounter::Atramedes::ObservationAttempt const observationAttempt{
+        Cohort().CombatLogEpoch, Cohort().AttemptId };
+    if (context.AdaptiveAtramedesOwnsNode)
+        Observations().Begin(Cohort().Id, observationAttempt);
+    if (Cohort().EncounterSnapshot)
+    {
+        Observations().Observe(Cohort().Id, observationAttempt, *Cohort().EncounterSnapshot);
+        // Ice Block is strictly once per fight: the strategy reads this
+        // attempt-scoped memory (BotAtramedesIceBlockGuard.h). It records
+        // only for a snapshot on Atramedes' encounter node.
+        BotEncounter::Atramedes::ProcessIceBlockGuard().Observe(Cohort().Id,
+            observationAttempt, *Cohort().EncounterSnapshot);
+    }
+
     auto observe = [this, &context]() -> BotActionArbitration::Outcome
     {
         if (!context.AdaptiveAtramedesOwnsNode

@@ -15,11 +15,11 @@
     "unseeded_prerequisites": "The eight dwarven spirits (spawn groups 435/436) and the Ancient Bell stay native: the route kills the spirits, waits for the bell to become selectable, rings it and waits for the intro landing."
   },
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
-  "matched_reference_ids": ["MxFq7TRbvnjGY1hJ-fight32", "PpFW3bgy7m6Kxk1t-fight8", "Bgcm6RavhWK7DLd1-fight34", "hxz7MH8gW9BYGNdr-fight41", "jxNrbDtq9BdwAcam-fight30", "X7tWdbvxYn3MjACD-fight28"],
-  "reference_status": {"state": "matched_wcl_references", "reason": "Six Atramedes 10N kills extracted 2026-09-27 (atramedes_wcl_dps_reference_v1.json): MxFq7TRbvnjGY1hJ fight 32 (round 1) and five round-2 kills of 2024-10 (173.6-199.0 s, raid item level 354.2-357.9) chosen for Balance Druid, Assassination Rogue and Demonology Warlock. Each spec's target is the median of one value per kill.", "wcl_matched": {"blood_death_knight": 13292.75, "balance_druid": 18355.0, "survival_hunter": 20412.6, "fire_mage": 18718.9, "retribution_paladin": 19929.9, "assassination_rogue": 17469.4, "elemental_shaman": 19688.2, "demonology_warlock": 20626.1}, "wcl_samples": {"blood_death_knight": 4, "balance_druid": 5, "survival_hunter": 5, "fire_mage": 3, "retribution_paladin": 3, "assassination_rogue": 5, "elemental_shaman": 2, "demonology_warlock": 5}, "wowsims_fallback_available": [], "no_reference_until_wcl": [], "healers_without_dps_target": ["holy_paladin", "discipline_priest"]},
-  "reference_gaps": {"with_wowsims_fallback": "None: every canonical non-healer spec has a matched WCL value. Thin samples: elemental_shaman (2 kills) and fire_mage (3 kills, parses 14, 52 and 79)."},
-  "unmatched_reference_notes": {"xAhkN2y9YP3KRmnJ-fight17": "48.5 s kill at item level 401.4 that ends before the first liftoff (no air phase, no Searing Flame); throughput context only, never a target."},
-  "reference_matching_rationale": "All six matched kills cover a full ground-air-ground cycle (fight 32 lands at about 129 s; the round-2 kills last 173.6-199.0 s), so every target already prices in the air phase that melee cannot hit and the Sonar Pulse / Sonic Breath movement, unlike the patchwerk WoWSims fallback used in round 1. Fight 32's blood_death_knight value is the active tank only (Greysnout, 13,254); its off-tank Wongelrainer (3,965, 39% active) is excluded because the canonical roster has one tank, and its Survival value is the median of two hunters. The round-2 kills were found through the Balance rankings filtered to raids that also field Assassination and Demonology, then verified on each fight page; their players' parse percentiles range 11-84 for the three wanted specs, so the per-spec median is not a top-parse target. Tank rows of other specs (feral_druid_tank, protection_paladin) are recorded but no canonical actor uses them.",
+  "matched_reference_ids": ["MxFq7TRbvnjGY1hJ-fight32", "PpFW3bgy7m6Kxk1t-fight8", "Bgcm6RavhWK7DLd1-fight34", "hxz7MH8gW9BYGNdr-fight41", "jxNrbDtq9BdwAcam-fight30", "X7tWdbvxYn3MjACD-fight28", "9Rdhq6BkMXKNw3CP-fight13"],
+  "reference_status": {"state": "matched_wcl_references", "reason": "Seven Atramedes 10N kills with raid item level 354.2-359.9 (median 356.9), T11 era 2024-10-05 to 2024-10-28 (atramedes_wcl_dps_reference_v1.json): MxFq7TRbvnjGY1hJ fight 32 (round 1), five round-2 kills (173.6-199.0 s) and, in round 3 (2026-09-30, tier-11 phase gear), 9Rdhq6BkMXKNw3CP fight 13 (180 s, a third Elemental). Each spec's target is the median of one value per kill.", "wcl_matched": {"blood_death_knight": 13292.75, "balance_druid": 18355.0, "survival_hunter": 21609.55, "fire_mage": 18718.9, "retribution_paladin": 19929.9, "assassination_rogue": 17469.4, "elemental_shaman": 24949.4, "demonology_warlock": 20626.1}, "wcl_samples": {"blood_death_knight": 4, "balance_druid": 5, "survival_hunter": 6, "fire_mage": 3, "retribution_paladin": 3, "assassination_rogue": 5, "elemental_shaman": 3, "demonology_warlock": 5}, "wowsims_fallback_available": [], "no_reference_until_wcl": [], "healers_without_dps_target": ["holy_paladin", "discipline_priest"]},
+  "reference_gaps": {"with_wowsims_fallback": "None: every canonical non-healer spec has a matched WCL value. Thinnest samples: fire_mage and retribution_paladin (3 kills each), elemental_shaman (3 kills since round 3)."},
+  "unmatched_reference_notes": {"xAhkN2y9YP3KRmnJ-fight17": "Dropped from the manifest in round 3 (dropped_references): 48.5 s kill at item level 401.4, outside the tier-11 band 352-366, ending before the first liftoff; it was throughput context only and never a target."},
+  "reference_matching_rationale": "All six matched kills cover a full ground-air-ground cycle (fight 32 lands at about 129 s; the round-2 kills last 173.6-199.0 s), so every target already prices in the air phase that melee cannot hit and the Sonar Pulse / Sonic Breath movement, unlike the patchwerk WoWSims fallback used in round 1. Fight 32's blood_death_knight value is the active tank only (Greysnout, 13,254); its off-tank Wongelrainer (3,965, 39% active) is excluded because the canonical roster has one tank, and its Survival value is the median of two hunters. The round-2 kills were found through the Balance rankings filtered to raids that also field Assassination and Demonology, then verified on each fight page; their players' parse percentiles range 11-84 for the three wanted specs, so the per-spec median is not a top-parse target. Tank rows of other specs (feral_druid_tank, protection_paladin) are recorded but no canonical actor uses them. Round 3 (2026-09-30): the roster wears tier-11 phase gear (about 359), so references are kills with raid item level 352-366, T11 era (before the 2025-02-20 cutoff); all six earlier matched kills are in band and stay, 9Rdhq6BkMXKNw3CP fight 13 (356.7) adds Elemental (Zukku 27,488, item level 359, parse 90) and two Survival hunters (averaged 25,762). Elemental moves 19,688.2 -> 24,949.4 and Survival 20,412.6 -> 21,609.55; every other target is unchanged. All seven kills contain a full ground-air-ground cycle.",
   "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_cast_timelines_v1.json",
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
@@ -126,5 +126,23 @@
       "--output-dir",
       "{output_dir}"
     ]
+  },
+  "reference_item_level": {
+    "band": [
+      352.0,
+      366.0
+    ],
+    "roster_average_item_level": 359,
+    "roster_gear": "tier-11 phase gear (composition gear_phase, experiments/configs/raid_gear_phases/cata_t11_v1.json; user decision 2026-09-30)",
+    "reference_raid_item_levels": {
+      "MxFq7TRbvnjGY1hJ-fight32": 359.9,
+      "PpFW3bgy7m6Kxk1t-fight8": 357.1,
+      "Bgcm6RavhWK7DLd1-fight34": 356.9,
+      "hxz7MH8gW9BYGNdr-fight41": 356.5,
+      "jxNrbDtq9BdwAcam-fight30": 354.2,
+      "X7tWdbvxYn3MjACD-fight28": 357.9,
+      "9Rdhq6BkMXKNw3CP-fight13": 356.7
+    },
+    "median_raid_item_level": 356.9
   }
 }

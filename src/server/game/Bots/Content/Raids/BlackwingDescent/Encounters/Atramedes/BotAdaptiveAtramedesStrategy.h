@@ -6,6 +6,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirActions.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesArenaFloor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlockGuard.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSpirits.h"
 #include <optional>
 #include <string>
@@ -56,8 +57,12 @@ public:
     static constexpr uint32 BossEntry = Atramedes::BossEntry;
     static constexpr uint64 CandidateLifetimeMs = 750;
 
+    // `iceBlockGuard` is the fight's memory of Ice Block (strictly once per
+    // fight, BotAtramedesIceBlockGuard.h): the process guard the kernel
+    // adapter feeds, unless a replay passes its own (nullptr: none).
     AdaptiveAtramedesPlan Propose(Blackboard const& board, ObjectGuid botGuid,
-        std::string_view role) const
+        std::string_view role,
+        Atramedes::IceBlockGuard const* iceBlockGuard = &Atramedes::ProcessIceBlockGuard()) const
     {
         using namespace Atramedes;
         if (Spirits::IsSpiritNode(board.Route.NodeId))
@@ -68,7 +73,9 @@ public:
         ActorSnapshot const* bot = board.FindActor(botGuid);
         if (!bot || !bot->Alive)
             return plan;
-        Facts const facts = BuildFacts(board);
+        Facts facts = BuildFacts(board);
+        facts.IceBlockSpent = iceBlockGuard
+            && iceBlockGuard->Spent(board.CurrentScope.CohortId, board.CurrentScope.AttemptId);
         // Only an engaged Atramedes. Before the pull (the respawn 30 s after
         // a wipe stands idle at AtramedesRespawnPosition) the route walks the
         // raid back and pulls him; an owned node with nothing to do would
@@ -98,12 +105,13 @@ public:
         else if (!gong.Withheld.empty())
             plan.GongReason = gong.Withheld;
         // Air abilities: the Ice Block rescuer's bait and block, the chased
-        // player's own extension or Ice Block.
+        // player's own extension or Ice Block. A chased player named to
+        // strike (a Sound-bound reset) strikes first.
         std::optional<AirAbility> ability;
         if (facts.CurrentPhase == Phase::Air)
         {
             ability = IceRescuerAbility(board, facts, *bot);
-            if (!ability)
+            if (!ability && !(gong.Required && gong.Clicker == botGuid))
                 ability = KiterAbility(facts, *bot, gong.Withheld);
         }
         if (ability)
@@ -119,7 +127,13 @@ public:
                 plan.DamageTarget = ObjectGuid();
             }
             if (ability->Hold)
+            {
+                if (ability->HazardStep)
+                    plan.Movement = MakeCandidate(board, ability->HazardStep->Mechanic,
+                        facts.Boss->Guid, ability->HazardStep->ActionPriority,
+                        ability->HazardStep->Utility, FloorMove(*ability->HazardStep));
                 return plan;
+            }
         }
 
         if (!ability && gong.Required && gong.Clicker == botGuid && gong.Shield)
@@ -138,7 +152,21 @@ public:
                         Geometry::Bearing(gong.Shield->Position, bot->Position),
                         ShieldStandInset, ArenaCenter.Z)
                     : ShieldStandPoint(*gong.Shield);
-                move = Survival(approach, "gong_approach", 530.0f);
+                // In reach of the shield but off bombs, fire and the flame,
+                // walking around fire; the chased kiter runs straight (its
+                // flame is behind it).
+                Vector3 stand = approach;
+                if (botGuid != facts.AirKiter)
+                {
+                    Dodge::Constraint reach;
+                    reach.Anchor = gong.Shield->Position;
+                    reach.AnchorReach = ShieldClickDistance - 0.5f;
+                    Dodge::Field const field = Dodge::BuildField(board, facts, *bot);
+                    stand = Dodge::LeastCostStep(field, *bot, Dodge::Resolve(field, *bot, approach, reach));
+                }
+                else
+                    stand = Dodge::LeastCostStep(Dodge::BuildField(board, facts, *bot), *bot, approach);
+                move = Survival(stand, "gong_approach", 530.0f);
             }
         }
 
@@ -166,15 +194,24 @@ public:
             return kite;
         if (std::optional<MoveProposal> run = AirRedirectRun(board, facts, self))
             return run;
-        if (std::optional<MoveProposal> exit = SonicBreathBeamExit(board, facts, duties, self))
+        // Melee and the tank dodge around the boss inside melee range (user
+        // raid experience 2026-09-25); everyone dodges everything (user raid
+        // experience 2026-09-30, BotAtramedesDodge.h).
+        bool const close = melee || tank;
+        Dodge::Constraint const ring = close && facts.Boss
+            && Geometry::Distance2d(facts.Boss->Position, self.Position) <= MeleeRangeYards
+            ? Dodge::MeleeRing(facts) : Dodge::Constraint{};
+        if (std::optional<MoveProposal> exit = SonicBreathBeamExit(board, facts, duties, self, close))
             return exit;
-        if (std::optional<MoveProposal> exit = FlameExit(facts, self))
+        if (std::optional<MoveProposal> step = RelayHazardStep(board, facts, duties, self))
+            return step;
+        if (std::optional<MoveProposal> exit = FlameExit(board, facts, self))
             return exit;
-        if (std::optional<MoveProposal> exit = BombMarkerExit(facts, self))
+        if (std::optional<MoveProposal> exit = BombMarkerExit(board, facts, self))
             return exit;
-        if (std::optional<MoveProposal> exit = FirePatchExit(facts, self))
+        if (std::optional<MoveProposal> exit = FirePatchExit(board, facts, self, ring))
             return exit;
-        if (std::optional<MoveProposal> exit = SonarPulseExit(facts, self, melee))
+        if (std::optional<MoveProposal> exit = SonarPulseExit(board, facts, self, close))
             return exit;
         if (facts.CurrentPhase != Phase::Air)
             if (std::optional<MoveProposal> standby = GongStandby(facts, duties, self))

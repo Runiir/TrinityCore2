@@ -336,8 +336,9 @@ int main()
     CHECK(convertedPlan.InterruptTarget == converted.Summons[0].Guid);
     CHECK(convertedPlan.OffenseAllowed.empty() && convertedPlan.SuppressOffense);
     CHECK(convertedPlan.InterruptCastOrdinal >= 2);
-    // Every landed interrupt procs Converted Power alike (spell_proc 79729
-    // SpellTypeMask 0), so no interrupt is excluded under the shield.
+    // A landed interrupt without damage procs no Converted Power (WCL 10N;
+    // staged spell_proc 79729 SpellTypeMask 1), so no interrupt is excluded
+    // under the shield.
     Blackboard marks = converted;
     marks.Revision = 10;
     marks.Players[2].ClassSpec = "marksmanship_hunter";
@@ -372,6 +373,342 @@ int main()
     assert output[-1] == "ok"
     assert output[0].startswith('{"applies":true,')
     assert '"pool":[40006,40008,40009,40001,40004,40002]' in output[0]
+
+
+def test_omnotron_interrupt_turn_skips_a_cooling_interrupter(tmp_path: Path) -> None:
+    program = PRELUDE + r'''
+static Blackboard CastBoard(uint64 revision, uint64 now, bool casting)
+{
+    Blackboard board = Board("cooldowns", revision, now);
+    ActorSnapshot arcanotron = Construct(O::ArcanotronEntry, 4, 0.0f, 0.0f, G(40001), now + 60000);
+    if (casting)
+        arcanotron.Cast = CastSnapshot{ 79710, G(40004), now, false, true };
+    board.Summons = { arcanotron };
+    return board;
+}
+
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    AdaptiveOmnotronStrategy strategy;
+    uint64 const now = 4000000;
+    // Pool: Ret, Rogue, Shaman, DK tank, Mage, Feral tank. The Ret used
+    // Rebuke 5 s before this cast and its spell history reported the
+    // unmodified 10 s left: the turn passes to the Rogue and the Shaman backs
+    // up.
+    O::InterruptLedger::RecordUse(CastBoard(1, now - 5000, false), G(40006), now - 5000, 10000);
+    Blackboard first = CastBoard(2, now, true);
+    O::DutyPlan plan = O::BuildDutyPlan(first, O::Observe(first), O::LedgerMode::Observe);
+    CHECK(plan.Interrupt.Ordinal == 1);
+    CHECK(plan.Interrupt.Primary == G(40008));
+    CHECK(plan.Interrupt.Backup == G(40009));
+    CHECK(plan.Interrupt.Cooling.size() == 1 && plan.Interrupt.Cooling[0] == G(40006));
+    CHECK(strategy.Propose(first, G(40006), "dps").InterruptTarget.IsEmpty());
+    CHECK(strategy.Propose(first, G(40008), "dps").InterruptTarget == first.Summons[0].Guid);
+    std::printf("%s\n", O::BuildOmnotronDutyPlanStatusJson(&first).c_str());
+
+    // The Rogue's own interrupt of this cast does not move the turn while the
+    // snapshot still shows the cast: no second interrupt at once.
+    O::InterruptLedger::RecordUse(first, G(40008), now + 100, 10000);
+    Blackboard stale = CastBoard(3, now + 200, true);
+    CHECK(strategy.Propose(stale, G(40008), "dps").InterruptTarget == stale.Summons[0].Guid);
+    CHECK(strategy.Propose(stale, G(40009), "dps").InterruptTarget.IsEmpty());
+
+    // Next cast (ordinal 2, turn on the Rogue): the Rogue is cooling, the
+    // Ret's 10 s Rebuke is back, so the Shaman (next ready after the turn)
+    // leads and the DK tank backs up; the Ret waits for its own turn.
+    strategy.Propose(CastBoard(4, now + 1500, false), G(40006), "dps");
+    Blackboard second = CastBoard(5, now + 6500, true);
+    O::DutyPlan next = O::BuildDutyPlan(second, O::Observe(second), O::LedgerMode::Observe);
+    CHECK(next.Interrupt.Ordinal == 2);
+    CHECK(next.Interrupt.Primary == G(40009));
+    CHECK(next.Interrupt.Backup == G(40001));
+    CHECK(next.Interrupt.Cooling.size() == 1 && next.Interrupt.Cooling[0] == G(40008));
+
+    // Everyone cooling: the plain rotation stands (the executor still checks).
+    for (uint32 guid : { 40006u, 40008u, 40009u, 40001u, 40004u, 40002u })
+        O::InterruptLedger::RecordUse(second, G(guid), now + 6000, 60000);
+    Blackboard third = CastBoard(6, now + 6600, true);
+    O::DutyPlan all = O::BuildDutyPlan(third, O::Observe(third), O::LedgerMode::Peek);
+    CHECK(all.Interrupt.Cooling.size() == 6);
+    CHECK(all.Interrupt.Primary == G(40008) && all.Interrupt.Backup == G(40009));
+
+    // Uses are scoped per cohort: another shard sees no cooldown.
+    Blackboard other = CastBoard(1, now + 6600, true);
+    other.CurrentScope.CohortId = "other-shard";
+    CHECK(O::BuildDutyPlan(other, O::Observe(other), O::LedgerMode::Peek).Interrupt.Cooling.empty());
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+'''
+    output = _compile_and_run(tmp_path, program).strip().splitlines()
+    assert output[-1] == "ok"
+    assert '"cooling":[40006]' in output[0]
+
+
+def test_omnotron_reverberation_wind_shear_is_ready_after_its_native_cooldown(tmp_path: Path) -> None:
+    program = PRELUDE + r'''
+// Only the Shaman and the Mage reach Arcanotron; everyone else stands 100 yd away.
+static Blackboard ShamanMageBoard(char const* cohort, uint64 revision, uint64 now, bool casting)
+{
+    Blackboard board = Board(cohort, revision, now);
+    for (ActorSnapshot& player : board.Players)
+        if (player.Guid != G(40004) && player.Guid != G(40009))
+            player.Position.X += 100.0f;
+    ActorSnapshot arcanotron = Construct(O::ArcanotronEntry, 4, 0.0f, 0.0f, G(40001), now + 60000);
+    if (casting)
+        arcanotron.Cast = CastSnapshot{ 79710, G(40004), now, false, true };
+    board.Summons = { arcanotron };
+    return board;
+}
+
+// The plan of the first Annihilator after one recorded interrupt; the native
+// remaining cooldown is what the spell history reported right after that cast.
+static O::DutyPlan PlanAfterUse(char const* cohort, uint32 user, uint64 usedAgoMs,
+    uint64 nativeRemainingMs, uint64 now)
+{
+    O::InterruptLedger::RecordUse(ShamanMageBoard(cohort, 1, now - usedAgoMs, false),
+        G(user), now - usedAgoMs, nativeRemainingMs);
+    Blackboard board = ShamanMageBoard(cohort, 2, now, true);
+    return O::BuildDutyPlan(board, O::Observe(board), O::LedgerMode::Observe);
+}
+
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    AdaptiveOmnotronStrategy strategy;
+    uint64 const now = 7000000;
+
+    // Reviewer scenario: Wind Shear 6.5 s ago; Reverberation made it 5 s, so
+    // the spell history reports 5 s and the Shaman is ready. It must lead (or
+    // at least back up); the Mage is not the only answer.
+    O::DutyPlan const reverb = PlanAfterUse("reverb", 40009, 6500, 5000, now);
+    CHECK(reverb.Interrupt.Pool.size() == 2);
+    CHECK(reverb.Interrupt.Cooling.empty());
+    CHECK(reverb.Interrupt.Primary == G(40009) || reverb.Interrupt.Backup == G(40009));
+    CHECK(reverb.Interrupt.Primary == G(40009));
+    CHECK(reverb.Interrupt.Backup == G(40004));
+    Blackboard const first = ShamanMageBoard("reverb", 2, now, true);
+    CHECK(strategy.Propose(first, G(40009), "dps").InterruptTarget == first.Summons[0].Guid);
+    CHECK(strategy.Propose(first, G(40004), "dps").InterruptTarget.IsEmpty());
+    // The Mage's backup turn comes after the 450 ms delay.
+    Blackboard const late = ShamanMageBoard("reverb", 3, now + 500, true);
+    CHECK(strategy.Propose(late, G(40004), "dps").InterruptTarget == late.Summons[0].Guid);
+    std::printf("%s\n", O::BuildOmnotronDutyPlanStatusJson(&first).c_str());
+
+    // The same cadence over two casts, the way the runtime records it: the
+    // Shaman interrupts cast 1, is ready again for cast 2 (turn on the Mage,
+    // the ready Shaman backs up), and is cooling only inside its 5 s.
+    O::InterruptLedger::RecordUse(first, G(40009), now + 100, 5000);
+    strategy.Propose(ShamanMageBoard("reverb", 4, now + 2000, false), G(40009), "dps");
+    Blackboard const second = ShamanMageBoard("reverb", 5, now + 6500, true);
+    O::DutyPlan const next = O::BuildDutyPlan(second, O::Observe(second), O::LedgerMode::Observe);
+    CHECK(next.Interrupt.Ordinal == 2);
+    CHECK(next.Interrupt.Cooling.empty());
+    CHECK(next.Interrupt.Primary == G(40004));
+    CHECK(next.Interrupt.Backup == G(40009));
+
+    // Negative control: without the talent the history reports the base 15 s
+    // at the cast, so the Shaman is still cooling 6.5 s later: the Mage leads
+    // with no backup.
+    O::DutyPlan const base = PlanAfterUse("no-talent", 40009, 6500, 15000, now);
+    CHECK(base.Interrupt.Cooling.size() == 1 && base.Interrupt.Cooling[0] == G(40009));
+    CHECK(base.Interrupt.Primary == G(40004));
+    CHECK(base.Interrupt.Backup.IsEmpty());
+    Blackboard const baseBoard = ShamanMageBoard("no-talent", 2, now, true);
+    std::printf("%s\n", O::BuildOmnotronDutyPlanStatusJson(&baseBoard).c_str());
+
+    // Negative control: Reverberation's 5 s still holds 4 s after the cast.
+    O::DutyPlan const early = PlanAfterUse("reverb-early", 40009, 4000, 5000, now);
+    CHECK(early.Interrupt.Cooling.size() == 1 && early.Interrupt.Cooling[0] == G(40009));
+    CHECK(early.Interrupt.Primary == G(40004) && early.Interrupt.Backup.IsEmpty());
+    // The cooldown ends exactly when the history said: ready at that instant.
+    O::DutyPlan const edge = PlanAfterUse("reverb-edge", 40009, 5000, 5000, now);
+    CHECK(edge.Interrupt.Cooling.empty() && edge.Interrupt.Backup == G(40004));
+
+    // Negative control: the Mage's Counterspell (24 s) is cooling, the ready
+    // Shaman leads and nobody backs up.
+    O::DutyPlan const mage = PlanAfterUse("mage-cooling", 40004, 6500, 24000, now);
+    CHECK(mage.Interrupt.Cooling.size() == 1 && mage.Interrupt.Cooling[0] == G(40004));
+    CHECK(mage.Interrupt.Primary == G(40009) && mage.Interrupt.Backup.IsEmpty());
+
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+'''
+    output = _compile_and_run(tmp_path, program).strip().splitlines()
+    assert output[-1] == "ok"
+    assert '"primary":40009,"backup":40004' in output[0]
+    assert '"cooling":[]' in output[0]
+    assert '"primary":40004,"backup":0' in output[1]
+    assert '"cooling":[40009]' in output[1]
+
+
+def test_omnotron_interrupt_readiness_follows_the_native_cooldown_of_every_interrupt(tmp_path: Path) -> None:
+    program = PRELUDE + r'''
+struct Row
+{
+    char const* Spec;
+    char const* Role;
+    char const* Spell;
+};
+
+static Blackboard Pair(std::string const& cohort, Row const& row, uint64 revision,
+    uint64 now, bool casting)
+{
+    Blackboard board = Board(cohort.c_str(), revision, now);
+    bool const mage = std::string(row.Spec).find("mage") != std::string::npos;
+    board.Players = {
+        Player(40001, row.Role, row.Spec, 2.0f, 2.0f),
+        Player(40002, "dps", mage ? "elemental_shaman" : "fire_mage", 3.0f, 3.0f),
+    };
+    ActorSnapshot arcanotron = Construct(O::ArcanotronEntry, 4, 0.0f, 0.0f, G(40001), now + 60000);
+    if (casting)
+        arcanotron.Cast = CastSnapshot{ 79710, G(40004), now, false, true };
+    board.Summons = { arcanotron };
+    return board;
+}
+
+static void Expect(bool ok, Row const& row, char const* what)
+{
+    if (!ok)
+    {
+        std::fprintf(stderr, "FAIL %s (%s): %s\n", row.Spec, row.Spell, what);
+        ++failures;
+    }
+}
+
+// The plan of the first Annihilator after the tested player's recorded interrupt.
+static O::DutyPlan PlanAfter(Row const& row, char const* mode, uint64 usedAgoMs,
+    uint64 nativeRemainingMs)
+{
+    uint64 const now = 8000000;
+    std::string const cohort = std::string(row.Spec) + "-" + mode;
+    O::InterruptLedger::RecordUse(Pair(cohort, row, 1, now - usedAgoMs, false), G(40001),
+        now - usedAgoMs, nativeRemainingMs);
+    Blackboard const board = Pair(cohort, row, 2, now, true);
+    return O::BuildDutyPlan(board, O::Observe(board), O::LedgerMode::Observe);
+}
+
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    Row const rows[] = {
+        { "assassination_rogue", "dps", "Kick 1766" },
+        { "arms_warrior", "dps", "Pummel 6552" },
+        { "unholy_death_knight", "dps", "Mind Freeze 47528" },
+        { "retribution_paladin", "dps", "Rebuke 96231" },
+        { "elemental_shaman", "dps", "Wind Shear 57994" },
+        { "fire_mage", "dps", "Counterspell 2139" },
+        { "marksmanship_hunter", "dps", "Silencing Shot 34490" },
+        { "shadow_priest", "dps", "Silence 15487" },
+        { "feral_druid_tank", "tank", "Skull Bash 80965" },
+    };
+    for (Row const& row : rows)
+    {
+        std::optional<O::InterruptCapability> const capability = O::InterruptFor(row.Spec);
+        Expect(capability.has_value(), row, "known interrupt");
+        if (!capability)
+            continue;
+        uint64 const base = capability->CooldownMs;
+
+        // A talent or glyph shortened the cooldown to 5 s: ready 6.5 s later
+        // whatever the base row says (every base is longer than 6.5 s).
+        Expect(base > 6500, row, "base cooldown longer than the test cadence");
+        O::DutyPlan const shortened = PlanAfter(row, "shortened", 6500, 5000);
+        Expect(shortened.Interrupt.Cooling.empty(), row, "shortened: not cooling");
+        Expect(shortened.Interrupt.Primary == G(40001) || shortened.Interrupt.Backup == G(40001),
+            row, "shortened: on duty");
+        Expect(!shortened.Interrupt.Primary.IsEmpty() && !shortened.Interrupt.Backup.IsEmpty(),
+            row, "shortened: primary and backup");
+
+        // Shortened, but still inside the cooldown the history reported.
+        O::DutyPlan const inside = PlanAfter(row, "inside", 6500, 8000);
+        Expect(inside.Interrupt.Cooling.size() == 1 && inside.Interrupt.Cooling[0] == G(40001),
+            row, "inside: cooling");
+        Expect(inside.Interrupt.Primary == G(40002) && inside.Interrupt.Backup.IsEmpty(),
+            row, "inside: partner leads alone");
+
+        // Longer than the base row (any modifier that lengthens it): the base
+        // row alone would call the bot ready after base + 2 s.
+        O::DutyPlan const longer = PlanAfter(row, "longer", base + 2000, base + 10000);
+        Expect(longer.Interrupt.Cooling.size() == 1 && longer.Interrupt.Cooling[0] == G(40001),
+            row, "longer: cooling");
+        Expect(longer.Interrupt.Primary == G(40002) && longer.Interrupt.Backup.IsEmpty(),
+            row, "longer: partner leads alone");
+
+        // No recorded use: ready.
+        std::string const cohort = std::string(row.Spec) + "-never";
+        Blackboard const idle = Pair(cohort, row, 2, 8000000, true);
+        O::DutyPlan const never = O::BuildDutyPlan(idle, O::Observe(idle), O::LedgerMode::Observe);
+        Expect(never.Interrupt.Cooling.empty(), row, "never used: not cooling");
+    }
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+'''
+    assert _compile_and_run(tmp_path, program).strip() == "ok"
+
+
+def test_omnotron_interrupt_ledger_records_the_native_cooldown_per_scope(tmp_path: Path) -> None:
+    program = PRELUDE + r'''
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    ObjectGuid const bot = G(40009);
+    Blackboard const board = Board("uses-a", 1, 1000);
+    CHECK(!O::InterruptLedger::LastUse(board, bot).has_value());
+
+    O::InterruptLedger::RecordUse(board, bot, 1000, 5000);
+    std::optional<O::InterruptUse> use = O::InterruptLedger::LastUse(board, bot);
+    CHECK(use.has_value() && use->AtMs == 1000 && use->ReadyAtMs == 6000);
+    CHECK(use && use->CoolingAt(5999) && !use->CoolingAt(6000));
+
+    // An older submission never rewinds a newer one.
+    O::InterruptLedger::RecordUse(board, bot, 900, 60000);
+    use = O::InterruptLedger::LastUse(board, bot);
+    CHECK(use.has_value() && use->AtMs == 1000 && use->ReadyAtMs == 6000);
+
+    // A newer one replaces it, and 0 remaining means ready at once.
+    O::InterruptLedger::RecordUse(board, bot, 2000, 0);
+    use = O::InterruptLedger::LastUse(board, bot);
+    CHECK(use.has_value() && use->AtMs == 2000 && !use->CoolingAt(2000));
+
+    // Scoped per cohort, attempt and wipe generation.
+    Blackboard other = board;
+    other.CurrentScope.CohortId = "uses-b";
+    CHECK(!O::InterruptLedger::LastUse(other, bot).has_value());
+    Blackboard wiped = board;
+    wiped.CurrentScope.WipeGeneration = 1;
+    CHECK(!O::InterruptLedger::LastUse(wiped, bot).has_value());
+    Blackboard attempt = board;
+    attempt.CurrentScope.AttemptId = board.CurrentScope.AttemptId + 1;
+    CHECK(!O::InterruptLedger::LastUse(attempt, bot).has_value());
+
+    // Idle uses age out (a long cooldown keeps its use alive until it has
+    // been idle for IdleExpiryMs after it ended).
+    O::InterruptLedger::RecordUse(board, G(40004), 2000, 24000);
+    uint64 const later = 2000 + 24000 + O::InterruptLedger::IdleExpiryMs + 1000;
+    O::InterruptLedger::RecordUse(other, G(40001), later, 10000);
+    CHECK(!O::InterruptLedger::LastUse(board, bot).has_value());
+    CHECK(!O::InterruptLedger::LastUse(board, G(40004)).has_value());
+    CHECK(O::InterruptLedger::LastUse(other, G(40001)).has_value());
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+'''
+    assert _compile_and_run(tmp_path, program).strip() == "ok"
+
+
+def test_omnotron_interrupt_submission_reads_the_native_spell_history() -> None:
+    plan = (OMNOTRON / "BotOmnotronDutyPlan.h").read_text(encoding="utf-8")
+    candidates = (OMNOTRON / "BotWorldPopulationMgrOmnotronCandidates.cpp").read_text(encoding="utf-8")
+    # The cooling decision never adds the capability's base cooldown row.
+    assert "entry.Capability.CooldownMs" not in plan
+    assert "LastUse(board, entry.Player->Guid)" in plan
+    # The submission records the bot's own remaining cooldown of the spell it cast.
+    assert "GetSpellHistory()->GetRemainingCooldown(castInfo)" in candidates
+    assert "context.DecisionNowMs, remainingCooldownMs" in candidates
 
 
 def test_omnotron_movement_mechanics(tmp_path: Path) -> None:
@@ -427,7 +764,8 @@ int main()
     }
 
     // Poison Bomb fixated on the mage: the mage kites away, a nearby player
-    // leaves the blast radius, and ranged damage kills only a safe bomb.
+    // leaves the blast radius, and ranged damage kills the bomb wherever it
+    // is (a killed bomb despawns without exploding; only contact explodes).
     Blackboard bombs = board;
     ActorSnapshot bomb = Unit(O::PoisonBombEntry, 30, 4.0f, 8.0f);
     bomb.Attackable = bomb.Selectable = true;
@@ -439,15 +777,23 @@ int main()
     if (BotNativeAction::Move const* move = MoveOf(kiter))
         CHECK(Dist(move->X, move->Y, bomb.Position) > Dist(bombs.Players[3].Position.X,
             bombs.Players[3].Position.Y, bomb.Position));
+    // Players within the 6 yd blast of the bomb do not spare it any more.
     AdaptiveOmnotronPlan warlock = strategy.Propose(bombs, G(40010), "dps");
-    CHECK(warlock.DamageTarget == magmatron.Guid);  // mage within 6 yd: not safe yet
-    Blackboard safe = bombs;
-    safe.Players[3].Position = { CX + 4.0f, CY + 20.0f, CZ };
-    safe.Players[2].Position = { CX - 6.0f, CY + 14.0f, CZ };
-    safe.Players[4].Position = { CX - 10.0f, CY + 12.0f, CZ };
-    safe.Players[6].Position = { CX + 14.0f, CY + 4.0f, CZ };
-    CHECK(strategy.Propose(safe, G(40010), "dps").DamageTarget == bomb.Guid);
-    CHECK(strategy.Propose(safe, G(40008), "dps").DamageTarget == magmatron.Guid);
+    CHECK(warlock.DamageTarget == bomb.Guid);
+    CHECK(strategy.Propose(bombs, G(40009), "dps").DamageTarget == bomb.Guid);
+    // Melee damage dealers stay on the construct.
+    CHECK(strategy.Propose(bombs, G(40008), "dps").DamageTarget == magmatron.Guid);
+    // Two bombs: the one nearer to its fixate target dies first; a dead bomb
+    // (despawning) is never a target.
+    Blackboard two = bombs;
+    ActorSnapshot near = Unit(O::PoisonBombEntry, 36, -6.0f, 13.0f);
+    near.Attackable = near.Selectable = true;
+    near.VictimGuid = G(40009);
+    two.Summons.push_back(near);
+    two.Players[8].Auras.push_back({ 80094, near.Guid, 1, now + 20000 });
+    CHECK(strategy.Propose(two, G(40010), "dps").DamageTarget == near.Guid);
+    two.Summons.back().Alive = false;
+    CHECK(strategy.Propose(two, G(40010), "dps").DamageTarget == bomb.Guid);
 
     // Chemical Cloud: a player inside 12 yd walks out past the edge.
     Blackboard cloud = board;

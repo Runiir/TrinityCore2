@@ -597,6 +597,21 @@
             BotActionArbitration::Priority::Mechanic, 275.0f);
     }
 
+    // A melee DPS (no configured ranged combat range, not a ranged spec) on
+    // the Exposed Head: normal combat movement owns its melee closure on the
+    // head, exactly as it does on Magmaw, so the ranged formation restore
+    // (the support anchor beside the body) must not pull it off the head for
+    // the whole vulnerability window. Only the ranged hold above needs the
+    // profile's configured range; hazards, hooks and pillars still win.
+    static bool MeleeHeadAttacker(ActorSnapshot const& bot,
+        ActorSnapshot const* head, std::string_view role)
+    {
+        return role == "dps" && head && head->Alive && head->Selectable
+            && head->Attackable && !bot.PreferredCombatRange
+            && !bot.ClassSpec.empty()
+            && !IsRangedParasiteSupportSpec(bot.ClassSpec);
+    }
+
     static bool InConfiguredHeadRange(Blackboard const& board,
         ActorSnapshot const& bot, ActorSnapshot const* head, std::string_view role)
     {

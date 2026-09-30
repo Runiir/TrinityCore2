@@ -12,8 +12,8 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 35,
-      "stage": "implement",
+      "revision": 51,
+      "stage": "build",
       "round": 3,
       "bootstrap_sources": {
         "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
@@ -4675,7 +4675,29 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_magmaw.handoff.json",
+                "sha256": "1707d61586ed3ec2b0e330ce11008ab9be4d1c2441dd7cb055680ec7f8a311e4",
+                "recorded_utc": "2026-09-30T12:24:12Z",
+                "patch_requests": 7,
+                "resolved_inputs": [
+                  "encounter_research"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_t11_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_t11_v1.json",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
+                  "tests/test_magmaw_melee_head_hold.py",
+                  "tests/test_magmaw_t11_references.py"
+                ],
+                "user_decisions": [
+                  "magmaw_single_fire_mage_bait_waves"
+                ]
+              }
             },
             "boss:omnotron": {
               "packet_id": "boss:omnotron",
@@ -4710,7 +4732,31 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_omnotron.handoff.json",
+                "sha256": "48c4c87f063bb2a7758b36c3586eb38b47ab2e2d06e255e7ab1f462954e91978",
+                "recorded_utc": "2026-09-30T12:02:36Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+                  "sql/custom/staged/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp",
+                  "tests/test_omnotron_defense_system_damage_modifier.py",
+                  "tests/test_omnotron_research_packet.py",
+                  "tests/test_omnotron_strategy.py"
+                ],
+                "user_decisions": [
+                  "omnotron_barrier_absorb_client_row"
+                ]
+              }
             },
             "boss:chimaeron": {
               "packet_id": "boss:chimaeron",
@@ -4741,7 +4787,29 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_chimaeron.handoff.json",
+                "sha256": "9b33d03fb03e011f895e1ec23be2547e0435c7aff717413e978f2690508a5508",
+                "recorded_utc": "2026-09-30T12:02:36Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron_logic.h",
+                  "tests/test_chimaeron_native_logic.py",
+                  "tests/test_chimaeron_research_data.py"
+                ],
+                "user_decisions": [
+                  "chimaeron_10n_berserk"
+                ]
+              }
             },
             "boss:atramedes": {
               "packet_id": "boss:atramedes",
@@ -4772,7 +4840,28 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_atramedes.handoff.json",
+                "sha256": "6cca18bcac22e7c3ef8ee30f76660d548efe80b5f05af660382f32e1274045f2",
+                "recorded_utc": "2026-09-30T12:02:37Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirActions.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirGong.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlock.h",
+                  "tests/test_atramedes_research_packet.py",
+                  "tests/test_atramedes_strategy.py"
+                ],
+                "user_decisions": [
+                  "atramedes_sonar_bomb_count_10n"
+                ]
+              }
             },
             "boss:maloriak": {
               "packet_id": "boss:maloriak",
@@ -4803,7 +4892,34 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_maloriak.handoff.json",
+                "sha256": "3781db6c08be12fe54c9e8b3093c67ba5e6a23935fe3bbb8dfe74ca4b0ff1696",
+                "recorded_utc": "2026-09-30T12:26:42Z",
+                "patch_requests": 7,
+                "resolved_inputs": [
+                  "encounter_research"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+                  "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+                  "sql/custom/staged/world/2026_09_30_20_maloriak_add_damage_modifier.sql",
+                  "sql/custom/staged/world/2026_09_30_21_maloriak_remedy_ramp.sql",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakDuties.h",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_minions.cpp",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_shared.h",
+                  "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_spells.cpp",
+                  "tests/test_maloriak_damage_modifier.py",
+                  "tests/test_maloriak_native_script.py",
+                  "tests/test_maloriak_research_packet.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:nefarian": {
               "packet_id": "boss:nefarian",
@@ -4834,13 +4950,216 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_nefarian.handoff.json",
+                "sha256": "a6614efb4838ddbc588e28e0c7e5ea842c21e3e828e549269b5e9e5ab28471cc",
+                "recorded_utc": "2026-09-30T08:58:16Z",
+                "patch_requests": 3,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscent.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMovement.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPlatformBody.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTactics.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianWarriorWatch.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotWorldPopulationMgrNefarianCandidates.cpp",
+                  "tests/test_nefarian_hop_ownership.py",
+                  "tests/test_nefarian_ledge_drop_floor_query.py",
+                  "tests/test_nefarian_movement.py",
+                  "tests/test_nefarian_stop_hold.py",
+                  "tests/test_nefarian_stranded.py",
+                  "tests/test_nefarian_strategy.py"
+                ],
+                "user_decisions": [
+                  "nefarian_r3_pillar_shaft_recovery"
+                ]
+              }
             }
           },
           "build": null,
           "run_plans": [],
           "runs": [],
-          "assessment": null
+          "assessment": null,
+          "user_decisions": [
+            {
+              "id": "nefarian_r3_pillar_shaft_recovery",
+              "question": "Nefarian phase 2: a bot that native movement pushed inside a hollow pillar shaft (round 2: the rogue in 3/3 runs, both tanks in 2/3) cannot leave it by any movement the server's collision proves. How should such a bot be handled?",
+              "options": [
+                "Prevention only: the new phase-2 pillar hold stops the native chase that puts bots there; a bot already inside is held with the typed state nefarian_inside_pillar_column and is lost for the fight",
+                "Allow a client-like exit: let a swimmer inside a shaft swim straight up through the pillar top (treating the shaft's inner faces as non-colliding, as a WoW client's one-sided collision may), then board; needs a shared-executor exception to the line-of-sight proof",
+                "Treat a bot inside a shaft as an infrastructure/terminal failure of the attempt (watchdog stop) instead of fighting on without it"
+              ],
+              "recommendation": "Prevention only for round 3, then look at whether any bot still ends up in a shaft. The second option weakens a lawfulness proof on the strength of an unverified claim about client collision.",
+              "context": "Collision-model evidence: tests/test_nefarian_ledge_drop_floor_query.py::test_the_platform_is_a_closed_body_with_hollow_pillar_shafts. The coordinator's request asked for an emerge/board step. Emerge (the swimmer's board report) requires the platform surface within 0.5 yd of the feet, but a shaft has no surface for 6+ yd, so such a step would be refused every decision. The bot is shown as a typed hold instead. Dossier section 7f.",
+              "packet_id": "boss:nefarian",
+              "asked_utc": "2026-09-30T08:58:16Z",
+              "answer": {
+                "text": "Fix the collision issue.",
+                "source": "user",
+                "answered_utc": "2026-09-30T08:58:23Z",
+                "date": "2026-09-30"
+              },
+              "previous_answers": [
+                {
+                  "text": "Fix the collision issue.",
+                  "source": "user",
+                  "answered_utc": "2026-09-30T08:58:17Z",
+                  "date": "2026-09-30"
+                }
+              ]
+            },
+            {
+              "id": "chimaeron_10n_berserk",
+              "question": "Should Chimaeron 10N normal be treated as having no berserk, which closes the last 10N timer claim, or should 10N research stay blocked until a normal log past 7:30 turns up?",
+              "options": [
+                "Treat 10N normal as no berserk (native unchanged; record it as a sourced user decision)",
+                "Add a 450 s berserk to 10N normal (follows BigWigs; changes native)",
+                "Keep 10N research blocked on this claim until a >450 s normal log is found"
+              ],
+              "recommendation": "Treat 10N normal as no berserk. DBM marks it heroic-only, the native script agrees, and no normal kill comes near 450 s. helper_field_reset and retail_reset_credit_loot still block 10N either way.",
+              "context": "The native script has no berserk. BigWigs starts a 450 s Berserk bar on every difficulty; DBM has the same timer commented '--Heroic'. Wowhead mentions no enrage. WCL: the longest 10N normal kill found lasts 160 s and has no Berserk row, and the Phase 4.5 rankings list no 10N normal kill of 180 s or more, so no log can test 450 s. Bot kills run about 2-3 minutes; one round-1 pull ran 467 s.",
+              "packet_id": "boss:chimaeron",
+              "asked_utc": "2026-09-30T12:02:36Z",
+              "answer": {
+                "text": "Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing",
+                "source": "user",
+                "answered_utc": "2026-09-30T12:02:37Z",
+                "date": "2026-09-30"
+              }
+            },
+            {
+              "id": "omnotron_barrier_absorb_client_row",
+              "question": "Accept the 4.4.2 client row (Barrier 79582 absorbs 300,000 on 10N, as native already does) to close the last 10N Omnotron research claim, or keep 10N research blocked until a WCL kill shows a Barrier break?",
+              "options": [
+                "Accept the client row 300,000 for 10N (record as client-row value with WCL lower bound 267,864; close the claim for 10N)",
+                "Keep blocked and send another WCL search for a 10N kill with Backdraft 79617",
+                "Accept provisionally and re-open if live runs ever log Backdraft"
+              ],
+              "recommendation": "Accept the client row 300,000 for 10N: it is the 4.4.2 client data, native already uses it, no WCL sample contradicts it, and the bot acceptance already requires Backdraft 0.",
+              "context": "21 WCL 10N kills (rounds 2-3) never broke a Barrier and never logged Backdraft 79617; the largest unbroken absorb is 267,864 (MxFq7TRbvnjGY1hJ-24), consistent with both the client 300,000 and Wowhead 900,000. Raids stop damage on Magmatron during Barrier, so a break is rare and further searching may not find one. The bots never damage a shielded construct (acceptance: Backdraft 0), so the value only matters if DoTs break it; native uses 300,000 (the harsher value). This claim alone keeps encounter_research open for Omnotron 10N.",
+              "packet_id": "boss:omnotron",
+              "asked_utc": "2026-09-30T12:02:36Z",
+              "answer": {
+                "text": "Accept 300,000 (Recommended)",
+                "source": "user",
+                "answered_utc": "2026-09-30T12:02:38Z",
+                "date": "2026-09-30"
+              }
+            },
+            {
+              "id": "atramedes_sonar_bomb_count_10n",
+              "question": "Can Atramedes 10N research be accepted with the native Sonar Bomb count of 5 per wave, although no source can confirm 3 or 5 for 4.4.2?",
+              "options": [
+                "Accept 10N with native 5 recorded as the unobservable, conservative value (more bombs than Wowhead's 3); mark the claim modes 10H/25N/25H only and set fidelity_state_by_mode 10N accepted",
+                "Accept 10N with 3 (Wowhead 4.4.2): change the SpellMgr correction for 92526/92532 to 3 and rebuild",
+                "Keep 10N research blocked until another source (a video count or a sniff) appears"
+              ],
+              "recommendation": "Accept 10N with the native 5. It is the harder value for the bots, the strategy handles any count, and no log can decide it. Record it as a sourced conflict with a bounded value, not as resolved truth.",
+              "context": "Current Wowhead (4.4.2) says 3 bombs per wave in normal. Historical Icy Veins and the TrinityCore SpellMgr correction say 5. Warcraft Logs records only the impacts (92553): seven 10N kills show 1-3 players hit per 3 s wave, which fits both counts. It logs no launch, marker or summon row, and the 4.4.2 client has no max-targets row for the spell. No further log reading can settle it. Everything else for 10N is resolved: phase timestamps, a random breath target, and a flame speed that matches the native time ramp. The bots already dodge every bomb marker, whatever the count.",
+              "packet_id": "boss:atramedes",
+              "asked_utc": "2026-09-30T12:02:37Z",
+              "answer": {
+                "text": "Switch to 3",
+                "source": "user",
+                "answered_utc": "2026-09-30T12:02:38Z",
+                "date": "2026-09-30"
+              }
+            },
+            {
+              "id": "magmaw_single_fire_mage_bait_waves",
+              "question": "On the canonical BWD 10N roster, which has one Fire Mage and one Survival Hunter, should the Fire Mage keep baiting every Lava Parasite wave together with the hunter, or should the hunter bait alternate waves alone?",
+              "options": [
+                "Keep the Fire Mage baiting every wave with the hunter (current behavior)",
+                "Hunter baits alternate waves alone; the Fire Mage stays on Magmaw (needs implementation and a 5-kill batch)",
+                "Another tactic you use for parasites in 10N (for example ranged kill them in place without baiting)"
+              ],
+              "recommendation": "Keep the current behavior for round 3 and decide once the first T11 Fire numbers are in. At the new target the bait cost may no longer matter.",
+              "context": "The bait rotation (DPS-064) alternates the Blink lane between two Fire Mages. The canonical roster has one, so it baits every wave (single_mage). At 409 gear, bait duty cost the mage about 4k DPS; Fire was at 94% in round 2. Round-3 T11 fights have 2-3 parasite waves (Pillars at ~32, ~65 and ~153 s), and the Fire target drops to 23,396 (T11 WCL). A hunter-only wave needs a vacant-mage-slot mode in the lane transition, plus a stable hook-rider list, and has not been built or validated.",
+              "packet_id": "boss:magmaw",
+              "asked_utc": "2026-09-30T12:24:12Z",
+              "answer": {
+                "text": "Keep as is for now (Recommended)",
+                "source": "user",
+                "answered_utc": "2026-09-30T12:24:12Z",
+                "date": "2026-09-30"
+              }
+            }
+          ],
+          "data_refreshes": [
+            {
+              "utc": "2026-09-30T09:13:37Z",
+              "stale_before": [
+                "raid_phase_gear",
+                "raid_shard_provisioning"
+              ],
+              "reproduced": [
+                "raid_phase_gear",
+                "raid_shard_provisioning",
+                "validation_scenarios"
+              ],
+              "modes_fixed": 8,
+              "rebind_changes": 8,
+              "stale_boundary_stages": [],
+              "pushed": true,
+              "head": "c8e8bfe85b292f3a34741b31bec75e13f964270b"
+            },
+            {
+              "utc": "2026-09-30T14:05:36Z",
+              "stale_before": [
+                "raid_phase_gear",
+                "raid_shard_provisioning"
+              ],
+              "reproduced": [
+                "raid_phase_gear",
+                "raid_shard_provisioning",
+                "validation_scenarios"
+              ],
+              "modes_fixed": 5,
+              "rebind_changes": 0,
+              "stale_boundary_stages": [],
+              "pushed": true,
+              "head": "c8e8bfe85b292f3a34741b31bec75e13f964270b"
+            },
+            {
+              "utc": "2026-09-30T16:07:40Z",
+              "stale_before": [
+                "raid_phase_gear",
+                "raid_shard_provisioning"
+              ],
+              "reproduced": [
+                "raid_phase_gear",
+                "raid_shard_provisioning",
+                "validation_scenarios"
+              ],
+              "modes_fixed": 5,
+              "rebind_changes": 0,
+              "stale_boundary_stages": [],
+              "pushed": true,
+              "head": "c8e8bfe85b292f3a34741b31bec75e13f964270b"
+            }
+          ],
+          "reviews": [
+            {
+              "verdict": "accept",
+              "diff_sha256": "74ff5e2e46a341179c52e446955de34265b011ada1da9617cc9a4d40dd93fb82",
+              "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; v5 focused re-review over v1-v4 rounds)",
+              "report": {
+                "path": "/home/runiir/.cache/r1_review/round3_v5_verdict_accept.md",
+                "sha256": "986b9116d40183e66315c06b6f75c645de37138b4ec644fcd232da426a689178"
+              },
+              "base": "b3ff1004555603226bea056d299dafb4959be30f",
+              "recorded_utc": "2026-09-30T20:17:07Z",
+              "automatic": false,
+              "matches": {
+                "worktree": true,
+                "committed": false
+              }
+            }
+          ]
         }
       ],
       "history": [
@@ -5157,6 +5476,163 @@
             "boss:nefarian",
             "boss:omnotron"
           ]
+        },
+        {
+          "revision": 36,
+          "utc": "2026-09-30T08:58:16Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:nefarian",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": [
+            "nefarian_r3_pillar_shaft_recovery"
+          ]
+        },
+        {
+          "revision": 37,
+          "utc": "2026-09-30T08:58:17Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "nefarian_r3_pillar_shaft_recovery"
+        },
+        {
+          "revision": 38,
+          "utc": "2026-09-30T08:58:23Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "nefarian_r3_pillar_shaft_recovery"
+        },
+        {
+          "revision": 39,
+          "utc": "2026-09-30T09:13:37Z",
+          "action": "refresh_data",
+          "round": 3,
+          "reproduced": [
+            "raid_phase_gear",
+            "raid_shard_provisioning",
+            "validation_scenarios"
+          ],
+          "rebind_changes": 8
+        },
+        {
+          "revision": 40,
+          "utc": "2026-09-30T12:02:36Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:chimaeron",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": [
+            "chimaeron_10n_berserk"
+          ]
+        },
+        {
+          "revision": 41,
+          "utc": "2026-09-30T12:02:36Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:omnotron",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": [
+            "omnotron_barrier_absorb_client_row"
+          ]
+        },
+        {
+          "revision": 42,
+          "utc": "2026-09-30T12:02:37Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:atramedes",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": [
+            "atramedes_sonar_bomb_count_10n"
+          ]
+        },
+        {
+          "revision": 43,
+          "utc": "2026-09-30T12:02:37Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "chimaeron_10n_berserk"
+        },
+        {
+          "revision": 44,
+          "utc": "2026-09-30T12:02:38Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "omnotron_barrier_absorb_client_row"
+        },
+        {
+          "revision": 45,
+          "utc": "2026-09-30T12:02:38Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "atramedes_sonar_bomb_count_10n"
+        },
+        {
+          "revision": 46,
+          "utc": "2026-09-30T12:24:12Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:magmaw",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": [
+            "magmaw_single_fire_mage_bait_waves"
+          ]
+        },
+        {
+          "revision": 47,
+          "utc": "2026-09-30T12:24:12Z",
+          "action": "user_decision",
+          "round": 3,
+          "decision": "magmaw_single_fire_mage_bait_waves"
+        },
+        {
+          "revision": 48,
+          "utc": "2026-09-30T12:26:42Z",
+          "action": "handoff",
+          "round": 3,
+          "packet": "boss:maloriak",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 49,
+          "utc": "2026-09-30T14:05:36Z",
+          "action": "refresh_data",
+          "round": 3,
+          "reproduced": [
+            "raid_phase_gear",
+            "raid_shard_provisioning",
+            "validation_scenarios"
+          ],
+          "rebind_changes": 0
+        },
+        {
+          "revision": 50,
+          "utc": "2026-09-30T16:07:40Z",
+          "action": "refresh_data",
+          "round": 3,
+          "reproduced": [
+            "raid_phase_gear",
+            "raid_shard_provisioning",
+            "validation_scenarios"
+          ],
+          "rebind_changes": 0
+        },
+        {
+          "revision": 51,
+          "utc": "2026-09-30T20:17:07Z",
+          "action": "review",
+          "round": 3,
+          "verdict": "accept",
+          "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; v5 focused re-review over v1-v4 rounds)",
+          "diff_sha256": "74ff5e2e46a341179c52e446955de34265b011ada1da9617cc9a4d40dd93fb82"
         }
       ]
     }

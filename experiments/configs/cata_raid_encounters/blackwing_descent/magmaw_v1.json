@@ -16,9 +16,11 @@
   },
   "modes": ["10N", "10H", "25N", "25H"],
   "fidelity_state": "fidelity_blocked",
+  "fidelity_state_by_mode": {"10N": "accepted", "10H": "fidelity_blocked", "25N": "fidelity_blocked", "25H": "fidelity_blocked"},
+  "fidelity_state_by_mode_note": "Round 3 (2026-09-30): every material claim covering 10N is resolved with sources, compared with the native script and given an acceptance observation (ledger research_completion observations_20260930). The acceptance observations themselves are implementation validation (live round-3 kills), not research prerequisites. 10H/25N/25H stay blocked by the scoped unresolved claims below; the contract-level fidelity_state stays fidelity_blocked while any mode is open.",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
-  "unresolved_material_count": 8,
+  "unresolved_material_count": 7,
   "encounter": "magmaw",
   "instance": "blackwing_descent",
   "scope": ["10N", "10H", "25N", "25H"],
@@ -41,7 +43,11 @@
     "repo_magmaw_a4b9ab9bd7",
     "local_dbm_r254_magmaw",
     "wcl_xAhkN2y9YP3KRmnJ_10",
-    "magmaw_baseline_20260912"
+    "magmaw_baseline_20260912",
+    "wcl_magmaw_10n_t11_20260930",
+    "blizzard_cata_classic_hotfixes_20250627",
+    "client_442_magmaw_spell_rows_20260930",
+    "wowhead_cata_magmaw_loot_achievement_20260930"
   ],
   "mode_matrix": {
     "10N": {
@@ -310,41 +316,24 @@
     "mangle_to_impale": "Mangle cancels projectile/Spew; Crash ejects pincer passengers; both hook auras trigger ACTION_IMPALE_MAGMAW; head is exposed after the impale sequence.",
     "evade": "FAIL; eject boss/pincers; remove Parasite Infection/Vomit; despawn head/summons/Nefarian; instance removes Crash dummies and room stalkers.",
     "death": "Remove parasite auras, disengage encounter frames, tell Nefarian to finish, call BossAI::_JustDied; instance DONE cleanup and generic Nefarius progression notification.",
-    "retail_credit_status": "Repository state/credit only; retail loot, achievement, and exact reset persistence are unresolved."
+    "retail_credit_status": "Repository state/credit audited; 10N loot and the Parasite Evening achievement compared with Wowhead Cataclysm Classic on 2026-09-30 (one missing quest item, Soothsayer's Runes 71716); 25N/10H/25H loot and exact reset persistence remain unresolved."
   },
   "timer_contract": [
-    {"key": "magma_spit", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 5s", "repository": "6s initial/repeat for four projectiles", "status": "mixed_unresolved"},
-    {"key": "lava_spew", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 20s over 6s", "repository": "19s then 24s; reschedules projectile in 6s", "status": "mixed_unresolved"},
-    {"key": "pillar", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 30s; 4-5s impact", "repository": "after fourth projectile; pillar despawns 7s", "status": "mixed_unresolved"},
-    {"key": "mangle_crash", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 90s; Crash shortly after Mangle", "repository": "Mangle 90s then 95s; prepare +3.5s; Crash +5s", "status": "mixed_unresolved"},
+    {"key": "magma_spit", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 5s", "repository": "6s initial/repeat for four projectiles", "observed_10N": "10N 2026-09-30: three-target volleys about 6.5 s apart between Spew/Pillar events (MxFq7TRbvnjGY1hJ-22)", "status": "10N_consistent_with_native_other_modes_mixed"},
+    {"key": "lava_spew", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 20s over 6s", "repository": "19s then 24s; reschedules projectile in 6s", "observed_10N": "10N 2026-09-30: first 77690 19.8-24.7 s, repeats 22.7-32.4 s, three casts 2 s apart; resumes 3.6-4.4 s after head cover, read as the second 79010 refresh (4 T11 kills)", "status": "10N_consistent_with_native_other_modes_mixed"},
+    {"key": "pillar", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 30s; 4-5s impact", "repository": "after fourth projectile; pillar despawns 7s", "observed_10N": "10N 2026-09-30: 78006 at about 32 s and 63-68 s, 2.5 s aura; first Pillar 7.7-8.5 s after head cover (4 T11 kills)", "status": "10N_consistent_with_native_other_modes_mixed"},
+    {"key": "mangle_crash", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 90s; Crash shortly after Mangle", "repository": "Mangle 90s then 95s; prepare +3.5s; Crash +5s", "observed_10N": "10N 2026-09-30: Mangle 90.17-90.84 s, Crash begin +8.1-8.5 s (7 T11 kills); no 10N kill reached a second Mangle", "status": "10N_consistent_with_native_other_modes_mixed"},
     {"key": "heroic_blazing_inferno", "modes": ["10H", "25H"], "strategy": "roughly 35s", "repository": "27s first then 36s", "status": "mixed_unresolved"},
     {"key": "heroic_shadow_breath", "modes": ["10H", "25H"], "strategy": "at 30%; roughly 1s", "repository": "below 30%; first +9s then repeat 1.2s", "status": "mixed_unresolved"}
   ],
   "unresolved": [
-    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Patch 4.4.2 notes establish the version/date but contain no Magmaw tuning; original Cataclysm hotfixes are not proof of Classic carryover. 2026-09-27: a 2025-05-15 (4.4.2-era, post-cutoff) 10N kill agrees with a 2024-10-28 kill on parasite count, Spew/Crash timing, Armor anchor and the melee envelope; the hotfix notes between the cutoff and that date are not audited."},
-    {"key": "live_timers_all_modes", "status": "fidelity_blocked", "detail": "Guide timers conflict with repository intervals for Spit, Spew, Pillar, Mangle/Crash, Blazing Inferno, and Shadow Breath."},
-    {
-      "key": "mode_damage_and_health_scaling",
-      "status": "fidelity_blocked",
-      "detail": "32 native/client base-roll checks match. WCL-derived health now covers all four bosses and both heroic construct modes. Boss melee pressure and exact-cutoff compatibility remain unverified; tiny heroic HP precision differences are retained."
-    },
-    {
-      "key": "parasite_spawn_count_and_scaling",
-      "status": "fidelity_blocked",
-      "detail": "Pinned client/native period, duration and extra-initial flag derive 9 uninterrupted summons. 10N observed 2026-09-27: 9 per Pillar in two 10N kills (MxFq7TRbvnjGY1hJ, Y8ajQ7dbmKMG1RZy). 25N/10H/25H counts and interruption cases remain unverified."
-    },
-    {
-      "key": "hook_player_count_and_tolerance",
-      "status": "fidelity_blocked",
-      "detail": "Native two-pincer topology; both hook auras have3000ms client duration. Guide<1s is tactic, not established server cutoff. Verify arrivals/expiry and seat behavior."
-    },
-    {
-      "key": "sweltering_armor_duration",
-      "status": "fidelity_blocked",
-      "detail": "90s client/native duration corroborated by 89.992s historical WCL. 10N apply anchor observed 2026-09-27 in a pre-4.4.2 and a 4.4.2-era kill: Armor is applied at Mangle removal. The native script has applied it at the same release boundary since a5c6606d93 (source audit 2026-09-27; the boarding-time conflict referred to the older source), and every accepted and round-1 scoreboard label ran that source. The 10N release cause and target-cutoff compatibility remain open."
-    },
-    {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
-    {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}
+    {"key": "live_timers_all_modes", "modes": ["10H", "25N", "25H"], "status": "fidelity_blocked", "detail": "10N resolved 2026-09-30 from seven T11 10N kills (wcl_magmaw_10n_t11_20260930): Mangle 90.17-90.84 s, Massive Crash begin 8.1-8.5 s after Mangle, first Lava Spew 77690 19.8-24.7 s and repeats 22.7-32.4 s, Pillar of Flame about 32 s and 63-68 s, Spew resuming 3.6-4.4 s and Pillar 7.7-8.5 s after the head is covered (the second Point of Vulnerability 79010 refresh, 30.3-31.2 s after Mangle removal in four of five kills), three-target Magma Spit volleys about 6.5 s apart between them. All fit the native queue (Spit 6 s x4 then Pillar, Spew 19 s then 24 s rescheduling the projectile, Mangle 90 s, prepare +3.5 s, Crash +5 s, cover +3 s Spew and +4 s projectile) within cast-state delays. The 95 s Mangle repeat is supported by DBM and the 25H WCL 95.558 s interval; no 10N kill reached a second Mangle. Open: 25-player and heroic timers (Blazing Inferno, Shadow Breath) against target-era logs."},
+    {"key": "mode_damage_and_health_scaling", "modes": ["10H", "25N", "25H"], "status": "fidelity_blocked", "detail": "32 native/client base-roll checks match; WCL-derived health covers all four bosses and both heroic construct modes. 10N resolved 2026-09-30: health 26,798,304 equals the WCL derivation; DamageModifier 16 is fitted to two 10N kills either side of the cutoff and two more T11 kills agree (fTCjtgrnzm4HRwXP-27 U 112,166-158,729 under continuous Scarlet Fever/Vindication; mRGwYjb8gnQ9BaXf-6 U 111,275-162,447, inside the DM16 envelope with the native +1% auto-attack bonus); the official hotfix thread has no Magmaw tuning after June 13 2024. Open: 25N/10H/25H melee modifiers are uncalibrated (no same-mode sample) and tiny heroic HP precision differences are retained."},
+    {"key": "parasite_spawn_count_and_scaling", "modes": ["25N", "10H", "25H"], "status": "fidelity_blocked", "detail": "Pinned client/native period, duration and extra-initial flag derive 9 uninterrupted summons. 10N resolved: 9 per Pillar in MxFq7TRbvnjGY1hJ-22, RtPXnbZxFkpacw1h-6 and Y8ajQ7dbmKMG1RZy-22; the other T11 kills list 11-22 damaged parasites over 2-3 Pillars, a lower bound because the damage-done selector lists only damaged units and WCL logs no summon events. No 10N Pillar overlaps the impale (Pillars at about 32, 63-68 and 152-155 s; impale about 106-117 s), so the native 78006 interruption never arises in 10N. Open: 25N/10H/25H counts and interruption cases."},
+    {"key": "hook_player_count_and_tolerance", "modes": ["25N", "25H"], "status": "fidelity_blocked", "detail": "Native two-pincer topology; the 4.4.2 client rows (client_442_magmaw_spell_rows_20260930) give both Launch Hook auras 77917/77941 a 3000 ms duration with no cast time, and the native script impales when both are on the spike at once, so the server tolerance is that 3 s overlap; guide <1 s is coordination advice. 10N resolved with current Wowhead/Icy Veins (two riders) plus repository confirmation; WCL exposes no hook, impale or vehicle events in nine 10N kills, so arrival/expiry is a live acceptance observation. Open for 25-player modes: Warcraft Tavern/old Icy Veins describe three riders."},
+    {"key": "sweltering_armor_duration", "modes": ["25N", "10H"], "status": "fidelity_blocked", "detail": "90s client/native duration corroborated by 89.992s historical 25H WCL. 10N resolved 2026-09-30: in all seven T11 kills Mangle ends 22.6-27.5 s after it is applied, before its 30 s duration, Sweltering Armor is applied at the same millisecond, and the head takes damage 0.1-1.4 s later; the release cause is the impale (native: Impale Self 77907 aura apply -> ACTION_EXPOSE_HEAD ejects the Mangle seat -> PassengerBoarded casts Armor), not the timeout or a death. 25H also applies it at Mangle removal. Open: release cause in 25N/10H."},
+    {"key": "shadow_breath_targeting_and_splash", "modes": ["10H", "25H"], "status": "fidelity_blocked", "detail": "Heroic only. Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
+    {"key": "retail_reset_credit_loot", "modes": ["25N", "10H", "25H"], "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited. 10N resolved 2026-09-30: Wowhead Cataclysm Classic N10 lists the 12 Magmaw items the world DB reference 415700 holds (2 drops) plus the quest item Soothsayer's Runes 71716 (44%), which the DB lacks (a non-combat loot content gap recorded in the ledger, no combat effect); Parasite Evening 5306 ('without anyone in the raid becoming infected with a parasite') matches native world state 5640, set on infection and reset at engage; WCL records every T11 10N kill as a kill. Open: 25N/10H/25H loot and credit were not compared."}
   ],
   "queue_and_damage_audit": "docs/bot_raids/magmaw_fidelity_20260912.md",
   "baseline_use": {

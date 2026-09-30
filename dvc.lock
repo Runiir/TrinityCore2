@@ -430,8 +430,8 @@ stages:
     deps:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: c5a55ba68f697c9bc48105f6c72e2fe3.dir
-      size: 4077499
+      md5: 7c88014b6c6175c95ca04420799d60fe.dir
+      size: 3950791
       nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
@@ -464,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: bf1fbd3d4d81f11e2b64920ecb652245.dir
-      size: 1190512
+      md5: d81508e285b69730b9ab0b4870adb533.dir
+      size: 1190428
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -1856,6 +1856,11 @@ stages:
       hash: md5
       md5: f65b0c49fa7b150c9cd338ad2510b819
       size: 1445
+    - path: dataset/raid_phase_gear_profiles
+      hash: md5
+      md5: 484881f228cf6cbc4866c6aff84ff880.dir
+      size: 576106
+      nfiles: 4
     - path: dataset/validation_gear_profiles
       hash: md5
       md5: 6a0a08de71d9081ab1cb906c12d8567f.dir
@@ -1883,8 +1888,13 @@ stages:
       size: 1797
     - path: experiments/configs/raid_compositions
       hash: md5
-      md5: 90a7ca03d68dfa3a66336563880d9666.dir
-      size: 35295
+      md5: fc47b3064eec006cbbc6b6958217de81.dir
+      size: 35921
+      nfiles: 1
+    - path: experiments/configs/raid_gear_phases
+      hash: md5
+      md5: 757657142773ff44c7f5995a819b2bcd.dir
+      size: 13698
       nfiles: 1
     - path: experiments/configs/raid_prerequisites
       hash: md5
@@ -1935,6 +1945,10 @@ stages:
       hash: md5
       md5: 8ccb6b8dc8a153814e44ee9e368ee7f3
       size: 5590
+    - path: tools/bot_ml/phase_gear_profiles.py
+      hash: md5
+      md5: 3d579cf0d66b989b155b1548338542ae
+      size: 6366
     - path: tools/bot_ml/player_gear_acquisition.py
       hash: md5
       md5: 1303ff922c4e00f156ae6ce3e40ab56c
@@ -1957,16 +1971,16 @@ stages:
       size: 13948
     - path: tools/raid_program/raid_loadout.py
       hash: md5
-      md5: 725f3e2ccab6f850ce3a91dad006db20
-      size: 14328
+      md5: 06f8be99001f2b320f818e76f870130f
+      size: 15095
     - path: tools/raid_program/raid_loadout_spells.py
       hash: md5
       md5: 4bdcba9a39a5f65c2a205a8157d78d08
       size: 14607
     - path: tools/raid_program/raid_loadout_sql.py
       hash: md5
-      md5: 7f0d4bc218baa28525edf11cc38bb105
-      size: 30948
+      md5: 7ee01f394f28f061d6236ab76a6c8865
+      size: 31950
     - path: tools/raid_program/raid_shard_contract.py
       hash: md5
       md5: d9ef3245a281426ef7d51085c75e488b
@@ -1977,8 +1991,8 @@ stages:
       size: 11356
     - path: tools/raid_program/raid_shard_plan.py
       hash: md5
-      md5: 4be189324c0d154611388de7469d4008
-      size: 44604
+      md5: d92b0cc1d4b8db655f04cd4904356ca4
+      size: 45862
     - path: tools/raid_program/raid_shard_preflight.py
       hash: md5
       md5: 9d306518c4d8227c1970e67fdb3bc377
@@ -1986,6 +2000,203 @@ stages:
     outs:
     - path: dataset/raid_shard_provisioning
       hash: md5
-      md5: c5a55ba68f697c9bc48105f6c72e2fe3.dir
-      size: 4077499
+      md5: 7c88014b6c6175c95ca04420799d60fe.dir
+      size: 3950791
+      nfiles: 4
+  raid_phase_gear:
+    cmd: python -m tools.bot_ml.build_phase_gear_profiles --compositions-dir 
+      experiments/configs/raid_compositions --dbc-dir data/dbc/enUS 
+      --shared-gear-profiles dataset/validation_gear_profiles/profiles.json 
+      --db-extract-dir dataset/raid_phase_gear_db_extract --output-dir 
+      dataset/raid_phase_gear_profiles
+    deps:
+    - path: data/dbc/enUS/ChrRaces.dbc
+      hash: md5
+      md5: 10578c545912529e2ac95ab990b3ba3d
+      size: 2631
+    - path: data/dbc/enUS/DungeonEncounter.dbc
+      hash: md5
+      md5: 019282dacb00af6b4a5faacf8f94feff
+      size: 27432
+    - path: data/dbc/enUS/GemProperties.dbc
+      hash: md5
+      md5: edfb518041fec829681d8a1bf2d7219f
+      size: 21693
+    - path: data/dbc/enUS/Item-sparse.db2
+      hash: md5
+      md5: 61c97067db73be61379002ef18993c5d
+      size: 30858357
+    - path: data/dbc/enUS/Item.db2
+      hash: md5
+      md5: 4d1b788fcac7adfbb6bdbf3ece9689a5
+      size: 2072849
+    - path: data/dbc/enUS/ItemExtendedCost.db2
+      hash: md5
+      md5: 917ee32b3035bc292cad28c8558f3c2c
+      size: 223869
+    - path: data/dbc/enUS/ItemLimitCategory.dbc
+      hash: md5
+      md5: 9e0720ed6ccb6d9980c9892fda5a00b5
+      size: 6379
+    - path: data/dbc/enUS/ItemReforge.dbc
+      hash: md5
+      md5: 44eeb1bbacba7c1811a18356a757e48d
+      size: 1141
+    - path: data/dbc/enUS/ItemSet.dbc
+      hash: md5
+      md5: 8af45478b374c39f0d01a8461f79b443
+      size: 101268
+    - path: data/dbc/enUS/SkillLineAbility.dbc
+      hash: md5
+      md5: eea2a19ff8760e91cfb4d98c1ff473b8
+      size: 469525
+    - path: data/dbc/enUS/Spell.dbc
+      hash: md5
+      md5: 17ac6404cf7385b6f4e2b371428f32ea
+      size: 17344388
+    - path: data/dbc/enUS/SpellEffect.dbc
+      hash: md5
+      md5: 4e7443542af69760f36f3ba6df070f57
+      size: 10517925
+    - path: data/dbc/enUS/SpellEquippedItems.dbc
+      hash: md5
+      md5: 6dcb2824ff404db4293ae102183e539e
+      size: 36101
+    - path: data/dbc/enUS/SpellItemEnchantment.dbc
+      hash: md5
+      md5: 3b721c083b10f3b73c0614bd0ae266ff
+      size: 337263
+    - path: data/dbc/enUS/SpellItemEnchantmentCondition.dbc
+      hash: md5
+      md5: 306941c2c566fc51838a7bf8322406f8
+      size: 4701
+    - path: dataset/raid_phase_gear_db_extract
+      hash: md5
+      md5: fa0b698358a780710c7cbddc38af5e2f.dir
+      size: 898587
+      nfiles: 1
+    - path: dataset/validation_gear_profiles
+      hash: md5
+      md5: 6a0a08de71d9081ab1cb906c12d8567f.dir
+      size: 1284521
+      nfiles: 3
+    - path: dataset/world_planner/item_source_index.jsonl
+      hash: md5
+      md5: 3f492b305b1cc0516e02ff3594d1fbb4
+      size: 94981027
+    - path: dataset/world_planner/recipe_source_index.jsonl
+      hash: md5
+      md5: bf1954ab5fbc683508b4b38bb80d38c6
+      size: 47718801
+    - path: experiments/configs/all_spec_targets_cata_p4_v1.json
+      hash: md5
+      md5: f3b409668c8258518e77cad8926b2d8f
+      size: 307240
+    - path: experiments/configs/cata_434_combat_loot_profiles.json
+      hash: md5
+      md5: 52f9f607e1aa7a5244f86c252edc9c86
+      size: 3975
+    - path: experiments/configs/cata_blood_permanent_enchant_overlays_v1.json
+      hash: md5
+      md5: fcebed12eec2869d02592b953b885a49
+      size: 1797
+    - path: experiments/configs/raid_compositions
+      hash: md5
+      md5: fc47b3064eec006cbbc6b6958217de81.dir
+      size: 35921
+      nfiles: 1
+    - path: experiments/configs/raid_gear_phases
+      hash: md5
+      md5: 757657142773ff44c7f5995a819b2bcd.dir
+      size: 13698
+      nfiles: 1
+    - path: experiments/configs/wowsims_cata_p4_gear_profiles.json
+      hash: md5
+      md5: cc22fba6ca67ee3f5cb85ac760dffa98
+      size: 65131
+    - path: sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
+      hash: md5
+      md5: 231ed9a14fbc5c4cff841045d4f8d7de
+      size: 43020
+    - path: sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql
+      hash: md5
+      md5: 4f56237172bfa03a67e4eeb6e0818a11
+      size: 138697
+    - path: tools/bot_ml/build_phase_gear_profiles.py
+      hash: md5
+      md5: d026781ffffb243d35705d5c4a57a78b
+      size: 24679
+    - path: tools/bot_ml/build_validation_gear_profiles.py
+      hash: md5
+      md5: fb81cb24964c321af9adf25ba41587b8
+      size: 41409
+    - path: tools/bot_ml/build_validation_provisioning.py
+      hash: md5
+      md5: be88bbf54b96179bd2f83649c18a6aa7
+      size: 69979
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: bb0de5d5b481e92f0fcffd74cbf1562e
+      size: 7115
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
+    - path: tools/bot_ml/permanent_enchant_overlays.py
+      hash: md5
+      md5: 8ccb6b8dc8a153814e44ee9e368ee7f3
+      size: 5590
+    - path: tools/bot_ml/phase_gear_equip_restrictions.py
+      hash: md5
+      md5: f19c77b4e00254664773a1e66be729cf
+      size: 7256
+    - path: tools/bot_ml/phase_gear_extract.py
+      hash: md5
+      md5: 2cd658995a438fda18d7df00076dbc17
+      size: 9733
+    - path: tools/bot_ml/phase_gear_item_effects.py
+      hash: md5
+      md5: d1eda7987bf398dc4b6b6254f0a8cc61
+      size: 8934
+    - path: tools/bot_ml/phase_gear_oracles.py
+      hash: md5
+      md5: c93546541d0981a50d0e0f36ada5b9dc
+      size: 10462
+    - path: tools/bot_ml/phase_gear_profiles.py
+      hash: md5
+      md5: 3d579cf0d66b989b155b1548338542ae
+      size: 6366
+    - path: tools/bot_ml/phase_gear_selection.py
+      hash: md5
+      md5: 58dcf250c04734a9590269ae5ddae158
+      size: 27903
+    - path: tools/bot_ml/phase_gear_sources.py
+      hash: md5
+      md5: 406704c76c6834519ee78c68d10e72e5
+      size: 16611
+    - path: tools/bot_ml/phase_gear_spell_requirements.py
+      hash: md5
+      md5: 626480998de9d36f419d23529e0e22fd
+      size: 11035
+    - path: tools/bot_ml/phase_gear_validation.py
+      hash: md5
+      md5: 6c112457e9140f2953511ae83f653c7c
+      size: 15937
+    - path: tools/bot_ml/player_gear_acquisition.py
+      hash: md5
+      md5: 1303ff922c4e00f156ae6ce3e40ab56c
+      size: 1745
+    - path: tools/bot_ml/validation_profile_manifests.py
+      hash: md5
+      md5: b6ff6de9234f3be1e6347021d0ff677a
+      size: 2993
+    - path: tools/bot_ml/wowsims_gear_binding.py
+      hash: md5
+      md5: 5776d931dc2eea9036e803e98e85457e
+      size: 31587
+    outs:
+    - path: dataset/raid_phase_gear_profiles
+      hash: md5
+      md5: 484881f228cf6cbc4866c6aff84ff880.dir
+      size: 576106
       nfiles: 4

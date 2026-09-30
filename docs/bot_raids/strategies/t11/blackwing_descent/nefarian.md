@@ -924,6 +924,99 @@ The calibration is right.
   round 2, so cross-pillar help is live. `CrossingSupported` is true, and
   TestCrossingHelp runs its departure checks.
 
+## 7f. BWD 10N raid program, round 2 (analysed in round 3)
+
+Round 2's results are not valid for tuning. A seeded-lockout bug revived every
+bot on the elevator at 50% health every tick (fixed in b2c1d8973c, live from
+the round-3 build), so deaths, rage, mana and gear durability were all
+artificial. A read-only diagnosis of the evidence found these mechanics
+problems, which the pin had hidden.
+
+**E1: the phase-3 descent never happens on pillar 1.** The mage, the warlock
+and the Disc priest stayed on the pillar-1 rim at local (-15.8, -32.4), offset
+z 9.37, in all three runs. The plan proposes `pillar_descent_step_off` there
+(replayed in `test_nefarian_stranded.py`). The executor refuses it:
+- Pillar 1 lies wholly in the platform's north half (local y < 0).
+- There, the unlimited first-hit floor query that `MotionMaster::MoveFall` and
+  `ProbeLedgeDrop` ask returns the model's underside (local z -8.666), not
+  the ring.
+- So every step-off candidate ends with `ledge_drop_landing_height_mismatch`,
+  and `ExecuteFall` would refuse too. No heading around pillar 1 escapes this.
+  On pillar 0 the headings from -90 to 0 degrees fail the same way; its slot
+  headings do not.
+- `test_nefarian_ledge_drop_floor_query.py` reproduces this on the collision
+  model.
+
+The fix is in shared runtime, sent as a patch request:
+- Bound the landing query to the declared drop:
+  `Z_OFFSET_FIND_HEIGHT + (z - declared landing) + tolerance`.
+- Launch the fall onto the floor that query proved. This is `MoveFall`'s own
+  body with that height.
+- Where the unlimited query already found the declared floor, the bounded one
+  returns the same height (tested on pillar 2 and on the orb-ledge drop).
+
+Refused movement is now visible. The plan's step is recorded in the decision
+trace as `nefarian_move_refused:<mechanic>:<executor reason>` (repeats
+coalesce).
+
+**E2: the phase-2 hop and board.**
+- **The shafts.** The rogue (3 of 3 runs) and both tanks (2 of 3) sat within
+  1.5 yd of a pillar centre at local z 3-4, six yards under the magma.
+  - The collision model is a closed body: the walk surface, a bottom at local
+    z -8.666 and an outer wall at 69.6-71.2 yd.
+  - The pillars are hollow shafts open into that body
+    (`BotNefarianPlatformBody.h`; the rays are pinned in
+    `test_nefarian_ledge_drop_floor_query.py`).
+  - Only an unproven movement gets a member there: native chase toward the
+    prototype on the top.
+  - No executor-proven swim, jump or walk leaves the shaft. The core's
+    collision is two-sided, and under the shaft there is nothing until the
+    bottom.
+  - So the plan names the state (`nefarian_inside_pillar_column`,
+    `nefarian_inside_platform_body`) instead of proposing a step that is
+    refused every decision. `OnPillarStructure` excludes the shaft.
+  - How to recover such a member is a user decision.
+- **The pillar hold.** In phase 2, every plan now carries
+  `nefarian_pillar_hold[:<diagnostic>]`: alone, or as the fallback beside a
+  proposed step. It stops the member and renews the movement lease like the
+  platform hold, so native combat movement cannot walk anyone into a shaft,
+  off a top, or onto a top without boarding.
+- **The Ret paladin.** He stood on a top without being a passenger, and the
+  rising platform left him behind. Now:
+  - A member on a top who is not a passenger boards at the lowered stop.
+  - While the top rises, he boards as long as it is within the swimmer's
+    emerge band (0.5 yd).
+  - Once the top has passed his feet, it is a typed miss
+    (`nefarian_rising_top_missed`).
+
+**E3: bone warriors** (user tactic: the Feral kites them with Nature's Grasp
+and keeps them out of Nefarian's front).
+- In round 2 they stayed active for 150-260 s and climbed the pillar-1 ramp to
+  the casters stuck on its rim.
+- The chase model in `test_nefarian_movement.py` found a planner flaw: the
+  shackler held a warrior on Nefarian's tank, in his front. His breath refilled
+  it every 18 s, and the handler left held warriors alone.
+- Now the shackler never takes a warrior in Nefarian's front. The handler takes
+  a warrior held in the front, and ranks warriors at a pillar as urgent as
+  those in the front.
+- Acceptance observation (`BotNefarianWarriorWatch.h`): no warrior stays active
+  for more than 45 s, and none stands on a pillar structure. Each violation is
+  recorded once in one reporter's decision trace.
+
+**E4: the hunter's minimum range.** Round 2 logged 577 `min_range_required`
+rejections.
+- Hunter shots have a 5 yd minimum range, which the spell system extends by the
+  melee range: 27.83 yd on Nefarian, 25.83 on Onyxia.
+- The hunter's formation spot keeps that range plus 1.5 yd, within the 36 yd
+  sight range. A spot that drifts inside it no longer serves, so the hunter
+  corrects back out.
+- In phase 2, no spot on a pillar top is outside the prototype's 12.2 yd
+  minimum range: the hunter can only melee there.
+
+**E5: class logic unchanged.** Re-measure after the round-3 run: the warlock's
+Life Tap loop and the mage's mana gate (both artefacts of the pin), and the
+hunter's phase-2 melee.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). Nefarian and
@@ -962,7 +1055,9 @@ onto its pillar with about 8 magma ticks and none after the hop, every Blast Nov
 interrupted, no phase 2 Nefarian damage, pillars left before landing without fall
 damage, no active bone warrior in Nefarian's front cone and none hit by his breath,
 Nature's Grasp cast when warriors reach the Feral, no repeated Shadowblaze ticks, native
-clear with 0 boss-window deaths.
+clear with 0 boss-window deaths. Round 3 adds: no bone warrior active for more than 45 s
+and none on a pillar structure (decision-trace actions `nefarian_bone_warrior_active_over_45s`
+and `nefarian_bone_warrior_on_pillar`, `BotNefarianWarriorWatch.h`).
 
 ## 10. Unresolved (fidelity_blocked)
 

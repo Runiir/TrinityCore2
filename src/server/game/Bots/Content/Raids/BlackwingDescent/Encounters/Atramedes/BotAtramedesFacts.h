@@ -140,6 +140,8 @@ struct Facts
     // ground, so its timer proves publication.
     bool GroundTimersPublished = false;
     std::optional<uint32> SearingFlameInMs;
+    // Time to the liftoff, while the ground schedule is published.
+    std::optional<uint32> LiftoffInMs;
     std::vector<ShieldFact> Shields;
     std::vector<ActorSnapshot const*> SonarPulses;
     std::vector<ActorSnapshot const*> TrackingFlames;
@@ -154,6 +156,12 @@ struct Facts
     ActorSnapshot const* AirKiterFlame = nullptr;
     uint32 MaxSound = 0;
     ObjectGuid LoudestPlayer;
+    // Ice Block was already used in this fight (IceBlockGuard,
+    // BotAtramedesIceBlockGuard.h): the play is strictly once per fight, so
+    // a cooldown that came back does not make it available again. Memory
+    // across snapshots, so it is not derived by BuildFacts; the strategy
+    // sets it from its guard.
+    bool IceBlockSpent = false;
 };
 
 inline bool HasAura(ActorSnapshot const& actor, uint32 spellId)
@@ -302,7 +310,11 @@ inline Facts BuildFacts(Blackboard const& board)
         if (timer->RemainingMs != std::numeric_limits<uint32>::max())
             facts.SearingFlameInMs = timer->RemainingMs;
     if (MechanicTimerSnapshot const* timer = boss.FindMechanicTimer(TakeOffSpell))
+    {
         facts.GroundTimersPublished = timer->RemainingMs != std::numeric_limits<uint32>::max();
+        if (facts.GroundTimersPublished)
+            facts.LiftoffInMs = timer->RemainingMs;
+    }
 
     auto collect = [&facts](std::vector<ActorSnapshot> const& actors)
     {

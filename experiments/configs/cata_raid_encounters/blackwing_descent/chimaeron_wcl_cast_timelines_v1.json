@@ -6,7 +6,7 @@
   "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27&type=casts&view=events",
   "duration_sec": 95.3,
   "target_scope": "Chimaeron",
-  "source_note": "Completed Cast rows (Begin Cast excluded) from WCL player Casts Events pages, read 2026-09-27 through GPT-6 Astra's browser surface; every actor's page was complete (row_count equals captured casts). Four actors from MxFq7TRbvnjGY1hJ fight 27 and two from xAhkN2y9YP3KRmnJ fight 14 (reference_id names fight 27; each actor_id carries its report). boss_events lists fight 27's Chimaeron cast/aura/damage events (Massacre damage rows omitted).",
+  "source_note": "Completed Cast rows (Begin Cast excluded) from WCL player Casts Events pages. Main fight MxFq7TRbvnjGY1hJ-27 (95.3 s): four actors read 2026-09-27 through GPT-6 Astra's browser surface; its two xAhkN2y9YP3KRmnJ-14 actors (Tristu, Catamara; item level 401.4, outside the tier-11 band) were removed 2026-09-30. additional_references (read 2026-09-30 through codex exec -m gpt-6.1-sol in its own tab of the user's Chrome, profile Runiir; no verification check; the first run lost Chrome after two actors and resumed): TtAL96aBnyHgXNMJ-fight3 (121.3 s, 358.5; Blood DK, Survival, Fire, Retribution, Assassination; three Massacres, Feud at Massacre 2, Mortality 105.1 s) with its boss events, and HF62ky4w8ThJmrbY-fight33 (122.3 s, 358.2; Demonology). Each additional actor is compared over its own fight's duration. Every actor's captured rows equal the displayed count (Kiskie's 74 rows include 29 Mutilate Off-Hand rows that WCL's summary count omits, as in the Omnotron and Nefarian manifests). boss_events lists fight 27's Chimaeron cast/aura/damage events (Massacre damage rows omitted).",
   "actors": [
     {
       "actor_id": "MxFq7TRbvnjGY1hJ-source3",
@@ -2253,832 +2253,6 @@
           "target": "Chimaeron"
         }
       ]
-    },
-    {
-      "actor_id": "xAhkN2y9YP3KRmnJ-source6",
-      "class_spec": "survival_hunter",
-      "name": "Tristu",
-      "report": "xAhkN2y9YP3KRmnJ",
-      "fight": 14,
-      "source_url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14&type=casts&view=events&source=6",
-      "row_count": 94,
-      "casts": [
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 0.777,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 0.81,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Synapse Springs",
-          "spell_id": 82174,
-          "t": 0.913,
-          "target": null
-        },
-        {
-          "ability": "Serpent Sting",
-          "spell_id": 1978,
-          "t": 1.012,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 2.023,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Black Arrow",
-          "spell_id": 3674,
-          "t": 3.026,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 3.26,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rapid Fire",
-          "spell_id": 3045,
-          "t": 4.044,
-          "target": null
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 5.066,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 5.143,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 6.073,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 6.495,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 7.063,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 7.186,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 7.848,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 8.189,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 9.181,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 9.882,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 10.227,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 10.881,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 11.193,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 11.264,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Lock and Load",
-          "spell_id": 56453,
-          "t": 11.859,
-          "target": null
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 12.198,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 12.298,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 13.21,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 13.34,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 14.21,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 14.381,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 15.215,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 15.423,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 16.461,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 16.911,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 17.212,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 17.53,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 18.229,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 18.544,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 19.233,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 19.584,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 21.035,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 21.208,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 21.233,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 22.483,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 23.205,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 23.251,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 24.008,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 25.516,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 25.516,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 25.825,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 27.71,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 27.782,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 27.782,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Black Arrow",
-          "spell_id": 3674,
-          "t": 28.778,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 29.594,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 31.201,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 31.483,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 32.461,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 32.541,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 33.371,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Lock and Load",
-          "spell_id": 56453,
-          "t": 33.602,
-          "target": null
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 34.811,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 34.811,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 35.262,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 35.814,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 36.814,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 37.143,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 39.03,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 39.069,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 39.07,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 40.916,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 41.368,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 41.368,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Arcane Shot",
-          "spell_id": 3044,
-          "t": 42.344,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 42.793,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 43.35,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 45.246,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Lock and Load",
-          "spell_id": 56453,
-          "t": 45.598,
-          "target": null
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 45.989,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 47.622,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 47.622,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 47.7,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 48.635,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 49.632,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 50.139,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Kill Shot",
-          "spell_id": 53351,
-          "t": 50.634,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Kill Shot",
-          "spell_id": 53351,
-          "t": 51.636,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 52.594,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Black Arrow",
-          "spell_id": 3674,
-          "t": 52.794,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 55.053,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 55.43,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Explosive Shot",
-          "spell_id": 53301,
-          "t": 55.631,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Auto Shot",
-          "spell_id": 75,
-          "t": 57.495,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 58.275,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Cobra Shot",
-          "spell_id": 77767,
-          "t": 59.906,
-          "target": "Chimaeron"
-        }
-      ]
-    },
-    {
-      "actor_id": "xAhkN2y9YP3KRmnJ-source11",
-      "class_spec": "blood_death_knight",
-      "name": "Catamara",
-      "report": "xAhkN2y9YP3KRmnJ",
-      "fight": 14,
-      "source_url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14&type=casts&view=events&source=11",
-      "row_count": 40,
-      "casts": [
-        {
-          "ability": "Horn of Winter",
-          "spell_id": 57330,
-          "t": 0.014,
-          "target": null
-        },
-        {
-          "ability": "Dark Command",
-          "spell_id": 56222,
-          "t": 0.686,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 1.506,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 3.011,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Synapse Springs",
-          "spell_id": 82174,
-          "t": 3.77,
-          "target": null
-        },
-        {
-          "ability": "Dancing Rune Weapon",
-          "spell_id": 49028,
-          "t": 4.519,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Outbreak",
-          "spell_id": 77575,
-          "t": 5.527,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 6.573,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 8.08,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 9.59,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Tap",
-          "spell_id": 48982,
-          "t": 10.253,
-          "target": null
-        },
-        {
-          "ability": "Empower Rune Weapon",
-          "spell_id": 47568,
-          "t": 11.305,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 11.672,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 13.175,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 14.691,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 16.192,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 17.703,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Blood Boil",
-          "spell_id": 48721,
-          "t": 19.2,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 20.969,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 22.807,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 24.817,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Blood Boil",
-          "spell_id": 48721,
-          "t": 26.34,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 31.007,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Vampiric Blood",
-          "spell_id": 55233,
-          "t": 31.436,
-          "target": null
-        },
-        {
-          "ability": "Rune Tap",
-          "spell_id": 48982,
-          "t": 33.137,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 36.079,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 37.574,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Outbreak",
-          "spell_id": 77575,
-          "t": 39.093,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Heart Strike",
-          "spell_id": 55050,
-          "t": 40.478,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 41.994,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 43.5,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 44.991,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 46.502,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Blood Boil",
-          "spell_id": 48721,
-          "t": 48.008,
-          "target": null
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 49.294,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Blood Tap",
-          "spell_id": 45529,
-          "t": 50.067,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 51.982,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Icebound Fortitude",
-          "spell_id": 48792,
-          "t": 53.737,
-          "target": null
-        },
-        {
-          "ability": "Death Strike",
-          "spell_id": 49998,
-          "t": 57.062,
-          "target": "Chimaeron"
-        },
-        {
-          "ability": "Rune Strike",
-          "spell_id": 56815,
-          "t": 58.507,
-          "target": "Chimaeron"
-        }
-      ]
     }
   ],
   "boss_events": [
@@ -3669,6 +2843,4262 @@
       "ability": "Mortality",
       "spell_id": 82890,
       "source_target": "Chimaeron → Greysnout"
+    }
+  ],
+  "additional_references": [
+    {
+      "reference_id": "TtAL96aBnyHgXNMJ-fight3",
+      "url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events",
+      "duration_sec": 121.3,
+      "actors": [
+        {
+          "actor_id": "TtAL96aBnyHgXNMJ-source8",
+          "class_spec": "blood_death_knight",
+          "name": "Jimlaheey",
+          "source_id": 8,
+          "role": "tank",
+          "observed_dps": 14682.4,
+          "report": "TtAL96aBnyHgXNMJ",
+          "fight": 3,
+          "source_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events&source=8",
+          "row_count": 63,
+          "casts": [
+            {
+              "ability": "Dark Command",
+              "spell_id": 56222,
+              "t": 0.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Outbreak",
+              "spell_id": 77575,
+              "t": 1.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 2.679,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 4.179,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 5.696,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 7.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Empower Rune Weapon",
+              "spell_id": 47568,
+              "t": 9.794,
+              "target": null
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 10.012,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 11.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 13.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 14.529,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 16.03,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 17.996,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 19.511,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Blood Boil",
+              "spell_id": 48721,
+              "t": 21.012,
+              "target": null
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 22.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Blood Boil",
+              "spell_id": 48721,
+              "t": 23.862,
+              "target": null
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 26.046,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 27.595,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 29.445,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 30.947,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 32.628,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 34.178,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 35.696,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Blood Boil",
+              "spell_id": 48721,
+              "t": 37.195,
+              "target": null
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 38.745,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 40.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Outbreak",
+              "spell_id": 77575,
+              "t": 41.762,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 43.128,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 44.628,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 46.129,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Blood Boil",
+              "spell_id": 48721,
+              "t": 47.645,
+              "target": null
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 48.996,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 50.496,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 51.995,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 53.516,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 55.013,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 57.511,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 59.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Tap",
+              "spell_id": 48982,
+              "t": 61.095,
+              "target": null
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 61.412,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 65.529,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 67.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 69.294,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 71.012,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 74.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Outbreak",
+              "spell_id": 77575,
+              "t": 85.729,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Tap",
+              "spell_id": 48982,
+              "t": 93.938,
+              "target": null
+            },
+            {
+              "ability": "Bone Shield",
+              "spell_id": 49222,
+              "t": 95.229,
+              "target": null
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 96.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 97.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 102.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 104.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 106.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 108.228,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 110.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 111.613,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Blood Boil",
+              "spell_id": 48721,
+              "t": 113.111,
+              "target": null
+            },
+            {
+              "ability": "Death Strike",
+              "spell_id": 49998,
+              "t": 114.146,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 115.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Outbreak",
+              "spell_id": 77575,
+              "t": 117.146,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Heart Strike",
+              "spell_id": 55050,
+              "t": 118.446,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rune Strike",
+              "spell_id": 56815,
+              "t": 119.963,
+              "target": "Chimaeron"
+            }
+          ],
+          "row_count_shown": 63,
+          "count_verification": "matched displayed Casts table Total"
+        },
+        {
+          "actor_id": "TtAL96aBnyHgXNMJ-source7",
+          "class_spec": "survival_hunter",
+          "name": "Lickswindows",
+          "source_id": 7,
+          "role": "dps",
+          "observed_dps": 27534.9,
+          "report": "TtAL96aBnyHgXNMJ",
+          "fight": 3,
+          "source_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events&source=7",
+          "row_count": 139,
+          "casts": [
+            {
+              "ability": "Synapse Springs",
+              "spell_id": 82174,
+              "t": 0.311,
+              "target": null
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 0.325,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 0.325,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Serpent Sting",
+              "spell_id": 1978,
+              "t": 1.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Black Arrow",
+              "spell_id": 3674,
+              "t": 2.328,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 2.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 4.944,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 4.978,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 6.561,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Lock and Load",
+              "spell_id": 56453,
+              "t": 7.012,
+              "target": null
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 7.328,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 8.179,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 8.179,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 9.18,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 9.678,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 10.212,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 12.012,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 12.845,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 12.845,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 14.363,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 15.461,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 16.696,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 17.06,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Berserking",
+              "spell_id": 26297,
+              "t": 17.111,
+              "target": null
+            },
+            {
+              "ability": "Charged Blows",
+              "spell_id": 101515,
+              "t": 17.111,
+              "target": null
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 18.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 18.828,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 19.045,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 20.995,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 21.195,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 22.544,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 22.946,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 23.896,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 23.98,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 24.896,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 24.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 26.862,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 27.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Black Arrow",
+              "spell_id": 3674,
+              "t": 27.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 28.813,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 29.946,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 31.163,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 31.562,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 31.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 33.495,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 34.278,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 35.846,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 35.88,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 37.494,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 37.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 38.195,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 40.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 40.545,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 41.879,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 42.879,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 43.495,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 43.662,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 45.227,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 46.277,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 47.579,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 47.894,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 49.513,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 49.644,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 49.913,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 52.261,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 52.279,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Black Arrow",
+              "spell_id": 3674,
+              "t": 52.279,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 54.611,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 54.894,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 56.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 56.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Lock and Load",
+              "spell_id": 56453,
+              "t": 56.945,
+              "target": null
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 56.962,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 59.128,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 59.162,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 59.295,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 61.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 61.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Synapse Springs",
+              "spell_id": 82174,
+              "t": 61.779,
+              "target": null
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 61.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 63.978,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 64.396,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 64.445,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Aspect of the Fox",
+              "spell_id": 82661,
+              "t": 65.245,
+              "target": null
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 67.061,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Aspect of the Hawk",
+              "spell_id": 13165,
+              "t": 67.112,
+              "target": null
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 68.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 68.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Lock and Load",
+              "spell_id": 56453,
+              "t": 68.946,
+              "target": null
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 69.829,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 70.912,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 72.013,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 74.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 74.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 77.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Black Arrow",
+              "spell_id": 3674,
+              "t": 77.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 79.879,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 81.511,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 81.511,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 84.13,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Lock and Load",
+              "spell_id": 56453,
+              "t": 85.746,
+              "target": null
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 85.763,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 87.378,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 87.378,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 88.379,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 89.379,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 90.378,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Auto Shot",
+              "spell_id": 75,
+              "t": 91.146,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 91.396,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 94.161,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 95.796,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 97.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 97.395,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 99.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rapid Fire",
+              "spell_id": 3045,
+              "t": 99.663,
+              "target": null
+            },
+            {
+              "ability": "Tol'vir Agility",
+              "spell_id": 79633,
+              "t": 99.713,
+              "target": null
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 100.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 100.896,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Black Arrow",
+              "spell_id": 3674,
+              "t": 101.912,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 103.813,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 103.929,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Kill Shot",
+              "spell_id": 53351,
+              "t": 104.929,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Kill Shot",
+              "spell_id": 53351,
+              "t": 105.93,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 107.828,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 108.846,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 109.845,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 109.947,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 111.846,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 111.962,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cobra Shot",
+              "spell_id": 77767,
+              "t": 113.861,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 113.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Lock and Load",
+              "spell_id": 56453,
+              "t": 114.396,
+              "target": null
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 114.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 115.98,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Kill Shot",
+              "spell_id": 53351,
+              "t": 116.996,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 117.996,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Kill Shot",
+              "spell_id": 53351,
+              "t": 118.997,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Explosive Shot",
+              "spell_id": 53301,
+              "t": 119.997,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Arcane Shot",
+              "spell_id": 3044,
+              "t": 120.997,
+              "target": "Chimaeron"
+            }
+          ],
+          "row_count_shown": 139,
+          "count_verification": "matched displayed Casts table Total; Events DOM contains 139 Cast and 48 Begin Cast rows"
+        },
+        {
+          "actor_id": "TtAL96aBnyHgXNMJ-source5",
+          "class_spec": "fire_mage",
+          "name": "Pejamage",
+          "source_id": 5,
+          "role": "dps",
+          "observed_dps": 29017.3,
+          "report": "TtAL96aBnyHgXNMJ",
+          "fight": 3,
+          "source_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events&source=5",
+          "row_count": 86,
+          "row_count_shown": 86,
+          "count_verification": "matched displayed Casts table Total; complete Events table read through end",
+          "casts": [
+            {
+              "ability": "Pyroblast",
+              "spell_id": 11366,
+              "t": 0.094,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Berserking",
+              "spell_id": 26297,
+              "t": 0.094,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 1.911,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 1.911,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 4.595,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 6.211,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 7.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Combustion",
+              "spell_id": 11129,
+              "t": 7.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 9.596,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 11.213,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 13.16,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Replenish Mana",
+              "spell_id": 5405,
+              "t": 13.245,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 15.461,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Flame Orb",
+              "spell_id": 82731,
+              "t": 15.461,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 18.677,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 20.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 20.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 23.845,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 25.778,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 27.179,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 27.713,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 29.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 29.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 31.045,
+              "target": null
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 33.194,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 36.395,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 36.395,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 39.644,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 41.58,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 43.513,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 45.445,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 46.678,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 47.378,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 49.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 49.445,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 50.73,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 53.947,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 55.896,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Volcanic Power",
+              "spell_id": 79476,
+              "t": 55.995,
+              "target": null
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 57.129,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 58.211,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 58.211,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 61.43,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Scorch",
+              "spell_id": 2948,
+              "t": 62.911,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Scorch",
+              "spell_id": 2948,
+              "t": 64.196,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 66.129,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 66.213,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 69.432,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 71.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 73.295,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 75.23,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 77.161,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 77.928,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 79.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 79.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 80.401,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Flame Orb",
+              "spell_id": 82731,
+              "t": 81.679,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 84.912,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 86.846,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 87.611,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 88.779,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 89.028,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Impact",
+              "spell_id": 64343,
+              "t": 89.794,
+              "target": null
+            },
+            {
+              "ability": "Scorch",
+              "spell_id": 2948,
+              "t": 93.111,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 95.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 95.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast",
+              "spell_id": 11366,
+              "t": 98.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 99.847,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 101.346,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 102.029,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 102.83,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 104.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 104.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 105.013,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 106.829,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 106.895,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Living Bomb",
+              "spell_id": 44457,
+              "t": 107.895,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 110.397,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hot Streak",
+              "spell_id": 48108,
+              "t": 111.079,
+              "target": null
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 111.88,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Pyroblast!",
+              "spell_id": 92315,
+              "t": 111.88,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 114.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 115.863,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 117.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 118.829,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Fireball",
+              "spell_id": 133,
+              "t": 120.329,
+              "target": "Chimaeron"
+            }
+          ]
+        },
+        {
+          "actor_id": "TtAL96aBnyHgXNMJ-source4",
+          "class_spec": "retribution_paladin",
+          "name": "Júshi",
+          "source_id": 4,
+          "role": "dps",
+          "observed_dps": 27013.3,
+          "report": "TtAL96aBnyHgXNMJ",
+          "fight": 3,
+          "source_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events&source=4",
+          "row_count": 81,
+          "row_count_shown": 81,
+          "count_verification": "matched displayed Casts table Total; complete Events table read through end",
+          "casts": [
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 0.244,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Guardian of Ancient Kings",
+              "spell_id": 86150,
+              "t": 0.682,
+              "target": null
+            },
+            {
+              "ability": "Avenging Wrath",
+              "spell_id": 31884,
+              "t": 1.311,
+              "target": null
+            },
+            {
+              "ability": "Thrill of Victory",
+              "spell_id": 91828,
+              "t": 1.311,
+              "target": null
+            },
+            {
+              "ability": "Hammer of Wrath",
+              "spell_id": 24275,
+              "t": 1.911,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 3.41,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 4.928,
+              "target": null
+            },
+            {
+              "ability": "Inquisition",
+              "spell_id": 84963,
+              "t": 6.263,
+              "target": null
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 7.594,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 9.095,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Zealotry",
+              "spell_id": 85696,
+              "t": 9.979,
+              "target": null
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 10.61,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hammer of Wrath",
+              "spell_id": 24275,
+              "t": 12.111,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 13.629,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 15.129,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 17.628,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Inquisition",
+              "spell_id": 84963,
+              "t": 19.11,
+              "target": null
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 20.461,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Synapse Springs",
+              "spell_id": 82174,
+              "t": 21.43,
+              "target": null
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 21.778,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 23.296,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 25.778,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 27.295,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 28.794,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 30.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 31.813,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 33.394,
+              "target": null
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 34.946,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 36.463,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 37.978,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 40.463,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 41.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 43.479,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 44.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 46.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 47.829,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 49.329,
+              "target": null
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 50.662,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 54.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Inquisition",
+              "spell_id": 84963,
+              "t": 56.312,
+              "target": null
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 58.262,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 59.596,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 61.113,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 63.611,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 65.464,
+              "target": null
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 66.729,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 67.995,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 69.512,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 71.012,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 72.53,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 74.028,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 75.528,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 77.811,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 80.528,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 82.045,
+              "target": null
+            },
+            {
+              "ability": "Synapse Springs",
+              "spell_id": 82174,
+              "t": 83.179,
+              "target": null
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 83.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 87.111,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Inquisition",
+              "spell_id": 84963,
+              "t": 88.644,
+              "target": null
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 89.913,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 91.428,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 95.229,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Golem's Strength",
+              "spell_id": 79634,
+              "t": 96.446,
+              "target": null
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 98.162,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 99.68,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 101.18,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 102.68,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 104.196,
+              "target": null
+            },
+            {
+              "ability": "Divine Protection",
+              "spell_id": 498,
+              "t": 104.246,
+              "target": null
+            },
+            {
+              "ability": "Hammer of Wrath",
+              "spell_id": 24275,
+              "t": 105.196,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 106.696,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 108.197,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 109.629,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 111.147,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 112.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hammer of Wrath",
+              "spell_id": 24275,
+              "t": 114.146,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Judgement",
+              "spell_id": 20271,
+              "t": 115.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Exorcism",
+              "spell_id": 879,
+              "t": 117.146,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Crusader Strike",
+              "spell_id": 35395,
+              "t": 118.162,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Holy Wrath",
+              "spell_id": 2812,
+              "t": 119.662,
+              "target": null
+            },
+            {
+              "ability": "Templar's Verdict",
+              "spell_id": 85256,
+              "t": 120.696,
+              "target": "Chimaeron"
+            }
+          ]
+        },
+        {
+          "actor_id": "TtAL96aBnyHgXNMJ-source2",
+          "class_spec": "assassination_rogue",
+          "name": "Kiskie",
+          "source_id": 2,
+          "role": "dps",
+          "observed_dps": 22470.4,
+          "report": "TtAL96aBnyHgXNMJ",
+          "fight": 3,
+          "source_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=casts&view=events&source=2",
+          "row_count": 74,
+          "row_count_shown": 45,
+          "count_verification": "Events table shows 74 Cast rows and no Begin Cast rows, all captured. Casts summary Total is 45 and omits 29 Mutilate Off-Hand rows; 74 - 29 = 45.",
+          "casts": [
+            {
+              "ability": "Tricks of the Trade",
+              "spell_id": 57934,
+              "t": 1.362,
+              "target": "Quillyn"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 2.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 2.646,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Slice and Dice",
+              "spell_id": 5171,
+              "t": 3.645,
+              "target": null
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 4.662,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 4.662,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 7.345,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 7.345,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 9.397,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 12.762,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 12.762,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 15.261,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 15.261,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Vendetta",
+              "spell_id": 79140,
+              "t": 19.56,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 20.563,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 20.563,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 23.811,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 24.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 25.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 25.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Cold Blood",
+              "spell_id": 14177,
+              "t": 26.745,
+              "target": null
+            },
+            {
+              "ability": "Enigma",
+              "spell_id": 92123,
+              "t": 27.612,
+              "target": null
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 29.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 29.329,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 33.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 33.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 35.944,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 38.129,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 38.129,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 42.862,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 42.862,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 48.079,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 48.079,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 52.279,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 52.279,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 55.979,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Tricks of the Trade",
+              "spell_id": 57934,
+              "t": 58.012,
+              "target": "Quillyn"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 59.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 59.029,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 61.596,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 61.596,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 66.213,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 66.213,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 70.763,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 70.763,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 72.479,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 75.061,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 75.061,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 79.112,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 80.295,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 80.295,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 84.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 84.362,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 88.111,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 88.111,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 90.812,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 92.728,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 92.728,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 96.48,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 96.48,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 100.481,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 100.481,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 103.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 103.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 108.197,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 108.197,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 110.813,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 110.813,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Rupture",
+              "spell_id": 1943,
+              "t": 112.548,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 114.597,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 115.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 115.612,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate Off-Hand",
+              "spell_id": 27576,
+              "t": 118.645,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Mutilate",
+              "spell_id": 1329,
+              "t": 118.645,
+              "target": "Chimaeron"
+            }
+          ],
+          "event_cast_rows_shown": 74
+        }
+      ],
+      "boss_events": [
+        {
+          "t": 4.512,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 4.512,
+          "event": "Apply Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 9.312,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 17.196,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 17.462,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 18.929,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 18.929,
+          "event": "Apply Debuff Stack",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 18.929,
+          "event": "Refresh Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 19.711,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 19.962,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 23.112,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 23.529,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 23.727,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 25.611,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 25.999,
+          "event": "Begin Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 26.028,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 29.995,
+          "event": "Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 39.112,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 39.112,
+          "event": "Apply Debuff Stack",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 39.112,
+          "event": "Refresh Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 43.912,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 47.513,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 47.53,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 50.011,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 50.028,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 53.195,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 53.516,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 53.516,
+          "event": "Apply Debuff Stack",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 53.516,
+          "event": "Refresh Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 53.662,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 55.695,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 55.979,
+          "event": "Begin Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 56.162,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 59.996,
+          "event": "Cast",
+          "ability": "Feud",
+          "spell_id": 88872,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 59.996,
+          "event": "Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 59.996,
+          "event": "Apply Buff",
+          "ability": "Feud",
+          "spell_id": 88872,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 59.996,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 59.996,
+          "event": "Apply Buff",
+          "ability": "Systems Failure",
+          "spell_id": 88853,
+          "source_target": "Bile-O-Tron 800 → Bile-O-Tron 800"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 77.346,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 77.37,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 79.831,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 79.879,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 83.312,
+          "event": "Apply Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 83.362,
+          "event": "Refresh Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 85.812,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 85.862,
+          "event": "Remove Debuff",
+          "ability": "Caustic Slime",
+          "spell_id": 82935,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 85.998,
+          "event": "Begin Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 85.998,
+          "event": "Remove Buff",
+          "ability": "Systems Failure",
+          "spell_id": 88853,
+          "source_target": "Bile-O-Tron 800 → Bile-O-Tron 800"
+        },
+        {
+          "t": 89.996,
+          "event": "Cast",
+          "ability": "Massacre",
+          "spell_id": 82848,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 89.996,
+          "event": "Remove Buff",
+          "ability": "Feud",
+          "spell_id": 88872,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 99.611,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 99.611,
+          "event": "Apply Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 104.412,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 105.094,
+          "event": "Cast",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 105.094,
+          "event": "Cast",
+          "ability": "Mortality",
+          "spell_id": 82934,
+          "source_target": "Chimaeron"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Buff",
+          "ability": "Mortality",
+          "spell_id": 82934,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Greater Fire Elemental (Steelshaman)"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Bloodworm 3 (Jimlaheey)"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Angy (Lickswindows)"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Lickswindows"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 105.094,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 113.529,
+          "event": "Remove Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 114.029,
+          "event": "Apply Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 114.029,
+          "event": "Apply Debuff Stack",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 114.029,
+          "event": "Refresh Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 118.829,
+          "event": "Remove Buff",
+          "ability": "Double Attack",
+          "spell_id": 88826,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 118.829,
+          "event": "Remove Debuff",
+          "ability": "Break",
+          "spell_id": 82881,
+          "source_target": "Chimaeron → Quillyn"
+        },
+        {
+          "t": 118.846,
+          "event": "Apply Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Bloodworm 4 (Jimlaheey)"
+        },
+        {
+          "t": 121.278,
+          "event": "Remove Buff",
+          "ability": "Mortality",
+          "spell_id": 82934,
+          "source_target": "Chimaeron → Chimaeron"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Greater Fire Elemental (Steelshaman)"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Bloodworm 4 (Jimlaheey)"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Angy (Lickswindows)"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Bearkardioak"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Steelshaman"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Kiskie"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Júshi"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Steffsis"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Súgár"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Pejamage"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Jimlaheey"
+        },
+        {
+          "t": 121.294,
+          "event": "Remove Debuff",
+          "ability": "Mortality",
+          "spell_id": 82890,
+          "source_target": "Chimaeron → Lickswindows"
+        }
+      ]
+    },
+    {
+      "reference_id": "HF62ky4w8ThJmrbY-fight33",
+      "url": "https://classic.warcraftlogs.com/reports/HF62ky4w8ThJmrbY?fight=33&type=casts&view=events",
+      "duration_sec": 122.3,
+      "actors": [
+        {
+          "actor_id": "HF62ky4w8ThJmrbY-source1",
+          "class_spec": "demonology_warlock",
+          "name": "Dotsnake",
+          "source_id": 1,
+          "role": "dps",
+          "observed_dps": 21366.0,
+          "report": "HF62ky4w8ThJmrbY",
+          "fight": 33,
+          "source_url": "https://classic.warcraftlogs.com/reports/HF62ky4w8ThJmrbY?fight=33&type=casts&view=events&source=1",
+          "row_count": 85,
+          "row_count_shown": 85,
+          "count_verification": "matched displayed Casts table Total; complete Events table read through end",
+          "casts": [
+            {
+              "ability": "Immolate",
+              "spell_id": 348,
+              "t": 1.76,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Bane of Agony",
+              "spell_id": 980,
+              "t": 1.76,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 2.986,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Demon Soul",
+              "spell_id": 77801,
+              "t": 4.02,
+              "target": null
+            },
+            {
+              "ability": "Metamorphosis",
+              "spell_id": 47241,
+              "t": 4.02,
+              "target": null
+            },
+            {
+              "ability": "Blood Fury",
+              "spell_id": 33702,
+              "t": 4.02,
+              "target": null
+            },
+            {
+              "ability": "Immolation Aura",
+              "spell_id": 50589,
+              "t": 4.23,
+              "target": null
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 7.087,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Summon Doomguard",
+              "spell_id": 18540,
+              "t": 7.304,
+              "target": null
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 8.536,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 11.601,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 11.601,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Bane of Agony",
+              "spell_id": 980,
+              "t": 12.837,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 15.892,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 17.724,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 19.564,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 21.398,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 23.04,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 23.04,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 26.09,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 27.928,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 27.928,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 31.157,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 32.983,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 34.835,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 36.671,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 36.671,
+              "target": null
+            },
+            {
+              "ability": "Bane of Agony",
+              "spell_id": 980,
+              "t": 37.904,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Life Tap",
+              "spell_id": 1454,
+              "t": 39.139,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 41.993,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 43.821,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 45.658,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 47.483,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 49.344,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 49.344,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 52.204,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 52.204,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 54.719,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 56.01,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 57.3,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Life Tap",
+              "spell_id": 1454,
+              "t": 57.3,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 60.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Bane of Agony",
+              "spell_id": 980,
+              "t": 60.312,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 63.373,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 63.749,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 66.796,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 68.446,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 68.446,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 70.96,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Life Tap",
+              "spell_id": 1454,
+              "t": 70.96,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 73.265,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 74.552,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 76.376,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 78.503,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 81.035,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 81.035,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 84.198,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 84.198,
+              "target": null
+            },
+            {
+              "ability": "Bane of Doom",
+              "spell_id": 603,
+              "t": 85.422,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Life Tap",
+              "spell_id": 1454,
+              "t": 86.651,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 89.49,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 92.896,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 94.722,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 96.578,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 98.413,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 100.056,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 100.056,
+              "target": null
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 101.276,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 103.923,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 105.336,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Life Tap",
+              "spell_id": 1454,
+              "t": 105.348,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 107.767,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 109.184,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Metamorphosis",
+              "spell_id": 47241,
+              "t": 109.314,
+              "target": null
+            },
+            {
+              "ability": "Immolation Aura",
+              "spell_id": 50589,
+              "t": 109.314,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 111.977,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Hand of Gul'dan",
+              "spell_id": 71521,
+              "t": 113.325,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Shadowflame",
+              "spell_id": 47897,
+              "t": 113.325,
+              "target": null
+            },
+            {
+              "ability": "Incinerate",
+              "spell_id": 29722,
+              "t": 115.745,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Soul Fire",
+              "spell_id": 6353,
+              "t": 116.878,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Corruption",
+              "spell_id": 172,
+              "t": 116.878,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Soul Fire",
+              "spell_id": 6353,
+              "t": 119.03,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Soul Fire",
+              "spell_id": 6353,
+              "t": 120.159,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Soul Fire",
+              "spell_id": 6353,
+              "t": 121.287,
+              "target": "Chimaeron"
+            },
+            {
+              "ability": "Demon Leap",
+              "spell_id": 54785,
+              "t": 121.298,
+              "target": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,31 @@
+-- Omnotron Defense System 10N: Power Conversion (79729) procs Converted Power (79735)
+-- only on a damaging hit, not on a landed interrupt without damage.
+--
+-- Staged 2026-09-30 (BWD 10N round 3). Promotion to sql/custom/world is the
+-- coordinator's step. Research claim: power_conversion_no_damage_proc (10N resolved) in
+-- experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json.
+--
+-- Live world DB read back 2026-09-30: spell_proc 79729 SpellTypeMask 0, Cooldown 500 (upstream
+-- 2025_06_20_00/01 re-inserted the row with Cooldown only). SpellTypeMask 0 lets a NODAMAGE
+-- spell hit (PROC_SPELL_TYPE_NO_DMG_HEAL: an interrupt or a taunt) proc a Converted Power stack.
+-- SpellTypeMask 1 (PROC_SPELL_TYPE_DAMAGE) keeps every damaging spell hit; melee and ranged
+-- swings are not spell procs, so SpellMgr::CanSpellTriggerProcOnEvent never checks the mask
+-- for them. The sibling shields Unstable Shield 79900 and Poison Soaked Shell 79835 already
+-- carry SpellTypeMask 1.
+--
+-- WCL 10N (GPT-6.1 Sol in the user's Chrome, 2026-09-30; raw capture
+-- ~/.cache/omnotron_wcl_r3/resultA2.json), interrupts of Arcane Annihilator during Power
+-- Conversion with no damaging hit on Arcanotron at the same moment:
+--   qaKLyFTxkvc9hVpM fight 11: Wind Shear 00:55.765, previous gain 00:54.458 (1,307 ms, past
+--     the 500 ms proc cooldown), next gain 00:58.318: no gain.
+--   Z36FdRPNbAgjrqGX fight 13: Rebuke 01:38.392, 1.27 s into Power Conversion, first gain
+--     01:41.415: no gain.
+--   VvXJBz2A93FRY4xm fight 15: Mind Freeze 00:54.072, 1.03 s into Power Conversion, no direct
+--     damage within 600 ms, first gain 00:55.936: no gain.
+-- The two Mind Freeze gains in TaAF1ncP89KgpbLx fight 12 and mfnZAdFTLkjMBC3z fight 6 land on
+-- the same millisecond as the Death Knight's own melee hit, which explains them.
+-- Heroic and 25-player rows (91543-91545) are left unchanged: no same-mode sample.
+UPDATE `spell_proc` SET `SpellTypeMask` = 1 WHERE `SpellId` = 79729;
+
+-- Reverse:
+-- UPDATE `spell_proc` SET `SpellTypeMask` = 0 WHERE `SpellId` = 79729;

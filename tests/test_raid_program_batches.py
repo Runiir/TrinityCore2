@@ -133,6 +133,46 @@ def test_a_batch_without_shard_run_is_recorded_as_failed(ready):
     assert 'SIGSEGV' in failed['reason'] and 'SIGSEGV' in result['batches'][0]['failed']
 
 
+class SetupFailedLoop(Loop):
+    """The coordinator refused before any shard ran but still wrote shard_run.json (round 3, BWD 10N)."""
+
+    def coordinator(self, root, plan_path, output, log, timeout):
+        self.calls.append({'plan': plan_path, 'output': str(output), 'timeout': timeout})
+        log.write_text('shard_coordinator log\n')
+        output.mkdir(parents=True)
+        (output / 'shard_run.json').write_text(json.dumps({
+            'schema': 'raid_shard_run_v1', 'run_id': None, 'terminal_reason': 'setup_failed',
+            'error': 'raid shard provisioning refused: gear stage missing', 'shards': [], 'ingest': [],
+            'worldserver': {'path': '/w', 'sha256': self.binary}}))
+        return 1
+
+
+def test_a_setup_failed_shard_run_without_shards_is_recorded_as_failed(ready):
+    root = ready['root']
+    loop = SetupFailedLoop(root)
+    result = loop.run(root)
+    assert result['stopped'] == 'batch_failed' and len(loop.calls) == 1 and 'error' not in result['batches'][0]
+    failed = rounds.current_round(program(root))['runs'][-1]
+    assert failed['failed'] and failed['batch'] == 1 and failed['terminal_reason'] == 'no_shard_run'
+    assert 'setup_failed' in failed['reason'] and 'gear stage missing' in failed['reason']
+    assert 'gear stage missing' in result['batches'][0]['failed'] and result['batches'][0]['shard_run']
+
+
+def test_setup_failure_detection_needs_no_shards_and_setup_failed(tmp_path):
+    summary = tmp_path / 'shard_run.json'
+    assert batches._setup_failure(summary) is None  # absent: the no-shard_run path reports it
+    summary.write_text('{not json')
+    assert batches._setup_failure(summary) is None
+    summary.write_text(json.dumps({'terminal_reason': 'setup_failed', 'error': 'boom', 'shards': []}))
+    assert batches._setup_failure(summary) == 'boom'
+    # Negative controls: shards that ran, or another terminal reason, keep the normal record path.
+    summary.write_text(json.dumps({'terminal_reason': 'setup_failed', 'error': 'x',
+                                   'shards': [{'cohort_id': COHORTS[0]}]}))
+    assert batches._setup_failure(summary) is None
+    summary.write_text(json.dumps({'terminal_reason': 'completed', 'shards': []}))
+    assert batches._setup_failure(summary) is None
+
+
 def test_ingest_errors_stop_the_loop(ready):
     root = ready['root']
     loop = Loop(root, errors=[{'cohort_id': COHORTS[0], 'error': 'evidence not archived'}])

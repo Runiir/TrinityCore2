@@ -866,8 +866,10 @@ static void TestAscent()
     place(wading, foot, shallowOrigin + floorLocal);
     NativeFacts const wadeFacts = facts(wading, PlacementAt(wading, 1, foot, floorLocal));
     AdaptiveNefarianPlan const wade = strategy.Propose(wading, Bot(1), "tank", &wadeFacts);
-    CHECK(!wade.Ascent && !wade.Movement && wade.MovementHold == "nefarian_wading_until_float_depth",
-        "in shallow magma: keep standing until it is deep enough to swim");
+    CHECK(!wade.Ascent && !wade.Movement
+        && HoldReason(wade.MovementHold) == "nefarian_wading_until_float_depth"
+        && IsPillarHold(wade.MovementHold),
+        "in shallow magma: keep standing until it is deep enough to swim (pillar hold)");
 
     // 3. Deep enough: float (stop standing on the platform).
     float const deepOrigin = MagmaSurfaceZ - FloatDepthYards - 0.05f - floorLocal;
@@ -893,8 +895,10 @@ static void TestAscent()
     Blackboard holding = AscentBoard(0.0f);
     place(holding, station, MagmaSurfaceZ - FloatDepthYards);
     AdaptiveNefarianPlan const hold = strategy.Propose(holding, Bot(1), "tank", &swimmer);
-    CHECK(!hold.Ascent && hold.MovementHold == "nefarian_float_hold_for_pillar",
-        "float at the station until the platform stops");
+    CHECK(!hold.Ascent && HoldReason(hold.MovementHold) == "nefarian_float_hold_for_pillar"
+        && IsPillarHold(hold.MovementHold),
+        "float at the station until the platform stops, under the pillar hold (round 3: no "
+        "native chase toward the prototype meanwhile)");
 
     // 6. Lowered stop: hop onto the rim just above the waterline.
     Blackboard lowered = AscentBoard(PlatformFrame::LoweredOriginZ);
@@ -974,10 +978,12 @@ static void TestAscent()
         "the rising floor reaches a swimmer: board it");
 
     // A late swimmer far from its station: every swim leg, depth correction
-    // included, stays inside the executor's 12-yard limit.
+    // included, stays inside the executor's 12-yard limit. (Round 3: its
+    // feet stay within the surface margin over the ring at origin 0; 1.3 yd
+    // deeper would be inside the platform's closed body, a typed hold.)
     Blackboard late = AscentBoard(0.0f);
     LocalPoint const far = Offset(station, AngleOf(station), 20.0f);
-    place(late, far, MagmaSurfaceZ - 2.9f);
+    place(late, far, RingLocalZ - InsideSurfaceMarginYards + 0.05f);
     AdaptiveNefarianPlan const lateSwim = strategy.Propose(late, Bot(1), "tank", &swimmer);
     Vector3 const lateFrom = FindPlayer(late, 1).Position;
     CHECK(lateSwim.Ascent && lateSwim.Ascent->Stage == AscentStage::Swim, "a late swimmer swims");
@@ -1032,7 +1038,7 @@ static int ReplayRisingFloor(float decisionGapSeconds, bool& missed,
         board.Summons.resize(1);
         FindPlayer(board, 1).Position = at;
         AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(1), "tank", &swimmer);
-        if (plan.MovementHold == "nefarian_rising_floor_missed")
+        if (HoldReason(plan.MovementHold) == "nefarian_rising_floor_missed")
         {
             missed = true;
             return -1;
@@ -2403,7 +2409,7 @@ static void TestCrossingHelp()
     auto [atRim, first] = departure(7, rim, NativeFacts{});
     bool const shieldCast = std::any_of(first.Actions.begin(), first.Actions.end(),
         [](BotNativeAction::Candidate const& action) { return action.Id.Mechanic == "pillar_crossing_defensive"; });
-    CHECK(!first.Movement && first.MovementHold == "nefarian_crossing_defensive_first" && shieldCast,
+    CHECK(!first.Movement && HoldReason(first.MovementHold) == "nefarian_crossing_defensive_first" && shieldCast,
         "at the rim the ready defensive comes first, with no movement proposed");
     // The arbitration: with no movement this decision the instant defensive
     // owns the cast lanes; a proposed step would have taken them.

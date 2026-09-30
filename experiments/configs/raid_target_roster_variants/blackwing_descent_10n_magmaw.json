@@ -2,7 +2,7 @@
   "schema": "raid_target_roster_variants_v1",
   "target_scenario": "blackwing_descent_10n_magmaw",
   "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
-  "rule": "Sidecar of the raid target: the target file stays byte-identical so the accepted Magmaw verdicts and the boss-level graph keep their pinned target_sha256. The target's top-level roster, validation_scenario_id and run_plan remain the accepted legacy shard (30001-30010). A label whose kill records all come from shard runs of one variant's validation scenario (record shard_identity.scenario_id) is judged against that variant's roster instead (tools/raid_program/scoreboard_core.target_for_records). Specs and roles still come from the roster, never from the run.",
+  "rule": "Sidecar of the raid target: the target file stays byte-identical so the accepted Magmaw verdicts and the boss-level graph keep their pinned target_sha256. The target's top-level roster, validation_scenario_id and run_plan remain the accepted legacy shard (30001-30010). A label whose kill records all come from shard runs of one variant's validation scenario (record shard_identity.scenario_id) is judged against that variant's roster instead (tools/raid_program/scoreboard_core.target_for_records). Specs and roles still come from the roster, never from the run. A variant may also carry its own WCL references (reference_override_keys: wcl_reference_manifest, wcl_cast_timelines, matched_reference_ids, reference_status, unmatched_reference_notes); they replace the target's for that variant's labels only, so the legacy shard keeps the accepted Y8ajQ7dbmKMG1RZy-fight22 reference and its pinned manifest bytes.",
   "variants": [
     {
       "validation_scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic",
@@ -82,6 +82,70 @@
           "{output_dir}"
         ],
         "ingest": "pixi run python -m tools.raid_program.scoreboard ingest --scenario blackwing_descent_10n_magmaw --label <label> --run-dir <output-dir>/shards/blackwing_descent_10n_magmaw_c0 (the flat single-shard run dir itself with --flat-shard-dir)"
+      },
+      "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_t11_v1.json",
+      "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_t11_v1.json",
+      "matched_reference_ids": [
+        "MxFq7TRbvnjGY1hJ-fight22",
+        "fDP4rMTd8GCjKNqn-fight30",
+        "yq3nVTPJC19mzgwx-fight1",
+        "RtPXnbZxFkpacw1h-fight6",
+        "fTCjtgrnzm4HRwXP-fight27",
+        "mRGwYjb8gnQ9BaXf-fight6",
+        "YcLpPHZgtzyWQGRX-fight17"
+      ],
+      "reference_status": {
+        "state": "matched_wcl_references",
+        "item_level": {
+          "band": [
+            352.0,
+            366.0
+          ],
+          "roster_average_item_level": 359,
+          "reference_raid_item_levels": [
+            354.9,
+            356.9,
+            357.9,
+            358.5,
+            358.8,
+            359.5,
+            359.9
+          ],
+          "median_raid_item_level": 358.5,
+          "gear_phase_decision": "user decision 2026-09-30: tier-11 phase gear (~359); references at raid item level 352-366"
+        },
+        "reason": "Seven Magmaw 10N kills of 2024-10-07..2024-10-28 (131-171 s, raid item level 354.9-359.9), read 2026-09-30 through GPT-6.1 Sol in the user's Chrome. Every kill includes Mangle at about 90 s, the impale with Exposed Head damage, two or three parasite waves and no deaths. Each spec's target is the median of one value per kill (same-spec actors averaged; outliers excluded per the manifest's actor_dps_rule).",
+        "wcl_matched": {
+          "blood_death_knight": 17717.4,
+          "balance_druid": 20436.1,
+          "survival_hunter": 27409.7,
+          "fire_mage": 23395.9,
+          "retribution_paladin": 23552.25,
+          "assassination_rogue": 25287.95,
+          "elemental_shaman": 23683.1,
+          "demonology_warlock": 20650.95
+        },
+        "wcl_samples": {
+          "blood_death_knight": 7,
+          "balance_druid": 3,
+          "survival_hunter": 4,
+          "fire_mage": 5,
+          "retribution_paladin": 4,
+          "assassination_rogue": 4,
+          "elemental_shaman": 4,
+          "demonology_warlock": 4
+        },
+        "wowsims_fallback_available": [],
+        "no_reference_until_wcl": [],
+        "healers_without_dps_target": [
+          "holy_paladin",
+          "discipline_priest"
+        ],
+        "replaced": "Round 1-2 c0 labels were judged against Y8ajQ7dbmKMG1RZy-fight22 (raid item level 395.33) plus 0.90 x WoWSims for Survival, Retribution, Assassination and Demonology; those 409-gear numbers are not comparable with the round-3 T11 targets."
+      },
+      "unmatched_reference_notes": {
+        "Y8ajQ7dbmKMG1RZy-fight22": "Legacy accepted reference (raid item level 395.33): outside the 352-366 band; kept only for the legacy shard.",
+        "xAhkN2y9YP3KRmnJ-fight10": "Short 70.9 s fight; throughput context only, never a target."
       }
     }
   ]

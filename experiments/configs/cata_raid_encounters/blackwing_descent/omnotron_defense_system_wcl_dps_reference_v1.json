@@ -3,8 +3,15 @@
   "boss": "omnotron_defense_system",
   "mode": "10N",
   "status": "references_extracted",
-  "status_note": "Read on 2026-09-27 from the rendered WCL pages through GPT-6 Astra driving the user's Chrome (profile Runiir); three 10-player Normal kills. The raid target matches Y8ajQ7dbmKMG1RZy-fight24 and xAhkN2y9YP3KRmnJ-fight12 (item level 395-401, like the Magmaw matched reference from the same Y8aj night); MxFq7TRbvnjGY1hJ-fight24 is low-item-level context.",
-  "retrieved_utc": "2026-09-27T04:28:33.633255+00:00",
+  "status_note": "Tier-11 item-level band (raid item level 352-366, roster about 359; user decision 2026-09-30: gear the bots to tier-11 phase gear). Ten 10-player Normal kills from 2024-10-05 to 2024-10-28 (Phase 2 partition), 133-168 s; the nine new kills damaged all four constructs. Read 2026-09-30 through codex gpt-6.1-sol driving the user's Chrome (profile Runiir), one own tab, no check appeared. MxFq7TRbvnjGY1hJ-fight24 is reused from the 2026-09-27 read. The round-1/2 references Y8ajQ7dbmKMG1RZy-fight24 (395.33) and xAhkN2y9YP3KRmnJ-fight12 (401.4) are outside the band and dropped; raw captures are archived in DVC (artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc).",
+  "retrieved_utc": "2026-09-30T09:19:30+00:00",
+  "item_level_band": {
+    "min": 352.0,
+    "max": 366.0,
+    "roster_average_item_level": 359,
+    "decision": "user decision 2026-09-30: regear the bots to tier-11 phase gear (~359) so kills exercise the mechanics; references at raid item level 352-366, players 359 +-12",
+    "roster_source": "dataset/validation_gear_profiles/profiles.json average_item_level"
+  },
   "access_attempts": [
     {
       "date": "2026-09-25",
@@ -19,330 +26,2019 @@
       "date": "2026-09-27",
       "agent": "codex exec -m gpt-6-astra, Chrome plugin on the user's Chrome",
       "result": "reports loaded; values read"
+    },
+    {
+      "date": "2026-09-30",
+      "agent": "codex exec -m gpt-6.1-sol, Chrome plugin on the user's Chrome (profile Runiir)",
+      "result": "rankings and reports loaded; values read; no check appeared"
     }
   ],
-  "actor_dps_rule": "one number per class_spec per reference: the highest DPS among that spec's non-healer actors in the kill (tanks included); healers omitted",
+  "actor_dps_rule": "(one value per spec per kill, like the existing manifests):\n- blood_death_knight: the boss tank row (role tank). With several Blood DK tanks,\n  the one with the highest active %, then DPS; the others are excluded.\n- other gated specs: rows in the dps role. Several actors of one spec in a kill\n  are averaged.\n- Outliers are excluded (user clarification 2026-09-30: gear match first, parse\n  secondary, competent representative players): an actor who died before 85% of\n  the kill, an actor below max(50%, raid DPS median active % - 20), an extreme parse (95+ or below 10), or an actor\n  whose own item level is more than 12 from the roster's 359 (outside 347-371).\n- Kills whose raid DPS median activity is below 75% (slowed, achievement or\n  carry kills; competent kills at this gear run 90-98%) are context only.\n- Only kills with raid item level 352-366 enter the median; near-band kills are\n  recorded separately and never enter a target.",
+  "hotfix_cutoff_note": "T11-era kills (before the 2025-02-20T23:00Z 4.4.2 cutoff) are preferred; each reference carries after_hotfix_cutoff_2025_02_20.",
+  "target_scope_rule": "Default damage-done view with All Enemies (the four constructs and Poison Bombs); no creature entry is excluded, so the bots' native encounter-window DPS counts every enemy of the node alike.",
+  "dropped_references": {
+    "Y8ajQ7dbmKMG1RZy-fight24": "raid item level 395.33, outside the 352-366 band (round-1/2 matched reference)",
+    "xAhkN2y9YP3KRmnJ-fight12": "raid item level 401.4, outside the 352-366 band (round-1/2 matched reference)"
+  },
+  "rejected_candidates": [
+    {
+      "report": "zYPxcay8h9f7Gkv6",
+      "fight": 12,
+      "reason": "Archived report; Summary and damage breakdown unavailable without Logs Archive subscription. Report date shown: 2024-07-30.",
+      "raid_item_level": null
+    },
+    {
+      "report": "ryX9RBwFaWVvcC2Q",
+      "fight": 10,
+      "raid_item_level": 354.3,
+      "reason": "Less representative raid than alternative: ilvl 318 Arms DPS (parse 4), Guardian tank active 50.76% and parse 1, Assassination parse 7 despite 95.22% activity. No deaths. Demonology Inflicter ilvl 359 parse 79 active 98.77%, but prefer cleaner raid near 359."
+    },
+    {
+      "report": "Tv2NQDWmC87LjytM",
+      "fight": 43,
+      "raid_item_level": 354.4,
+      "reason": "Fight header says Omnotron Defense System (10 Player) Kill and omits Normal, failing required difficulty verification. Report creation date 2024-10-05. Several full-activity DPS parse below 10; prefer cleaner raid."
+    }
+  ],
+  "canonical_spec_coverage": {
+    "longer_half_context": {
+      "rule": "context only, not a target: median over in-band kills at or above the boss's median in-band duration",
+      "duration_cut_sec": 158.45,
+      "reference_ids": [
+        "TaAF1ncP89KgpbLx-fight12",
+        "qaKLyFTxkvc9hVpM-fight11",
+        "w2W84MtybL1VKCvQ-fight12",
+        "VvXJBz2A93FRY4xm-fight15",
+        "MRytXdWJxkBpfPK1-fight26"
+      ],
+      "median": {
+        "blood_death_knight": 15401.3,
+        "survival_hunter": 23710.45,
+        "fire_mage": 25183.65,
+        "retribution_paladin": 30358.95,
+        "assassination_rogue": 24755.6,
+        "elemental_shaman": 24735.85,
+        "demonology_warlock": 24071.25
+      },
+      "samples": {
+        "blood_death_knight": 3,
+        "survival_hunter": 4,
+        "fire_mage": 4,
+        "retribution_paladin": 2,
+        "assassination_rogue": 2,
+        "elemental_shaman": 2,
+        "demonology_warlock": 2
+      }
+    },
+    "wcl_matched": {
+      "blood_death_knight": 15932.8,
+      "survival_hunter": 24349.2,
+      "fire_mage": 25183.65,
+      "retribution_paladin": 30330.2,
+      "assassination_rogue": 30496.95,
+      "elemental_shaman": 24496.8,
+      "demonology_warlock": 30756.5
+    },
+    "samples": {
+      "blood_death_knight": 7,
+      "survival_hunter": 7,
+      "fire_mage": 6,
+      "retribution_paladin": 3,
+      "assassination_rogue": 4,
+      "elemental_shaman": 5,
+      "demonology_warlock": 3
+    },
+    "per_spec_values": {
+      "blood_death_knight": [
+        18801.5,
+        17827.4,
+        15932.8,
+        13653.1,
+        20007.0,
+        12722.2,
+        15401.3
+      ],
+      "survival_hunter": [
+        27574.1,
+        23399.8,
+        23071.7,
+        18018.0,
+        26232.7,
+        24349.2,
+        26238.4
+      ],
+      "fire_mage": [
+        35921.2,
+        32153.4,
+        21813.7,
+        19543.5,
+        25936.9,
+        24430.4
+      ],
+      "retribution_paladin": [
+        22905.0,
+        30387.7,
+        30330.2
+      ],
+      "assassination_rogue": [
+        30869.1,
+        30685.0,
+        30308.9,
+        18826.2
+      ],
+      "elemental_shaman": [
+        24496.8,
+        25587.2,
+        20870.9,
+        22028.0,
+        27443.7
+      ],
+      "demonology_warlock": [
+        16130.9,
+        30756.5,
+        32011.6
+      ]
+    },
+    "per_spec_item_levels": {
+      "blood_death_knight": [
+        359.9,
+        362.8,
+        358.9,
+        355.4,
+        362.1,
+        358.7,
+        357.4
+      ],
+      "survival_hunter": [
+        359.9,
+        356.5,
+        362.8,
+        359.5,
+        355.4,
+        358.7,
+        357.4
+      ],
+      "fire_mage": [
+        356.5,
+        362.8,
+        358.9,
+        358.7,
+        357.4,
+        358.8
+      ],
+      "retribution_paladin": [
+        359.9,
+        358.7,
+        357.4
+      ],
+      "assassination_rogue": [
+        358.9,
+        359.5,
+        355.4,
+        357.4
+      ],
+      "elemental_shaman": [
+        359.9,
+        356.5,
+        362.1,
+        358.7,
+        358.8
+      ],
+      "demonology_warlock": [
+        362.8,
+        362.1,
+        358.8
+      ]
+    },
+    "no_kill_in_band": [],
+    "fewer_than_three": []
+  },
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight24",
       "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=24&type=damage-done",
+      "summary_url": null,
       "mode": "10N",
-      "date": "2024-10-28",
       "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-28",
+      "kill": true,
+      "boss_verified": "current manifest reference (re-used, read 2026-09-27)",
       "duration_sec": 133.2,
       "raid_dps": 199698.1,
       "average_item_level": 359.9,
-      "pets_merged": true,
+      "item_level": 359.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
       "target_scope": "Arcanotron, Magmatron, Toxitron and Poison Bombs (Electron activated 0.8 s before the kill)",
-      "reference_class": "context_only_low_item_level",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
       "actor_dps": {
-        "balance_druid": 17519.8,
         "blood_death_knight": 18801.5,
-        "combat_rogue": 25648.8,
-        "elemental_shaman": 24496.8,
-        "retribution_paladin": 22905,
-        "shadow_priest": 21078,
-        "survival_hunter": 30854.6
+        "survival_hunter": 27574.1,
+        "retribution_paladin": 22905.0,
+        "elemental_shaman": 24496.8
+      },
+      "actor_item_level": {
+        "blood_death_knight": 365.0,
+        "survival_hunter": 360.0,
+        "retribution_paladin": 357.0,
+        "elemental_shaman": 362.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "retribution_paladin": null,
+        "elemental_shaman": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Wongelrainer"
+        ],
+        "survival_hunter": [
+          "Jägamara",
+          "Lachina"
+        ],
+        "retribution_paladin": [
+          "Janderak"
+        ],
+        "elemental_shaman": [
+          "Sélán"
+        ]
+      },
+      "excluded_actor_dps": {
+        "blood_death_knight:Greysnout": {
+          "dps": 13201.1,
+          "active_pct": null,
+          "reason": "second Blood DK tank; the canonical roster's single Blood DK is the boss tank"
+        }
+      },
+      "raid_dps_median_active_pct": null,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Arcanotron",
+          "Magmatron",
+          "Toxitron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": false,
+        "notes": "Prior extraction: Electron activated 0.8 s before kill. Reused without re-reading as requested."
       },
       "players": [
         {
           "name": "Jägamara",
-          "class_spec": "survival_hunter",
+          "class": "Hunter",
           "role": "dps",
           "dps": 30854.6,
-          "total_display": "4.11m",
-          "item_level": 357
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null,
+          "class_spec": "survival_hunter"
         },
         {
           "name": "Avéran",
-          "class_spec": "combat_rogue",
+          "class": "Rogue",
           "role": "dps",
           "dps": 25648.8,
-          "total_display": "3.42m",
-          "item_level": 357
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null,
+          "class_spec": "combat_rogue"
         },
         {
           "name": "Sélán",
-          "class_spec": "elemental_shaman",
+          "class": "Shaman",
           "role": "dps",
           "dps": 24496.8,
-          "total_display": "3.26m",
-          "item_level": 362
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 362,
+          "parse_percentile": null,
+          "class_spec": "elemental_shaman"
         },
         {
           "name": "Lachina",
-          "class_spec": "survival_hunter",
+          "class": "Hunter",
           "role": "dps",
           "dps": 24293.6,
-          "total_display": "3.24m",
-          "item_level": 363
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 363,
+          "parse_percentile": null,
+          "class_spec": "survival_hunter"
         },
         {
           "name": "Janderak",
-          "class_spec": "retribution_paladin",
+          "class": "Paladin",
           "role": "dps",
           "dps": 22905,
-          "total_display": "3.05m",
-          "item_level": 357
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null,
+          "class_spec": "retribution_paladin"
         },
         {
           "name": "Adara",
-          "class_spec": "shadow_priest",
+          "class": "Priest",
           "role": "dps",
           "dps": 21078,
-          "total_display": "2.81m",
-          "item_level": 360
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 360,
+          "parse_percentile": null,
+          "class_spec": "shadow_priest"
         },
         {
           "name": "Wongelrainer",
-          "class_spec": "blood_death_knight",
+          "class": "Death Knight",
           "role": "tank",
           "dps": 18801.5,
-          "total_display": "2.50m",
-          "item_level": 365
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 365,
+          "parse_percentile": null,
+          "class_spec": "blood_death_knight"
         },
         {
           "name": "Koakuma",
-          "class_spec": "balance_druid",
+          "class": "Druid",
           "role": "dps",
           "dps": 17519.8,
-          "total_display": "2.33m",
-          "item_level": 362
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 362,
+          "parse_percentile": null,
+          "class_spec": "balance_druid"
         },
         {
           "name": "Greysnout",
-          "class_spec": "blood_death_knight",
+          "class": "Death Knight",
           "role": "tank",
           "dps": 13201.1,
-          "total_display": "1.76m",
-          "item_level": 359
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 359,
+          "parse_percentile": null,
+          "class_spec": "blood_death_knight"
         },
         {
           "name": "Nevox",
-          "class_spec": "holy_paladin",
+          "class": "Paladin",
           "role": "healer",
           "dps": 762.3,
-          "total_display": "101.5k",
-          "item_level": 357
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null,
+          "class_spec": "holy_paladin"
         }
       ],
-      "limitations": [
-        "Average item level 359.9, about 35-40 below the matched references; context only, never a target.",
-        "Two Survival hunters and two Blood DK tanks: actor_dps keeps the higher DPS of each spec; players lists every actor.",
-        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
-      ]
+      "notes": "Seeded from omnotron_defense_system_wcl_dps_reference_v1.json (context_only_low_item_level)."
     },
     {
-      "id": "Y8ajQ7dbmKMG1RZy-fight24",
-      "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=24&type=damage-done",
+      "id": "BwaHpnPbjkWtCX4Z-fight26",
+      "url": "https://classic.warcraftlogs.com/reports/BwaHpnPbjkWtCX4Z?fight=26&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/BwaHpnPbjkWtCX4Z?fight=26&type=summary",
       "mode": "10N",
-      "date": "2025-05-15",
       "difficulty_text": "Normal (10 Player)",
-      "duration_sec": 88.1,
-      "raid_dps": 292375.1,
-      "average_item_level": 395.33,
+      "date": "2024-10-08",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 153.0,
+      "raid_dps": 172080.3,
+      "average_item_level": 356.5,
+      "item_level": 356.5,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
       "pets_merged": true,
-      "target_scope": "Electron and Arcanotron (Magmatron and Toxitron never activated; no Poison Bombs)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
       "actor_dps": {
-        "affliction_warlock": 47307.5,
-        "arms_warrior": 42037,
-        "balance_druid": 46219.7,
-        "blood_death_knight": 27851.8,
-        "elemental_shaman": 51668.9,
-        "fire_mage": 48982,
-        "protection_paladin": 10851.7
+        "survival_hunter": 23399.8,
+        "fire_mage": 35921.2,
+        "elemental_shaman": 25587.2
+      },
+      "actor_item_level": {
+        "survival_hunter": 354.0,
+        "fire_mage": 359.0,
+        "elemental_shaman": 353.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": 42.0,
+        "fire_mage": 92.0,
+        "elemental_shaman": 63.0
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Vílle"
+        ],
+        "fire_mage": [
+          "Tharrak"
+        ],
+        "elemental_shaman": [
+          "Strippey"
+        ]
+      },
+      "excluded_actor_dps": {
+        "blood_death_knight:Calánthá": {
+          "dps": 9261.9,
+          "reason": "extreme bottom parse (8)"
+        }
+      },
+      "raid_dps_median_active_pct": 98.39,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Toxitron",
+          "Electron",
+          "Arcanotron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/BwaHpnPbjkWtCX4Z?fight=26&type=damage-done&by=target",
+        "activation_order": null
       },
       "players": [
         {
-          "name": "Roostertours",
-          "class_spec": "elemental_shaman",
+          "name": "Tharrak",
+          "class": "Mage",
           "role": "dps",
-          "dps": 51668.9,
-          "total_display": "4.55m",
-          "item_level": 399
+          "dps": 35921.2,
+          "dps_default_view": null,
+          "active_pct": 97.41,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "class_spec": "fire_mage"
         },
         {
-          "name": "Sethra",
-          "class_spec": "fire_mage",
+          "name": "Surianna",
+          "class": "Warlock",
           "role": "dps",
-          "dps": 48982,
-          "total_display": "4.32m",
-          "item_level": 395
+          "dps": 28384.2,
+          "dps_default_view": null,
+          "active_pct": 98.12,
+          "item_level": 361,
+          "parse_percentile": 90,
+          "class_spec": "affliction_warlock"
         },
         {
-          "name": "Næñï",
-          "class_spec": "affliction_warlock",
+          "name": "Strippey",
+          "class": "Shaman",
           "role": "dps",
-          "dps": 47307.5,
-          "total_display": "4.17m",
-          "item_level": 394
+          "dps": 25587.2,
+          "dps_default_view": null,
+          "active_pct": 99.33,
+          "item_level": 353,
+          "parse_percentile": 63,
+          "class_spec": "elemental_shaman"
         },
         {
-          "name": "Inkar",
-          "class_spec": "balance_druid",
+          "name": "Vílle",
+          "class": "Hunter",
           "role": "dps",
-          "dps": 46219.7,
-          "total_display": "4.07m",
-          "item_level": 401
+          "dps": 23399.8,
+          "dps_default_view": null,
+          "active_pct": 98.33,
+          "item_level": 354,
+          "parse_percentile": 42,
+          "class_spec": "survival_hunter"
         },
         {
-          "name": "Bloodstaín",
-          "class_spec": "arms_warrior",
+          "name": "Dednar",
+          "class": "Death Knight",
           "role": "dps",
-          "dps": 42037,
-          "total_display": "3.70m",
-          "item_level": 396
+          "dps": 20868.3,
+          "dps_default_view": null,
+          "active_pct": 99.15,
+          "item_level": 357,
+          "parse_percentile": 22,
+          "class_spec": "unholy_death_knight"
         },
         {
-          "name": "Nexry",
-          "class_spec": "blood_death_knight",
+          "name": "Derjadin",
+          "class": "Priest",
+          "role": "dps",
+          "dps": 20730.2,
+          "dps_default_view": null,
+          "active_pct": 98.45,
+          "item_level": 360,
+          "parse_percentile": 42,
+          "class_spec": "shadow_priest"
+        },
+        {
+          "name": "Calánthá",
+          "class": "Death Knight",
           "role": "tank",
-          "dps": 27851.8,
-          "total_display": "2.45m",
-          "item_level": 393
+          "dps": 9261.9,
+          "dps_default_view": null,
+          "active_pct": 98.01,
+          "item_level": 354,
+          "parse_percentile": 8,
+          "class_spec": "blood_death_knight"
         },
         {
-          "name": "Luxferre",
-          "class_spec": "discipline_priest",
-          "role": "healer",
-          "dps": 17153.1,
-          "total_display": "1.51m",
-          "item_level": 400
-        },
-        {
-          "name": "Schanilá",
-          "class_spec": "protection_paladin",
+          "name": "Suyanpala",
+          "class": "Paladin",
           "role": "tank",
-          "dps": 10851.7,
-          "total_display": "956.4k",
-          "item_level": 397
+          "dps": 7927.3,
+          "dps_default_view": null,
+          "active_pct": 99.39,
+          "item_level": 352,
+          "parse_percentile": 15,
+          "class_spec": "protection_paladin"
         },
         {
-          "name": "Korotan",
-          "class_spec": "holy_paladin",
+          "name": "Elowén",
+          "class": "Druid",
           "role": "healer",
-          "dps": 303.4,
-          "total_display": "26.7k",
-          "item_level": 383
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 358,
+          "parse_percentile": null,
+          "class_spec": "restoration_druid"
+        },
+        {
+          "name": "Weevil",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 357,
+          "parse_percentile": null,
+          "class_spec": "restoration_shaman"
         }
       ],
-      "limitations": [
-        "Nine players although the fight is 10-player Normal.",
-        "88.1 s kill with two constructs; short-fight throughput.",
-        "No Survival hunter, Retribution paladin, Assassination rogue, Demonology warlock or Feral tank.",
-        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
-      ]
+      "notes": "Blood tank Calánthá is an excluded reference: parse 8 despite full activity. Healers absent from damage table; damage metrics null. No deaths. All four constructs damaged."
     },
     {
-      "id": "xAhkN2y9YP3KRmnJ-fight12",
-      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=12&type=damage-done",
+      "id": "TaAF1ncP89KgpbLx-fight12",
+      "url": "https://classic.warcraftlogs.com/reports/TaAF1ncP89KgpbLx?fight=12&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/TaAF1ncP89KgpbLx?fight=12&type=summary",
       "mode": "10N",
-      "date": "2025-06-11",
       "difficulty_text": "Normal (10 Player)",
-      "duration_sec": 78.8,
-      "raid_dps": 333204.4,
-      "average_item_level": 401.4,
+      "date": "2024-10-05",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 166.9,
+      "raid_dps": 157733.3,
+      "average_item_level": 362.8,
+      "item_level": 362.8,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
       "pets_merged": true,
-      "target_scope": "Toxitron, Magmatron and Poison Bombs",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
       "actor_dps": {
-        "affliction_warlock": 43730.3,
-        "arms_warrior": 35899.4,
-        "blood_death_knight": 32643,
-        "elemental_shaman": 40901.5,
-        "enhancement_shaman": 34528.3,
-        "fire_mage": 35203.7,
-        "survival_hunter": 45475.8
+        "blood_death_knight": 17827.4,
+        "survival_hunter": 23071.7,
+        "fire_mage": 32153.4,
+        "demonology_warlock": 16130.9
+      },
+      "actor_item_level": {
+        "blood_death_knight": 364.0,
+        "survival_hunter": 363.0,
+        "fire_mage": 361.0,
+        "demonology_warlock": 357.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 73.0,
+        "survival_hunter": 40.0,
+        "fire_mage": [
+          92.0,
+          72.0
+        ],
+        "demonology_warlock": 15.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Spartanlich"
+        ],
+        "survival_hunter": [
+          "Tzuyuie"
+        ],
+        "fire_mage": [
+          "Gotdadoginme",
+          "Sheve"
+        ],
+        "demonology_warlock": [
+          "Maxleficent"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 98.87,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Electron",
+          "Arcanotron",
+          "Toxitron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/TaAF1ncP89KgpbLx?fight=12&type=damage-done&by=target",
+        "activation_order": null
       },
       "players": [
         {
-          "name": "Vitarâ",
-          "class_spec": "survival_hunter",
+          "name": "Gotdadoginme",
+          "class": "Mage",
           "role": "dps",
-          "dps": 45475.8,
-          "total_display": "3.58m",
-          "item_level": 403
+          "dps": 36131.3,
+          "dps_default_view": null,
+          "active_pct": 98.48,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "class_spec": "fire_mage"
         },
         {
-          "name": "Schlabunsen",
-          "class_spec": "affliction_warlock",
+          "name": "Sheve",
+          "class": "Mage",
           "role": "dps",
-          "dps": 43730.3,
-          "total_display": "3.45m",
-          "item_level": 403
+          "dps": 28175.4,
+          "dps_default_view": null,
+          "active_pct": 98.85,
+          "item_level": 363,
+          "parse_percentile": 72,
+          "class_spec": "fire_mage"
         },
         {
-          "name": "Schastnerak",
-          "class_spec": "elemental_shaman",
+          "name": "Liljoey",
+          "class": "Rogue",
           "role": "dps",
-          "dps": 40901.5,
-          "total_display": "3.22m",
-          "item_level": 406
+          "dps": 24804,
+          "dps_default_view": null,
+          "active_pct": 98.93,
+          "item_level": 363,
+          "parse_percentile": 64,
+          "class_spec": "combat_rogue"
         },
         {
-          "name": "Tristu",
-          "class_spec": "survival_hunter",
+          "name": "Tzuyuie",
+          "class": "Hunter",
           "role": "dps",
-          "dps": 37407.1,
-          "total_display": "2.95m",
-          "item_level": 403
+          "dps": 23071.7,
+          "dps_default_view": null,
+          "active_pct": 98.87,
+          "item_level": 363,
+          "parse_percentile": 40,
+          "class_spec": "survival_hunter"
         },
         {
-          "name": "Noho",
-          "class_spec": "arms_warrior",
-          "role": "dps",
-          "dps": 35899.4,
-          "total_display": "2.83m",
-          "item_level": 401
-        },
-        {
-          "name": "Thorsmage",
-          "class_spec": "fire_mage",
-          "role": "dps",
-          "dps": 35203.7,
-          "total_display": "2.78m",
-          "item_level": 400
-        },
-        {
-          "name": "Heutnich",
-          "class_spec": "enhancement_shaman",
-          "role": "dps",
-          "dps": 34528.3,
-          "total_display": "2.72m",
-          "item_level": 396
-        },
-        {
-          "name": "Catamara",
-          "class_spec": "blood_death_knight",
+          "name": "Spartanlich",
+          "class": "Death Knight",
           "role": "tank",
-          "dps": 32643,
-          "total_display": "2.57m",
-          "item_level": 407
+          "dps": 17827.4,
+          "dps_default_view": null,
+          "active_pct": 98.79,
+          "item_level": 364,
+          "parse_percentile": 73,
+          "class_spec": "blood_death_knight"
         },
         {
-          "name": "Catorì",
-          "class_spec": "elemental_shaman",
+          "name": "Maxleficent",
+          "class": "Warlock",
           "role": "dps",
-          "dps": 25810.3,
-          "total_display": "2.03m",
-          "item_level": 392
+          "dps": 16130.9,
+          "dps_default_view": null,
+          "active_pct": 99.32,
+          "item_level": 357,
+          "parse_percentile": 15,
+          "class_spec": "demonology_warlock"
         },
         {
-          "name": "Awì",
-          "class_spec": "restoration_shaman",
+          "name": "Droidbishop",
+          "class": "Paladin",
+          "role": "tank",
+          "dps": 10862.6,
+          "dps_default_view": null,
+          "active_pct": 99.22,
+          "item_level": 363,
+          "parse_percentile": 46,
+          "class_spec": "protection_paladin"
+        },
+        {
+          "name": "Avengerqt",
+          "class": "Paladin",
           "role": "healer",
-          "dps": 1605.1,
-          "total_display": "126.5k",
-          "item_level": 403
+          "dps": 337.2,
+          "dps_default_view": null,
+          "active_pct": 33.86,
+          "item_level": 371,
+          "parse_percentile": 42,
+          "class_spec": "holy_paladin"
+        },
+        {
+          "name": "Pepperhots",
+          "class": "Druid",
+          "role": "healer",
+          "dps": 185.4,
+          "dps_default_view": null,
+          "active_pct": 8.06,
+          "item_level": 363,
+          "parse_percentile": 74,
+          "class_spec": "restoration_druid"
+        },
+        {
+          "name": "Padrechema",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": 171.3,
+          "dps_default_view": null,
+          "active_pct": 12.77,
+          "item_level": 362,
+          "parse_percentile": 24,
+          "class_spec": "restoration_shaman"
         }
       ],
-      "limitations": [
-        "78.8 s kill with two constructs and eight DPS; short-fight throughput.",
-        "Two Survival hunters and two Elemental shamans: actor_dps keeps the higher DPS of each spec; players lists every actor.",
-        "No Retribution paladin, Assassination rogue, Demonology warlock or Feral tank.",
-        "Displayed duration and DPS are rounded observations; assignments, buffs, gear and rotation order differ from the bot canary."
-      ]
+      "notes": "No deaths. DPS activity 98.48-99.32%. Maxleficent parse 15 is low but above cutoff, full activity and ilvl 357. Healer active percentages describe damage activity only. Non-player Tricks of the Trade row excluded."
+    },
+    {
+      "id": "mfnZAdFTLkjMBC3z-fight6",
+      "url": "https://classic.warcraftlogs.com/reports/mfnZAdFTLkjMBC3z?fight=6&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/mfnZAdFTLkjMBC3z?fight=6&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-14",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 156.8,
+      "raid_dps": 167112.7,
+      "average_item_level": 358.9,
+      "item_level": 358.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "blood_death_knight": 15932.8,
+        "fire_mage": 21813.7,
+        "assassination_rogue": 30869.1
+      },
+      "actor_item_level": {
+        "blood_death_knight": 367.0,
+        "fire_mage": 357.5,
+        "assassination_rogue": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 61.0,
+        "fire_mage": [
+          57.0,
+          24.0
+        ],
+        "assassination_rogue": 90.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Evoknight"
+        ],
+        "fire_mage": [
+          "Tonomi",
+          "Ceruleanna"
+        ],
+        "assassination_rogue": [
+          "Popflash"
+        ]
+      },
+      "excluded_actor_dps": {
+        "blood_death_knight:Izix": {
+          "dps": 13458.7,
+          "active_pct": 92.35,
+          "reason": "second Blood DK tank; the canonical roster's single Blood DK is the boss tank"
+        },
+        "survival_hunter:Andypandy": {
+          "dps": 15759.4,
+          "active_pct": 97.92,
+          "item_level": 359.0,
+          "parse_percentile": 5.0,
+          "reason": "extreme bottom parse (5)"
+        }
+      },
+      "raid_dps_median_active_pct": 98.39,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Magmatron",
+          "Arcanotron",
+          "Toxitron",
+          "Electron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/mfnZAdFTLkjMBC3z?fight=6&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Popflash",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 30869.1,
+          "dps_default_view": null,
+          "active_pct": 98.86,
+          "item_level": 359,
+          "parse_percentile": 90,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Tonomi",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 24920.4,
+          "dps_default_view": null,
+          "active_pct": 98.92,
+          "item_level": 359,
+          "parse_percentile": 57,
+          "class_spec": "fire_mage"
+        },
+        {
+          "name": "Ømniheal",
+          "class": "Priest",
+          "role": "dps",
+          "dps": 21991.1,
+          "dps_default_view": null,
+          "active_pct": 99.3,
+          "item_level": 358,
+          "parse_percentile": 52,
+          "class_spec": "shadow_priest"
+        },
+        {
+          "name": "Ceruleanna",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 18706.9,
+          "dps_default_view": null,
+          "active_pct": 96.63,
+          "item_level": 356,
+          "parse_percentile": 24,
+          "class_spec": "fire_mage"
+        },
+        {
+          "name": "Assamina",
+          "class": "Warrior",
+          "role": "dps",
+          "dps": 17354.6,
+          "dps_default_view": null,
+          "active_pct": 97.83,
+          "item_level": 359,
+          "parse_percentile": 37,
+          "class_spec": "fury_warrior"
+        },
+        {
+          "name": "Evoknight",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 15932.8,
+          "dps_default_view": null,
+          "active_pct": 97.65,
+          "item_level": 367,
+          "parse_percentile": 61,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Andypandy",
+          "class": "Hunter",
+          "role": "dps",
+          "dps": 15759.4,
+          "dps_default_view": null,
+          "active_pct": 97.92,
+          "item_level": 359,
+          "parse_percentile": 5,
+          "class_spec": "survival_hunter"
+        },
+        {
+          "name": "Izix",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 13458.7,
+          "dps_default_view": null,
+          "active_pct": 92.35,
+          "item_level": 360,
+          "parse_percentile": 39,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Loonatik",
+          "class": "Priest",
+          "role": "healer",
+          "dps": 7339.8,
+          "dps_default_view": null,
+          "active_pct": 98.64,
+          "item_level": 359,
+          "parse_percentile": 69,
+          "class_spec": "discipline_priest"
+        },
+        {
+          "name": "Ancabearhug",
+          "class": "Druid",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 353,
+          "parse_percentile": null,
+          "class_spec": "restoration_druid"
+        }
+      ],
+      "notes": "No deaths. Survival Hunter excluded from reference counts: parse 5 at full activity. Prefer Izix ilvl 360 for Blood reference. Ancabearhug absent from damage table, null damage metrics. Non-player Tricks of the Trade and Army ghoul rows excluded."
+    },
+    {
+      "id": "qaKLyFTxkvc9hVpM-fight11",
+      "url": "https://classic.warcraftlogs.com/reports/qaKLyFTxkvc9hVpM?fight=11&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/qaKLyFTxkvc9hVpM?fight=11&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-23",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 160.1,
+      "raid_dps": 161818.8,
+      "average_item_level": 359.5,
+      "item_level": 359.5,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "survival_hunter": 18018.0,
+        "assassination_rogue": 30685.0
+      },
+      "actor_item_level": {
+        "survival_hunter": 359.0,
+        "assassination_rogue": 359.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": 12.0,
+        "assassination_rogue": [
+          92.0,
+          85.0
+        ]
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Minimaz"
+        ],
+        "assassination_rogue": [
+          "Snibetisnab",
+          "Shivshenko"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 99.0,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Arcanotron",
+          "Electron",
+          "Toxitron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/qaKLyFTxkvc9hVpM?fight=11&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Snibetisnab",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 31957.2,
+          "dps_default_view": null,
+          "active_pct": 99.06,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Shivshenko",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 29412.7,
+          "dps_default_view": null,
+          "active_pct": 99.15,
+          "item_level": 359,
+          "parse_percentile": 85,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Groggfarbror",
+          "class": "Warrior",
+          "role": "dps",
+          "dps": 26574.4,
+          "dps_default_view": null,
+          "active_pct": 98.95,
+          "item_level": 359,
+          "parse_percentile": 74,
+          "class_spec": "arms_warrior"
+        },
+        {
+          "name": "Ninjamopeden",
+          "class": "Warrior",
+          "role": "dps",
+          "dps": 18722.5,
+          "dps_default_view": null,
+          "active_pct": 98.17,
+          "item_level": 357,
+          "parse_percentile": 25,
+          "class_spec": "arms_warrior"
+        },
+        {
+          "name": "Minimaz",
+          "class": "Hunter",
+          "role": "dps",
+          "dps": 18018,
+          "dps_default_view": null,
+          "active_pct": 99.29,
+          "item_level": 359,
+          "parse_percentile": 12,
+          "class_spec": "survival_hunter"
+        },
+        {
+          "name": "Bûggers",
+          "class": "Paladin",
+          "role": "tank",
+          "dps": 14462.3,
+          "dps_default_view": null,
+          "active_pct": 98.69,
+          "item_level": 359,
+          "parse_percentile": 81,
+          "class_spec": "protection_paladin"
+        },
+        {
+          "name": "Smf",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 12669.5,
+          "dps_default_view": null,
+          "active_pct": 97.21,
+          "item_level": 359,
+          "parse_percentile": 28,
+          "class_spec": "frost_mage"
+        },
+        {
+          "name": "Sonarouk",
+          "class": "Druid",
+          "role": "tank",
+          "dps": 9851.7,
+          "dps_default_view": null,
+          "active_pct": 95.79,
+          "item_level": 361,
+          "parse_percentile": 35,
+          "class_spec": "feral_druid_tank"
+        },
+        {
+          "name": "Dwas",
+          "class": "Paladin",
+          "role": "healer",
+          "dps": 92.3,
+          "dps_default_view": null,
+          "active_pct": 1.06,
+          "item_level": 361,
+          "parse_percentile": 9,
+          "class_spec": "holy_paladin"
+        },
+        {
+          "name": "Lornoh",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 362,
+          "parse_percentile": null,
+          "class_spec": "restoration_shaman"
+        }
+      ],
+      "notes": "No deaths. Both Assassination players ilvl 359, parse 85/92, high activity. Minimaz parse 12 is low but above cutoff. Smf Ilvl % displayed 16*. Lornoh absent from damage table."
+    },
+    {
+      "id": "kCLpgK4xBXcWahN1-fight22",
+      "url": "https://classic.warcraftlogs.com/reports/kCLpgK4xBXcWahN1?fight=22&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/kCLpgK4xBXcWahN1?fight=22&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-14",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 147.2,
+      "raid_dps": 176960.0,
+      "average_item_level": 355.4,
+      "item_level": 355.4,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "blood_death_knight": 13653.1,
+        "survival_hunter": 26232.7,
+        "assassination_rogue": 30308.9
+      },
+      "actor_item_level": {
+        "blood_death_knight": 359.0,
+        "survival_hunter": 357.0,
+        "assassination_rogue": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 41.0,
+        "survival_hunter": 62.0,
+        "assassination_rogue": 89.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Djann"
+        ],
+        "survival_hunter": [
+          "Biggspoon"
+        ],
+        "assassination_rogue": [
+          "Hermitlife"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 98.68,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Arcanotron",
+          "Electron",
+          "Toxitron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/kCLpgK4xBXcWahN1?fight=22&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Hermitlife",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 30308.9,
+          "dps_default_view": null,
+          "active_pct": 98.67,
+          "item_level": 359,
+          "parse_percentile": 89,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Suttree",
+          "class": "Druid",
+          "role": "dps",
+          "dps": 30292.6,
+          "dps_default_view": null,
+          "active_pct": 99.13,
+          "item_level": 359,
+          "parse_percentile": 90,
+          "class_spec": "balance_druid"
+        },
+        {
+          "name": "Scootersham",
+          "class": "Shaman",
+          "role": "dps",
+          "dps": 29372.1,
+          "dps_default_view": null,
+          "active_pct": 98.32,
+          "item_level": 360,
+          "parse_percentile": 92,
+          "class_spec": "enhancement_shaman"
+        },
+        {
+          "name": "Biggspoon",
+          "class": "Hunter",
+          "role": "dps",
+          "dps": 26232.7,
+          "dps_default_view": null,
+          "active_pct": 99.18,
+          "item_level": 357,
+          "parse_percentile": 62,
+          "class_spec": "survival_hunter"
+        },
+        {
+          "name": "Crazydrifter",
+          "class": "Druid",
+          "role": "dps",
+          "dps": 19459.8,
+          "dps_default_view": null,
+          "active_pct": 98.69,
+          "item_level": 355,
+          "parse_percentile": 43,
+          "class_spec": "feral_druid_dps"
+        },
+        {
+          "name": "Chickenlune",
+          "class": "Priest",
+          "role": "dps",
+          "dps": 15600.9,
+          "dps_default_view": null,
+          "active_pct": 97.32,
+          "item_level": 352,
+          "parse_percentile": 13,
+          "class_spec": "shadow_priest"
+        },
+        {
+          "name": "Djann",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 13653.1,
+          "dps_default_view": null,
+          "active_pct": 97.42,
+          "item_level": 359,
+          "parse_percentile": 41,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Paldoray",
+          "class": "Paladin",
+          "role": "tank",
+          "dps": 10996.9,
+          "dps_default_view": null,
+          "active_pct": 98.88,
+          "item_level": 358,
+          "parse_percentile": 47,
+          "class_spec": "protection_paladin"
+        },
+        {
+          "name": "Shalathea",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": 891.2,
+          "dps_default_view": null,
+          "active_pct": 19,
+          "item_level": 336,
+          "parse_percentile": 51,
+          "class_spec": "restoration_shaman"
+        },
+        {
+          "name": "Midilite",
+          "class": "Paladin",
+          "role": "healer",
+          "dps": 151.7,
+          "dps_default_view": null,
+          "active_pct": 14.87,
+          "item_level": 359,
+          "parse_percentile": 17,
+          "class_spec": "holy_paladin"
+        }
+      ],
+      "notes": "No deaths. Raid mean reduced by ilvl 336 healer; wanted players ilvl 357-359 and full activity. All four constructs damaged."
+    },
+    {
+      "id": "Z36FdRPNbAgjrqGX-fight13",
+      "url": "https://classic.warcraftlogs.com/reports/Z36FdRPNbAgjrqGX?fight=13&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/Z36FdRPNbAgjrqGX?fight=13&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-05",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 145.7,
+      "raid_dps": 178029.9,
+      "average_item_level": 362.1,
+      "item_level": 362.1,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "blood_death_knight": 20007.0,
+        "elemental_shaman": 20870.9,
+        "demonology_warlock": 30756.5
+      },
+      "actor_item_level": {
+        "blood_death_knight": 368.0,
+        "elemental_shaman": 362.0,
+        "demonology_warlock": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 83.0,
+        "elemental_shaman": 37.0,
+        "demonology_warlock": 83.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Shadowmourne"
+        ],
+        "elemental_shaman": [
+          "Osmanlioglu"
+        ],
+        "demonology_warlock": [
+          "Bêkâ"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 99.52,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Electron",
+          "Arcanotron",
+          "Magmatron",
+          "Toxitron"
+        ],
+        "additional_targets": [],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/Z36FdRPNbAgjrqGX?fight=13&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Bêkâ",
+          "class": "Warlock",
+          "role": "dps",
+          "dps": 30756.5,
+          "dps_default_view": null,
+          "active_pct": 98.95,
+          "item_level": 359,
+          "parse_percentile": 83,
+          "class_spec": "demonology_warlock"
+        },
+        {
+          "name": "Dauión",
+          "class": "Death Knight",
+          "role": "dps",
+          "dps": 30159.5,
+          "dps_default_view": null,
+          "active_pct": 99.05,
+          "item_level": 363,
+          "parse_percentile": 84,
+          "class_spec": "frost_death_knight"
+        },
+        {
+          "name": "Prashur",
+          "class": "Priest",
+          "role": "dps",
+          "dps": 27599,
+          "dps_default_view": null,
+          "active_pct": 99.77,
+          "item_level": 361,
+          "parse_percentile": 83,
+          "class_spec": "shadow_priest"
+        },
+        {
+          "name": "Kage",
+          "class": "Druid",
+          "role": "dps",
+          "dps": 27224.3,
+          "dps_default_view": null,
+          "active_pct": 99.52,
+          "item_level": 359,
+          "parse_percentile": 81,
+          "class_spec": "balance_druid"
+        },
+        {
+          "name": "Osmanlioglu",
+          "class": "Shaman",
+          "role": "dps",
+          "dps": 20870.9,
+          "dps_default_view": null,
+          "active_pct": 99.59,
+          "item_level": 362,
+          "parse_percentile": 37,
+          "class_spec": "elemental_shaman"
+        },
+        {
+          "name": "Shadowmourne",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 20007,
+          "dps_default_view": null,
+          "active_pct": 99.24,
+          "item_level": 368,
+          "parse_percentile": 83,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Quinth",
+          "class": "Paladin",
+          "role": "tank",
+          "dps": 12265.3,
+          "dps_default_view": null,
+          "active_pct": 98.46,
+          "item_level": 365,
+          "parse_percentile": 62,
+          "class_spec": "protection_paladin"
+        },
+        {
+          "name": "Göttergattin",
+          "class": "Priest",
+          "role": "healer",
+          "dps": 7685.9,
+          "dps_default_view": null,
+          "active_pct": 88.01,
+          "item_level": 366,
+          "parse_percentile": 74,
+          "class_spec": "discipline_priest"
+        },
+        {
+          "name": "Môrû",
+          "class": "Paladin",
+          "role": "healer",
+          "dps": 1005.1,
+          "dps_default_view": null,
+          "active_pct": 73.56,
+          "item_level": 363,
+          "parse_percentile": 90,
+          "class_spec": "holy_paladin"
+        },
+        {
+          "name": "Rhaila",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": 456.4,
+          "dps_default_view": null,
+          "active_pct": 9.87,
+          "item_level": 355,
+          "parse_percentile": 35,
+          "class_spec": "restoration_shaman"
+        }
+      ],
+      "notes": "No deaths. All four constructs damaged; Toxitron receives 4.61% of total damage. Demonology ilvl 359 parse 83; Elemental ilvl 362 parse 37. DPS activity 98.95-99.77%."
+    },
+    {
+      "id": "w2W84MtybL1VKCvQ-fight12",
+      "url": "https://classic.warcraftlogs.com/reports/w2W84MtybL1VKCvQ?fight=12&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/w2W84MtybL1VKCvQ?fight=12&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-13",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 164.8,
+      "raid_dps": 159180.0,
+      "average_item_level": 358.7,
+      "item_level": 358.7,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "blood_death_knight": 12722.2,
+        "survival_hunter": 24349.2,
+        "fire_mage": 19543.5,
+        "retribution_paladin": 30387.7,
+        "elemental_shaman": 22028.0
+      },
+      "actor_item_level": {
+        "blood_death_knight": 357.0,
+        "survival_hunter": 362.0,
+        "fire_mage": 359.0,
+        "retribution_paladin": 359.0,
+        "elemental_shaman": 360.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 32.0,
+        "survival_hunter": 49.0,
+        "fire_mage": 28.0,
+        "retribution_paladin": 85.0,
+        "elemental_shaman": 43.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Planaka"
+        ],
+        "survival_hunter": [
+          "Müldoon"
+        ],
+        "fire_mage": [
+          "Lærekurve"
+        ],
+        "retribution_paladin": [
+          "Suilen"
+        ],
+        "elemental_shaman": [
+          "Kidlvr"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 98.95,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Toxitron",
+          "Arcanotron",
+          "Electron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/w2W84MtybL1VKCvQ?fight=12&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Suilen",
+          "class": "Paladin",
+          "role": "dps",
+          "dps": 30387.7,
+          "dps_default_view": null,
+          "active_pct": 99.96,
+          "item_level": 359,
+          "parse_percentile": 85,
+          "class_spec": "retribution_paladin"
+        },
+        {
+          "name": "Müldoon",
+          "class": "Hunter",
+          "role": "dps",
+          "dps": 24349.2,
+          "dps_default_view": null,
+          "active_pct": 99.21,
+          "item_level": 362,
+          "parse_percentile": 49,
+          "class_spec": "survival_hunter"
+        },
+        {
+          "name": "Baberiðill",
+          "class": "Warrior",
+          "role": "dps",
+          "dps": 22259.7,
+          "dps_default_view": null,
+          "active_pct": 98.95,
+          "item_level": 358,
+          "parse_percentile": 48,
+          "class_spec": "arms_warrior"
+        },
+        {
+          "name": "Kidlvr",
+          "class": "Shaman",
+          "role": "dps",
+          "dps": 22028,
+          "dps_default_view": null,
+          "active_pct": 98.24,
+          "item_level": 360,
+          "parse_percentile": 43,
+          "class_spec": "elemental_shaman"
+        },
+        {
+          "name": "Lærekurve",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 19543.5,
+          "dps_default_view": null,
+          "active_pct": 97.7,
+          "item_level": 359,
+          "parse_percentile": 28,
+          "class_spec": "fire_mage"
+        },
+        {
+          "name": "Cpthamilton",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 15435.4,
+          "dps_default_view": null,
+          "active_pct": 98.95,
+          "item_level": 349,
+          "parse_percentile": 11,
+          "class_spec": "combat_rogue"
+        },
+        {
+          "name": "Planaka",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 12722.2,
+          "dps_default_view": null,
+          "active_pct": 98.53,
+          "item_level": 357,
+          "parse_percentile": 32,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Torrio",
+          "class": "Priest",
+          "role": "healer",
+          "dps": 6489.4,
+          "dps_default_view": null,
+          "active_pct": 89.26,
+          "item_level": 360,
+          "parse_percentile": 58,
+          "class_spec": "discipline_priest"
+        },
+        {
+          "name": "Radý",
+          "class": "Warrior",
+          "role": "tank",
+          "dps": 5024,
+          "dps_default_view": null,
+          "active_pct": 81.77,
+          "item_level": 362,
+          "parse_percentile": 5,
+          "class_spec": "protection_warrior"
+        },
+        {
+          "name": "Telkez",
+          "class": "Druid",
+          "role": "healer",
+          "dps": 862.7,
+          "dps_default_view": null,
+          "active_pct": 27.11,
+          "item_level": 361,
+          "parse_percentile": 86,
+          "class_spec": "restoration_druid"
+        }
+      ],
+      "notes": "No deaths. Ret own gear exactly 359, raid 358.70. DPS all 97.70-99.96% active. Nonwanted Protection Warrior parse 5 / damage activity 81.77%; not used as reference. Ranking date Oct 14, report header creation date Oct 13 recorded as requested."
+    },
+    {
+      "id": "VvXJBz2A93FRY4xm-fight15",
+      "url": "https://classic.warcraftlogs.com/reports/VvXJBz2A93FRY4xm?fight=15&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/VvXJBz2A93FRY4xm?fight=15&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-09",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 164.6,
+      "raid_dps": 157504.4,
+      "average_item_level": 357.4,
+      "item_level": 357.4,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "blood_death_knight": 15401.3,
+        "survival_hunter": 26238.4,
+        "fire_mage": 25936.9,
+        "retribution_paladin": 30330.2,
+        "assassination_rogue": 18826.2
+      },
+      "actor_item_level": {
+        "blood_death_knight": 361.0,
+        "survival_hunter": 359.0,
+        "fire_mage": 358.0,
+        "retribution_paladin": 359.0,
+        "assassination_rogue": 354.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 56.0,
+        "survival_hunter": 63.0,
+        "fire_mage": 62.0,
+        "retribution_paladin": 84.0,
+        "assassination_rogue": 19.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Ampyr"
+        ],
+        "survival_hunter": [
+          "Ehiza"
+        ],
+        "fire_mage": [
+          "Piqoku"
+        ],
+        "retribution_paladin": [
+          "Hùguette"
+        ],
+        "assassination_rogue": [
+          "Kedi"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "raid_dps_median_active_pct": 98.92,
+      "deaths": [],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Arcanotron",
+          "Magmatron",
+          "Electron",
+          "Toxitron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/VvXJBz2A93FRY4xm?fight=15&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Hùguette",
+          "class": "Paladin",
+          "role": "dps",
+          "dps": 30330.2,
+          "dps_default_view": null,
+          "active_pct": 98.87,
+          "item_level": 359,
+          "parse_percentile": 84,
+          "class_spec": "retribution_paladin"
+        },
+        {
+          "name": "Ehiza",
+          "class": "Hunter",
+          "role": "dps",
+          "dps": 26238.4,
+          "dps_default_view": null,
+          "active_pct": 98.92,
+          "item_level": 359,
+          "parse_percentile": 63,
+          "class_spec": "survival_hunter"
+        },
+        {
+          "name": "Piqoku",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 25936.9,
+          "dps_default_view": null,
+          "active_pct": 99.06,
+          "item_level": 358,
+          "parse_percentile": 62,
+          "class_spec": "fire_mage"
+        },
+        {
+          "name": "Niñolito",
+          "class": "Warrior",
+          "role": "dps",
+          "dps": 24468.6,
+          "dps_default_view": null,
+          "active_pct": 99.12,
+          "item_level": 363,
+          "parse_percentile": 62,
+          "class_spec": "arms_warrior"
+        },
+        {
+          "name": "Kedi",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 18826.2,
+          "dps_default_view": null,
+          "active_pct": 97.97,
+          "item_level": 354,
+          "parse_percentile": 19,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Ampyr",
+          "class": "Death Knight",
+          "role": "tank",
+          "dps": 15401.3,
+          "dps_default_view": null,
+          "active_pct": 98.85,
+          "item_level": 361,
+          "parse_percentile": 56,
+          "class_spec": "blood_death_knight"
+        },
+        {
+          "name": "Cassegrain",
+          "class": "Druid",
+          "role": "tank",
+          "dps": 9684.9,
+          "dps_default_view": null,
+          "active_pct": 84.32,
+          "item_level": 344,
+          "parse_percentile": 33,
+          "class_spec": "feral_druid_tank"
+        },
+        {
+          "name": "Klytt",
+          "class": "Paladin",
+          "role": "healer",
+          "dps": 4017.2,
+          "dps_default_view": null,
+          "active_pct": 99.27,
+          "item_level": 358,
+          "parse_percentile": 99,
+          "class_spec": "holy_paladin"
+        },
+        {
+          "name": "Inidil",
+          "class": "Priest",
+          "role": "healer",
+          "dps": 2501.4,
+          "dps_default_view": null,
+          "active_pct": 23,
+          "item_level": 361,
+          "parse_percentile": 12,
+          "class_spec": "discipline_priest"
+        },
+        {
+          "name": "Malakï",
+          "class": "Druid",
+          "role": "healer",
+          "dps": 99.3,
+          "dps_default_view": null,
+          "active_pct": 0,
+          "item_level": 357,
+          "parse_percentile": 67,
+          "class_spec": "restoration_druid"
+        }
+      ],
+      "notes": "No deaths. Ret ilvl 359 parse 84. DPS activity 97.97-99.12%. Nonwanted Guardian ilvl 344 and active 84.32% reduce raid average; wanted players 354-361. Holy healer damage parse 99 recorded, not a wanted spec reference."
+    },
+    {
+      "id": "MRytXdWJxkBpfPK1-fight26",
+      "url": "https://classic.warcraftlogs.com/reports/MRytXdWJxkBpfPK1?fight=26&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/MRytXdWJxkBpfPK1?fight=26&type=summary",
+      "mode": "10N",
+      "difficulty_text": "Normal (10 Player)",
+      "date": "2024-10-11",
+      "kill": true,
+      "boss_verified": "Omnotron Defense System Normal 10 Player Kill",
+      "duration_sec": 167.5,
+      "raid_dps": 158417.4,
+      "average_item_level": 358.8,
+      "item_level": 358.8,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies",
+      "reference_class": "matched_item_level_band",
+      "pets_merged": true,
+      "actor_dps": {
+        "fire_mage": 24430.4,
+        "elemental_shaman": 27443.7,
+        "demonology_warlock": 32011.6
+      },
+      "actor_item_level": {
+        "fire_mage": 359.0,
+        "elemental_shaman": 358.0,
+        "demonology_warlock": 359.0
+      },
+      "actor_parse_percentile": {
+        "fire_mage": 54.0,
+        "elemental_shaman": 71.0,
+        "demonology_warlock": 86.0
+      },
+      "actor_names": {
+        "fire_mage": [
+          "Onýx"
+        ],
+        "elemental_shaman": [
+          "Zthunder"
+        ],
+        "demonology_warlock": [
+          "Ryjalmein"
+        ]
+      },
+      "excluded_actor_dps": {
+        "assassination_rogue:Lunanoír": {
+          "dps": 8634.5,
+          "active_pct": 76.85,
+          "item_level": 359.0,
+          "parse_percentile": 0.0,
+          "reason": "died at 102 s of 168 s"
+        }
+      },
+      "raid_dps_median_active_pct": 98.14,
+      "deaths": [
+        {
+          "name": "Lunanoír",
+          "time": "1:42"
+        }
+      ],
+      "phase_coverage": {
+        "constructs_damaged": [
+          "Toxitron",
+          "Electron",
+          "Arcanotron",
+          "Magmatron"
+        ],
+        "additional_targets": [
+          "Poison Bomb"
+        ],
+        "all_four_damaged": true,
+        "evidence_url": "https://classic.warcraftlogs.com/reports/MRytXdWJxkBpfPK1?fight=26&type=damage-done&by=target",
+        "activation_order": null
+      },
+      "players": [
+        {
+          "name": "Ryjalmein",
+          "class": "Warlock",
+          "role": "dps",
+          "dps": 32011.6,
+          "dps_default_view": null,
+          "active_pct": 99.17,
+          "item_level": 359,
+          "parse_percentile": 86,
+          "class_spec": "demonology_warlock"
+        },
+        {
+          "name": "Zthunder",
+          "class": "Shaman",
+          "role": "dps",
+          "dps": 27443.7,
+          "dps_default_view": null,
+          "active_pct": 98.56,
+          "item_level": 358,
+          "parse_percentile": 71,
+          "class_spec": "elemental_shaman"
+        },
+        {
+          "name": "Onýx",
+          "class": "Mage",
+          "role": "dps",
+          "dps": 24430.4,
+          "dps_default_view": null,
+          "active_pct": 97.72,
+          "item_level": 359,
+          "parse_percentile": 54,
+          "class_spec": "fire_mage"
+        },
+        {
+          "name": "Aesthalis",
+          "class": "Priest",
+          "role": "dps",
+          "dps": 22161.4,
+          "dps_default_view": null,
+          "active_pct": 99.41,
+          "item_level": 359,
+          "parse_percentile": 53,
+          "class_spec": "shadow_priest"
+        },
+        {
+          "name": "Idavere",
+          "class": "Druid",
+          "role": "dps",
+          "dps": 16700.7,
+          "dps_default_view": null,
+          "active_pct": 97.62,
+          "item_level": 359,
+          "parse_percentile": 21,
+          "class_spec": "balance_druid"
+        },
+        {
+          "name": "Kaletri",
+          "class": "Paladin",
+          "role": "tank",
+          "dps": 11119.9,
+          "dps_default_view": null,
+          "active_pct": 99.4,
+          "item_level": 358,
+          "parse_percentile": 49,
+          "class_spec": "protection_paladin"
+        },
+        {
+          "name": "Lunanoír",
+          "class": "Rogue",
+          "role": "dps",
+          "dps": 8634.5,
+          "dps_default_view": null,
+          "active_pct": 76.85,
+          "item_level": 359,
+          "parse_percentile": 0,
+          "class_spec": "assassination_rogue"
+        },
+        {
+          "name": "Syrenara",
+          "class": "Warrior",
+          "role": "tank",
+          "dps": 8572.5,
+          "dps_default_view": null,
+          "active_pct": 98.55,
+          "item_level": 359,
+          "parse_percentile": 50,
+          "class_spec": "protection_warrior"
+        },
+        {
+          "name": "Karenatcanes",
+          "class": "Priest",
+          "role": "healer",
+          "dps": 7342.7,
+          "dps_default_view": null,
+          "active_pct": 89.88,
+          "item_level": 362,
+          "parse_percentile": 69,
+          "class_spec": "discipline_priest"
+        },
+        {
+          "name": "Rayrày",
+          "class": "Shaman",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 356,
+          "parse_percentile": null,
+          "class_spec": "restoration_shaman"
+        }
+      ],
+      "notes": "Rogue Lunanoír died at 1:42 and is excluded from reference counts. Remaining DPS activity 97.62-99.41%. Raid average 358.8, Demonology own ilvl 359 parse 86. Rayrày absent from damage table."
     }
   ],
   "extraction_plan": {

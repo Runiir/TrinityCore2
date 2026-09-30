@@ -1,0 +1,71 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:chimaeron",
+  "round": 3,
+  "changed_files": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron_logic.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_dps_reference_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+    "tests/test_chimaeron_native_logic.py",
+    "tests/test_chimaeron_research_data.py"
+  ],
+  "new_files": [],
+  "resolved_inputs": [],
+  "open_items": [
+    "encounter_research stays open for 10N (contract/ledger fidelity_state_by_mode 10N = fidelity_blocked). Three claims still cover 10N: event_cadence (only the normal-mode berserk is left; see needs_user_decision chimaeron_10n_berserk), helper_field_reset (needs a wipe and re-pull; a stale knockout count would show as a Systems Failure on the new pull's first Massacre), and retail_reset_credit_loot (retail lockout/loot/achievement persistence). If the user settles the berserk, the other two are the remaining 10N blockers.",
+    "Resolved for 10N this round and scoped out of 10N (claims kept for the other modes because the audit pins their keys): the knockout rule (census of 22 WCL kills: 0/30 on the first Massacre of a cycle, 11/24 on the second, 8/8 on the third), the Caustic Slime repeat (6 s), Feud behaviour (30.011 s, Slime continues, no Break or Double Attack), Mortality (no Massacre afterwards), the 4.4.2 client rows (equal to 4.3.4 for every 10N value) and the 10N Slime target count (2).",
+    "Native repairs need the round-3 build: knockout by cycle position 0/50/100% (was 40/60/80/100%), Caustic Slime repeat 6 s (was 5 s), and Break/Double Attack skipped during Feud. boss_chimaeron.cpp passed a syntax-only compile (-fsyntax-only from compile_commands.json). No build was run.",
+    "Live acceptance to watch in the round-3 run: Systems Failure only at the 2nd or 3rd Massacre of a cycle; two Slime volleys per cycle about 6 s apart; no Break or Double Attack during Feud; T11-gear fights of about 120-160 s now reach 1-2 outages.",
+    "The WCL references were applied. Per-spec targets (median over 3-5 of 7 kills): Blood DK 15,316.5 (was 25,888.5), Survival 26,254.9 (was 37,218.05), Fire 24,654.6 (was the WoWSims fallback), Retribution 26,133.6 (was 25,345.0), Assassination 26,350.7 (was fallback), Demonology 23,443.3 (was fallback). Party reference: median raid DPS of the seven kills. xAhkN2y9YP3KRmnJ-fight14 (401.4) was dropped. No WoWSims fallback remains; the Feral tank is exempt.",
+    "Cast timelines: the two 401.4 actors (xAhkN2y9YP3KRmnJ) were removed. additional_references now hold TtAL96aBnyHgXNMJ-fight3 (Blood DK, Survival, Fire, Retribution, Assassination, with 139 boss events) and HF62ky4w8ThJmrbY-fight33 (Demonology). Every actor's captured rows match the count WCL displays.",
+    "Coordinator (DVC): archive and push the raw WCL captures in ~/.cache/chimaeron_wcl/: r3_mechanics.json, r3_timelines.json, census_summary.json, client442.json, and the prompts, final answers and logs of runs r3, r3b, r3c, r3_timelines and r3t2. Then delete the local copies.",
+    "WCL route: codex exec -m gpt-6.1-sol (--skip-git-repo-check, < /dev/null), with its own tab in the user's Chrome (profile Runiir). No verification check appeared in any run. Runs (UTC): census 10:36Z, which lost the Chrome connection after two kills (this also hit the parallel Atramedes, Maloriak and Magmaw agents). Resume at 10:46Z: 'The Chrome plugin reports no available browsers', and no Chrome process was running. Resume at 10:51-11:17Z completed after Chrome was restarted by someone else; I did not start it. Timelines: 10:38Z (partial), then 11:17-11:35Z (complete).",
+    "Round-2 DPS and death numbers came from 409 gear and are not comparable with round 3."
+  ],
+  "patch_requests": [],
+  "risks": [
+    "The second-Massacre knockout chance (50%) is an estimate from 11/24 (95% interval about 26-67%). The rule's structure is well supported: 0/30 at position 1 and 8/8 at position 3.",
+    "The knockout repair shortens the outage share of each kill. In round 1 the boss was pacified for most kills (knockouts after every Massacre). Kills now get about one Feud per two to three Massacres, so the boss melees more, and the round-3 DPS and deaths shift for that reason, not only because of the gear.",
+    "A second outage within 3 minutes gets no Power Word: Barrier or Spirit Link Totem because they are on cooldown. The strategy still proposes them in the window; the executor rejects them, and healers continue by health percentage. This is documented, not changed.",
+    "Skipping Double Attack during Feud: if Mortality starts inside a Feud, the 1 ms Mortality Double Attack is skipped and fires on the 15 s repeat instead. WCL has no Mortality-inside-Feud sample.",
+    "Twelve of the 22 census kills are Phase 4.5 era (Dragon Soul gear), not T11. They follow the same pattern as the nine T11 kills (second position 4/12 versus 7/12)."
+  ],
+  "tests": [
+    {
+      "command": "pixi run python -m pytest -q tests/test_chimaeron_*.py tests/test_cata_raid_research_contracts.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py",
+      "result": "38 passed"
+    },
+    {
+      "command": "PYTHONPATH=. pixi run python -m tools.raid_program.test_baseline check -- <chimaeron, research-contract, audit, raid_shard_scenarios, scoreboard_death_basis, raid_support_runtime, bwd_diagnostic_node_manifests, raid_shard_neutrality, raid_shard_anchor_clearance, bot_validation_route_native_contract, raid_loadout, raid_program_data tests>",
+      "result": "195 passed, new_failures 0, known_failures 0 (baseline from 94cbcdf3fb84)"
+    },
+    {
+      "command": "c++ -fsyntax-only (flags from build/compile_commands.json) boss_chimaeron.cpp",
+      "result": "ok (only the pre-existing <ciso646> warning)"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.raid_workloop program status --boss chimaeron (read-only)",
+      "result": "encounter_research: contract fidelity_state_by_mode[10N] is not accepted (expected; see open_items)"
+    }
+  ],
+  "validation_neutrality": "Every change is scoped to Chimaeron: its native script and pure logic header, one comment in the Chimaeron bot strategy, Chimaeron configs, dossier and tests. No shared runtime, SQL, composition or other boss is touched, so Stonecore, calibration, legacy Magmaw and the other BWD shards are unaffected. The DamageModifier 20 calibration is unchanged.",
+  "needs_user_decision": [
+    {
+      "id": "chimaeron_10n_berserk",
+      "question": "Should Chimaeron 10N normal be treated as having no berserk, which closes the last 10N timer claim, or should 10N research stay blocked until a normal log past 7:30 turns up?",
+      "context": "The native script has no berserk. BigWigs starts a 450 s Berserk bar on every difficulty; DBM has the same timer commented '--Heroic'. Wowhead mentions no enrage. WCL: the longest 10N normal kill found lasts 160 s and has no Berserk row, and the Phase 4.5 rankings list no 10N normal kill of 180 s or more, so no log can test 450 s. Bot kills run about 2-3 minutes; one round-1 pull ran 467 s.",
+      "options": [
+        "Treat 10N normal as no berserk (native unchanged; record it as a sourced user decision)",
+        "Add a 450 s berserk to 10N normal (follows BigWigs; changes native)",
+        "Keep 10N research blocked on this claim until a >450 s normal log is found"
+      ],
+      "recommendation": "Treat 10N normal as no berserk. DBM marks it heroic-only, the native script agrees, and no normal kill comes near 450 s. helper_field_reset and retail_reset_credit_loot still block 10N either way."
+    }
+  ]
+}

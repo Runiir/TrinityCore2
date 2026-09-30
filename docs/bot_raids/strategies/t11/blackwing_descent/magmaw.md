@@ -85,13 +85,43 @@ What the two kills establish for 10N:
 - **Timings:** Lava Spew is three 77690 casts 2 s apart per sequence. Massive Crash begins about 8.1 s after Mangle in both kills.
 - **Molten Tantrum:** none observed.
 
-Still open for 10N:
+The items this section left open for 10N (hotfix cutoff, hooks, head exposure, Mangle release, credit/loot/achievement) were resolved in round 3; see the next section.
 
-- **Hotfix cutoff:** the agreement between two logs that straddle the cutoff is claim-specific evidence only. The official hotfix notes from 2025-02-20 to 2025-05-15 have not been audited.
-- **Hooks:** WCL shows no hook, impale or vehicle events, so hook-expiry timing needs a client combat log or a native observation.
-- **Head exposure:** its start is not bounded.
-- **Mangle release:** what ends Mangle is not identified.
-- **Retail credit, loot and achievements:** not researched.
+### 10N research resolved (round 3, 2026-09-30)
+
+The contract and ledger now carry `fidelity_state_by_mode` with `10N: accepted`. 10H, 25N and 25H stay `fidelity_blocked`, and so does the contract-level state. Seven unresolved claims remain; each is scoped to the modes it still covers, and none covers 10N. The evidence is in the ledger `source_catalog`:
+
+- `wcl_magmaw_10n_t11_20260930`: seven T11-era 10N kills (2024-10, raid item level 354.9-359.9, 131-171 s), read through GPT-6.1 Sol in the user's Chrome.
+- `blizzard_cata_classic_hotfixes_20250627`: the official hotfix thread.
+- `client_442_magmaw_spell_rows_20260930`: 4.4.2 client spell rows.
+- `wowhead_cata_magmaw_loot_achievement_20260930`: Wowhead loot and achievement pages.
+
+What each item now rests on:
+
+- **Hotfix cutoff.** The official Cataclysm Classic hotfix thread runs from 2024-05-01 to 2025-06-27. Its only Magmaw entry is dated 2024-06-13: Magmaw no longer falls backwards during Impale. No section from 2024-10 onward mentions Magmaw or Blackwing Descent.
+- **Timers.** Every observed time fits the native queue within cast-state delays:
+  - Mangle lands at 90.2-90.8 s.
+  - Massive Crash starts 8.1-8.5 s after Mangle.
+  - The first Lava Spew lands at 19.8-24.7 s, and later ones repeat every 22.7-32.4 s.
+  - Pillars land at about 32 s and 63-68 s.
+  - After the head is covered, Spew resumes 3.6-4.4 s later and the next Pillar comes 7.7-8.5 s later.
+  - Three-target Spit volleys land about 6.5 s apart.
+  - No 10N kill reached a second Mangle. The 95 s repeat rests on DBM and the 25H WCL log.
+- **Mangle release and Sweltering Armor.** In every kill, Mangle ends 22.6-27.5 s after it is applied, before its 30 s duration runs out. Armor is applied at the same millisecond, and the head takes damage 0.1-1.4 s later, so the impale releases the tank. The native script does the same: when Impale Self (a 6 s cast) lands, it ejects the Mangle seat and applies Armor.
+- **Head window.** The head is covered about 30 s after Mangle is released, which is when the second Point of Vulnerability refresh happens. The native head window (Impale Self cast +5 s through the 30 s aura) matches the log to within about 2 s.
+- **Hooks.** Both Launch Hook auras (77917/77941) last 3000 ms in the 4.4.2 client, and the native script impales when both auras are up at once. WCL logs no hook events, so hook arrival and expiry can only be checked in a live acceptance run.
+- **Parasites.** Three kills show 9 parasites per Pillar. The others list fewer, but they are a lower bound: the damage-done selector only lists parasites that took damage, and WCL records no summon events.
+- **Boss melee.** Two more T11 kills fall inside the DamageModifier 16 envelope.
+- **Loot and achievement.** The world DB holds the 12 Wowhead N10 items. Wowhead also lists the quest item Soothsayer's Runes 71716; the DB lacks it (`known_repository_gaps`; no combat effect). Parasite Evening 5306 matches native world state 5640.
+
+**Canonical DPS targets.** Round 3 moves to T11 gear (about 359). The seven kills above replace the 395-item-level reference for the canonical c0 shard:
+
+- The references are in `magmaw_wcl_dps_reference_t11_v1.json`, and the cast timelines are in `magmaw_wcl_cast_timelines_t11_v1.json` (fTCjtgrnzm4HRwXP-27 plus RtPXnbZxFkpacw1h-6, eight canonical specs).
+- Per-spec medians: Blood DK 17,717; Balance 20,436; Survival 27,410; Fire 23,396; Retribution 23,552; Assassination 25,288; Elemental 23,683; Demonology 20,651. Each rests on 3-7 kills.
+- The legacy target, its manifest and its timelines are byte-identical, because the accepted `b5-d1898555` verdict pins their hashes.
+- The c0 variant takes the new references through the roster-variant sidecar. That needs the round-3 patch requests to `scoreboard_core`, `graph_acceptance`, `scoreboard_record` and the sidecar.
+
+**Melee on the head.** The canonical roster brings Retribution and Assassination melee, which the legacy roster never had. The ranged head hold needs a configured ranged combat range, so it never admitted melee. Instead, `ranged_formation_restore` pulled them back to the support anchor for the whole head window. Now a melee DPS whose damage target is the Exposed Head keeps normal melee closure (`MeleeHeadAttacker`, `tests/test_magmaw_melee_head_hold.py`). Hazards, hooks and Pillars still take precedence.
 
 ### Fire Mage on the canonical roster (round 2, 2026-09-27)
 

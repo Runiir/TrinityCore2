@@ -2,6 +2,8 @@
 #include "Bots/BotMemberInstanceState.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotNativeLifeEvents.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationExport.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianObservationExport.h"
 #include "Player.h"
 #include <map>
 #include <sstream>
@@ -9,25 +11,18 @@
 #include <vector>
 namespace
 {
-BotAdmissionIdentityGenerated::Identity const* FindExpectedBotAdmissionIdentity(
-    std::string const& classSpec)
+bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
+    std::string& gearProfileId, std::string& gearManifestSha256)
 {
     for (BotAdmissionIdentityGenerated::Identity const& identity :
         BotAdmissionIdentityGenerated::Identities)
         if (classSpec == identity.ClassSpec)
-            return &identity;
-    return nullptr;
-}
-
-bool ResolveExpectedBotGearIdentity(std::string const& classSpec,
-    std::string& gearProfileId, std::string& gearManifestSha256)
-{
-    auto const* identity = FindExpectedBotAdmissionIdentity(classSpec);
-    if (!identity)
-        return false;
-    gearProfileId = identity->GearProfileId;
-    gearManifestSha256 = identity->GearManifestSha256;
-    return !gearProfileId.empty() && gearManifestSha256.size() == 64;
+        {
+            gearProfileId = identity.GearProfileId;
+            gearManifestSha256 = identity.GearManifestSha256;
+            return !gearProfileId.empty() && gearManifestSha256.size() == 64;
+        }
+    return false;
 }
 }
 
@@ -994,6 +989,10 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
     }
     json << "]";
     AppendRaidPrepullConsumablesJson(json);
-    json << "}";
+    // Nefarian and Atramedes cohorts only (their *ObservationExport.h), one encounter_observations object; "" elsewhere.
+    json << BotEncounter::Atramedes::EncounterObservationsJsonField(
+        BotEncounter::Nefarian::EncounterObservationsJsonField(Cohort().Id,
+        { Cohort().CombatLogEpoch, Cohort().AttemptId }, Cohort().Config.ValidationRouteNodeId),
+        Cohort().Id, { Cohort().CombatLogEpoch, Cohort().AttemptId }, Cohort().Config.ValidationRouteNodeId) << "}";
     return json.str();
 }

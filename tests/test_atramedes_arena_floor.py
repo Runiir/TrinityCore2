@@ -156,7 +156,8 @@ int main()
     for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
     {
         ActorSnapshot shield;
-        shield.Guid = ObjectGuid(HighGuid::Unit, spawn.Entry, spawn.SpawnId);
+        // The runtime counter is never the database spawn id.
+        shield.Guid = ObjectGuid(HighGuid::Unit, spawn.Entry, spawn.SpawnId - 249000u);
         shield.Entry = spawn.Entry;
         shield.Kind = ActorKind::Interactable;
         shield.Position = { spawn.X, spawn.Y, spawn.Z };

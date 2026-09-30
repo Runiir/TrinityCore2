@@ -32,6 +32,7 @@
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMagma.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMovement.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPlatformBody.h"
 #include <optional>
 #include <string_view>
 
@@ -99,9 +100,38 @@ constexpr float RisingFloorEmergeToleranceYards = 0.5f;
 constexpr float RisingFloorRideRoomYards = 0.5f;
 constexpr float RisingFloorArmYards = 2.0f;
 constexpr float RisingFloorMeetYards = 1.5f;
+// The ride closes on the floor no slower than RideCloseYardsPerSecond, and
+// fast enough that the swimmer runs out of room under the surface no earlier
+// than the floor reaches the bottom of the boarding band (round 3, packet
+// liquid_clearance): a ride that reached the surface first left the floor to
+// close at the full rise speed, a 0.7 s band, and a late decision then left
+// the floor passing through the body.
+constexpr float RisingFloorRideTargetGapYards = RisingFloorBoardMinYards + 0.05f;
+constexpr float RideSurfaceMarginYards = 0.05f;
+
+inline float RideClosingYardsPerSecond(float gap, float room)
+{
+    float const closeBy = std::max(gap - RisingFloorRideTargetGapYards, 0.0f);
+    if (closeBy <= 0.0f)
+        return RideCloseYardsPerSecond;
+    float const needed = FloorRiseYardsPerSecond * closeBy / (std::max(room, 0.0f) + closeBy);
+    return std::clamp(needed, RideCloseYardsPerSecond, FloorRiseYardsPerSecond);
+}
+
+// A rising pillar passes through a swimmer whose body reaches its wall or
+// skirt: the skirt stands 0.81 above the ring out to about 5.97 yards (the
+// model; PillarSkirtRadius 6.05 bounds it), so a swimmer riding the ring
+// nearer than this would board with the skirt inside its body. It moves
+// out to its swim station's radius first (round 3, packet liquid_clearance).
+constexpr float RisingFloorPillarClearRadius = PillarSkirtRadius + BodyRadiusYards + 0.1f;
+// The hop leaves from no nearer the pillar than this: from the inner part of
+// the station tolerance the jump's body meets the wall edge on the real model
+// (tests/test_liquid_body_clearance.py), and the executor refuses it.
+constexpr float HopOriginInnerSlackYards = 0.25f;
 
 // A passenger of the elevator standing on a pillar (top or rim): its
-// placement is above the ring and skirt and within the pillar's reach.
+// placement is above the ring and skirt and within the pillar's reach, and
+// not inside the pillar's hollow shaft (round 3, BotNefarianPlatformBody.h).
 inline bool OnPillarStructure(MovementContext const& context)
 {
     if (!context.Facts)
@@ -113,7 +143,8 @@ inline bool OnPillarStructure(MovementContext const& context)
         return false;
     float distance = 0.0f;
     NearestPillar(BotLocal(context), distance);
-    return distance <= DescentStepOffRadius + 0.5f;
+    return distance <= DescentStepOffRadius + 0.5f
+        && !InsidePillarShaft(BotLocal(context), placement->Offset.Z);
 }
 
 inline bool IsElevatorPassenger(MovementContext const& context)
@@ -152,6 +183,15 @@ inline AscentDecision PlanPillarAscent(MovementContext const& context,
         return result;
     };
 
+    // Inside a pillar's hollow shaft (round 2: native chase put melee members
+    // there): no swim, float or walk proven by the executors leaves it
+    // (BotNefarianPlatformBody.h), so name it rather than propose one.
+    if (InsidePillarShaft(local, BotLocalZ(context)))
+    {
+        decision.Hold = "nefarian_inside_pillar_column";
+        return decision;
+    }
+
     if (IsElevatorPassenger(context))
     {
         if (OnPillarStructure(context))
@@ -188,9 +228,25 @@ inline AscentDecision PlanPillarAscent(MovementContext const& context,
     {
         // A swimmer over the rising floor meets it and boards it.
         float nearest = 0.0f;
-        NearestPillar(local, nearest);
+        int const nearPillar = NearestPillar(local, nearest);
         if (context.View.CurrentPhase == Phase::PlatformReturn
-            && nearest > PillarSkirtRadius && Length(local) <= OuterFloorLimit)
+            && nearest <= RisingFloorPillarClearRadius && Length(local) <= OuterFloorLimit)
+        {
+            // Beside a rising pillar: straight out from its centre to the
+            // swim station's radius at the same depth, before its skirt
+            // reaches the knee (then the floor is met and boarded there).
+            LocalPoint const centre = PillarCenters[nearPillar];
+            LocalPoint const away{ local.X - centre.X, local.Y - centre.Y };
+            LocalPoint const out = Offset(centre, Length(away) > 0.01f ? AngleOf(away)
+                : PillarSlotHeading(uint8(nearPillar), slot), SwimStationRadius);
+            Vector3 clear = LocalToWorld(out, 0.0f, 0.0f);
+            clear.Z = position.Z;
+            decision.Step = step(AscentStage::Swim);
+            decision.Step->World = clear;
+            return decision;
+        }
+        if (context.View.CurrentPhase == Phase::PlatformReturn
+            && nearest > RisingFloorPillarClearRadius && Length(local) <= OuterFloorLimit)
         {
             float const floorZ = elevator.OriginZ + FloorLocalZAt(local);
             float const gap = position.Z - floorZ;
@@ -212,10 +268,12 @@ inline AscentDecision PlanPillarAscent(MovementContext const& context,
             Vector3 target = position;
             if (gap <= RisingFloorArmYards)
             {
-                // Ride: rise just slower than the floor, up to the surface.
-                target.Z = MagmaSurfaceZ - 0.05f;
-                decision.Step->SwimSpeedYardsPerSecond =
-                    FloorRiseYardsPerSecond - RideCloseYardsPerSecond;
+                // Ride: rise just slower than the floor, up to the surface,
+                // closing fast enough to reach the band before the surface.
+                target.Z = MagmaSurfaceZ - RideSurfaceMarginYards;
+                // (Never 0: the executor reads 0 as the native swim speed.)
+                decision.Step->SwimSpeedYardsPerSecond = std::max(FloorRiseYardsPerSecond
+                    - RideClosingYardsPerSecond(gap, target.Z - position.Z), 0.05f);
             }
             else
             {
@@ -261,9 +319,17 @@ inline AscentDecision PlanPillarAscent(MovementContext const& context,
             decision.Step->World = target;
             return decision;
         }
+        // Under the walk surface, inside the closed body: every swim to the
+        // station crosses the surface from below and is refused.
+        if (InsidePlatformBody(local, position.Z - elevator.OriginZ))
+        {
+            decision.Hold = "nefarian_inside_platform_body";
+            return decision;
+        }
         LocalPoint const station = PillarRadial(p, slot, SwimStationRadius);
         float const off = Distance(local, station);
         if (off > SwimStationToleranceYards
+            || Distance(local, PillarCenters[p]) < SwimStationRadius - HopOriginInnerSlackYards
             || std::fabs(position.Z - floatZ) > SwimDepthToleranceYards)
         {
             // One swim leg: the whole 3D displacement (horizontal and the
@@ -303,9 +369,34 @@ inline AscentDecision PlanPillarAscent(MovementContext const& context,
         return decision;
     }
 
-    // Above the magma without being a passenger: landed from the hop.
+    // Above the magma without being a passenger: landed from the hop (or, in
+    // round 2, stood on the top without boarding). It boards before the
+    // platform rises: nothing native lifts a unit that is not a passenger.
     float distance = 0.0f;
-    NearestPillar(local, distance);
+    int const nearestPillar = NearestPillar(local, distance);
+    bool const topMoving = context.View.CurrentPhase == Phase::PlatformReturn
+        || elevator.State == ElevatorState::Moving;
+    if (topMoving && distance < PillarShaftRadius)
+    {
+        // The top or rim rising under the feet (the rise starts inside the
+        // lowered stop's tolerance): board while it is within the swimmer's
+        // emerge band (the report is made where the member stands), a typed
+        // miss once it has passed them.
+        float const surface = elevator.OriginZ
+            + PillarSurfaceLowest(uint8(nearestPillar), distance);
+        float const gap = position.Z - surface;
+        if (gap < -RisingFloorEmergeToleranceYards)
+        {
+            decision.Hold = "nefarian_rising_top_missed";
+            return decision;
+        }
+        if (gap <= RisingFloorBoardMaxYards)
+        {
+            decision.Step = step(AscentStage::Board);
+            decision.Step->FloorToleranceYards = RisingFloorEmergeToleranceYards;
+            return decision;
+        }
+    }
     if (distance <= PillarSkirtRadius
         && position.Z >= elevator.OriginZ + PillarSkirtLocalZ + 1.5f)
     {

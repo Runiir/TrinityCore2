@@ -26,11 +26,12 @@
     "3pvXdMVntcjxygW4-fight13",
     "h1LaC3FZ8BwPrbXW-fight18",
     "hmAcWCt3njMR4HFT-fight12",
-    "cCXgM3dx9YGKaDt7-fight28"
+    "cCXgM3dx9YGKaDt7-fight28",
+    "QfJR9AZw13G6kzXP-fight14"
   ],
   "reference_status": "extracted",
   "reference_gaps": {
-    "wcl_matched": "Median over MxFq7TRbvnjGY1hJ fight 34 (2024-10-28, 125.1 s) and VL3fW9wNm2PRJDYt fight 13 (2024-10-21, 209.6 s), all targets: blood_death_knight 11,681.9 (fight 34 main tank only), survival_hunter median(25,375.4, 16,145.0), retribution_paladin median(19,708.8, 20,230.9), elemental_shaman 23,356.4 (fight 34), demonology_warlock 18,229.8 (fight 13, two Warlocks). Fire and Assassination (added 2026-09-27, round 2): fire_mage median(18,125.7 h1LaC3FZ8BwPrbXW fight 18, 18,244.2 hmAcWCt3njMR4HFT fight 12, 19,159.7 cCXgM3dx9YGKaDt7 fight 28) = 18,244.2; assassination_rogue median(20,069.4 ZyH2KkjchMRTdXga fight 33, 21,261.6 XzVpNLkxaAFG3DjW fight 18, 20,150.2 3pvXdMVntcjxygW4 fight 13) = 20,150.2. Each kill was picked for one middle-percentile player (Fire parse 52/50/50, Assassination 49/57/48) and its actor_dps holds only that player, so the other specs' targets are unchanged.",
+    "wcl_matched": "Round 3 (2026-09-30), tier-11 band: median per spec over the nine matched 10N kills (raid item level 355.6-361.0, 2024-10-01 to 2024-10-28, 125-210 s), one value per spec per kill, same-spec actors averaged: blood_death_knight 15,364.3 (6 kills, boss tank only), survival_hunter 22,932.8 (9), fire_mage 18,701.95 (4), retribution_paladin 20,070.75 (4), assassination_rogue 20,705.9 (4), elemental_shaman 22,266.0 (8), demonology_warlock 20,471.5 (3). Round 2 held 11,681.9 / 20,760.2 / 18,244.2 / 19,969.85 / 20,150.2 / 23,356.4 / 18,229.8 at 409-gear bots; those DPS ratios are not comparable with the phase-gear roster. View: all nine View Unfiltered Damage (options=8192); fights 34 and 13, first read in the default view, were re-read unfiltered in the round-3 fix (2026-09-30, ledger source wcl_maloriak_10n_post_cutoff_20260930 part_a): Retribution moved from 19,969.85 and Demonology from 20,060.4; the other medians are unchanged. Details: maloriak_wcl_dps_reference_v1.json t11_reference_set_20260930.",
     "no_reference_until_wcl": [
       "feral_druid_tank"
     ],
@@ -39,8 +40,9 @@
   },
   "unmatched_reference_notes": {
     "MxFq7TRbvnjGY1hJ-fight34:combat_rogue,shadow_priest,balance_druid": "Specs the bot roster does not field; context only.",
-    "VL3fW9wNm2PRJDYt-fight13:frost_death_knight,shadow_priest": "Specs the bot roster does not field; context only. The add-tank Blood DK Orageux (1,117.2 DPS) is excluded from actor_dps.",
-    "VL3fW9wNm2PRJDYt-fight13:casts": "Feral tank and Demonology casts are in maloriak_wcl_cast_timelines_fight13_v1.json; the scoreboard timeline comparison uses fight 34 only."
+    "VL3fW9wNm2PRJDYt-fight13:frost_death_knight,shadow_priest": "Specs the bot roster does not field; context only. The add-tank Blood DK Orageux (5,040.5 DPS unfiltered, 1,117.2 default) is excluded from actor_dps.",
+    "VL3fW9wNm2PRJDYt-fight13:casts": "Feral tank and Demonology casts are in maloriak_wcl_cast_timelines_fight13_v1.json; the scoreboard timeline comparison uses fight 34 only.",
+    "QfJR9AZw13G6kzXP-fight14:tanks": "Blood DK Darthkrayt is the boss tank (15,955.0); the fight has no add-tanking Feral, so feral_druid_tank stays exempt with no reference."
   },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
@@ -197,5 +199,39 @@
       "{output_dir}"
     ]
   },
-  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json"
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_cast_timelines_v1.json",
+  "reference_item_level": {
+    "band": "raid item level 352-366 (user decision 2026-09-30: tier-11 phase gear, roster about 359)",
+    "roster_average_item_level": 359,
+    "per_reference": {
+      "MxFq7TRbvnjGY1hJ-fight34": 359.9,
+      "VL3fW9wNm2PRJDYt-fight13": 355.6,
+      "ZyH2KkjchMRTdXga-fight33": 359.0,
+      "XzVpNLkxaAFG3DjW-fight18": 359.3,
+      "3pvXdMVntcjxygW4-fight13": 358.1,
+      "h1LaC3FZ8BwPrbXW-fight18": 361.0,
+      "hmAcWCt3njMR4HFT-fight12": 358.4,
+      "cCXgM3dx9YGKaDt7-fight28": 358.9,
+      "QfJR9AZw13G6kzXP-fight14": 356.0
+    },
+    "median": 358.9
+  },
+  "reference_kills_per_spec": {
+    "assassination_rogue": 4,
+    "blood_death_knight": 6,
+    "demonology_warlock": 3,
+    "elemental_shaman": 8,
+    "fire_mage": 4,
+    "retribution_paladin": 4,
+    "survival_hunter": 9
+  },
+  "reference_spec_targets": {
+    "assassination_rogue": 20705.9,
+    "blood_death_knight": 15364.3,
+    "demonology_warlock": 20471.5,
+    "elemental_shaman": 22266.0,
+    "fire_mage": 18701.95,
+    "retribution_paladin": 20070.75,
+    "survival_hunter": 22932.8
+  }
 }

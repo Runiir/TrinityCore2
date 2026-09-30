@@ -3,6 +3,7 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDutyPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesGeometry.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSoundBound.h"
 #include <optional>
 #include <string_view>
 
@@ -12,10 +13,17 @@
 // npc_atramedes_ancient_dwarven_shield::OnSpellClick); nothing here changes
 // Sound, Vertigo or the breath target.
 //
-// Budget: the ten shields are finite and Searing Flame must always find one.
-// Searing Flame may spend any shield. A 90-Sound emergency may spend down to
-// this ground phase's pending Searing Flame. An air rescue also keeps the
-// next ground phase's; an elective (80 Sound) gong keeps one more spare.
+// Budget (ShieldBudget): the ten shields are finite. The rest of the fight
+// needs one Searing Flame interrupt per ground phase still to come: this
+// ground phase's while it is pending, and the next one's while the boss
+// lives to reach it (ShieldReserve). Every other shield is for the air
+// strikes (rescues, the kiter Sound bound's resets, the pre-liftoff reset),
+// first come first served. Searing Flame may spend any shield; a 90-Sound
+// emergency may spend down to this phase's pending Searing Flame; an
+// elective (80 Sound) gong keeps one more spare, but when the pre-liftoff
+// reset is due the stricter elective budget never suppresses it (it is an
+// air strike). A strike the budget forbids is withheld with a `*_at_reserve`
+// reason.
 namespace BotEncounter::Atramedes
 {
 // 100 Sound is Devastation (78868). Ninety leaves one Sonic Breath tick (+20).
@@ -30,11 +38,28 @@ inline constexpr float ShieldStandInset = 4.0f;
 // Next-ground-phase Searing Flame reserve. The next ground phase's Searing
 // Flame comes at least 51 s after landing (native schedule), and the air
 // phase lasts at least 31 s, so it is >= 82 s away on the ground and >= 51 s
-// away in the air. At a 150k raid-DPS floor (the canonical 10N composition
-// measured 274-279k on Magmaw) and native 10N health 26,111,168 that removes
-// 47% or 29% of the boss's health: below these the boss dies first.
-inline constexpr float NextSearingHealthPctFromGround = 50.0f;
-inline constexpr float NextSearingHealthPctFromAir = 30.0f;
+// away in the air. Below the health that a raid-DPS floor removes in that
+// time the boss dies first and the reserve is released.
+//
+// The floor is the slowest matched tier-11 reference (round 3, 2026-09-30:
+// the roster wears phase gear, ~359): the lowest whole-fight raid DPS of the
+// seven 10N kills at raid item level 354-360 in
+// atramedes_wcl_dps_reference_v1.json is 131,217 (hxz7MH8gW9BYGNdr fight 41);
+// the median is 145,174. Whole-fight raid DPS already prices in the air
+// phase the melee cannot hit. The old 150k floor was taken from ~409-gear
+// Magmaw runs (274-279k) and overstated a T11 raid: a raid slower than its
+// floor reaches the next Searing Flame with its shield spent. A lower floor
+// only keeps the reserve longer. tests/test_atramedes_raid_sound.py checks
+// that the floor stays at or below every matched reference.
+inline constexpr float ReserveRaidDpsFloor = 130000.0f;
+inline constexpr float NativeHealth10N = 26111168.0f;
+inline constexpr float NextSearingSecondsFromGround = 82.0f;
+inline constexpr float NextSearingSecondsFromAir = 51.0f;
+// 40.8% and 25.4%.
+inline constexpr float NextSearingHealthPctFromGround =
+    100.0f * ReserveRaidDpsFloor * NextSearingSecondsFromGround / NativeHealth10N;
+inline constexpr float NextSearingHealthPctFromAir =
+    100.0f * ReserveRaidDpsFloor * NextSearingSecondsFromAir / NativeHealth10N;
 
 struct GongDecision
 {
@@ -87,6 +112,31 @@ inline ShieldReserve SearingFlameReserve(Facts const& facts)
     return reserve;
 }
 
+// The shields left and what each kind of strike may spend of them.
+struct ShieldBudget
+{
+    std::size_t Available = 0;
+    ShieldReserve Reserve;
+
+    // Searing Flame itself may take the last shield.
+    bool AllowsSearingFlame() const { return Available > 0; }
+    // A 90-Sound emergency (Devastation) spends down to this phase's interrupt.
+    bool AllowsEmergency() const { return Available > Reserve.CurrentPhase; }
+    // Air strikes (and the pre-liftoff reset) keep every interrupt.
+    bool AllowsAirStrike() const { return Available > Reserve.Total(); }
+    // An elective 80-Sound gong keeps one spare on top.
+    bool AllowsElective() const { return Available > Reserve.Total() + 1; }
+    std::size_t AirStrikesLeft() const
+    {
+        return AllowsAirStrike() ? Available - Reserve.Total() : 0;
+    }
+};
+
+inline ShieldBudget BuildShieldBudget(Facts const& facts)
+{
+    return { facts.Shields.size(), SearingFlameReserve(facts) };
+}
+
 // Available shields ordered by distance to the ground tank anchor (GUID
 // breaks ties). Rank 0 is the gong owner's, rank 1 the backup's.
 inline std::optional<ShieldFact> DutyShield(Facts const& facts, std::size_t rank)
@@ -133,15 +183,11 @@ inline bool IsKiter(Facts const& facts, ObjectGuid guid)
     return !guid.IsEmpty() && (guid == facts.GroundKiter || guid == facts.AirKiter);
 }
 
-// Ground clicker: the owner, else the backup, else the living non-tank
-// player closest to any shield. A kiter never leaves its kite to gong
-// (GroundKiter only exists while the breath is cast or channelled).
-inline ObjectGuid GroundGonger(Blackboard const& board, Facts const& facts,
+// The living non-tank player closest to any shield (a kiter never leaves
+// its kite to gong).
+inline ObjectGuid NearestShieldPlayer(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
-    for (ObjectGuid guid : { duties.GongOwner, duties.GongBackup })
-        if (FindLivingPlayer(board, guid) && !IsKiter(facts, guid))
-            return guid;
     ObjectGuid best;
     float bestDistance = 0.0f;
     for (ActorSnapshot const& player : board.Players)
@@ -161,21 +207,32 @@ inline ObjectGuid GroundGonger(Blackboard const& board, Facts const& facts,
     return best;
 }
 
+// Ground clicker: the owner, else the backup, else the living non-tank
+// player closest to any shield. A kiter never leaves its kite to gong
+// (GroundKiter only exists while the breath is cast or channelled).
+inline ObjectGuid GroundGonger(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties)
+{
+    for (ObjectGuid guid : { duties.GongOwner, duties.GongBackup })
+        if (FindLivingPlayer(board, guid) && !IsKiter(facts, guid))
+            return guid;
+    return NearestShieldPlayer(board, facts, duties);
+}
+
 inline GongDecision DecideGroundGong(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
     GongDecision decision;
     if (facts.BossStunned)
         return decision;
-    std::size_t const available = facts.Shields.size();
-    ShieldReserve const reserve = SearingFlameReserve(facts);
+    ShieldBudget const budget = BuildShieldBudget(facts);
     if (facts.SearingFlameChannel)
         decision.Reason = "searing_flame";
     else if (facts.MaxSound >= SoundEmergency)
     {
         // A player at 90+ Sound dies to Devastation: only this phase's
         // Searing Flame outranks that.
-        if (available <= reserve.CurrentPhase)
+        if (!budget.AllowsEmergency())
         {
             decision.Withheld = "sound_emergency_at_reserve";
             return decision;
@@ -185,26 +242,51 @@ inline GongDecision DecideGroundGong(Blackboard const& board, Facts const& facts
     else if (facts.MaxSound >= SoundHigh
         && !(facts.SearingFlameInMs && *facts.SearingFlameInMs <= SearingSoonMs))
     {
-        if (available <= reserve.Total() + 1)
+        if (budget.AllowsElective())
+            decision.Reason = "sound_high";
+        else if (PreLiftoffSoundResetDue(facts) && budget.AllowsAirStrike())
+        {
+            // Only the elective budget (one spare on top of every interrupt)
+            // refuses the gong; the last seconds before liftoff are the air
+            // phase's first strike, which every interrupt still expected
+            // leaves room for. Withholding it would start the chase above
+            // the Sound bound with a spendable shield in hand.
+            decision.Reason = "pre_liftoff_sound_reset";
+        }
+        else
         {
             decision.Withheld = "sound_high_at_reserve";
             return decision;
         }
-        decision.Reason = "sound_high";
+    }
+    else if (PreLiftoffSoundResetDue(facts))
+    {
+        // The kiter Sound bound (BotAtramedesSoundBound.h): the air phase's
+        // first strike, taken before the flame can spawn on a loud player.
+        if (!budget.AllowsAirStrike())
+        {
+            decision.Withheld = "pre_liftoff_sound_reset_at_reserve";
+            return decision;
+        }
+        decision.Reason = "pre_liftoff_sound_reset";
     }
     else
         return decision;
     decision.Required = true;
     decision.Urgent = true;
-    decision.Clicker = GroundGonger(board, facts, duties);
+    // The pre-liftoff reset has seconds left: whoever stands nearest a
+    // shield strikes the nearest one.
+    bool const reset = decision.Reason == "pre_liftoff_sound_reset";
+    decision.Clicker = reset ? NearestShieldPlayer(board, facts, duties)
+        : GroundGonger(board, facts, duties);
     if (ActorSnapshot const* clicker = FindLivingPlayer(board, decision.Clicker))
     {
         // The owner and backup strike their own duty shield when it is still
         // available; anyone else strikes the nearest.
         std::optional<ShieldFact> shield;
-        if (decision.Clicker == duties.GongOwner)
+        if (!reset && decision.Clicker == duties.GongOwner)
             shield = DutyShield(facts, 0);
-        else if (decision.Clicker == duties.GongBackup)
+        else if (!reset && decision.Clicker == duties.GongBackup)
             shield = DutyShield(facts, 1);
         std::optional<ShieldFact> const nearest = NearestShield(facts, clicker->Position);
         if (!shield || (nearest && Geometry::Distance3d(clicker->Position, nearest->Position)

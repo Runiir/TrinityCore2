@@ -6,11 +6,14 @@ and tools/raid_program/run_sanity_inputs.py records what older records lacked. N
 change evaluate_target output (Magmaw b5-d1898555 stays byte-identical)."""
 from __future__ import annotations
 
+import gzip
 import json
 from pathlib import Path
 
 import pytest
 
+from tools.bot_ml.live_validation_heartbeat import TRACE_HISTORY_FILE
+from tools.bot_ml.live_validation_terminal_signals import TERMINAL_TRACE_DRAIN_FILE
 from tools.raid_program import run_sanity
 from tools.raid_program.run_sanity import NOT_EVALUABLE, sanity_findings
 from tools.raid_program.run_sanity_inputs import enrage_rows, sanity_input_fields, sanity_inputs
@@ -35,15 +38,15 @@ REGISTRY = {"schema": "creature_damage_calibration_v1", "creatures": {
               "status": "calibrated", "damage_modifier": 10.34}}}
 
 
-def make_root(tmp_path: Path, durations=(300.0, 250.0)) -> Path:
+def make_root(tmp_path: Path, durations=(300.0, 250.0), scenario: str = SCENARIO) -> Path:
     root = tmp_path / "root"
     refs = [{"id": f"r{index}", "duration_sec": duration, "raid_dps": 100000.0,
              "actor_dps": {"blood_death_knight": 12000.0, "fire_mage": 30000.0}}
             for index, duration in enumerate(durations)]
     files = {
         "experiments/configs/wcl.json": {"schema": "test", "references": refs},
-        f"experiments/configs/raid_targets/{SCENARIO}.json": {
-            "schema": "raid_target_v1", "scenario": SCENARIO, "encounter_route_node_id": NODE,
+        f"experiments/configs/raid_targets/{scenario}.json": {
+            "schema": "raid_target_v1", "scenario": scenario, "encounter_route_node_id": NODE,
             "wcl_reference_manifest": "experiments/configs/wcl.json", "matched_reference_ids": [ref["id"] for ref in refs],
             "kills_per_measurement": 1, "actor_dps_ratio": 0.95, "max_boss_window_deaths": 0,
             "roles_without_dps_target": ["healer"], "dps_gate_exempt_specs": ["feral_druid_tank"], "roster": ROSTER},
@@ -85,9 +88,14 @@ def inputs(**changes) -> dict:
                                 "last_resurrection_ms": 17_629, "gap_ms": 16_629, "measured": True,
                                 "in_boss_window": True}], "native_available": True,
                     "combat_log": {"pairs": 0, "min_gap_ms_by_actor": {}}},
+        # a complete decision trace of the boss window with none of the round 3 observations
+        "nefarian_observations": {"bone_warrior_active_over_45s": 0, "bone_warrior_on_pillar": 0, "move_refused": {}},
+        "decision_trace": {"available": True, "files": {"trace_history.jsonl.gz": 40}, "window_rows": 40, "actors": 4,
+                           "sequence_gaps": 0, "unsequenced_rows": 0, "actors_without_rows": [], "unreadable": [],
+                           "complete": True, "incomplete_reason": None},
     }
     for key, value in changes.items():
-        document[key] = {**document[key], **value}
+        document[key] = value if value is None else {**document[key], **value}
     return document
 
 
@@ -102,8 +110,8 @@ def kill(kill_id: str, *, duration: float | None = 200.0, **fields) -> dict:
     return record
 
 
-def write_scoreboard(root: Path, records: list[dict]) -> None:
-    path = root / SCOREBOARD_DIR / f"{SCENARIO}.jsonl"
+def write_scoreboard(root: Path, records: list[dict], scenario: str = SCENARIO) -> None:
+    path = root / SCOREBOARD_DIR / f"{scenario}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(record, sort_keys=True) + "\n" for record in records))
 
@@ -179,7 +187,9 @@ def test_old_records_are_not_evaluable_once_per_check_and_only_for_counted_kills
     write_scoreboard(root, [kill("k1", duration=700.0), kill("k2", duration=650.0),
                             kill("k3", duration=700.0, measurement_validity=stalled)])
     findings = sanity_findings(root, SCENARIO, LABEL)
-    assert not [row for row in findings if row["severity"] == "blocking"]
+    # the round 3 acceptance observation has no not_evaluable escape: unavailable evidence blocks (counted kills only)
+    assert [(row["check"], row["kill_id"]) for row in findings if row["severity"] == "blocking"] == [
+        ("acceptance_observation", "k1"), ("acceptance_observation", "k2")]
     unevaluable = {row["check"]: row for row in findings if row["evidence"].get("status") == NOT_EVALUABLE}
     assert set(unevaluable) == {"enrage_reached", "death_signal_conflict", "repeated_deaths", "health_pinned_half",
                                 "instant_revive"}
@@ -194,7 +204,8 @@ def test_a_window_shorter_than_the_enrage_passes_without_pull_timing(tmp_path):
     write_scoreboard(root, [kill("k1", duration=500.0, death_basis="combat_log_lethal_damage", route_deaths=1,
                                  deaths=lethal_list({"3": 1}), boss_window_deaths=1)])
     findings = sanity_findings(root, SCENARIO, LABEL)
-    assert "enrage_reached" not in by_check(findings) and not [row for row in findings if row["severity"] == "blocking"]
+    assert "enrage_reached" not in by_check(findings)
+    assert not [row for row in findings if row["severity"] == "blocking" and row["check"] != "acceptance_observation"]
 
 
 @pytest.mark.parametrize("hits, at_half, blocked", [
@@ -304,6 +315,134 @@ def test_idle_actor_thresholds(tmp_path, change, idle):
     assert [row["evidence"]["actors"][0]["why"] for row in rows] == ([idle] if idle else [])
 
 
+# --- acceptance_observation (BWD 10N round 3: the Nefarian decision-trace observations) ---------------
+
+ACTIVE, PILLAR = "bone_warrior_active_over_45s", "bone_warrior_on_pillar"
+LEDGE = "pillar_descent_step_off:native_ledge_drop_landing_height_mismatch"
+
+
+def observation_findings(tmp_path, *, observations=None, trace=None, scenario=SCENARIO, actor_changes=None, **fields):
+    """acceptance_observation findings of one kill whose sanity inputs carry the given observation fields."""
+    root = make_root(tmp_path, scenario=scenario)
+    document = inputs()
+    if observations is not None:
+        document["nefarian_observations"] = {**document["nefarian_observations"], **observations}
+    if trace is not None:
+        document["decision_trace"] = {**document["decision_trace"], **trace}
+    record = kill("k1", scenario=scenario, actors=actors(**(actor_changes or {})), sanity_inputs=document, **fields)
+    write_scoreboard(root, [record], scenario)
+    return by_check(sanity_findings(root, scenario, LABEL)).get("acceptance_observation") or []
+
+
+@pytest.mark.parametrize("observations", [{ACTIVE: 1}, {PILLAR: 1}, {ACTIVE: 1, PILLAR: 1}, {ACTIVE: 3, PILLAR: 2}])
+def test_a_bone_warrior_observation_is_one_blocking_finding(tmp_path, observations):
+    rows = observation_findings(tmp_path, observations=observations)
+    assert [(row["severity"], row["kill_id"]) for row in rows] == [("blocking", "k1")]
+    assert {key: rows[0]["evidence"][key] for key in (ACTIVE, PILLAR)} == {ACTIVE: observations.get(ACTIVE, 0),
+                                                                          PILLAR: observations.get(PILLAR, 0)}
+    assert "acceptance observation allows none" in rows[0]["detail"]
+
+
+def test_no_bone_warrior_observation_is_no_finding(tmp_path):
+    """Negative control of the one-entry case: the same record with a complete trace and zero entries."""
+    assert observation_findings(tmp_path, observations={ACTIVE: 0, PILLAR: 0}) == []
+    # Refusals alone are not an acceptance failure: with no idle actor they are not even a finding.
+    assert observation_findings(tmp_path, observations={"move_refused": {"3": {LEDGE: 812}}}) == []
+
+
+def test_an_uncounted_kill_downgrades_the_observation_to_warn(tmp_path):
+    stalled = {"valid_for_dps": False, "reasons": ["boss_window_stall_too_long"], "stalled_sec": 4.0,
+               "max_stall_sec": 4.0, "stall_fraction": 0.004, "thresholds": {"max_boss_window_stall_fraction": 0.02}}
+    rows = observation_findings(tmp_path, observations={ACTIVE: 1}, measurement_validity=stalled)
+    assert [row["severity"] for row in rows] == ["warn"] and rows[0]["evidence"]["counted"] is False
+    assert "kill not counted" in rows[0]["detail"]
+
+
+@pytest.mark.parametrize("case", ["field absent", "no trace file", "sequence gaps", "silent actors", "unreadable",
+                                  "partial counts", "malformed counts"])
+def test_a_missing_or_partial_trace_is_unproven_and_blocks(tmp_path, case):
+    document = inputs()
+    trace = {"available": False, "complete": False, "incomplete_reason": "no_trace_file"}
+    if case == "field absent":  # a record from before sanity_inputs.nefarian_observations
+        del document["nefarian_observations"], document["decision_trace"]
+    elif case == "no trace file":
+        document["nefarian_observations"], document["decision_trace"] = None, {**document["decision_trace"], **trace}
+    elif case == "partial counts":
+        document["nefarian_observations"] = {ACTIVE: 0}
+    elif case == "malformed counts":
+        document["nefarian_observations"] = {ACTIVE: "0", PILLAR: None, "move_refused": {}}
+    else:  # zeros the retained trace cannot vouch for
+        reason = {"sequence gaps": "sequence_gaps", "silent actors": "actors_without_rows", "unreadable": "unreadable"}[case]
+        document["decision_trace"] = {**document["decision_trace"], "complete": False, "incomplete_reason": reason}
+    root = make_root(tmp_path)
+    write_scoreboard(root, [kill("k1", sanity_inputs=document)])
+    rows = by_check(sanity_findings(root, SCENARIO, LABEL))["acceptance_observation"]
+    assert [(row["severity"], row["kill_id"], row["evidence"]["status"]) for row in rows] == [
+        ("blocking", "k1", "unproven")]
+    counts_gone = "records before sanity_inputs.nefarian_observations"
+    fragment = {"field absent": counts_gone, "partial counts": counts_gone, "malformed counts": counts_gone,
+                "no trace file": "holds no retained decision trace", "sequence gaps": "lost rows",
+                "silent actors": "no rows of some actors", "unreadable": "unreadable or has malformed rows"}[case]
+    assert "acceptance observation is unproven" in rows[0]["detail"] and fragment in rows[0]["detail"]
+
+
+def test_an_observation_is_blocking_even_when_the_trace_is_partial(tmp_path):
+    """A count above zero is evidence whatever the coverage; only a zero needs a complete trace."""
+    rows = observation_findings(tmp_path, observations={PILLAR: 1},
+                                trace={"complete": False, "incomplete_reason": "sequence_gaps"})
+    assert [row["severity"] for row in rows] == ["blocking"]
+    assert rows[0]["evidence"]["trace_complete"] is False
+    assert rows[0]["evidence"]["trace_incomplete_reason"] == "sequence_gaps"
+
+
+def test_a_record_without_a_coverage_claim_proves_no_zero(tmp_path):
+    """A synthetic record holding only the counts: one entry is a blocking finding, and so is a zero with no claim."""
+    root = make_root(tmp_path)
+    counts = {ACTIVE: 1, PILLAR: 0, "move_refused": {}}
+    document = {key: value for key, value in inputs().items() if key != "decision_trace"}
+    write_scoreboard(root, [kill("one", sanity_inputs={**document, "nefarian_observations": counts}),
+                            kill("zero", sanity_inputs={**document, "nefarian_observations": {**counts, ACTIVE: 0}})])
+    rows = by_check(sanity_findings(root, SCENARIO, LABEL))["acceptance_observation"]
+    assert [(row["kill_id"], row["severity"]) for row in rows] == [("one", "blocking"), ("zero", "blocking")]
+    assert "allows none" in rows[0]["detail"] and rows[1]["evidence"]["status"] == "unproven"
+
+
+def test_the_top_move_refused_reasons_are_listed_for_an_idle_actor(tmp_path):
+    refused = {"3": {LEDGE: 812, "hop:native_no_path": 40, "pillar_descent_step_off:blocked": 40, "hop:stunned": 2},
+               "1": {"tank_step:leg_in_flight": 9}}  # the Blood DK is not idle
+    idle_mage = {"3": {"encounter_window_dps": 7100.0, "damage_uptime": 0.9}}
+    rows = observation_findings(tmp_path, observations={"move_refused": refused}, actor_changes=idle_mage)
+    assert [row["severity"] for row in rows] == ["warn"]
+    (listed,) = rows[0]["evidence"]["actors"]
+    assert (listed["id"], listed["name"], listed["spec"], listed["why"]) == ("3", "Mage", "fire_mage", "dps")
+    assert listed["move_refused"] == [{"reason": LEDGE, "count": 812}, {"reason": "hop:native_no_path", "count": 40},
+                                      {"reason": "pillar_descent_step_off:blocked", "count": 40}]  # top 3, ties by name
+    assert "fire_mage (id 3)" in rows[0]["detail"] and f"{LEDGE} x812" in rows[0]["detail"]
+    assert "tank_step" not in rows[0]["detail"]
+
+
+def test_move_refused_reasons_need_an_idle_actor_with_refusals(tmp_path):
+    refused = {"3": {LEDGE: 812}}
+    assert observation_findings(tmp_path / "busy", observations={"move_refused": refused}) == []  # nobody idle
+    idle_without = {"1": {"encounter_window_dps": 2000.0, "damage_uptime": 0.1}}  # idle, but never refused a step
+    assert observation_findings(tmp_path / "quiet", observations={"move_refused": refused},
+                                actor_changes=idle_without) == []
+    both = observation_findings(tmp_path / "both", observations={ACTIVE: 1, "move_refused": refused},
+                                actor_changes={"3": {"encounter_window_dps": 7100.0}})
+    assert [row["severity"] for row in both] == ["blocking", "warn"]  # the warn never replaces the blocking finding
+
+
+@pytest.mark.parametrize("scenario", ["blackwing_descent_10n_magmaw", "blackwing_descent_25n_nefarian"])
+def test_a_non_nefarian_scenario_is_not_affected(tmp_path, scenario):
+    """Even a record that carries a bone warrior observation, or none of the fields, gets no finding there."""
+    assert observation_findings(tmp_path / "counts", scenario=scenario, observations={ACTIVE: 4, PILLAR: 2}) == []
+    root = make_root(tmp_path / "old", scenario=scenario)
+    write_scoreboard(root, [kill("k1", scenario=scenario, sanity_inputs={
+        key: value for key, value in inputs().items() if key not in ("nefarian_observations", "decision_trace")})],
+        scenario)
+    assert "acceptance_observation" not in by_check(sanity_findings(root, scenario, LABEL))
+
+
 def test_evidence_fits_the_assess_budget(tmp_path):
     root = make_root(tmp_path, durations=(100.0,))
     long_id = "x" * 150
@@ -349,14 +488,21 @@ def _lethal(at, target, node=NODE):
             "landed_damage_observation": {"target_health_before_damage": 400}}
 
 
-def write_run(path: Path, events, *, report=None, dropped=0) -> Path:
+WINDOW_START, WINDOW_END = 10_000, 800_000  # write_run's analysed boss window (ms)
+# The identity of write_run's combat-log capture (the native event-stream identity of the full export): the
+# judged capture the status counters must belong to (run_sanity_inputs.capture_identity).
+CAPTURE = {"cohort_id": "shard-nefarian", "server_epoch": 5_000_000_001, "attempt_id": 7, "combat_log_epoch": 3}
+
+
+def write_run(path: Path, events, *, report=None, dropped=0, capture=CAPTURE) -> Path:
     path.mkdir(parents=True, exist_ok=True)
-    analysis = {"encounters": [{"route_node_id": NODE, "first_at_ms": 10_000, "last_at_ms": 800_000,
+    analysis = {"encounters": [{"route_node_id": NODE, "first_at_ms": WINDOW_START, "last_at_ms": WINDOW_END,
                                 "actors": [{"actor_guid": guid} for guid in (1, 2, 3, 4)]}],
                 "killed_hostile_damage_reconciliation": {"mismatch_count": 0, "mismatches": [],
                                                          "hostiles": [{"route_node_id": NODE, "target_entry": 41376}]}}
     (path / "combat_analysis.json").write_text(json.dumps(analysis))
-    (path / "combat_log.json").write_text(json.dumps({"recent_events": events, "recent_events_dropped": dropped}))
+    (path / "combat_log.json").write_text(json.dumps({"recent_events": events, "recent_events_dropped": dropped,
+                                                      **(capture or {})}))
     if report is not None:
         (path / "report.json").write_text(json.dumps(report))
     return path
@@ -519,6 +665,184 @@ def test_native_pre_pull_hull_does_not_override_explicit_trash_attribution(tmp_p
     assert [row["evidence"]["actors"][0]["native_gap_ms"] for row in control] == [5]
 
 
+# --- record-time decision-trace observations (write_run: boss window 10-800 s, actors 1-4) -----------
+
+TARGET = {"encounter_route_node_id": NODE, "scenario": SCENARIO}
+BONE_ACTIVE, BONE_PILLAR = "nefarian_bone_warrior_active_over_45s", "nefarian_bone_warrior_on_pillar"
+REFUSED = "nefarian_move_refused:"
+
+
+# What a native decision-trace entry names (BotWorldTrace::AppendDecisionTraceEntryJson): its cohort, server epoch and
+# attempt. write_run's combat-log capture is the same three (plus the combat-log epoch an entry does not carry).
+TRACE_IDENTITY = {field: CAPTURE[field] for field in ("cohort_id", "server_epoch", "attempt_id")}
+
+
+def _trace_row(bot, sequence, action, *, at=None, node=NODE, result="hold", actor=True, identity=TRACE_IDENTITY):
+    """One retained-trace row: the harness's {bot_guid, bot_name, entry} wrapper around a decision-trace entry.
+
+    The entry names the judged capture by default (``identity``; None leaves the identity fields out)."""
+    entry = {"sequence": sequence, "timestamp_ms": 20_000 + sequence * 1_000 if at is None else at,
+             "route_node_id": node, "situation": "adaptive_nefarian", "action": action, "result": result,
+             **(identity or {})}
+    return {"bot_guid": bot, "bot_name": f"Bot{bot}", "entry": entry} if actor else {"entry": {**entry, "actor": {"guid": bot}}}
+
+
+def _write_gz(path: Path, rows: list) -> Path:
+    with gzip.open(path, "wt", encoding="utf-8") as handle:
+        handle.write("".join(json.dumps(row) + "\n" for row in rows))
+    return path
+
+
+def _trace(entries=(), *, bots=(1, 2, 3, 4), count=6, actor=True) -> list[dict]:
+    """A contiguous trace covering the boss window (sequences 1..count per bot) and then the given
+    (bot, action, result) entries, each with the bot's next sequence number. Each bot's first row is
+    stamped before the window opens and its last after the window closes (run_sanity_inputs proves the
+    window edges from those rows); the ones between fall inside the window."""
+    final = {bot: count + sum(entry[0] == bot for entry in entries) for bot in bots}
+
+    def at(bot: int, sequence: int) -> int:
+        if sequence == 1:
+            return WINDOW_START - 1_000
+        return WINDOW_END + 1_000 if sequence == final[bot] else 20_000 + sequence * 1_000
+
+    rows = [_trace_row(bot, sequence, "nefarian_platform_hold", at=at(bot, sequence), actor=actor)
+            for bot in bots for sequence in range(1, count + 1)]
+    last = {bot: count for bot in bots}
+    for bot, action, result in entries:
+        last[bot] += 1
+        rows.append(_trace_row(bot, last[bot], action, at=at(bot, last[bot]), result=result, actor=actor))
+    return rows
+
+
+def _trace_run(tmp_path: Path, rows: list | None, name: str = "run", file: str = TRACE_HISTORY_FILE) -> Path:
+    run = write_run(tmp_path / name, [_hit(20_000, 1, 9_000)])
+    if rows is not None:
+        _write_gz(run / file, rows)
+    return run
+
+
+def _observation_findings(tmp_path: Path, run: Path, name: str = "k1") -> list[dict]:
+    """acceptance_observation findings of one kill recorded from a run directory."""
+    root = make_root(tmp_path / f"{name}-root")
+    write_scoreboard(root, [kill(name, sanity_inputs=sanity_inputs(run, TARGET, ROOT))])
+    return by_check(sanity_findings(root, SCENARIO, LABEL)).get("acceptance_observation") or []
+
+
+def test_sanity_inputs_count_the_nefarian_trace_observations(tmp_path):
+    entries = [(3, BONE_ACTIVE, "observation"), (2, BONE_PILLAR, "observation"), (2, BONE_PILLAR, "observation"),
+               (3, f"{REFUSED}{LEDGE}", "refused"), (3, f"{REFUSED}{LEDGE}", "refused"),
+               (3, f"{REFUSED}hop:native_no_path", "refused"), (1, f"{REFUSED}hop:native_no_path", "refused")]
+    rows = _trace(entries)
+    # Not counted: an entry of another node before the window, and the terminal drain's copies of rows already held.
+    rows.append(_trace_row(3, 0, BONE_PILLAR, at=5_000, node="bwd.trash", result="observation"))
+    run = _trace_run(tmp_path, rows)
+    _write_gz(run / TERMINAL_TRACE_DRAIN_FILE, [rows[-2], _trace_row(3, 3, "nefarian_platform_hold")])
+    result = sanity_inputs(run, TARGET, ROOT)
+    assert result["nefarian_observations"] == {
+        ACTIVE: 1, PILLAR: 2,
+        "move_refused": {"1": {"hop:native_no_path": 1}, "3": {"hop:native_no_path": 1, LEDGE: 2}}}
+    trace = result["decision_trace"]
+    assert (trace["complete"], trace["incomplete_reason"], trace["window_rows"], trace["actors"]) == (True, None, 31, 4)
+    assert trace["files"] == {TRACE_HISTORY_FILE: len(rows), TERMINAL_TRACE_DRAIN_FILE: 2}
+    assert trace["sequence_gaps"] == 0 and trace["actors_without_rows"] == []
+
+
+def test_the_actor_of_a_row_falls_back_to_the_entry(tmp_path):
+    rows = _trace([(3, f"{REFUSED}hop:stunned", "refused")], count=3, actor=False)
+    result = sanity_inputs(_trace_run(tmp_path, rows), TARGET, ROOT)
+    assert result["nefarian_observations"]["move_refused"] == {"3": {"hop:stunned": 1}}
+    assert result["decision_trace"]["complete"] is True
+
+
+def test_one_recorded_bone_warrior_entry_is_one_blocking_finding_and_none_is_none(tmp_path):
+    one = _trace_run(tmp_path, _trace([(3, BONE_ACTIVE, "observation")]), "one")
+    control = _trace_run(tmp_path, _trace([(3, f"{REFUSED}{LEDGE}", "refused")]), "control")
+    rows = _observation_findings(tmp_path, one, "one")
+    assert [(row["severity"], row["kill_id"], row["evidence"][ACTIVE], row["evidence"][PILLAR]) for row in rows] == [
+        ("blocking", "one", 1, 0)]
+    assert _observation_findings(tmp_path, control, "control") == []  # a complete trace with no entry
+
+
+def test_a_missing_trace_is_unproven_end_to_end(tmp_path):
+    run = _trace_run(tmp_path, None)  # a run directory without either retained trace file
+    result = sanity_inputs(run, TARGET, ROOT)
+    assert result["nefarian_observations"] is None
+    assert result["decision_trace"]["available"] is False and result["decision_trace"]["complete"] is False
+    assert result["decision_trace"]["incomplete_reason"] == "no_trace_file"
+    (row,) = _observation_findings(tmp_path, run)
+    assert (row["severity"], row["evidence"]["status"]) == ("blocking", "unproven")
+    assert "holds no retained decision trace" in row["detail"]
+
+
+@pytest.mark.parametrize("case, reason", [
+    ("gaps", "sequence_gaps"),       # light heartbeat tails keep a few rows of a bot's stream
+    ("silent actor", "actors_without_rows"),
+    ("outside the window", "no_window_rows"),
+    ("truncated gzip", "unreadable"),
+    ("malformed row", "unreadable"),
+    ("no sequence", "unsequenced_rows"),
+])
+def test_a_partial_trace_records_its_counts_but_cannot_vouch_for_a_zero(tmp_path, case, reason):
+    rows = _trace()
+    if case == "gaps":
+        rows = [row for row in rows if row["bot_guid"] != 3 or row["entry"]["sequence"] not in (3, 4)]
+    elif case == "silent actor":
+        rows = [row for row in rows if row["bot_guid"] != 4]
+    elif case == "outside the window":
+        rows = [_trace_row(1, sequence, "x", at=5_000, node="bwd.trash") for sequence in range(1, 4)]
+    elif case == "no sequence":
+        rows = [{**row, "entry": {**row["entry"], "sequence": 0}} for row in rows]
+    run = _trace_run(tmp_path, rows)
+    path = run / TRACE_HISTORY_FILE
+    if case == "truncated gzip":
+        path.write_bytes(path.read_bytes()[:-40])
+    elif case == "malformed row":
+        with gzip.open(path, "at", encoding="utf-8") as handle:
+            handle.write("{not json\n")
+    result = sanity_inputs(run, TARGET, ROOT)
+    trace = result["decision_trace"]
+    assert (trace["complete"], trace["incomplete_reason"]) == (False, reason)
+    assert {"gaps": trace["sequence_gaps"] == 2, "silent actor": trace["actors_without_rows"] == ["4"],
+            "outside the window": trace["window_rows"] == 0, "truncated gzip": bool(trace["unreadable"]),
+            "malformed row": bool(trace["unreadable"]), "no sequence": trace["unsequenced_rows"] == 24}[case]
+    (row,) = _observation_findings(tmp_path, run)  # zeros the trace cannot vouch for: blocking, never a pass
+    assert (row["severity"], row["evidence"]["status"]) == ("blocking", "unproven")
+
+
+def test_a_partial_trace_still_blocks_on_an_observation_it_holds(tmp_path):
+    rows = [row for row in _trace([(3, BONE_PILLAR, "observation")]) if row["bot_guid"] != 4]  # no rows of actor 4
+    run = _trace_run(tmp_path, rows)
+    assert sanity_inputs(run, TARGET, ROOT)["nefarian_observations"][PILLAR] == 1
+    assert [row["severity"] for row in _observation_findings(tmp_path, run)] == ["blocking"]
+
+
+def test_a_boss_window_that_is_unknown_is_not_evaluable(tmp_path):
+    run = _trace_run(tmp_path, _trace([(3, BONE_ACTIVE, "observation")]))
+    (run / "combat_analysis.json").write_text(json.dumps({"encounters": []}))
+    result = sanity_inputs(run, TARGET, ROOT)
+    assert result["nefarian_observations"] is None
+    assert result["decision_trace"]["incomplete_reason"] == "boss_window_unknown"
+
+
+def test_only_the_nefarian_scenario_records_trace_observations(tmp_path):
+    run = _trace_run(tmp_path, _trace([(3, BONE_ACTIVE, "observation")]))
+    other = sanity_inputs(run, {"encounter_route_node_id": NODE, "scenario": "blackwing_descent_10n_magmaw"}, ROOT)
+    assert "nefarian_observations" not in other and "decision_trace" not in other
+    assert sanity_inputs(run, TARGET, ROOT)["nefarian_observations"][ACTIVE] == 1
+
+
+def test_the_trace_scan_never_costs_the_record_its_other_inputs(tmp_path, monkeypatch):
+    from tools.raid_program import run_sanity_inputs
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(run_sanity_inputs, "scan_decision_trace", broken)
+    result = sanity_input_fields(_trace_run(tmp_path, _trace()), TARGET, ROOT)["sanity_inputs"]
+    assert result["nefarian_observations"] is None and result["deaths"]["lethal_events"] == 0
+    assert result["decision_trace"]["complete"] is False and "boom" in result["decision_trace"]["error"]
+
+
 def test_enrage_rows_match_the_scenario_or_a_seen_entry():
     assert set(enrage_rows(REGISTRY, SCENARIO)) == {41376}
     assert set(enrage_rows(REGISTRY, "blackwing_descent_10n_magmaw")) == set()
@@ -551,8 +875,12 @@ def test_round_two_nefarian_is_blocked():
     assert {("repeated_deaths", "ae5e8cc7"), ("repeated_deaths", "c4c110ea")} <= blocking
 
 
-def test_round_two_atramedes_and_magmaw_have_no_blocking_finding():
-    assert not _blocking(_stored("blackwing_descent_10n_atramedes", R02))
+def test_round_two_magmaw_has_no_blocking_finding_and_atramedes_only_the_kiter_sound_evidence():
+    # Round 3 fix (user decision 2026-09-30, "Bound kiter Sound"): a record before
+    # sanity_inputs.atramedes_observations cannot prove the kiter stayed at 10 Sound or less, and that
+    # unproven acceptance observation is its only blocking finding (tests/test_atramedes_sanity_observation.py).
+    atramedes = _blocking(_stored("blackwing_descent_10n_atramedes", R02))
+    assert atramedes and {check for check, _ in atramedes} == {"acceptance_observation"}
     magmaw = _stored("blackwing_descent_10n_magmaw", R02)  # records before health_half / revives
     assert {row["check"] for row in magmaw} == {"health_pinned_half", "instant_revive"}
     assert all(row["evidence"]["status"] == NOT_EVALUABLE and row["severity"] == "warn" for row in magmaw)
@@ -562,10 +890,10 @@ def test_command_line_exit_code(capsys):
     _stored(SCENARIO, R02)
     assert run_sanity.main([SCENARIO, "--label", R02]) == 1
     assert "blocking duration_outlier" in capsys.readouterr().out
-    assert run_sanity.main(["blackwing_descent_10n_atramedes", "--label", R02, "--json"]) == 0
+    assert run_sanity.main(["blackwing_descent_10n_magmaw", "--label", R02, "--json"]) == 0
     printed = json.loads(capsys.readouterr().out)
-    assert set(printed) == {"blackwing_descent_10n_atramedes"}
-    assert all(row["severity"] == "warn" for row in printed["blackwing_descent_10n_atramedes"])
+    assert set(printed) == {"blackwing_descent_10n_magmaw"}
+    assert all(row["severity"] == "warn" for row in printed["blackwing_descent_10n_magmaw"])
 
 
 def test_magmaw_b5_verdict_stays_byte_identical():

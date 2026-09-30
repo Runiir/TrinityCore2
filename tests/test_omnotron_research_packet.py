@@ -66,23 +66,53 @@ def test_ledger_retains_client_rotation_and_native_roll() -> None:
     assert values["kill_credit_and_route_attribution"]["modes"]["10N"] == "credit creature 42180 Toxitron"
 
 
-def test_wcl_manifests_hold_three_verified_10n_kills() -> None:
+T11_REFERENCES = [
+    "MxFq7TRbvnjGY1hJ-fight24", "BwaHpnPbjkWtCX4Z-fight26", "TaAF1ncP89KgpbLx-fight12",
+    "mfnZAdFTLkjMBC3z-fight6", "qaKLyFTxkvc9hVpM-fight11", "kCLpgK4xBXcWahN1-fight22",
+    "Z36FdRPNbAgjrqGX-fight13", "w2W84MtybL1VKCvQ-fight12", "VvXJBz2A93FRY4xm-fight15",
+    "MRytXdWJxkBpfPK1-fight26"]
+GATED_SPECS = {"blood_death_knight", "survival_hunter", "fire_mage", "retribution_paladin",
+               "assassination_rogue", "elemental_shaman", "demonology_warlock"}
+
+
+def test_wcl_manifests_hold_tier11_band_10n_kills() -> None:
     reference, timelines = load(WCL_REFERENCE), load(WCL_TIMELINES)
     assert reference["status"] == "references_extracted" and timelines["status"] == "extracted"
-    ids_ = {row["id"] for row in reference["references"]}
-    assert ids_ == {"MxFq7TRbvnjGY1hJ-fight24", "Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"}
+    ids_ = [row["id"] for row in reference["references"]]
+    assert ids_ == T11_REFERENCES
+    band = reference["item_level_band"]
+    assert (band["min"], band["max"], band["roster_average_item_level"]) == (352.0, 366.0, 359)
     for row in reference["references"]:
         assert row["mode"] == "10N" and row["difficulty_text"] == "Normal (10 Player)"
         assert row["duration_sec"] > 0 and row["raid_dps"] > 0 and row["actor_dps"]
+        assert band["min"] <= row["item_level"] <= band["max"] and row["in_item_level_band"]
+        assert row["after_hotfix_cutoff_2025_02_20"] is False
+        assert set(row["actor_dps"]) <= GATED_SPECS
+        # One value per spec: the named actors' mean (same-spec DPS actors averaged).
         for spec, dps in row["actor_dps"].items():
-            best = max(p["dps"] for p in row["players"] if p["class_spec"] == spec and p["role"] != "healer")
-            assert dps == best
-    assert timelines["reference_id"] in ids_ and timelines["duration_sec"] > 0
+            names = row["actor_names"][spec]
+            values = [p["dps"] for p in row["players"] if p["name"] in names and p["class_spec"] == spec]
+            assert len(values) == len(names) and abs(sum(values) / len(values) - dps) < 0.06
+        for key in row["excluded_actor_dps"]:
+            spec, name = key.split(":", 1)
+            assert name not in row["actor_names"].get(spec, [])
+    # Nine kills rotate all four constructs; the reused MxFq kill saw three.
+    four = [row["id"] for row in reference["references"] if row["phase_coverage"]["all_four_damaged"]]
+    assert len(four) == 9 and "MxFq7TRbvnjGY1hJ-fight24" not in four
+    assert set(reference["dropped_references"]) == {"Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"}
+
+    assert timelines["reference_id"] == "w2W84MtybL1VKCvQ-fight12" and timelines["duration_sec"] > 0
     specs = [actor["class_spec"] for actor in timelines["actors"]]
-    assert len(specs) == len(set(specs)) and set(specs) == {
-        "survival_hunter", "fire_mage", "elemental_shaman", "blood_death_knight"}
-    assert all(actor["casts"] for actor in timelines["actors"])
-    assert set(timelines["enemy_cast_timelines"]) == ids_
+    specs += [actor["class_spec"] for ref in timelines["additional_references"] for actor in ref["actors"]]
+    assert len(specs) == len(set(specs)) and set(specs) == GATED_SPECS
+    by_id = {row["id"]: row for row in reference["references"]}
+    for ref_id, actors in [(timelines["reference_id"], timelines["actors"])] + [
+            (ref["reference_id"], ref["actors"]) for ref in timelines["additional_references"]]:
+        assert ref_id in by_id
+        for actor in actors:
+            assert actor["casts"] and actor["source_name"] in by_id[ref_id]["actor_names"][actor["class_spec"]]
+            assert actor["observed_dps"] == by_id[ref_id]["actor_dps"][actor["class_spec"]]
+    assert "MxFq7TRbvnjGY1hJ-fight24" in timelines["enemy_cast_timelines"]
 
 
 def test_wcl_evidence_is_sourced_and_open_10n_claims_stay_blocked() -> None:
@@ -94,16 +124,47 @@ def test_wcl_evidence_is_sourced_and_open_10n_claims_stay_blocked() -> None:
                 "construct_abilities_10n", "damage_scaling_electrical_discharge", "poison_bomb_death"):
         assert rows[key]["status"] == "resolved", key
         assert "wcl_omnotron_10n_20260927" in rows[key]["source_refs"]
-    # One unbroken 267,864 Barrier, one Static Shock hit on the attacking tank and no
-    # interrupt/Converted Power pairing leave three 10N material claims open.
+    # Round 3 (tier-11 kills): Static Shock is attacker-centred and a non-damaging interrupt
+    # gives no Converted Power on 10N; no Barrier broke in 21 kills, so only the absorb
+    # amount kept 10N blocked until the user decision of 2026-09-30 ("Accept 300,000
+    # (Recommended)") closed it for 10N. All three claims stay open for the other modes.
     open_10n = {item["key"] for item in ledger["unresolved"] if "10N" in item["modes"]}
-    assert open_10n == {"barrier_absorb_amount", "static_shock_center_attacker_or_construct",
-                        "power_conversion_no_damage_proc"}
-    assert all(item["key"].startswith("heroic_") for item in ledger["unresolved"] if item["key"] not in open_10n)
+    assert open_10n == set()
+    by_key = {item["key"]: item for item in ledger["unresolved"]}
+    assert by_key["barrier_absorb_amount"]["modes"] == ["10H", "25N", "25H"]
+    assert "user_decision_20260930_omnotron_barrier_absorb_10n" in by_key["barrier_absorb_amount"]["evidence_gap"]
+    assert "Accept 300,000 (Recommended)" in by_key["barrier_absorb_amount"]["evidence_gap"]
+    assert "267,864" in by_key["barrier_absorb_amount"]["evidence_gap"]
+    decision = ledger["source_catalog"]["user_decision_20260930_omnotron_barrier_absorb_10n"]
+    assert decision["quote"] == "Accept 300,000 (Recommended)"
+    assert "user_decision_20260930_omnotron_barrier_absorb_10n" in {row["id"] for row in contract["source_catalog"]}
+    assert contract["difficulty_matrix"]["10N"]["barrier_absorb"] == 300000
+    other_modes = {"static_shock_center_attacker_or_construct", "power_conversion_no_damage_proc"}
+    by_key = {item["key"]: item for item in ledger["unresolved"]}
+    for key in other_modes:
+        assert by_key[key]["modes"] == ["10H", "25N", "25H"]
+        assert "wcl_omnotron_10n_r3_20260930" in by_key[key]["evidence_gap"]
+    assert all(item["key"].startswith("heroic_") for item in ledger["unresolved"]
+               if item["key"] not in open_10n | other_modes | {"barrier_absorb_amount"})
+    for key in ("static_shock_centre_10n", "arcanotron_interrupt_rotation_10n", "poison_bomb_kill_priority_10n"):
+        assert rows[key]["status"] == "resolved" and "wcl_omnotron_10n_r3_20260930" in rows[key]["source_refs"]
+    assert rows["power_conversion_no_damage_proc"]["status"] == "resolved_for_10N"
+    # Promoted 2026-09-30 from sql/custom/staged/world to the auto-applied sql/custom/world.
+    proc = ROOT / "sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql"
+    assert not (ROOT / "sql/custom/staged/world" / proc.name).exists()
+    sql = [line for line in proc.read_text().splitlines() if line and not line.startswith("--")]
+    assert sql == ["UPDATE `spell_proc` SET `SpellTypeMask` = 1 WHERE `SpellId` = 79729;"]
     assert all(item["modes"] and set(item["modes"]) <= {"10N", "10H", "25N", "25H"} for item in ledger["unresolved"])
-    assert rows["barrier_periodic_break"]["status"] == "open"
+    assert rows["barrier_periodic_break"]["status"] == "resolved_for_10N_by_user_decision"
     for document in (ledger, contract):
-        assert set(document["fidelity_state_by_mode"].values()) == {"fidelity_blocked"}
+        assert document["fidelity_state"] == "fidelity_blocked"
+        assert document["fidelity_state_by_mode"] == {"10N": "accepted", "10H": "fidelity_blocked",
+                                                      "25N": "fidelity_blocked", "25H": "fidelity_blocked"}
+    # The per-mode gate accepts 10N only because contract and ledger agree and no claim covers it.
+    from tools.raid_program.raid_program_inputs import mode_scoped_research_state
+    assert mode_scoped_research_state(ROOT, contract, None, "10N") == ("accepted", None)
+    for mode in ("10H", "25N", "25H"):
+        assert mode_scoped_research_state(ROOT, contract, None, mode)[0] == "fidelity_blocked"
     values = {row["key"]: row for row in ledger["values"]}
     health = values["shared_health_and_construct_count"]["wcl_10N_derivation"]["max_health_tooltip_at_pull"]
     assert set(health.values()) == {values["shared_health_and_construct_count"]["native_calculated_mode_values"]["10N"]}
@@ -116,8 +177,18 @@ def test_raid_target_follows_the_canonical_omnotron_selection() -> None:
     assert target["encounter_route_node_id"] == "bwd.omnotron.encounter"
     manifest = load(ROOT / target["wcl_reference_manifest"])
     assert set(target["matched_reference_ids"]) <= {row["id"] for row in manifest["references"]}
-    assert target["matched_reference_ids"] == ["Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"]
-    assert set(target["unmatched_reference_notes"]) == {"MxFq7TRbvnjGY1hJ-fight24"}
+    assert target["matched_reference_ids"] == T11_REFERENCES
+    assert set(target["unmatched_reference_notes"]) == {"Y8ajQ7dbmKMG1RZy-fight24", "xAhkN2y9YP3KRmnJ-fight12"}
+    assert set(target["reference_item_level"]["references"]) == set(T11_REFERENCES)
+    status = target["reference_status"]
+    assert status["wowsims_fallback_specs"] == [] and status["no_reference_specs"] == ["feral_druid_tank"]
+    assert set(status["wcl_spec_kill_counts"]) == GATED_SPECS
+    assert all(count >= 3 for count in status["wcl_spec_kill_counts"].values())
+    from tools.raid_program.scoreboard_core import reference_targets
+    targets = reference_targets(ROOT, target)
+    for spec in GATED_SPECS:
+        assert targets[spec]["basis"] == "wcl"
+        assert targets[spec]["dps"] == pytest.approx(status["wcl_spec_targets"][spec])
     assert (ROOT / target["wcl_cast_timelines"]) == WCL_TIMELINES
     assert "wcl_cast_timelines_pending" not in target
     boss = next(row for row in composition["bosses"] if row["boss_key"] == "omnotron")

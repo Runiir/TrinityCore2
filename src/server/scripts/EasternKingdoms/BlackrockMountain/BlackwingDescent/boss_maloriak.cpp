@@ -29,6 +29,7 @@
 #include "ScriptedCreature.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 
@@ -63,20 +64,7 @@ enum Events
     EVENT_MOVE_AWAY_FROM_CAULDRON,
     EVENT_ENGULFING_DARKNESS,
     EVENT_VILE_SWILL,
-
-    // Experiments
-    EVENT_LEAP_OUT_OF_CHAMBER,
-
-    // Lord Victor Nefarius
-    EVENT_MOCK_MALORIAK,
-    EVENT_THROW_BLACK_BOTTLE,
-    EVENT_LAND,
-    EVENT_SAY_MALORIAK_DEAD,
-    EVENT_MASTER_ADVENTURER_AWARD,
-    EVENT_TELEPORT_AWAY,
-
-    // Vile Swill
-    EVENT_DARK_SLUDGE
+    EVENT_PRE_VIAL_ACTION
 };
 
 enum Phases
@@ -87,15 +75,8 @@ enum Phases
 
 enum MovePoints
 {
-    // Maloriak
     POINT_NONE      = 0,
-    POINT_CAULDRON  = 1,
-
-    // Experiments
-    POINT_GROUND    = 1,
-
-    // Lord Victor Nefarius
-    POINT_LAND      = 1
+    POINT_CAULDRON  = 1
 };
 
 enum Texts
@@ -111,13 +92,7 @@ enum Texts
     SAY_RELEASE_ABERRATIONS = 7,
     SAY_RELEASE_ALL_MINIONS = 8,
     SAY_SLAY                = 9,
-    SAY_DEATH               = 10,
-
-    // Lord Victor Nefarius
-    SAY_MOCK_MALORIAK       = 0,
-    SAY_THROW_BLACK_BOTTLE  = 1,
-    SAY_ANNOUNCE_BLACK_VIAL = 2,
-    SAY_MALORIAK_DEAD       = 3
+    SAY_DEATH               = 10
 };
 
 // Release Aberrations frees three chamber creatures per successful cast; the
@@ -126,7 +101,6 @@ constexpr uint8 MAX_SUCCESSFUL_ABERRATION_RELEASES = 6;
 
 Position const CauldronMovePosition             = { -106.6782f, -475.4438f, 73.45684f };
 Position const LordVictorNefariusSummonPosition = { -105.9514f, -494.0278f, 89.33157f, 1.605703f };
-Position const LordVictorNefariusLandPosition   = { -105.9514f, -494.0278f, 73.44659f };
 
 struct VialData
 {
@@ -185,6 +159,8 @@ struct boss_maloriak : public BossAI
         _usedVialsCount = 0;
         _releasedAberrationsCount = 0;
         _vialSequenceActive = false;
+        _preVialOpening = false;
+        _berserkTimerMs = 0;
     }
 
     void JustAppeared() override
@@ -199,12 +175,18 @@ struct boss_maloriak : public BossAI
         Talk(SAY_AGGRO);
         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
         events.SetPhase(PHASE_ONE);
-        events.ScheduleEvent(EVENT_FACE_TO_CAULDRON, 15s + 500ms, 0, PHASE_ONE);
-        // 10N WCL: an Arcane Storm begins before the first vial in all eight
-        // kills (10.9-15.0 s, median 14.3 s; ledger pre_vial_casts). The
-        // cauldron visit's events.Reset() drops its repeat.
-        if (IsTenNormal())
-            events.ScheduleEvent(EVENT_ARCANE_STORM, 14s + 300ms, 0, PHASE_ONE);
+        // 10N WCL opening (boss_maloriak_shared.h, PRE_VIAL_*): an Arcane Storm,
+        // then Release Aberrations, Remedy or the first vial. The cauldron
+        // visit's events.Reset() drops the storm's repeat.
+        // Berserk: 10N only (the evidence is one 10N kill); the event map is
+        // reset at every cauldron visit, so a plain countdown carries it.
+        _berserkTimerMs = IsTenNormal() ? BERSERK_10N_MS : 0;
+        _preVialOpening = IsTenNormal();
+        if (_preVialOpening)
+            events.ScheduleEvent(EVENT_ARCANE_STORM, Milliseconds(Trinity::Containers::SelectRandomContainerElement(
+                PRE_VIAL_STORM_BEGIN_MS)), 0, PHASE_ONE);
+        else
+            events.ScheduleEvent(EVENT_FACE_TO_CAULDRON, 15s + 500ms, 0, PHASE_ONE);
 
         if (IsHeroic())
             DoSummon(NPC_LORD_VICTOR_NEFARIUS_MALORIAK, LordVictorNefariusSummonPosition, 0, TEMPSUMMON_MANUAL_DESPAWN);
@@ -313,16 +295,22 @@ struct boss_maloriak : public BossAI
                 switch (_currentVial)
                 {
                     case VIAL_RED:
-                        events.ScheduleEvent(EVENT_ARCANE_STORM, 15s + 500ms, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_REMEDY, 20s + 500ms, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, 11s, 0, PHASE_ONE);
+                        if (!ScheduleTenNormalColorVial(Milliseconds(17800), Milliseconds(21000)))
+                        {
+                            events.ScheduleEvent(EVENT_ARCANE_STORM, 15s + 500ms, 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_REMEDY, 20s + 500ms, 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, 11s, 0, PHASE_ONE);
+                        }
                         events.ScheduleEvent(EVENT_CONSUMING_FLAMES, 7s, 8s, 0, PHASE_ONE);
                         events.ScheduleEvent(EVENT_SCORCHING_BLAST, 19s, 22s, 0, PHASE_ONE);
                         break;
                     case VIAL_BLUE:
-                        events.ScheduleEvent(EVENT_ARCANE_STORM, 6s, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_REMEDY, 21s + 500ms, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, 14s + 500ms, 0, PHASE_ONE);
+                        if (!ScheduleTenNormalColorVial(Milliseconds(16200), Milliseconds(19400)))
+                        {
+                            events.ScheduleEvent(EVENT_ARCANE_STORM, 6s, 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_REMEDY, 21s + 500ms, 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, 14s + 500ms, 0, PHASE_ONE);
+                        }
                         events.ScheduleEvent(EVENT_BITING_CHILL, 13s, 14s, 0, PHASE_ONE);
                         events.ScheduleEvent(EVENT_FLASH_FREEZE, 17s, 0, PHASE_ONE);
                         break;
@@ -337,10 +325,22 @@ struct boss_maloriak : public BossAI
                             }, 8s);
                             cauldron->CastSpell(cauldron, SPELL_DEBILITATING_SLIME_DEBUFF);
                         }
+                        // 10N WCL: the slime strips Growth Catalyst (the evidence is 10N only).
+                        if (IsTenNormal())
+                            StripGrowthCatalystForSlime(me);
 
-                        events.ScheduleEvent(EVENT_ARCANE_STORM, 5s, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_REMEDY, 7s + 500ms, 0, PHASE_ONE);
-                        events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, 9s, 0, PHASE_ONE);
+                        // 10N WCL (six Green phases before the 2025-02-20 target,
+                        // five kills after it): Arcane Storm begin 3.1-6.1 s,
+                        // Remedy 7.3-14.2 s and Release Aberrations begin
+                        // 6.415-10.505 s after Slime Imbued, drawn uniformly
+                        // (begin times: the storm has a 0.5 s cast, Remedy is
+                        // instant, the Release bounds are Begin Cast rows).
+                        // Release and Remedy may fall in either order; a due
+                        // event waits while Maloriak casts. The other modes
+                        // keep 5 / 7.5 / 9 s (ScheduleGreenPhaseCasts draws
+                        // nothing off 10N).
+                        ScheduleGreenPhaseCasts(events, IsTenNormal(), EVENT_ARCANE_STORM, EVENT_REMEDY,
+                            EVENT_RELEASE_ABERRATIONS, PHASE_ONE);
                         break;
                     case VIAL_BLACK:
                         me->GetMotionMaster()->MovePoint(POINT_NONE, me->GetHomePosition());
@@ -442,6 +442,17 @@ struct boss_maloriak : public BossAI
         if (!UpdateVictim())
             return;
 
+        if (_berserkTimerMs)
+        {
+            if (_berserkTimerMs <= diff)
+            {
+                _berserkTimerMs = 0;
+                DoCastSelf(SPELL_BERSERK, true);
+            }
+            else
+                _berserkTimerMs -= diff;
+        }
+
         events.Update(diff);
 
         if (me->HasUnitState(UNIT_STATE_CASTING))
@@ -458,6 +469,34 @@ struct boss_maloriak : public BossAI
                     Creature* maloriak = me;
                     me->m_Events.AddEventAtOffset([maloriak]() { maloriak->MakeInterruptable(false); }, 6s + 500ms);
                     events.Repeat(15s + 500ms, 17s);
+                    if (_preVialOpening)
+                        events.ScheduleEvent(EVENT_PRE_VIAL_ACTION,
+                            Milliseconds(PRE_VIAL_SLOT_AFTER_STORM_MS - PRE_VIAL_FACE_LEAD_MS), 0, PHASE_ONE);
+                    break;
+                }
+                case EVENT_PRE_VIAL_ACTION:
+                {
+                    // events.GetTimer() counts from the engage: Reset() cleared it
+                    // and the map does not advance out of combat.
+                    _preVialOpening = false;
+                    uint32 const slotMs = events.GetTimer() + PRE_VIAL_FACE_LEAD_MS;
+                    uint32 const castMs = std::max(slotMs, PRE_VIAL_EARLIEST_CAST_MS) - events.GetTimer();
+                    switch (ChoosePreVialAction(slotMs, urand(0, 7)))
+                    {
+                        case PreVialAction::ReleaseAberrations:
+                            events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, Milliseconds(castMs), 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_FACE_TO_CAULDRON,
+                                Milliseconds(castMs + PRE_VIAL_FACE_AFTER_RELEASE_MS), 0, PHASE_ONE);
+                            break;
+                        case PreVialAction::Remedy:
+                            events.ScheduleEvent(EVENT_REMEDY, Milliseconds(castMs), 0, PHASE_ONE);
+                            events.ScheduleEvent(EVENT_FACE_TO_CAULDRON,
+                                Milliseconds(castMs + PRE_VIAL_FACE_AFTER_REMEDY_MS), 0, PHASE_ONE);
+                            break;
+                        default:
+                            events.ScheduleEvent(EVENT_FACE_TO_CAULDRON, 1ms, 0, PHASE_ONE);
+                            break;
+                    }
                     break;
                 }
                 case EVENT_REMEDY:
@@ -537,7 +576,10 @@ struct boss_maloriak : public BossAI
                     events.Repeat(17s);
                     break;
                 case EVENT_BITING_CHILL:
-                   if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true))
+                    // 10N WCL: one Biting Chill per cast, always on a player in
+                    // melee range (ledger biting_chill_targets_10N); 77760 has a
+                    // 10-yd range, so a 60-yd pick failed the cast.
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, IsTenNormal() ? 10.0f : 60.0f, true))
                         DoCast(target, SPELL_BITING_CHILL);
                     events.Repeat(11s);
                     break;
@@ -633,9 +675,29 @@ private:
     // True from the cauldron facing until the imbued buff schedules the
     // vial's abilities (or phase two cancels the visit).
     bool _vialSequenceActive;
+    // 10N: the engage storm has not reached its pre-vial decision yet.
+    bool _preVialOpening = false;
+    // 10N: milliseconds until Berserk (0 when it is cast or not used).
+    uint32 _berserkTimerMs = 0;
 
     // Phase-two cadence evidence comes from 10N WCL kills only.
     bool IsTenNormal() const { return GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL; }
+
+    // 10N WCL, eight Red and eight Blue phases (ledger vial_offsets_10N): after
+    // the colored imbue, Arcane Storm and Release Aberrations come in a random
+    // order, the first at 11.3 s, then Release at 14.6 s or Arcane Storm at
+    // 16.2 s; Remedy at 17.8-21.0 s (Red) or 16.2-19.4 s (Blue). The native
+    // Blue storm came at 6 s. Returns false off 10N (the old schedule stays).
+    bool ScheduleTenNormalColorVial(Milliseconds remedyMin, Milliseconds remedyMax)
+    {
+        if (!IsTenNormal())
+            return false;
+        bool const stormFirst = urand(0, 1) == 0;
+        events.ScheduleEvent(EVENT_ARCANE_STORM, stormFirst ? 11s + 300ms : 16s + 200ms, 0, PHASE_ONE);
+        events.ScheduleEvent(EVENT_RELEASE_ABERRATIONS, stormFirst ? 14s + 600ms : 11s + 300ms, 0, PHASE_ONE);
+        events.ScheduleEvent(EVENT_REMEDY, remedyMin, remedyMax, 0, PHASE_ONE);
+        return true;
+    }
 
     // The vial pipeline events carry no phase mask. A 25% crossing during a
     // cauldron visit must not finish that visit (walk, drink, colored imbue,
@@ -657,283 +719,6 @@ private:
         summons.DespawnAll();
     }
 };
-
-struct npc_maloriak_flash_freeze : public NullCreatureAI
-{
-    npc_maloriak_flash_freeze(Creature* creature) : NullCreatureAI(creature) { }
-
-    void JustAppeared() override
-    {
-        me->ApplySpellImmune(0, IMMUNITY_ID, sSpellMgr->GetSpellIdForDifficulty(SPELL_GROWTH_CATALYST, me), true);
-        DoCastSelf(SPELL_FLASH_FREEZE_VISUAL);
-        Creature* creature = me;
-        me->m_Events.AddEventAtOffset([creature]() { creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE); }, 1s);
-    }
-
-    void JustDied(Unit* /*killer*/) override
-    {
-        if (TempSummon* summon = me->ToTempSummon())
-            if (Unit* owner = summon->GetSummoner())
-                owner->CastSpell(owner, SPELL_FLASH_FREEZE_DUMMY, true);
-
-        DoCastAOE(SPELL_SHATTER, true);
-        me->DespawnOrUnsummon(4s);
-    }
-};
-
-struct npc_maloriak_experiment : public ScriptedAI
-{
-    npc_maloriak_experiment(Creature* creature) : ScriptedAI(creature)
-    {
-        Initialize();
-    }
-
-    void Initialize()
-    {
-        me->SetReactState(REACT_PASSIVE);
-        me->AddUnitMovementFlag(MOVEMENTFLAG_DISABLE_GRAVITY);
-    }
-
-    void JustDied(Unit* /*killer*/) override
-    {
-        me->DespawnOrUnsummon(5s);
-    }
-
-    void DoAction(int32 action) override
-    {
-        switch (action)
-        {
-            case ACTION_RELEASE_EXPERIMENT:
-            {
-                me->RemoveAurasDueToSpell(SPELL_DROWNED_STATE);
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-
-                // The chambers have super weird spawn points so FindNearestGameObject wont work here.
-                std::list<GameObject*> gameObjectList;
-                uint32 entry = me->GetEntry() == NPC_ABERRATION ? GO_GROWTH_CHAMBER : GO_LARGE_GROWTH_CHAMBER;
-                me->GetGameObjectListWithEntryInGrid(gameObjectList, entry, 2.0f);
-                float z = me->GetPositionZ();
-
-                if (me->GetEntry() == NPC_ABERRATION)
-                {
-                    gameObjectList.remove_if([z](GameObject const* go)
-                    {
-                        if (go->GetPositionZ() > z)
-                            return true;
-
-                        if (std::abs(go->GetPositionZ() - z) > 7.0f)
-                            return true;
-
-                        return false;
-                    });
-                }
-
-                if (gameObjectList.empty())
-                    break;
-
-                for (GameObject* chamber : gameObjectList)
-                {
-                    chamber->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE);
-                    chamber->SetGoState(GO_STATE_ACTIVE_ALTERNATIVE);
-                }
-
-                _events.ScheduleEvent(EVENT_LEAP_OUT_OF_CHAMBER, 1s + 700ms);
-                break;
-            }
-            default:
-                break;
-        }
-    }
-
-    void MovementInform(uint32 motionType, uint32 pointId) override
-    {
-        if (motionType != EFFECT_MOTION_TYPE)
-            return;
-
-        switch (pointId)
-        {
-            case POINT_GROUND:
-                me->SetDisableGravity(false);
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC);
-                me->SetReactState(REACT_AGGRESSIVE);
-                DoZoneInCombat();
-                DoCastSelf(SPELL_GROWTH_CATALYST);
-                break;
-            default:
-                break;
-        }
-    }
-
-    void UpdateAI(uint32 diff) override
-    {
-        // No return here. Maloriak handles the despawn.
-        UpdateVictim();
-
-        _events.Update(diff);
-
-        while (uint32 eventId = _events.ExecuteEvent())
-        {
-            switch (eventId)
-            {
-                case EVENT_LEAP_OUT_OF_CHAMBER:
-                {
-                    Position pos = me->GetPosition();
-                    pos.m_positionX += cos(me->GetOrientation()) * 11.64f;
-                    pos.m_positionY += sin(me->GetOrientation()) * 11.64f;
-                    pos.m_positionZ = me->GetMapHeight(pos.GetPositionX(), pos.GetPositionY(), me->GetPositionZ());
-                    me->GetMotionMaster()->MoveJump(pos, 21.0f, 15.0f, POINT_GROUND);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-
-        DoMeleeAttackIfReady();
-    }
-private:
-    EventMap _events;
-};
-
-struct npc_maloriak_magma_jet : public NullCreatureAI
-{
-    npc_maloriak_magma_jet(Creature* creature) : NullCreatureAI(creature) { }
-
-    void JustSummoned(Creature* summon) override
-    {
-        summon->CastSpell(summon, SPELL_MAGMA_JETS_ERUPTION);
-        summon->DespawnOrUnsummon(30s);
-    }
-};
-
-struct npc_maloriak_lord_victor_nefarius : public NullCreatureAI
-{
-    npc_maloriak_lord_victor_nefarius(Creature* creature) : NullCreatureAI(creature) { }
-
-    void JustAppeared() override
-    {
-        me->SetHover(true);
-        DoCastSelf(SPELL_TELEPORT_VISUAL_ONLY);
-        _events.ScheduleEvent(EVENT_MOCK_MALORIAK, 7s + 200ms);
-    }
-
-    void MovementInform(uint32 motionType, uint32 pointId) override
-    {
-        if (motionType != POINT_MOTION_TYPE && motionType != EFFECT_MOTION_TYPE)
-            return;
-
-        switch (pointId)
-        {
-            case POINT_LAND:
-                me->SetDisableGravity(false);
-                me->SetHover(false);
-                _events.ScheduleEvent(EVENT_SAY_MALORIAK_DEAD, 2s);
-                break;
-            default:
-                break;
-        }
-    }
-
-    void DoAction(int32 action) override
-    {
-        switch (action)
-        {
-            case ACTION_THROW_BLACK_BOTTLE:
-                Talk(SAY_THROW_BLACK_BOTTLE);
-                _events.ScheduleEvent(EVENT_THROW_BLACK_BOTTLE, 2s + 400ms);
-                break;
-            case ACTION_MALORIAK_DEAD:
-                me->SetAIAnimKitId(AI_ANIM_KIT_ID_LORD_VICTOR_NEFARIUS);
-                _events.Reset();
-                _events.ScheduleEvent(EVENT_LAND, 3s);
-                break;
-            default:
-                break;
-        }
-    }
-
-    void UpdateAI(uint32 diff) override
-    {
-        _events.Update(diff);
-
-        while (uint32 eventId = _events.ExecuteEvent())
-        {
-            switch (eventId)
-            {
-                case EVENT_MOCK_MALORIAK:
-                    Talk(SAY_MOCK_MALORIAK);
-                    break;
-                case EVENT_THROW_BLACK_BOTTLE:
-                    Talk(SAY_ANNOUNCE_BLACK_VIAL);
-                    DoCastAOE(SPELL_THROW_BLACK_BOTTLE, true);
-                    break;
-                case EVENT_LAND:
-                    me->GetMotionMaster()->MoveLand(POINT_LAND, LordVictorNefariusLandPosition);
-                    break;
-                case EVENT_SAY_MALORIAK_DEAD:
-                    Talk(SAY_MALORIAK_DEAD);
-                    _events.ScheduleEvent(EVENT_MASTER_ADVENTURER_AWARD, 7s);
-                    break;
-                case EVENT_MASTER_ADVENTURER_AWARD:
-                    DoCastAOE(SPELL_MASTER_ADVENTURER_AWARD);
-                    _events.ScheduleEvent(EVENT_TELEPORT_AWAY, 2s + 500ms);
-                    break;
-                case EVENT_TELEPORT_AWAY:
-                    DoCastSelf(SPELL_TELEPORT_VISUAL_ONLY);
-                    me->DespawnOrUnsummon(1s + 200ms);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-private:
-    EventMap _events;
-};
-
-struct npc_maloriak_vile_swill : public ScriptedAI
-{
-    npc_maloriak_vile_swill(Creature* creature) : ScriptedAI(creature) {  }
-
-    void JustAppeared() override
-    {
-        DoZoneInCombat();
-        me->ApplySpellImmune(0, IMMUNITY_ID, sSpellMgr->GetSpellIdForDifficulty(SPELL_GROWTH_CATALYST, me), true);
-        _events.ScheduleEvent(EVENT_DARK_SLUDGE, 6s);
-    }
-
-    void JustDied(Unit* /*killer*/) override
-    {
-        me->DespawnOrUnsummon(5s);
-    }
-
-    void UpdateAI(uint32 diff) override
-    {
-        if (!UpdateVictim())
-            return;
-
-        _events.Update(diff);
-
-        while (uint32 eventId = _events.ExecuteEvent())
-        {
-            switch (eventId)
-            {
-                case EVENT_DARK_SLUDGE:
-                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true))
-                        DoCast(target, SPELL_DARK_SLUDGE);
-                    _events.Repeat(6s);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        DoMeleeAttackIfReady();
-    }
-private:
-    EventMap _events;
-};
 }
 
 void AddSC_boss_maloriak()
@@ -941,12 +726,9 @@ void AddSC_boss_maloriak()
     using namespace BlackwingDescent;
     using namespace BlackwingDescent::Maloriak;
     RegisterBlackwingDescentCreatureAI(boss_maloriak);
-    RegisterBlackwingDescentCreatureAI(npc_maloriak_flash_freeze);
-    RegisterBlackwingDescentCreatureAI(npc_maloriak_experiment);
-    RegisterBlackwingDescentCreatureAI(npc_maloriak_magma_jet);
-    RegisterBlackwingDescentCreatureAI(npc_maloriak_lord_victor_nefarius);
-    RegisterBlackwingDescentCreatureAI(npc_maloriak_vile_swill);
-    // The spell scripts live in boss_maloriak_spells.cpp; registering them
-    // here keeps the Eastern Kingdoms script loader unchanged.
+    // The helper creature AIs (boss_maloriak_minions.cpp) and the spell
+    // scripts (boss_maloriak_spells.cpp) register here, so the Eastern
+    // Kingdoms script loader is unchanged.
+    AddSC_boss_maloriak_minions();
     AddSC_boss_maloriak_spells();
 }

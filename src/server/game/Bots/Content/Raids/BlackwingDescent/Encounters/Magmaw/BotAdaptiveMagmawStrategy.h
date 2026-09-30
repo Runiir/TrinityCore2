@@ -235,7 +235,8 @@ public:
             && !HasActivePillar(board)
             && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
             && !HasActiveHazardPath(board, movementLease, activePathValid, moving)
-            && InConfiguredHeadRange(board, *bot, observed.Head, role);
+            && (InConfiguredHeadRange(board, *bot, observed.Head, role)
+                || MeleeHeadAttacker(*bot, observed.Head, role));
         plan.ReleaseRetainedRangedFormation = holdHeadPosition
             && activePathValid && retainedPath && retainedPath->PurposeValid
             && retainedPath->Purpose == "ranged_formation_restore"

@@ -23,6 +23,12 @@ COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10
 AUDIT = ROOT / "experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json"
 SCRIPT = ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp"
 DBC = ROOT / "data/dbc/enUS"
+# Tier-11 references (raid item level 352-366), round 3 of the BWD 10N program (2026-09-30).
+T11_REFERENCES = [
+    "MxFq7TRbvnjGY1hJ-fight27", "JLvtbwNpFrzf6qjQ-fight14", "B4J8vQVnbxFdjf3P-fight22",
+    "HF62ky4w8ThJmrbY-fight33", "AztLjaG8wJh2fvbk-fight37", "TtAL96aBnyHgXNMJ-fight3",
+    "zg18Kt3FkAdyv7jn-fight11",
+]
 
 
 def load(path: Path) -> dict:
@@ -70,13 +76,53 @@ def test_research_completion_covers_the_10n_obligations_with_known_sources() -> 
         for row in ledger[section]:
             assert set(row["source_refs"]) <= sources, row["key"]
     # WCL-dependent work is promoted only with a WCL source attached.
-    assert rows["wcl_dps_reference"]["status"] == "resolved_two_kills"
+    assert rows["wcl_dps_reference"]["status"] == "resolved_t11_band_seven_kills"
+    assert "wcl_t11_chimaeron_refs_20260930" in rows["wcl_dps_reference"]["source_refs"]
+    # Round 3: the knockout rule and the Slime repeat are resolved for 10N from WCL.
+    for key in ("caustic_slime", "systems_failure_feud_outage"):
+        assert rows[key]["status"] == "resolved_10N", key
+        assert "wcl_chimaeron_mechanics_census_20260930" in rows[key]["source_refs"], key
+    census = ledger["knockout_census_10N"]["by_cycle_position"]
+    assert census["1"]["knockouts"] == 0 and census["3"]["knockouts"] == census["3"]["massacres"]
+    assert 0 < census["2"]["knockouts"] < census["2"]["massacres"]
+    assert sum(row["massacres"] for row in census.values()) == sum(
+        len(kill["massacres"]) for kill in ledger["knockout_census_10N"]["kills"])
     assert rows["boss_melee_damage_fidelity"]["status"] == "calibrated_staged"
     assert rows["boss_health"]["status"] == "resolved_10N"
     for key in ("wcl_dps_reference", "boss_melee_damage_fidelity", "boss_health"):
         assert "wcl_MxFq7TRbvnjGY1hJ_27" in rows[key]["source_refs"], key
-    assert rows["berserk"]["status"] == "unresolved"
+    # User raid experience 2026-09-30: no berserk on normal or heroic; native unchanged.
+    assert rows["berserk"]["status"] == "resolved_by_user_raid_experience"
+    assert rows["berserk"]["modes"] == ["10N", "10H", "25N", "25H"]
+    assert "user_raid_experience_20260930_chimaeron_berserk" in rows["berserk"]["source_refs"]
     assert ledger["wcl_extraction_plan"]["status"] == "extracted_2026_09_27"
+
+
+def test_berserk_decision_is_quoted_and_the_native_script_stays_without_one() -> None:
+    quote = ("Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. "
+             "Kill it before it kills you due to the 99% reduced healing")
+    ledger, contract = load(LEDGER), load(CONTRACT)
+    source = next(row for row in ledger["source_catalog"]
+                  if row["id"] == "user_raid_experience_20260930_chimaeron_berserk")
+    assert source["quote"] == quote and "user raid experience 2026-09-30" in source["authority"]
+    assert "user_raid_experience_20260930_chimaeron_berserk" in contract["source_refs"]
+    assert next(row for row in ledger["values"] if row["key"] == "berserk")["user_raid_experience_20260930"] == quote
+    assert next(row for row in contract["timer_contract"] if row["key"] == "berserk")["native"] == "none"
+    assert quote in DOSSIER.read_text(encoding="utf-8")
+    assert "berserk" not in SCRIPT.read_text(encoding="utf-8").lower()
+
+
+def test_mode_scopes_keep_10n_blocked_only_by_its_open_claims() -> None:
+    # event_cadence lost its last 10N part (the berserk) on 2026-09-30 and stays open for the 2 s-swing modes.
+    open_10n = {"helper_field_reset", "retail_reset_credit_loot"}
+    for document in (load(CONTRACT), load(LEDGER)):
+        assert document["fidelity_state_by_mode"] == dict.fromkeys(("10N", "10H", "25N", "25H"), "fidelity_blocked")
+        for claim in document["unresolved"]:
+            assert claim["modes"] and set(claim["modes"]) <= {"10N", "10H", "25N", "25H"}, claim["key"]
+        covering = {claim["key"] for claim in document["unresolved"] if "10N" in claim["modes"]}
+        assert covering == open_10n
+        cadence = next(claim for claim in document["unresolved"] if claim["key"] == "event_cadence")
+        assert cadence["modes"] == ["10H", "25N", "25H"]
 
 
 def test_ledger_values_reproduce_the_native_formulas() -> None:
@@ -129,17 +175,31 @@ def test_wcl_references_and_timelines_are_extracted() -> None:
     assert reference["schema"] == "chimaeron_wcl_dps_reference_v1"
     assert reference["extraction_status"] == "extracted"
     ids_ = [row["id"] for row in reference["references"]]
-    assert ids_ == ["MxFq7TRbvnjGY1hJ-fight27", "xAhkN2y9YP3KRmnJ-fight14"]
+    assert ids_ == T11_REFERENCES
+    band = reference["item_level_band"]
     for row in reference["references"]:
         assert row["mode"] == "10N" and row["duration_sec"] > 0 and row["raid_dps"] > 0
         assert row["limitations"] and row["url"].startswith("https://classic.warcraftlogs.com/reports/")
+        # Tier-11 band (user decision 2026-09-30) and T11 era.
+        assert band["min"] <= row["item_level"] <= band["max"] and row["in_item_level_band"]
+        assert row["after_hotfix_cutoff_2025_02_20"] is False
         healers = {r["spec"] for r in row["roster"] if r["role"] == "healer"}
         assert not healers & set(row["actor_dps"])
+    assert "xAhkN2y9YP3KRmnJ-fight14" not in ids_
     fight27 = reference["references"][0]["actor_dps"]
-    assert fight27["survival_hunter"] == pytest.approx((26557.1 + 29102.4) / 2)
+    assert fight27["survival_hunter"] == pytest.approx((26557.1 + 29102.4) / 2, abs=0.1)
     assert timelines["schema"] == "chimaeron_wcl_cast_timelines_v1"
     assert timelines["reference_id"] == "MxFq7TRbvnjGY1hJ-fight27"
-    for actor in timelines["actors"]:
+    actors = list(timelines["actors"])
+    for extra in timelines["additional_references"]:
+        assert extra["reference_id"] in ids_ and extra["duration_sec"] > 0
+        actors += extra["actors"]
+    # Every timeline actor comes from an in-band reference (the 401.4 kill's actors are gone).
+    assert {actor["actor_id"].split("-source")[0] for actor in actors} <= {i.split("-fight")[0] for i in ids_}
+    assert {actor["class_spec"] for actor in actors} >= {
+        "blood_death_knight", "survival_hunter", "fire_mage", "retribution_paladin",
+        "assassination_rogue", "demonology_warlock"}
+    for actor in actors:
         assert actor["row_count"] == len(actor["casts"]) > 0
         assert all(cast["ability"] != "Begin Cast" for cast in actor["casts"])
     massacre = [e["t"] for e in timelines["boss_events"] if e["spell_id"] == 82848 and e["event"] == "Begin Cast"]
@@ -152,7 +212,7 @@ def test_raid_target_roster_is_the_canonical_chimaeron_copy() -> None:
     assert target["encounter_route_node_id"] == "bwd.chimaeron.encounter"
     assert target["wcl_reference_manifest"] == WCL_REFERENCE.relative_to(ROOT).as_posix()
     assert target["wcl_cast_timelines"] == WCL_TIMELINES.relative_to(ROOT).as_posix()
-    assert target["matched_reference_ids"] == ["MxFq7TRbvnjGY1hJ-fight27", "xAhkN2y9YP3KRmnJ-fight14"]
+    assert target["matched_reference_ids"] == T11_REFERENCES
     assert target["actor_dps_ratio"] == 0.95 and target["fallback_reference"]["ratio"] == 0.90
     assert target["roles_without_dps_target"] == ["healer"] and target["max_boss_window_deaths"] == 0
     assert target["shard"]["lockout"]["precompleted_boss_keys"] == ["magmaw", "omnotron"]
@@ -183,7 +243,12 @@ def test_raid_target_reads_through_the_scoreboard_with_declared_gaps() -> None:
         assert references[spec]["basis"] == "wowsims_fallback"
     for spec, dps in declared["wcl_matched"].items():
         assert references[spec] == {"dps": pytest.approx(dps), "basis": "wcl", "ratio": 0.95}
-    assert scoreboard_core.party_reference_dps(ROOT, target) == pytest.approx((217144.7 + 345080.1) / 2)
+    assert not declared["wowsims_fallback_available"]
+    assert {spec: references[spec]["dps"] for spec in declared["wcl_matched"]} == pytest.approx({
+        "blood_death_knight": 15316.5, "survival_hunter": 26254.9, "fire_mage": 24654.6,
+        "retribution_paladin": 26133.6, "assassination_rogue": 26350.7, "demonology_warlock": 23443.3})
+    raid_dps = sorted(row["raid_dps"] for row in load(WCL_REFERENCE)["references"])
+    assert scoreboard_core.party_reference_dps(ROOT, target) == pytest.approx(raid_dps[len(raid_dps) // 2])
 
 
 def test_dossier_discloses_sources_state_and_strategy() -> None:
@@ -197,7 +262,7 @@ def test_dossier_discloses_sources_state_and_strategy() -> None:
 def test_native_script_repairs_are_in_place() -> None:
     source = SCRIPT.read_text(encoding="utf-8")
     initialize = function_body(source, "void Initialize()")
-    for field in ("_knockOutChance = 40;", "_killedPlayerCount = 0;", "_isInFeud = false;"):
+    for field in ("_massacresInCycle = 0;", "_killedPlayerCount = 0;", "_isInFeud = false;"):
         assert field in initialize
     reset = function_body(source, "void Reset() override")
     assert "Initialize();" in reset and "SetMortalityTauntImmunity(false);" in reset
@@ -212,6 +277,16 @@ def test_native_script_repairs_are_in_place() -> None:
     assert "_killedPlayerCount = 0;" in engage
     # WCL 10N: the first Caustic Slime impacts land at 17.2 s (15 s cast + flight).
     assert "events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 15s, 0, PHASE_1);" in engage
+    # WCL 10N (three kills, ten Massacre cycles): two Slime volleys per cycle, about 6 s apart.
+    # 10N only: the other modes keep the 5 s repeat (test_chimaeron_mode_gating.py).
+    assert "events.Repeat(Logic::CausticSlimeRepeatMs(IsTenNormal()));" in source
+    assert "events.Repeat(5s);" not in source
+    # Feud pacifies his melee: on 10N no Break or Double Attack while it lasts (WCL: no Double Attack
+    # application inside either observed 30 s Feud window); the timers keep running.
+    update = function_body(source, "void UpdateAI(uint32 diff) override")
+    for cast in ("DoCastVictim(SPELL_BREAK);", "DoCastSelf(SPELL_DOUBLE_ATTACK, true);"):
+        guard = update.index(cast)
+        assert "if (!Logic::SkipsBreakAndDoubleAttack(IsTenNormal(), _isInFeud))" in update[guard - 120:guard], cast
     timer = function_body(source, "uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override")
     assert "spellId != SPELL_MASSACRE" in timer
     assert "events.GetTimeUntilEvent(EVENT_MASSACRE)" in timer

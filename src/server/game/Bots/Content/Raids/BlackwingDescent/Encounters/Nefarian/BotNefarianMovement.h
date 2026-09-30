@@ -77,6 +77,9 @@ struct SurfaceGoal
     // from where the bot actually stands).
     std::vector<LocalPoint> Sight;
     float SightRangeYards = 0.0f;
+    // A standoff member (hunter): the nearest it may stand to Sight.front(),
+    // its damage target (round 3: 577 min_range_required rejections).
+    float SightMinRangeYards = 0.0f;
 };
 
 struct MovementContext
@@ -156,10 +159,6 @@ inline SurfaceGoal MakeGoal(MovementContext const& context, MovePurpose purpose,
     return goal;
 }
 
-// A point a bone warrior may be led to: well outside Nefarian's front cone
-// (his breath wakes, refills and empowers warriors; confirmed by the user) and
-// outside his tail.
-constexpr float WarriorFrontMarginDeg = 15.0f;
 constexpr float HandlerKiteTriggerYards = 6.0f;
 // The movement hold that stops a running walk no lawful leg replaces (the
 // submission claims the movement lane and stops the spline).
@@ -178,6 +177,9 @@ constexpr std::string_view WarriorStopHold = "nefarian_warrior_path_stop";
 // (static navmesh paths under the transport) cannot walk it off. A leg in
 // flight (nefarian_leg_in_flight) renews the lease without being stopped.
 constexpr std::string_view PlatformHold = "nefarian_platform_hold";
+// The decision-trace action of a movement step the executor refused (round
+// 3): "nefarian_move_refused:<mechanic>:<executor reason>".
+constexpr std::string_view MoveRefusedPrefix = "nefarian_move_refused:";
 constexpr std::string_view LegInFlightHold = "nefarian_leg_in_flight";
 
 // A platform hold keeps the diagnostic it replaces visible in the trace:
@@ -203,38 +205,62 @@ inline bool IsPlatformHold(std::string_view hold)
     return hold.substr(0, PlatformHold.size()) == PlatformHold;
 }
 
-// The diagnostic a hold carries: the hold itself, or what a platform hold
-// replaced.
+// The pillar hold (round 3): in phase 2 a member with no step of the plan
+// (waiting at its swim station, wading, on its pillar top, or somewhere no
+// lawful step leaves) stands where it is, stopped like the platform hold, so
+// native combat movement cannot take it. Round 2: melee members' native
+// chase toward the prototype on the pillar top drove them through the pillar
+// wall into the hollow column (the rogue in 3 of 3 runs, both tanks in 2),
+// and a Ret paladin onto a pillar top without boarding the platform.
+constexpr std::string_view PillarHold = "nefarian_pillar_hold";
+
+inline std::string_view PillarHoldWith(std::string_view diagnostic)
+{
+    static constexpr std::string_view Composed[] = {
+        "nefarian_pillar_hold:nefarian_ascent_needs_native_facts",
+        "nefarian_pillar_hold:nefarian_wading_until_float_depth",
+        "nefarian_pillar_hold:nefarian_magma_rising",
+        "nefarian_pillar_hold:nefarian_float_hold_for_pillar",
+        "nefarian_pillar_hold:nefarian_rising_floor_armed",
+        "nefarian_pillar_hold:nefarian_rising_floor_missed",
+        "nefarian_pillar_hold:nefarian_rising_top_missed",
+        "nefarian_pillar_hold:nefarian_inside_pillar_column",
+        "nefarian_pillar_hold:nefarian_inside_platform_body",
+        "nefarian_pillar_hold:nefarian_not_on_platform",
+        "nefarian_pillar_hold:nefarian_elevator_unobserved",
+        "nefarian_pillar_hold:nefarian_movement_stunned",
+        "nefarian_pillar_hold:nefarian_no_surface_path",
+        "nefarian_pillar_hold:nefarian_crossing_defensive_first",
+        "nefarian_pillar_hold:nefarian_crossing_wait_for_lowered_floor",
+        "nefarian_pillar_hold:hop_rise_beyond_jump_apex",
+        "nefarian_pillar_hold:hop_distance_beyond_run_speed",
+        "nefarian_pillar_hold:hop_spline_timing_mismatch",
+        "nefarian_pillar_hold:hop_arc_hits_pillar",
+    };
+    for (std::string_view composed : Composed)
+        if (composed.substr(PillarHold.size() + 1) == diagnostic)
+            return composed;
+    return PillarHold;
+}
+
+inline bool IsPillarHold(std::string_view hold)
+{
+    return hold.substr(0, PillarHold.size()) == PillarHold;
+}
+
+// The diagnostic a hold carries: the hold itself, or what a platform or
+// pillar hold replaced.
 inline std::string_view HoldReason(std::string_view hold)
 {
     if (IsPlatformHold(hold) && hold.size() > PlatformHold.size() + 1)
         return hold.substr(PlatformHold.size() + 1);
+    if (IsPillarHold(hold) && hold.size() > PillarHold.size() + 1)
+        return hold.substr(PillarHold.size() + 1);
     return hold;
 }
 constexpr float HandlerKiteReleaseYards = 10.0f; // hysteresis: kiting ends past this
 constexpr float HandlerPenRadius = 24.0f;
 constexpr float WarriorLeadRangeYards = 25.0f;
-
-// How deep a point lies in the warrior exclusion (radians past its edge; 0
-// outside it): the breath cone widened by WarriorFrontMarginDeg, and the tail
-// cone, both within the cones' 60-yard radius.
-inline float WarriorDanger(EncounterView const& view, LocalPoint point)
-{
-    if (!view.Nefarian || !view.Nefarian->Alive || !view.NefarianLanded())
-        return 0.0f;
-    DragonPose const nefarian = PoseOf(*view.Nefarian);
-    if (Distance(nefarian.Position, point) > DragonConeRadius)
-        return 0.0f;
-    float const off = OffFacing(nefarian.Position, nefarian.Facing, point);
-    float const front = DegToRad(BreathHalfAngleDeg + WarriorFrontMarginDeg) - off;
-    float const rear = off - (Pi - DegToRad(TailLashHalfAngleDeg + 8.0f));
-    return std::max(0.0f, std::max(front, rear));
-}
-
-inline bool WarriorPointSafe(EncounterView const& view, LocalPoint point)
-{
-    return WarriorDanger(view, point) <= 0.0f;
-}
 
 // A straight walk a following warrior may take: it ends outside the
 // exclusion, and along it (sampled at most a yard apart) the depth in the

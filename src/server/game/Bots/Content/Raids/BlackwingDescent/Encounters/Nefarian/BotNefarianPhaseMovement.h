@@ -350,6 +350,38 @@ inline uint8 FormationSlot(Blackboard const& board, ObjectGuid guid)
 // tank's step or a dragon's turn does not put them out of reach.
 constexpr float SightRangeYards = 36.0f;
 
+// Hunter shots and Auto Shot carry a 5 yd minimum range that the spell system
+// extends by the melee range (Spell::GetMinMaxRange; the dragons' melee
+// reaches above already hold the 1.5-yd player and the 4/3 allowance), as
+// Chimaeron's round-2 fix does. Round 2 here: 577 min_range_required
+// rejections from an 18-yd phase 3 formation slot (limit 27.83 on Nefarian).
+constexpr float StandoffSpellMinRangeYards = 5.0f;
+// A dragon's step inside its tank's arrival tolerance does not bring it
+// inside the minimum range.
+constexpr float StandoffMarginYards = 1.5f;
+
+inline bool IsStandoffSpec(std::string_view spec)
+{
+    return spec == "beast_mastery_hunter" || spec == "marksmanship_hunter"
+        || spec == "survival_hunter";
+}
+
+// The nearest a standoff member may stand to its dragon damage target
+// (centre to centre), or 0 when neither applies.
+inline float StandoffMinRange(MovementContext const& context, ObjectGuid damageTarget)
+{
+    if (!IsStandoffSpec(context.Bot.ClassSpec) || damageTarget.IsEmpty())
+        return 0.0f;
+    EncounterView const& view = context.View;
+    if (view.Nefarian && view.Nefarian->Guid == damageTarget)
+        return StandoffSpellMinRangeYards + NefarianMeleeReach + StandoffMarginYards;
+    if (view.Onyxia && view.Onyxia->Guid == damageTarget)
+        return StandoffSpellMinRangeYards + OnyxiaMeleeReach + StandoffMarginYards;
+    return 0.0f;
+}
+static_assert(StandoffSpellMinRangeYards + NefarianMeleeReach + StandoffMarginYards + 3.0f
+        < SightRangeYards, "a standoff band inside the sight range exists on Nefarian");
+
 // Whom a ranged member or healer must see from its spot: its damage target,
 // and for a healer the dragon tanks (`primaryOnly`: the tank of the dragon
 // that fights now - Onyxia's before Nefarian lands, his after she dies).
@@ -376,9 +408,14 @@ inline std::vector<LocalPoint> SightTargets(MovementContext const& context,
 }
 
 // A spot from which every target is in sight past the pillars and within
-// SightRangeYards.
-inline bool SpotServes(LocalPoint point, std::vector<LocalPoint> const& targets)
+// SightRangeYards, and at least `minRangeYards` from the first (the damage
+// target of a standoff member).
+inline bool SpotServes(LocalPoint point, std::vector<LocalPoint> const& targets,
+    float minRangeYards = 0.0f)
 {
+    if (minRangeYards > 0.0f && !targets.empty()
+        && Distance(point, targets.front()) < minRangeYards)
+        return false;
     return std::all_of(targets.begin(), targets.end(), [point](LocalPoint target)
         {
             return PillarSightClear(point, target)
@@ -390,7 +427,8 @@ inline bool SpotServes(LocalPoint point, std::vector<LocalPoint> const& targets)
 // yards around `wanted`, then, stepping toward the targets (a tank leading
 // Onyxia out to the ring), rings of 0 and 4 yards every 4 yards.
 inline std::optional<LocalPoint> SightedSpot(MovementContext const& context,
-    LocalPoint wanted, float bearing, std::vector<LocalPoint> const& targets)
+    LocalPoint wanted, float bearing, std::vector<LocalPoint> const& targets,
+    float minRangeYards = 0.0f)
 {
     auto search = [&](LocalPoint centre, std::initializer_list<float> radii)
         -> std::optional<LocalPoint>
@@ -399,7 +437,8 @@ inline std::optional<LocalPoint> SightedSpot(MovementContext const& context,
             for (float step : { 0.0f, 45.0f, -45.0f, 90.0f, -90.0f, 135.0f, -135.0f, 180.0f })
             {
                 LocalPoint const point = Offset(centre, bearing + DegToRad(step), radius);
-                if (FloorPointSafe(context, point, false) && SpotServes(point, targets))
+                if (FloorPointSafe(context, point, false)
+                    && SpotServes(point, targets, minRangeYards))
                     return point;
                 if (radius == 0.0f)
                     break;
@@ -434,13 +473,26 @@ inline std::optional<SurfaceGoal> SightedFormationGoal(MovementContext const& co
             break;
         std::vector<LocalPoint> const targets = SightTargets(context, damageTarget,
             healer, primaryOnly);
-        if (std::optional<LocalPoint> const point = SightedSpot(context, wanted, bearing,
-                targets))
+        // A standoff member's first sight target is its dragon (SightTargets
+        // lists the damage target first): its spot keeps the minimum range,
+        // and the search starts outside it.
+        float const minRange = targets.empty() ? 0.0f
+            : StandoffMinRange(context, damageTarget);
+        LocalPoint start = wanted;
+        if (minRange > 0.0f && Distance(start, targets.front()) < minRange + 1.5f)
+        {
+            LocalPoint const out{ start.X - targets.front().X, start.Y - targets.front().Y };
+            float const heading = Length(out) < 0.1f ? bearing : AngleOf(out);
+            start = Offset(targets.front(), heading, minRange + 1.5f);
+        }
+        if (std::optional<LocalPoint> const point = SightedSpot(context, start, bearing,
+                targets, minRange))
         {
             SurfaceGoal goal = MakeGoal(context, purpose, Surface::Floor, *point, 3.0f,
                 false);
             goal.Sight = targets;
             goal.SightRangeYards = SightRangeYards;
+            goal.SightMinRangeYards = minRange;
             return goal;
         }
     }

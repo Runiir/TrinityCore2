@@ -313,4 +313,9 @@ def test_life_edges_observed_on_update_entry_and_exit_and_exported() -> None:
     for name in ("BotNativeLifeEvents.h", "BotWorldPopulationMgrUpdateBot.cpp", "BotWorldPopulationMgrNativeAction.cpp",
                  "BotWorldPopulationMgrCombatNotifications.cpp", "BotWorldPopulationMgrRaidRuntime.cpp"):
         text = (ROOT / "src/server/game/Bots" / name).read_text(encoding="utf-8")
+        if name == "BotWorldPopulationMgrRaidRuntime.cpp":
+            # The encounter observation export keys its stores by cohort id plus (combat-log epoch, attempt),
+            # which is the capture identity the sanity harness binds to; it is not a life-event scope.
+            start = text.index("json << BotEncounter::Atramedes::EncounterObservationsJsonField(")
+            text = text[:start] + text[text.index('<< "}";', start):]
         assert "Cohort().RunId" not in text and "{ Cohort().CombatLogEpoch" not in text, name

@@ -21,7 +21,7 @@
     "25H"
   ],
   "research_state": "researched_client_rows_native_repaired_not_live_validated",
-  "research_as_of": "2026-09-27",
+  "research_as_of": "2026-09-30",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
     "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
@@ -152,21 +152,148 @@
   "known_behavior_summary": [
     "Normal order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green (two independent verbatim sources in the ledger). The constructor now starts at the cycle start, so the first normal vial is random (it was always Blue); Maloriak respawns with a new AI after a wipe (Default Group), and Reset() also restarts the cycle defensively.",
     "Release Aberrations selects up to three non-drowned chamber creatures per successful cast and has an 18-creature reserve (six successful casts); interrupted casts do not count.",
-    "The native AI schedules Release Aberrations in Red, Blue and Green; guides describe Red/Green or throughout phase one, so the bot uses a quota (nine loose at most) rather than a color rule.",
     "DamageTaken enters phase two at 25% in every mode, cancels any unfinished cauldron visit, releases all remaining minions (two Prime Subjects included) and drinks all bottles.",
     "The boss publishes read-only mechanic timers (GetTimeUntilEncounterMechanic) for the bot blackboard; publication into the blackboard is a coordinator patch.",
     "Scorching Blast damage is split among targets by spell_custom_attr (77679, SHARE_DAMAGE).",
     "SpellMgrCorrectionsPart04.cpp used to overwrite Biting Chill EFFECT_0 TargetA twice; the TargetB correction was applied in c0efb93a61.",
-    "Biting Chill picks a random target within 60 yd but has a 10-yd cast range, so ranged picks fail natively (open native fidelity item; live target counts pending).",
-    "Runtime 4.3.4 DBC rows match the 4.4.2 client rows for every Maloriak spell apart from radius indices (ledger dbc_434_parity_20260925)."
+    "Runtime 4.3.4 DBC rows match the 4.4.2 client rows for every Maloriak spell apart from radius indices (ledger dbc_434_parity_20260925).",
+    "The native AI schedules Release Aberrations in Red, Blue and Green (and, on 10N, possibly before the first vial); the bot never interrupts a release (user tactic) and kills each Aberration as it comes.",
+    "10N Biting Chill picks one player within 10 yd (every WCL pick was in melee range); other modes keep the 60-yd pick.",
+    "On 10N (round 3): Remedy heals base x tick number (ramp), Debilitating Slime strips Growth Catalyst, Berserk at 7 min, Prime Subjects cast Rend, Flash Freeze prefers players beyond 10 yd.",
+    "Round-3 fix (2026-09-30): the 2025-02-20 target is corroborated by five post-cutoff 10N kills and an official hotfix audit with no entry in 2025-01-13..2025-02-20 (ledger target_era_corroboration_10N); the Green Arcane Storm (3.66-6.57 s after Slime Imbued against 4.13-4.92 s), one Green Remedy (14.15 s against 7.3-10.9 s) and one Green Release begin (6.415 s against 7.3-10.5 s) differ, so the native 10N script draws them uniformly over 3.1-6.1 s, 7.3-14.2 s and 6.415-10.505 s and 10N is accepted (other modes keep 5 / 7.5 / 9 s)."
   ],
   "unresolved": [
-    "exact_442_client_build_and_hotfix_cutoff",
-    "live_timer_and_cauldron_movement_confirmation_all_modes",
-    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h",
-    "normal_health_and_enrage_due_current_vs_historical_guide_conflict",
-    "heroic_prime_subject_fixate_implementation",
-    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters"
+    {
+      "key": "exact_442_client_build_and_hotfix_cutoff",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "10N resolved on target-era evidence (round-3 fix, 2026-09-30): official_hotfix_audit_20250113_20250220 found no official Cataclysm Classic entry dated 2025-01-13..2025-02-20 touching Maloriak, Blackwing Descent, tier-11 raids, raid tuning or encounters globally (hotfix thread, hotfix news article, full 4.4.2 patch notes), and five 10N kills after the cutoff (wcl_maloriak_10n_post_cutoff_20260930, 2025-03-02..2025-05-13) agree with the pre-cutoff 10N values on every gear-independent mechanic they show except the Green Arcane Storm and one Green Remedy offset, which the native 10N script now draws over the observed ranges (the timer claim; ledger target_era_corroboration_10N). Values not observable after the cutoff (health, melee, spell values, Berserk, Rend, Biting Chill and Flash Freeze roles, the Growth Catalyst strip) are bounded by the pre-cutoff observations and the audit. 25N/10H/25H: no same-mode observation; no official document states Maloriak-specific carryover.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Official audit: no entry in the interval; post-cutoff kills agree on every observed gear-independent mechanic except the Green storm and Remedy offsets, modelled natively on 10N by a draw over the observed ranges (timer claim).",
+        "bounded_parts": [
+          "health",
+          "melee",
+          "spell_values",
+          "berserk",
+          "rend",
+          "biting_chill_and_flash_freeze_roles",
+          "growth_catalyst_strip"
+        ]
+      }
+    },
+    {
+      "key": "live_timer_and_cauldron_movement_confirmation_all_modes",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "10N resolved on target-era evidence and a native draw (round-3 fix, 2026-09-30): after the 2025-02-20 cutoff (wcl_maloriak_10n_post_cutoff_20260930, five kills) the Arcane Storm after Slime Imbued came 3.66, 4.69, 5.34, 6.18 and 6.57 s after the imbue (Cast rows), against 4.13-4.92 s before the cutoff, one Green Remedy came at 14.15 s (7.3-10.9 s before) and one Green Release Aberrations began 6.415 s after the imbue (a canceled Begin Cast, 7PT6hQ3wBqXmdtcH 49; 7.3-10.5 s before). official_hotfix_audit_20250113_20250220 found no official change in 2025-01-13..2025-02-20 and two kills repeat the pre-cutoff timing to 0.01 s, so the spread is modelled instead of read as one retimed value: the native 10N script (boss_maloriak.cpp, boss_maloriak_shared.h ScheduleGreenPhaseCasts) draws the Green Arcane Storm uniformly over 3.1-6.1 s in begin time (EVENT_ARCANE_STORM fires when its 0.5 s cast begins; the post-cutoff Cast rows 3.66-6.57 s are 3.13-6.10 s as begins after the 0.474-0.531 s begin-to-cast offset of 31 round-2 Begin/Cast pairs, and the pre-cutoff begins are 3.6-4.4 s) and the Green Remedy over 7.3-14.2 s after Slime Imbued (an instant cast, so its Cast rows are its fire times), with the Remedy never before the storm; the Green Release Aberrations begin is drawn uniformly over 6.415-10.505 s (EVENT_RELEASE_ABERRATIONS fires when its 1.5 s cast begins: the first begins were 7.3-10.5 s before the cutoff and 6.415 (canceled), 8.905, 9.312 (canceled) and 9.701 s after it, Begin Cast rows as logged and Cast rows minus the 1.5 s cast; both bounds are Begin Cast rows, ledger green_release_begins_10N), after the storm range and overlapping the Remedy range, so either order occurs and a Remedy due during the Release cast waits for it. One Release-first Blue phase cast Remedy on the storm slot (16.20 s) and the storm at 18.32 s; the native 10N schedule can produce the same slot collision. Corroborated after the cutoff: the opening, the Red/Blue offsets and Release timing, imbue-to-throw 42.55-42.72 s (one 43.06 s), throw-to-throw 49.73-51.78 s and the phase-two cadence. Not observed after the cutoff: the fourth vial (no kill reached it; the same native timer is corroborated after Red and Blue), bounded by the pre-cutoff observation and the audit. The live check of the native schedule is an acceptance observation. 25N/10H/25H: no same-mode cadence, so they keep the fixed 5 / 7.5 / 9 s Green schedule.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Green Arcane Storm 3.66-6.57 s, one Green Remedy 14.15 s and one Green Release begin 6.415 s after Slime Imbued after the cutoff (against 4.13-4.92 s, 7.3-10.9 s and 7.3-10.5 s before): modelled natively on 10N by uniform draws over 3.1-6.1 s, 7.3-14.2 s and 6.415-10.505 s; every other timer corroborated; the fourth vial is not observed after the cutoff.",
+        "bounded_parts": [
+          "fourth_vial_after_green"
+        ]
+      }
+    },
+    {
+      "key": "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). 10N resolved on target-era evidence (round-3 fix, 2026-09-30): after the cutoff (wcl_maloriak_10n_post_cutoff_20260930) the Remedy ramp holds on all 72 ticks (25,000 x tick number x a player healing-debuff factor 1.0/0.9/0.75) and Biting Chill keeps one debuffed player per cast (14 of 15; one cast spread to four players inside its 3-yd area) at 12.9/24.3/35.6 s after Frost Imbued; the Biting Chill melee-range pick, the Flash Freeze ranged preference, the WCL U spell values and the slime stripping Growth Catalyst were not observable after the cutoff and are bounded by the pre-cutoff samples (biting_chill_targets_10N, flash_freeze_targets_10N, spell_values_10N_wcl, green_phase_10N) and official_hotfix_audit_20250113_20250220. Open: 25N/10H/25H target counts (Biting Chill two in 25-man per the 2012 guide) and samples. The SpellMgr target correction is applied (c0efb93a61). Also open for 25N/10H/25H: melee DamageModifier of every add template (Aberration, Prime Subject, Vile Swill; ledger add_melee_damage_modifiers_non_10n); 10N adds are staged (ledger add_melee_10N). The Remedy ramp (25,000 x tick on 10N) and Debilitating Slime stripping Growth Catalyst are native on 10N only; the guides say both apply in every mode, with no same-mode sample.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Remedy ramp and Biting Chill count/cadence corroborated after the cutoff; roles, U values and the Growth Catalyst strip bounded by the audit.",
+        "bounded_parts": [
+          "biting_chill_pick_within_10_yd",
+          "flash_freeze_prefers_beyond_10_yd",
+          "spell_values",
+          "growth_catalyst_strip"
+        ]
+      }
+    },
+    {
+      "key": "normal_health_and_enrage_due_current_vs_historical_guide_conflict",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "10N bounded by the official audit (round-3 fix, 2026-09-30): health 19.76M from two pre-cutoff kills (native 19,755,160) and Berserk 64238 at 7 min (native 10N since round 3) were not observable after the cutoff (wcl_maloriak_10n_post_cutoff_20260930: no maximum health displayed, longest kill 212.8 s, no Berserk row); official_hotfix_audit_20250113_20250220 found no raid boss tuning entry in 2025-01-13..2025-02-20. Open: 25N health (native 68.7M, Wowhead 86.6M) and the 25N/10H/25H enrage (historical 7 min normal, 12 min heroic; none native).",
+      "target_era_10N": {
+        "status": "bounded_by_official_audit",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Health and Berserk not observable after the cutoff (no max health shown; longest kill 212.8 s).",
+        "bounded_parts": [
+          "health",
+          "berserk"
+        ]
+      }
+    },
+    {
+      "key": "heroic_prime_subject_fixate_implementation",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "No spell id or observed target sequence for the heroic Fixate. The 10N Prime Subject Rend (ledger prime_subject_rend_10N, native on 10N since round 3) is bounded by the official audit (round-3 fix): not captured after the cutoff (wcl_maloriak_10n_post_cutoff_20260930), no entry in official_hotfix_audit_20250113_20250220.",
+      "target_era_10N": {
+        "status": "bounded_by_official_audit",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "10N Rend not captured after the cutoff.",
+        "bounded_parts": [
+          "rend"
+        ]
+      }
+    },
+    {
+      "key": "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "fidelity_blocked",
+      "evidence_gap": "Resolved from source for every mode (repo_spawn_groups): the Default Group respawn builds a new Creature and AI, and Reset() restarts the cycle. Normal: 19 pre-cutoff 10N openings show a random first vial (Red 12, Blue 7), and five after the cutoff agree (Red 3, Blue 2; wcl_maloriak_10n_post_cutoff_20260930; official_hotfix_audit_20250113_20250220 found no change); the 10N wipe/re-pull check is an acceptance observation. Heroic: the Black first vial after a wipe and re-pull is unobserved.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Random first vial after the cutoff (Red 3, Blue 2)."
+      }
+    }
   ],
   "conflicts": [
     "guide_first_vial_about_20s_vs_local_first_cauldron_face_15_5s_plus_unmeasured_movement",
@@ -209,12 +336,12 @@
     ]
   },
   "unresolved_status": {
-    "exact_442_client_build_and_hotfix_cutoff": "build and cutoff pinned, Maloriak client rows extracted; Maloriak-specific hotfix carryover unproven",
-    "live_timer_and_cauldron_movement_confirmation_all_modes": "native schedule published; one 10N WCL kill (MxFq7TRbvnjGY1hJ fight 34) gives Red/Blue/phase-two cadence (ledger wcl_10N_boss_timeline_fight34); no Green phase, no live native timer observation, heroic and 25-player cadence absent; round 2: eight 10N kills give the pre-vial Arcane Storm (8/8) and the phase-two Remedy (5/5 long phase twos), both now native on 10N; the pre-vial Release/Remedy (5/8, Red openings only) stays open",
-    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved and runtime DBC parity closed (radius indices only); target counts (Biting Chill), WCL sample compatibility open",
-    "normal_health_and_enrage_due_current_vs_historical_guide_conflict": "native normal health matches the 2012 guide, conflicts with the 4.4.2 Wowhead page; enrage absent",
-    "heroic_prime_subject_fixate_implementation": "no spell data",
-    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source: the Default Group respawn builds a new AI, so counters never survived; Reset is defensive; the random first vial awaits a live observation"
+    "exact_442_client_build_and_hotfix_cutoff": "10N resolved on target-era evidence (round-3 fix, 2026-09-30): official_hotfix_audit_20250113_20250220 found no official Cataclysm Classic entry dated 2025-01-13..2025-02-20 touching Maloriak, Blackwing Descent, tier-11 raids, raid tuning or encounters globally (hotfix thread, hotfix news article, full 4.4.2 patch notes), and five 10N kills after the cutoff (wcl_maloriak_10n_post_cutoff_20260930, 2025-03-02..2025-05-13) agree with the pre-cutoff 10N values on every gear-independent mechanic they show except the Green Arcane Storm and one Green Remedy offset, which the native 10N script now draws over the observed ranges (the timer claim; ledger target_era_corroboration_10N). Values not observable after the cutoff (health, melee, spell values, Berserk, Rend, Biting Chill and Flash Freeze roles, the Growth Catalyst strip) are bounded by the pre-cutoff observations and the audit. 25N/10H/25H: no same-mode observation; no official document states Maloriak-specific carryover.",
+    "live_timer_and_cauldron_movement_confirmation_all_modes": "10N resolved on target-era evidence and a native draw (round-3 fix, 2026-09-30): after the 2025-02-20 cutoff (wcl_maloriak_10n_post_cutoff_20260930, five kills) the Arcane Storm after Slime Imbued came 3.66, 4.69, 5.34, 6.18 and 6.57 s after the imbue (Cast rows), against 4.13-4.92 s before the cutoff, one Green Remedy came at 14.15 s (7.3-10.9 s before) and one Green Release Aberrations began 6.415 s after the imbue (a canceled Begin Cast, 7PT6hQ3wBqXmdtcH 49; 7.3-10.5 s before). official_hotfix_audit_20250113_20250220 found no official change in 2025-01-13..2025-02-20 and two kills repeat the pre-cutoff timing to 0.01 s, so the spread is modelled instead of read as one retimed value: the native 10N script (boss_maloriak.cpp, boss_maloriak_shared.h ScheduleGreenPhaseCasts) draws the Green Arcane Storm uniformly over 3.1-6.1 s in begin time (EVENT_ARCANE_STORM fires when its 0.5 s cast begins; the post-cutoff Cast rows 3.66-6.57 s are 3.13-6.10 s as begins after the 0.474-0.531 s begin-to-cast offset of 31 round-2 Begin/Cast pairs, and the pre-cutoff begins are 3.6-4.4 s) and the Green Remedy over 7.3-14.2 s after Slime Imbued (an instant cast, so its Cast rows are its fire times), with the Remedy never before the storm; the Green Release Aberrations begin is drawn uniformly over 6.415-10.505 s (EVENT_RELEASE_ABERRATIONS fires when its 1.5 s cast begins: the first begins were 7.3-10.5 s before the cutoff and 6.415 (canceled), 8.905, 9.312 (canceled) and 9.701 s after it, Begin Cast rows as logged and Cast rows minus the 1.5 s cast; both bounds are Begin Cast rows, ledger green_release_begins_10N), after the storm range and overlapping the Remedy range, so either order occurs and a Remedy due during the Release cast waits for it. One Release-first Blue phase cast Remedy on the storm slot (16.20 s) and the storm at 18.32 s; the native 10N schedule can produce the same slot collision. Corroborated after the cutoff: the opening, the Red/Blue offsets and Release timing, imbue-to-throw 42.55-42.72 s (one 43.06 s), throw-to-throw 49.73-51.78 s and the phase-two cadence. Not observed after the cutoff: the fourth vial (no kill reached it; the same native timer is corroborated after Red and Blue), bounded by the pre-cutoff observation and the audit. The live check of the native schedule is an acceptance observation. 25N/10H/25H: no same-mode cadence, so they keep the fixed 5 / 7.5 / 9 s Green schedule.",
+    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). 10N resolved on target-era evidence (round-3 fix, 2026-09-30): after the cutoff (wcl_maloriak_10n_post_cutoff_20260930) the Remedy ramp holds on all 72 ticks (25,000 x tick number x a player healing-debuff factor 1.0/0.9/0.75) and Biting Chill keeps one debuffed player per cast (14 of 15; one cast spread to four players inside its 3-yd area) at 12.9/24.3/35.6 s after Frost Imbued; the Biting Chill melee-range pick, the Flash Freeze ranged preference, the WCL U spell values and the slime stripping Growth Catalyst were not observable after the cutoff and are bounded by the pre-cutoff samples (biting_chill_targets_10N, flash_freeze_targets_10N, spell_values_10N_wcl, green_phase_10N) and official_hotfix_audit_20250113_20250220. Open: 25N/10H/25H target counts (Biting Chill two in 25-man per the 2012 guide) and samples. The SpellMgr target correction is applied (c0efb93a61). Also open for 25N/10H/25H: melee DamageModifier of every add template (Aberration, Prime Subject, Vile Swill; ledger add_melee_damage_modifiers_non_10n); 10N adds are staged (ledger add_melee_10N). The Remedy ramp (25,000 x tick on 10N) and Debilitating Slime stripping Growth Catalyst are native on 10N only; the guides say both apply in every mode, with no same-mode sample.",
+    "normal_health_and_enrage_due_current_vs_historical_guide_conflict": "10N bounded by the official audit (round-3 fix, 2026-09-30): health 19.76M from two pre-cutoff kills (native 19,755,160) and Berserk 64238 at 7 min (native 10N since round 3) were not observable after the cutoff (wcl_maloriak_10n_post_cutoff_20260930: no maximum health displayed, longest kill 212.8 s, no Berserk row); official_hotfix_audit_20250113_20250220 found no raid boss tuning entry in 2025-01-13..2025-02-20. Open: 25N health (native 68.7M, Wowhead 86.6M) and the 25N/10H/25H enrage (historical 7 min normal, 12 min heroic; none native).",
+    "heroic_prime_subject_fixate_implementation": "No spell id or observed target sequence for the heroic Fixate. The 10N Prime Subject Rend (ledger prime_subject_rend_10N, native on 10N since round 3) is bounded by the official audit (round-3 fix): not captured after the cutoff (wcl_maloriak_10n_post_cutoff_20260930), no entry in official_hotfix_audit_20250113_20250220.",
+    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "Resolved from source for every mode (repo_spawn_groups): the Default Group respawn builds a new Creature and AI, and Reset() restarts the cycle. Normal: 19 pre-cutoff 10N openings show a random first vial (Red 12, Blue 7), and five after the cutoff agree (Red 3, Blue 2; wcl_maloriak_10n_post_cutoff_20260930; official_hotfix_audit_20250113_20250220 found no change); the 10N wipe/re-pull check is an acceptance observation. Heroic: the Black first vial after a wipe and re-pull is unobserved."
   },
   "native_damage_calibration_20260927": "Maloriak 10N 41378 DamageModifier 9.5 staged (sql/custom/world/2026_09_27_22_maloriak_damage_modifier.sql) from WCL MxFq7TRbvnjGY1hJ fight 34 melee U (bounds 9.41-9.71); registry patch requested. 25N/10H/25H and the adds stay open.",
   "native_repairs_20260927": [
@@ -230,5 +357,28 @@
     "Melee may fight from a 5-yard outer ring when the 3.5-yard ring is blocked (BotMaloriakFormation.h).",
     "The off-tank taunts an add standing within 12 yards of Maloriak from a post 15 yards out, keeping its pack out of Growth Catalyst's reach of him (BotMaloriakPullPost.h).",
     "Add switch at 50% boss health (was 30%) per user raid experience 2026-09-27; round 1 removed no Remedy during the 30% hold (one full 250k Remedy at 94-104 s in each kill)."
+  ],
+  "fidelity_state_by_mode": {
+    "10N": "accepted",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "10N accepted 2026-09-30 (round-3 fix, review finding 4, then the native Green timer draw): no unresolved claim covers 10N. The fidelity target is the live game on 2025-02-20, so each 10N claim needed target-era evidence. official_hotfix_audit_20250113_20250220 found no official change in 2025-01-13..2025-02-20, and five post-cutoff 10N kills (wcl_maloriak_10n_post_cutoff_20260930) agree on every observed gear-independent mechanic except the Green Arcane Storm, one Green Remedy and one Green Release begin offset (storm 3.66-6.57 s after Slime Imbued against 4.13-4.92 s before; Remedy 14.15 s against 7.3-10.9 s; Release begin 6.415 s against 7.3-10.5 s). The native 10N script now draws all three over the combined observed ranges (storm 3.1-6.1 s, Remedy 7.3-14.2 s, Release begin 6.415-10.505 s; ledger native_fidelity_items green_arcane_storm_offset_10N), which closed the live timer claim for 10N. Every other 10N part is closed on target-era evidence or bounded by the audit (ledger target_era_corroboration_10N; each claim's target_era_10N). 10H/25N/25H stay blocked (each unresolved claim lists its modes; the Green schedule there is unchanged). The contract-level fidelity_state stays fidelity_blocked while 10H/25N/25H are open.",
+  "native_repairs_20260930": [
+    "pre_vial_opening (10N): storm begin drawn from 19 observed values; Release/Remedy/vial decided for the slot 3.2 s after it (boss_maloriak_shared.h PRE_VIAL_*, ledger pre_vial_opening_10N).",
+    "colored_vial_offsets (10N): after a Red/Blue imbue Arcane Storm and Release in a random order (11.3 s, then 14.6/16.2 s), Remedy 17.8-21.0 s (Red) / 16.2-19.4 s (Blue); Green storm drawn over 3.1-6.1 s, Green Remedy over 7.3-14.2 s and Green Release begin over 6.415-10.505 s after the imbue (ledger vial_offsets_10N, green_arcane_storm_offset_10N, green_release_begins_10N; ScheduleGreenPhaseCasts).",
+    "biting_chill_pick (10N): a random player within 10 yd (was 60 yd, failing ranged picks).",
+    "flash_freeze_pick (10N): players beyond 10 yd preferred (every WCL Flash Freeze froze a ranged player or healer).",
+    "remedy_ramp (10N): tick n heals base x n (spell_maloriak_remedy, bound to 77912 only); binding in sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql (promoted 2026-09-30).",
+    "slime_strips_growth_catalyst (10N): Debilitating Slime removes Growth Catalyst; survivors recast 5.2 s later.",
+    "berserk (10N): Berserk 64238 at 7 min.",
+    "prime_subject_rend (10N): Rend 78034 on the victim 14.1-16.5 s after landing, every 9.7-16.2 s.",
+    "module split: the helper creature AIs moved to boss_maloriak_minions.cpp (registered from AddSC_boss_maloriak; a CMake reconfigure picks up the new file)."
+  ],
+  "native_damage_calibration_20260930": "Aberration 41440 DamageModifier 0.81 and Prime Subject 41841 3.5 set by sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql (promoted 2026-09-30) from 10N WCL rows with Growth Catalyst counts (ledger add_melee_10N); registry patch updated. Maloriak 10N 9.5 checked live in round 2 (1.02x WCL).",
+  "bot_strategy_round3": [
+    "WCL references: the tier-11 band (raid item level 352-366, nine kills incl. QfJR9AZw13G6kzXP 14; maloriak_wcl_dps_reference_v1.json t11_reference_set_20260930).",
+    "No strategy behaviour change: the user tactics (no Release interrupts; 50% add switch with only the Blood DK on the boss; no Remedy dispel in the hold; Misdirection/Tricks on the Feral, the Feral kites) are implemented and unchanged. With the native Remedy ramp, Maloriak heals about 1.3M per undispelled Remedy in the hold."
   ]
 }

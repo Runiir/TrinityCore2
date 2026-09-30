@@ -4,107 +4,758 @@
   "mode": "10N",
   "extraction_status": "extracted",
   "extraction_attempt": {
-    "date": "2026-09-27",
-    "observation": "Read through codex exec -m gpt-6-astra with CUA_REPL_ENABLED_SURFACES=browser (Astra's browser surface in the user's browser session). No verification page appeared and none was clicked. Plain HTTP/headless requests on the same day still returned Cloudflare 'Just a moment...' (403). The 2026-09-25 attempt was blocked by the human-verification gate.",
-    "report_search": {
-      "MxFq7TRbvnjGY1hJ": "fight 27 Chimaeron 10N kill",
-      "Y8ajQ7dbmKMG1RZy": "no Chimaeron encounter",
-      "xAhkN2y9YP3KRmnJ": "fight 14 Chimaeron 10N kill"
+    "date": "2026-09-30",
+    "observation": "Tier-11 band re-selection (BWD 10N round 3). Read 2026-09-30T09:52:36Z through codex exec -m gpt-6.1-sol driving its own tab in the user's Chrome (profile Runiir); no verification check appeared; 41 page loads. Raw captures archived in DVC: artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc (wcl_t11_refs/chimaeron.json, raw/chimaeron_astra.json).",
+    "previous": "2026-09-27 read (gpt-6-astra browser surface): MxFq7TRbvnjGY1hJ-fight27 (359.5, kept) and xAhkN2y9YP3KRmnJ-fight14 (401.4, dropped: outside the 352-366 band)."
+  },
+  "item_level_band": {
+    "min": 352.0,
+    "max": 366.0,
+    "roster_average_item_level": 359,
+    "decision": "user decision 2026-09-30: regear the bots to tier-11 phase gear (~359) so kills exercise the mechanics; references at raid item level 352-366, players 359 +-12",
+    "roster_source": "dataset/raid_phase_gear_profiles/profiles.json (composition gear_phase, round 3; about 359)"
+  },
+  "actor_dps_rule": "(one value per spec per kill, like the existing manifests):\n- blood_death_knight: the boss tank row (role tank). With several Blood DK tanks,\n  the one with the highest active %, then DPS; the others are excluded.\n- other gated specs: rows in the dps role. Several actors of one spec in a kill\n  are averaged.\n- Outliers are excluded (user clarification 2026-09-30: gear match first, parse\n  secondary, competent representative players): an actor who died before 85% of\n  the kill, an actor below max(50%, raid DPS median active % - 20), an extreme parse (95+ or below 10), or an actor\n  whose own item level is more than 12 from the roster's 359 (outside 347-371).\n- Kills whose raid DPS median activity is below 75% (slowed, achievement or\n  carry kills; competent kills at this gear run 90-98%) are context only.\n- Only kills with raid item level 352-366 enter the median; near-band kills are\n  recorded separately and never enter a target.",
+  "hotfix_cutoff_note": "T11-era kills (before the 2025-02-20T23:00Z 4.4.2 cutoff) are preferred; each reference carries after_hotfix_cutoff_2025_02_20.",
+  "target_scope_rule": "All Enemies: Chimaeron is the only hostile in the fight (the Bile-O-Tron 800 and Finkle Einhorn are friendly), so the default and Unfiltered views agree and no target entry is excluded.",
+  "canonical_spec_coverage": {
+    "matched": [
+      "blood_death_knight",
+      "survival_hunter",
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "demonology_warlock"
+    ],
+    "absent_or_no_row": {
+      "feral_druid_tank": "not searched: dps_gate_exempt_specs (user decision 2026-09-27)"
+    },
+    "wcl_matched_median": {
+      "blood_death_knight": 15316.5,
+      "survival_hunter": 26254.9,
+      "fire_mage": 24654.6,
+      "retribution_paladin": 26133.6,
+      "assassination_rogue": 26350.7,
+      "demonology_warlock": 23443.3
+    },
+    "samples": {
+      "blood_death_knight": 5,
+      "survival_hunter": 4,
+      "fire_mage": 4,
+      "retribution_paladin": 4,
+      "assassination_rogue": 3,
+      "demonology_warlock": 3
+    },
+    "per_spec_values": {
+      "blood_death_knight": [
+        20526.6,
+        18044.5,
+        15316.5,
+        11582.3,
+        14682.4
+      ],
+      "survival_hunter": [
+        27829.8,
+        24974.9,
+        22350.4,
+        27534.9
+      ],
+      "fire_mage": [
+        28765.4,
+        19489.3,
+        29017.3,
+        20543.8
+      ],
+      "retribution_paladin": [
+        25345.0,
+        26922.2,
+        27013.3,
+        18848.5
+      ],
+      "assassination_rogue": [
+        26637.4,
+        22470.4,
+        26350.7
+      ],
+      "demonology_warlock": [
+        23443.3,
+        26810.5,
+        21366.0
+      ]
+    },
+    "per_spec_item_levels": {
+      "blood_death_knight": [
+        359.5,
+        359.9,
+        358.2,
+        359.0,
+        358.5
+      ],
+      "survival_hunter": [
+        359.5,
+        361.1,
+        359.0,
+        358.5
+      ],
+      "fire_mage": [
+        359.9,
+        359.0,
+        358.5,
+        356.3
+      ],
+      "retribution_paladin": [
+        359.5,
+        359.0,
+        358.5,
+        356.3
+      ],
+      "assassination_rogue": [
+        358.2,
+        358.5,
+        356.3
+      ],
+      "demonology_warlock": [
+        359.9,
+        361.1,
+        358.2
+      ]
+    },
+    "longer_half_context": {
+      "rule": "context only, not a target: median over in-band kills at or above the boss's median in-band duration",
+      "duration_cut_sec": 123.0,
+      "reference_ids": [
+        "JLvtbwNpFrzf6qjQ-fight14",
+        "B4J8vQVnbxFdjf3P-fight22",
+        "AztLjaG8wJh2fvbk-fight37",
+        "zg18Kt3FkAdyv7jn-fight11"
+      ],
+      "median": {
+        "blood_death_knight": 14813.4,
+        "survival_hunter": 23662.65,
+        "fire_mage": 20543.8,
+        "retribution_paladin": 22885.35,
+        "assassination_rogue": 26350.7,
+        "demonology_warlock": 25126.9
+      },
+      "samples": {
+        "blood_death_knight": 2,
+        "survival_hunter": 2,
+        "fire_mage": 3,
+        "retribution_paladin": 2,
+        "assassination_rogue": 1,
+        "demonology_warlock": 2
+      }
     }
   },
+  "dropped_references": [
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight14",
+      "item_level": 401.4,
+      "duration_sec": 60.0,
+      "reason": "outside the 352-366 raid item level band (round-3 tier-11 regear, user decision 2026-09-30)"
+    }
+  ],
+  "near_band": [
+    {
+      "id": "Qck9GA6KbT4V1arz-fight32",
+      "url": "https://classic.warcraftlogs.com/reports/Qck9GA6KbT4V1arz?fight=32&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/Qck9GA6KbT4V1arz?fight=32&type=summary",
+      "mode": "10N",
+      "date": "2024-10-08",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 144.9,
+      "raid_dps": 142813.6,
+      "average_item_level": 354.8,
+      "item_level": 354.8,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "near_band_context_only",
+      "roster": [
+        {
+          "name": "Guckmâl",
+          "class": "Rogue",
+          "spec": "Assassination",
+          "spec_key": "assassination_rogue",
+          "role": "dps",
+          "dps": 26437.0,
+          "dps_default_view": null,
+          "active_pct": 99.19,
+          "item_level": 359,
+          "parse_percentile": 88,
+          "ilvl_parse_percentile": 88
+        },
+        {
+          "name": "Shiraille",
+          "class": "Hunter",
+          "spec": "Survival",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 25253.2,
+          "dps_default_view": null,
+          "active_pct": 98.05,
+          "item_level": 365,
+          "parse_percentile": 76,
+          "ilvl_parse_percentile": 37
+        },
+        {
+          "name": "Locatio",
+          "class": "Death Knight",
+          "spec": "Unholy",
+          "spec_key": "unholy_death_knight",
+          "role": "dps",
+          "dps": 23189.5,
+          "dps_default_view": null,
+          "active_pct": 98.87,
+          "item_level": 356,
+          "parse_percentile": 57,
+          "ilvl_parse_percentile": 60
+        },
+        {
+          "name": "Saamirah",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 17324.1,
+          "dps_default_view": null,
+          "active_pct": 97.89,
+          "item_level": 356,
+          "parse_percentile": 22,
+          "ilvl_parse_percentile": 23
+        },
+        {
+          "name": "Flíksy",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 16654.3,
+          "dps_default_view": null,
+          "active_pct": 97.1,
+          "item_level": 342,
+          "parse_percentile": 18,
+          "ilvl_parse_percentile": 77
+        },
+        {
+          "name": "Bärwasser",
+          "class": "Druid",
+          "spec": "Guardian",
+          "spec_key": "feral_druid_tank",
+          "role": "tank",
+          "dps": 12156.7,
+          "dps_default_view": null,
+          "active_pct": 99.3,
+          "item_level": 353,
+          "parse_percentile": 80,
+          "ilvl_parse_percentile": 90
+        },
+        {
+          "name": "Tamendor",
+          "class": "Druid",
+          "spec": "Balance",
+          "spec_key": "balance_druid",
+          "role": "dps",
+          "dps": 11366.4,
+          "dps_default_view": null,
+          "active_pct": 87.73,
+          "item_level": 352,
+          "parse_percentile": 8,
+          "ilvl_parse_percentile": 10
+        },
+        {
+          "name": "Arina",
+          "class": "Priest",
+          "spec": "Discipline",
+          "spec_key": "discipline_priest",
+          "role": "healer",
+          "dps": 5854.0,
+          "dps_default_view": null,
+          "active_pct": 78.81,
+          "item_level": 355,
+          "parse_percentile": 77,
+          "ilvl_parse_percentile": 83
+        },
+        {
+          "name": "Féel",
+          "class": "Paladin",
+          "spec": "Protection",
+          "spec_key": "protection_paladin",
+          "role": "tank",
+          "dps": 3987.3,
+          "dps_default_view": null,
+          "active_pct": 57.41,
+          "item_level": 354,
+          "parse_percentile": 2,
+          "ilvl_parse_percentile": 3
+        },
+        {
+          "name": "Hérbst",
+          "class": "Paladin",
+          "spec": "Holy",
+          "spec_key": "holy_paladin",
+          "role": "healer",
+          "dps": 321.7,
+          "dps_default_view": null,
+          "active_pct": 51.36,
+          "item_level": 356,
+          "parse_percentile": 30,
+          "ilvl_parse_percentile": 33
+        }
+      ],
+      "actor_dps": {
+        "survival_hunter": 25253.2,
+        "fire_mage": 17324.1,
+        "assassination_rogue": 26437.0
+      },
+      "actor_item_level": {
+        "survival_hunter": 365.0,
+        "fire_mage": 356.0,
+        "assassination_rogue": 359.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": 76.0,
+        "fire_mage": 22.0,
+        "assassination_rogue": 88.0
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Shiraille"
+        ],
+        "fire_mage": [
+          "Saamirah"
+        ],
+        "assassination_rogue": [
+          "Guckmâl"
+        ]
+      },
+      "excluded_actor_dps": {
+        "fire_mage:Flíksy": {
+          "dps": 16654.3,
+          "active_pct": 97.1,
+          "item_level": 342.0,
+          "parse_percentile": 18.0,
+          "reason": "player item level 342 is more than 12 from 359"
+        }
+      },
+      "deaths": [
+        {
+          "name": "Féel",
+          "time": "00:44"
+        },
+        {
+          "name": "Féel",
+          "time": "01:14"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 3,
+        "massacre_cast_times": [
+          "00:29.952",
+          "00:59.958",
+          "01:29.962"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "01:29.962"
+        ],
+        "mortality_time": "01:57.774",
+        "mortality_time_sec": 117.774,
+        "notes": "Fourth Massacre begin at 01:55.956 was Canceled, not counted. Duplicate Mortality is one transition."
+      },
+      "notes": "Guckmâl primary 359 Assassination reference. Saamirah 356 parse 22 is qualifying Fire; Flíksy 342 below player band is excluded. Shiraille 365 qualifies but farther from target. Five of six DPS have 97.10-99.19% activity. Tank Féel died twice in phase 1; Tamendor has bottom parse 8 and is not a wanted reference. Caveat retained for mechanics audit."
+    },
+    {
+      "id": "vkKcwDxZg2BrLJ4Q-fight3",
+      "url": "https://classic.warcraftlogs.com/reports/vkKcwDxZg2BrLJ4Q?fight=3&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/vkKcwDxZg2BrLJ4Q?fight=3&type=summary",
+      "mode": "10N",
+      "date": "2024-10-17",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 149.0,
+      "raid_dps": 138922.3,
+      "average_item_level": 357.0,
+      "item_level": 357.0,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "near_band_context_only",
+      "roster": [
+        {
+          "name": "Searedscalop",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 28478.6,
+          "dps_default_view": null,
+          "active_pct": 98.41,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "ilvl_parse_percentile": 94
+        },
+        {
+          "name": "Luminice",
+          "class": "Death Knight",
+          "spec": "Frost",
+          "spec_key": "frost_death_knight",
+          "role": "dps",
+          "dps": 23423.6,
+          "dps_default_view": null,
+          "active_pct": 98.69,
+          "item_level": 356,
+          "parse_percentile": 69,
+          "ilvl_parse_percentile": 76
+        },
+        {
+          "name": "Darlag",
+          "class": "Death Knight",
+          "spec": "Unholy",
+          "spec_key": "unholy_death_knight",
+          "role": "dps",
+          "dps": 22559.0,
+          "dps_default_view": null,
+          "active_pct": 99.41,
+          "item_level": 358,
+          "parse_percentile": 51,
+          "ilvl_parse_percentile": 38
+        },
+        {
+          "name": "Sistertouch",
+          "class": "Priest",
+          "spec": "Shadow",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 18042.1,
+          "dps_default_view": null,
+          "active_pct": 98.02,
+          "item_level": 363,
+          "parse_percentile": 50,
+          "ilvl_parse_percentile": 19
+        },
+        {
+          "name": "Èndlessagony",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 16862.7,
+          "dps_default_view": null,
+          "active_pct": 98.17,
+          "item_level": 358,
+          "parse_percentile": 19,
+          "ilvl_parse_percentile": 7
+        },
+        {
+          "name": "Zakaraii",
+          "class": "Shaman",
+          "spec": "Elemental",
+          "spec_key": "elemental_shaman",
+          "role": "dps",
+          "dps": 15115.7,
+          "dps_default_view": null,
+          "active_pct": 98.36,
+          "item_level": 358,
+          "parse_percentile": 14,
+          "ilvl_parse_percentile": 7
+        },
+        {
+          "name": "Jenoside",
+          "class": "Death Knight",
+          "spec": "Blood",
+          "spec_key": "blood_death_knight",
+          "role": "tank",
+          "dps": 9865.8,
+          "dps_default_view": null,
+          "active_pct": 90.63,
+          "item_level": 358,
+          "parse_percentile": 14,
+          "ilvl_parse_percentile": 11
+        },
+        {
+          "name": "Valadorya",
+          "class": "Paladin",
+          "spec": "Protection",
+          "spec_key": "protection_paladin",
+          "role": "tank",
+          "dps": 3918.7,
+          "dps_default_view": null,
+          "active_pct": 84.59,
+          "item_level": 347,
+          "parse_percentile": 1,
+          "ilvl_parse_percentile": 3
+        },
+        {
+          "name": "Goliathhoof",
+          "class": "Shaman",
+          "spec": "Restoration",
+          "spec_key": "restoration_shaman",
+          "role": "healer",
+          "dps": 656.0,
+          "dps_default_view": null,
+          "active_pct": 10.39,
+          "item_level": 357,
+          "parse_percentile": 43,
+          "ilvl_parse_percentile": 49
+        },
+        {
+          "name": "Buird",
+          "class": "Paladin",
+          "spec": "Holy",
+          "spec_key": "holy_paladin",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 356,
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
+        }
+      ],
+      "actor_dps": {
+        "blood_death_knight": 9865.8,
+        "fire_mage": 22670.7
+      },
+      "actor_item_level": {
+        "blood_death_knight": 358.0,
+        "fire_mage": 358.5
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 14.0,
+        "fire_mage": [
+          92.0,
+          19.0
+        ]
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Jenoside"
+        ],
+        "fire_mage": [
+          "Searedscalop",
+          "Èndlessagony"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "deaths": [
+        {
+          "name": "Valadorya",
+          "time": "02:07"
+        },
+        {
+          "name": "Jenoside",
+          "time": "02:17"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 4,
+        "massacre_cast_times": [
+          "00:30.010",
+          "01:00.009",
+          "01:30.006",
+          "01:59.995"
+        ],
+        "feud_occurred": true,
+        "feud_count": 2,
+        "feud_times": [
+          "01:00.009",
+          "01:59.995"
+        ],
+        "mortality_time": "02:07.715",
+        "mortality_time_sec": 127.715,
+        "notes": "Completed Cast rows counted. Duplicate Mortality at same timestamp is one transition."
+      },
+      "notes": "Searedscalop ilvl 359 parse 92 is primary Fire reference. Six DPS have 98.02-99.41% activity. Blood tank Jenoside died 12 seconds before kill in Mortality, excluded from reference counts. Buird absent from damage-done table, so damage and parse values are null."
+    }
+  ],
+  "rejected": [
+    {
+      "report": "jN3Q6FqAmcxDpPL7",
+      "fight": 31,
+      "reason": "Archived log paywall prevents damage activity, Summary and casts verification; Fire rank 97 and Assassination rank 96 are also extreme top outliers.",
+      "raid_item_level": 359.3
+    }
+  ],
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight27",
       "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27&type=summary",
+      "summary_url": null,
       "mode": "10N",
       "date": "2024-10-28",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill (read 2026-09-27; reused 2026-09-30)",
       "duration_sec": 95.3,
       "raid_dps": 217144.7,
       "average_item_level": 359.5,
+      "item_level": 359.5,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
       "target_scope": "All Enemies (Chimaeron)",
-      "reference_class": "measured_live_observation_not_acceptance_floor",
-      "actor_dps": {
-        "balance_druid": 19930.5,
-        "blood_death_knight": 20526.6,
-        "combat_rogue": 27621.1,
-        "elemental_shaman": 25970.3,
-        "retribution_paladin": 25345,
-        "shadow_priest": 21687.6,
-        "survival_hunter": 27829.75,
-        "unholy_death_knight": 19258.7
-      },
+      "reference_class": "matched_item_level_band",
       "roster": [
         {
           "name": "Wongelrainer",
+          "class": "Death Knight",
           "spec": "blood_death_knight",
+          "spec_key": "blood_death_knight",
           "role": "tank",
+          "dps": 20526.6,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 365,
-          "dps": 20526.6
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Greysnout",
+          "class": "Death Knight",
           "spec": "unholy_death_knight",
+          "spec_key": "unholy_death_knight",
           "role": "dps",
+          "dps": 19258.7,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 355,
-          "dps": 19258.7
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Koakuma",
+          "class": "Druid",
           "spec": "balance_druid",
+          "spec_key": "balance_druid",
           "role": "dps",
+          "dps": 19930.5,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 362,
-          "dps": 19930.5
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Jägamara",
+          "class": "Hunter",
           "spec": "survival_hunter",
+          "spec_key": "survival_hunter",
           "role": "dps",
+          "dps": 26557.1,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 357,
-          "dps": 26557.1
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Lachina",
+          "class": "Hunter",
           "spec": "survival_hunter",
+          "spec_key": "survival_hunter",
           "role": "dps",
+          "dps": 29102.4,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 363,
-          "dps": 29102.4
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Janderak",
+          "class": "Paladin",
           "spec": "retribution_paladin",
+          "spec_key": "retribution_paladin",
           "role": "dps",
+          "dps": 25345,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 357,
-          "dps": 25345
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Adara",
+          "class": "Priest",
           "spec": "shadow_priest",
+          "spec_key": "shadow_priest",
           "role": "dps",
+          "dps": 21687.6,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 360,
-          "dps": 21687.6
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Avéran",
+          "class": "Rogue",
           "spec": "combat_rogue",
+          "spec_key": "combat_rogue",
           "role": "dps",
+          "dps": 27621.1,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 357,
-          "dps": 27621.1
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Sélán",
+          "class": "Shaman",
           "spec": "elemental_shaman",
+          "spec_key": "elemental_shaman",
           "role": "dps",
+          "dps": 25970.3,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 362,
-          "dps": 25970.3
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         },
         {
           "name": "Nevox",
+          "class": "Paladin",
           "spec": "holy_paladin",
+          "spec_key": "holy_paladin",
           "role": "healer",
+          "dps": 864.5,
+          "dps_default_view": null,
+          "active_pct": null,
           "item_level": 357,
-          "dps": 864.5
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
         }
       ],
+      "actor_dps": {
+        "blood_death_knight": 20526.6,
+        "survival_hunter": 27829.8,
+        "retribution_paladin": 25345.0
+      },
+      "actor_item_level": {
+        "blood_death_knight": 365.0,
+        "survival_hunter": 360.0,
+        "retribution_paladin": 357.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": null,
+        "survival_hunter": null,
+        "retribution_paladin": null
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Wongelrainer"
+        ],
+        "survival_hunter": [
+          "Jägamara",
+          "Lachina"
+        ],
+        "retribution_paladin": [
+          "Janderak"
+        ]
+      },
+      "excluded_actor_dps": {},
       "deaths": [
         {
           "player": "Wongelrainer",
@@ -112,149 +763,1283 @@
           "killing_ability": "Melee"
         }
       ],
+      "phase_coverage": {
+        "massacre_count": 2,
+        "feud_occurred": false,
+        "feud_count": 0,
+        "mortality_time_sec": 78.1,
+        "notes": "From the 2026-09-27 read (cast timelines manifest boss_events): two Massacres, no Systems Failure/Feud, Mortality at 78.1 s. Not re-read on 2026-09-30."
+      },
+      "notes": "Seeded from chimaeron_wcl_dps_reference_v1.json (measured_live_observation_not_acceptance_floor).",
+      "raid_dps_median_active_pct": null,
       "limitations": [
         "One tank (Blood DK, no taunt swap; died to a Mortality melee 2 s before the kill) and one healer; the canonical roster has two tanks and three healers.",
-        "Average item level 359.5, well below the Magmaw matched reference (395.3).",
-        "Two Massacres, no Systems Failure/Feud; Mortality at 78.1 s.",
-        "Displayed duration and DPS are rounded observations over All Enemies (Chimaeron is the only hostile).",
-        "Actor DPS per spec is the median of that spec's players in this kill (two Survival Hunters)."
+        "Short kill: two Massacres and no Feud; kept because its raid item level (359.5) is in band.",
+        "Actor DPS per spec is the mean of that spec's players in this kill (two Survival Hunters)."
       ]
     },
     {
-      "id": "xAhkN2y9YP3KRmnJ-fight14",
-      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14&type=summary",
+      "id": "JLvtbwNpFrzf6qjQ-fight14",
+      "url": "https://classic.warcraftlogs.com/reports/JLvtbwNpFrzf6qjQ?fight=14&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/JLvtbwNpFrzf6qjQ?fight=14&type=summary",
       "mode": "10N",
-      "date": "2025-06-11",
-      "duration_sec": 60.0,
-      "raid_dps": 345080.1,
-      "average_item_level": 401.4,
+      "date": "2024-10-10",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 123.0,
+      "raid_dps": 168243.2,
+      "average_item_level": 359.9,
+      "item_level": 359.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
       "target_scope": "All Enemies (Chimaeron)",
-      "reference_class": "short_fight_throughput_context",
-      "actor_dps": {
-        "affliction_warlock": 50668.1,
-        "arms_warrior": 51245.7,
-        "blood_death_knight": 31250.4,
-        "elemental_shaman": 40131.35,
-        "enhancement_shaman": 36474.1,
-        "survival_hunter": 46606.35
-      },
+      "reference_class": "matched_item_level_band",
       "roster": [
         {
-          "name": "Catamara",
-          "spec": "blood_death_knight",
+          "name": "Nonecrosis",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 28765.4,
+          "dps_default_view": null,
+          "active_pct": 96.99,
+          "item_level": 359,
+          "parse_percentile": 93,
+          "ilvl_parse_percentile": 95
+        },
+        {
+          "name": "Hexonia",
+          "class": "Warlock",
+          "spec": "Demonology",
+          "spec_key": "demonology_warlock",
+          "role": "dps",
+          "dps": 23443.3,
+          "dps_default_view": null,
+          "active_pct": 94.95,
+          "item_level": 359,
+          "parse_percentile": 64,
+          "ilvl_parse_percentile": 55
+        },
+        {
+          "name": "Mjayed",
+          "class": "Priest",
+          "spec": "Shadow",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 21816.5,
+          "dps_default_view": null,
+          "active_pct": 95.8,
+          "item_level": 361,
+          "parse_percentile": 82,
+          "ilvl_parse_percentile": 65
+        },
+        {
+          "name": "Cramil",
+          "class": "Rogue",
+          "spec": "Combat",
+          "spec_key": "combat_rogue",
+          "role": "dps",
+          "dps": 21069.9,
+          "dps_default_view": null,
+          "active_pct": 99.82,
+          "item_level": 359,
+          "parse_percentile": 51,
+          "ilvl_parse_percentile": 40
+        },
+        {
+          "name": "Revengetime",
+          "class": "Warlock",
+          "spec": "Demonology",
+          "spec_key": "demonology_warlock",
+          "role": "dps",
+          "dps": 20912.1,
+          "dps_default_view": null,
+          "active_pct": 97.31,
+          "item_level": 354,
+          "parse_percentile": 47,
+          "ilvl_parse_percentile": 70
+        },
+        {
+          "name": "Deescó",
+          "class": "Warlock",
+          "spec": "Affliction",
+          "spec_key": "affliction_warlock",
+          "role": "dps",
+          "dps": 19456.0,
+          "dps_default_view": null,
+          "active_pct": 94.47,
+          "item_level": 359,
+          "parse_percentile": 52,
+          "ilvl_parse_percentile": 38
+        },
+        {
+          "name": "Strongknight",
+          "class": "Death Knight",
+          "spec": "Blood",
+          "spec_key": "blood_death_knight",
           "role": "tank",
-          "item_level": 407,
-          "dps": 31250.4
+          "dps": 18044.5,
+          "dps_default_view": null,
+          "active_pct": 97.58,
+          "item_level": 365,
+          "parse_percentile": 91,
+          "ilvl_parse_percentile": 77
         },
         {
-          "name": "Tristu",
-          "spec": "survival_hunter",
-          "role": "dps",
-          "item_level": 403,
-          "dps": 47808.7
+          "name": "Ohmymonkey",
+          "class": "Druid",
+          "spec": "Guardian",
+          "spec_key": "feral_druid_tank",
+          "role": "tank",
+          "dps": 13337.3,
+          "dps_default_view": null,
+          "active_pct": 98.44,
+          "item_level": 362,
+          "parse_percentile": 90,
+          "ilvl_parse_percentile": 84
         },
         {
-          "name": "Vitarâ",
-          "spec": "survival_hunter",
-          "role": "dps",
-          "item_level": 403,
-          "dps": 45404
-        },
-        {
-          "name": "Thorsmage",
-          "spec": "fire_mage",
-          "role": "dps",
-          "item_level": 400,
-          "dps": null
-        },
-        {
-          "name": "Catorì",
-          "spec": "elemental_shaman",
-          "role": "dps",
-          "item_level": 392,
-          "dps": 32792.5
-        },
-        {
-          "name": "Heutnich",
-          "spec": "enhancement_shaman",
-          "role": "dps",
-          "item_level": 396,
-          "dps": 36474.1
-        },
-        {
-          "name": "Schastnerak",
-          "spec": "elemental_shaman",
-          "role": "dps",
-          "item_level": 406,
-          "dps": 47470.2
-        },
-        {
-          "name": "Schlabunsen",
-          "spec": "affliction_warlock",
-          "role": "dps",
-          "item_level": 403,
-          "dps": 50668.1
-        },
-        {
-          "name": "Noho",
-          "spec": "arms_warrior",
-          "role": "dps",
-          "item_level": 401,
-          "dps": 51245.7
-        },
-        {
-          "name": "Awì",
-          "spec": "restoration_shaman",
+          "name": "Xtaurenspy",
+          "class": "Druid",
+          "spec": "Restoration",
+          "spec_key": "restoration_druid",
           "role": "healer",
-          "item_level": 403,
-          "dps": 1966.4
+          "dps": 726.3,
+          "dps_default_view": null,
+          "active_pct": 10.77,
+          "item_level": 361,
+          "parse_percentile": 71,
+          "ilvl_parse_percentile": 58
+        },
+        {
+          "name": "Toxena",
+          "class": "Paladin",
+          "spec": "Holy",
+          "spec_key": "holy_paladin",
+          "role": "healer",
+          "dps": 489.4,
+          "dps_default_view": null,
+          "active_pct": 16.86,
+          "item_level": 360,
+          "parse_percentile": 54,
+          "ilvl_parse_percentile": 51
         }
       ],
+      "actor_dps": {
+        "blood_death_knight": 18044.5,
+        "fire_mage": 28765.4,
+        "demonology_warlock": 23443.3
+      },
+      "actor_item_level": {
+        "blood_death_knight": 365.0,
+        "fire_mage": 359.0,
+        "demonology_warlock": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 91.0,
+        "fire_mage": 93.0,
+        "demonology_warlock": 64.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Strongknight"
+        ],
+        "fire_mage": [
+          "Nonecrosis"
+        ],
+        "demonology_warlock": [
+          "Hexonia"
+        ]
+      },
+      "excluded_actor_dps": {
+        "demonology_warlock:Revengetime": {
+          "dps": 20912.1,
+          "active_pct": 97.31,
+          "item_level": 354.0,
+          "parse_percentile": 47.0,
+          "reason": "died at 83 s of 123 s"
+        }
+      },
       "deaths": [
         {
-          "player": "Thorsmage",
-          "time_sec": 35,
-          "killing_ability": "Cauterize"
+          "name": "Revengetime",
+          "time": "01:23"
         }
       ],
+      "phase_coverage": {
+        "massacre_count": 3,
+        "massacre_cast_times": [
+          "00:30.002",
+          "01:00.004",
+          "01:30.016"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "01:30.016"
+        ],
+        "mortality_time": "01:45.371",
+        "mortality_time_sec": 105.371,
+        "notes": "Mortality appears twice at the same timestamp; counted as one phase transition. Counted completed Cast rows, not Begin Cast rows."
+      },
+      "notes": "Hexonia is the chosen Demonology reference at ilvl 359; Revengetime died at 1:23 and is excluded as a reference. All six DPS show 94.47-99.82% damage activity. Strongknight is listed as Blood tank in Summary.",
+      "raid_dps_median_active_pct": 96.39,
       "limitations": [
-        "Short 60 s kill with one Massacre; Mortality at 50.2 s.",
-        "One tank (Blood DK) and one Restoration Shaman healer; eight DPS.",
-        "Average item level 401.4 (above the fight 27 raid).",
-        "The Fire Mage died at 35 s (Cauterize) and has no Damage Done row: fire_mage keeps the WoWSims fallback.",
-        "Actor DPS per spec is the median of that spec's players in this kill (two Survival Hunters)."
+        "3 Massacres, 1 Feud(s) at 01:30.016, Mortality at 105.371 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
+      ]
+    },
+    {
+      "id": "B4J8vQVnbxFdjf3P-fight22",
+      "url": "https://classic.warcraftlogs.com/reports/B4J8vQVnbxFdjf3P?fight=22&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/B4J8vQVnbxFdjf3P?fight=22&type=summary",
+      "mode": "10N",
+      "date": "2024-10-23",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 124.5,
+      "raid_dps": 166326.3,
+      "average_item_level": 361.1,
+      "item_level": 361.1,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "matched_item_level_band",
+      "roster": [
+        {
+          "name": "Poparzony",
+          "class": "Warlock",
+          "spec": "Demonology",
+          "spec_key": "demonology_warlock",
+          "role": "dps",
+          "dps": 26810.5,
+          "dps_default_view": null,
+          "active_pct": 99.75,
+          "item_level": 359,
+          "parse_percentile": 83,
+          "ilvl_parse_percentile": 81
+        },
+        {
+          "name": "Hubon",
+          "class": "Hunter",
+          "spec": "Survival",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 24974.9,
+          "dps_default_view": null,
+          "active_pct": 99.17,
+          "item_level": 363,
+          "parse_percentile": 74,
+          "ilvl_parse_percentile": 49
+        },
+        {
+          "name": "Deathtime",
+          "class": "Death Knight",
+          "spec": "Frost",
+          "spec_key": "frost_death_knight",
+          "role": "dps",
+          "dps": 23939.6,
+          "dps_default_view": null,
+          "active_pct": 98.83,
+          "item_level": 355,
+          "parse_percentile": 73,
+          "ilvl_parse_percentile": 80
+        },
+        {
+          "name": "Elvenpat",
+          "class": "Priest",
+          "spec": "Shadow",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 23826.7,
+          "dps_default_view": null,
+          "active_pct": 98.09,
+          "item_level": 363,
+          "parse_percentile": 92,
+          "ilvl_parse_percentile": 84
+        },
+        {
+          "name": "Zajajco",
+          "class": "Shaman",
+          "spec": "Enhancement",
+          "spec_key": "enhancement_shaman",
+          "role": "dps",
+          "dps": 23335.5,
+          "dps_default_view": null,
+          "active_pct": 99.75,
+          "item_level": 361,
+          "parse_percentile": 80,
+          "ilvl_parse_percentile": 48
+        },
+        {
+          "name": "Morthraz",
+          "class": "Warrior",
+          "spec": "Arms",
+          "spec_key": "arms_warrior",
+          "role": "dps",
+          "dps": 21007.2,
+          "dps_default_view": null,
+          "active_pct": 96.98,
+          "item_level": 365,
+          "parse_percentile": 56,
+          "ilvl_parse_percentile": 18
+        },
+        {
+          "name": "Glonojad",
+          "class": "Druid",
+          "spec": "Feral",
+          "spec_key": "feral_druid_dps",
+          "role": "dps",
+          "dps": 11650.7,
+          "dps_default_view": null,
+          "active_pct": 94.54,
+          "item_level": 361,
+          "parse_percentile": 42,
+          "ilvl_parse_percentile": 33
+        },
+        {
+          "name": "Kalasznikov",
+          "class": "Paladin",
+          "spec": "Protection",
+          "spec_key": "protection_paladin",
+          "role": "tank",
+          "dps": 10206.4,
+          "dps_default_view": null,
+          "active_pct": 98.05,
+          "item_level": 360,
+          "parse_percentile": 57,
+          "ilvl_parse_percentile": 51
+        },
+        {
+          "name": "Ieatwife",
+          "class": "Priest",
+          "spec": "Holy",
+          "spec_key": "holy_priest",
+          "role": "healer",
+          "dps": 574.9,
+          "dps_default_view": null,
+          "active_pct": 10.98,
+          "item_level": 365,
+          "parse_percentile": 42,
+          "ilvl_parse_percentile": 35
+        },
+        {
+          "name": "Petivokszia",
+          "class": "Shaman",
+          "spec": "Restoration",
+          "spec_key": "restoration_shaman",
+          "role": "healer",
+          "dps": null,
+          "dps_default_view": null,
+          "active_pct": null,
+          "item_level": 359,
+          "parse_percentile": null,
+          "ilvl_parse_percentile": null
+        }
+      ],
+      "actor_dps": {
+        "survival_hunter": 24974.9,
+        "demonology_warlock": 26810.5
+      },
+      "actor_item_level": {
+        "survival_hunter": 363.0,
+        "demonology_warlock": 359.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": 74.0,
+        "demonology_warlock": 83.0
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Hubon"
+        ],
+        "demonology_warlock": [
+          "Poparzony"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "deaths": [
+        {
+          "name": "Glonojad",
+          "time": "01:52"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 3,
+        "massacre_cast_times": [
+          "00:29.941",
+          "00:59.952",
+          "01:29.967"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "01:29.967"
+        ],
+        "mortality_time": "01:47.223",
+        "mortality_time_sec": 107.223,
+        "notes": "Completed Cast rows counted; duplicate Mortality is one transition."
+      },
+      "notes": "Report header created Oct 23, ranking kill date Oct 24. Wanted players survived, with 99%+ activity. Petivokszia absent from damage table. Ieatwife ilvl percentile displays 35*.",
+      "raid_dps_median_active_pct": 98.83,
+      "limitations": [
+        "3 Massacres, 1 Feud(s) at 01:29.967, Mortality at 107.223 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
+      ]
+    },
+    {
+      "id": "HF62ky4w8ThJmrbY-fight33",
+      "url": "https://classic.warcraftlogs.com/reports/HF62ky4w8ThJmrbY?fight=33&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/HF62ky4w8ThJmrbY?fight=33&type=summary",
+      "mode": "10N",
+      "date": "2024-10-24",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 122.3,
+      "raid_dps": 169318.0,
+      "average_item_level": 358.2,
+      "item_level": 358.2,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "matched_item_level_band",
+      "roster": [
+        {
+          "name": "Cjrob",
+          "class": "Rogue",
+          "spec": "Assassination",
+          "spec_key": "assassination_rogue",
+          "role": "dps",
+          "dps": 26637.4,
+          "dps_default_view": null,
+          "active_pct": 99.16,
+          "item_level": 359,
+          "parse_percentile": 89,
+          "ilvl_parse_percentile": 90
+        },
+        {
+          "name": "Authorized",
+          "class": "Priest",
+          "spec": "Shadow",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 22840.5,
+          "dps_default_view": null,
+          "active_pct": 98.13,
+          "item_level": 359,
+          "parse_percentile": 88,
+          "ilvl_parse_percentile": 90
+        },
+        {
+          "name": "Dotsnake",
+          "class": "Warlock",
+          "spec": "Demonology",
+          "spec_key": "demonology_warlock",
+          "role": "dps",
+          "dps": 21366.0,
+          "dps_default_view": null,
+          "active_pct": 98.59,
+          "item_level": 355,
+          "parse_percentile": 50,
+          "ilvl_parse_percentile": 56
+        },
+        {
+          "name": "Phetdk",
+          "class": "Death Knight",
+          "spec": "Frost",
+          "spec_key": "frost_death_knight",
+          "role": "dps",
+          "dps": 21196.2,
+          "dps_default_view": null,
+          "active_pct": 98.28,
+          "item_level": 355,
+          "parse_percentile": 48,
+          "ilvl_parse_percentile": 51
+        },
+        {
+          "name": "Vespinegas",
+          "class": "Warlock",
+          "spec": "Destruction",
+          "spec_key": "destruction_warlock",
+          "role": "dps",
+          "dps": 19714.0,
+          "dps_default_view": null,
+          "active_pct": 97.7,
+          "item_level": 356,
+          "parse_percentile": 51,
+          "ilvl_parse_percentile": 54
+        },
+        {
+          "name": "Rikisham",
+          "class": "Shaman",
+          "spec": "Elemental",
+          "spec_key": "elemental_shaman",
+          "role": "dps",
+          "dps": 18704.0,
+          "dps_default_view": null,
+          "active_pct": 97.93,
+          "item_level": 358,
+          "parse_percentile": 33,
+          "ilvl_parse_percentile": 22
+        },
+        {
+          "name": "Trivdruid",
+          "class": "Druid",
+          "spec": "Feral",
+          "spec_key": "feral_druid_dps",
+          "role": "dps",
+          "dps": 17897.1,
+          "dps_default_view": null,
+          "active_pct": 98.52,
+          "item_level": 354,
+          "parse_percentile": 66,
+          "ilvl_parse_percentile": 73
+        },
+        {
+          "name": "Xtupid",
+          "class": "Death Knight",
+          "spec": "Blood",
+          "spec_key": "blood_death_knight",
+          "role": "tank",
+          "dps": 15316.5,
+          "dps_default_view": null,
+          "active_pct": 98.75,
+          "item_level": 360,
+          "parse_percentile": 77,
+          "ilvl_parse_percentile": 75
+        },
+        {
+          "name": "Phenomefart",
+          "class": "Shaman",
+          "spec": "Restoration",
+          "spec_key": "restoration_shaman",
+          "role": "healer",
+          "dps": 5146.9,
+          "dps_default_view": null,
+          "active_pct": 97.37,
+          "item_level": 359,
+          "parse_percentile": 97,
+          "ilvl_parse_percentile": 97
+        },
+        {
+          "name": "Draie",
+          "class": "Druid",
+          "spec": "Restoration",
+          "spec_key": "restoration_druid",
+          "role": "healer",
+          "dps": 396.6,
+          "dps_default_view": null,
+          "active_pct": 3.54,
+          "item_level": 367,
+          "parse_percentile": 48,
+          "ilvl_parse_percentile": 17
+        }
+      ],
+      "actor_dps": {
+        "blood_death_knight": 15316.5,
+        "assassination_rogue": 26637.4,
+        "demonology_warlock": 21366.0
+      },
+      "actor_item_level": {
+        "blood_death_knight": 360.0,
+        "assassination_rogue": 359.0,
+        "demonology_warlock": 355.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 77.0,
+        "assassination_rogue": 89.0,
+        "demonology_warlock": 50.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Xtupid"
+        ],
+        "assassination_rogue": [
+          "Cjrob"
+        ],
+        "demonology_warlock": [
+          "Dotsnake"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "deaths": [],
+      "phase_coverage": {
+        "massacre_count": 3,
+        "massacre_cast_times": [
+          "00:29.916",
+          "00:59.895",
+          "01:29.910"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "00:59.895"
+        ],
+        "mortality_time": "01:46.368",
+        "mortality_time_sec": 106.368,
+        "notes": "Mortality rows at 01:46.368 and 01:46.375 are same phase transition. Completed Massacre Cast rows counted."
+      },
+      "notes": "No deaths. Only tank Xtupid is Blood at 360 with parse 77. Cjrob 359 parse 89 is primary Assassination reference. Dotsnake 355 parse 50 qualifies for Demonology. Seven DPS have 97.70-99.16% activity. Draie ilvl percentile shown as 17*.",
+      "raid_dps_median_active_pct": 98.28,
+      "limitations": [
+        "3 Massacres, 1 Feud(s) at 00:59.895, Mortality at 106.368 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
+      ]
+    },
+    {
+      "id": "AztLjaG8wJh2fvbk-fight37",
+      "url": "https://classic.warcraftlogs.com/reports/AztLjaG8wJh2fvbk?fight=37&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/AztLjaG8wJh2fvbk?fight=37&type=summary",
+      "mode": "10N",
+      "date": "2024-10-12",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 143.6,
+      "raid_dps": 144166.3,
+      "average_item_level": 359.0,
+      "item_level": 359.0,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "matched_item_level_band",
+      "roster": [
+        {
+          "name": "Wulfrich",
+          "class": "Paladin",
+          "spec": "Retribution",
+          "spec_key": "retribution_paladin",
+          "role": "dps",
+          "dps": 26922.2,
+          "dps_default_view": null,
+          "active_pct": 99.55,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "ilvl_parse_percentile": 92
+        },
+        {
+          "name": "Eagleballz",
+          "class": "Rogue",
+          "spec": "Combat",
+          "spec_key": "combat_rogue",
+          "role": "dps",
+          "dps": 22820.5,
+          "dps_default_view": null,
+          "active_pct": 99.26,
+          "item_level": 359,
+          "parse_percentile": 69,
+          "ilvl_parse_percentile": 62
+        },
+        {
+          "name": "Huntergoddes",
+          "class": "Hunter",
+          "spec": "Survival",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 22350.4,
+          "dps_default_view": null,
+          "active_pct": 99.14,
+          "item_level": 358,
+          "parse_percentile": 49,
+          "ilvl_parse_percentile": 39
+        },
+        {
+          "name": "Bizzygnome",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 19489.3,
+          "dps_default_view": null,
+          "active_pct": 98.44,
+          "item_level": 361,
+          "parse_percentile": 38,
+          "ilvl_parse_percentile": 8
+        },
+        {
+          "name": "Brudheala",
+          "class": "Priest",
+          "spec": "Shadow",
+          "spec_key": "shadow_priest",
+          "role": "dps",
+          "dps": 18789.1,
+          "dps_default_view": null,
+          "active_pct": 99.52,
+          "item_level": 359,
+          "parse_percentile": 57,
+          "ilvl_parse_percentile": 48
+        },
+        {
+          "name": "Fírndahlia",
+          "class": "Hunter",
+          "spec": "Marksmanship",
+          "spec_key": "marksmanship_hunter",
+          "role": "dps",
+          "dps": 14890.5,
+          "dps_default_view": null,
+          "active_pct": 98.41,
+          "item_level": 359,
+          "parse_percentile": 31,
+          "ilvl_parse_percentile": 12
+        },
+        {
+          "name": "Belthesar",
+          "class": "Death Knight",
+          "spec": "Blood",
+          "spec_key": "blood_death_knight",
+          "role": "tank",
+          "dps": 11582.3,
+          "dps_default_view": null,
+          "active_pct": 99.14,
+          "item_level": 358,
+          "parse_percentile": 32,
+          "ilvl_parse_percentile": 28
+        },
+        {
+          "name": "Owelman",
+          "class": "Warrior",
+          "spec": "Protection",
+          "spec_key": "protection_warrior",
+          "role": "tank",
+          "dps": 5976.5,
+          "dps_default_view": null,
+          "active_pct": 98.01,
+          "item_level": 359,
+          "parse_percentile": 23,
+          "ilvl_parse_percentile": 18
+        },
+        {
+          "name": "Gæaa",
+          "class": "Shaman",
+          "spec": "Restoration",
+          "spec_key": "restoration_shaman",
+          "role": "healer",
+          "dps": 675.0,
+          "dps_default_view": null,
+          "active_pct": 17.01,
+          "item_level": 359,
+          "parse_percentile": 44,
+          "ilvl_parse_percentile": 41
+        },
+        {
+          "name": "Phallady",
+          "class": "Druid",
+          "spec": "Restoration",
+          "spec_key": "restoration_druid",
+          "role": "healer",
+          "dps": 670.3,
+          "dps_default_view": null,
+          "active_pct": 7.51,
+          "item_level": 359,
+          "parse_percentile": 67,
+          "ilvl_parse_percentile": 62
+        }
+      ],
+      "actor_dps": {
+        "blood_death_knight": 11582.3,
+        "survival_hunter": 22350.4,
+        "fire_mage": 19489.3,
+        "retribution_paladin": 26922.2
+      },
+      "actor_item_level": {
+        "blood_death_knight": 358.0,
+        "survival_hunter": 358.0,
+        "fire_mage": 361.0,
+        "retribution_paladin": 359.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 32.0,
+        "survival_hunter": 49.0,
+        "fire_mage": 38.0,
+        "retribution_paladin": 92.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Belthesar"
+        ],
+        "survival_hunter": [
+          "Huntergoddes"
+        ],
+        "fire_mage": [
+          "Bizzygnome"
+        ],
+        "retribution_paladin": [
+          "Wulfrich"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "deaths": [
+        {
+          "name": "Fírndahlia",
+          "time": "01:00"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 4,
+        "massacre_cast_times": [
+          "00:30.003",
+          "01:00.001",
+          "01:30.010",
+          "02:00.017"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "01:00.001"
+        ],
+        "mortality_time": "02:05.783",
+        "mortality_time_sec": 125.783,
+        "notes": "Completed Massacre Cast rows counted. Duplicate Mortality is one transition."
+      },
+      "notes": "Exact raid target 359.00, primary Retribution player Wulfrich 359 parse 92. Wanted players survived. All six DPS have 98.41-99.55% activity. Non-wanted Marksmanship hunter death at 1:00 appears in Summary despite high aggregate damage activity. Belthesar listed as Blood tank.",
+      "raid_dps_median_active_pct": 99.2,
+      "limitations": [
+        "4 Massacres, 1 Feud(s) at 01:00.001, Mortality at 125.783 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
+      ]
+    },
+    {
+      "id": "TtAL96aBnyHgXNMJ-fight3",
+      "url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/TtAL96aBnyHgXNMJ?fight=3&type=summary",
+      "mode": "10N",
+      "date": "2024-10-26",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 121.3,
+      "raid_dps": 170597.6,
+      "average_item_level": 358.5,
+      "item_level": 358.5,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "matched_item_level_band",
+      "roster": [
+        {
+          "name": "Pejamage",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 29017.3,
+          "dps_default_view": null,
+          "active_pct": 99.65,
+          "item_level": 361,
+          "parse_percentile": 94,
+          "ilvl_parse_percentile": 85
+        },
+        {
+          "name": "Lickswindows",
+          "class": "Hunter",
+          "spec": "Survival",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 27534.9,
+          "dps_default_view": null,
+          "active_pct": 99.34,
+          "item_level": 357,
+          "parse_percentile": 90,
+          "ilvl_parse_percentile": 97
+        },
+        {
+          "name": "Júshi",
+          "class": "Paladin",
+          "spec": "Retribution",
+          "spec_key": "retribution_paladin",
+          "role": "dps",
+          "dps": 27013.3,
+          "dps_default_view": null,
+          "active_pct": 99.65,
+          "item_level": 359,
+          "parse_percentile": 92,
+          "ilvl_parse_percentile": 92
+        },
+        {
+          "name": "Kiskie",
+          "class": "Rogue",
+          "spec": "Assassination",
+          "spec_key": "assassination_rogue",
+          "role": "dps",
+          "dps": 22470.4,
+          "dps_default_view": null,
+          "active_pct": 98.16,
+          "item_level": 360,
+          "parse_percentile": 54,
+          "ilvl_parse_percentile": 45
+        },
+        {
+          "name": "Steffsis",
+          "class": "Warrior",
+          "spec": "Arms",
+          "spec_key": "arms_warrior",
+          "role": "dps",
+          "dps": 21674.7,
+          "dps_default_view": null,
+          "active_pct": 99.32,
+          "item_level": 361,
+          "parse_percentile": 62,
+          "ilvl_parse_percentile": 31
+        },
+        {
+          "name": "Steelshaman",
+          "class": "Shaman",
+          "spec": "Elemental",
+          "spec_key": "elemental_shaman",
+          "role": "dps",
+          "dps": 17878.4,
+          "dps_default_view": null,
+          "active_pct": 98.79,
+          "item_level": 354,
+          "parse_percentile": 28,
+          "ilvl_parse_percentile": 49
+        },
+        {
+          "name": "Jimlaheey",
+          "class": "Death Knight",
+          "spec": "Blood",
+          "spec_key": "blood_death_knight",
+          "role": "tank",
+          "dps": 14682.4,
+          "dps_default_view": null,
+          "active_pct": 98.87,
+          "item_level": 356,
+          "parse_percentile": 71,
+          "ilvl_parse_percentile": 79
+        },
+        {
+          "name": "Quillyn",
+          "class": "Paladin",
+          "spec": "Protection",
+          "spec_key": "protection_paladin",
+          "role": "tank",
+          "dps": 9546.5,
+          "dps_default_view": null,
+          "active_pct": 94.45,
+          "item_level": 354,
+          "parse_percentile": 46,
+          "ilvl_parse_percentile": 60
+        },
+        {
+          "name": "Bearkardioak",
+          "class": "Druid",
+          "spec": "Restoration",
+          "spec_key": "restoration_druid",
+          "role": "healer",
+          "dps": 494.6,
+          "dps_default_view": null,
+          "active_pct": 7.31,
+          "item_level": 364,
+          "parse_percentile": 54,
+          "ilvl_parse_percentile": 34
+        },
+        {
+          "name": "Súgár",
+          "class": "Paladin",
+          "spec": "Holy",
+          "spec_key": "holy_paladin",
+          "role": "healer",
+          "dps": 200.9,
+          "dps_default_view": null,
+          "active_pct": 26.96,
+          "item_level": 359,
+          "parse_percentile": 15,
+          "ilvl_parse_percentile": 14
+        }
+      ],
+      "actor_dps": {
+        "blood_death_knight": 14682.4,
+        "survival_hunter": 27534.9,
+        "fire_mage": 29017.3,
+        "retribution_paladin": 27013.3,
+        "assassination_rogue": 22470.4
+      },
+      "actor_item_level": {
+        "blood_death_knight": 356.0,
+        "survival_hunter": 357.0,
+        "fire_mage": 361.0,
+        "retribution_paladin": 359.0,
+        "assassination_rogue": 360.0
+      },
+      "actor_parse_percentile": {
+        "blood_death_knight": 71.0,
+        "survival_hunter": 90.0,
+        "fire_mage": 94.0,
+        "retribution_paladin": 92.0,
+        "assassination_rogue": 54.0
+      },
+      "actor_names": {
+        "blood_death_knight": [
+          "Jimlaheey"
+        ],
+        "survival_hunter": [
+          "Lickswindows"
+        ],
+        "fire_mage": [
+          "Pejamage"
+        ],
+        "retribution_paladin": [
+          "Júshi"
+        ],
+        "assassination_rogue": [
+          "Kiskie"
+        ]
+      },
+      "excluded_actor_dps": {},
+      "deaths": [
+        {
+          "name": "Quillyn",
+          "time": "01:58"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 3,
+        "massacre_cast_times": [
+          "00:29.995",
+          "00:59.996",
+          "01:29.996"
+        ],
+        "feud_occurred": true,
+        "feud_count": 1,
+        "feud_times": [
+          "00:59.996"
+        ],
+        "mortality_time": "01:45.094",
+        "mortality_time_sec": 105.094,
+        "notes": "Completed Cast rows counted. Duplicate Mortality is one transition."
+      },
+      "notes": "Raid average 358.50. Júshi 359 parse 92; Kiskie 360 parse 54. All wanted players survived. Six DPS have 98.16-99.65% activity. Pejamage parse 94 is below exclusion threshold 95; Lickswindows overall parse 90 qualifies despite ilvl bracket parse 97. Non-wanted Protection tank died near kill end.",
+      "raid_dps_median_active_pct": 99.33,
+      "limitations": [
+        "3 Massacres, 1 Feud(s) at 00:59.996, Mortality at 105.094 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
+      ]
+    },
+    {
+      "id": "zg18Kt3FkAdyv7jn-fight11",
+      "url": "https://classic.warcraftlogs.com/reports/zg18Kt3FkAdyv7jn?fight=11&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/zg18Kt3FkAdyv7jn?fight=11&type=summary",
+      "mode": "10N",
+      "date": "2024-10-14",
+      "kill": true,
+      "boss_verified": "Chimaeron Normal 10 Player Kill",
+      "duration_sec": 163.3,
+      "raid_dps": 126741.8,
+      "average_item_level": 356.3,
+      "item_level": 356.3,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Chimaeron)",
+      "reference_class": "matched_item_level_band",
+      "roster": [
+        {
+          "name": "Sneakyshmit",
+          "class": "Rogue",
+          "spec": "Assassination",
+          "spec_key": "assassination_rogue",
+          "role": "dps",
+          "dps": 26350.7,
+          "dps_default_view": null,
+          "active_pct": 99.14,
+          "item_level": 359,
+          "parse_percentile": 87,
+          "ilvl_parse_percentile": 87
+        },
+        {
+          "name": "Nightmama",
+          "class": "Death Knight",
+          "spec": "Unholy",
+          "spec_key": "unholy_death_knight",
+          "role": "dps",
+          "dps": 23239.7,
+          "dps_default_view": null,
+          "active_pct": 98.77,
+          "item_level": 359,
+          "parse_percentile": 58,
+          "ilvl_parse_percentile": 45
+        },
+        {
+          "name": "Comablack",
+          "class": "Mage",
+          "spec": "Fire",
+          "spec_key": "fire_mage",
+          "role": "dps",
+          "dps": 20543.8,
+          "dps_default_view": null,
+          "active_pct": 97.86,
+          "item_level": 356,
+          "parse_percentile": 46,
+          "ilvl_parse_percentile": 55
+        },
+        {
+          "name": "Holyfãns",
+          "class": "Paladin",
+          "spec": "Retribution",
+          "spec_key": "retribution_paladin",
+          "role": "dps",
+          "dps": 18848.5,
+          "dps_default_view": null,
+          "active_pct": 98.1,
+          "item_level": 357,
+          "parse_percentile": 30,
+          "ilvl_parse_percentile": 31
+        },
+        {
+          "name": "Wölfebane",
+          "class": "Hunter",
+          "spec": "Survival",
+          "spec_key": "survival_hunter",
+          "role": "dps",
+          "dps": 15136.6,
+          "dps_default_view": null,
+          "active_pct": 96.9,
+          "item_level": 356,
+          "parse_percentile": 8,
+          "ilvl_parse_percentile": 8
+        },
+        {
+          "name": "Nastyimp",
+          "class": "Paladin",
+          "spec": "Retribution",
+          "spec_key": "retribution_paladin",
+          "role": "dps",
+          "dps": 8114.3,
+          "dps_default_view": null,
+          "active_pct": 80.12,
+          "item_level": 357,
+          "parse_percentile": 2,
+          "ilvl_parse_percentile": 1
+        },
+        {
+          "name": "Thickformama",
+          "class": "Druid",
+          "spec": "Guardian",
+          "spec_key": "feral_druid_tank",
+          "role": "tank",
+          "dps": 6287.0,
+          "dps_default_view": null,
+          "active_pct": 97.1,
+          "item_level": 344,
+          "parse_percentile": 4,
+          "ilvl_parse_percentile": 9
+        },
+        {
+          "name": "Addiemarie",
+          "class": "Paladin",
+          "spec": "Protection",
+          "spec_key": "protection_paladin",
+          "role": "tank",
+          "dps": 4592.2,
+          "dps_default_view": null,
+          "active_pct": 87.55,
+          "item_level": 358,
+          "parse_percentile": 3,
+          "ilvl_parse_percentile": 1
+        },
+        {
+          "name": "Sqwench",
+          "class": "Priest",
+          "spec": "Discipline",
+          "spec_key": "discipline_priest",
+          "role": "healer",
+          "dps": 3132.5,
+          "dps_default_view": null,
+          "active_pct": 40.93,
+          "item_level": 358,
+          "parse_percentile": 33,
+          "ilvl_parse_percentile": 32
+        },
+        {
+          "name": "Nidalaeh",
+          "class": "Paladin",
+          "spec": "Holy",
+          "spec_key": "holy_paladin",
+          "role": "healer",
+          "dps": 472.5,
+          "dps_default_view": null,
+          "active_pct": 12.78,
+          "item_level": 359,
+          "parse_percentile": 51,
+          "ilvl_parse_percentile": 49
+        }
+      ],
+      "actor_dps": {
+        "fire_mage": 20543.8,
+        "retribution_paladin": 18848.5,
+        "assassination_rogue": 26350.7
+      },
+      "actor_item_level": {
+        "fire_mage": 356.0,
+        "retribution_paladin": 357.0,
+        "assassination_rogue": 359.0
+      },
+      "actor_parse_percentile": {
+        "fire_mage": 46.0,
+        "retribution_paladin": 30.0,
+        "assassination_rogue": 87.0
+      },
+      "actor_names": {
+        "fire_mage": [
+          "Comablack"
+        ],
+        "retribution_paladin": [
+          "Holyfãns"
+        ],
+        "assassination_rogue": [
+          "Sneakyshmit"
+        ]
+      },
+      "excluded_actor_dps": {
+        "survival_hunter:Wölfebane": {
+          "dps": 15136.6,
+          "active_pct": 96.9,
+          "item_level": 356.0,
+          "parse_percentile": 8.0,
+          "reason": "extreme bottom parse (8)"
+        },
+        "retribution_paladin:Nastyimp": {
+          "dps": 8114.3,
+          "active_pct": 80.12,
+          "item_level": 357.0,
+          "parse_percentile": 2.0,
+          "reason": "died at 120 s of 163 s"
+        }
+      },
+      "deaths": [
+        {
+          "name": "Nastyimp",
+          "time": "02:00"
+        }
+      ],
+      "phase_coverage": {
+        "massacre_count": 4,
+        "massacre_cast_times": [
+          "00:29.981",
+          "00:59.997",
+          "01:29.978",
+          "01:59.990"
+        ],
+        "feud_occurred": true,
+        "feud_count": 2,
+        "feud_times": [
+          "00:59.997",
+          "01:59.990"
+        ],
+        "mortality_time": "02:20.430",
+        "mortality_time_sec": 140.43,
+        "notes": "Completed Cast rows counted. Duplicate Mortality is one transition."
+      },
+      "notes": "Sneakyshmit 359 parse 87 survived with 99.14% activity, closer raid gear than Qck9GA6KbT4V1arz. Comablack 356 parse 46 and Holyfãns 357 parse 30 qualify. Wölfebane overall parse 8 despite 96.90% activity is excluded as Survival reference. Nastyimp died and had parse 2/activity 80.12%, excluded as Retribution reference. Five of six DPS have 96.90-99.14% activity; lower performance elsewhere is retained as a caveat.",
+      "raid_dps_median_active_pct": 97.98,
+      "limitations": [
+        "4 Massacres, 2 Feud(s) at 00:59.997, 01:59.990, Mortality at 140.43 s.",
+        "Selected by the extractor with a preference for kills that include a Feud (phase coverage), not at random.",
+        "One value per spec: the boss-tank Blood DK (confirmed from boss melee in damage-taken); same-spec DPS actors averaged; outliers in excluded_actor_dps."
       ]
     }
-  ],
-  "canonical_spec_coverage": {
-    "matched": [
-      "blood_death_knight",
-      "survival_hunter",
-      "retribution_paladin"
-    ],
-    "absent_or_no_row": {
-      "fire_mage": "present only in fight 14, died at 35 s without a Damage Done row",
-      "feral_druid_tank": "absent",
-      "assassination_rogue": "absent (fight 27 has Combat)",
-      "demonology_warlock": "absent (fight 14 has Affliction)"
-    }
-  },
-  "planned_extraction": {
-    "candidate_reports": [
-      {
-        "report": "MxFq7TRbvnjGY1hJ",
-        "why": "10N raid night of the calibrated Magmaw melee sample; Chimaeron fight 27 extracted"
-      },
-      {
-        "report": "Y8ajQ7dbmKMG1RZy",
-        "why": "10N raid night of the matched Magmaw DPS reference; no Chimaeron encounter"
-      },
-      {
-        "report": "xAhkN2y9YP3KRmnJ",
-        "why": "second Magmaw 10N reference night; Chimaeron fight 14 extracted"
-      }
-    ],
-    "fallback": "Chimaeron 10-player normal rankings, for a kill with Fire Mage, Assassination Rogue, Demonology Warlock or a Feral tank",
-    "matching_rule": "Same mode (10N) and a kill that reaches Mortality; prefer rosters with two tanks and three healers. A spec absent from every matched kill keeps the WoWSims fallback (0.90) or no_reference."
-  }
+  ]
 }

@@ -13,9 +13,12 @@
 //
 // - Outage: after the knockout the raid has ~15 s before Caustic Slime
 //   resumes (native reschedule +19 s from the Massacre event, 4 s cast), then
-//   ~11 s of stacked Slimes until the Bile-O-Tron returns. The Discipline
-//   Priest drops Power Word: Barrier on the stack as Slimes resume and the
-//   Restoration Shaman follows with Spirit Link Totem for the second half.
+//   two stacked Slime volleys (Feud at ~15 s and ~9 s left; 6 s repeat, WCL)
+//   until the Bile-O-Tron returns. The Discipline Priest drops Power Word:
+//   Barrier on the stack for the first volley and the Restoration Shaman
+//   follows with Spirit Link Totem for the second. A second outage within
+//   their 3 minute cooldowns gets neither: the executor rejects the cast and
+//   the healers keep healing by health percentage.
 // - Burn (BotChimaeronBurn.h): the lust owner lusts when the push starts
 //   (release plus a settled handoff), the moment the non-tanks are released.
 // - Mortality: absorbs still work, so the Discipline Priest shields the boss

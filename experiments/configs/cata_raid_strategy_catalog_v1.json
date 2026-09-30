@@ -42,8 +42,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 8,
-          "ledger_unresolved_material_count": 8
+          "contract_unresolved_material_count": 7,
+          "ledger_unresolved_material_count": 7
         },
         {
           "boss_slug": "omnotron_defense_system",

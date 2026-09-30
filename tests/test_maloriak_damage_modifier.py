@@ -28,7 +28,9 @@ REGISTRY_PATCH = (ROOT / "experiments/configs/cata_raid_encounters/blackwing_des
 
 MALORIAK_10N = 41378
 MALORIAK_OTHER_MODES = (49974, 49980, 49986)  # 25N, 10H, 25H: open, untouched
-ADDS = (41440, 41841)  # Aberration, Prime Subject: open (Growth Catalyst stacks unknown)
+ADDS = (41440, 41841)  # Aberration, Prime Subject: calibrated in round 3 by ADD_MIGRATION
+ADD_MIGRATION = ROOT / "sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql"
+ADD_MODIFIERS = {41440: 0.81, 41841: 3.5}
 EXPECTED_MODIFIER = 9.5
 
 # (entry, DamageModifier, BaseAttackTime, difficulty_entry_1..3).
@@ -179,9 +181,15 @@ def test_registry_patch_records_the_same_value():
     assert row["evidence"]["derivation_file"] == MIGRATION.relative_to(ROOT).as_posix()
     assert row["evidence"]["migration_state"] == "staged"
     assert row["wcl_melee_reference"]["landed_samples"] == 29
-    for entry in MALORIAK_OTHER_MODES + ADDS:
+    for entry in MALORIAK_OTHER_MODES:
         other = patch["creatures"][str(entry)]
         assert other["status"] == "open" and other["damage_modifier"] is None
+    # Round 3: the 10N adds are calibrated by the add migration (promoted to sql/custom/world 2026-09-30).
+    for entry, value in ADD_MODIFIERS.items():
+        row = patch["creatures"][str(entry)]
+        assert row["status"] == "calibrated" and row["damage_modifier"] == value
+        assert row["evidence"]["derivation_file"] == ADD_MIGRATION.relative_to(ROOT).as_posix()
+        assert row["evidence"]["bounds"]["lower"] <= value <= row["evidence"]["bounds"]["upper"]
 
 
 def test_file_is_applied_under_sql_custom_world():
@@ -189,3 +197,24 @@ def test_file_is_applied_under_sql_custom_world():
     assert MIGRATION.parent == ROOT / "sql/custom/world"
     assert not (ROOT / "sql/custom/staged/world" / MIGRATION.name).exists()
     assert not list((ROOT / "sql/custom/staged/world").glob(f"*{MIGRATION.stem.split('_', 4)[-1]}*"))
+    # Round 3 add migration: promoted 2026-09-30, no staged copy left.
+    assert ADD_MIGRATION.parent == ROOT / "sql/custom/world" and ADD_MIGRATION.exists()
+    assert not (ROOT / "sql/custom/staged/world" / ADD_MIGRATION.name).exists()
+
+
+def test_add_migration_sets_only_the_10n_add_templates_and_reverses():
+    text = ADD_MIGRATION.read_text(encoding="utf-8")
+    executable = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("--"))
+    assert {int(m["entry"]): float(m["value"]) for m in FORWARD.finditer(executable)} == ADD_MODIFIERS
+    db = _database()
+    db.executescript(executable)
+    for entry, value in ADD_MODIFIERS.items():
+        assert _modifier(db, entry) == value
+    assert _modifier(db, MALORIAK_10N) == 1.0 and _modifier(db, 41570) == 16.0
+    once = _state(db)
+    db.executescript(executable)
+    assert _state(db) == once  # idempotent
+    lines = text.splitlines()
+    block = lines[lines.index("-- BEGIN REVERSE MIGRATION") + 1: lines.index("-- END REVERSE MIGRATION")]
+    db.executescript("\n".join(line[3:] for line in block))
+    assert all(_modifier(db, entry) == 1.0 for entry in ADD_MODIFIERS)

@@ -36,6 +36,7 @@ from tools.bot_ml.build_validation_provisioning import (
     scenario_report,
     sql_quote,
 )
+from tools.bot_ml.phase_gear_profiles import is_phase_profile_id, merge_phase_gear_profiles, phase_gear_profiles_path
 from tools.raid_program.raid_loadout import (
     expected_glyph_rows,
     expected_inventory,
@@ -91,14 +92,28 @@ def raid_shard_config(plan: dict[str, Any], scenario_ids: Sequence[str] = ()) ->
     }
 
 
-def materialization_inputs(gear_profiles: Path, trainers_path: Path) -> dict[str, Any]:
-    """sha256 of every file a loadout materialization reads besides the plan and client DBCs."""
+def plan_uses_phase_profiles(plan: dict[str, Any]) -> bool:
+    """Whether any talent group of the plan wears a content-phase profile (``<phase>/<spec>``)."""
+    return any(is_phase_profile_id(str(group.get("gear_profile_id") or ""))
+               for shard in plan.get("shards") or [] for bot in shard.get("bots") or []
+               for group in (bot.get("loadout") or {}).get("groups") or [])
+
+
+def materialization_inputs(gear_profiles: Path, trainers_path: Path, phase_profiles: bool = False) -> dict[str, Any]:
+    """sha256 of every file a loadout materialization reads besides the plan and client DBCs.
+
+    ``phase_profiles`` adds the content-phase profiles for a plan that wears
+    them (plan_uses_phase_profiles); a plan without them keeps its inputs.
+    """
     from tools.bot_ml.build_validation_provisioning import DEFAULT_WOWSIMS_GEAR_PROFILES
     from tools.bot_ml.validation_profile_manifests import DEFAULT_ACTION_PROFILE_MANIFEST
 
     inputs = {}
-    for name, path in (("trainers", trainers_path), ("action_profiles", DEFAULT_ACTION_PROFILE_MANIFEST),
-                       ("gear_profiles", gear_profiles), ("wowsims_gear_profiles", DEFAULT_WOWSIMS_GEAR_PROFILES)):
+    named = [("trainers", trainers_path), ("action_profiles", DEFAULT_ACTION_PROFILE_MANIFEST),
+             ("gear_profiles", gear_profiles), ("wowsims_gear_profiles", DEFAULT_WOWSIMS_GEAR_PROFILES)]
+    if phase_profiles:
+        named.append(("phase_gear_profiles", phase_gear_profiles_path()))
+    for name, path in named:
         path = Path(path)
         inputs[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
     return inputs
@@ -112,7 +127,7 @@ def check_plan_sources(plan: dict[str, Any], gear_profiles: Path, trainers_path:
     before the spellbook baseline read the class trainers, is refused as
     unrecorded instead of passing the drift check silently.
     """
-    inputs = materialization_inputs(gear_profiles, trainers_path)
+    inputs = materialization_inputs(gear_profiles, trainers_path, plan_uses_phase_profiles(plan))
     recorded = plan.get("sources") or {}
     unrecorded = sorted(name for name in inputs
                         if not isinstance(recorded.get(name), dict) or "sha256" not in recorded[name])
@@ -128,6 +143,8 @@ def prepare_config(plan: dict[str, Any], gear_profiles: Path, dbc_dir: Path,
                    scenario_ids: Sequence[str] = (), trainers_path: Path = DEFAULT_TRAINERS) -> dict[str, Any]:
     check_plan_sources(plan, gear_profiles, trainers_path)
     profiles = load_gear_profiles(gear_profiles, dbc_dir=dbc_dir)
+    if plan_uses_phase_profiles(plan):
+        profiles = merge_phase_gear_profiles(profiles)
     config = apply_gear_profiles(raid_shard_config(plan, scenario_ids), profiles)
     return materialize_config(config, profiles, dbc_dir, trainers_path)
 
@@ -469,7 +486,7 @@ def verify_plan_outputs(plan: dict[str, Any], output_dir: Path, gear_profiles: P
             failures.append({"check": "raid_shard_manifest_output_hash", "path": name})
     if set(recorded) != set(payloads):
         failures.append({"check": "raid_shard_manifest_output_set", "expected": sorted(payloads), "actual": sorted(recorded)})
-    inputs = materialization_inputs(gear_profiles, trainers_path)
+    inputs = materialization_inputs(gear_profiles, trainers_path, plan_uses_phase_profiles(plan))
     evidence["materialization_inputs"] = inputs
     if manifest.get("materialization_inputs") != inputs:
         failures.append({"check": "raid_shard_manifest_materialization_inputs",
@@ -484,7 +501,7 @@ def write_plan_outputs(plan: dict[str, Any], gear_profiles: Path, dbc_dir: Path,
     manifest = {"schema": MANIFEST_SCHEMA, "composition_id": plan["composition_id"],
                 "shard_count": plan["shard_count"], "bot_count": plan["bot_count"],
                 "sources": plan.get("sources", {}), "output_sha256": hashes,
-                "materialization_inputs": materialization_inputs(gear_profiles, trainers_path)}
+                "materialization_inputs": materialization_inputs(gear_profiles, trainers_path, plan_uses_phase_profiles(plan))}
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
         for name, text in payloads.items():

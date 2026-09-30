@@ -15,7 +15,8 @@ from tests.test_raid_scoreboard import SCENARIO, TARGET, kill, root  # noqa: F40
 from tools.raid_program import graph_acceptance
 from tools.raid_program.scoreboard import append_record, evaluate_target
 from tools.raid_program.scoreboard_core import (
-    ROSTER_VARIANTS_DIR, file_sha256, load_target, roster, roster_variants_path, target_for_records,
+    ROSTER_VARIANTS_DIR, VARIANT_REFERENCE_KEYS, file_sha256, load_target, roster, roster_variants_path,
+    target_for_records,
 )
 from tools.raid_program.scoreboard_record import record_from_summary
 from tools.raid_program.scoreboard_show import render
@@ -54,6 +55,16 @@ def test_a_sidecar_of_another_target_is_refused(tmp_path):
     assert target_for_records(tmp_path, {}, [_kill(C0)]) == {}  # no scenario: nothing to look up
 
 
+def _copy_sidecar(root: Path) -> None:
+    """The sidecar and the WCL files its variants reference (the c0 variant's own T11 references)."""
+    sidecar = json.loads((ROOT / SIDECAR).read_text())
+    files = [SIDECAR] + [variant[key] for variant in sidecar["variants"]
+                         for key in ("wcl_reference_manifest", "wcl_cast_timelines") if key in variant]
+    for relative in files:
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / relative, root / relative)
+
+
 def _c0_kill(label: str, name: str) -> dict:
     record = kill(label, name, shard_identity={"scenario_id": C0, "cohort_id": "blackwing_descent_10n_magmaw_c0"})
     record["actors"] = [{"actor_id": actor_id, "name": row["name"], "spec": row["spec"], "role": row["role"],
@@ -63,8 +74,7 @@ def _c0_kill(label: str, name: str) -> dict:
 
 
 def test_c0_kills_are_judged_and_shown_with_the_c0_roster(root):  # noqa: F811
-    (root / SIDECAR).parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(ROOT / SIDECAR, root / SIDECAR)
+    _copy_sidecar(root)
     for name in ("k1", "k2", "k3"):
         append_record(root, SCENARIO, _c0_kill("c0", name))
     for name in ("k1", "k2", "k3"):
@@ -83,8 +93,7 @@ def test_c0_kills_are_judged_and_shown_with_the_c0_roster(root):  # noqa: F811
 
 
 def test_a_c0_summary_takes_specs_from_the_c0_roster(root):  # noqa: F811
-    (root / SIDECAR).parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(ROOT / SIDECAR, root / SIDECAR)
+    _copy_sidecar(root)
     target = load_target(root, SCENARIO)
     summary = {"native_clear": True, "completion_reason": "validation_route_manifest_complete",
                "shard_identity": {"scenario_id": C0},
@@ -108,3 +117,43 @@ def test_the_accepted_magmaw_graph_still_accepts_its_verdict():
     tampered = {**verdict, "roster_variant": {"path": SIDECAR, "sha256": "0" * 64}}
     with pytest.raises(Exception, match="roster variant changed"):
         graph_acceptance.check_inputs(ROOT, unit["development_graph"], tampered)
+
+
+def test_the_c0_variant_carries_its_own_t11_wcl_references_and_legacy_labels_keep_the_target_ones():
+    target = load_target(ROOT, SCENARIO)
+    variant = json.loads((ROOT / SIDECAR).read_text())["variants"][0]
+    judged = target_for_records(ROOT, target, [_kill(C0)])
+    declared = {key: variant[key] for key in VARIANT_REFERENCE_KEYS if key in variant}
+    assert declared and {key: judged[key] for key in declared} == declared
+    assert judged["wcl_reference_manifest"].endswith("magmaw_wcl_dps_reference_t11_v1.json")
+    assert len(judged["matched_reference_ids"]) == 7
+    for records in ([], [_kill(None)], [_kill("blackwing_descent_10n_magmaw_diagnostic")], [_kill(C0), _kill(None)]):
+        legacy = target_for_records(ROOT, target, records)
+        assert legacy is target and legacy["matched_reference_ids"] == ["Y8ajQ7dbmKMG1RZy-fight22"]
+
+
+@pytest.mark.parametrize("scenario_id", [C0, None])
+def test_program_ingest_builds_timeline_hints_from_the_variant_timelines(tmp_path, monkeypatch, scenario_id):
+    """record_kill (the raid program's ingest) picks the WCL cast timelines the way `ingest --run-dir` does."""
+    from tools.raid_program import scoreboard_run
+
+    target = load_target(ROOT, SCENARIO)
+    expected = target_for_records(ROOT, target, [_kill(scenario_id)])["wcl_cast_timelines"]
+    if scenario_id:
+        assert expected != target["wcl_cast_timelines"]
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "report.json").write_text(json.dumps(_kill(scenario_id)))
+    seen = {}
+
+    def fake_write_timeline(output_dir, manifest, path, *args):
+        seen["manifest"] = manifest
+        return None
+
+    monkeypatch.setattr(scoreboard_run, "write_timeline", fake_write_timeline)
+    monkeypatch.setattr(scoreboard_run, "record_from_run_dir", lambda *args, **kwargs: {"kill_id": "k"})
+    kill_row = {"kill_id": "k", "output_dir": run_dir, "analysis_dir": tmp_path / "analysis"}
+    record = scoreboard_run.record_kill(ROOT, target, scenario=SCENARIO, label="l", kill=kill_row, sha="s",
+                                        source_commit=None)
+    assert record == {"kill_id": "k"}
+    assert seen["manifest"] == ROOT / expected

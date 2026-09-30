@@ -259,6 +259,32 @@ inline bool InControlRange(ActorSnapshot const& member,
     return Distance3(member.Position, warrior.Position) <= range;
 }
 
+// A point a bone warrior may be led to: well outside Nefarian's front cone
+// (his breath wakes, refills and empowers warriors; confirmed by the user) and
+// outside his tail.
+constexpr float WarriorFrontMarginDeg = 15.0f;
+
+// How deep a point lies in the warrior exclusion (radians past its edge; 0
+// outside it): the breath cone widened by WarriorFrontMarginDeg, and the tail
+// cone, both within the cones' 60-yard radius.
+inline float WarriorDanger(EncounterView const& view, LocalPoint point)
+{
+    if (!view.Nefarian || !view.Nefarian->Alive || !view.NefarianLanded())
+        return 0.0f;
+    DragonPose const nefarian = PoseOf(*view.Nefarian);
+    if (Distance(nefarian.Position, point) > DragonConeRadius)
+        return 0.0f;
+    float const off = OffFacing(nefarian.Position, nefarian.Facing, point);
+    float const front = DegToRad(BreathHalfAngleDeg + WarriorFrontMarginDeg) - off;
+    float const rear = off - (Pi - DegToRad(TailLashHalfAngleDeg + 8.0f));
+    return std::max(0.0f, std::max(front, rear));
+}
+
+inline bool WarriorPointSafe(EncounterView const& view, LocalPoint point)
+{
+    return WarriorDanger(view, point) <= 0.0f;
+}
+
 inline uint8 EmpowerStacks(ActorSnapshot const& warrior)
 {
     for (AuraSnapshot const& aura : warrior.Auras)
@@ -279,9 +305,12 @@ inline uint8 EmpowerStacks(ActorSnapshot const& warrior)
 // The warrior the shackler reserves: none while it is dead or cannot cast
 // Shackle Undead now (unknown or not ready), so the handler takes that
 // warrior instead of leaving it to nobody.
+// Round 3: never a warrior in Nefarian's front. Held there it only waits for
+// his next breath to refill it (the chase model in test_nefarian_movement.py
+// kept one shackled on his tank for 46 s); the handler takes it out instead.
 inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
     std::vector<ActorSnapshot const*> const& active, DutyPlan const& plan,
-    NativeFacts const* facts = nullptr)
+    NativeFacts const* facts = nullptr, EncounterView const* view = nullptr)
 {
     ActorSnapshot const* shackler = plan.Shackler.IsEmpty() ? nullptr
         : board.FindActor(plan.Shackler);
@@ -300,6 +329,7 @@ inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
             && (plan.WarriorHandler.IsEmpty()
                 || warrior->VictimGuid != plan.WarriorHandler)
             && InControlRange(*shackler, *warrior)
+            && (!view || WarriorPointSafe(*view, WorldToLocal(warrior->Position)))
             && (!best || EmpowerStacks(*warrior) > EmpowerStacks(*best)))
             best = warrior;
     return best;
@@ -316,7 +346,7 @@ inline ControlDecision DecideShackle(Blackboard const& board,
     for (ActorSnapshot const* warrior : view.BoneWarriors)
         if (IsActiveBoneWarrior(*warrior))
             active.push_back(warrior);
-    ActorSnapshot const* shackle = ShackleCandidate(board, active, plan, facts);
+    ActorSnapshot const* shackle = ShackleCandidate(board, active, plan, facts, &view);
     if (!shackle)
         return decision;
     decision.Target = shackle->Guid;

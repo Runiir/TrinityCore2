@@ -6,9 +6,67 @@ live-attempt-ready shard; 10H, 25N and 25H keep their earlier guide-level
 status. The claim ledger is
 `experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json`
 and the mechanic contract is `omnotron_defense_system_v1.json` next to it. The
-encounter stays `fidelity_blocked`: ten material values are unresolved, most of
-them because Warcraft Logs showed a human-verification page during this pass
-(no agent may pass it). Nothing below is a bot timer.
+encounter stays `fidelity_blocked` at contract level: material values are
+unresolved for 10H, 25N and 25H. Per mode, 10N is `accepted` since 2026-09-30
+(user decision on the Barrier absorb, below); the other three modes stay
+`fidelity_blocked`. Nothing below is a bot timer.
+
+## Raid-program round 3 (2026-09-30): tier-11 references and 10N claims
+
+The roster now wears tier-11 phase gear (about 359; user decision
+2026-09-30), so the DPS references moved to ten 10N kills at raid item level
+355.4-362.8 (band 352-366), 133-168 s, 2024-10-05 to 2024-10-28. Nine of them
+damaged all four constructs. Targets (median of matched kills, ratio 0.95):
+
+| Spec | Target DPS | Kills |
+|---|---:|---:|
+| Blood DK (tank) | 15,933 | 7 |
+| Survival | 24,349 | 7 |
+| Fire | 25,184 | 6 |
+| Retribution | 30,330 | 3 |
+| Assassination | 30,497 | 4 |
+| Elemental | 24,497 | 5 |
+| Demonology | 30,757 | 3 |
+
+No spec uses the WoWSims fallback any more; the Feral tank stays gate-exempt.
+The round-1/2 references (395-401) were dropped. Cast timelines come from
+w2W84MtybL1VKCvQ fight 12 (five specs) plus Assassination
+(mfnZAdFTLkjMBC3z fight 6) and Demonology (Z36FdRPNbAgjrqGX fight 13).
+
+WCL research on those kills (GPT-6.1 Sol in the user's Chrome; ledger source
+`wcl_omnotron_10n_r3_20260930`):
+
+- **Static Shock centre, 10N: the attacker.** In qaKLyFTxkvc9hVpM fight 11 the
+  ranged Survival hunter was hit alone four times, each 0.5-0.9 s after his
+  own shot on Electron, and the mage once 1.0 s after her Frostbolt, while the
+  tank and four melee beside Electron were not hit. A construct-centred blast
+  would have hit the tank every time. Native already casts at the attacker.
+  Pet and totem hits never triggered one.
+- **Power Conversion, 10N: no stack from a non-damaging interrupt.** Wind
+  Shear, Rebuke and Mind Freeze landed under Power Conversion, past the 500 ms
+  proc cooldown and without a damaging hit at the same moment, and no
+  Converted Power followed. Native gave one stack (spell_proc 79729
+  SpellTypeMask 0); the promoted (2026-09-30)
+  `sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql`
+  sets SpellTypeMask 1. No taunt was observed; it is the same no-damage proc
+  path.
+- **Barrier, 10N closed by user decision (2026-09-30).** Five tier-11 Barrier
+  windows absorbed 111,283-267,864 without a break and no Backdraft appears;
+  no Backdraft in 21 kills over rounds 2-3. That fits the client 300,000 and
+  Wowhead 900,000 alike, so it was the last claim keeping 10N blocked. The
+  user was asked whether to accept the 4.4.2 client row (300,000, which native
+  already uses) or keep searching, and answered: "Accept 300,000 (Recommended)".
+  Recorded as client row 300,000 with WCL lower bound 267,864, source
+  `user_decision_20260930_omnotron_barrier_absorb_10n`. No native change. The
+  claim stays open for 10H, 25N and 25H (heroic client 150,000 against Wowhead
+  450,000, no sample). Live check: Backdraft 79617 stays 0 because the bots
+  never damage a shielded construct; reopen if a run logs one.
+- **Arcane Annihilator.** Competent kills interrupt 13 of 13-14 casts per full
+  Arcanotron activation; casts repeat every 6-7 s.
+
+Bot changes: the interrupt turn skips a member still on its interrupt
+cooldown, and ranged kill the Poison Bomb nearest its target wherever it
+stands (see Bot strategy).
 
 ## What changed in round 2 (2026-09-25)
 
@@ -60,7 +118,7 @@ them because Warcraft Logs showed a human-verification page during this pass
 | Magmatron | Acquiring Target 79501 → Flamethrower 79505/79504 | 4 s mark, then a 25° cone, 20,474-21,525 per second for 4 s | Marked player leads the cone away; others leave the line |
 | Magmatron | Barrier 79582 | Absorb 300,000 (client; Wowhead says 900,000), 10 s; breaking it casts Backdraft 73,124-76,875 on everyone | Stop all damage |
 | Toxitron | Chemical Bomb 80157 → Chemical Cloud 42934 | 30 s; +50% damage taken for players within 12 yd and constructs within 13 yd | Leave the cloud; no construct dragging (1 yd band) |
-| Toxitron | Poison Protocol 80053 | 9 s, one Poison Bomb every 3 s (3 per cast), twice per activation | Fixated player kites; ranged kill bombs where the blast reaches nobody |
+| Toxitron | Poison Protocol 80053 | 9 s, one Poison Bomb every 3 s (3 per cast), twice per activation | Fixated player kites; ranged kill bombs, the one nearest its target first (a killed bomb does not explode) |
 | Toxitron | Poison Bomb 42897 | Fixate 20 s; on contact 73,124-76,875 nature in 6 yd plus Poison Puddle (6 yd, 11,699-12,300 per second, 30 s) | Leave puddles and other players' bombs |
 | Toxitron | Poison Soaked Shell 79835 | 10 s; attackers get Soaked In Poison (5,000 per stack every 2 s, 30 s, poison) | Stop direct damage; dispel 3+ stacks |
 | Arcanotron | Arcane Annihilator 79710 | 38,999-41,000 arcane, 1.5 s cast, one random target | Interrupt rotation |
@@ -158,13 +216,21 @@ observed state and capability, never from a roster slot:
   Shear 15 s, Counterspell 24 s), then tanks (Mind Freeze), then long
   cooldowns (Skull Bash 60 s). A player with a personal movement debuff comes
   last. A per-cohort ledger counts casts: one primary per cast and one backup
-  450 ms in. Under Power Conversion the rotation keeps interrupting: natively
-  every interrupt that lands procs one Converted Power stack, damaging or not
-  (spell_proc 79729 has SpellTypeMask 0 and a no-damage hit still raises a
-  proc), which is judged cheaper than a 39-41k Annihilator. Whether 4.4.2
-  behaves the same is an open research item; stacks per interrupt are a live
-  signal. A taunt is the same for Arcanotron under Power Conversion (one
-  Converted Power stack) and procs nothing on the other shields: Unstable
+  450 ms in. Since round 3 the ledger also records each bot's submitted
+  interrupt with the remaining cooldown its spell history reports right after
+  the cast (talents and glyphs included, e.g. Reverberation's 5 s Wind Shear),
+  and a turn passes over a member whose interrupt is still cooling: Arcane
+  Annihilator repeats every 6-7 s, faster than most 10-24 s cooldowns, so a
+  cooling primary used to leave the cast to the backup alone. A use during the current cast never moves the
+  turn (no second interrupt into a cast the snapshot still shows).
+  Under Power Conversion the rotation keeps interrupting. Native gave one
+  Converted Power stack per landed interrupt, damaging or not (spell_proc
+  79729 SpellTypeMask 0), which was judged cheaper than a 39-41k
+  Annihilator. WCL 10N (round 3) shows no stack from a non-damaging
+  interrupt, and the promoted spell_proc row (SpellTypeMask 1) makes native
+  agree; stacks per interrupt stay a live signal. A taunt takes the same
+  no-damage path (no stack with the promoted row) and procs
+  nothing on the other shields: Unstable
   Shield (79900, 91447-91449) and Poison Soaked Shell (79835, 91501-91503)
   have TDB 434.22011 spell_proc rows with SpellTypeMask 1 (damage), which no
   later update removes, so `CanSpellTriggerProcOnEvent` rejects a no-damage
@@ -173,6 +239,13 @@ observed state and capability, never from a roster slot:
 - **Dispels.** Poison dispellers (Cleanse, Remove Corruption; never a Bear Form
   tank) clear Soaked In Poison at 3+ stacks or below 50% health. Healers go
   first.
+- **Poison Bombs.** Ranged damage dealers within 40 yd kill the living bomb
+  nearest to its fixate target. Round 3 dropped the old rule "only where the
+  6 yd blast reaches nobody": a bomb explodes only when its melee swing reaches
+  its target (80086 -> Quiet Suicide -> 80092 plus a Poison Puddle); a killed
+  bomb despawns (native `JustDied`; WCL 10N killed bombs dealt no 80092
+  damage, ledger `poison_bomb_death`). Sparing a bomb near players only let
+  it walk through the raid to its target.
 - **Movement**, in priority order: Lightning Conductor isolation, Poison Bomb
   kiting, Acquiring Target cone steering, Flamethrower cone dodge, hazard exit
   (Chemical Cloud, Poison Puddle, bomb blast), clearance from a conductor, tank
@@ -200,7 +273,9 @@ Not implemented, deliberately:
 4. `electrical_discharge_chain_damage_scaling`: Wowhead same damage, Icy Veins
    increasing, native no-op.
 5. `poison_bomb_death_explosion`: Wowhead explodes; native does not.
-6. `barrier_absorb_amount`: client 300k against Wowhead 900k.
+6. `barrier_absorb_amount`: client 300k against Wowhead 900k. Closed for 10N on
+   2026-09-30 by user decision (client row 300,000 accepted, WCL lower bound
+   267,864); open for 10H, 25N and 25H.
 7. `normal_mode_first_cast_and_repeat_timers`: native against DBM normal
    offsets.
 8. `heroic_nefarius_selection_order_and_cadence`.
@@ -211,7 +286,8 @@ Not implemented, deliberately:
 Open research questions (ledger `open_questions`): whether 4.4.2 Power
 Conversion procs on a non-damaging interrupt or taunt, now also the material
 claim `power_conversion_no_damage_proc`; whether DoTs can break the 10N
-Barrier.
+Barrier (closed for 10N on 2026-09-30: the client 300,000 is accepted by user
+decision; no Backdraft in 21 WCL 10N kills).
 
 ## Raid-program round 1 (2026-09-27): WCL 10N results
 
@@ -263,7 +339,7 @@ and the cast timeline manifest.
 `fidelity_blocked` because three 10N material claims stay open (each
 `unresolved` entry lists its modes). `barrier_absorb_amount`: 267,864
 absorbed without a break is below both 300,000 and 900,000, so it cannot
-tell them apart. `static_shock_center_attacker_or_construct`: the one hit
+tell them apart (closed for 10N on 2026-09-30 by user decision, see round 3). `static_shock_center_attacker_or_construct`: the one hit
 landed on the attacking tank beside Electron, which both centres explain.
 `power_conversion_no_damage_proc`: no WCL row shows whether a non-damaging
 interrupt grants Converted Power. The two heroic items also remain.
@@ -317,7 +393,8 @@ WCL round 2 (GPT-6 Astra in the user's Chrome; ledger source
 `wcl_omnotron_10n_r2_20260927`). All three claims stay open:
 
 - **Barrier absorb.** No Backdraft 79617 row in 11 accessible 10N kills, so
-  no Barrier broke; the absorb size stays unresolved.
+  no Barrier broke; the absorb size stayed unresolved (closed for 10N on
+  2026-09-30 by user decision, see round 3).
 - **Static Shock centre.** In zPVW3nfwMhgjGAFr fight 22, single bursts hit a
   Fire mage, an Elemental shaman and the Blood DK tank together. Overlapping
   attacks prevent tying a burst to one attacker, so the centre stays

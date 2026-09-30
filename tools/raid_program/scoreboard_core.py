@@ -141,12 +141,24 @@ def roster_variants_path(root: Path, scenario: str) -> Path:
     return Path(root) / ROSTER_VARIANTS_DIR / f"{scenario}.json"
 
 
+# Keys a roster variant may carry to replace the target's WCL references for its own labels only
+# (e.g. the canonical Magmaw c0 shard at tier-11 gear); the legacy shard keeps the target's references.
+VARIANT_REFERENCE_KEYS = ("wcl_reference_manifest", "wcl_cast_timelines", "matched_reference_ids",
+                          "reference_status", "unmatched_reference_notes")
+
+
+def variant_reference_overrides(variant: dict[str, Any]) -> dict[str, Any]:
+    """The VARIANT_REFERENCE_KEYS a roster variant declares."""
+    return {key: variant[key] for key in VARIANT_REFERENCE_KEYS if key in variant}
+
+
 def target_for_records(root: Path, target: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any]:
     """The target as it judges these kill records.
 
     A target's sidecar (ROSTER_VARIANTS_DIR/<scenario>.json, raid_target_roster_variants_v1) may declare
     roster variants. When every record is a shard run of one variant's validation scenario (the record's
-    shard_identity.scenario_id), that variant's roster replaces the top-level roster, and `roster_variant`
+    shard_identity.scenario_id), that variant's roster replaces the top-level roster, its
+    VARIANT_REFERENCE_KEYS (if any) replace the target's WCL references, and `roster_variant`
     pins the sidecar (path, sha256) for the verdict; otherwise (legacy runs, no records, mixed scenarios)
     the target is returned unchanged. The target file itself never changes, so accepted verdicts keep
     their target_sha256.
@@ -162,7 +174,8 @@ def target_for_records(root: Path, target: dict[str, Any], records: list[dict[st
     for variant in sidecar.get("variants") or []:
         variant_id = str(variant.get("validation_scenario_id") or "")
         if variant_id and scenarios == {variant_id}:
-            return {**target, "roster": variant["roster"], "validation_scenario_id": variant_id,
+            return {**target, **variant_reference_overrides(variant), "roster": variant["roster"],
+                    "validation_scenario_id": variant_id,
                     "roster_variant": {"path": path.relative_to(root).as_posix(), "sha256": file_sha256(path),
                                        "validation_scenario_id": variant_id}}
     return target

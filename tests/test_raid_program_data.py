@@ -87,7 +87,11 @@ def test_raid_stages_are_derived_from_dvc_yaml(repo):
 
 def test_real_dvc_yaml_closure():
     graph = data.raid_stages(REAL)
-    assert graph['stages'] == STAGES and graph['boundary'] == ['world_knowledge', 'world_planner']
+    # The content-phase gear profiles (raid_phase_gear) feed raid_shard_provisioning.
+    real = [*STAGES[:3], 'raid_phase_gear', *STAGES[3:]]
+    assert graph['stages'] == real and graph['boundary'] == ['world_knowledge', 'world_planner']
+    assert graph['upstream']['raid_phase_gear'] == ['validation_gear']
+    assert 'raid_phase_gear' in graph['upstream']['raid_shard_provisioning']
 
 
 def to_review(root: Path) -> None:

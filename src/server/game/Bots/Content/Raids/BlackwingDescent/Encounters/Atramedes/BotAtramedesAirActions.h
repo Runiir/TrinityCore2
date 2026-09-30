@@ -4,6 +4,7 @@
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesArenaFloor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMovementPolicy.h"
+#include <algorithm>
 #include <optional>
 #include <string_view>
 
@@ -23,6 +24,8 @@ struct AirAbility
     // that leaves the cast lanes free beside an instant self-buff.
     bool Hold = false;
     bool KeepKiting = false;
+    // While holding: the step out of a Sonar Bomb zone or a fire patch.
+    std::optional<MoveProposal> HazardStep;
     bool SuppressOffense = false;
     std::string_view SuppressReason;
 };
@@ -32,13 +35,14 @@ inline BotNativeAction::Intent SelfCast(uint32 spellId)
     return BotNativeAction::CastSpell{ ObjectGuid(), spellId };
 }
 
-// The leap target: the next ring waypoint away from the flame (Blink goes
-// forward toward it, Disengage faces the flame and leaps back toward it).
+// The leap target: the kite's next ring waypoint away from the flame (Blink
+// goes forward toward it, Disengage faces the flame and leaps back toward
+// it), clear of bomb zones and fire when it can be (BotAtramedesKitePath.h).
 inline std::optional<BotNativeAction::Intent> LeapAway(Facts const& facts,
     ActorSnapshot const& self, Mobility::Ability const& leap, std::string_view reason)
 {
-    std::optional<Vector3> const next = NextRingWaypoint(self.Position,
-        AirKiteDirection(facts, self));
+    std::optional<Vector3> const next = KitePath::ChooseWaypoint(facts, self,
+        KiterFlame(facts, self), AirKiteDirection(facts, self));
     if (!next)
         return std::nullopt;
     BotNativeAction::DirectionalMobility mobility;
@@ -67,9 +71,18 @@ inline std::optional<AirAbility> KiterAbility(Facts const& facts, ActorSnapshot 
     AirAbility ability;
     if (withheld == "kiter_ice_block")
     {
-        ability.Cast = SelfCast(Mobility::IceBlockSpell);
         ability.Mechanic = "kiter_ice_block";
-        ability.Hold = true;
+        if (IceBlockCastable(facts, self))
+        {
+            ability.Cast = SelfCast(Mobility::IceBlockSpell);
+            ability.Hold = true;
+            return ability;
+        }
+        // Still on the global cooldown: kite on and start no new cast, so
+        // the block goes out the moment it is castable.
+        ability.KeepKiting = true;
+        ability.SuppressOffense = true;
+        ability.SuppressReason = "atramedes_ice_block_pending";
         return ability;
     }
     // Speed buffs come before contact too, so the extension is the kiter's
@@ -95,9 +108,24 @@ inline std::optional<AirAbility> KiterAbility(Facts const& facts, ActorSnapshot 
     return ability;
 }
 
+// Yards the nearest flame could close within one global cooldown, plus the
+// block trigger: inside this the bait starts no new cast, so Ice Block
+// (global cooldown 1.5 s) is castable when the flame arrives.
+inline float IceBaitQuietYards(ActorSnapshot const& flame)
+{
+    float const speed = FlameBaseSpeed + FlameSpeedPerStack
+        * float(std::min(BuildingSpeedStacks(flame), BuildingSpeedMaxStacks));
+    return IceBlockTriggerYards + speed * float(IceBlockGlobalCooldownMs) / 1000.0f;
+}
+
 // The Ice Block rescuer after its strike: hold still, still casting at the
-// boss, while the flame comes (the survival Ice Block cast pre-empts the
-// damage cast); block once the flame tracking it is close; stay blocked.
+// boss while the flame is far (the survival Ice Block cast pre-empts a cast
+// in progress), no new cast once the flame is within IceBaitQuietYards;
+// block once the flame tracking it is close and the block is castable; stay
+// blocked. The redirected flame flies to the struck shield across the relay
+// station and lays its fire trail there, and a Sonar Bomb may mark the mage:
+// the bait steps out of either (its Sound opens the chase the block ends,
+// under the kiter Sound bound) and holds again.
 inline std::optional<AirAbility> IceRescuerAbility(Blackboard const& board,
     Facts const& facts, ActorSnapshot const& self)
 {
@@ -113,7 +141,19 @@ inline std::optional<AirAbility> IceRescuerAbility(Blackboard const& board,
     if (!IceBaiting(board, facts, self))
         return std::nullopt;
     ability.Mechanic = "ice_block_bait";
-    if (facts.AirKiter == self.Guid && !facts.AirKiterUntracked)
+    // The flame comes to the bait on purpose: only bombs and fire count.
+    Dodge::FieldOptions const waiting{ true, false };
+    ability.HazardStep = BombMarkerExit(board, facts, self, {}, waiting);
+    if (!ability.HazardStep)
+        ability.HazardStep = FirePatchExit(board, facts, self, {}, waiting);
+    for (ActorSnapshot const* flame : facts.ReverberatingFlames)
+        if (Geometry::Distance2d(flame->Position, self.Position) <= IceBaitQuietYards(*flame))
+        {
+            ability.SuppressOffense = true;
+            ability.SuppressReason = "atramedes_ice_block_bait";
+        }
+    if (facts.AirKiter == self.Guid && !facts.AirKiterUntracked
+        && IceBlockCastable(facts, self))
         if (ActorSnapshot const* flame = KiterFlame(facts, self))
             if (Geometry::Distance2d(flame->Position, self.Position) <= IceBlockTriggerYards)
             {

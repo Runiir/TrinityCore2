@@ -24,6 +24,7 @@ from tests.test_nefarian_strategy import PRELUDE, _compile_and_run
 
 PROGRAM = PRELUDE + r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianStranded.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPlatformBody.h"
 
 static TransportPlacement PlacementAt(Blackboard const& board, uint32 slot, float localZ)
 {
@@ -291,10 +292,163 @@ static void TestStrandedFall()
     CHECK(!StrandedAbovePlatform(context), "never while the floor moves");
 }
 
+// Round 3 (E1, round-2 live evidence): the mage, the warlock and the Disc
+// priest stayed on the pillar-1 rim at local (-15.8, -32.4), offset z 9.37,
+// in all three runs; no step-off was ever committed. The plan proposes the
+// step-off there (the refusal is the executor's native landing query under
+// the platform's north half, tests/test_nefarian_ledge_drop_floor_query.py,
+// shared-runtime patch request), onto the ring under the rim.
+static void TestRound3PillarOneRimStepOff()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = GroundBoard();
+    LocalPoint const rim{ -15.8f, -32.4f };
+    float distance = 0.0f;
+    CHECK(NearestPillar(rim, distance) == 1 && distance > DescentRimRadius - 0.3f
+        && distance < DescentOverVoidRadius(1, 0) - 0.15f, "the rim point is pillar 1's rim");
+    for (uint32 slot : { 4u, 7u, 10u })
+    {
+        FindPlayer(board, slot).Position = LocalToWorld(rim, 9.37f, PlatformFrame::RaisedOriginZ);
+        NativeFacts facts;
+        facts.PillarAscentSupported = true;
+        facts.Placements.push_back(PlacementAt(board, slot, 9.37f));
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(slot),
+            slot == 7 ? "healer" : "dps", &facts);
+        auto const* move = plan.Movement
+            ? std::get_if<BotNativeAction::TransportSurfaceMove>(&plan.Movement->Action) : nullptr;
+        CHECK(plan.Phase == Phase::NefarianGround && move
+            && move->Kind == BotNativeAction::TransportSurfaceMove::Stage::StepOff
+            && plan.Movement->Id.Mechanic == "pillar_descent_step_off"
+            && plan.Movement->ActionPriority == BotActionArbitration::Priority::Survival,
+            "E1: the pillar-1 rim yields the step-off");
+        CHECK(move && Near(move->LandingZ, PlatformFrame::RaisedOriginZ + RingLocalZ, 0.001f)
+            && move->LandOnTransport && Near(move->LandingToleranceYards, 1.0f),
+            "declared onto the ring under the rim");
+        if (move)
+        {
+            LocalPoint const off = WorldToLocal({ move->X, move->Y, move->Z });
+            float offDistance = 0.0f;
+            NearestPillar(off, offDistance);
+            CHECK(Near(offDistance, DescentStepOffRadius, 0.01f)
+                && Distance(off, rim) <= DescentStepOffRadius - DescentRimRadius + 0.3f,
+                "the declared step-off is past the wall on the member's own heading");
+        }
+        FindPlayer(board, slot).Position = LocalToWorld({ 9.0f, 0.0f }, PlatformFrame::FloorLocalZ,
+            PlatformFrame::RaisedOriginZ);
+    }
+}
+
+// Round 3 (E2): the rogue (3 of 3 runs) and both tanks (2 of 3) sat inside a
+// pillar's hollow shaft, within 1.5 yd of its centre at local z 3-4. No
+// executor-proven step leaves it (BotNefarianPlatformBody.h): the plan names
+// the state under the pillar hold instead of a float, swim or walk.
+static void TestRound3InsidePillarShaft()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CrossingBoard();
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    struct Case { uint32 Slot; int Pillar; LocalPoint Offset; float LocalZ; bool Passenger; };
+    Case const cases[] = {
+        { 8, 0, { 0.9f, 0.6f }, 3.4f, false }, // the rogue, swimming in the shaft
+        { 8, 0, { -1.2f, 0.4f }, 3.9f, true },  // the rogue, a passenger in it
+        { 1, 2, { 1.0f, -0.8f }, 3.1f, false }, // the Blood DK
+        { 2, 2, { -0.5f, 1.3f }, 4.0f, true },  // the Feral
+    };
+    for (Case const& c : cases)
+    {
+        CHECK(duty.PillarOf(Bot(c.Slot)) == c.Pillar, "the member's own pillar");
+        Blackboard inside = board;
+        LocalPoint const at{ PillarCenters[c.Pillar].X + c.Offset.X,
+            PillarCenters[c.Pillar].Y + c.Offset.Y };
+        FindPlayer(inside, c.Slot).Position = LocalToWorld(at, c.LocalZ,
+            PlatformFrame::LoweredOriginZ);
+        CHECK(FindPlayer(inside, c.Slot).Position.Z < MagmaSurfaceZ - 5.0f,
+            "six yards under the magma, as recorded");
+        CHECK(InsidePillarShaft(at, c.LocalZ), "inside the hollow shaft");
+        NativeFacts facts = TopFacts(inside);
+        facts.Placements.erase(std::remove_if(facts.Placements.begin(), facts.Placements.end(),
+            [&c](TransportPlacement const& p) { return p.Actor == Bot(c.Slot); }),
+            facts.Placements.end());
+        if (c.Passenger)
+            facts.Placements.push_back(PlacementAt(inside, c.Slot, c.LocalZ));
+        EncounterView const view = ObserveEncounter(inside);
+        ArenaLayout const layout = BuildArenaLayout(duty);
+        CHECK(!OnPillarStructure(MovementContext{ inside, view, duty, layout,
+            FindPlayer(inside, c.Slot), &facts }), "inside the shaft is not on the pillar");
+        AdaptiveNefarianPlan const plan = strategy.Propose(inside, Bot(c.Slot),
+            FindPlayer(inside, c.Slot).Role, &facts);
+        CHECK(plan.Phase == Phase::PlatformHold && !plan.Ascent && !plan.Movement,
+            "no float, swim, hop or walk out of the shaft is proposed");
+        CHECK(IsPillarHold(plan.MovementHold)
+            && HoldReason(plan.MovementHold) == "nefarian_inside_pillar_column",
+            "the typed state, under the pillar hold (no native chase deeper in)");
+    }
+    // Negative controls: on the top and on the rim a member is on the pillar,
+    // and a swimmer at its station is not inside anything.
+    CHECK(!InsidePillarShaft(PillarSlot(0, 1), PlatformFrame::PillarTopLocalZ)
+        && !InsidePillarShaft(PillarRadial(0, 1, HopLandingRadius(0, 1)), HopLandingLocalZ)
+        && !InsidePillarShaft(PillarRadial(0, 1, SwimStationRadius), LoweredMagmaLocalZ - FloatDepthYards),
+        "top, rim and swim station are outside the shaft");
+    CHECK(InsidePillarShaft(PillarSlot(0, 1), PlatformFrame::PillarTopLocalZ - 0.7f)
+        && !InsidePillarShaft(PillarSlot(0, 1), PlatformFrame::PillarTopLocalZ - 0.5f),
+        "the shaft starts past the floor tolerance under the top");
+}
+
+// Round 3 (E2): the Ret paladin stood on the pillar-1 top without being a
+// passenger, and the rising platform left him behind. A member on a top who
+// is not on the transport boards before the rise: at the lowered stop, and
+// while the rising top is still within the emerge band under its feet;
+// past that it is a typed miss.
+static void TestRound3TopBoardsBeforeRise()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CrossingBoard();
+    NativeFacts facts = TopFacts(board);
+    facts.Placements.erase(std::remove_if(facts.Placements.begin(), facts.Placements.end(),
+        [](TransportPlacement const& p) { return p.Actor == Bot(6); }), facts.Placements.end());
+    AdaptiveNefarianPlan const lowered = strategy.Propose(board, Bot(6), "dps", &facts);
+    CHECK(lowered.Phase == Phase::PlatformHold && lowered.Ascent
+        && lowered.Ascent->Stage == AscentStage::Board,
+        "on the top, not a passenger, at the lowered stop: board");
+
+    // The rise (every prototype dead): the top comes up under his feet from
+    // where he stood (feet - top: 0 at the lowered stop, then negative).
+    Blackboard rise = board;
+    rise.Summons.resize(1);
+    Vector3 const feet = FindPlayer(board, 6).Position;
+    float const lowest = PillarSurfaceLowest(1, Distance(WorldToLocal(feet), PillarCenters[1]));
+    for (float gap : { 0.1f, -0.2f, -0.45f })
+    {
+        rise.Interactables = { MakeElevator(feet.Z - lowest - gap) };
+        FindPlayer(rise, 6).Position = feet;
+        AdaptiveNefarianPlan const plan = strategy.Propose(rise, Bot(6), "dps", &facts);
+        CHECK(plan.Phase == Phase::PlatformReturn && plan.Ascent
+            && plan.Ascent->Stage == AscentStage::Board
+            && Near(plan.Ascent->FloorToleranceYards, RisingFloorEmergeToleranceYards),
+            "the rising top within the band: board where he stands");
+    }
+    rise.Interactables = { MakeElevator(feet.Z - lowest + 0.55f) };
+    AdaptiveNefarianPlan const missed = strategy.Propose(rise, Bot(6), "dps", &facts);
+    CHECK(!missed.Ascent && HoldReason(missed.MovementHold) == "nefarian_rising_top_missed"
+        && IsPillarHold(missed.MovementHold), "past the band: the typed miss, held");
+    rise.Interactables = { MakeElevator(feet.Z - lowest + 2.0f) };
+    AdaptiveNefarianPlan const buried = strategy.Propose(rise, Bot(6), "dps", &facts);
+    CHECK(!buried.Ascent && HoldReason(buried.MovementHold) == "nefarian_inside_pillar_column",
+        "left behind inside the rising pillar: the shaft state");
+    // A passenger on its top in phase 2 with nothing to do is held, so native
+    // combat movement cannot walk it anywhere.
+    NativeFacts const topFacts = TopFacts(board);
+    AdaptiveNefarianPlan const aboard = strategy.Propose(board, Bot(4), "dps", &topFacts);
+    CHECK(!aboard.Movement && IsPillarHold(aboard.MovementHold), "an idle passenger on its top is held");
+}
+
 int main()
 {
     TestPhaseTwoCrossingOnly();
     TestStrandedFall();
+    TestRound3PillarOneRimStepOff();
+    TestRound3InsidePillarShaft();
+    TestRound3TopBoardsBeforeRise();
     if (failures)
         std::fprintf(stderr, "%d failure(s)\n", failures);
     return failures ? 1 : 0;

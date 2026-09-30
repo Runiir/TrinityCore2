@@ -3,20 +3,38 @@
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianObservationExport.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianObservationStore.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
+#include "GameTime.h"
 #include "MotionMaster.h"
 #include "MoveSpline.h"
+#include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
 
 #include <string>
 #include <utility>
+#include <vector>
 
+using BotEncounter::Nefarian::ReportsWarriorWatch;
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+
+namespace
+{
+// The acceptance observations of every cohort: per cohort attempt, the
+// bone-warrior watch bound to its map instance and the counters the
+// raid_runtime export reads (BotNefarianObservationStore.h).
+BotEncounter::Nefarian::ObservationStore& Observations()
+{
+    static BotEncounter::Nefarian::ObservationStore store;
+    return store;
+}
+}
 
 // Kernel submission of the adaptive Nefarian's End strategy's outputs. The
 // strategy (BotAdaptiveNefarianStrategy.h) decides from the encounter
@@ -31,8 +49,55 @@ using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 //   platform without a prototype, the landing);
 // - the typed capability blocker or movement hold of this decision, recorded
 //   as a not-applicable reason in the decision trace.
+std::string BotEncounter::Nefarian::EncounterObservationsJsonField(std::string const& cohortId,
+    ObservationAttempt attempt, std::string const& routeNodeId)
+{
+    return Observations().JsonField(cohortId, attempt, routeNodeId);
+}
+
 void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& context)
 {
+    // The cohort's observations are live for this attempt (start lifecycle
+    // and attempt id) from the first decision the strategy owns; a new
+    // attempt starts them clean.
+    std::string const cohortId = Cohort().Id;
+    BotEncounter::Nefarian::ObservationAttempt const observationAttempt{
+        Cohort().CombatLogEpoch, Cohort().AttemptId };
+    if (context.AdaptiveNefarianOwnsNode)
+        Observations().Begin(cohortId, observationAttempt);
+
+    // Acceptance observation (round 3): a bone warrior active past 45 s or
+    // standing on a pillar is recorded once in the reporter's decision trace.
+    // The watch is this cohort attempt's, bound to the snapshot's instance.
+    // One reporter per cohort, a bot (ReportsWarriorWatch). Active durations
+    // run on the game tick's monotonic (steady) time: the snapshot's own
+    // ObservedAtMs is system time, which a clock step can move. The reporter
+    // decides more often than the blackboard is republished (a system-time
+    // throttle, held by a step back of the wall clock), so the snapshot's
+    // Revision goes with the observation: a snapshot already observed adds
+    // neither state nor time. Its ObservedAtMs (system ms, the combat log's
+    // clock) goes with it too: the export's first and last observation times,
+    // which the harness holds against the boss window.
+    if (context.AdaptiveNefarianOwnsNode && Cohort().EncounterSnapshot
+        && ReportsWarriorWatch(*Cohort().EncounterSnapshot, context.Bot->GetGUID()))
+    {
+        BotEncounter::Blackboard const& board = *Cohort().EncounterSnapshot;
+        BotEncounter::Nefarian::EncounterView const view =
+            BotEncounter::Nefarian::ObserveEncounter(board);
+        std::vector<BotEncounter::Nefarian::WarriorViolation> const violations =
+            Observations().ObserveWarriors(cohortId, observationAttempt, board.CurrentScope,
+                view, { board.Revision, board.ObservedAtMs },
+                BotEncounter::Nefarian::ObservationClockMs(
+                    GameTime::GetGameTimeSteadyPoint()));
+        for (BotEncounter::Nefarian::WarriorViolation const& violation : violations)
+        {
+            std::string const name(BotEncounter::Nefarian::WarriorViolationName(violation.Kind));
+            RecordDecisionTrace(context.State, "adaptive_nefarian", name.c_str(),
+                ObjectAccessor::GetUnit(*context.Bot, violation.Warrior), 0, "observation",
+                name.c_str(), false);
+        }
+    }
+
     // The movement lease at the bot's own position, renewed by every admitted
     // leg of the plan and every hold: the movement executor preserves it
     // against every lower lane (combat range recovery - MoveBotToProfileRange,
@@ -67,7 +132,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
         // escape (fire, breath, warriors), Mechanic for the rest.
         bool const survival = uint8(proposal.ActionPriority)
             >= uint8(BotActionArbitration::Priority::Survival);
-        movement.Attempt = [this, &context, renewLease, survival,
+        movement.Attempt = [this, &context, renewLease, survival, cohortId, observationAttempt,
+            mechanic = proposal.Id.Mechanic,
             intent = BotNativeAction::WithMovementReason(proposal.Action,
                 proposal.Id.Mechanic)]()
         {
@@ -83,6 +149,21 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
                 context.Situation = "adaptive_nefarian";
                 context.Action = "nefarian_mechanic_movement";
                 context.State.LastDecisionHandler = "adaptive_nefarian";
+            }
+            else if (outcome.Result == BotActionArbitration::Disposition::Retryable
+                || outcome.Result == BotActionArbitration::Disposition::Unsafe)
+            {
+                // Round 3: a refused step is visible in the decision trace
+                // (round 2's pillar-1 step-offs were refused every decision
+                // with no reason in the evidence). Repeats coalesce.
+                std::string const refused = std::string(BotEncounter::Nefarian::MoveRefusedPrefix)
+                    + mechanic + ":" + outcome.Reason;
+                // Counted for the status export: every refusal, uncoalesced.
+                Observations().RecordRefused(cohortId, observationAttempt,
+                    context.Bot->GetGUID().GetCounter(),
+                    refused.substr(BotEncounter::Nefarian::MoveRefusedPrefix.size()));
+                RecordDecisionTrace(context.State, "adaptive_nefarian", refused.c_str(),
+                    nullptr, 0, "refused", outcome.Reason.c_str(), true);
             }
             return outcome;
         };
@@ -195,7 +276,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveNefarianCandidates(BotUpdateContext& c
     // - LegInFlightHold: the plan's own leg is running: Mechanic lease only.
     std::string const& hold = context.AdaptiveNefarianMovementHold;
     bool const warriorStop = hold == BotEncounter::Nefarian::WarriorStopHold;
-    bool const platformStop = BotEncounter::Nefarian::IsPlatformHold(hold);
+    // The pillar hold (phase 2, round 3) stops and leases like the platform hold.
+    bool const platformStop = BotEncounter::Nefarian::IsPlatformHold(hold)
+        || BotEncounter::Nefarian::IsPillarHold(hold);
     bool const legInFlight = hold == BotEncounter::Nefarian::LegInFlightHold;
     if (warriorStop || platformStop || legInFlight)
     {

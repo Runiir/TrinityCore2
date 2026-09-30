@@ -1,0 +1,5708 @@
+{
+ "schema": "magmaw_wcl_cast_timelines_v1",
+ "encounter": "magmaw",
+ "mode": "10N",
+ "status": "extracted",
+ "status_reason": "Read 2026-09-30T10:58:07.742Z through codex gpt-6.1-sol in one own tab of the user's Chrome (profile Runiir); checks seen: none. A first attempt at 2026-09-30T10:39Z lost the plugin connection after four page loads; the resumed run kept its Renthør rows and read the rest.",
+ "reference_id": "fTCjtgrnzm4HRwXP-fight27",
+ "url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events",
+ "duration_sec": 166.7,
+ "target_scope": "WCL Damage Done over All Enemies: Magmaw, Exposed Head of Magmaw, Lava Parasites",
+ "source_note": "Completed Cast rows (Begin Cast excluded) from WCL player Casts Events pages; every actor page complete (row_count equals captured casts). Main fight fTCjtgrnzm4HRwXP fight 27 (2024-10, raid item level 358.8, 166.7 s, full mechanics) carries six canonical specs; RtPXnbZxFkpacw1h fight 6 (354.9, 158.2 s) adds Retribution and Elemental. Actors are the matched references' own actors (observed_dps equals the T11 DPS manifest). Pet casts are not included. Canonical c0 roster only; the legacy magmaw_wcl_cast_timelines_v1.json (Y8ajQ7dbmKMG1RZy fight 22) stays byte-identical for the accepted legacy verdict.",
+ "actors": [
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source7",
+   "class_spec": "blood_death_knight",
+   "name": "Renthør",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 15284.5,
+   "source_id": 7,
+   "source_name": "Renthør",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=7",
+   "row_count": 88,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Dark Command",
+     "spell_id": 56222,
+     "t": 1.364,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Synapse Springs",
+     "spell_id": 82174,
+     "t": 1.917,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 2.212,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Horn of Winter",
+     "spell_id": 57330,
+     "t": 3.706,
+     "target": null
+    },
+    {
+     "ability": "Empower Rune Weapon",
+     "spell_id": 47568,
+     "t": 4.355,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 5.218,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death and Decay",
+     "spell_id": 43265,
+     "t": 6.721,
+     "target": null
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 8.125,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 9.632,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Dancing Rune Weapon",
+     "spell_id": 49028,
+     "t": 11.14,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 12.564,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 14.065,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 15.562,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 17.065,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 18.575,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 20.078,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 21.969,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 23.485,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 24.983,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 26.479,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Outbreak",
+     "spell_id": 77575,
+     "t": 30.003,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 31.404,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 32.905,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 34.409,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 38.635,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 40.135,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 41.652,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 46.754,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 48.262,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death and Decay",
+     "spell_id": 43265,
+     "t": 50.631,
+     "target": null
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 52.817,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 54.32,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Blood Tap",
+     "spell_id": 45529,
+     "t": 54.933,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 55.829,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 57.33,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 58.842,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 60.346,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 61.843,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 63.354,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 64.855,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 66.364,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 67.877,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 71.663,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Synapse Springs",
+     "spell_id": 82174,
+     "t": 73.13,
+     "target": null
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 73.162,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Outbreak",
+     "spell_id": 77575,
+     "t": 74.664,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 76.086,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 77.581,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 79.171,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 80.671,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 82.183,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 83.695,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 85.201,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 86.705,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Bone Shield",
+     "spell_id": 49222,
+     "t": 88.231,
+     "target": null
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 89.645,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Icebound Fortitude",
+     "spell_id": 48792,
+     "t": 110.1,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 119.544,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 121.051,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 122.545,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Outbreak",
+     "spell_id": 77575,
+     "t": 124.047,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Death and Decay",
+     "spell_id": 43265,
+     "t": 125.45,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 126.641,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 128.139,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Dancing Rune Weapon",
+     "spell_id": 49028,
+     "t": 129.971,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 132.284,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Synapse Springs",
+     "spell_id": 82174,
+     "t": 133.606,
+     "target": null
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 133.908,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 135.419,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 136.915,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 138.422,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 139.934,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 141.433,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 143.598,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 145.098,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 146.615,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 150.89,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 152.398,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 153.917,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 155.41,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 156.926,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 158.426,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Death Strike",
+     "spell_id": 49998,
+     "t": 159.937,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 161.443,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Dark Command",
+     "spell_id": 56222,
+     "t": 161.571,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rune Strike",
+     "spell_id": 56815,
+     "t": 162.95,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 164.435,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Heart Strike",
+     "spell_id": 55050,
+     "t": 165.952,
+     "target": "Magmaw"
+    }
+   ]
+  },
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source10",
+   "class_spec": "balance_druid",
+   "name": "Qatsi",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 23781.1,
+   "source_id": 10,
+   "source_name": "Qatsi",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=10",
+   "row_count": 113,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Force of Nature",
+     "spell_id": 33831,
+     "t": 0.073,
+     "target": null
+    },
+    {
+     "ability": "Starfall",
+     "spell_id": 48505,
+     "t": 1.891,
+     "target": null
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 3.553,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 4.611,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 7.593,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 9.645,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 11.554,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 13.451,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 15.378,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Eclipse (Solar)",
+     "spell_id": 48517,
+     "t": 15.378,
+     "target": null
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 16.45,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 17.536,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 20.005,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 20.005,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 21.019,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 22.022,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88751,
+     "t": 22.96,
+     "target": null
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 26.211,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 26.211,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 28.761,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 30.234,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 31.702,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 33.371,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 35.521,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 36.58,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 37.77,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88751,
+     "t": 38.678,
+     "target": null
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 40.471,
+     "target": "Lava Parasite 2"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 42.052,
+     "target": "Lava Parasite 8"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 43.311,
+     "target": "Lava Parasite 4"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 44.566,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 45.854,
+     "target": "Lava Parasite 7"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 47.806,
+     "target": "Lava Parasite 3"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 49.059,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 50.326,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 52.134,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 53.4,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 57.559,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 61.374,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 63.054,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 64.734,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 66.419,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 68.108,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 70.202,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 71.392,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 72.933,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88751,
+     "t": 73.739,
+     "target": null
+    },
+    {
+     "ability": "Starfall",
+     "spell_id": 48505,
+     "t": 74.734,
+     "target": null
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 75.996,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 77.244,
+     "target": "Lava Parasite 16"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 78.351,
+     "target": "Lava Parasite 16"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 79.451,
+     "target": "Lava Parasite 12"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 80.551,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 81.663,
+     "target": "Lava Parasite 15"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 82.749,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 83.848,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 85.988,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Eclipse (Lunar)",
+     "spell_id": 48518,
+     "t": 85.998,
+     "target": null
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 89.259,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 89.484,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 90.58,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 93.651,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 95.633,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Bear Form",
+     "spell_id": 5487,
+     "t": 98.415,
+     "target": null
+    },
+    {
+     "ability": "Enrage",
+     "spell_id": 5229,
+     "t": 98.965,
+     "target": null
+    },
+    {
+     "ability": "Stampeding Roar",
+     "spell_id": 77761,
+     "t": 99.918,
+     "target": null
+    },
+    {
+     "ability": "Moonkin Form",
+     "spell_id": 24858,
+     "t": 102.206,
+     "target": null
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 103.713,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 104.809,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 107.758,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 110.031,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 112.303,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 114.581,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 116.842,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 118.537,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Starfire",
+     "spell_id": 2912,
+     "t": 121.282,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 121.282,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Eclipse (Solar)",
+     "spell_id": 48517,
+     "t": 121.292,
+     "target": null
+    },
+    {
+     "ability": "Sunfire",
+     "spell_id": 93402,
+     "t": 122.285,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 125.125,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 127.929,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 129.067,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 130.17,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Lifeblood",
+     "spell_id": 74497,
+     "t": 130.17,
+     "target": null
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 132.596,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 132.596,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 134.674,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 135.766,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 135.766,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 136.76,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 137.771,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88751,
+     "t": 138.408,
+     "target": null
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 141.183,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 142.436,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 143.682,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 144.939,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 144.939,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 145.94,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Insect Swarm",
+     "spell_id": 5570,
+     "t": 150.633,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 151.633,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 154.17,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Starfall",
+     "spell_id": 48505,
+     "t": 154.17,
+     "target": null
+    },
+    {
+     "ability": "Wrath",
+     "spell_id": 5176,
+     "t": 156.607,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Eclipse (Lunar)",
+     "spell_id": 48518,
+     "t": 156.607,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 158.142,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 159.158,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88747,
+     "t": 160.159,
+     "target": null
+    },
+    {
+     "ability": "Wild Mushroom",
+     "spell_id": 88751,
+     "t": 160.724,
+     "target": null
+    },
+    {
+     "ability": "Starsurge",
+     "spell_id": 78674,
+     "t": 161.601,
+     "target": "Lava Parasite 3"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 162.872,
+     "target": "Unknown"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 163.968,
+     "target": "Lava Parasite 5"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 165.066,
+     "target": "Lava Parasite 18"
+    },
+    {
+     "ability": "Moonfire",
+     "spell_id": 8921,
+     "t": 166.163,
+     "target": "Lava Parasite 19"
+    }
+   ]
+  },
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source4",
+   "class_spec": "survival_hunter",
+   "name": "Missfli",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 24038.3,
+   "source_id": 4,
+   "source_name": "Missfli",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=4",
+   "row_count": 195,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 1.575,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 1.575,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 2.563,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Black Arrow",
+     "spell_id": 3674,
+     "t": 3.585,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 4.103,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 6.093,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 6.579,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 6.632,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 7.624,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 7.624,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 8.626,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 9.152,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 9.632,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 11.687,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 12.154,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 13.677,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 14.215,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 15.183,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 15.647,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 16.588,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 16.748,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rapid Fire",
+     "spell_id": 3045,
+     "t": 16.839,
+     "target": null
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 18.198,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 18.198,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 19.204,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 19.272,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 20.201,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 21.071,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 22.292,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 22.884,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 23.398,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 24.469,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 24.686,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 25.559,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 26.211,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 26.496,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 28.291,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 28.449,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Black Arrow",
+     "spell_id": 3674,
+     "t": 28.449,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Healthstone",
+     "spell_id": 6262,
+     "t": 29.832,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 30.103,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 31.292,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 31.905,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 32.379,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Trap Launcher",
+     "spell_id": 77769,
+     "t": 34.032,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 34.435,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Ice Trap",
+     "spell_id": 82941,
+     "t": 34.913,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 36.968,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 37.297,
+     "target": null
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 37.464,
+     "target": null
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 39.098,
+     "target": "Lava Parasite 5"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 39.482,
+     "target": "Lava Parasite 5"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 40.113,
+     "target": "Lava Parasite 6"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 41.121,
+     "target": "Lava Parasite 6"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 42.052,
+     "target": "Lava Parasite 8"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 43.821,
+     "target": "Lava Parasite 4"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 44.104,
+     "target": "Lava Parasite 2"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 44.904,
+     "target": "Lava Parasite 7"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 45.113,
+     "target": "Lava Parasite 7"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 46.126,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 47.434,
+     "target": "Lava Parasite 3"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 49.976,
+     "target": "Lava Parasite 3"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 50.113,
+     "target": "Lava Parasite 3"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 52.817,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 52.861,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 55.338,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 57.722,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 57.864,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 59.218,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Black Arrow",
+     "spell_id": 3674,
+     "t": 59.218,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 60.394,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 61.744,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 62.901,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 63.244,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 63.244,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 65.436,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 65.772,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Synapse Springs",
+     "spell_id": 82174,
+     "t": 65.792,
+     "target": null
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 67.732,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 67.975,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 69.252,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 69.266,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Trap Launcher",
+     "spell_id": 77769,
+     "t": 70.121,
+     "target": null
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 70.294,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 70.495,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Ice Trap",
+     "spell_id": 82941,
+     "t": 71.089,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 73.021,
+     "target": "Unknown"
+    },
+    {
+     "ability": "Disengage",
+     "spell_id": 781,
+     "t": 73.172,
+     "target": null
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 73.623,
+     "target": null
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 74.788,
+     "target": "Lava Parasite 11"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 75.623,
+     "target": "Lava Parasite 11"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 75.846,
+     "target": "Lava Parasite 14"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 78.168,
+     "target": "Lava Parasite 14"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 78.37,
+     "target": "Lava Parasite 14"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 78.454,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 80.686,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 80.967,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 82.483,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 83.217,
+     "target": "Lava Parasite 17"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 84.028,
+     "target": "Lava Parasite 15"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 85.029,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 86.328,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 88.856,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 90.445,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 91.394,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 91.94,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 93.909,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Disengage",
+     "spell_id": 781,
+     "t": 96.074,
+     "target": null
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 100.984,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 101.021,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 102.497,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Black Arrow",
+     "spell_id": 3674,
+     "t": 102.497,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 103.562,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 105.168,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 106.092,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 107.704,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 108.622,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 109.232,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 110.749,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 110.972,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 111.143,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 113.497,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 113.666,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 115.015,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 116.203,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 116.533,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 117.496,
+     "target": null
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 118.842,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 118.989,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 119.849,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 120.839,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 120.934,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 121.86,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Berserking",
+     "spell_id": 26297,
+     "t": 122.219,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 122.877,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 123.839,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 124.483,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 124.843,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 125.842,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 126.105,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 126.839,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 127.753,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 127.849,
+     "target": null
+    },
+    {
+     "ability": "Black Arrow",
+     "spell_id": 3674,
+     "t": 128.863,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 129.359,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 130.845,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 130.999,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 131.847,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 132.615,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 132.842,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 134.043,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 134.043,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 134.559,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Synapse Springs",
+     "spell_id": 82174,
+     "t": 134.745,
+     "target": null
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 136.35,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 136.513,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 137.515,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 138.454,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 138.685,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 139.855,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 140.059,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 140.385,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 142.232,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Kill Shot",
+     "spell_id": 53351,
+     "t": 142.232,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 142.326,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Kill Shot",
+     "spell_id": 53351,
+     "t": 143.234,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 144.266,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 145.402,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 146.219,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 146.585,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 147.535,
+     "target": null
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 148.049,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 148.566,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 149.042,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 150.06,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 150.502,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Serpent Sting",
+     "spell_id": 1978,
+     "t": 151.061,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 152.448,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Kill Shot",
+     "spell_id": 53351,
+     "t": 153.242,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Kill Shot",
+     "spell_id": 53351,
+     "t": 154.232,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 154.401,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 156.069,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 156.358,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Trap Launcher",
+     "spell_id": 77769,
+     "t": 156.591,
+     "target": null
+    },
+    {
+     "ability": "Ice Trap",
+     "spell_id": 82941,
+     "t": 157.7,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 158.295,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 159.083,
+     "target": null
+    },
+    {
+     "ability": "Lock and Load",
+     "spell_id": 56453,
+     "t": 159.46,
+     "target": null
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 160.562,
+     "target": "Lava Parasite 4"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 160.822,
+     "target": "Lava Parasite 4"
+    },
+    {
+     "ability": "Explosive Shot",
+     "spell_id": 53301,
+     "t": 161.551,
+     "target": "Lava Parasite 4"
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 163.354,
+     "target": "Lava Parasite 2"
+    },
+    {
+     "ability": "Cobra Shot",
+     "spell_id": 77767,
+     "t": 165.066,
+     "target": "Lava Parasite 2"
+    },
+    {
+     "ability": "Multi-Shot",
+     "spell_id": 2643,
+     "t": 165.429,
+     "target": null
+    },
+    {
+     "ability": "Auto Shot",
+     "spell_id": 75,
+     "t": 165.878,
+     "target": "Lava Parasite 22"
+    }
+   ]
+  },
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source9",
+   "class_spec": "fire_mage",
+   "name": "Téné",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 24244.3,
+   "source_id": 9,
+   "source_name": "Téné",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=9",
+   "row_count": 125,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 1.122,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 1.122,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mirror Image",
+     "spell_id": 55342,
+     "t": 2.359,
+     "target": null
+    },
+    {
+     "ability": "Combustion",
+     "spell_id": 11129,
+     "t": 3.17,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 5.437,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Flame Orb",
+     "spell_id": 82731,
+     "t": 5.437,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 7.198,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 8.515,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 10.361,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 12.189,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 14.031,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 14.042,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 18.141,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 20.12,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 20.965,
+     "target": null
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 21.87,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 21.969,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 23.729,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 23.81,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 25.559,
+     "target": null
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 25.559,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 25.664,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 27.121,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 27.202,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 28.619,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 31.682,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 33.527,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Blink",
+     "spell_id": 1953,
+     "t": 34.621,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 35.284,
+     "target": null
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 40.089,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Blast Wave",
+     "spell_id": 11113,
+     "t": 40.089,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 40.631,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Fire Blast",
+     "spell_id": 2136,
+     "t": 41.747,
+     "target": "Lava Parasite 1"
+    },
+    {
+     "ability": "Flamestrike",
+     "spell_id": 2120,
+     "t": 42.917,
+     "target": null
+    },
+    {
+     "ability": "Flamestrike",
+     "spell_id": 2120,
+     "t": 44.181,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 44.182,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 45.399,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Fire Blast",
+     "spell_id": 2136,
+     "t": 46.635,
+     "target": "Lava Parasite 9"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 50.855,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 52.091,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 52.091,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 52.105,
+     "target": null
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 56.331,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Blink",
+     "spell_id": 1953,
+     "t": 56.89,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 59.967,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 61.814,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 63.809,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 65.359,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 65.663,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 65.663,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Flame Orb",
+     "spell_id": 82731,
+     "t": 66.891,
+     "target": null
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 67.214,
+     "target": null
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 68.108,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 69.405,
+     "target": null
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 75.893,
+     "target": "Lava Parasite 10"
+    },
+    {
+     "ability": "Blast Wave",
+     "spell_id": 11113,
+     "t": 75.901,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 75.901,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 75.901,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 75.901,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 75.901,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 76.622,
+     "target": "Lava Parasite 10"
+    },
+    {
+     "ability": "Fire Blast",
+     "spell_id": 2136,
+     "t": 79.592,
+     "target": "Lava Parasite 13"
+    },
+    {
+     "ability": "Flamestrike",
+     "spell_id": 2120,
+     "t": 80.842,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 83.059,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 87.318,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 89.161,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 89.358,
+     "target": null
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 90.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 90.516,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Replenish Mana",
+     "spell_id": 5405,
+     "t": 91.225,
+     "target": null
+    },
+    {
+     "ability": "Blink",
+     "spell_id": 1953,
+     "t": 91.843,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 94.912,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 96.366,
+     "target": null
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 97.293,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 97.317,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 97.489,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 99.942,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 102.187,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 104.034,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Evocation",
+     "spell_id": 12051,
+     "t": 104.034,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 105.355,
+     "target": null
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 110.353,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 110.354,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 110.561,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 111.793,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 114.865,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 116.711,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 121.12,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 122.084,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 122.189,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 124.621,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Combustion",
+     "spell_id": 11129,
+     "t": 125.251,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 126.932,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 128.339,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Flame Orb",
+     "spell_id": 82731,
+     "t": 128.339,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 130.761,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 132.197,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 132.831,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 133.606,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 133.606,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 134.627,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 137.061,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 138.464,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 139.884,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 141.307,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 142.72,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 144.139,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 145.563,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 146.183,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 146.986,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 146.986,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Pyroblast",
+     "spell_id": 11366,
+     "t": 151.653,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Scorch",
+     "spell_id": 2948,
+     "t": 152.601,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 152.625,
+     "target": null
+    },
+    {
+     "ability": "Living Bomb",
+     "spell_id": 44457,
+     "t": 152.667,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hot Streak!",
+     "spell_id": 48108,
+     "t": 153.242,
+     "target": null
+    },
+    {
+     "ability": "Pyroblast!",
+     "spell_id": 92315,
+     "t": 153.669,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 156.091,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 157.51,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 159.355,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Blast Wave",
+     "spell_id": 11113,
+     "t": 159.874,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 159.889,
+     "target": null
+    },
+    {
+     "ability": "Impact",
+     "spell_id": 64343,
+     "t": 159.889,
+     "target": null
+    },
+    {
+     "ability": "Frost Nova",
+     "spell_id": 122,
+     "t": 162.72,
+     "target": null
+    },
+    {
+     "ability": "Fireball",
+     "spell_id": 133,
+     "t": 165.794,
+     "target": "Magmaw"
+    }
+   ]
+  },
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source2",
+   "class_spec": "assassination_rogue",
+   "name": "Melgario",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 20476.3,
+   "source_id": 2,
+   "source_name": "Melgario",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=2",
+   "row_count": 92,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Garrote",
+     "spell_id": 703,
+     "t": 1.521,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rupture",
+     "spell_id": 1943,
+     "t": 2.52,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 3.54,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 3.54,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 4.611,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 5.62,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 5.62,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Vendetta",
+     "spell_id": 79140,
+     "t": 6.668,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 9.231,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 9.231,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 12.212,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 12.214,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Cold Blood",
+     "spell_id": 14177,
+     "t": 13.078,
+     "target": null
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 14.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 14.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 16.748,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 16.748,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 21.172,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 21.172,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 26.938,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 26.938,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rupture",
+     "spell_id": 1943,
+     "t": 29.311,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 31.385,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 31.385,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Slice and Dice",
+     "spell_id": 5171,
+     "t": 34.47,
+     "target": null
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 35.47,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 35.47,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 39.108,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 39.108,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 43.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 43.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Vanish",
+     "spell_id": 1856,
+     "t": 46.916,
+     "target": null
+    },
+    {
+     "ability": "Garrote",
+     "spell_id": 703,
+     "t": 47.497,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rupture",
+     "spell_id": 1943,
+     "t": 48.891,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 50.34,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 50.34,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Slice and Dice",
+     "spell_id": 5171,
+     "t": 52.901,
+     "target": null
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 53.919,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 53.919,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 55.225,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 55.225,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 59.702,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 59.702,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 63.018,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 63.018,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 66.076,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 66.076,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 69.574,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 69.574,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 75.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 75.386,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 81.448,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 81.448,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Rupture",
+     "spell_id": 1943,
+     "t": 83.534,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 85.698,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 85.698,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 89.988,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 89.988,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 94.457,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 94.457,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Sprint",
+     "spell_id": 2983,
+     "t": 98.533,
+     "target": null
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 116.722,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 116.722,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 117.722,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 117.722,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 120.069,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 120.069,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Rupture",
+     "spell_id": 1943,
+     "t": 122.176,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 124.047,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 124.047,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 126.28,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 126.28,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Vendetta",
+     "spell_id": 79140,
+     "t": 127.281,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 130.855,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 130.855,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 134.397,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Cold Blood",
+     "spell_id": 14177,
+     "t": 135.248,
+     "target": null
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 136.558,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 137.572,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 138.562,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 140.582,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 141.719,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 144.62,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Backstab",
+     "spell_id": 53,
+     "t": 146.661,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 148.855,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 148.855,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 152.183,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 152.183,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 156.827,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 156.827,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 27576,
+     "t": 161.468,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Mutilate",
+     "spell_id": 1329,
+     "t": 161.468,
+     "target": "Magmaw"
+    }
+   ]
+  },
+  {
+   "actor_id": "fTCjtgrnzm4HRwXP-source3",
+   "class_spec": "demonology_warlock",
+   "name": "Edugaru",
+   "report": "fTCjtgrnzm4HRwXP",
+   "fight": 27,
+   "observed_dps": 23778.1,
+   "source_id": 3,
+   "source_name": "Edugaru",
+   "source_url": "https://classic.warcraftlogs.com/reports/fTCjtgrnzm4HRwXP?fight=27&type=casts&view=events&source=3",
+   "row_count": 108,
+   "complete": true,
+   "casts": [
+    {
+     "ability": "Demonic Leap",
+     "spell_id": 54785,
+     "t": 0.918,
+     "target": null
+    },
+    {
+     "ability": "Dark Soul",
+     "spell_id": 77801,
+     "t": 2.425,
+     "target": null
+    },
+    {
+     "ability": "Soulburn",
+     "spell_id": 74434,
+     "t": 2.425,
+     "target": null
+    },
+    {
+     "ability": "Summon Felhunter",
+     "spell_id": 691,
+     "t": 2.425,
+     "target": null
+    },
+    {
+     "ability": "Immolate",
+     "spell_id": 348,
+     "t": 5.136,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Doom",
+     "spell_id": 603,
+     "t": 5.453,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 6.55,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Immolation Aura",
+     "spell_id": 50589,
+     "t": 7.783,
+     "target": null
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 10.287,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 13.237,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 14.869,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 14.869,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 17.606,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 19.244,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 20.881,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 22.512,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 22.529,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 25.664,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 27.167,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 29.169,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 31.057,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 32.945,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 34.825,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Life Tap",
+     "spell_id": 1454,
+     "t": 35.205,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 38.089,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 40.036,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 41.545,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 41.712,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Doom",
+     "spell_id": 603,
+     "t": 42.961,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Immolate",
+     "spell_id": 348,
+     "t": 45.902,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 45.902,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 47.155,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 50.285,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 52.183,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 54.058,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 55.605,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 57.722,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 59.599,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 61.521,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 63.402,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 63.523,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 66.66,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 68.541,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 70.048,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 70.294,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 73.423,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 77.244,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 79.129,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 81.029,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 81.121,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 83.898,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 85.839,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 86.032,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 89.174,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Immolate",
+     "spell_id": 348,
+     "t": 90.843,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Doom",
+     "spell_id": 603,
+     "t": 90.854,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 92.105,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fel Flame",
+     "spell_id": 77799,
+     "t": 96.161,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fel Flame",
+     "spell_id": 77799,
+     "t": 97.926,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 101.054,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 103.045,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 104.542,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 106.442,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 108.331,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 110.334,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 112.217,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fel Flame",
+     "spell_id": 77799,
+     "t": 112.47,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fel Flame",
+     "spell_id": 77799,
+     "t": 113.731,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Fel Flame",
+     "spell_id": 77799,
+     "t": 114.988,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Summon Felguard",
+     "spell_id": 30146,
+     "t": 124.251,
+     "target": null
+    },
+    {
+     "ability": "Metamorphosis",
+     "spell_id": 47241,
+     "t": 124.385,
+     "target": null
+    },
+    {
+     "ability": "Dark Soul",
+     "spell_id": 77801,
+     "t": 125.211,
+     "target": null
+    },
+    {
+     "ability": "Soulburn",
+     "spell_id": 74434,
+     "t": 125.211,
+     "target": null
+    },
+    {
+     "ability": "Summon Felhunter",
+     "spell_id": 691,
+     "t": 125.211,
+     "target": null
+    },
+    {
+     "ability": "Immolate",
+     "spell_id": 348,
+     "t": 127.346,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Doom",
+     "spell_id": 603,
+     "t": 127.406,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 128.404,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Immolation Aura",
+     "spell_id": 50589,
+     "t": 129.409,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 131.302,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 132.435,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 132.532,
+     "target": null
+    },
+    {
+     "ability": "Summon Doomguard",
+     "spell_id": 18540,
+     "t": 133.53,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 135.419,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 136.428,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 137.797,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Life Tap",
+     "spell_id": 1454,
+     "t": 137.797,
+     "target": null
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 140.059,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 141.307,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 142.579,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Incinerate",
+     "spell_id": 29722,
+     "t": 143.845,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Life Tap",
+     "spell_id": 1454,
+     "t": 143.845,
+     "target": null
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 145.865,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 145.865,
+     "target": null
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 146.89,
+     "target": "Exposed Head of Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 149.575,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 151.045,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 152.198,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Immolate",
+     "spell_id": 348,
+     "t": 153.497,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Doom",
+     "spell_id": 603,
+     "t": 153.652,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Corruption",
+     "spell_id": 172,
+     "t": 154.647,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 156.81,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 158.095,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 159.6,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 161.108,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Hand of Gul'dan",
+     "spell_id": 71521,
+     "t": 162.609,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 164.261,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Soul Fire",
+     "spell_id": 6353,
+     "t": 165.768,
+     "target": "Magmaw"
+    },
+    {
+     "ability": "Demonic Breath",
+     "spell_id": 47897,
+     "t": 165.768,
+     "target": null
+    }
+   ]
+  }
+ ],
+ "additional_references": [
+  {
+   "reference_id": "RtPXnbZxFkpacw1h-fight6",
+   "url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=casts&view=events",
+   "duration_sec": 158.2,
+   "actors": [
+    {
+     "actor_id": "RtPXnbZxFkpacw1h-source18",
+     "class_spec": "retribution_paladin",
+     "name": "Salwho",
+     "report": "RtPXnbZxFkpacw1h",
+     "fight": 6,
+     "observed_dps": 23716.1,
+     "source_id": 18,
+     "source_name": "Salwho",
+     "source_url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=casts&view=events&source=18",
+     "row_count": 94,
+     "complete": true,
+     "casts": [
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 0.284,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Resistance Aura",
+       "spell_id": 19891,
+       "t": 1.784,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 3.117,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 4.601,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 7.052,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 8.567,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 10.835,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Inquisition",
+       "spell_id": 84963,
+       "t": 12.335,
+       "target": null
+      },
+      {
+       "ability": "Divine Protection",
+       "spell_id": 498,
+       "t": 12.752,
+       "target": null
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 14.168,
+       "target": null
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 15.475,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 16.918,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 18.426,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 19.915,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 22.202,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 25.951,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 27.452,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 28.952,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 30.218,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 31.736,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 33.219,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 34.485,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 38.252,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 39.769,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 41.253,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 42.769,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 44.269,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 46.536,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 48.035,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Inquisition",
+       "spell_id": 84963,
+       "t": 49.336,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 50.635,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 52.086,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 53.586,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 55.103,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 56.619,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 58.885,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 62.637,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 64.152,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 65.636,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 67.152,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 70.003,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 71.269,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 73.653,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 75.47,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 76.969,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Inquisition",
+       "spell_id": 84963,
+       "t": 78.486,
+       "target": null
+      },
+      {
+       "ability": "Divine Protection",
+       "spell_id": 498,
+       "t": 78.837,
+       "target": null
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 80.019,
+       "target": null
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 81.287,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 82.802,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 84.319,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 85.553,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 87.055,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 88.569,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 90.419,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 92.321,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 93.837,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 95.34,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 96.853,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 98.354,
+       "target": null
+      },
+      {
+       "ability": "Guardian of Ancient Kings",
+       "spell_id": 86150,
+       "t": 109.853,
+       "target": null
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 111.537,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 113.404,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 115.986,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 117.254,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Avenging Wrath",
+       "spell_id": 31884,
+       "t": 118.303,
+       "target": null
+      },
+      {
+       "ability": "Zealotry",
+       "spell_id": 85696,
+       "t": 118.303,
+       "target": null
+      },
+      {
+       "ability": "Inquisition",
+       "spell_id": 84963,
+       "t": 119.486,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 120.503,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 122.004,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 123.504,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 125.009,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 126.52,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 128.022,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 129.521,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 131.021,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 132.537,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 134.037,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 135.538,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 137.053,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 138.553,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 140.07,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 141.571,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Exorcism",
+       "spell_id": 879,
+       "t": 143.087,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 144.504,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 146.003,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 147.503,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 149.004,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Templar's Verdict",
+       "spell_id": 85256,
+       "t": 150.52,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Hammer of Wrath",
+       "spell_id": 24275,
+       "t": 152.021,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Holy Wrath",
+       "spell_id": 2812,
+       "t": 153.52,
+       "target": null
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 154.538,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Judgement",
+       "spell_id": 20271,
+       "t": 156.032,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Crusader Strike",
+       "spell_id": 35395,
+       "t": 157.556,
+       "target": "Magmaw"
+      }
+     ]
+    },
+    {
+     "actor_id": "RtPXnbZxFkpacw1h-source9",
+     "class_spec": "elemental_shaman",
+     "name": "Elegirl",
+     "report": "RtPXnbZxFkpacw1h",
+     "fight": 6,
+     "observed_dps": 22590.9,
+     "source_id": 9,
+     "source_name": "Elegirl",
+     "source_url": "https://classic.warcraftlogs.com/reports/RtPXnbZxFkpacw1h?fight=6&type=casts&view=events&source=9",
+     "row_count": 112,
+     "complete": true,
+     "casts": [
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 0.5,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 3.584,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 5.351,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Call of the Elements",
+       "spell_id": 66842,
+       "t": 5.601,
+       "target": null
+      },
+      {
+       "ability": "Fire Elemental Totem",
+       "spell_id": 2894,
+       "t": 5.602,
+       "target": null
+      },
+      {
+       "ability": "Strength of Earth Totem",
+       "spell_id": 8075,
+       "t": 5.602,
+       "target": null
+      },
+      {
+       "ability": "Mana Spring Totem",
+       "spell_id": 5675,
+       "t": 5.602,
+       "target": null
+      },
+      {
+       "ability": "Wrath of Air Totem",
+       "spell_id": 3738,
+       "t": 5.602,
+       "target": null
+      },
+      {
+       "ability": "Elemental Mastery",
+       "spell_id": 16166,
+       "t": 6.935,
+       "target": null
+      },
+      {
+       "ability": "Unleash Elements",
+       "spell_id": 73680,
+       "t": 7.217,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Heart's Judgement",
+       "spell_id": 91041,
+       "t": 7.751,
+       "target": null
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 8.335,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 11.135,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 12.568,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 14.252,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 15.718,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 17.319,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 18.718,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 20.168,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 21.485,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 21.607,
+       "target": null
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 22.886,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Earth Shock",
+       "spell_id": 8042,
+       "t": 22.952,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 25.319,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 26.969,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 29.085,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 30.968,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 32.82,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 37.002,
+       "target": "Unknown"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 38.252,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 39.519,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 40.936,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 44.697,
+       "target": "Lava Parasite 4"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 48.052,
+       "target": "Lava Parasite 9"
+      },
+      {
+       "ability": "Earth Shock",
+       "spell_id": 8042,
+       "t": 48.169,
+       "target": "Lava Parasite 9"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 51.571,
+       "target": "Lava Parasite 7"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 53.202,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 55.285,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 56.803,
+       "target": "Lava Parasite 1"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 57.353,
+       "target": null
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 59.919,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 62.302,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 64.236,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 65.802,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Unleash Elements",
+       "spell_id": 73680,
+       "t": 66.236,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 66.236,
+       "target": null
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 68.403,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 70.652,
+       "target": "Unknown"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 71.987,
+       "target": "Lava Parasite 17"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 73.253,
+       "target": "Lava Parasite 17"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 74.753,
+       "target": "Lava Parasite 15"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 76.169,
+       "target": "Lava Parasite 18"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 77.436,
+       "target": "Lava Parasite 13"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 79.703,
+       "target": "Lava Parasite 14"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 81.22,
+       "target": "Lava Parasite 14"
+      },
+      {
+       "ability": "Thunderstorm",
+       "spell_id": 51490,
+       "t": 82.169,
+       "target": null
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 84.07,
+       "target": "Lava Parasite 12"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 88.253,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 89.87,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Earth Shock",
+       "spell_id": 8042,
+       "t": 89.87,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 92.886,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 94.853,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Elemental Mastery",
+       "spell_id": 16166,
+       "t": 95.203,
+       "target": null
+      },
+      {
+       "ability": "Unleash Elements",
+       "spell_id": 73680,
+       "t": 95.603,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 96.67,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 98.004,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 100.17,
+       "target": null
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 100.469,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 101.853,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 103.837,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 105.352,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 105.903,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 108.002,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 109.604,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 111.053,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 112.736,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Earth Shock",
+       "spell_id": 8042,
+       "t": 112.869,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Heroism",
+       "spell_id": 32182,
+       "t": 116.069,
+       "target": null
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 118.369,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Unleash Elements",
+       "spell_id": 73680,
+       "t": 118.82,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 120.903,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 122.022,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 123.137,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 124.303,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 125.587,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 126.721,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 127.188,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 129.154,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 129.371,
+       "target": null
+      },
+      {
+       "ability": "Heart's Judgement",
+       "spell_id": 91041,
+       "t": 129.454,
+       "target": null
+      },
+      {
+       "ability": "Volcanic Power",
+       "spell_id": 79476,
+       "t": 129.987,
+       "target": null
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 131.238,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 132.404,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 133.37,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Earth Shock",
+       "spell_id": 8042,
+       "t": 133.555,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 135.753,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 136.886,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 138.22,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 139.121,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 140.171,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lava Surge!",
+       "spell_id": 77762,
+       "t": 140.704,
+       "target": null
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 141.221,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 141.571,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 143.587,
+       "target": "Exposed Head of Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 145.953,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 146.57,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Unleash Elements",
+       "spell_id": 73680,
+       "t": 147.67,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 149.82,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lightning Bolt",
+       "spell_id": 403,
+       "t": 151.604,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Lava Burst",
+       "spell_id": 51505,
+       "t": 152.571,
+       "target": "Magmaw"
+      },
+      {
+       "ability": "Chain Lightning",
+       "spell_id": 421,
+       "t": 155.27,
+       "target": "Lava Parasite 5"
+      },
+      {
+       "ability": "Flame Shock",
+       "spell_id": 8050,
+       "t": 155.788,
+       "target": "Lava Parasite 5"
+      }
+     ]
+    }
+   ],
+   "limitations": [
+    "Only the Retribution Paladin and Elemental Shaman were read from this fight."
+   ]
+  }
+ ]
+}

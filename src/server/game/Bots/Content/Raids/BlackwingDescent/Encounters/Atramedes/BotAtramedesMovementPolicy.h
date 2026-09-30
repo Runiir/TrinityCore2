@@ -3,6 +3,7 @@
 
 #include "Bots/BotActionArbiter.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirGong.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDodge.h"
 #include <optional>
 #include <string_view>
 
@@ -39,17 +40,14 @@ inline MoveProposal Positioning(Vector3 destination, std::string_view mechanic,
 inline constexpr float GroundKiteMinRadius = 28.0f;
 inline constexpr float GroundKiteMaxRadius = 42.0f;
 inline constexpr float KiteStep = 12.0f;
-inline constexpr float HazardMargin = 2.5f;
 // A Sonic Breath lasts 2 s cast + 6 s channel; a kiter circles the boss at
 // ~13 degrees per second, so the beam can only reach players it would sweep
 // within that time.
 inline constexpr float BeamSweepHorizonRad = 110.0f * Geometry::Pi / 180.0f;
 inline constexpr float BeamPadRad = 12.0f * Geometry::Pi / 180.0f;
-
-inline float SoundMargin(ActorSnapshot const& self)
-{
-    return SoundOf(self) >= 60 ? 1.5f : 0.0f;
-}
+// A run ahead of the sweep may wait out a disk while the beam is this far
+// behind (about 2.5 s of sweep).
+inline constexpr float RunAheadHoldRad = 30.0f * Geometry::Pi / 180.0f;
 
 // Centroid of other living players (the kiter and tank excluded).
 inline std::optional<Vector3> RaidCentroid(Blackboard const& board,
@@ -112,15 +110,18 @@ inline std::optional<MoveProposal> GroundKiteMove(Blackboard const& board,
     float const radius = std::clamp(Geometry::Distance2d(boss, self.Position),
         GroundKiteMinRadius, GroundKiteMaxRadius);
     int const direction = GroundKiteDirection(board, facts, duties, self);
-    return Survival(Geometry::TangentialStep(boss, self.Position, radius,
-        KiteStep, direction), "sonic_breath_kite", 540.0f);
+    // The kite keeps its direction; its radius and stride bend around disk
+    // lanes and fire patches on the way (BotAtramedesDodge.h).
+    Dodge::Field const field = Dodge::BuildField(board, facts, self, { false, true });
+    return Survival(Dodge::ClearCircleStep(field, boss, self.Position, radius, KiteStep, direction,
+        GroundKiteMinRadius, GroundKiteMaxRadius), "sonic_breath_kite", 540.0f);
 }
 
 // Players the Sonic Breath beam will sweep. The beam points from the boss
 // at the Tracking Flames and follows the kiter; those ahead of it within the
 // sweep horizon run on with the sweep, those at the beam step back behind it.
 inline std::optional<MoveProposal> SonicBreathBeamExit(Blackboard const& board,
-    Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self)
+    Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self, bool melee = false)
 {
     if (!facts.Boss || !facts.SonicBreathActive || facts.TrackingFlames.empty()
         || self.Guid == facts.GroundKiter)
@@ -144,14 +145,24 @@ inline std::optional<MoveProposal> SonicBreathBeamExit(Blackboard const& board,
     float const z = self.Position.Z;
     if (offset < -beamHalfAngle)
         return std::nullopt;
+    // Behind the beam or ahead of it, clear of the disk lanes and fire too;
+    // melee and the tank stay inside melee range.
+    Dodge::Field const field = Dodge::BuildField(board, facts, self);
+    Dodge::Constraint const ring = melee ? Dodge::MeleeRing(facts) : Dodge::Constraint{};
     if (offset <= beamHalfAngle)
-        return Survival(Geometry::PointAt(boss, beam - float(sweep)
-            * (beamHalfAngle + BeamPadRad), radius, z), "sonic_breath_beam_exit",
+        return Survival(Dodge::Resolve(field, self, Geometry::PointAt(boss, beam - float(sweep)
+            * (beamHalfAngle + BeamPadRad), radius, z), ring), "sonic_breath_beam_exit",
             520.0f);
     if (offset > BeamSweepHorizonRad)
         return std::nullopt;
-    return Survival(Geometry::TangentialStep(boss, self.Position, radius,
-        KiteStep, sweep), "sonic_breath_run_ahead", 515.0f);
+    Dodge::Field ahead = field;
+    ahead.SonicBreath.reset();
+    float const low = ring.RingCenter ? ring.RingMin : std::max(2.0f, radius - 9.0f);
+    float const high = ring.RingCenter ? ring.RingMax : radius + 9.0f;
+    // Far enough ahead of the sweep, a run that would meet a disk waits.
+    bool const mayHold = offset > beamHalfAngle + RunAheadHoldRad;
+    return Survival(Dodge::ClearCircleStep(ahead, boss, self.Position, radius,
+        KiteStep, sweep, low, high, Mobility::RunSpeed(self), mayHold), "sonic_breath_run_ahead", 515.0f);
 }
 
 // A melee player in melee range steps around the boss at its own distance
@@ -171,7 +182,7 @@ inline Vector3 MeleeLaneExit(Vector3 const& boss, float heading, Vector3 const& 
 // Sonar Pulse disks leave the boss centre and travel straight out; step
 // sideways out of the lane of any disk still heading toward `self` (melee in
 // melee range around the boss, see MeleeLaneExit).
-inline std::optional<MoveProposal> SonarPulseExit(Facts const& facts,
+inline std::optional<MoveProposal> SonarPulseExit(Blackboard const& board, Facts const& facts,
     ActorSnapshot const& self, bool melee = false)
 {
     if (!facts.Boss)
@@ -186,9 +197,12 @@ inline std::optional<MoveProposal> SonarPulseExit(Facts const& facts,
         {
             // Not moving yet: only its own footprint is known.
             if (Geometry::Distance2d(disk->Position, self.Position) < clearance)
-                return Survival(Geometry::RadialExit(disk->Position, self.Position,
+            {
+                best = Survival(Geometry::RadialExit(disk->Position, self.Position,
                     clearance + 1.0f, Geometry::Bearing(boss, ArenaCenter)),
                     "sonar_pulse_exit", 480.0f);
+                break;
+            }
             continue;
         }
         float const heading = Geometry::Bearing(boss, disk->Position);
@@ -208,12 +222,22 @@ inline std::optional<MoveProposal> SonarPulseExit(Facts const& facts,
                 inMelee ? "sonar_pulse_melee_exit" : "sonar_pulse_exit", 480.0f);
         }
     }
+    // Out of every lane at once (four disks per pulse fan out from the
+    // boss), and out of the beam and fire; melee around the boss in range.
+    bool const ringed = melee && Geometry::Distance2d(boss, self.Position) <= MeleeRangeYards;
+    if (best)
+        best->Destination = Dodge::Resolve(Dodge::BuildField(board, facts, self), self,
+            best->Destination, ringed ? Dodge::MeleeRing(facts) : Dodge::Constraint{});
     return best;
 }
 
-inline std::optional<MoveProposal> NearestFootprintExit(
+// Out of the nearest footprint, to a point clear of every other hazard too
+// (the shortest safe step, BotAtramedesDodge.h): a radial exit alone steps
+// from one bomb zone into the next or along a fire trail.
+inline std::optional<MoveProposal> NearestFootprintExit(Blackboard const& board, Facts const& facts,
     std::vector<ActorSnapshot const*> const& hazards, ActorSnapshot const& self,
-    float clearance, std::string_view mechanic, float utility)
+    float clearance, std::string_view mechanic, float utility,
+    Dodge::Constraint const& constraint = {}, Dodge::FieldOptions const& options = {})
 {
     ActorSnapshot const* nearest = nullptr;
     float nearestDistance = 0.0f;
@@ -228,44 +252,57 @@ inline std::optional<MoveProposal> NearestFootprintExit(
     }
     if (!nearest)
         return std::nullopt;
-    return Survival(Geometry::RadialExit(nearest->Position, self.Position,
-        clearance + 1.5f, Geometry::Bearing(nearest->Position, ArenaCenter)),
-        mechanic, utility);
+    Vector3 const radial = Geometry::RadialExit(nearest->Position, self.Position,
+        clearance + 1.5f, Geometry::Bearing(nearest->Position, ArenaCenter));
+    return Survival(Dodge::Resolve(Dodge::BuildField(board, facts, self, options), self, radial,
+        constraint), mechanic, utility);
 }
 
-inline std::optional<MoveProposal> BombMarkerExit(Facts const& facts,
-    ActorSnapshot const& self)
+inline std::optional<MoveProposal> BombMarkerExit(Blackboard const& board, Facts const& facts,
+    ActorSnapshot const& self, Dodge::Constraint const& constraint = {},
+    Dodge::FieldOptions const& options = {})
 {
-    return NearestFootprintExit(facts.BombMarkers, self,
-        SonarBombRadius + 1.5f + SoundMargin(self), "sonar_bomb_exit", 510.0f);
+    return NearestFootprintExit(board, facts, facts.BombMarkers, self,
+        Dodge::BombClearYards + SoundMargin(self), "sonar_bomb_exit", 510.0f, constraint, options);
 }
 
-inline std::optional<MoveProposal> FirePatchExit(Facts const& facts,
-    ActorSnapshot const& self)
+inline std::optional<MoveProposal> FirePatchExit(Blackboard const& board, Facts const& facts,
+    ActorSnapshot const& self, Dodge::Constraint const& constraint = {},
+    Dodge::FieldOptions const& options = {})
 {
-    return NearestFootprintExit(facts.FirePatches, self,
-        FirePatchRadius + 1.5f + SoundMargin(self), "roaring_flame_exit", 500.0f);
+    return NearestFootprintExit(board, facts, facts.FirePatches, self,
+        Dodge::PatchClearYards + SoundMargin(self), "roaring_flame_exit", 500.0f, constraint, options);
 }
 
-inline std::optional<MoveProposal> FlameExit(Facts const& facts,
-    ActorSnapshot const& self)
+// Bystanders leave the flame and the path it is about to take (toward the
+// player it chases, or during a redirect toward the struck shield): a flame
+// at ten Building Speed stacks runs 15 yd/s, so a step straight away from it
+// along its path is caught.
+inline std::optional<MoveProposal> FlameExit(Blackboard const& board, Facts const& facts,
+    ActorSnapshot const& self, Dodge::Constraint const& constraint = {})
 {
-    if (self.Guid == facts.AirKiter)
+    if (self.Guid == facts.AirKiter || facts.ReverberatingFlames.empty())
         return std::nullopt;
-    return NearestFootprintExit(facts.ReverberatingFlames, self,
-        FlameBreathRadius + 4.0f, "reverberating_flame_exit", 515.0f);
+    Dodge::Field const field = Dodge::BuildField(board, facts, self);
+    for (Dodge::Capsule const& flame : field.Flames)
+        if (Dodge::DistanceToSegment(self.Position, flame.From, flame.To) < flame.Radius)
+            return Survival(Dodge::Resolve(field, self, Geometry::RadialExit(flame.From,
+                self.Position, flame.Radius + 1.5f, Geometry::Bearing(flame.From, ArenaCenter)),
+                constraint), "reverberating_flame_exit", 515.0f);
+    return std::nullopt;
 }
 
 // Air kite: the next ring waypoint ahead, away from the chasing flame. The
 // waypoints lie inside spellclick reach of every shield, so a rescue always
-// finds a shield ahead within one waypoint.
+// finds a shield ahead within one waypoint. A run through a Sonar Bomb zone
+// or a fire patch takes the least-Sound waypoint instead (BotAtramedesKitePath.h).
 inline std::optional<MoveProposal> AirKiteMove(Facts const& facts,
     ActorSnapshot const& self)
 {
     if (self.Guid != facts.AirKiter)
         return std::nullopt;
-    std::optional<Vector3> const next = NextRingWaypoint(self.Position,
-        AirKiteDirection(facts, self));
+    std::optional<Vector3> const next = KitePath::ChooseWaypoint(facts, self,
+        KiterFlame(facts, self), AirKiteDirection(facts, self));
     if (!next)
         return std::nullopt;
     return Survival(*next, "roaring_flame_breath_kite", 540.0f);
@@ -273,18 +310,23 @@ inline std::optional<MoveProposal> AirKiteMove(Facts const& facts,
 
 // The striker of an air gong runs on before the flame comes back for it: the
 // flame waits 2 s, flies to the struck shield beside the striker and then
-// tracks it, so every yard gained now delays the next catch.
+// tracks it, so every yard gained now delays the next catch. Its Sound when
+// the flame takes it opens the next chase, so its run avoids the hazards too.
 inline std::optional<MoveProposal> AirRedirectRun(Blackboard const& board,
     Facts const& facts, ActorSnapshot const& self)
 {
     ActorSnapshot const* runner = AirRedirectRunner(board, facts);
     if (!runner || runner->Guid != self.Guid)
         return std::nullopt;
-    std::optional<Vector3> const next = NextRingWaypoint(self.Position,
+    std::optional<Vector3> const next = KitePath::ChooseWaypoint(facts, self, nullptr,
         RingDirectionAwayFrom(self.Position, facts.ReverberatingFlames.front()->Position));
     if (!next)
         return std::nullopt;
-    return Survival(*next, "air_redirect_run", 535.0f);
+    // Every waypoint lies on the ring, where earlier chases left their fire
+    // trails: the run walks around them (the striker's Sound opens the next
+    // chase under the kiter Sound bound).
+    return Survival(Dodge::RunnerStep(Dodge::BuildField(board, facts, self), self, *next,
+        facts.ReverberatingFlames.front()->Position), "air_redirect_run", 535.0f);
 }
 }
 

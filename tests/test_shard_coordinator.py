@@ -252,7 +252,7 @@ def test_shard_script_is_addressed_and_starts_the_profile() -> None:
     lines = script.splitlines()
     assert lines[0] == f".botauto start {spec.cohort_id} {MALORIAK}"
     assert all(line.split()[2] == spec.cohort_id for line in lines)
-    assert f".botauto trace {spec.cohort_id} all 128 delta" in lines
+    assert f".botauto trace {spec.cohort_id} all {sc.SHARD_HEARTBEAT_TRACE_LIMIT}" in lines
     assert lines[-1] == f".botauto stop {spec.cohort_id}"
     assert not any(line.startswith((".botexp", "server")) for line in lines)
     startup, heartbeat, cleanup = harness.heartbeat_commands_from_script(script)

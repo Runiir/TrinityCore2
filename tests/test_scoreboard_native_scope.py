@@ -28,7 +28,7 @@ def test_nefarian_references_and_target_share_one_enemy_set() -> None:
     manifest = json.loads(NEFARIAN_DPS.read_text())
     target = json.loads(NEFARIAN_TARGET.read_text())
     matched = [ref for ref in manifest["references"] if ref["id"] in target["matched_reference_ids"]]
-    assert len(matched) == 3 and len({ref["target_scope"] for ref in matched}) == 1
+    assert len(matched) == 10 and len({ref["target_scope"] for ref in matched}) == 1
     assert "excludes Animated Bone Warriors (41918)" in matched[0]["target_scope"]
     assert native_excluded_entries(target) == [BONE_WARRIOR]
 

@@ -800,19 +800,25 @@ def clear_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> 
 # A full-raid cohort writes ~30 decision-trace rows per bot per second (~11 KB
 # each) while a delta poll exports at most 128 per bot: the delta never caught
 # up (pending pinned at the 4096-row cap, gap every poll) and each 30 s
-# heartbeat reply stayed ~13.7 MB of console log.  The full raid heartbeat
-# reads the newest rows instead, like the light combat heartbeat; boss shards
-# keep the delta export.
-FULL_RAID_HEARTBEAT_TRACE_LIMIT = 8
+# heartbeat reply stayed ~13.7 MB of console log.  Boss shards were no better
+# (BWD 10N round 2: backlogs of 56-1436 rows per bot, ~12 MB per reply, six
+# shards on one world thread): their world-tick stalls of 0.5-0.8 s started
+# inside or right after these replies and invalidated two of three Chimaeron
+# kills (2.4 % and 2.7 % stalled > 2 %).  Every shard heartbeat therefore reads
+# the newest rows, like the light combat heartbeat, and a failed shard
+# captures one bounded terminal tail (terminal_trace_command).  The delta is
+# not needed: ingest reads the combat log, and the watchdog's progress signals
+# come from status and the newest rows (RouteActionLedger deduplicates tails).
+SHARD_HEARTBEAT_TRACE_LIMIT = 8
+FULL_RAID_HEARTBEAT_TRACE_LIMIT = SHARD_HEARTBEAT_TRACE_LIMIT  # earlier name
 
 
 def shard_script(spec: ShardSpec, policy: WatchdogPolicy) -> str:
     """The harness watchdog script, addressed to the shard, starting its profile."""
-    full_raid = is_full_raid_shard(spec)
     script = harness.command_script(
         selector=policy.selector,
-        trace_limit=min(policy.trace_limit, FULL_RAID_HEARTBEAT_TRACE_LIMIT) if full_raid else policy.trace_limit,
-        start=True, stop=True, exit_server=False, cohort_id=spec.cohort_id, trace_delta=not full_raid,
+        trace_limit=min(policy.trace_limit, SHARD_HEARTBEAT_TRACE_LIMIT),
+        start=True, stop=True, exit_server=False, cohort_id=spec.cohort_id, trace_delta=False,
     )
     start = f".botauto start {spec.cohort_id}"
     lines = [f"{start} {spec.profile}" if line == start else line for line in script.splitlines()]
@@ -822,14 +828,12 @@ def shard_script(spec: ShardSpec, policy: WatchdogPolicy) -> str:
 
 
 def terminal_trace_command(spec: ShardSpec, policy: WatchdogPolicy) -> str:
-    """The one bounded non-delta trace a failed full-raid shard captures before its stop.
+    """The one bounded non-delta trace a failed shard captures before its stop.
 
-    Its heartbeat has no delta trace, so the terminal drain has no delta to
-    walk; this single reply (the newest rows per bot) keeps the failing bots'
-    last decisions.  Boss shards drain their delta heartbeat as before.
+    No shard heartbeat has a delta trace, so the terminal drain has no delta
+    to walk; this single reply (the newest rows per bot) keeps the failing
+    bots' last decisions.
     """
-    if not is_full_raid_shard(spec):
-        return ""
     return f".botauto trace {spec.cohort_id} {policy.selector} {policy.trace_limit}"
 
 

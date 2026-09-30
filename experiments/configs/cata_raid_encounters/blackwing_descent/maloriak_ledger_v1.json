@@ -14,7 +14,7 @@
   "unresolved_material_count": 7,
   "encounter": "maloriak",
   "purpose": "sourced_value_and_timer_ledger; no live assertion",
-  "research_as_of": "2026-09-27",
+  "research_as_of": "2026-09-30",
   "source_catalog": {
     "wowhead_442": {
       "title": "Maloriak Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -432,6 +432,169 @@
         "If Remedy was not being removed during the hold, start the hold at 50% instead of 30%: everyone but the Blood DK stops damaging Maloriak, kills each Aberration as the chambers release it, and resumes on the boss once every add is dead."
       ],
       "evidence_check": "Round 1 (label blackwing_descent_10n-r01-553da85c98, kills 521c17 and 6bf522): no Remedy was removed during the 30% hold. Maloriak's health samples show one full Remedy (250,000 healing, 25,000 per second for 10 s) at 94-104 s inside each hold (holds 79.5-105.2 s and 82.5-114.6 s). The only removal was the Mage's Spellsteal before the hold: the stolen Remedy ticked on the Mage at 46-55 s in both kills. No Purge, Tranquilizing Shot or offensive Dispel Magic appears in either kill's action outcomes or rejections (the Discipline Priest's Dispel Magic is ally-only in its profile). Branch taken: 50%."
+    },
+    "wcl_QfJR9AZw13G6kzXP_14": {
+      "title": "Warcraft Logs report QfJR9AZw13G6kzXP fight 14: Maloriak 10N kill (Blue, Red, Green)",
+      "publisher": "classic.warcraftlogs.com",
+      "url": "https://classic.warcraftlogs.com/reports/QfJR9AZw13G6kzXP?fight=14",
+      "published": "2024-10-19",
+      "accessed": "2026-09-30",
+      "mode": "10N",
+      "claim": "Maloriak, Normal, 10 players, kill, 175.7 s, raid item level 356.0; Blood DK boss tank Darthkrayt (56 of 57 Maloriak melee rows), Guardian add tank; per-spec DPS (View Unfiltered Damage); opening, Prime Subject melee.",
+      "extraction": "GPT-6.1 Sol via the Codex Chrome plugin in the user Chrome (profile Runiir), one own tab; no check appeared. Reference read ~/.cache/wcl_t11_refs/maloriak.json (DVC artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc)."
+    },
+    "wcl_r3_sol_20260930": {
+      "title": "Round-3 Maloriak 10N WCL census: openings, Biting Chill, health, Green, fourth vial, Remedy ticks, Berserk, add melee, Rend and spell values",
+      "publisher": "classic.warcraftlogs.com (reports listed in each value)",
+      "accessed": "2026-09-30",
+      "mode": "10N",
+      "route": "codex exec -m gpt-6.1-sol with the Codex Chrome plugin in the user Chrome (profile Runiir), one own tab per task; tasks A-E started 10:38 UTC, lost when Chrome exited at about 10:45-10:49 UTC (the plugin reported no browser); Chrome was relaunched with the same profile at 10:50 UTC and tasks F (10:52-) and G (11:16-11:47) ran sequentially. No verification check appeared.",
+      "reports": [
+        "3pvXdMVntcjxygW4-13",
+        "4ZHnxmF2AdMcKWkR-6",
+        "FTqPwYMA2DQd4Gah-24",
+        "LPwYhmyM4DVZApjd-24",
+        "M6vd3W7BhkLcTwjF-22",
+        "MxFq7TRbvnjGY1hJ-34",
+        "NYcJZtHd6baDC41p-28",
+        "QfJR9AZw13G6kzXP-14",
+        "VL3fW9wNm2PRJDYt-13",
+        "WJNzVg2qwD7FYGCc-16",
+        "WJgLFqnDM6kAQfrK-9",
+        "XzVpNLkxaAFG3DjW-18",
+        "ZyH2KkjchMRTdXga-33",
+        "cCXgM3dx9YGKaDt7-28",
+        "cDQCyb4B71Wj9dV8-15",
+        "h1LaC3FZ8BwPrbXW-18",
+        "hQx8Gp3Rkq4AfwYP-28",
+        "hmAcWCt3njMR4HFT-12",
+        "jJg8hQYKATmnFrVq-22",
+        "njPtX9aTp2R4GVM1-32",
+        "ryA8T6mnvhZ9a7pM-25"
+      ],
+      "raw_capture": "~/.cache/maloriak_wcl_r3/result{A,B,C,D,E,F,G}.json (scratch; publish through DVC per raid-evidence-lifecycle)",
+      "selection": "Kills 2024-10-01..2025-02-20 from the Maloriak 10N rankings (zone 1023, encounter 1025) as a discovery index, each verified on its fight page (Normal, 10 player, kill)."
+    },
+    "db_readback_20260930": {
+      "title": "Live world database read-back (172.20.0.2 world), 2026-09-30",
+      "publisher": "repository runtime database",
+      "accessed": "2026-09-30",
+      "claims": [
+        "spell_custom_attr 77679, 92968, 92969, 92970: attributes 8 (SPELL_ATTR0_CU_SHARE_DAMAGE) for every mode",
+        "spell_script_names binds all 12 registered spell_maloriak_* scripts (77569, 77716, 77786, 77925, 77932, 77934, 77937, 77938, 77991, 78206, 89798, 92720, 92737, 92831, 92837, 92971-92973, 93018, 93022, 97693); none for Remedy 77912/92965-92967",
+        "creature_template: 41378 DamageModifier 9.5, HealthModifier 230; 41440 1 / 2.8; 41841 1 / 100; 49974/49980/49986 DamageModifier 1; ScriptNames boss_maloriak, npc_maloriak_experiment, npc_maloriak_flash_freeze, npc_maloriak_vile_swill, npc_maloriak_lord_victor_nefarius, npc_maloriak_magma_jet"
+      ]
+    },
+    "client_442_59185_rend_berserk_remedy_20260930": {
+      "title": "Cataclysm Classic 4.4.2.59185 client rows for Rend 78034/78043, Berserk 64238 and Remedy 77912",
+      "publisher": "wago.tools DB2 CSV export (build 4.4.2.59185, enUS)",
+      "accessed": "2026-09-30",
+      "command": "pixi run python -m tools.raid_program.extract_442_client_spell_rows --output <path> --follow-triggers --spell-id 78034 (then --spell-id 64238, --spell-id 77912)",
+      "claims": [
+        "Rend 78034: 18 s, CumulativeAura 100, aura 227 period 3 s triggering 78043 with base points 1000 (10N), 2000 (25N), 1500 (10H), 3000 (25H); 4.3.4 SpellEffect.dbc matches (effect 77550/77559)",
+        "Berserk 64238: +900% damage done (aura 79), +150% haste (aura 138), 30 min; present in the runtime 4.3.4 DBC",
+        "Remedy 77912 effect 0: aura 8, 25,000 per 1 s (10N), 75,000 (25N), 50,000 (10H), 150,000 (25H); flat in the client, effect 1 energize 2,000"
+      ]
+    },
+    "scoreboard_r02_20260930": {
+      "title": "Scoreboard blackwing_descent_10n_maloriak label blackwing_descent_10n-r02-a82a035b81 (3 counted native clears, 409-gear roster)",
+      "publisher": "tools.raid_program.scoreboard show",
+      "accessed": "2026-09-30",
+      "claim": "encounter fidelity (informational): Maloriak after-attacker mean 49,326 = 1.02x WCL 48,574 in 3 of 3 kills (the promoted DamageModifier 9.5); kill time 194.3 +- 4.7 s"
+    },
+    "wcl_maloriak_10n_post_cutoff_20260930": {
+      "title": "Round-3 fix: Maloriak 10N kills after the 2025-02-20 hotfix cutoff, and the two default-view references re-read unfiltered",
+      "publisher": "classic.warcraftlogs.com (reports listed below)",
+      "accessed": "2026-09-30",
+      "mode": "10N",
+      "route": "codex exec -m gpt-6.1-sol with the Codex Chrome plugin in the user Chrome (profile Runiir), one own tab (88059018, closed at the end); 85 page loads, no verification check. The run started 14:05 UTC and finished 14:54 UTC; an earlier attempt (13:25 UTC) crashed on a model-capacity error without saving.",
+      "reports": [
+        "fpZ2dVPa1TANY69G-3",
+        "H7NA9PFKgfkCQntm-12",
+        "7PT6hQ3wBqXmdtcH-49",
+        "V2dvWRwtBmA6rk1H-30",
+        "9r3MBf1X4GkNAZbJ-45"
+      ],
+      "dates": {
+        "fpZ2dVPa1TANY69G-3": "2025-05-13",
+        "H7NA9PFKgfkCQntm-12": "2025-05-13",
+        "7PT6hQ3wBqXmdtcH-49": "2025-04-06",
+        "V2dvWRwtBmA6rk1H-30": "2025-03-02",
+        "9r3MBf1X4GkNAZbJ-45": "2025-04-16"
+      },
+      "durations_sec": {
+        "fpZ2dVPa1TANY69G-3": 212.8,
+        "H7NA9PFKgfkCQntm-12": 156.1,
+        "7PT6hQ3wBqXmdtcH-49": 150.3,
+        "V2dvWRwtBmA6rk1H-30": 160,
+        "9r3MBf1X4GkNAZbJ-45": 173.1
+      },
+      "raid_item_level": {
+        "fpZ2dVPa1TANY69G-3": 389.4,
+        "H7NA9PFKgfkCQntm-12": 399.3,
+        "7PT6hQ3wBqXmdtcH-49": 399.5,
+        "V2dvWRwtBmA6rk1H-30": 383.5,
+        "9r3MBf1X4GkNAZbJ-45": 400.2
+      },
+      "first_vial": {
+        "fpZ2dVPa1TANY69G-3": "red",
+        "H7NA9PFKgfkCQntm-12": "red",
+        "7PT6hQ3wBqXmdtcH-49": "red",
+        "V2dvWRwtBmA6rk1H-30": "blue",
+        "9r3MBf1X4GkNAZbJ-45": "blue"
+      },
+      "reread_references": [
+        "MxFq7TRbvnjGY1hJ-fight34",
+        "VL3fW9wNm2PRJDYt-fight13"
+      ],
+      "selection": "part_b: Maloriak Normal 10 Player kills (encounter 1025) dated on or after 2025-02-21 from the rankings, any gear, preferring long kills with three vials; each verified on its fight page (kill, difficulty 3, size 10). Three primary kills carry a full ten-tick Remedy; two supplemental kills were kept with all their rows. part_a: MxFq7TRbvnjGY1hJ fight 34 and VL3fW9wNm2PRJDYt fight 13, every player row in the default and the View Unfiltered Damage (options=8192) views.",
+      "claims": [
+        "Five 10N kills 2025-03-02..2025-05-13 (150.3-212.8 s, raid item level 383.5-400.2): Maloriak cast rows with fight-relative times (Cast rows; Begin Cast only where canceled), Biting Chill and Flash Freeze applications and damage recipients, Remedy heal ticks per aura lifetime. Boss maximum health was not displayed; no kill reached Berserk.",
+        "Gear-independent mechanics only are compared (timers, target counts, base values); health and DPS of these overgeared kills are not."
+      ],
+      "raw_capture": "artifacts/cata_raid_program/wcl_round3_maloriak_bwd10n_20260930.tar.gz",
+      "publication": "Archive built 2026-09-30 from ~/.cache/wcl_r3fix/maloriak_*, common_head.txt, run_maloriak.sh and the comparison script; the coordinator runs dvc add / dvc push."
+    },
+    "official_hotfix_audit_20250113_20250220": {
+      "title": "Official Cataclysm Classic hotfix and patch-note audit for 2025-01-13..2025-02-20 (Blackwing Descent, Maloriak, tier-11 raids, raid tuning, global encounter changes)",
+      "publisher": "Blizzard Entertainment (us.forums.blizzard.com, worldofwarcraft.blizzard.com)",
+      "accessed": "2026-09-30",
+      "interval": [
+        "2025-01-13",
+        "2025-02-20"
+      ],
+      "route": "Same GPT-6.1 Sol run as wcl_maloriak_10n_post_cutoff_20260930 (part_c).",
+      "sources_read": [
+        {
+          "url": "https://us.forums.blizzard.com/en/wow/t/cataclysm-classic-hotfixes-june-27/1843458",
+          "date_range_covered": "2024-05-01..2025-06-27; complete edited opening hotfix list read. No dated entry from 2025-01-13 through 2025-02-20; list jumps from 2024-12-11 to 2025-02-21."
+        },
+        {
+          "url": "https://us.forums.blizzard.com/en/wow/t/cataclysm-classic-hotfixes-june-27/1843458/555",
+          "date_range_covered": "2024-12-19..2025-03-27 surrounding posts loaded; January 2, 6, 8 and 21 player replies followed by February 21 official hotfix content posted February 22."
+        },
+        {
+          "url": "https://worldofwarcraft.blizzard.com/en-us/news/24148555/hotfixes-february-21-2025",
+          "date_range_covered": "2024-11-01..2025-02-21. Audited dated sections 2025-01-13, 01-14, 01-21, 01-23, 01-30, 02-04, 02-11, 02-13, 02-14; none contains a Cataclysm Classic subsection. Next Cataclysm section is 02-21 outside requested interval."
+        },
+        {
+          "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+          "date_range_covered": "2025-02-18; full official Version 4.4.2 Hour of Twilight notes read."
+        },
+        {
+          "url": "https://worldofwarcraft.blizzard.com/news/24173042/",
+          "date_range_covered": "Current article dated 2025-02-25; describes 02-18 patch, 02-20 Dragon Soul release, 02-25 Alizabal. Outside requested publication interval; no tier 11 tuning or global encounter change."
+        },
+        {
+          "url": "https://worldofwarcraft.blizzard.com/news/24177514/wow-weekly-upgrade-your-mists-of-pandaria-classic%E2%84%A2-adventures-and-more",
+          "date_range_covered": "2025-02-21; Hour of Twilight section and linked source inspected, outside requested interval."
+        }
+      ],
+      "entries": [],
+      "none_found": true,
+      "claim": "No official entry dated 2025-01-13 through 2025-02-20 mentions Blackwing Descent, Maloriak, a tier-11 raid, raid boss tuning or a global encounter change: the Cataclysm Classic Hotfixes thread list jumps from 2024-12-11 to 2025-02-21, the hotfix news article has no Cataclysm Classic subsection in its dated sections 2025-01-13..2025-02-14, and the full 4.4.2 patch notes (2025-02-18) have no tier-11 or Maloriak entry.",
+      "limitation": "A document audit covers published hotfixes only; an unannounced server-side change is not excluded by it, which is why the post-cutoff kills are compared as well (wcl_maloriak_10n_post_cutoff_20260930).",
+      "raw_capture": "artifacts/cata_raid_program/wcl_round3_maloriak_bwd10n_20260930.tar.gz"
     }
   },
   "mode_matrix": {
@@ -1196,6 +1359,1522 @@
       ],
       "value": "Add switch at 50% boss health (was 30%) on the user's decision; everything else in the switch is unchanged (Blood DK keeps full damage, no Remedy dispel until every add is dead and the chambers are empty, Misdirection/Tricks to the Feral, the Feral kites, 180 s cap).",
       "budget": "From 50% to 25% is 4.94M HP on 10N. Round-1 hold damage was 38-48k DPS (Blood DK 23-31k, the rest DoT ticks and procs from before the hold) against Remedy's 10.4k average (250k every 24 s). With DoTs expired (no refresh in the hold): about 13-21k net, 235 s or more to 25%. Even if the other 15-17k continued: about 130 s. The hold should last about two minutes (WCL last releases at about 150-165 s; 50% comes near 40 s in round 1)."
+    },
+    {
+      "key": "pre_vial_opening_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_QfJR9AZw13G6kzXP_14",
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_ZyH2KkjchMRTdXga_33"
+      ],
+      "value": "19 10N kills (first vial Red 12, Blue 7). Every opening begins an Arcane Storm 10.9-14.9 s after the pull. The next action begins about 3.2 s after the storm begin (1.6-2.1 s after the interrupt where it was read). Slots at 14.1-16.4 s: Release Aberrations 4, Remedy 4 (the cast never begins before 15.7 s). Slots at 17.4-18.1 s: the vial 7, Remedy 3, Release 1. No slot fell between 16.4 and 17.4 s. The first throw begins 1.2-1.7 s after a Remedy and 1.6-1.7 s after a Release begins, else at the slot. Blue openings also carry Release (QfJR 14, ryA8 25) and Remedy (LPwY 24), so the round-2 \"Red openings only\" reading is withdrawn.",
+      "openings": [
+        {
+          "report": "MxFq7TRbvnjGY1hJ",
+          "fight": 34,
+          "date": "2024-10-28",
+          "first_vial": "red",
+          "storm_begin_s": 13.1,
+          "next_action": "remedy",
+          "next_begin_s": 16.4,
+          "throw_begin_s": 18.0
+        },
+        {
+          "report": "VL3fW9wNm2PRJDYt",
+          "fight": 13,
+          "date": "2024-10-21",
+          "first_vial": "red",
+          "storm_begin_s": 12.6,
+          "next_action": "release",
+          "next_begin_s": 15.8,
+          "throw_begin_s": 17.5
+        },
+        {
+          "report": "ZyH2KkjchMRTdXga",
+          "fight": 33,
+          "date": "2024-10-20",
+          "first_vial": "red",
+          "storm_begin_s": 14.786,
+          "next_action": "remedy",
+          "next_begin_s": 18.008,
+          "throw_begin_s": 19.623
+        },
+        {
+          "report": "XzVpNLkxaAFG3DjW",
+          "fight": 18,
+          "date": "2024-10-22",
+          "first_vial": "red",
+          "storm_begin_s": 10.9,
+          "next_action": "release",
+          "next_begin_s": 15.7,
+          "throw_begin_s": 17.4
+        },
+        {
+          "report": "3pvXdMVntcjxygW4",
+          "fight": 13,
+          "date": "2024-10-26",
+          "first_vial": "red",
+          "storm_begin_s": 14.4,
+          "next_action": "remedy",
+          "next_begin_s": 17.7,
+          "throw_begin_s": 19.3
+        },
+        {
+          "report": "h1LaC3FZ8BwPrbXW",
+          "fight": 18,
+          "date": "2024-10-01",
+          "first_vial": "blue",
+          "storm_begin_s": 14.3,
+          "next_action": "vial",
+          "next_begin_s": 17.5,
+          "throw_begin_s": 17.5
+        },
+        {
+          "report": "hmAcWCt3njMR4HFT",
+          "fight": 12,
+          "date": "2024-10-23",
+          "first_vial": "blue",
+          "storm_begin_s": 14.4,
+          "next_action": "vial",
+          "next_begin_s": 17.6,
+          "throw_begin_s": 17.6
+        },
+        {
+          "report": "cCXgM3dx9YGKaDt7",
+          "fight": 28,
+          "date": "2024-10-11",
+          "first_vial": "red",
+          "storm_begin_s": 14.9,
+          "next_action": "vial",
+          "next_begin_s": 18.1,
+          "throw_begin_s": 18.1
+        },
+        {
+          "report": "QfJR9AZw13G6kzXP",
+          "fight": 14,
+          "date": "2024-10-19",
+          "first_vial": "blue",
+          "storm_begin_s": 11.195,
+          "next_action": "release",
+          "next_begin_s": 16.063,
+          "throw_begin_s": 17.708
+        },
+        {
+          "report": "M6vd3W7BhkLcTwjF",
+          "fight": 22,
+          "date": "2025-01-12",
+          "first_vial": "red",
+          "storm_begin_s": 14.565,
+          "next_action": "vial",
+          "next_begin_s": 17.797,
+          "throw_begin_s": 17.797
+        },
+        {
+          "report": "4ZHnxmF2AdMcKWkR",
+          "fight": 6,
+          "date": "2025-01-13",
+          "first_vial": "red",
+          "storm_begin_s": 13.206,
+          "next_action": "remedy",
+          "next_begin_s": 16.422,
+          "throw_begin_s": 17.641
+        },
+        {
+          "report": "WJNzVg2qwD7FYGCc",
+          "fight": 16,
+          "date": "2024-12-29",
+          "first_vial": "red",
+          "storm_begin_s": 12.548,
+          "next_action": "remedy",
+          "next_begin_s": 15.796,
+          "throw_begin_s": 17.481
+        },
+        {
+          "report": "jJg8hQYKATmnFrVq",
+          "fight": 22,
+          "date": "2024-10-27",
+          "first_vial": "blue",
+          "storm_begin_s": 14.485,
+          "next_action": "vial",
+          "next_begin_s": 17.719,
+          "throw_begin_s": 17.719
+        },
+        {
+          "report": "njPtX9aTp2R4GVM1",
+          "fight": 32,
+          "date": "2024-10-29",
+          "first_vial": "red",
+          "storm_begin_s": 14.193,
+          "next_action": "release",
+          "next_begin_s": 17.408,
+          "throw_begin_s": 19.018
+        },
+        {
+          "report": "ryA8T6mnvhZ9a7pM",
+          "fight": 25,
+          "date": "2024-10-19",
+          "first_vial": "blue",
+          "storm_begin_s": 11.117,
+          "next_action": "release",
+          "next_begin_s": 15.978,
+          "throw_begin_s": 17.595
+        },
+        {
+          "report": "hQx8Gp3Rkq4AfwYP",
+          "fight": 28,
+          "date": "2024-10-07",
+          "first_vial": "red",
+          "storm_begin_s": 14.773,
+          "next_action": "vial",
+          "next_begin_s": 18.018,
+          "throw_begin_s": 18.018
+        },
+        {
+          "report": "WJgLFqnDM6kAQfrK",
+          "fight": 9,
+          "date": "2024-10-07",
+          "first_vial": "blue",
+          "storm_begin_s": 14.357,
+          "next_action": "vial",
+          "next_begin_s": 17.603,
+          "throw_begin_s": 17.603
+        },
+        {
+          "report": "LPwYhmyM4DVZApjd",
+          "fight": 24,
+          "date": "2024-10-17",
+          "first_vial": "blue",
+          "storm_begin_s": 12.614,
+          "next_action": "remedy",
+          "next_begin_s": 15.878,
+          "throw_begin_s": 17.5
+        },
+        {
+          "report": "FTqPwYMA2DQd4Gah",
+          "fight": 24,
+          "date": "2024-10-15",
+          "first_vial": "red",
+          "storm_begin_s": 14.551,
+          "next_action": "remedy",
+          "next_begin_s": 19.395,
+          "throw_begin_s": 20.596
+        }
+      ],
+      "native_comparison": "Native before round 3: storm at 14.3 s and the cauldron face at 15.5 s (throw 16.8 s), never a pre-vial Release or Remedy. Round 3 (10N only, boss_maloriak_shared.h PRE_VIAL_*): the storm begin is drawn from these 19 values; 1.9 s after it the script decides for the slot (storm + 3.2 s): before 17 s Release or Remedy 1:1, from 17 s the vial 5/8, Remedy 2/8, Release 1/8, a cast never before 15.7 s, the face 0.3 s after Remedy and 0.4 s after a Release begins (the throw then waits for the 1.5 s cast: 2.8 s after the Release begin versus 1.6-1.7 s live)."
+    },
+    {
+      "key": "biting_chill_targets_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_QfJR9AZw13G6kzXP_14"
+      ],
+      "value": "25 Biting Chill casts in nine 10N kills, one picked player each: every pick was a melee-range player (10 tanks: Blood DK, Protection Paladin, Guardian; 16 melee damage dealers: Assassination, Retribution, Arms, Unholy, Enhancement); never a ranged player or healer. One cast (h1LaC3FZ8BwPrbXW 18, 49.914 s) also applied to an Enhancement Shaman beside the tank: the 3-yd area of the aura (TargetB). Casts 11.3 s apart, the first 12.7-13.4 s after Frost Imbued.",
+      "per_kill": {
+        "MxFq7TRbvnjGY1hJ-34": [
+          {
+            "t": 88.867,
+            "target": "Blood DK (tank)"
+          },
+          {
+            "t": 100.196,
+            "target": "Blood DK (tank)"
+          }
+        ],
+        "ZyH2KkjchMRTdXga-33": [
+          {
+            "t": 90.861,
+            "target": "Assassination"
+          },
+          {
+            "t": 102.169,
+            "target": "Blood DK (tank)"
+          }
+        ],
+        "XzVpNLkxaAFG3DjW-18": [
+          {
+            "t": 90.194,
+            "target": "Arms"
+          },
+          {
+            "t": 101.523,
+            "target": "Assassination"
+          },
+          {
+            "t": 112.848,
+            "target": "Unholy"
+          }
+        ],
+        "3pvXdMVntcjxygW4-13": [
+          {
+            "t": 92.092,
+            "target": "Assassination"
+          },
+          {
+            "t": 103.448,
+            "target": "Assassination"
+          },
+          {
+            "t": 116.385,
+            "target": "Assassination"
+          }
+        ],
+        "h1LaC3FZ8BwPrbXW-18": [
+          {
+            "t": 38.596,
+            "target": "Unholy"
+          },
+          {
+            "t": 49.914,
+            "target": "Protection Paladin (tank) + Enhancement 49.914"
+          },
+          {
+            "t": 61.256,
+            "target": "Unholy"
+          }
+        ],
+        "hmAcWCt3njMR4HFT-12": [
+          {
+            "t": 38.622,
+            "target": "Assassination"
+          },
+          {
+            "t": 49.992,
+            "target": "Arms"
+          },
+          {
+            "t": 62.906,
+            "target": "Blood DK (tank)"
+          }
+        ],
+        "cCXgM3dx9YGKaDt7-28": [
+          {
+            "t": 89.294,
+            "target": "Protection Paladin (tank)"
+          },
+          {
+            "t": 100.621,
+            "target": "Protection Paladin (tank)"
+          },
+          {
+            "t": 111.945,
+            "target": "Protection Paladin (tank)"
+          }
+        ],
+        "QfJR9AZw13G6kzXP-14": [
+          {
+            "t": 38.776,
+            "target": "Retribution"
+          },
+          {
+            "t": 50.125,
+            "target": "Retribution"
+          },
+          {
+            "t": 63.083,
+            "target": "Guardian (tank)"
+          }
+        ],
+        "VL3fW9wNm2PRJDYt-13": [
+          {
+            "t": 88.669,
+            "target": "Guardian (tank)"
+          },
+          {
+            "t": 100.01,
+            "target": "Retribution"
+          },
+          {
+            "t": 111.37,
+            "target": "Retribution"
+          }
+        ]
+      },
+      "native_comparison": "Native picked a random player within 60 yd for a 10-yd spell, so a ranged pick failed the cast. Round 3 (10N): the pick is a random player within 10 yd (boss_maloriak.cpp EVENT_BITING_CHILL). Cadence 11 s and the 13-14 s first cast already match. Resolves the Wowhead \"three random raid members\" versus 2012 \"one melee-range target (10-man)\" conflict for 10N in favour of the 2012 guide."
+    },
+    {
+      "key": "health_10N_wcl",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_QfJR9AZw13G6kzXP_14"
+      ],
+      "value": "Maloriak 10N damage taken minus Remedy healing received: VL3fW9wNm2PRJDYt 13 24.92M - 5.16M = 19.76M; QfJR9AZw13G6kzXP 14 21.26M - 1.50M = 19.76M (WCL two-decimal display); the resources row at 0.017 s reads HP 19.7m 99.9%. Native 19,755,160 matches; Wowhead 4.4.2 24.7M does not.",
+      "native_comparison": "Native 10N health confirmed; no change."
+    },
+    {
+      "key": "green_phase_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "value": "Green throw to Slime Imbued 7.2-7.3 s; Debilitating Slime 15.0 s on every player (125.122-140.131). After Slime Imbued: Arcane Storm 4.0-4.5 s (native 5 s), Remedy 7.3-10.9 s (native 7.5 s), Release Aberrations begin 7.3-10.5 s (native 9 s; four kills, ledger green_release_begins_10N), repeats 14.5-17.8 s. At Slime Imbued every Growth Catalyst on the Aberrations, their own included, was removed (02:05.122 own, 02:05.148 spread); one survivor had its own again 5.2 s later (02:10.332). Guides: the slime removes Growth Catalyst (both Icy Veins pages). After the 2025-02-20 cutoff (five kills, wcl_maloriak_10n_post_cutoff_20260930): Arcane Storm Cast 3.66-6.57 s (begin 3.13-6.10 s after the 0.474-0.531 s begin-to-cast offset), Remedy Cast 7.29, 8.02 and 8.06 s and once 14.15 s (instant, so also its fire times), Release begin 6.415 (a canceled Begin Cast), 8.905, 9.312 (canceled) and 9.701 s (ledger green_release_begins_10N).",
+      "native_comparison": "Native kept Growth Catalyst through the slime. Round 3 (10N; the guides say every mode, the WCL evidence is 10N): StripGrowthCatalystForSlime removes it from every living Aberration and Prime Subject at the debuff and each survivor casts it again 5.2 s later. Green timers (10N only): round 3 fixed the storm at 4 s; the round-3 fix draws the storm uniformly over 3.1-6.1 s, the Remedy over 7.3-14.2 s and the Release begin over 6.415-10.505 s (ScheduleGreenPhaseCasts); the other modes keep 5 / 7.5 / 9 s."
+    },
+    {
+      "key": "green_release_begins_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "value": "First Release Aberrations begin after Slime Imbued in every 10N Green phase that logged one (eleven phases: six before the 2025-02-20 cutoff, five after). A Begin Cast row is a begin as logged, canceled begins included; a Cast row is converted by subtracting its 1.5 s cast (Spell.dbc 77569, 1500 ms; 32 observed Begin-to-Cast pairs span 1.479-1.565 s). Pre-cutoff: 7.299 (3pvXdMVntcjxygW4 13, Begin Cast 135.836 s after Slime Imbued at 128.537 s), 7.666 (cDQCyb4B71Wj9dV8 15), 8.888 (VL3fW9wNm2PRJDYt 13, Begin Cast displayed as Canceled) and 10.505 s (NYcJZtHd6baDC41p 28). Post-cutoff (wcl_maloriak_10n_post_cutoff_20260930): 6.415 (7PT6hQ3wBqXmdtcH 49, a canceled Begin Cast at 131.307 s against Slime Imbued at 124.892 s, no separate failure timestamp), 8.905 (H7NA9PFKgfkCQntm 12, Cast 135.959 s), 9.312 (9r3MBf1X4GkNAZbJ 45, a canceled Begin Cast) and 9.701 s (V2dvWRwtBmA6rk1H 30, Cast 135.556 s). The combined range is 6.415-10.505 s; both bounds are Begin Cast rows. Three phases reached phase two before any Release began (censored, not bounds): XzVpNLkxaAFG3DjW 18 at 6.061 s, hmAcWCt3njMR4HFT 12 at 6.888 s and fpZ2dVPa1TANY69G 3 at about 7.27 s. The repeat begins (26.676, 28.302, 28.723 and 27.112 s, the last canceled) follow the 17-18 s repeat timer and are not part of the first-begin range. The earlier pre-cutoff range 7.7-10.5 s omitted the 7.299 s round-2 row, and the first round-3 closure omitted the 6.415 s canceled begin.",
+      "rows": [
+        {
+          "report": "3pvXdMVntcjxygW4",
+          "fight": 13,
+          "period": "pre_cutoff",
+          "imbue_s": 128.537,
+          "row_type": "Begin Cast",
+          "row_s": 135.836,
+          "canceled": false,
+          "begin_s": 7.299
+        },
+        {
+          "report": "cDQCyb4B71Wj9dV8",
+          "fight": 15,
+          "period": "pre_cutoff",
+          "imbue_s": 125.046,
+          "row_type": "Begin Cast",
+          "row_s": 132.712,
+          "canceled": false,
+          "begin_s": 7.666
+        },
+        {
+          "report": "VL3fW9wNm2PRJDYt",
+          "fight": 13,
+          "period": "pre_cutoff",
+          "imbue_s": 125.122,
+          "row_type": "Begin Cast",
+          "row_s": 134.01,
+          "canceled": true,
+          "begin_s": 8.888
+        },
+        {
+          "report": "NYcJZtHd6baDC41p",
+          "fight": 28,
+          "period": "pre_cutoff",
+          "imbue_s": 124.986,
+          "row_type": "Begin Cast",
+          "row_s": 135.491,
+          "canceled": false,
+          "begin_s": 10.505
+        },
+        {
+          "report": "7PT6hQ3wBqXmdtcH",
+          "fight": 49,
+          "period": "post_cutoff",
+          "imbue_s": 124.892,
+          "row_type": "Begin Cast",
+          "row_s": 131.307,
+          "canceled": true,
+          "begin_s": 6.415
+        },
+        {
+          "report": "H7NA9PFKgfkCQntm",
+          "fight": 12,
+          "period": "post_cutoff",
+          "imbue_s": 125.554,
+          "row_type": "Cast",
+          "row_s": 135.959,
+          "canceled": false,
+          "begin_s": 8.905
+        },
+        {
+          "report": "9r3MBf1X4GkNAZbJ",
+          "fight": 45,
+          "period": "post_cutoff",
+          "imbue_s": 124.936,
+          "row_type": "Begin Cast",
+          "row_s": 134.248,
+          "canceled": true,
+          "begin_s": 9.312
+        },
+        {
+          "report": "V2dvWRwtBmA6rk1H",
+          "fight": 30,
+          "period": "post_cutoff",
+          "imbue_s": 124.355,
+          "row_type": "Cast",
+          "row_s": 135.556,
+          "canceled": false,
+          "begin_s": 9.701
+        }
+      ],
+      "censored": [
+        {
+          "report": "XzVpNLkxaAFG3DjW",
+          "fight": 18,
+          "period": "pre_cutoff",
+          "imbue_s": 126.24,
+          "phase_two_begin_s": 132.301,
+          "no_release_begin_before_s": 6.061
+        },
+        {
+          "report": "hmAcWCt3njMR4HFT",
+          "fight": 12,
+          "period": "pre_cutoff",
+          "imbue_s": 125.696,
+          "phase_two_begin_s": 132.584,
+          "no_release_begin_before_s": 6.888
+        },
+        {
+          "report": "fpZ2dVPa1TANY69G",
+          "fight": 3,
+          "period": "post_cutoff",
+          "imbue_s": 130.014,
+          "phase_two_begin_s": 137.282,
+          "no_release_begin_before_s": 7.268,
+          "note": "Release All Minions has a Cast row only (138.782 s); its begin is the Cast row minus the 1.5 s cast."
+        }
+      ],
+      "repeats": [
+        {
+          "report": "VL3fW9wNm2PRJDYt",
+          "fight": 13,
+          "row_type": "Begin Cast",
+          "canceled": false,
+          "begin_s": 26.676
+        },
+        {
+          "report": "NYcJZtHd6baDC41p",
+          "fight": 28,
+          "row_type": "Begin Cast",
+          "canceled": false,
+          "begin_s": 28.302
+        },
+        {
+          "report": "cDQCyb4B71Wj9dV8",
+          "fight": 15,
+          "row_type": "Begin Cast",
+          "canceled": false,
+          "begin_s": 28.723
+        },
+        {
+          "report": "9r3MBf1X4GkNAZbJ",
+          "fight": 45,
+          "row_type": "Begin Cast",
+          "canceled": true,
+          "begin_s": 27.112
+        }
+      ],
+      "bounds_s": {
+        "min": 6.415,
+        "max": 10.505
+      },
+      "native_comparison": "Native before the fix: EVENT_RELEASE_ABERRATIONS a fixed 9 s after Slime Imbued, which could not reproduce a Release that begins 6.415 s after the imbue (7PT6hQ3wBqXmdtcH 49) and needs an interrupt then. Round-3 fix (10N only): ScheduleGreenPhaseCasts draws it uniformly over 6.415-10.505 s (GREEN_RELEASE_10N_MIN_MS / MAX_MS in boss_maloriak_shared.h, unrounded because both bounds are Begin Cast rows), after the storm range (3.1-6.1 s) and overlapping the Remedy range (7.3-14.2 s). The kills show both orders (Release first: 3pvXdMVntcjxygW4 13, cDQCyb4B71Wj9dV8 15, 7PT6hQ3wBqXmdtcH 49, 9r3MBf1X4GkNAZbJ 45; Remedy first: VL3fW9wNm2PRJDYt 13, NYcJZtHd6baDC41p 28, H7NA9PFKgfkCQntm 12, V2dvWRwtBmA6rk1H 30), and a Remedy due during the Release cast waits for it because UpdateAI runs no event while Maloriak casts (3pvXdMVntcjxygW4 13 cast Remedy 0.13 s after the Release cast ended). 25N/10H/25H keep the fixed 9 s and draw nothing."
+    },
+    {
+      "key": "fourth_vial_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930"
+      ],
+      "value": "Two long 10N kills with a vial after Green: NYcJZtHd6baDC41p 28 (332 s): Slime Imbued 124.986, Throw Red Bottle 166.640 (41.65 s); cDQCyb4B71Wj9dV8 15 (426 s): Slime Imbued 125.046, Throw Blue Bottle 166.720 (41.67 s). The Red/Blue imbue-to-throw intervals were 41.7-42.1 s (fights 34 and 13).",
+      "native_comparison": "Native: EVENT_FACE_TO_CAULDRON 40 s after every imbue plus the 1.3 s throw = 41.3 s. Matches; resolves conflicts.green_duration for 10N (the 2012 36 s and 2024 about 45 s readings do not fit)."
+    },
+    {
+      "key": "remedy_ramp_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "client_442_59185_rend_berserk_remedy_20260930"
+      ],
+      "value": "Remedy heal ticks, VL3fW9wNm2PRJDYt 13: cast 43.3 s: 22,500, 45,000, 67,500, 90,000, 112,500, 135,000, 175,000, 180,000, 202,500, 225,000; cast 64.4 s: 22,500 ... 135,000, 175,000, 200,000, 225,000, 250,000. Tick n heals 25,000 x n (x 0.9 while a -10% healing debuff was up): 1.25-1.32M per full cast, about 5x the flat client row (250,000). Removals in that kill: two expiries at 10 s, then Purge (137.7 s) and Tranquilizing Shot (194.4 s).",
+      "native_comparison": "Native: the flat client heal (25,000 per s). Round 3: spell_maloriak_remedy scales each tick by its tick number (boss_maloriak_spells.cpp), bound by sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql (promoted 2026-09-30). The Wowhead 4.4.2 \"increasing each tick\" claim is confirmed; bound to the 10N id 77912 only (25N/10H/25H keep the flat heal)."
+    },
+    {
+      "key": "enrage_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "client_442_59185_rend_berserk_remedy_20260930",
+        "icy_original"
+      ],
+      "value": "cDQCyb4B71Wj9dV8 15 (10N kill, 7:06): Berserk 64238 applied to Maloriak at 7:02.551 of the fight, removed at the kill (7:06.759). The 2012 guide: 7 min on normal. NYcJZtHd6baDC41p 28 (332 s) shows none.",
+      "native_comparison": "Native had no enrage. Round 3 (10N only): Berserk 64238 at 7 min after engage (a countdown in UpdateAI, because the cauldron visit resets the event map). 25N/10H/25H stay without one."
+    },
+    {
+      "key": "add_melee_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_QfJR9AZw13G6kzXP_14"
+      ],
+      "value": "Aberration 41440: 0.802 <= m <= 0.824 from 30 landed rows (VL3fW9wNm2PRJDYt 13, 0-72 s, U 5,658-8,809) with k = Growth Catalyst auras on the attacker (own included), no attacker-side debuff; mean 0.798; staged 0.81. Prime Subject 41841: 3.394 <= m <= 3.627 from 16 rows to 156 s (VL3 13 and QfJR 14, Demoralizing Roar from 147.6 s in QfJR); mean 3.46; staged 3.5. The 8 later QfJR rows are left out: their counts of 4-5 auras include Aberrations that were dying (a dying caster shows no remove row); with them the bounds cross.",
+      "formula": "U / (roll_max * 1.1^k * 1.01 * r) <= m <= U / (roll_min * 1.1^k * 1.01 * r); r = 0.9 under Demoralizing Roar",
+      "native_roll_at_modifier_1": {
+        "aberration": [
+          5953.7,
+          8901.6
+        ],
+        "prime_subject": [
+          5965.9,
+          8913.9
+        ]
+      },
+      "samples": {
+        "aberration_VL3fW9wNm2PRJDYt_13": {
+          "rows": [
+            {
+              "t": 23.451,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 8316,
+              "hit_type": null
+            },
+            {
+              "t": 25.442,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Miss"
+            },
+            {
+              "t": 25.938,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 6139,
+              "hit_type": null
+            },
+            {
+              "t": 27.447,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 5977,
+              "hit_type": null
+            },
+            {
+              "t": 28.45,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 7259,
+              "hit_type": null
+            },
+            {
+              "t": 29.454,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Miss"
+            },
+            {
+              "t": 30.449,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 6198,
+              "hit_type": null
+            },
+            {
+              "t": 31.45,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 7753,
+              "hit_type": null
+            },
+            {
+              "t": 32.442,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 8540,
+              "hit_type": null
+            },
+            {
+              "t": 33.231,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 33.469,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 6039,
+              "hit_type": null
+            },
+            {
+              "t": 34.454,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 6354,
+              "hit_type": null
+            },
+            {
+              "t": 35.246,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": 8502,
+              "hit_type": null
+            },
+            {
+              "t": 35.472,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 8725,
+              "hit_type": null
+            },
+            {
+              "t": 36.466,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 8809,
+              "hit_type": null
+            },
+            {
+              "t": 37.251,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 37.477,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 6596,
+              "hit_type": null
+            },
+            {
+              "t": 38.449,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Miss"
+            },
+            {
+              "t": 39.264,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 39.48,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 7253,
+              "hit_type": null
+            },
+            {
+              "t": 40.468,
+              "source": "Aberration 2",
+              "target": "Orageux",
+              "u": 7964,
+              "hit_type": null
+            },
+            {
+              "t": 41.25,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 41.484,
+              "source": "Aberration 1",
+              "target": "Orageux",
+              "u": 6917,
+              "hit_type": null
+            },
+            {
+              "t": 43.26,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Dodge"
+            },
+            {
+              "t": 45.305,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": 7757,
+              "hit_type": null
+            },
+            {
+              "t": 47.279,
+              "source": "Aberration 3",
+              "target": "Orageux",
+              "u": 6278,
+              "hit_type": null
+            },
+            {
+              "t": 60.626,
+              "source": "Aberration 6",
+              "target": "Orageux",
+              "u": 6820,
+              "hit_type": null
+            },
+            {
+              "t": 61.671,
+              "source": "Aberration 4",
+              "target": "Orageux",
+              "u": 5658,
+              "hit_type": null
+            },
+            {
+              "t": 61.98,
+              "source": "Aberration 5",
+              "target": "Boboops",
+              "u": 6046,
+              "hit_type": null
+            },
+            {
+              "t": 62.627,
+              "source": "Aberration 6",
+              "target": "Orageux",
+              "u": 7150,
+              "hit_type": null
+            },
+            {
+              "t": 63.98,
+              "source": "Aberration 5",
+              "target": "Orageux",
+              "u": 7032,
+              "hit_type": null
+            },
+            {
+              "t": 64.621,
+              "source": "Aberration 6",
+              "target": "Orageux",
+              "u": 8299,
+              "hit_type": null
+            },
+            {
+              "t": 65.979,
+              "source": "Aberration 5",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 66.685,
+              "source": "Aberration 4",
+              "target": "Orageux",
+              "u": 6749,
+              "hit_type": null
+            },
+            {
+              "t": 67.639,
+              "source": "Aberration 6",
+              "target": "Orageux",
+              "u": null,
+              "hit_type": "Parry"
+            },
+            {
+              "t": 67.998,
+              "source": "Aberration 5",
+              "target": "Orageux",
+              "u": 8289,
+              "hit_type": null
+            },
+            {
+              "t": 69.187,
+              "source": "Aberration 4",
+              "target": "Orageux",
+              "u": 6611,
+              "hit_type": null
+            },
+            {
+              "t": 69.638,
+              "source": "Aberration 6",
+              "target": "Orageux",
+              "u": 7124,
+              "hit_type": null
+            },
+            {
+              "t": 70.001,
+              "source": "Aberration 5",
+              "target": "Orageux",
+              "u": 6786,
+              "hit_type": null
+            },
+            {
+              "t": 71.192,
+              "source": "Aberration 4",
+              "target": "Orageux",
+              "u": 8274,
+              "hit_type": null
+            }
+          ],
+          "growth_catalyst": [
+            "00:20.699 Apply Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 1",
+            "00:20.699 Apply Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 2",
+            "00:20.699 Apply Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 3",
+            "00:20.699 Apply Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 3",
+            "00:20.721 Apply Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 1",
+            "00:22.324 Remove Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 3",
+            "00:24.343 Remove Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 1",
+            "00:27.986 Refresh Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 3",
+            "00:29.615 Apply Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 2",
+            "00:29.615 Apply Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 1",
+            "00:34.847 Apply Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 3",
+            "00:34.847 Apply Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 3",
+            "00:36.074 Apply Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 1",
+            "00:36.074 Apply Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 2",
+            "00:41.679 Remove Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 2",
+            "00:41.679 Remove Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 2",
+            "00:41.679 Remove Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 2",
+            "00:41.679 Remove Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 3",
+            "00:41.679 Remove Buff Growth Catalyst Growth Catalyst Aberration 2 → Aberration 1",
+            "00:43.327 Remove Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 1",
+            "00:43.327 Remove Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 1",
+            "00:43.339 Remove Buff Growth Catalyst Growth Catalyst Aberration 1 → Aberration 3",
+            "00:47.529 Remove Buff Growth Catalyst Growth Catalyst Aberration 3 → Aberration 3",
+            "00:57.938 Apply Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 4",
+            "00:58.326 Apply Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 5",
+            "00:58.733 Apply Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 6",
+            "01:01.174 Apply Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 6",
+            "01:03.190 Apply Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 4",
+            "01:03.190 Apply Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 5",
+            "01:06.412 Remove Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 4",
+            "01:06.808 Apply Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 6",
+            "01:08.441 Apply Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 4",
+            "01:11.688 Apply Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 5",
+            "01:12.099 Apply Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 4",
+            "01:19.563 Remove Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 5",
+            "01:19.563 Remove Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 5",
+            "01:19.563 Remove Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 5",
+            "01:19.563 Remove Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 4",
+            "01:19.563 Remove Buff Growth Catalyst Growth Catalyst Aberration 5 → Aberration 6",
+            "01:21.344 Remove Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 6",
+            "01:21.344 Remove Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 6",
+            "01:21.355 Remove Buff Growth Catalyst Growth Catalyst Aberration 6 → Aberration 4",
+            "01:22.733 Remove Buff Growth Catalyst Growth Catalyst Aberration 4 → Aberration 4"
+          ]
+        },
+        "prime_subject_VL3fW9wNm2PRJDYt_13": {
+          "rows": [
+            {
+              "t": 163.138,
+              "source": "Prime Subject 1",
+              "target": "Ûnstûff",
+              "u": 26849,
+              "hit_type": null
+            },
+            {
+              "t": 165.637,
+              "source": "Prime Subject 1",
+              "target": "Labraizz",
+              "u": 36943,
+              "hit_type": null
+            },
+            {
+              "t": 168.036,
+              "source": "Prime Subject 1",
+              "target": "Labraizz",
+              "u": 33607,
+              "hit_type": null
+            },
+            {
+              "t": 170.443,
+              "source": "Prime Subject 1",
+              "target": "Labraizz",
+              "u": 28674,
+              "hit_type": null
+            },
+            {
+              "t": 172.827,
+              "source": "Prime Subject 2",
+              "target": "Orageux",
+              "u": 41401,
+              "hit_type": null
+            },
+            {
+              "t": 172.855,
+              "source": "Prime Subject 1",
+              "target": "Orageux",
+              "u": 28672,
+              "hit_type": null
+            }
+          ],
+          "growth_catalyst": [
+            "02:43.125 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 1",
+            "02:43.125 Apply Buff Growth Catalyst Growth Catalyst Aberration 14 → Prime Subject 1",
+            "02:43.151 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:43.938 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 2",
+            "02:45.565 Remove Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:45.565 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:46.358 Remove Buff Growth Catalyst Growth Catalyst Aberration 14 → Prime Subject 1",
+            "02:51.606 Apply Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 2",
+            "02:51.606 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "02:51.606 Apply Buff Growth Catalyst Growth Catalyst Aberration 13 → Prime Subject 2",
+            "02:53.215 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:53.215 Apply Buff Growth Catalyst Growth Catalyst Aberration 15 → Prime Subject 2",
+            "02:53.215 Apply Buff Growth Catalyst Growth Catalyst Aberration 15 → Prime Subject 1",
+            "02:53.215 Apply Buff Growth Catalyst Growth Catalyst Aberration 14 → Prime Subject 2",
+            "02:53.215 Apply Buff Growth Catalyst Growth Catalyst Aberration 14 → Prime Subject 1",
+            "02:53.638 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 2",
+            "02:56.456 Apply Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 1",
+            "02:56.456 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:56.456 Apply Buff Growth Catalyst Growth Catalyst Aberration 13 → Prime Subject 1",
+            "02:56.456 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 2",
+            "03:14.247 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "03:17.889 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2"
+          ]
+        },
+        "prime_subject_QfJR9AZw13G6kzXP_14": {
+          "rows": [
+            {
+              "t": 143.229,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 27051,
+              "hit_type": null
+            },
+            {
+              "t": 144.029,
+              "source": "Prime Subject 1",
+              "target": "Darthkrayt",
+              "u": 32687,
+              "hit_type": null
+            },
+            {
+              "t": 145.229,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 26444,
+              "hit_type": null
+            },
+            {
+              "t": 146.051,
+              "source": "Prime Subject 1",
+              "target": "Darthkrayt",
+              "u": 33584,
+              "hit_type": null
+            },
+            {
+              "t": 147.229,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 34505,
+              "hit_type": null
+            },
+            {
+              "t": 148.047,
+              "source": "Prime Subject 1",
+              "target": "Darthkrayt",
+              "u": 34719,
+              "hit_type": null
+            },
+            {
+              "t": 149.23,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 32498,
+              "hit_type": null
+            },
+            {
+              "t": 150.047,
+              "source": "Prime Subject 1",
+              "target": "Darthkrayt",
+              "u": null,
+              "hit_type": "Miss"
+            },
+            {
+              "t": 151.247,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 27377,
+              "hit_type": null
+            },
+            {
+              "t": 153.248,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 34342,
+              "hit_type": null
+            },
+            {
+              "t": 155.247,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": null,
+              "hit_type": "Dodge"
+            },
+            {
+              "t": 155.35,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 30224,
+              "hit_type": null
+            },
+            {
+              "t": 157.263,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 23604,
+              "hit_type": null
+            },
+            {
+              "t": 157.364,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": null,
+              "hit_type": "Dodge"
+            },
+            {
+              "t": 159.281,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 39584,
+              "hit_type": null
+            },
+            {
+              "t": 159.347,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 30731,
+              "hit_type": null
+            },
+            {
+              "t": 161.281,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": 28345,
+              "hit_type": null
+            },
+            {
+              "t": 161.364,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 28486,
+              "hit_type": null
+            },
+            {
+              "t": 163.282,
+              "source": "Prime Subject 2",
+              "target": "Âkela",
+              "u": null,
+              "hit_type": "Dodge"
+            },
+            {
+              "t": 163.363,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 40578,
+              "hit_type": null
+            },
+            {
+              "t": 165.364,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 38353,
+              "hit_type": null
+            },
+            {
+              "t": 167.879,
+              "source": "Prime Subject 1",
+              "target": "Âkela",
+              "u": 34082,
+              "hit_type": null
+            }
+          ],
+          "growth_catalyst": [
+            "02:18.804 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 1",
+            "02:18.833 Apply Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 1",
+            "02:18.833 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:19.996 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 2",
+            "02:19.996 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 2",
+            "02:22.029 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:26.051 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:26.051 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:27.263 Remove Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:27.663 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:27.663 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "02:32.530 Remove Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:32.530 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:32.530 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 2",
+            "02:36.164 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "02:36.164 Apply Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:36.164 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:37.764 Apply Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 2",
+            "02:37.764 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:37.764 Apply Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "02:46.678 Remove Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 2",
+            "02:46.678 Remove Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 2",
+            "02:46.678 Remove Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 2",
+            "02:46.678 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 2",
+            "02:47.879 Remove Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:51.913 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 2 → Prime Subject 1",
+            "02:53.146 Remove Buff Growth Catalyst Growth Catalyst Aberration 16 → Prime Subject 1",
+            "02:53.146 Remove Buff Growth Catalyst Growth Catalyst Aberration 18 → Prime Subject 1",
+            "02:53.146 Remove Buff Growth Catalyst Growth Catalyst Aberration 17 → Prime Subject 1",
+            "02:53.146 Apply Buff Growth Catalyst Growth Catalyst Prime Subject 1 → Prime Subject 2"
+          ],
+          "demoralizing_roar_from": 147.579
+        }
+      },
+      "native_comparison": "Both adds ran at DamageModifier 1; set by sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql (promoted 2026-09-30) with the registry patch."
+    },
+    {
+      "key": "prime_subject_rend_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "client_442_59185_rend_berserk_remedy_20260930"
+      ],
+      "value": "Rend 78034 on the add tank: VL3fW9wNm2PRJDYt 13: Prime Subject 2 at 177.268, Prime Subject 1 at 179.293 (stack 2), Prime Subject 2 at 193.425 and 203.129; removes at 182.109, 197.880, 207.982. MxFq7TRbvnjGY1hJ 34: 121.218 and 123.650 (stack 2). First cast 14.1-14.6 s after the Prime Subjects landed (Growth Catalyst 163.1 / 106.6 s); repeats 9.7-16.2 s. No damage rows for 78034 in either kill (the ticks are the triggered 78043). Client: 1,000 per 3 s per stack (10N), 18 s, stacks to 100.",
+      "native_comparison": "Native Prime Subjects cast nothing. Round 3 (10N only): Rend on the victim 14.1-16.5 s after landing, then every 9.7-16.2 s (boss_maloriak_minions.cpp). The early removals (2.8-4.9 s after an application, against the 18 s duration) are unexplained and not modelled; at 1,000 per 3 s the difference is negligible."
+    },
+    {
+      "key": "spell_values_10N_wcl",
+      "source_refs": [
+        "wcl_r3_sol_20260930",
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "Player damage-taken U, VL3fW9wNm2PRJDYt 13: Consuming Flames 4,500 per tick (19,500 after other magic damage), Biting Chill 5,000, Arcane Storm 11,778-12,355 in one tick (client 11,309), Acid Nova 9,075 (client 7,500 x 1.1^2: two Growth Catalyst auras on Maloriak in phase two), Magma Jet 38,239-41,431 (client 37,999).",
+      "native_comparison": "The client base values hold for 10N; the increases fit Growth Catalyst on Maloriak (10% per nearby add) and a small per-target spread. The Consuming Flames growth is the native proc (50% of other magic damage). No change."
+    },
+    {
+      "key": "flash_freeze_targets_10N",
+      "source_refs": [
+        "wcl_r3_sol_20260930"
+      ],
+      "value": "17 players frozen by 16 Flash Freezes in 10 10N kills (one cast in cDQCyb4B71Wj9dV8 15 caught two players standing together): every one a ranged damage dealer or a healer (Survival, Elemental, Balance, Shadow; Holy, Restoration, Discipline), never a tank or a melee player; MxFq7TRbvnjGY1hJ 34 had none. Flash Freeze U 61,709 (client 56,549). Both guides: one ranged player.",
+      "rows": [
+        {
+          "kill": "VL3fW9wNm2PRJDYt-13",
+          "t": 109.751,
+          "target": "Scrotome",
+          "spec": "Hunter (Survival)"
+        },
+        {
+          "kill": "ZyH2KkjchMRTdXga-33",
+          "t": 94.098,
+          "target": "Suebi",
+          "spec": "Druid (Restoration)"
+        },
+        {
+          "kill": "XzVpNLkxaAFG3DjW-18",
+          "t": 93.457,
+          "target": "Deruku",
+          "spec": "Paladin (Holy)"
+        },
+        {
+          "kill": "XzVpNLkxaAFG3DjW-18",
+          "t": 111.244,
+          "target": "Deruku",
+          "spec": "Paladin (Holy)"
+        },
+        {
+          "kill": "3pvXdMVntcjxygW4-13",
+          "t": 118,
+          "target": "Shockstraps",
+          "spec": "Shaman (Elemental)"
+        },
+        {
+          "kill": "h1LaC3FZ8BwPrbXW-18",
+          "t": 58.023,
+          "target": "Adachi",
+          "spec": "Druid (Balance)"
+        },
+        {
+          "kill": "hmAcWCt3njMR4HFT-12",
+          "t": 43.479,
+          "target": "Anøør",
+          "spec": "Druid (Restoration)"
+        },
+        {
+          "kill": "hmAcWCt3njMR4HFT-12",
+          "t": 61.3,
+          "target": "Visdoom",
+          "spec": "Priest (Shadow)"
+        },
+        {
+          "kill": "cCXgM3dx9YGKaDt7-28",
+          "t": 92.533,
+          "target": "Klaasou",
+          "spec": "Hunter (Survival)"
+        },
+        {
+          "kill": "cCXgM3dx9YGKaDt7-28",
+          "t": 110.335,
+          "target": "Roselys",
+          "spec": "Priest (Discipline)"
+        },
+        {
+          "kill": "QfJR9AZw13G6kzXP-14",
+          "t": 61.477,
+          "target": "Hornetosi",
+          "spec": "Priest (Shadow)"
+        },
+        {
+          "kill": "NYcJZtHd6baDC41p-28",
+          "t": 61.076,
+          "target": "Izumiki",
+          "spec": "Paladin (Holy)"
+        },
+        {
+          "kill": "NYcJZtHd6baDC41p-28",
+          "t": 260.499,
+          "target": "Kelwindria",
+          "spec": "Priest (Discipline)"
+        },
+        {
+          "kill": "cDQCyb4B71Wj9dV8-15",
+          "t": 58.255,
+          "target": "Midnightanni",
+          "spec": "Shaman (Elemental)"
+        },
+        {
+          "kill": "cDQCyb4B71Wj9dV8-15",
+          "t": 58.255,
+          "target": "Duckrodgers",
+          "spec": "Paladin (Holy)"
+        },
+        {
+          "kill": "cDQCyb4B71Wj9dV8-15",
+          "t": 190.971,
+          "target": "Kelvarlaic",
+          "spec": "Priest (Discipline)"
+        },
+        {
+          "kill": "cDQCyb4B71Wj9dV8-15",
+          "t": 207.177,
+          "target": "Squeana",
+          "spec": "Druid (Restoration)"
+        }
+      ],
+      "native_comparison": "Native: a random player other than the victim and players fighting an Aberration, so melee players were eligible. Round 3 (10N): players beyond 10 yd of Maloriak are preferred (spell_maloriak_flash_freeze_targeting); with none, the old pick."
+    },
+    {
+      "key": "live_boss_melee_check_r02",
+      "source_refs": [
+        "scoreboard_r02_20260930",
+        "wcl_MxFq7TRbvnjGY1hJ_34"
+      ],
+      "value": "Round-2 shard kills (3 of 3): Maloriak after-attacker mean 49,326 = 1.02x the WCL mean 48,574 at DamageModifier 9.5.",
+      "native_comparison": "Inside the +-10% acceptance check for 41378 (10N)."
+    },
+    {
+      "key": "db_readback_custom_sql_20260930",
+      "source_refs": [
+        "db_readback_20260930",
+        "repo_spell_custom_attr"
+      ],
+      "value": "spell_custom_attr 77679 and 92968-92970 carry 8 (share damage) and every registered spell_maloriak_* script is bound in spell_script_names in the live world DB.",
+      "native_comparison": "The historical custom SQL pack is applied; resolves the read-back claim for every mode."
+    },
+    {
+      "key": "vial_offsets_10N",
+      "source_refs": [
+        "wcl_ZyH2KkjchMRTdXga_33",
+        "wcl_XzVpNLkxaAFG3DjW_18",
+        "wcl_3pvXdMVntcjxygW4_13",
+        "wcl_h1LaC3FZ8BwPrbXW_18",
+        "wcl_hmAcWCt3njMR4HFT_12",
+        "wcl_cCXgM3dx9YGKaDt7_28",
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930"
+      ],
+      "value": "Offsets from the colored imbue (maloriak_wcl_boss_timelines_round2_v1.json, six kills, re-read in round 3). Red: Consuming Flames 8.1 s; Release first at 11.3-11.4 s then Arcane Storm 16.2 s (4 kills) or Arcane Storm first at 11.3-11.4 s then Release 14.6 s (2); Remedy 17.8-21.0 s; Scorching Blast 19.4-21.1 s. Blue: Arcane Storm first at 11.3-11.4 s then Release 14.6 s (4) or Release first at 11.3 s then Arcane Storm 16.2 s (2); Biting Chill 12.9-13.0 s; Remedy 16.2-19.4 s. Green (six phases incl. VL3fW9wNm2PRJDYt 13, NYcJZtHd6baDC41p 28, cDQCyb4B71Wj9dV8 15): Arcane Storm 3.6-4.4 s; Remedy and Release at 7.3-10.9 s in either order.",
+      "native_comparison": "Native: Red Storm 15.5 / Release 11 / Remedy 20.5 s; Blue Storm 6 / Release 14.5 / Remedy 21.5 s (the Blue storm 5-10 s early); Green Storm 5 / Remedy 7.5 / Release 9 s. Round 3 (10N only): Red and Blue use the observed random order (ScheduleTenNormalColorVial) and Remedy ranges; the Green storm is drawn over 3.1-6.1 s, the Green Remedy over 7.3-14.2 s and the Green Release begin over 6.415-10.505 s after the imbue (round-3 fix, ScheduleGreenPhaseCasts). Consuming Flames 7-8 s, Scorching Blast 19-22 s and Biting Chill 13-14 s already fit."
+    },
+    {
+      "key": "target_era_corroboration_10N",
+      "source_refs": [
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220",
+        "wcl_r3_sol_20260930"
+      ],
+      "value": "Round-3 fix (review finding 4): the 10N values came from kills dated 2024-10-01..2025-01-13 while the fidelity target is the live game on 2025-02-20. official_hotfix_audit_20250113_20250220 found no official entry in 2025-01-13..2025-02-20 that touches Maloriak, Blackwing Descent, tier-11 raids, raid tuning or encounters globally. Five post-cutoff 10N kills (wcl_maloriak_10n_post_cutoff_20260930, 2025-03-02..2025-05-13, overgeared) were compared on gear-independent mechanics only. They agree on the opening, the Red/Blue offsets and Release timing, the vial cadence, Biting Chill counts and cadence, the Remedy ramp and the phase-two cadence. They differ on the Arcane Storm after Slime Imbued (spread 3.66-6.57 s against 4.13-4.92 s), on one Green Remedy (14.15 s against 7.3-10.9 s) and on one Green Release begin (6.415 s, a canceled Begin Cast, against 7.3-10.5 s); the native 10N script now draws all three uniformly over the combined observed ranges (storm 3.1-6.1 s, Remedy 7.3-14.2 s, Release begin 6.415-10.505 s). Not observed after the cutoff: the fourth vial, Biting Chill and Flash Freeze roles, the Growth Catalyst strip, Berserk, health, melee, spell values and Rend; those parts rest on the pre-cutoff observations and the audit.",
+      "comparison": "Times are fight-relative Cast rows unless a Begin Cast is named; pre-cutoff values are the same Cast rows of maloriak_wcl_boss_timelines_round2_v1.json. Tolerance for agreement: +-0.5 s around the pre-cutoff range. Begin parity (round-3 fix): a native event fires when the cast begins, so a Cast row is compared as a begin after subtracting the spell's begin-to-cast time: Arcane Storm 0.474-0.531 s (31 Begin/Cast pairs of maloriak_wcl_boss_timelines_round2_v1.json; Spell.dbc 77896 cast time 500 ms), Release Aberrations 1.5 s (Spell.dbc 77569, 1500 ms), Remedy 0 s (Spell.dbc 77912, 0 ms; no Begin Cast row in 22 pre-cutoff Remedy casts, and the post-cutoff aura application equals the Cast row, fpZ2dVPa1TANY69G 3 at 49.934 s). A Begin Cast row is a begin as logged, canceled ones included, and is never shifted (ledger green_release_begins_10N).",
+      "post_cutoff_kills": [
+        {
+          "report": "fpZ2dVPa1TANY69G",
+          "fight": 3,
+          "date": "2025-05-13",
+          "duration_sec": 212.8,
+          "raid_item_level": 389.4,
+          "first_vial": "red",
+          "url": "https://classic.warcraftlogs.com/reports/fpZ2dVPa1TANY69G?fight=3&type=summary"
+        },
+        {
+          "report": "H7NA9PFKgfkCQntm",
+          "fight": 12,
+          "date": "2025-05-13",
+          "duration_sec": 156.1,
+          "raid_item_level": 399.3,
+          "first_vial": "red",
+          "url": "https://classic.warcraftlogs.com/reports/H7NA9PFKgfkCQntm?fight=12&type=summary"
+        },
+        {
+          "report": "7PT6hQ3wBqXmdtcH",
+          "fight": 49,
+          "date": "2025-04-06",
+          "duration_sec": 150.3,
+          "raid_item_level": 399.5,
+          "first_vial": "red",
+          "url": "https://classic.warcraftlogs.com/reports/7PT6hQ3wBqXmdtcH?fight=49&type=summary"
+        },
+        {
+          "report": "V2dvWRwtBmA6rk1H",
+          "fight": 30,
+          "date": "2025-03-02",
+          "duration_sec": 160,
+          "raid_item_level": 383.5,
+          "first_vial": "blue",
+          "url": "https://classic.warcraftlogs.com/reports/V2dvWRwtBmA6rk1H?fight=30&type=summary"
+        },
+        {
+          "report": "9r3MBf1X4GkNAZbJ",
+          "fight": 45,
+          "date": "2025-04-16",
+          "duration_sec": 173.1,
+          "raid_item_level": 400.2,
+          "first_vial": "blue",
+          "url": "https://classic.warcraftlogs.com/reports/9r3MBf1X4GkNAZbJ?fight=45&type=summary"
+        }
+      ],
+      "mechanics": [
+        {
+          "mechanic": "opening_and_first_vial",
+          "status": "corroborated",
+          "ledger_values": [
+            "pre_vial_opening_10N"
+          ],
+          "pre_cutoff": "Storm begin 10.9-14.9 s; the next action about 3.2 s after it and never before 15.7 s; the throw 1.6-1.7 s after a Release begins, 1.2-1.7 s after a Remedy; first vial Red 12 / Blue 7.",
+          "post_cutoff": "Storm Cast 11.419-14.968 s (begin about 0.5 s earlier, 10.92-14.47 s; pre-cutoff Begin/Cast pairs are 0.49-0.52 s apart). Three kills: Release Cast 17.60-17.93 s (begin 16.10-16.43 s, 3.22-3.24 s after the storm begin) and the throw Cast 0.61-0.62 s after it (begin 1.62 s after the Release begin). V2dvWRwtBmA6rk1H 30: storm begin 10.92 s, Release begin 15.77 s (+4.85 s, as QfJR9AZw13G6kzXP 14 +4.87 s and ryA8T6mnvhZ9a7pM 25 +4.86 s before the cutoff), throw begin +1.64 s. fpZ2dVPa1TANY69G 3: Remedy 19.19 s (4.72 s after the storm begin, as FTqPwYMA2DQd4Gah 24 +4.84 s), throw Cast 21.451 s (begin about 20.95 s, 1.76 s after the Remedy; 0.35 s after the latest pre-cutoff throw, 20.596 s). First vial Red 3 / Blue 2.",
+          "note": "Within the +-0.5 s comparison tolerance used here (cast-bar and log jitter; the ledger already accepted the native 41.3 s against live 41.65-42.1 s)."
+        },
+        {
+          "mechanic": "colored_vial_offsets_and_release_aberrations",
+          "status": "corroborated_except_one_slot_collision",
+          "ledger_values": [
+            "vial_offsets_10N",
+            "wcl_10N_boss_timelines_round2"
+          ],
+          "pre_cutoff": "Cast offsets after a Red/Blue imbue (six round-2 kills): Consuming Flames 8.07-8.11 s; first slot storm 11.82-11.86 s or Release 12.82-12.85 s; second slot Release 16.05-16.14 s or storm 16.68-16.73 s; Remedy 17.79-21.04 s; Scorching Blast 19.43-21.09 s.",
+          "post_cutoff": "Ten Red/Blue phases: Consuming Flames 8.08-8.12 s; first slot storm 11.82-11.87 s (3) or Release 12.82-12.86 s (4), fpZ2dVPa1TANY69G 3 Red Release 13.28 s (+0.43 s); second slot Release 16.05-16.11 s or storm 16.68-16.85 s; Remedy 16.20-19.46 s; Scorching Blast 19.39-21.08 s. Two Blue phases interrupted the first-slot Release (canceled Begin Cast 11.33 s after the imbue) and cast the storm at 15.09-15.20 s. Collision: 7PT6hQ3wBqXmdtcH 49 Blue (Release first at 12.85 s) cast Remedy at 16.20 s and the storm at 18.32 s, 1.6 s after the 16.7 s slot; no pre-cutoff Release-first Blue phase had a Remedy at 16.2 s.",
+          "note": "The native 10N schedule can also put Remedy (16.2-19.4 s after a Blue imbue) on the storm slot (16.2 s); the collision is a slot conflict, not a changed timer."
+        },
+        {
+          "mechanic": "vial_cadence",
+          "status": "corroborated",
+          "ledger_values": [
+            "fourth_vial_10N",
+            "vial_offsets_10N"
+          ],
+          "pre_cutoff": "Imbue to the next throw Cast 42.53-42.63 s (11 intervals; the ledger's 41.7-42.1 s are to the throw begin), throw to throw 50.14-51.83 s.",
+          "post_cutoff": "Imbue to the next throw Cast 42.55-42.72 s in nine of ten intervals and 43.06 s once (V2dvWRwtBmA6rk1H 30, after Frost Imbued; +0.43 s); throw to throw 49.73-51.78 s.",
+          "note": "Same native event after every imbue (EVENT_FACE_TO_CAULDRON 40 s plus the throw)."
+        },
+        {
+          "mechanic": "fourth_vial_after_green",
+          "status": "not_observed",
+          "ledger_values": [
+            "fourth_vial_10N"
+          ],
+          "pre_cutoff": "Two long kills: next throw 41.65 / 41.67 s after Slime Imbued.",
+          "post_cutoff": "No post-cutoff kill reached a fourth vial: all five entered phase two 8.8-38.3 s after Slime Imbued.",
+          "note": "Bounded: the native timer after a Green imbue is the same EVENT_FACE_TO_CAULDRON that the post-cutoff Red/Blue intervals corroborate, and official_hotfix_audit_20250113_20250220 found no change."
+        },
+        {
+          "mechanic": "green_arcane_storm_offset",
+          "status": "modelled_by_native_draw",
+          "ledger_values": [
+            "green_phase_10N",
+            "vial_offsets_10N"
+          ],
+          "pre_cutoff": "Slime Imbued to the storm Cast 4.13-4.92 s (three round-2 kills; the ledger reads 3.6-4.4 s to the begin over six Green phases); Green throw Cast to storm Cast 11.32-11.33 s. Native 10N before the round-3 fix: EVENT_ARCANE_STORM a fixed 4.0 s after Slime Imbued.",
+          "post_cutoff": "Slime Imbued to the storm Cast 4.69 s (fpZ2dVPa1TANY69G 3), 3.66 s (7PT6hQ3wBqXmdtcH 49), 5.34 s (V2dvWRwtBmA6rk1H 30), 6.18 s (H7NA9PFKgfkCQntm 12), 6.57 s (9r3MBf1X4GkNAZbJ 45); Green throw to storm 11.31-11.32 s in fpZ2 and V2dv, 9.70, 13.38 and 12.94 s in the others. 9r3MBf1X4GkNAZbJ 45 also cast the Green Remedy 14.15 s after Slime Imbued (pre-cutoff 7.3-10.9 s), after an interrupted Release begin at 9.31 s.",
+          "note": "Two kills are 1.3-1.7 s past the pre-cutoff maximum and one 0.5 s before the minimum; two kills repeat the pre-cutoff timing to 0.01 s, so a uniform timer change does not explain the spread, and official_hotfix_audit_20250113_20250220 found no change: the spread is modelled instead. Begin parity: EVENT_ARCANE_STORM fires when the 0.5 s cast begins, so the range is stated in begin time. Pre-cutoff begins: 3.6-4.4 s over six Green phases (round-2 kills 3.626, 4.047 and 4.421 s). Post-cutoff Cast rows 3.66, 4.69, 5.34, 6.18 and 6.57 s minus the begin-to-cast offset 0.474-0.531 s (31 Begin/Cast pairs) are begins at 3.13-3.19, 4.16-4.22, 4.81-4.87, 5.65-5.71 and 6.04-6.10 s. The combined begin span 3.13-6.10 s is stated to 0.1 s as 3.1-6.1 s. Native 10N: EVENT_ARCANE_STORM is drawn uniformly over 3.1-6.1 s after Slime Imbued (it was a fixed 4.0 s). Remedy needs no shift: it is an instant cast (Spell.dbc cast time 0 ms, no Begin Cast rows) and every observed value is a Cast row, so EVENT_REMEDY is drawn over the observed 7.3-14.2 s (was 7.5 s), never before the storm. The other modes keep 5 / 7.5 / 9 s."
+        },
+        {
+          "mechanic": "green_release_and_remedy",
+          "status": "modelled_by_native_draw",
+          "ledger_values": [
+            "green_phase_10N",
+            "green_release_begins_10N"
+          ],
+          "pre_cutoff": "Remedy 7.3-10.9 s after Slime Imbued; first Release begin 7.299 (3pvXdMVntcjxygW4 13), 7.666 (cDQCyb4B71Wj9dV8 15), 8.888 (VL3fW9wNm2PRJDYt 13, displayed as Canceled) and 10.505 s (NYcJZtHd6baDC41p 28), all Begin Cast rows, so 7.3-10.5 s; the earlier 7.7-10.5 s omitted the 7.299 s round-2 row.",
+          "post_cutoff": "Remedy 7.29, 8.02 and 8.06 s. First Release begin after Slime Imbued: 6.415 s (7PT6hQ3wBqXmdtcH 49, a canceled Begin Cast at 131.307 s against Slime Imbued at 124.892 s; the first round-3 closure omitted it), 8.905 s (H7NA9PFKgfkCQntm 12, Cast 10.405 s minus the 1.5 s cast), 9.312 s (9r3MBf1X4GkNAZbJ 45, a canceled Begin Cast) and 9.701 s (V2dvWRwtBmA6rk1H 30, Cast 11.201 s minus the 1.5 s cast). fpZ2dVPa1TANY69G 3 reached phase two about 7.27 s after the imbue with no Release begin. The 9r3MBf1X4GkNAZbJ 45 Remedy at 14.15 s is listed under green_arcane_storm_offset and covered by the native Remedy draw (7.3-14.2 s).",
+          "note": "Release Aberrations is drawn like the storm and Remedy. Begin parity: EVENT_RELEASE_ABERRATIONS fires when the 1.5 s cast begins, so a Begin Cast row (canceled ones included) is a begin as logged and a Cast row is converted by subtracting the 1.5 s cast (Spell.dbc 77569, 1500 ms; 32 observed Begin-to-Cast pairs 1.479-1.565 s). Combined first-begin range over both periods: 6.415-10.505 s (ledger green_release_begins_10N; four pre-cutoff and four post-cutoff begins; both bounds are Begin Cast rows, so they are used unrounded). Native 10N: EVENT_RELEASE_ABERRATIONS is drawn uniformly over 6.415-10.505 s after Slime Imbued (it was a fixed 9 s), after the storm range and overlapping the Remedy range; either order occurs in the kills and a Remedy due during the Release cast waits for it. Native Remedy: uniform 7.3-14.2 s (instant cast, Cast rows are fire times). The other modes keep the fixed 9 s."
+        },
+        {
+          "mechanic": "biting_chill_count_and_cadence",
+          "status": "corroborated",
+          "ledger_values": [
+            "biting_chill_targets_10N"
+          ],
+          "pre_cutoff": "One pick per cast (25 casts), the aura also catching a player within 3 yd once; first cast 12.93-12.97 s after Frost Imbued, then 11.3 s apart.",
+          "post_cutoff": "15 casts in five kills at 12.92-12.97, 24.25-24.31 and 35.58-35.68 s after Frost Imbued. 14 casts applied the debuff to one player; fpZ2dVPa1TANY69G 3 at 93.618 s applied it to four players within 0.02 s (the 3-yd area of the aura). Damage recipients: one in 12 casts; 2, 5 and 7 in fpZ2 and 2 in V2dvWRwtBmA6rk1H 30 (splash within 3 yd during the 10-s aura, absorbed hits included)."
+        },
+        {
+          "mechanic": "biting_chill_pick_within_10_yd",
+          "status": "not_observed",
+          "ledger_values": [
+            "biting_chill_targets_10N"
+          ],
+          "pre_cutoff": "Every pick a tank or melee player (26 of 26).",
+          "post_cutoff": "The capture names the players but not their roles or positions. Picks repeat on one or two players per kill (Semì 3 of 3, Rigormortíts 3 of 3, Morgohr 2 of 3, Drey 2 of 3) and were never a Flash Freeze target of the same kill, which fits a melee-range pick but does not prove it.",
+          "note": "Bounded by the pre-cutoff observation and official_hotfix_audit_20250113_20250220."
+        },
+        {
+          "mechanic": "flash_freeze_prefers_beyond_10_yd",
+          "status": "not_observed",
+          "ledger_values": [
+            "flash_freeze_targets_10N"
+          ],
+          "pre_cutoff": "17 frozen players in 10 kills, every one ranged or a healer.",
+          "post_cutoff": "Eight applications (no Cast row is logged) froze nine players; one froze two players 2 ms apart (H7NA9PFKgfkCQntm 12 at 112.99 s; cDQCyb4B71Wj9dV8 15 did the same before the cutoff). No role or position data.",
+          "note": "Bounded by the pre-cutoff observation and official_hotfix_audit_20250113_20250220."
+        },
+        {
+          "mechanic": "remedy_ramp",
+          "status": "corroborated",
+          "ledger_values": [
+            "remedy_ramp_10N"
+          ],
+          "pre_cutoff": "Tick n heals 25,000 x n (x 0.9 under a healing debuff), ten 1-s ticks.",
+          "post_cutoff": "72 ticks over 15 Remedy auras in five kills, each exactly 25,000 x n x f with f 1.0, 0.9 or 0.75 (player healing-reduction debuffs); four uninterrupted ten-tick Remedies in three kills (fpZ2dVPa1TANY69G 3 twice, H7NA9PFKgfkCQntm 12, 7PT6hQ3wBqXmdtcH 49); unreduced ticks such as 175,000 at tick 7 (7PT6) and 25,000 / 50,000 at ticks 1-2 (H7NA)."
+        },
+        {
+          "mechanic": "phase_two_cadence",
+          "status": "corroborated",
+          "ledger_values": [
+            "wcl_10N_boss_timelines_round2"
+          ],
+          "pre_cutoff": "After Unstable Mix: first Magma Jets 5.64-7.02 s, Acid Nova 6.47-8.11 s, Absolute Zero 11.32-11.36 s; repeats Magma Jets 9.90-12.44 s, Absolute Zero 11.29-11.32 s, Acid Nova 30.7 s (one sample); phase-two Remedy 17.8-21.0 s, then 22.6 s. Native 10N: 11.8 / 30.7 / 11.3 s repeats, Remedy 19.4 s then 24 s.",
+          "post_cutoff": "First Magma Jets 5.54-7.07 s, Acid Nova 6.47-8.08 s, Absolute Zero 11.30-11.35 s; fpZ2dVPa1TANY69G 3 (67 s of phase two): Magma Jets repeats 10.32-12.88 s, Absolute Zero 11.31-11.37 s, Remedy 17.78 s after Unstable Mix then 24.28 s. Its one Acid Nova repeat (33.98 s) came after a Magma Jets cast ending at 186.116 s and with a Remedy at 187.483 s, so it is not a clean repeat measurement."
+        },
+        {
+          "mechanic": "slime_strips_growth_catalyst",
+          "status": "not_observed",
+          "ledger_values": [
+            "green_phase_10N"
+          ],
+          "post_cutoff": "The capture has no add aura rows.",
+          "note": "Bounded by the pre-cutoff observation and official_hotfix_audit_20250113_20250220."
+        },
+        {
+          "mechanic": "berserk_7_min",
+          "status": "not_observed",
+          "ledger_values": [
+            "enrage_10N"
+          ],
+          "post_cutoff": "None of the five kills is long enough: the longest lasts 212.8 s against the 7-min Berserk, and no Berserk row appears.",
+          "note": "Bounded by the pre-cutoff observation (cDQCyb4B71Wj9dV8 15) and official_hotfix_audit_20250113_20250220."
+        },
+        {
+          "mechanic": "health_melee_spell_values_and_rend",
+          "status": "not_observed",
+          "ledger_values": [
+            "health_10N_wcl",
+            "add_melee_10N",
+            "spell_values_10N_wcl",
+            "prime_subject_rend_10N",
+            "boss_melee"
+          ],
+          "post_cutoff": "Not captured: boss maximum health was not displayed, no damage-taken rows or Prime Subject auras were read, and these kills are overgeared (raid item level 383.5-400.2), so health and damage would not compare anyway.",
+          "note": "Bounded by the same-mode pre-cutoff observations and official_hotfix_audit_20250113_20250220 (no raid boss tuning entry in the interval)."
+        }
+      ],
+      "native_comparison": "Every corroborated mechanic matches the round-3 native 10N schedule. The Green Arcane Storm, Remedy and Release offsets spread beyond the earlier fixed values (storm 3.66-6.57 s, one Remedy 14.15 s, one Release begin 6.415 s after Slime Imbued); the native 10N script (boss_maloriak_shared.h ScheduleGreenPhaseCasts) draws the storm over 3.1-6.1 s, the Remedy over 7.3-14.2 s and the Release begin over 6.415-10.505 s, and the other modes keep the fixed 5 / 7.5 / 9 s."
     }
   ],
   "timers": [
@@ -1612,7 +3291,8 @@
       "key": "biting_chill_targets",
       "wowhead": "3_random_raid_members",
       "icy_original": "1_10_player_or_2_25_player_melee_targets",
-      "resolution": "unresolved_spell_target_mode"
+      "resolution": "unresolved_spell_target_mode",
+      "resolution_10N": "resolved (ledger biting_chill_targets_10N): one melee-range pick per cast in 25 casts; native 10N now picks within 10 yd"
     },
     {
       "key": "heroic_coefficients",
@@ -1624,7 +3304,8 @@
       "key": "enrage",
       "icy_cata_classic": "6m_wording",
       "icy_original": "7m_normal_12m_heroic",
-      "resolution": "unresolved_hotfix_and_page_context"
+      "resolution": "unresolved_hotfix_and_page_context",
+      "resolution_10N": "resolved (ledger enrage_10N): Berserk 64238 at 7 min on 10N; native 10N now casts it"
     },
     {
       "key": "release_color",
@@ -1638,14 +3319,16 @@
       "icy_original": "21 s Green phase then a 15 s transition (36 s)",
       "icy_cata_classic": "next vial 30 s after the 15 s Debilitating Slime wears off (about 45 s)",
       "local": "EVENT_FACE_TO_CAULDRON 40 s after the Green imbue",
-      "resolution": "unresolved; measure the Green-throw to next-throw interval in a WCL kill"
+      "resolution": "unresolved; measure the Green-throw to next-throw interval in a WCL kill",
+      "resolution_10N": "resolved (ledger fourth_vial_10N): 41.65 and 41.67 s from Slime Imbued to the next throw, native 40 s + 1.3 s; the 36 s and 45 s guide readings do not fit"
     },
     {
       "key": "biting_chill_target_selection",
       "icy_original": "1 melee-range target (10-man), 2 (25-man)",
       "wowhead": "3 random raid members",
       "local": "random target within 60 yd, cast range 10 yd (ranged picks fail)",
-      "resolution": "unresolved; live and WCL target counts"
+      "resolution": "unresolved; live and WCL target counts",
+      "resolution_10N": "resolved (ledger biting_chill_targets_10N): one melee-range pick per cast in 25 casts; native 10N now picks within 10 yd"
     },
     {
       "key": "release_aberrations_interrupts",
@@ -1660,43 +3343,166 @@
       "user_raid_experience_20260926": "no Remedy dispel from 30% until the adds are dead and the chambers empty, then dispel again",
       "resolution": "user tactic adopted (authoritative)",
       "user_raid_experience_20260927": "no Remedy dispel during the hold (confirmed); the hold now starts at 50%"
+    },
+    {
+      "key": "normal_health_10N",
+      "native": "19,755,160",
+      "wowhead": "24.7M",
+      "resolution_10N": "resolved (ledger health_10N_wcl): two WCL kills derive 19.76M"
     }
   ],
   "unresolved": [
     {
       "key": "exact_442_client_build_and_BWD_hotfix_cutoff",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Build 4.4.2.59185 and the 2025-02-20 cutoff are pinned and the Maloriak client rows are extracted (client_442_59185_maloriak_rows_20260925); no official document states Maloriak-specific hotfix carryover."
+      "evidence_gap": "10N resolved on target-era evidence (round-3 fix, 2026-09-30): official_hotfix_audit_20250113_20250220 found no official Cataclysm Classic entry dated 2025-01-13..2025-02-20 touching Maloriak, Blackwing Descent, tier-11 raids, raid tuning or encounters globally (hotfix thread, hotfix news article, full 4.4.2 patch notes), and five 10N kills after the cutoff (wcl_maloriak_10n_post_cutoff_20260930, 2025-03-02..2025-05-13) agree with the pre-cutoff 10N values on every gear-independent mechanic they show except the Green Arcane Storm and one Green Remedy offset, which the native 10N script now draws over the observed ranges (the timer claim; ledger target_era_corroboration_10N). Values not observable after the cutoff (health, melee, spell values, Berserk, Rend, Biting Chill and Flash Freeze roles, the Growth Catalyst strip) are bounded by the pre-cutoff observations and the audit. 25N/10H/25H: no same-mode observation; no official document states Maloriak-specific carryover.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Official audit: no entry in the interval; post-cutoff kills agree on every observed gear-independent mechanic except the Green storm and Remedy offsets, modelled natively on 10N by a draw over the observed ranges (timer claim).",
+        "bounded_parts": [
+          "health",
+          "melee",
+          "spell_values",
+          "berserk",
+          "rend",
+          "biting_chill_and_flash_freeze_roles",
+          "growth_catalyst_strip"
+        ]
+      }
     },
     {
       "key": "live_timer_and_movement_confirmation_for_10N_10H_25N_25H",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Native schedules are now published read-only by GetTimeUntilEncounterMechanic, but no identity-pinned live or WCL vial/ability cadence exists (WCL gated 2026-09-25)."
+      "evidence_gap": "10N resolved on target-era evidence and a native draw (round-3 fix, 2026-09-30): after the 2025-02-20 cutoff (wcl_maloriak_10n_post_cutoff_20260930, five kills) the Arcane Storm after Slime Imbued came 3.66, 4.69, 5.34, 6.18 and 6.57 s after the imbue (Cast rows), against 4.13-4.92 s before the cutoff, one Green Remedy came at 14.15 s (7.3-10.9 s before) and one Green Release Aberrations began 6.415 s after the imbue (a canceled Begin Cast, 7PT6hQ3wBqXmdtcH 49; 7.3-10.5 s before). official_hotfix_audit_20250113_20250220 found no official change in 2025-01-13..2025-02-20 and two kills repeat the pre-cutoff timing to 0.01 s, so the spread is modelled instead of read as one retimed value: the native 10N script (boss_maloriak.cpp, boss_maloriak_shared.h ScheduleGreenPhaseCasts) draws the Green Arcane Storm uniformly over 3.1-6.1 s in begin time (EVENT_ARCANE_STORM fires when its 0.5 s cast begins; the post-cutoff Cast rows 3.66-6.57 s are 3.13-6.10 s as begins after the 0.474-0.531 s begin-to-cast offset of 31 round-2 Begin/Cast pairs, and the pre-cutoff begins are 3.6-4.4 s) and the Green Remedy over 7.3-14.2 s after Slime Imbued (an instant cast, so its Cast rows are its fire times), with the Remedy never before the storm; the Green Release Aberrations begin is drawn uniformly over 6.415-10.505 s (EVENT_RELEASE_ABERRATIONS fires when its 1.5 s cast begins: the first begins were 7.3-10.5 s before the cutoff and 6.415 (canceled), 8.905, 9.312 (canceled) and 9.701 s after it, Begin Cast rows as logged and Cast rows minus the 1.5 s cast; both bounds are Begin Cast rows, ledger green_release_begins_10N), after the storm range and overlapping the Remedy range, so either order occurs and a Remedy due during the Release cast waits for it. One Release-first Blue phase cast Remedy on the storm slot (16.20 s) and the storm at 18.32 s; the native 10N schedule can produce the same slot collision. Corroborated after the cutoff: the opening, the Red/Blue offsets and Release timing, imbue-to-throw 42.55-42.72 s (one 43.06 s), throw-to-throw 49.73-51.78 s and the phase-two cadence. Not observed after the cutoff: the fourth vial (no kill reached it; the same native timer is corroborated after Red and Blue), bounded by the pre-cutoff observation and the audit. The live check of the native schedule is an acceptance observation. 25N/10H/25H: no same-mode cadence, so they keep the fixed 5 / 7.5 / 9 s Green schedule.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Green Arcane Storm 3.66-6.57 s, one Green Remedy 14.15 s and one Green Release begin 6.415 s after Slime Imbued after the cutoff (against 4.13-4.92 s, 7.3-10.9 s and 7.3-10.5 s before): modelled natively on 10N by uniform draws over 3.1-6.1 s, 7.3-14.2 s and 6.415-10.505 s; every other timer corroborated; the fourth vial is not observed after the cutoff.",
+        "bounded_parts": [
+          "fourth_vial_after_green"
+        ]
+      }
     },
     {
       "key": "exact_spell_coefficients_and_target_counts_by_mode",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). Open: target counts per mode (Biting Chill native_fidelity_items.biting_chill_target_selection, live counts pending) and WCL sample compatibility. The SpellMgr target correction is applied (c0efb93a61)."
+      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). 10N resolved on target-era evidence (round-3 fix, 2026-09-30): after the cutoff (wcl_maloriak_10n_post_cutoff_20260930) the Remedy ramp holds on all 72 ticks (25,000 x tick number x a player healing-debuff factor 1.0/0.9/0.75) and Biting Chill keeps one debuffed player per cast (14 of 15; one cast spread to four players inside its 3-yd area) at 12.9/24.3/35.6 s after Frost Imbued; the Biting Chill melee-range pick, the Flash Freeze ranged preference, the WCL U spell values and the slime stripping Growth Catalyst were not observable after the cutoff and are bounded by the pre-cutoff samples (biting_chill_targets_10N, flash_freeze_targets_10N, spell_values_10N_wcl, green_phase_10N) and official_hotfix_audit_20250113_20250220. Open: 25N/10H/25H target counts (Biting Chill two in 25-man per the 2012 guide) and samples. The SpellMgr target correction is applied (c0efb93a61). The Remedy ramp (25,000 x tick on 10N) and Debilitating Slime stripping Growth Catalyst are native on 10N only; the guides say both apply in every mode, with no same-mode sample.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Remedy ramp and Biting Chill count/cadence corroborated after the cutoff; roles, U values and the Growth Catalyst strip bounded by the audit.",
+        "bounded_parts": [
+          "biting_chill_pick_within_10_yd",
+          "flash_freeze_prefers_beyond_10_yd",
+          "spell_values",
+          "growth_catalyst_strip"
+        ]
+      }
     },
     {
       "key": "normal_health_and_enrage_values",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Native 10N 19,755,160 and 25N 68,713,600 match the 2012 guide; the 4.4.2 Wowhead page says 24.7M / 86.6M. Needs a WCL health derivation; the enrage timer (6 vs 7/12 min) is absent from the script."
+      "evidence_gap": "10N bounded by the official audit (round-3 fix, 2026-09-30): health 19.76M from two pre-cutoff kills (native 19,755,160) and Berserk 64238 at 7 min (native 10N since round 3) were not observable after the cutoff (wcl_maloriak_10n_post_cutoff_20260930: no maximum health displayed, longest kill 212.8 s, no Berserk row); official_hotfix_audit_20250113_20250220 found no raid boss tuning entry in 2025-01-13..2025-02-20. Open: 25N health (native 68.7M, Wowhead 86.6M) and the 25N/10H/25H enrage (historical 7 min normal, 12 min heroic; none native).",
+      "target_era_10N": {
+        "status": "bounded_by_official_audit",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Health and Berserk not observable after the cutoff (no max health shown; longest kill 212.8 s).",
+        "bounded_parts": [
+          "health",
+          "berserk"
+        ]
+      }
     },
     {
       "key": "heroic_prime_subject_fixate_spell_data_and_target_persistence",
+      "modes": [
+        "10H",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "No spell id or observed target sequence for Fixate or Rend."
+      "evidence_gap": "No spell id or observed target sequence for the heroic Fixate. The 10N Prime Subject Rend (ledger prime_subject_rend_10N, native on 10N since round 3) is bounded by the official audit (round-3 fix): not captured after the cutoff (wcl_maloriak_10n_post_cutoff_20260930), no entry in official_hotfix_audit_20250113_20250220.",
+      "target_era_10N": {
+        "status": "bounded_by_official_audit",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "10N Rend not captured after the cutoff.",
+        "bounded_parts": [
+          "rend"
+        ]
+      }
     },
     {
       "key": "AI_object_reconstruction_and_custom_counter_reset_after_evade",
+      "modes": [
+        "10H",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Resolved from source for this spawn (repo_spawn_groups): the Default Group respawn builds a new Creature and AI, so counters did not survive a wipe; Reset() is defensive. The real 10N change is the random first vial (formerly always Blue). Still open: a live wipe/re-pull observation (first vial random Red/Blue, releases available again)."
+      "evidence_gap": "Resolved from source for every mode (repo_spawn_groups): the Default Group respawn builds a new Creature and AI, and Reset() restarts the cycle. Normal: 19 pre-cutoff 10N openings show a random first vial (Red 12, Blue 7), and five after the cutoff agree (Red 3, Blue 2; wcl_maloriak_10n_post_cutoff_20260930; official_hotfix_audit_20250113_20250220 found no change); the 10N wipe/re-pull check is an acceptance observation. Heroic: the Black first vial after a wipe and re-pull is unobserved.",
+      "target_era_10N": {
+        "status": "closed_target_era",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "Random first vial after the cutoff (Red 3, Blue 2)."
+      }
     },
     {
-      "key": "whether_historical_custom_SQL_pack_is_applied_to_current_database",
+      "key": "add_melee_damage_modifiers_non_10n",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ],
       "status": "fidelity_blocked",
-      "evidence_gap": "The world database was offline on 2026-09-25; spell_script_names and spell_custom_attr (77679 share damage) rows still need a live read-back."
+      "evidence_gap": "10N bounded by the official audit (round-3 fix, 2026-09-30): Aberration 0.81 and Prime Subject 3.5 staged from same-mode pre-cutoff WCL rows with Growth Catalyst counts (ledger add_melee_10N); the post-cutoff kills (wcl_maloriak_10n_post_cutoff_20260930) are overgeared and carry no add melee rows, and official_hotfix_audit_20250113_20250220 found no tuning entry in 2025-01-13..2025-02-20. The 25N/10H/25H Aberration, Prime Subject and Vile Swill templates have no same-mode sample.",
+      "target_era_10N": {
+        "status": "bounded_by_official_audit",
+        "source_refs": [
+          "wcl_maloriak_10n_post_cutoff_20260930",
+          "official_hotfix_audit_20250113_20250220"
+        ],
+        "summary": "10N add melee not observable after the cutoff (overgeared, no add rows).",
+        "bounded_parts": [
+          "add_melee"
+        ]
+      }
     }
   ],
   "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
@@ -1921,12 +3727,16 @@
         "25N",
         "25H"
       ],
-      "status": "resolved_native_live_pending",
-      "known": "BossAI engage/death; DATA_MALORIAK credit; the Default Group respawn builds a new AI; the first normal vial is now random Red/Blue (formerly always Blue); Reset is defensive.",
-      "next": "Observe one wipe and re-pull: first vial random Red/Blue, releases available again.",
+      "status": "resolved_10N",
+      "known": "BossAI engage/death; DATA_MALORIAK credit; the Default Group respawn builds a new AI; the first normal vial is now random Red/Blue (formerly always Blue); Reset is defensive. Round 3: 19 10N openings chose Red 12 / Blue 7 (random first vial).",
+      "next": "Observe one 10N wipe and re-pull (acceptance observation). Heroic: the Black first vial after a re-pull is unobserved.",
       "source_refs": [
         "local_cpp",
-        "local_instance_and_loader"
+        "local_instance_and_loader",
+        "wcl_r3_sol_20260930"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -1937,15 +3747,21 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "Order resolved (random Red/Blue, other, Green; heroic Black first and after each Green). Native: face 15.5 s after pull, 40 s after each imbue (Black 90 s). First vial Red: Throw Red Bottle begin 18.0 s (native face 15.5 s + 1.3 s throw = 16.8 s); Blue throw 67.8 s, 41.7 s after Fire Imbued (native 40 s + 1.3 s). WCL fight 13: Red 17.5, Blue 67.6, Green 117.8 s (50.2 s apart; next throw 42.1 s after each Imbued).",
-      "next": "Green-phase cadence and a second kill to size the interval spread.",
+      "status": "resolved_10N",
+      "known": "Order resolved (random Red/Blue, other, Green; heroic Black first and after each Green). Native: face 15.5 s after pull, 40 s after each imbue (Black 90 s). First vial Red: Throw Red Bottle begin 18.0 s (native face 15.5 s + 1.3 s throw = 16.8 s); Blue throw 67.8 s, 41.7 s after Fire Imbued (native 40 s + 1.3 s). WCL fight 13: Red 17.5, Blue 67.6, Green 117.8 s (50.2 s apart; next throw 42.1 s after each Imbued). Round 3: two 10N kills reach a fourth vial 41.65/41.67 s after Slime Imbued (native 41.3 s). Round-3 fix: five post-cutoff kills agree (imbue to throw Cast 42.55-42.72 s, one 43.06 s; first vial Red 3 / Blue 2); none reached a fourth vial.",
+      "next": "Heroic and 25-player cadence (no same-mode WCL).",
       "source_refs": [
         "local_cpp",
         "icy_cata_classic",
         "icy_original",
         "wcl_MxFq7TRbvnjGY1hJ_34",
-        "wcl_VL3fW9wNm2PRJDYt_13"
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_r3_sol_20260930",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -1956,13 +3772,17 @@
         "25N",
         "25H"
       ],
-      "status": "resolved_values_cadence_partial",
-      "known": "Client 500 ms cast + 6 s channel, 11309 (normal) / 47124 (heroic) per 1 s tick in 80 yd; interrupt every cast. WCL fight 34: 13.1, 42.3, 60.1, 93.7 s; four channels stopped (Greysnout 3, Sélán 1).",
-      "next": "Interrupt latency after channel start (needs event-level interrupt times).",
+      "status": "resolved_10N",
+      "known": "Client 500 ms cast + 6 s channel, 11309 (normal) / 47124 (heroic) per 1 s tick in 80 yd; interrupt every cast. WCL fight 34: 13.1, 42.3, 60.1, 93.7 s; four channels stopped (Greysnout 3, Sélán 1). Round 3: 19 openings, storm begin 10.9-14.9 s; tick U 11.8-12.4k (client 11,309).",
+      "next": "Heroic and 25-player cadence.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "icy_cata_classic",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -1973,13 +3793,19 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "Client 10 s heal 25000/75000/50000/150000 per s; dispel/spellsteal tactic. WCL fight 34: Remedy at 16.4, 45.6, 92.1 s.",
-      "next": "Heal ticks and dispels (dispels view) to settle the Wowhead ramp claim.",
+      "status": "resolved_10N",
+      "known": "Client 10 s heal 25000/75000/50000/150000 per s; dispel/spellsteal tactic. WCL fight 34: Remedy at 16.4, 45.6, 92.1 s. Round 3: ticks ramp 25,000 x n (1.25-1.32M a cast); native ramp added (binding staged). Round-3 fix: all 72 post-cutoff ticks are 25,000 x n x a healing-debuff factor (1.0/0.9/0.75).",
+      "next": "Live check of the ramp once the binding is promoted; heroic and 25-player samples.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "wowhead_442",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -1990,15 +3816,19 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "3 per success, 18 reserve, 1.5 s interruptible cast; catalyst radius 10 yd +10/20% damage, -20% taken; guides: slime removes catalyst. WCL fight 34: three successful Release Aberrations (37.5, 55.3, 87.2 s), three Aberrations each; Release All Minions frees 9 more and 2 Prime Subjects.",
-      "next": "Catalyst removal by Debilitating Slime (needs a kill with a Green phase).",
+      "status": "resolved_10N",
+      "known": "3 per success, 18 reserve, 1.5 s interruptible cast; catalyst radius 10 yd +10/20% damage, -20% taken; guides: slime removes catalyst. WCL fight 34: three successful Release Aberrations (37.5, 55.3, 87.2 s), three Aberrations each; Release All Minions frees 9 more and 2 Prime Subjects. Round 3: the Green slime strips Growth Catalyst; survivors recast 5.2 s later (native).",
+      "next": "Heroic Growth Catalyst +20% samples.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "icy_cata_classic",
         "icy_original",
         "local_cpp",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -2009,13 +3839,17 @@
         "25N",
         "25H"
       ],
-      "status": "resolved_values_cadence_partial",
-      "known": "Scorching Blast split cone and Consuming Flames values per mode. WCL fight 34: Consuming Flames 34.2, 50.4 s; Scorching Blast 47.2, 63.0 s.",
-      "next": "Scorching Blast split counts (damage-taken rows per cast).",
+      "status": "resolved_10N",
+      "known": "Scorching Blast split cone and Consuming Flames values per mode. WCL fight 34: Consuming Flames 34.2, 50.4 s; Scorching Blast 47.2, 63.0 s. Round 3: Consuming Flames 4,500 a tick, +50% of other magic damage (native proc).",
+      "next": "Heroic and 25-player Scorching Blast values.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "repo_spell_custom_attr",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -2026,15 +3860,21 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native Flash Freeze targeting excludes the victim and players attacked by an Aberration; Biting Chill picks within 60 yd but has a 10-yd cast range. WCL fight 34: Biting Chill cast 88.9 and 100.2 s; no Flash Freeze cast row in 34 s of Blue.",
-      "next": "Biting Chill targets per cast (player debuff rows) and a longer Blue phase for Flash Freeze.",
+      "status": "resolved_10N",
+      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native Flash Freeze targeting excludes the victim and players attacked by an Aberration; Biting Chill picks within 60 yd but has a 10-yd cast range. WCL fight 34: Biting Chill cast 88.9 and 100.2 s; no Flash Freeze cast row in 34 s of Blue. Round 3: 25 Biting Chill casts, one melee-range pick each; native 10N pick within 10 yd. Round-3 fix: 15 post-cutoff Biting Chills keep one debuffed player (one spread to four in its 3-yd area) at 12.9/24.3/35.6 s after Frost Imbued; roles not captured.",
+      "next": "Biting Chill counts in 25-player and heroic modes.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "repo_spellmgr_corrections",
         "icy_original",
         "spellfix_applied_c0efb93a61",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -2045,13 +3885,16 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd. WCL fight 13: Green throw 117.8 s (50.2 s after Blue), Slime Imbued 125.1 s; the 25% transition (158.3 s) came 40.5 s after the Green throw, so the Green-to-next-vial interval is still unobserved.",
-      "next": "Observe catalyst removal, kill timing of released adds, and the Green-to-next-vial interval (conflicts.green_duration).",
+      "status": "resolved_10N",
+      "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd. WCL fight 13: Green throw 117.8 s (50.2 s after Blue), Slime Imbued 125.1 s; the 25% transition (158.3 s) came 40.5 s after the Green throw, so the Green-to-next-vial interval is still unobserved. Round 3: slime 15.0 s; Storm/Remedy/Release begin 4.0-4.5 / 7.3-10.9 / 7.3-10.5 s after Slime Imbued. Round-3 fix: after the cutoff the storm came 3.66-6.57 s after Slime Imbued, one Remedy 14.15 s and one Release begin 6.415 s (five kills; wcl_maloriak_10n_post_cutoff_20260930), against 4.13-4.92 s, 7.3-10.9 s and 7.3-10.5 s before; the native 10N script now draws the storm over 3.1-6.1 s, the Remedy over 7.3-14.2 s and the Release begin over 6.415-10.505 s; the other modes keep 5 / 7.5 / 9 s.",
+      "next": "Observe live on 10N: Arcane Storm 3.1-6.1 s, Remedy 7.3-14.2 s and Release begin 6.415-10.505 s after Slime Imbued (the storm first); heroic Green (Black after it) cadence.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "icy_cata_classic",
-        "wcl_VL3fW9wNm2PRJDYt_13"
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_r3_sol_20260930",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
       ]
     },
     {
@@ -2062,15 +3905,21 @@
         "25N",
         "25H"
       ],
-      "status": "partial",
-      "known": "25% transition, release all, drink all, Magma Jets / Acid Nova / Absolute Zero values; native 6 / 20 / 7 s cadence; vial pipeline leak repaired. WCL fight 34: Release All Minions 101.8 s, Magma Jets 114.5 s, Acid Nova 118.0 s, Absolute Zero 121.2 s; Prime Subject Rend on the add tank (121.2, 123.7 s). WCL fight 13 repeats: Magma Jets 11.4-12.4 s, Acid Nova 30.7 s, Absolute Zero 11.3 s; the native 6/20/7 s repeats were corrected in boss_maloriak.cpp.",
-      "next": "Live observation of the corrected phase-two cadence; Remedy in phase two (native_fidelity_items.phase_two_remedy).",
+      "status": "resolved_10N",
+      "known": "25% transition, release all, drink all, Magma Jets / Acid Nova / Absolute Zero values; native 6 / 20 / 7 s cadence; vial pipeline leak repaired. WCL fight 34: Release All Minions 101.8 s, Magma Jets 114.5 s, Acid Nova 118.0 s, Absolute Zero 121.2 s; Prime Subject Rend on the add tank (121.2, 123.7 s). WCL fight 13 repeats: Magma Jets 11.4-12.4 s, Acid Nova 30.7 s, Absolute Zero 11.3 s; the native 6/20/7 s repeats were corrected in boss_maloriak.cpp. Round 3: Acid Nova U 9,075 (7,500 x 1.1^2), Magma Jet U 38-41k; Prime Subject Rend native on 10N. Round-3 fix: the post-cutoff first casts and repeats agree (Magma Jets 10.32-12.88 s, Absolute Zero 11.31-11.37 s).",
+      "next": "Live observation of the phase-two cadence (acceptance observation).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "local_cpp",
         "icy_original",
         "wcl_MxFq7TRbvnjGY1hJ_34",
-        "wcl_VL3fW9wNm2PRJDYt_13"
+        "wcl_VL3fW9wNm2PRJDYt_13",
+        "wcl_r3_sol_20260930",
+        "wcl_maloriak_10n_post_cutoff_20260930",
+        "official_hotfix_audit_20250113_20250220"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -2095,14 +3944,18 @@
         "25N",
         "25H"
       ],
-      "status": "blocked",
-      "known": "Native health and melee rolls at DamageModifier 1 computed. 41378 10N calibrated from WCL MxFq7TRbvnjGY1hJ fight 34 (m 9.5 staged, bounds 9.41-9.71).",
-      "next": "Stage and observe 41378 at 9.5 live (boss_melee after-attacker stage within +-10% of WCL 40,559-63,630). Open: 10N health derivation, Aberration/Prime Subject modifiers (need Growth Catalyst stack counts), and every 25N/10H/25H template.",
+      "status": "resolved_10N_staged",
+      "known": "Native health and melee rolls at DamageModifier 1 computed. 41378 10N calibrated from WCL MxFq7TRbvnjGY1hJ fight 34 (m 9.5 staged, bounds 9.41-9.71). Round 3: 10N health 19.76M from two kills; Aberration 0.81 and Prime Subject 3.5 staged; boss 9.5 live 1.02x.",
+      "next": "Promote the add migration and check live U within +-10%; every 25N/10H/25H template stays open.",
       "source_refs": [
         "native_stats_20260925",
         "wcl_gate_20260925",
         "wcl_gate_20260927",
-        "wcl_MxFq7TRbvnjGY1hJ_34"
+        "wcl_MxFq7TRbvnjGY1hJ_34",
+        "wcl_r3_sol_20260930"
+      ],
+      "modes_resolved": [
+        "10N"
       ]
     },
     {
@@ -2110,13 +3963,14 @@
       "modes": [
         "10N"
       ],
-      "status": "resolved_applied_full_route_kill_observed",
-      "known": "Plateau root cause and the kill-attribution gap for adaptive owners; safe regroup and patrol node computed on the pinned navmesh. Both patches are applied: the scenario rows are in validation_scenarios_cata_001.json and SubmitMaloriakKernelCandidates publishes world.validation_route_maloriak_observation. Full-route run r11 killed Maloriak natively (route generation 13).",
-      "next": "Observe regroup -> patrol -> encounter -> native clear in the Maloriak shard itself (the r11 kill was the full route and uncertified).",
+      "status": "resolved_shard_clears_observed",
+      "known": "Plateau root cause and the kill-attribution gap for adaptive owners; safe regroup and patrol node computed on the pinned navmesh. Both patches are applied: the scenario rows are in validation_scenarios_cata_001.json and SubmitMaloriakKernelCandidates publishes world.validation_route_maloriak_observation. Full-route run r11 killed Maloriak natively (route generation 13). Round 2 (label blackwing_descent_10n-r02-a82a035b81): three counted native clears in the Maloriak shard (regroup, patrol, encounter), 0 boss-window deaths.",
+      "next": "Keep the shard route; nothing open.",
       "source_refs": [
         "round1_two_shard_proof_20260925",
         "navmesh_669_probe_20260925",
-        "full_raid_r11_20260927"
+        "full_raid_r11_20260927",
+        "scoreboard_r02_20260930"
       ]
     }
   ],
@@ -2128,7 +3982,16 @@
     "Red: Scorching Blast split among at least 7 players; no Consuming Flames target inside the cone.",
     "Blue: no chained Flash Freeze (one frozen player per cast); blocks broken within 5 s.",
     "Phase two: no Magma Jets hits on non-tanks, no Absolute Zero explosion hits, raid haste inside the first 10 s after 25%.",
-    "Native clear with zero boss-window deaths; the route completes (validation_route_manifest_complete)."
+    "Native clear with zero boss-window deaths; the route completes (validation_route_manifest_complete).",
+    "10N opening: an Arcane Storm 10.9-14.9 s after engage; the first vial, Release or Remedy about 3.2 s after its begin; Release/Remedy only when that slot is before 17 s or with 3/8 probability after.",
+    "10N Biting Chill: every application on a player within 10 yd of Maloriak; no failed cast.",
+    "10N Flash Freeze: the frozen player stood beyond 10 yd of Maloriak whenever one was eligible.",
+    "Remedy (binding promoted): heal ticks 25,000 x n on 10N.",
+    "Green: Growth Catalyst removed from every add at Debilitating Slime and recast on survivors 5.2 s later.",
+    "10N: Prime Subjects apply Rend 78034 to their tank 14-16.5 s after landing.",
+    "Adds (migration promoted): Aberration and Prime Subject U within +-10% of the add_melee_10N envelopes for their Growth Catalyst counts.",
+    "Kill before 7 min (10N Berserk 64238 at 7 min).",
+    "Green (10N): Arcane Storm 3.1-6.1 s, Remedy 7.3-14.2 s and Release begin 6.415-10.505 s after Slime Imbued (uniform draws, storm first; Release and Remedy in either order); 25N/10H/25H keep 5 / 7.5 / 9 s."
   ],
   "verbatim_quotes": [
     {
@@ -2171,13 +4034,13 @@
   "native_fidelity_items": [
     {
       "key": "biting_chill_target_selection",
-      "status": "open",
+      "status": "fixed_in_owned_script_10n_only",
       "native": "EVENT_BITING_CHILL picks SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true) but 77760 has a 10-yd spell range (client and 4.3.4 SpellMisc range 0-10), so a ranged pick fails the cast and only melee-range picks land.",
       "sources": [
         "icy_original (verbatim_quotes biting_chill_targets: 1 melee-range target in 10-man, 2 in 25-man)",
         "wowhead_442 (three random raid members, 2026-08-11 claim)"
       ],
-      "next": "Live: count Biting Chill applications and their targets per Blue phase (combat log) before choosing a native target filter; do not change the script until the target count is settled."
+      "next": "Observe live on 10N: every Biting Chill lands on a player in melee range (no failed casts). 25N/10H/25H keep the 60-yd pick until same-mode evidence exists."
     },
     {
       "key": "shadow_imbued_taunt_immunity",
@@ -2239,7 +4102,7 @@
     },
     {
       "key": "pre_vial_release_aberrations",
-      "status": "partially_fixed_in_owned_script_10n_only",
+      "status": "fixed_in_owned_script_10n_only",
       "native": "Native schedules Release Aberrations only after an imbue; WCL fight 13 shows one at 15.8 s, before the first vial (fight 34 did not). Round 2 (eight 10N kills): an Arcane Storm begins before the first vial in all eight (median 14.3 s); Release Aberrations precedes the first vial in two and Remedy in three, only on Red openings.",
       "sources": [
         "wcl_VL3fW9wNm2PRJDYt_13",
@@ -2251,7 +4114,71 @@
         "wcl_hmAcWCt3njMR4HFT_12",
         "wcl_cCXgM3dx9YGKaDt7_28"
       ],
-      "next": "The pre-vial Arcane Storm is scheduled natively on 10N (14.3 s). The pre-vial Release/Remedy (5 of 8 kills, Red openings only) stays open until a rule fits every kill."
+      "next": "Observe live on 10N (ledger pre_vial_opening_10N): an Arcane Storm 10.9-14.9 s after engage, then Release or Remedy when its slot is before 17 s, otherwise mostly the vial."
+    },
+    {
+      "key": "flash_freeze_ranged_pick",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "Flash Freeze could freeze a melee player beside Maloriak.",
+      "next": "Observe live on 10N: Flash Freeze on players beyond 10 yd."
+    },
+    {
+      "key": "remedy_ramp",
+      "status": "fixed_in_owned_script_10n_only_binding_staged",
+      "native": "Remedy healed a flat 25,000 per s (10N) for 10 s; live 10N ticks grow by 25,000 each (1.25-1.32M a cast).",
+      "next": "Promoted 2026-09-30 (sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql); observe live Remedy ticks 25,000 x n on 10N."
+    },
+    {
+      "key": "slime_strips_growth_catalyst",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "Growth Catalyst stayed on the adds through Debilitating Slime.",
+      "next": "Observe live: Growth Catalyst gone at the Green slime, back on survivors 5.2 s later."
+    },
+    {
+      "key": "berserk_10n",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "No enrage.",
+      "next": "A live kill never reaches 7 min; a wipe at 7 min shows Berserk 64238."
+    },
+    {
+      "key": "prime_subject_rend",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "Prime Subjects cast no Rend.",
+      "next": "Observe live Rend 78034 on the add tank 14-16.5 s after the landing."
+    },
+    {
+      "key": "add_damage_modifiers_10n",
+      "status": "staged",
+      "native": "Aberration and Prime Subject at DamageModifier 1.",
+      "next": "Promoted 2026-09-30 (sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql); check live U against the add_melee_10N envelopes within +-10%."
+    },
+    {
+      "key": "colored_vial_offsets",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "The Blue Arcane Storm came 6 s after Frost Imbued (live 11.3 or 16.2 s); fixed Storm/Release order.",
+      "next": "Observe live on 10N: Storm and Release in either order at 11.3 s and 14.6/16.2 s after each Red/Blue imbue."
+    },
+    {
+      "key": "green_arcane_storm_offset_10N",
+      "status": "fixed_in_owned_script_10n_only",
+      "native": "EVENT_ARCANE_STORM, EVENT_REMEDY and EVENT_RELEASE_ABERRATIONS after Slime Imbued on 10N: a uniform draw over 3.1-6.1 s (storm, begin time), 7.3-14.2 s (instant Remedy) and 6.415-10.505 s (Release begin, Begin Cast rows unrounded) (ScheduleGreenPhaseCasts, boss_maloriak_shared.h; the storm was a fixed 4.0 s, Remedy 7.5 s and Release 9 s). 25N/10H/25H keep the fixed 5 / 7.5 / 9 s and draw nothing.",
+      "sources": [
+        "wcl_maloriak_10n_post_cutoff_20260930 (3.66-6.57 s after Slime Imbued, Cast rows, five kills)",
+        "wcl_10N_boss_timelines_round2 (4.13-4.92 s, three kills)",
+        "green_release_begins_10N (first Release begin 7.3-10.5 s before and 6.415-9.701 s after the cutoff, eight phases)"
+      ],
+      "next": "Observe live on 10N: Arcane Storm 3.1-6.1 s, Remedy 7.3-14.2 s and Release begin 6.415-10.505 s after Slime Imbued, the storm first; Release and Remedy in either order."
     }
-  ]
+  ],
+  "resolved_20260930": {
+    "whether_historical_custom_SQL_pack_is_applied_to_current_database": "Resolved for every mode by the live DB read-back (db_readback_20260930): spell_custom_attr 77679/92968-92970 = 8 and every registered spell_maloriak_* script bound. Removed from unresolved; the audit (cata_raid_bwd_quantitative_resolution_audit_v1.json) needs the matching reconciliation (coordinator patch).",
+    "replaced_by_add_melee_damage_modifiers_non_10n": "The 10N add melee calibration is resolved; add_melee_damage_modifiers_non_10n tracks the other modes."
+  },
+  "fidelity_state_by_mode": {
+    "10N": "accepted",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "10N accepted 2026-09-30 (round-3 fix, review finding 4, then the native Green timer draw): no unresolved claim covers 10N. The fidelity target is the live game on 2025-02-20, so each 10N claim needed target-era evidence. official_hotfix_audit_20250113_20250220 found no official change in 2025-01-13..2025-02-20, and five post-cutoff 10N kills (wcl_maloriak_10n_post_cutoff_20260930) agree on every observed gear-independent mechanic except the Green Arcane Storm, one Green Remedy and one Green Release begin offset (storm 3.66-6.57 s after Slime Imbued against 4.13-4.92 s before; Remedy 14.15 s against 7.3-10.9 s; Release begin 6.415 s against 7.3-10.5 s). The native 10N script now draws all three over the combined observed ranges (storm 3.1-6.1 s, Remedy 7.3-14.2 s, Release begin 6.415-10.505 s; ledger native_fidelity_items green_arcane_storm_offset_10N), which closed the live timer claim for 10N. Every other 10N part is closed on target-era evidence or bounded by the audit (ledger target_era_corroboration_10N; each claim's target_era_10N). 10H/25N/25H stay blocked (each unresolved claim lists its modes; the Green schedule there is unchanged). The contract-level fidelity_state stays fidelity_blocked while 10H/25N/25H are open."
 }

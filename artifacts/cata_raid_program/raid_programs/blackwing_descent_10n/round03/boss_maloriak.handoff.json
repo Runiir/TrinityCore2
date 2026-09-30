@@ -1,0 +1,111 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:maloriak",
+  "round": 3,
+  "resolved_inputs": [
+    "encounter_research"
+  ],
+  "changed_files": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_shared.h",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_spells.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakDuties.h",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+    "tests/test_maloriak_native_script.py",
+    "tests/test_maloriak_research_packet.py",
+    "tests/test_maloriak_damage_modifier.py"
+  ],
+  "new_files": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_minions.cpp",
+    "sql/custom/staged/world/2026_09_30_20_maloriak_add_damage_modifier.sql",
+    "sql/custom/staged/world/2026_09_30_21_maloriak_remedy_ramp.sql"
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json",
+      "patch": "--- a/experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json\t2026-09-30 15:13:39.920183318 +0300\n+++ b/experiments/configs/cata_raid_bwd_quantitative_resolution_audit_v1.json\t2026-09-30 15:24:21.816977475 +0300\n@@ -17,6 +17,7 @@\n       \"chimaeron\": {\"event_cadence\": {\"closed_for\": [\"10N\"], \"still_open_for\": [\"10H\", \"25N\", \"25H\"], \"decision\": \"chimaeron_10n_berserk: no berserk on normal or heroic (user raid experience 2026-09-30)\"}},\n       \"omnotron_defense_system\": {\"barrier_absorb_amount\": {\"closed_for\": [\"10N\"], \"still_open_for\": [\"10H\", \"25N\", \"25H\"], \"decision\": \"omnotron_barrier_absorb_client_row: Accept 300,000 (Recommended)\"}}\n     },\n+    \"blockers_replaced_20260930\": {\"maloriak\": {\"removed\": [\"whether_historical_custom_SQL_pack_is_applied_to_current_database\"], \"added\": [\"add_melee_damage_modifiers_non_10n\"], \"reason\": \"Round 3: the live world DB read-back (ledger db_readback_20260930) shows the share-damage attribute on all four Scorching Blast ids and every spell_maloriak_* script bound; the non-10N add melee calibration is its own claim now. Total stays 42; one resolvable_from_server_db_source blocker becomes still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence.\"}},\n     \"blockers_removed_20260927\": {\"reason\": \"Removed after BWD 10N raid program round 1: same-mode WCL kills resolved these for 10N and the ledgers no longer list them. The resolving evidence is in each ledger's source_catalog, not in this audit.\", \"atramedes\": [\"wcl_10n_kill_reference_pending\", \"boss_melee_damage_modifier_10n\", \"boss_health_10n\", \"modulation_repeat_interval\"], \"nefarian\": [\"wcl_10n_kill_references_and_timelines_pending\", \"health_guide_vs_native_conflict\"], \"omnotron_defense_system\": [\"wcl_matched_10n_kill_references\", \"construct_melee_damage_modifier_10n\", \"shared_health_10n_wcl_derivation\", \"electrical_discharge_chain_damage_scaling\", \"poison_bomb_death_explosion\", \"normal_mode_first_cast_and_repeat_timers\"], \"replaced\": {\"nefarian\": {\"pillar_access_and_magma_geometry\": \"heroic_onyxia_burn_and_magma\"}}, \"restored_after_review\": {\"omnotron_defense_system\": {\"kept\": [\"barrier_absorb_amount\", \"static_shock_center_attacker_or_construct\"], \"added\": [\"power_conversion_no_damage_proc\"], \"reason\": \"The single 10N Barrier and Static Shock samples do not separate the candidate values, and no row shows whether a non-damaging interrupt grants Converted Power.\"}}}\n   },\n   \"target_identity\": {\n@@ -304,7 +305,7 @@\n         {\"key\":\"normal_health_and_enrage_values\",\"original_status\":\"fidelity_blocked\",\"ledger_status\":\"fidelity_blocked\",\"resolution_class\":\"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\",\"resolution_state\":\"unresolved\",\"evidence_refs\":[\"warcraftlogs_gap\",\"historical_hotfix_gap\",\"repo_native_stat_formulas\",\"wcl_access_gate_20260925\"],\"remaining_gap\":\"Native 10N 19,755,160 and 25N 68,713,600 match the 2012 guide while the 4.4.2 Wowhead page says 24.7M / 86.6M; needs a WCL health derivation. The enrage timer (6 vs 7/12 min) is absent from the script, and repository SQL is a 4.3.4-era snapshot.\",\"ledger_refs\":[\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:unresolved[key=normal_health_and_enrage_values]\"]},\n         {\"key\":\"heroic_prime_subject_fixate_spell_data_and_target_persistence\",\"original_status\":\"fidelity_blocked\",\"ledger_status\":\"fidelity_blocked\",\"resolution_class\":\"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\",\"resolution_state\":\"unresolved\",\"evidence_refs\":[\"warcraftlogs_gap\",\"repo_bwd_runtime\"],\"remaining_gap\":\"No identity-pinned Prime Subject target/aura sequence is available.\",\"ledger_refs\":[\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:unresolved[key=heroic_prime_subject_fixate_spell_data_and_target_persistence]\"]},\n         {\"key\":\"AI_object_reconstruction_and_custom_counter_reset_after_evade\",\"original_status\":\"fidelity_blocked\",\"ledger_status\":\"fidelity_blocked\",\"resolution_class\":\"resolvable_from_server_db_source\",\"resolution_state\":\"repository_baseline_resolved; live_wipe_observation_unresolved\",\"evidence_refs\":[\"repo_bwd_ledger_runtime\"],\"remaining_gap\":\"Resolved from source for this spawn: 250112 is in the Default Group (no compatibility mode), so the respawn builds a new Creature and AI and counters do not survive a wipe; Reset() is defensive. Still open: a live wipe/re-pull observation (first vial random Red/Blue, releases available again).\",\"ledger_refs\":[\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:unresolved[key=AI_object_reconstruction_and_custom_counter_reset_after_evade]\",\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:source_catalog[repo_spawn_groups]\"]},\n-        {\"key\":\"whether_historical_custom_SQL_pack_is_applied_to_current_database\",\"original_status\":\"fidelity_blocked\",\"ledger_status\":\"fidelity_blocked\",\"resolution_class\":\"resolvable_from_server_db_source\",\"resolution_state\":\"repository_history_resolved; active_database_application_unresolved\",\"evidence_refs\":[\"repo_bwd_sql\",\"repo_bwd_ledger_runtime\"],\"remaining_gap\":\"Historical custom bindings are present in repository history, but the world database was offline on 2026-09-25, so spell_script_names and spell_custom_attr (77679 share damage) rows still need a live read-back; update ordering is not asserted.\",\"ledger_refs\":[\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:unresolved[key=whether_historical_custom_SQL_pack_is_applied_to_current_database]\"]}\n+        {\"key\":\"add_melee_damage_modifiers_non_10n\",\"original_status\":\"fidelity_blocked\",\"ledger_status\":\"fidelity_blocked\",\"resolution_class\":\"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\",\"resolution_state\":\"unresolved\",\"evidence_refs\":[\"warcraftlogs_gap\",\"repo_bwd_ledger_runtime\"],\"remaining_gap\":\"10N Aberration and Prime Subject DamageModifiers are staged from same-mode WCL rows (round 3); the 25N/10H/25H add templates have no same-mode melee sample.\",\"ledger_refs\":[\"experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json:unresolved[key=add_melee_damage_modifiers_non_10n]\"]}\n       ]\n     },\n     {\n@@ -339,11 +340,11 @@\n     \"total_blockers\": 42,\n     \"resolvable_from_official_cutoff_docs\": 3,\n     \"resolvable_from_client_rows\": 3,\n-    \"resolvable_from_server_db_source\": 3,\n-    \"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\": 33,\n+    \"resolvable_from_server_db_source\": 2,\n+    \"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\": 34,\n     \"fully_resolved_retail_fidelity_claims\": 0,\n-    \"partial_repository_or_client_resolutions\": 9,\n-    \"external_evidence_required\": 33\n+    \"partial_repository_or_client_resolutions\": 8,\n+    \"external_evidence_required\": 34\n   },\n   \"gate\": {\n     \"status\": \"blocked_fidelity\",\n"
+    },
+    {
+      "to": "coordinator",
+      "file": "tests/test_cata_raid_bwd_quantitative_resolution_audit.py",
+      "patch": "--- a/tests/test_cata_raid_bwd_quantitative_resolution_audit.py\t2026-09-27 09:17:36.411867529 +0300\n+++ b/tests/test_cata_raid_bwd_quantitative_resolution_audit.py\t2026-09-30 15:19:09.787083017 +0300\n@@ -72,14 +72,14 @@\n     assert counts == {\n         \"resolvable_from_official_cutoff_docs\": 3,\n         \"resolvable_from_client_rows\": 3,\n-        \"resolvable_from_server_db_source\": 3,\n-        \"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\": 33,\n+        \"resolvable_from_server_db_source\": 2,\n+        \"still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence\": 34,\n     }\n     assert report[\"resolution_counts\"][\"total_blockers\"] == 42\n     for key, count in counts.items():\n         assert report[\"resolution_counts\"][key] == count\n-    assert report[\"resolution_counts\"][\"external_evidence_required\"] == 33\n-    assert report[\"resolution_counts\"][\"partial_repository_or_client_resolutions\"] == 9\n+    assert report[\"resolution_counts\"][\"external_evidence_required\"] == 34\n+    assert report[\"resolution_counts\"][\"partial_repository_or_client_resolutions\"] == 8\n \n \n def test_bwd_quantitative_resolution_audit_pins_identity_and_fails_closed() -> None:\n"
+    },
+    {
+      "to": "coordinator",
+      "file": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+      "patch": "Replace creatures['41440'] and creatures['41841'] with the entries of the same keys in experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json, verbatim (status calibrated, damage_modifier 0.81 and 3.5, evidence, wcl_melee_reference; open_reason removed). Every other key unchanged."
+    },
+    {
+      "to": "coordinator",
+      "file": "sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql",
+      "patch": "git mv sql/custom/staged/world/2026_09_30_20_maloriak_add_damage_modifier.sql sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql (promotion; then set migration_state 'promoted' in the registry rows 41440/41841 if the registry records it)."
+    },
+    {
+      "to": "coordinator",
+      "file": "sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql",
+      "patch": "git mv sql/custom/staged/world/2026_09_30_21_maloriak_remedy_ramp.sql sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql (binds spell_maloriak_remedy to 77912; until applied the worldserver logs the script as unassigned and Remedy stays flat)."
+    },
+    {
+      "to": "coordinator",
+      "file": "build configuration (CMake)",
+      "patch": "Re-run the CMake configure step before the round-3 build: the scripts module collects sources with file(GLOB) without CONFIGURE_DEPENDS, and boss_maloriak_minions.cpp is a new file (AddSC_boss_maloriak calls AddSC_boss_maloriak_minions; without a reconfigure the link fails on that symbol)."
+    },
+    {
+      "to": "coordinator",
+      "file": "DVC evidence",
+      "patch": "Archive the round-3 raw captures through DVC (raid-evidence-lifecycle), then delete the local copies: ~/.cache/maloriak_wcl_r3/result{A,B,C,D,E,F,G,H}.json with task*.txt and final*.md, and the client-row extracts ~/.cache/maloriak_r3/client/{rend_78034,berserk_64238,remedy_77912}.json. The ledger source wcl_r3_sol_20260930 points at them."
+    }
+  ],
+  "tests": [
+    {
+      "command": "pixi run python -m pytest -q tests/test_maloriak_*.py",
+      "result": "53 passed, 1 failed: test_packet_identity_and_fail_closed_counts_match_the_catalog (audit keys vs ledger keys; new, caused by this packet's claim swap, fixed by the audit patch_request)"
+    },
+    {
+      "command": "PYTHONPATH=. pixi run python -m tools.raid_program.test_baseline check -- tests/test_maloriak_*.py tests/test_cata_raid_research_contracts.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py",
+      "result": "69 ran, 67 passed; new_failures 2: the Maloriak packet-identity test above, and test_bwd_quantitative_resolution_audit_reconciles_all_42_ledger_blockers (currently fails first on magmaw 8 == 7, another packet's ledger; after that is reconciled it needs this packet's audit patch). Earlier in the session test_cata_raid_research_contracts also failed on magmaw 8 == 7; it now passes (Maloriak's catalog counts, contract 6 / ledger 7, are unchanged)."
+    },
+    {
+      "command": "g++ -fsyntax-only with the build's compile_commands flags for boss_maloriak.cpp, boss_maloriak_spells.cpp, boss_maloriak_minions.cpp",
+      "result": "no errors (no build run)"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.raid_workloop program status --boss maloriak (read-only)",
+      "result": "unit raid:blackwing_descent:10N:maloriak research fidelity_state accepted, missing_inputs []"
+    }
+  ],
+  "open_items": [
+    {
+      "item": "verdict",
+      "state": "needs_round3_batch",
+      "reason": "No run this round. T11 targets (median, kills): blood_death_knight 15,364.3 (6), survival_hunter 22,932.8 (9), fire_mage 18,701.95 (4), retribution_paladin 20,070.75 (4), assassination_rogue 20,705.9 (4), elemental_shaman 22,266.0 (8), demonology_warlock 20,471.5 (3); round-2 kills (409 gear) are not comparable."
+    },
+    {
+      "item": "other_modes_research",
+      "state": "fidelity_blocked",
+      "reason": "10H/25N/25H stay blocked by six ledger claims (each lists its modes): hotfix carryover, cadence, target counts/samples (incl. Remedy ramp and slime strip, native on 10N only), 25N health and non-10N enrage, heroic Fixate and Black-first re-pull, non-10N add melee."
+    },
+    {
+      "item": "strategy_tuning_candidate",
+      "state": "needs_live_data",
+      "reason": "Native 10N Biting Chill now always lands on a melee-range player; the bot isolates a chilled non-tank when anyone is within 6 yd (BitingChillDanger), wider than the aura's 3-yd area, so melee may step out more than needed. Not tuned without live data."
+    }
+  ],
+  "risks": [
+    "Remedy ramp (10N, once the binding is promoted): an undispelled Remedy heals about 1.375M (7% of 19.76M) instead of 250k. In the user's 50% hold nobody dispels, so Maloriak climbs during the hold; with a hold of ~75 s the kill can lengthen by ~20-30 s. The 10N Berserk (7 min) now bounds a stalled fight; round-2 kills took 194 s at 409 gear.",
+    "Pre-vial model (10N): the storm time is drawn from 19 observed begins; the Release/Remedy/vial choice uses empirical frequencies (early 1:1, late vial 5/8, Remedy 2/8, Release 1/8). After a pre-vial Release the throw comes 2.8 s after the Release begin (live 1.6-1.7 s) because the face event waits for the cast.",
+    "Growth Catalyst recast after the slime uses one observed 5.2 s sample; the Rend's early removals (2.8-4.9 s live) are not modelled (1,000 per 3 s).",
+    "Prime Subject 3.5 excludes 8 late QfJR rows whose Growth Catalyst counts are inflated by dying Aberrations (no remove rows); with them the bounds cross (3.394 vs 3.245, all-row mean 3.35).",
+    "Flash Freeze on 10N now prefers players beyond 10 yd of Maloriak; bots in the Blue back fan (18 yd) will be the targets, as in the WCL kills.",
+    "Chrome exited during the first parallel WCL batch (plugin: no browser); I relaunched it with the user's profile (google-chrome --profile-directory='Profile 1', DISPLAY :0) at 10:50 UTC. Other agents' WCL tasks were affected at the same time.",
+    "New source file boss_maloriak_minions.cpp needs a CMake reconfigure (patch request); boss_maloriak.cpp is now 728 lines."
+  ],
+  "validation_neutrality": "All native changes are gated to 10N (GetDifficulty()/IsTenNormal checks or the 10N-only spell id binding) and to Maloriak's own scripts and entries; the file split moves code verbatim. The shared bot code, other bosses, Stonecore, dummy calibration and Magmaw's accepted scope are untouched (BotMaloriakDuties.h changed a comment only). The staged SQL touches only creature_template 41440/41841 and spell_script_names 77912.",
+  "needs_user_decision": []
+}

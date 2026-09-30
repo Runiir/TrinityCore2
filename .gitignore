@@ -41,6 +41,7 @@ __pycache__/
 /dataset
 !/dataset/
 /dataset/*
+!/dataset/raid_phase_gear_db_extract.dvc
 !/dataset/runtime_assets/
 /dataset/runtime_assets/*
 !/dataset/runtime_assets/*.dvc

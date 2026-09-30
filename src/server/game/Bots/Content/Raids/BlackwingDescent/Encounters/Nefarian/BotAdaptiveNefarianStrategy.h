@@ -240,17 +240,26 @@ private:
         for (ActorSnapshot const* warrior : view.BoneWarriors)
             if (IsActiveBoneWarrior(*warrior))
                 active.push_back(warrior);
-        ActorSnapshot const* shackle = ShackleCandidate(board, active, duty, facts);
+        ActorSnapshot const* shackle = ShackleCandidate(board, active, duty, facts, &view);
+        // Round 3: a warrior at a pillar (round 2's climbed the pillar-1 ramp
+        // to the rim casters) is as urgent as one in Nefarian's front.
         auto rank = [&](ActorSnapshot const* warrior)
         {
-            bool const inFront = !WarriorPointSafe(view, WorldToLocal(warrior->Position));
+            LocalPoint const at = WorldToLocal(warrior->Position);
+            bool const urgent = !WarriorPointSafe(view, at)
+                || NearPillar(at, PillarKeepOutRadius);
             bool const onWarden = warrior->VictimGuid == warden.Guid;
-            return (onWarden ? 2 : 0) + (inFront ? 0 : 1);
+            return (onWarden ? 2 : 0) + (urgent ? 0 : 1);
         };
         ActorSnapshot const* best = nullptr;
         for (ActorSnapshot const* warrior : active)
         {
-            if (warrior == shackle || IsBoneWarriorHeld(*warrior))
+            // A held warrior stays held, unless it is held in Nefarian's
+            // front: his breath would refill it there, so the handler takes
+            // it (its damage breaks the hold, its taunt leads it out).
+            bool const heldInFront = IsBoneWarriorHeld(*warrior)
+                && !WarriorPointSafe(view, WorldToLocal(warrior->Position));
+            if (warrior == shackle || (IsBoneWarriorHeld(*warrior) && !heldInFront))
                 continue;
             if (!best || rank(warrior) < rank(best)
                 || (rank(warrior) == rank(best)
@@ -506,6 +515,23 @@ private:
             && plan.MovementHold != WarriorStopHold
             && plan.MovementHold != LegInFlightHold)
             plan.MovementHold = PlatformHoldWith(plan.MovementHold);
+        // Round 3: the same in phase 2 (BotNefarianMovement.h PillarHold),
+        // alone or as the fallback beside a proposed step.
+        if (PillarHoldApplies(context) && plan.MovementHold != WarriorStopHold
+            && plan.MovementHold != LegInFlightHold)
+            plan.MovementHold = PillarHoldWith(plan.MovementHold);
+    }
+
+    static bool PillarHoldApplies(Nefarian::MovementContext const& context)
+    {
+        using namespace Nefarian;
+        if (!PhaseWantsPillar(context.View.CurrentPhase))
+            return false;
+        if (context.Facts)
+            if (FallState const* fall = context.Facts->FindFall(context.Bot.Guid);
+                fall && (fall->Falling || fall->LandingPending))
+                return false;
+        return true;
     }
 
     // The pickup's budget spent for the dragon this tank picks up (Onyxia,
@@ -663,7 +689,8 @@ private:
         // Arrived - unless a caster or healer would stand where a pillar
         // hides a target or a target is out of range, or a non-tank would
         // stand in a dragon's core: then it finishes the leg.
-        bool const selfServes = goal->Sight.empty() || SpotServes(self, goal->Sight);
+        bool const selfServes = goal->Sight.empty()
+            || SpotServes(self, goal->Sight, goal->SightMinRangeYards);
         bool const selfClear = !InDragonCore(context, self);
         if (goal->Target == Surface::Floor
             && Distance(self, goal->Local) <= goal->ArrivalToleranceYards

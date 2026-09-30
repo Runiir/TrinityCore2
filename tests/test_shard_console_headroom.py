@@ -39,16 +39,31 @@ def test_full_raid_heartbeat_reads_a_bounded_trace_tail_not_the_delta() -> None:
     assert f".botauto trace {FULL} all 4" in small
 
 
-def test_boss_shards_keep_the_delta_trace() -> None:
-    spec = proof_plan().shards[0]
-    assert not sc.is_full_raid_shard(spec)
-    assert f".botauto trace {spec.cohort_id} all 128 delta" in sc.shard_script(spec, sc.WatchdogPolicy()).splitlines()
+def test_boss_shards_read_the_same_bounded_trace_tail_not_the_delta() -> None:
+    """BWD 10N round 2: ~12 MB boss-shard delta replies stalled the shared world thread."""
+    for spec in proof_plan().shards:
+        assert not sc.is_full_raid_shard(spec)
+        lines = sc.shard_script(spec, sc.WatchdogPolicy()).splitlines()
+        traces = [line for line in lines if line.startswith(".botauto trace")]
+        assert traces == [f".botauto trace {spec.cohort_id} all {sc.SHARD_HEARTBEAT_TRACE_LIMIT}"]
+        assert not any(line.endswith(" delta") for line in lines)
+        _, heartbeat, _ = harness.heartbeat_commands_from_script("\n".join(lines))
+        assert drain_delta_command(heartbeat) == ""
+    assert sc.FULL_RAID_HEARTBEAT_TRACE_LIMIT == sc.SHARD_HEARTBEAT_TRACE_LIMIT == 8
 
 
-def test_full_raid_shards_name_one_bounded_terminal_trace() -> None:
+def test_the_legacy_harness_script_keeps_its_delta_trace() -> None:
+    """Negative control: Magmaw b5 / Stonecore scripts built outside the coordinator are unchanged."""
+    script = harness.command_script(selector="all", trace_limit=128, start=True, stop=True,
+                                    exit_server=False, cohort_id="c0", trace_delta=True)
+    assert ".botauto trace c0 all 128 delta" in script.splitlines()
+
+
+def test_every_shard_names_one_bounded_terminal_trace() -> None:
     spec = sc.parse_shard(shard_row(FULL, FULL))
     assert sc.terminal_trace_command(spec, sc.WatchdogPolicy()) == f".botauto trace {FULL} all 128"
-    assert sc.terminal_trace_command(proof_plan().shards[0], sc.WatchdogPolicy()) == ""
+    boss = proof_plan().shards[0]
+    assert sc.terminal_trace_command(boss, sc.WatchdogPolicy()) == f".botauto trace {boss.cohort_id} all 128"
 
 
 def test_without_a_delta_heartbeat_the_drain_captures_only_the_bounded_tail(tmp_path: Path) -> None:

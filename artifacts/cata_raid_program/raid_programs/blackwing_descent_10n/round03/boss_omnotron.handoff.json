@@ -1,0 +1,68 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:omnotron",
+  "round": 3,
+  "changed_files": [
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp",
+    "tests/test_omnotron_research_packet.py",
+    "tests/test_omnotron_strategy.py",
+    "tests/test_omnotron_defense_system_damage_modifier.py"
+  ],
+  "new_files": [
+    "sql/custom/staged/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql"
+  ],
+  "resolved_inputs": [],
+  "patch_requests": [],
+  "tests": [
+    {
+      "command": "PYTHONPATH=. pixi run python -m tools.raid_program.test_baseline check -- tests/test_omnotron_defense_system_damage_modifier.py tests/test_omnotron_positioning.py tests/test_omnotron_recovery_readycheck.py tests/test_omnotron_research_packet.py tests/test_omnotron_route_geometry.py tests/test_omnotron_strategy.py tests/test_cata_raid_research_contracts.py tests/test_scoreboard_native_scope.py tests/test_raid_scoreboard.py tests/test_run_sanity.py",
+      "result": "first run: 204 passed, 1 new_failure (test_omnotron_defense_system_damage_modifier.py::test_file_is_applied_under_sql_custom_world: its glob forbade any staged *omnotron* file; caused by this packet's new staged spell_proc SQL; relevant; the assertion was narrowed to *omnotron*damage_modifier*). Rerun of that file: 6 passed. All other 204 pass."
+    },
+    {
+      "command": "pixi run python -m pytest -q tests/test_omnotron_*.py",
+      "result": "all pass (strategy tests compile the headers with g++ -Wall -Wextra -Werror)"
+    },
+    {
+      "command": "g++ -fsyntax-only with build/compile_commands.json flags on BotWorldPopulationMgrOmnotronCandidates.cpp (no object written, no build)",
+      "result": "no errors"
+    }
+  ],
+  "validation_neutrality": "Changes are Omnotron-only: the Omnotron strategy headers and its candidate submitter (Omnotron route node), Omnotron research/reference/target files, and one staged (not applied) SQL row for spell_proc 79729 (10N Power Conversion; heroic/25 rows 91543-91545 unchanged). No shared runtime, class rotation, Magmaw, Stonecore or calibration path is touched. The raid target now matches ten tier-11 references (all gated specs WCL-based, no WoWSims fallback), so the Omnotron verdict thresholds change deliberately with the round-3 regear; round-1/2 409-gear numbers are not comparable.",
+  "risks": [
+    "Per-spec WCL targets (tier-11, median of matched kills, ratio 0.95): Blood DK 15,933 (7 kills), Survival 24,349 (7), Fire 25,184 (6), Retribution 30,330 (3), Assassination 30,497 (4), Elemental 24,497 (5), Demonology 30,757 (3); party reference median raid DPS 164,466. Retribution, Assassination and Demonology moved from WoWSims fallback to WCL medians; three-kill medians (Ret, Demo) are sensitive to one kill (Demo values 16,131 / 30,757 / 32,012).",
+    "Poison Bomb targeting now applies in every mode: native despawns a killed bomb in all modes and WCL confirms it for 10N; Wowhead claims heroic bombs explode on death (no heroic sample). No heroic run is planned.",
+    "The interrupt cooldown record is written when TryCastCombatSpell reports a submission; a submitted-but-failed interrupt marks that bot cooling for up to its client cooldown (10-24 s), and the rotation then skips it (other members or the plain-rotation fallback still cover).",
+    "The staged spell_proc row takes effect only when the coordinator promotes it to sql/custom/world before the batch; until then native still gives one Converted Power stack per interrupt/taunt (acceptance observation text says 'once promoted').",
+    "Round-2 sanity warn boss_melee_fidelity: Electron melee 1.161x its own WCL mean (27 swings). The pooled four-construct cross-check at DamageModifier 11.2 was -0.6% and Electron's own WCL mean includes attacker-debuffed rows (Scarlet Fever etc.); not re-calibrated without T11 live data.",
+    "I ran `git checkout --` on the owned raid target (and restored the owned DPS manifest from `git show HEAD:`) once, to redo my own rewrite with the repository's indent; both files were unmodified at HEAD before this packet (verified by key-by-key diff), so no foreign change was lost."
+  ],
+  "open_items": [
+    "encounter_research stays blocking for 10N: one material claim remains, barrier_absorb_amount (no Barrier broke in 21 WCL 10N kills; largest unbroken absorb 267,864; client 300,000 vs Wowhead 900,000). See needs_user_decision omnotron_barrier_absorb_client_row. static_shock_center_attacker_or_construct and power_conversion_no_damage_proc are resolved for 10N and stay open only for 10H/25N/25H.",
+    "Coordinator: promote sql/custom/staged/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql to sql/custom/world before the round-3 batch (reverse in the file).",
+    "Coordinator: publish the WCL scratch ~/.cache/omnotron_wcl_r3/ (resultA.json, resultA2.json, resultA2.md, resultB.json, prompts, logs) through DVC with the round-3 evidence and delete the local copy. Route: codex exec -m gpt-6.1-sol in the user's Chrome (profile Runiir), own tab per run, 2026-09-30 10:37-11:54 UTC; no check on WCL pages (one Archon help page showed a check, not submitted); the first run and the timeline run lost the Chrome plugin connection mid-task (tab closure unverified for those two), the second research run closed its tab.",
+    "The enemy cast timeline of w2W84MtybL1VKCvQ-fight12 was not read (plugin disconnect); enemy_cast_timelines keeps the 2026-09-27 kills (encounter-timer evidence only).",
+    "Live round-3 checks for the reviewer/assessor: duty plan 'cooling' list and Arcane Annihilator interrupt ratio (WCL competent kills: 13/13-14 per full activation), Poison Bomb 80092 hits and Poison Puddle summons per fixate near 0, Static Shock 79912 and Backdraft 79617 count 0, Converted Power per interrupt 0 once the staged row is promoted.",
+    "WCL side observation (not acted on): pet and totem hits on shielded Arcanotron/Electron never produced Converted Power or Static Shock in the tier-11 kills; native procs on pet damage too. Pets follow the bot's target, which excludes shielded constructs, so bots are unaffected."
+  ],
+  "needs_user_decision": [
+    {
+      "id": "omnotron_barrier_absorb_client_row",
+      "question": "Accept the 4.4.2 client row (Barrier 79582 absorbs 300,000 on 10N, as native already does) to close the last 10N Omnotron research claim, or keep 10N research blocked until a WCL kill shows a Barrier break?",
+      "context": "21 WCL 10N kills (rounds 2-3) never broke a Barrier and never logged Backdraft 79617; the largest unbroken absorb is 267,864 (MxFq7TRbvnjGY1hJ-24), consistent with both the client 300,000 and Wowhead 900,000. Raids stop damage on Magmatron during Barrier, so a break is rare and further searching may not find one. The bots never damage a shielded construct (acceptance: Backdraft 0), so the value only matters if DoTs break it; native uses 300,000 (the harsher value). This claim alone keeps encounter_research open for Omnotron 10N.",
+      "options": [
+        "Accept the client row 300,000 for 10N (record as client-row value with WCL lower bound 267,864; close the claim for 10N)",
+        "Keep blocked and send another WCL search for a 10N kill with Backdraft 79617",
+        "Accept provisionally and re-open if live runs ever log Backdraft"
+      ],
+      "recommendation": "Accept the client row 300,000 for 10N: it is the 4.4.2 client data, native already uses it, no WCL sample contradicts it, and the bot acceptance already requires Backdraft 0."
+    }
+  ]
+}

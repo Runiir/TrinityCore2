@@ -1,0 +1,56 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:atramedes",
+  "round": 3,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlock.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirActions.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirGong.h",
+    "tests/test_atramedes_strategy.py",
+    "tests/test_atramedes_research_packet.py",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+  ],
+  "new_files": [],
+  "resolved_inputs": [],
+  "open_items": [
+    "encounter_research stays open for 10N on exactly one claim, sonar_bomb_count_by_mode: WCL logs no Sonar Bomb launches (only 92553 impacts), and the 4.4.2 client has no MaxTargets row, so 3 vs 5 cannot be observed. See needs_user_decision atramedes_sonar_bomb_count_10n. The 10N parts of ground_air_phase_timestamps, breath_initial_target_rule and breath_speed_scaling_with_sound are resolved (the claims keep 10H/25N/25H). fidelity_state_by_mode is added, and all modes stay fidelity_blocked.",
+    "Coordinator: publish the raw WCL captures through DVC, then delete the local copies: ~/.cache/atramedes_wcl/r3_air.json, r3_air2.json, r3_air3.json and their r3_air*_prompt.txt and r3_air*_final.md (ledger source_catalog wcl_atramedes_10n_air_20260930.raw_captures). Also publish ~/.cache/atramedes_client/sonar_bomb_442.json (4.4.2 client rows for 92519/92526/92530-92533/92553/92557/78092/78207/78217/78218).",
+    "First T11 live numbers come from the round-3 run. Check that the air phase happens at about 91 s, that 1-2 shields are spent per air phase, whether the Ice Block rescue fires (air_ice_block_rescue, ice_block_bait, ice_block) and that there are no air deaths.",
+    "Cast-timeline manifest unchanged: its reference (MxFq7TRbvnjGY1hJ fight 32) stays matched, and the new kill only adds Elemental and Survival DPS values."
+  ],
+  "patch_requests": [],
+  "risks": [
+    "The next-phase Searing Flame shield reserve drops below 50% boss health on the ground and 30% in the air. Those thresholds assume at least 150k raid DPS; the T11 WCL references run 145-158k. If the bots are slower, the second ground phase could be one shield short in the worst case. Out of 10 shields, the typical spend is 1 per ground phase plus 1-2 per air phase. Numbers were not tuned without live data.",
+    "The Ice Block rescue has never run live. Round 2 at 409 gear killed Atramedes before the air phase, and round 1 had air phases but no published spell timers for the play. The bait now suppresses offense once the flame is within 8 yd + 1.5 s of flame travel, so the mage loses a few seconds of damage once per fight.",
+    "Survival and Elemental targets rose, from 20,412.6 to 21,609.55 and from 19,688.2 to 24,949.4. Their round-2 ratios, measured at 409 gear, are not comparable anyway.",
+    "tests/test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed fails 8 == 7 for magmaw (catalog contract_unresolved_material_count 8 vs the magmaw contract's 7). This comes from the magmaw packet's concurrent edits and is unrelated to Atramedes: every Atramedes count is unchanged at 5, and the test passed before the magmaw contract changed."
+  ],
+  "tests": [
+    {
+      "command": "PYTHONPATH=. pixi run python -m tools.raid_program.test_baseline check -- tests/test_atramedes_*.py tests/test_cata_raid_research_contracts.py tests/test_cata_raid_bwd_quantitative_resolution_audit.py",
+      "result": "56 tests: 55 passed, 1 new_failure: test_cata_raid_research_contracts.py::test_all_catalog_triplets_reconcile_identity_and_fail_closed (magmaw catalog 8 vs contract 7; another packet's in-progress edit, not Atramedes). All 41 tests/test_atramedes_*.py pass, including the g++ -Wall -Wextra -Werror strategy harness."
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.raid_workloop program status --boss atramedes (read-only)",
+      "result": "encounter_research detail: contract fidelity_state_by_mode[10N] is not accepted (expected; the sonar_bomb_count_by_mode claim still covers 10N)"
+    }
+  ],
+  "validation_neutrality": "The strategy change is scoped to Atramedes (BotAtramedes*.h, encounter node bwd.atramedes.encounter only). It changes only the mage Ice Block air play: availability tolerates the global cooldown, the cast still waits for full readiness, and the bait starts no new cast near the flame. Other raids, Stonecore, calibration and the legacy shards are untouched. The reference change moves only the Atramedes Elemental and Survival targets. There are no SQL, native-script, runtime-publisher or shared-file changes.",
+  "needs_user_decision": [
+    {
+      "id": "atramedes_sonar_bomb_count_10n",
+      "question": "Can Atramedes 10N research be accepted with the native Sonar Bomb count of 5 per wave, although no source can confirm 3 or 5 for 4.4.2?",
+      "context": "Current Wowhead (4.4.2) says 3 bombs per wave in normal. Historical Icy Veins and the TrinityCore SpellMgr correction say 5. Warcraft Logs records only the impacts (92553): seven 10N kills show 1-3 players hit per 3 s wave, which fits both counts. It logs no launch, marker or summon row, and the 4.4.2 client has no max-targets row for the spell. No further log reading can settle it. Everything else for 10N is resolved: phase timestamps, a random breath target, and a flame speed that matches the native time ramp. The bots already dodge every bomb marker, whatever the count.",
+      "options": [
+        "Accept 10N with native 5 recorded as the unobservable, conservative value (more bombs than Wowhead's 3); mark the claim modes 10H/25N/25H only and set fidelity_state_by_mode 10N accepted",
+        "Accept 10N with 3 (Wowhead 4.4.2): change the SpellMgr correction for 92526/92532 to 3 and rebuild",
+        "Keep 10N research blocked until another source (a video count or a sniff) appears"
+      ],
+      "recommendation": "Accept 10N with the native 5. It is the harder value for the bots, the strategy handles any count, and no log can decide it. Record it as a sourced conflict with a bounded value, not as resolved truth."
+    }
+  ]
+}

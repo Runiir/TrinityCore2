@@ -111,6 +111,11 @@ def check_inputs(root: Path, g: dict, verdict: dict) -> None:
                 or variant.get('sha256') != graph.digest(sidecar.read_bytes())):
             raise graph.GraphError('raid target roster variant changed since the verdict (roster_variant)')
     target = graph.read(target_file)
+    if variant is not None:
+        from tools.raid_program.scoreboard_core import variant_reference_overrides
+        for row in graph.read(sidecar).get('variants') or []:
+            if isinstance(row, dict) and row.get('validation_scenario_id') == variant.get('validation_scenario_id'):
+                target = {**target, **variant_reference_overrides(row)}
     for field, key in (('wcl_manifest_sha256', 'wcl_reference_manifest'), ('wcl_timelines_sha256', 'wcl_cast_timelines')):
         path = target.get(key)
         if path is None and field == 'wcl_timelines_sha256' and verdict.get(field) is None:

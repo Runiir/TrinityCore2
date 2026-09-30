@@ -14,7 +14,7 @@
   "unresolved_material_count": 5,
   "encounter": "atramedes",
   "purpose": "source, client-data and native-audit ledger for Atramedes; no live-validation assertion",
-  "research_as_of": "2026-09-27",
+  "research_as_of": "2026-09-30",
   "source_catalog": {
     "wowhead_442": {
       "title": "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -188,9 +188,10 @@
       "title": "Atramedes SpellInfo corrections",
       "publisher": "repository",
       "path": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
-      "lines": "315-365",
+      "lines": "315-371",
       "accessed": "2026-09-25",
-      "claim": "Sonar Pulse 77672/92411-92413 MaxAffectedTargets 4; Searing Flame 77840 effect 1 -> periodic trigger 2000 ms; air Sonar Pulse 92526/92532 (10-player) 5 targets, 92531/92533 (25-player) 12; Roaring Flame Breath 78207 1 target; Sonic Flames 77782 target any; Building Speed Effect 78218/92463-92465 StackAmount 10."
+      "claim": "Sonar Pulse 77672/92411-92413 MaxAffectedTargets 4; Searing Flame 77840 effect 1 -> periodic trigger 2000 ms; air Sonar Bomb 92526 (10N) 3 targets since the 2026-09-30 user decision (was 5), 92532 (10H) 5 targets, 92531/92533 (25-player) 12; Roaring Flame Breath 78207 1 target; Sonic Flames 77782 target any; Building Speed Effect 78218/92463-92465 StackAmount 10.",
+      "updated": "2026-09-30 (92526 split from 92532, 10N set to 3)"
     },
     "tdb_bindings_20260925": {
       "title": "TDB 434.22011 Atramedes bindings, spawns and templates",
@@ -300,6 +301,62 @@
       "location": "DVC: artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_atramedes_blackwing_descent_10n-r01-553da85c98-*.tar.gz.dvc",
       "accessed": "2026-09-27",
       "use": "native liftoff/landing timing (boss z) and bot diagnosis"
+    },
+    "wcl_atramedes_10n_air_20260930": {
+      "title": "Warcraft Logs Cataclysm Classic, air-phase events of five Atramedes 10N kills: Tracking 78092 debuff events, Resonating Clash 78168/77611, Atramedes melee, Roaring Flame Breath 78353 and Sonar Bomb damage taken, Alternate Power (Sound, resource 110) gains, player buffs/casts during each air chase, Deaths",
+      "publisher": "Warcraft Logs",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13",
+        "https://classic.warcraftlogs.com/reports/hxz7MH8gW9BYGNdr?fight=41",
+        "https://classic.warcraftlogs.com/reports/jxNrbDtq9BdwAcam?fight=30",
+        "https://classic.warcraftlogs.com/reports/PpFW3bgy7m6Kxk1t?fight=8"
+      ],
+      "accessed": "2026-09-30 (10:37-11:52 UTC, three reads)",
+      "route": "codex exec -m gpt-6.1-sol, Chrome plugin, one own tab in the user's running Chrome (profile Runiir); no check appeared; the first read lost the plugin connection after 12 page loads and was resumed in two further reads (41 and 46 page loads)",
+      "raw_captures": "~/.cache/atramedes_wcl/r3_air.json, r3_air2.json, r3_air3.json (scratch; coordinator publishes through DVC)",
+      "use": "10N air-phase timestamps, breath target rule (Sound at each Tracking), flame catch timing against the Building Speed ramp, Sonar Bomb observability"
+    },
+    "user_decision_20260930_atramedes_sonar_bomb_10n": {
+      "title": "User decision: Atramedes 10N Sonar Bomb count",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-30",
+      "quote": "Switch to 3",
+      "question": "Can Atramedes 10N research be accepted with the native Sonar Bomb count of 5 per wave, although no source can confirm 3 or 5 for 4.4.2? (needs_user_decision atramedes_sonar_bomb_count_10n, round-3 handoff; the option \"Accept 10N with 3 (Wowhead 4.4.2)\" was chosen over the recommended native 5)",
+      "used_for": [
+        "sonar_bomb_count_by_mode (10N)"
+      ],
+      "supporting_source": "wowhead_442 (Wowhead 4.4.2 guide: 3 bombs per wave in normal)",
+      "reliability": "authoritative for 10N per the user; Warcraft Logs impact waves of 1-2 players fit both 3 and 5, so the decision is not contradicted by any observation",
+      "native_change": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp: 92526 (10N, SpellDifficulty row 3155 index 0) MaxAffectedTargets 5 -> 3; 92532 (10H) stays 5, 92531/92533 (25-player) stay 12; needs a worldserver build before a live run"
+    },
+    "user_decision_20260930_atramedes_kiter_sound_bound": {
+      "title": "User decision: Atramedes 10N kiter Sound bound",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-30",
+      "quote": "Bound kiter Sound (Recommended): keep the time-only ramp and add a 10N acceptance rule: the tracked kiter stays at 10 Sound or less during the chase",
+      "question": "The round-3 scoreboard/research review (item 5) rejected closing breath_speed_scaling_with_sound for 10N: every measured WCL chase had its kiter at 0-10 Sound, so an additive Sound term above 10 was never measured and nothing kept a 10N kiter inside that range. How should 10N resolve it?",
+      "used_for": [
+        "breath_speed_scaling_with_sound (10N)",
+        "acceptance_observations: kiter Sound bound"
+      ],
+      "supporting_source": "wcl_atramedes_10n_air_20260930 (five chases on the native time ramp, every kiter at 0-10 Sound)",
+      "reliability": "authoritative for 10N per the user; it bounds acceptance to the measured range instead of asserting the flame speed outside it",
+      "native_change": "none to the encounter: the native Reverberating Flame keeps its time-only Building Speed ramp. Bot runtime: BotAtramedesObservationCounters.h and BotAtramedesObservationStore.h sample the tracked kiter's Sound per chase and export raid_runtime.encounter_observations.atramedes; tools/raid_program/run_sanity.py blocks a counted 10N kill with a sample above 10 or without complete evidence; needs a worldserver build before a live run"
+    },
+    "user_raid_experience_20260930_atramedes_dodge": {
+      "title": "Atramedes tactic from the user's raid experience: everyone dodges everything",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-30",
+      "source_label": "user raid experience 2026-09-30",
+      "quote": "For atramedes ideally everyone is as close to 0 sound as possible, meaning the bots dodge everything.",
+      "used_for": [
+        "raid_wide_sound_near_zero",
+        "every_role_dodges_every_avoidable_sound_source_in_both_phases",
+        "acceptance_observations: raid-wide Sound"
+      ],
+      "reliability": "authoritative_plan_per_coordinator (user raid tactics outrank guides)",
+      "supporting_source": "client_spell_values.modulation: in 10N Modulation adds no Sound, so every 10N Sound source is avoidable (Sonar Pulse disks, Sonic Breath, fire patches, Sonar Bomb impacts, the Roaring Flame Breath); the ground Searing Flame adds none and is interrupted by the gong",
+      "native_change": "none to the encounter. Bot runtime: BotAtramedesDodge.h (one hazard field per bot: bomb zones, fire patches, moving Sonar Pulse lanes, the flame and its path, the Sonic Breath band; the shortest safe step clear of all of them) used by every exit, the tank and melee at maximum melee range, fire-free ground slots and detours; needs a worldserver build before a live run"
     }
   },
   "mode_matrix": {
@@ -1206,7 +1263,8 @@
       "icy_original": "80s_ground_40s_air",
       "local_cpp": "91s_first_liftoff_31s_air_event_93s_later_liftoff_plus_movement",
       "resolution": "do_not_schedule_exact_client_phase_timestamp",
-      "wcl_10n": "liftoff_about90s;air_about38_39s_including_travel"
+      "wcl_10n": "liftoff_about90s;air_about38_39s_including_travel",
+      "wcl_10n_20260930": "first_air_tracking_95_1_to_95_4s;melee_back_127_5_to_133_0s;matches_native"
     },
     {
       "key": "sonic_breath_cadence",
@@ -1222,7 +1280,8 @@
       "wowhead_442": "random_player",
       "icy_original": "highest_sound_not_tank",
       "local_cpp": "random_eligible_excluding_victim",
-      "resolution": "unresolved_4_4_2_target_rule"
+      "resolution": "10n_random_matches_native;other_modes_unresolved",
+      "wcl_10n_20260930": "random_not_highest_sound (18 determinable applications, 4 kills; target loudest twice)"
     },
     {
       "key": "sonar_bomb_counts",
@@ -1276,8 +1335,11 @@
       "key": "sonar_bomb_count_10n",
       "wowhead_442": "3",
       "icy_original": "5",
-      "local_spellmgr": "5",
-      "resolution": "unresolved_wcl_count_per_3s_wave"
+      "local_spellmgr": "3 (92526, changed 2026-09-30 by user decision; was 5)",
+      "resolution": "resolved_for_10N_by_user_decision_20260930 (\"Switch to 3\"; Wowhead 4.4.2 = 3; no log can decide, impacts fit 3 and 5)",
+      "wcl_10n_20260930": "no_launch_rows;impact_waves_1_to_2_players",
+      "local_spellmgr_before_20260930": "5",
+      "user_decision_20260930": "Switch to 3"
     },
     {
       "key": "building_speed_stack_cap",
@@ -1331,10 +1393,9 @@
   "unresolved": [
     {
       "key": "ground_air_phase_timestamps",
-      "status": "partial",
-      "evidence_gap": "10N is now measured on both sides; 10H/25N/25H have no log. WCL 10N (six kills, round 2): the first air Tracking lands at 95.1-95.4 s in all six and the first ground cast after the air phase at 138.8-148.1 s (native re-engage + 13-14 s puts the landing at about 125-135 s); fight 32 ground melee stops 89.8 s, resumes 129.1 s. Native (round-1 bot kills): liftoff 91.2-91.5 s, hover from 95-96 s, touch-down 127.8-128.5 s. WCL shows no Take Off Anim Kit row, so liftoff is read from melee and Tracking. Candidate for 10N resolution once the catalog and the BWD quantitative audit are updated together (coordinator-owned).",
+      "status": "resolved_10n_partial_other_modes",
+      "evidence_gap": "10N resolved 2026-09-30 (source wcl_atramedes_10n_air_20260930): in seven 10N kills the first air Tracking lands at 95.1-95.4 s, the last ground melee swing is at 87.9-90.4 s, the first air breath tick at 95.8-96.2 s, the last at 119.5-125.6 s, and the first melee after the landing at 127.5-133.0 s (median 129.1; 9Rdhq6BkMXKNw3CP f13 133.0, hxz7MH8gW9BYGNdr f41 127.7, jxNrbDtq9BdwAcam f30 127.5, PpFW3bgy7m6Kxk1t f8 129.4, MxFq7TRbvnjGY1hJ f32 129.1). Native: EVENT_LIFTOFF 91 s, hover reached and flame spawned about 95 s, EVENT_LAND 31 s later, touch-down 127.8-128.5 s and re-engage 0.8 s after (round-1 bot kills); the second ground phase's first Sonic Breath Tracking lands 150.3-152.0 s in WCL against native landing + 22 s. 10H, 25N and 25H still have no log.",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
@@ -1342,10 +1403,9 @@
     },
     {
       "key": "breath_initial_target_rule",
-      "status": "unresolved",
-      "evidence_gap": "Sonic Breath and Roaring Flame Breath: random (native, Wowhead) vs highest Sound and not the tank (historical Icy Veins). WCL 10N, six kills (34 Tracking applications): the ground Sonic Breath never tracked a tank (19 applications; native excludes the current victim), while the air Roaring Flame Breath tracked a tank twice (Wongelrainer, fight 32; the sole tank Diliny, X7tWdbvxYn3MjACD fight 28), so 'not the tank' does not hold in the air. WCL exposes Sound (alternate power 110) only as gains, not per-player balances, so 'highest Sound' stays untested.",
+      "status": "resolved_10n_other_modes_unobserved",
+      "evidence_gap": "10N resolved 2026-09-30 (source wcl_atramedes_10n_air_20260930): random, not highest Sound. Sound at each Tracking was summed from WCL Alternate Power gains since the last shield strike (a strike resets every bar) in four kills: of the 18 applications whose loudest player the gains determine, the target was the loudest only twice, and it often had 0 while others were loud (hxz7MH8gW9BYGNdr f41 01:35.3 Jonson 0 vs Andremus 90; jxNrbDtq9BdwAcam f30 01:46.5 Rubælia 0 vs Worgnfreeman 73; 9Rdhq6BkMXKNw3CP f13 01:07.7 Heinberg 0 vs Phoenixwings 15). Ground Sonic Breath never tracked a tank in 22 applications over the seven kills (native excludes the current victim); the air flame tracked a tank twice in round 2 (native RandomResize over all players). After a tracked target dies the flame takes a new target (f13: Vahan dies 01:58.8, Zuuri tracked 01:59.5; native SelectNearestPlayer). Observed but not modelled natively: a hunter's Feign Death dropped the flame (f30 Rubælia feigns 01:58.765, Tracking removed 01:58.757, Starfallaa tracked 01:59.415); native re-targets only a dead or missing target, and no canonical bot uses Feign Death. Heroic and 25-player targeting have no log.",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
@@ -1354,9 +1414,8 @@
     {
       "key": "sonar_bomb_count_by_mode",
       "status": "conflict",
-      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5. WCL MxFq7TRbvnjGY1hJ fight 32 shows no Sonar Bomb damage taken (all avoided), so the count stays unresolved. Round 2: five more 10N kills show Sonar Bomb 92553 impact groups every 3 s through the air phase with 1-3 players hit per group; WCL exposes no bomb cast or missile rows, so the launch count (3 vs 5) is still undecidable from damage taken.",
+      "evidence_gap": "10N resolved 2026-09-30 by user decision (source user_decision_20260930_atramedes_sonar_bomb_10n): \"Switch to 3\". Wowhead 4.4.2 says 3 bombs per wave in normal; the native SpellMgr correction for 92526 (10N) changed from 5 to 3; no log could settle it. Evidence behind the decision: WCL MxFq7TRbvnjGY1hJ fight 32 shows no Sonar Bomb damage taken (all avoided), so the count stays unresolved. Round 2: five more 10N kills show Sonar Bomb 92553 impact groups every 3 s through the air phase with 1-3 players hit per group; WCL exposes no bomb cast or missile rows, so the launch count (3 vs 5) is still undecidable from damage taken. Round 3 (2026-09-30, source wcl_atramedes_10n_air_20260930): WCL logs no Sonar Bomb launch at all: in 9Rdhq6BkMXKNw3CP f13 the all-events filters for 92519/92526/92530-92533/92557/92553/49623, for the names Sonar Bomb and Sonar Pulse and for summons in 01:25-02:15 are all empty (no bomb hit either); only impact damage (92553) appears. Impact waves hit 1-2 distinct players (f41 4 waves: 1, 2, 2, 1; f30 6 waves: 1, 1, 1, 2, 1, 1; f8 2 waves: 1, 1; one wave lands just after the landing from missiles in flight). Hits bound the launch count below by 2, which both 3 and 5 satisfy; the 4.4.2 client has no SpellTargetRestrictions MaxTargets row for 92526/92532 (the count is server-side). Open for 10H, 25N and 25H: Wowhead 4.4.2 says 6 (heroic) and 3 (25N) against the historical 5 (10-player) and 8 (25-player); native keeps 5 for 10H (92532) and 12 for 25-player (92531/92533); no same-mode log or count.",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
@@ -1364,10 +1423,9 @@
     },
     {
       "key": "breath_speed_scaling_with_sound",
-      "status": "unresolved",
-      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill. The WCL 10N kill shows no Resonating Clash cast rows in the enemy Casts view; per-air-phase shield counts are not visible there. Round 2: air Resonating Clash 78168 casts per air phase in six 10N kills are 1, 1, 1, 2, 1, 1 (fight 32 1; PpFW3bgy7m6Kxk1t 1; Bgcm6RavhWK7DLd1 1; hxz7MH8gW9BYGNdr 2; jxNrbDtq9BdwAcam 1; X7tWdbvxYn3MjACD 1), the same 1-2 the native mobility replay spends with the 7 s spawn. That matches the observable spend but does not isolate a Sound term in the flame speed.",
+      "status": "resolved_10n_by_user_bound_other_modes_unobserved",
+      "evidence_gap": "10N resolved 2026-09-30 by user decision (source user_decision_20260930_atramedes_kiter_sound_bound): \"Bound kiter Sound (Recommended): keep the time-only ramp and add a 10N acceptance rule: the tracked kiter stays at 10 Sound or less during the chase\". The native time-only ramp is kept, and a 10N kill is accepted only when, in every air-phase Roaring Flame chase, the tracked kiter stays at 10 Sound or less (acceptance observation; server counters raid_runtime.encounter_observations.atramedes, run_sanity acceptance_observation), so the unmeasured high-Sound case never counts as accepted. The earlier closure with bounds alone was rejected on review (2026-09-30): the evidence below covers only 0-10 Sound. Evidence (source wcl_atramedes_10n_air_20260930): WCL logs no Building Speed (78217/78218) rows, so the speed is read from catch timing. The flame hits its new target 0.47-0.53 s after Tracking (it spawns on the target), the target breaks free, and is caught again: Vahan 12.0 s after Tracking (Nitro Boosts 3.3-8.3 s), Rubælia 12.0 s (Nitro 1.9-6.9 s), Aduktai 8.5 s (Darkflight +40% 2.1-12.1 s), Jonson 4.5 s (no speed buff, casting); Aiada, tracked from a redirect with a head start, 20.0 s (Nitro, then Sprint). The native time ramp (5 yd/s + 1 yd/s per second, one Building Speed stack per second) in a straight-line chase predicts 12.8-13.2, 12.8-13.2, 7.8-8.8, 4.0 and 16-17 s; curved kites around the ring are caught sooner. Every target had 0-10 Sound during these chases, so a Sound-only speed (a slow flame at low Sound) is rejected; an additive Sound term above that range and the stack cap (server 10 versus client 99: 0.3 s difference in these chases) stay unmeasured. The native ramp is kept. Air strikes in these air phases: f13 1 (at 92.9 s, before the flame spawned), f41 2, f30 1, f8 1. Heroic/25-player: no log.",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
@@ -1500,9 +1558,9 @@
         92557,
         92553
       ],
-      "value": "92519 (30 s) every 3000 ms: 92526 marks 5 random players (10-player, SpellMgr correction; 12 in 25-player), each summons marker 49623 (6 s) and Atramedes fires 92557 at it (delay value 2.5, heroic 2); 92553: 20,000 Arcane and +20 Sound within 6 yd (heroic 30,000, +30)",
+      "value": "92519 (30 s) every 3000 ms: 92526 marks 3 random players in 10N (user decision 2026-09-30, Wowhead 4.4.2; SpellMgr correction, was 5), 92532 marks 5 in 10H (SpellMgr correction), 12 in 25-player, each summons marker 49623 (6 s) and Atramedes fires 92557 at it (delay value 2.5, heroic 2); 92553: 20,000 Arcane and +20 Sound within 6 yd (heroic 30,000, +30)",
       "modes": "all",
-      "status": "resolved_client_count_conflict_open"
+      "status": "resolved_client_count_10n_user_decision_other_modes_conflict_open"
     },
     {
       "key": "devastation",
@@ -1602,6 +1660,12 @@
         "observation": "Review assumed the client's 99-stack cap; SpellMgrCorrectionsPart04.cpp sets StackAmount 10 for 78218/92463/92464/92465",
         "resolution": "runtime cap 10 kept, conflict recorded, test pins the correction",
         "status": "recorded"
+      },
+      {
+        "key": "sonar_bomb_10n_count",
+        "observation": "SpellMgr correction gave 92526 (10N) and 92532 (10H) 5 targets; no log or client row shows the 10N count",
+        "fix": "92526 split from 92532 and set to MaxAffectedTargets 3 (user decision 2026-09-30, Wowhead 4.4.2); 92532 stays 5; syntax-checked, not built or run",
+        "status": "changed_by_user_decision_build_pending"
       }
     ]
   },
@@ -1632,7 +1696,7 @@
         "25H"
       ],
       "status": "resolved",
-      "known": "WCL 10N: ground melee stops at 89.8 s and resumes at 129.1 s (about 38-39 s air including travel), consistent with native 91 s liftoff + travel + 31 s + landing travel and BigWigs 36 s from take-off. Native (round-1 live kills blackwing_descent_10n-r01-553da85c98, boss z in the combat log): liftoff starts 91.2-91.5 s after the first hit, hover (z 113.2) from 95-96 s, touch-down 127.8-128.5 s: 36.5 s airborne including travel, within 1 s of the WCL 10N kill.",
+      "known": "WCL 10N: ground melee stops at 89.8 s and resumes at 129.1 s (about 38-39 s air including travel), consistent with native 91 s liftoff + travel + 31 s + landing travel and BigWigs 36 s from take-off. Native (round-1 live kills blackwing_descent_10n-r01-553da85c98, boss z in the combat log): liftoff starts 91.2-91.5 s after the first hit, hover (z 113.2) from 95-96 s, touch-down 127.8-128.5 s: 36.5 s airborne including travel, within 1 s of the WCL 10N kill. Round 3 (2026-09-30): four more 10N kills: last melee 87.9-90.4 s, first air Tracking 95.1-95.4 s, first melee after landing 127.5-133.0 s; the redirected flame re-tracks the striker 7.2-7.6 s after the strike (2 s wait plus the flight to the shield).",
       "next": "None for 10N.",
       "source_refs": [
         "local_cpp",
@@ -1640,7 +1704,8 @@
         "dbm_cataclysm_atramedes",
         "wcl_cloudflare_verification_20260927",
         "wcl_MxFq7TRbvnjGY1hJ_32",
-        "bot_live_r01_553da85c98"
+        "bot_live_r01_553da85c98",
+        "wcl_atramedes_10n_air_20260930"
       ]
     },
     {
@@ -1763,7 +1828,7 @@
         "10N"
       ],
       "status": "specified",
-      "known": "Tank 1 (anchor 150,-224.5); gong owner on the ground at the non-relay shield nearest the anchor (250130) until this phase's Searing Flame is spent, then at its first air relay station while the boss is in spell range; ground strikes prefer a non-relay shield in reach; in the air the owner and the backup at relay stations 10 yd from their shield toward the hover point, inside the 11.5 yd click reach (native 12.5) and in 3D spell range (61.5 yd less 0.25) with a 1 yd hold (five native stations: 250128, 250126, 250125, 250122, 250129; owner nearest the hover point, backup farthest from the owner's), sparse-shield fallback out of range only with <= 3 shields and more than the Searing Flame reserve; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check); early strike at a shield only for a lone kiter; strike at an in-reach non-relay shield first, then the one farthest from the flame (tank eligible as kiter); the lone-kiter early strike is suppressed only by an assigned relay in reach of its station's shield; the latest striker (78168) runs on during the redirect. Replay of successive air phases, each after a strategy-gonged ground Searing Flame (flame spawn 7 s and 3 s after liftoff, stack cap 10 and 99): phase 1 (9 shields, 100%) and phase 2 (phase-1 leftovers less one, 60%) first catch at once, later catches within 0.25 s, 2-4 strikes; phase 3 with three shields left (25%: the farthest three for every target and all 120 three-shield sets) first catch within 1.5 s and 3 ticks. User raid experience (2026-09-25, authoritative): melee hold slots at maximum melee range (21.58 yd, melee range 22.83 from CombatReach 20) behind the boss and dodge Sonar Pulse around the boss at that distance; the hunter owns the gongs; the air gong team is the hunter, the mage and the most mobile other player (by capability; balance druid, then rogue); the chased player spends its mobility (Sprint, Dash, Stampeding Roar from 4 s before contact; Blink, Disengage at contact; Aspect of the Cheetah left out: it fights the persistent Aspect of the Hawk) before anyone strikes; the mage with Ice Block ready takes the rescue strike, holds still (still casting), blocks when the flame is within 8 yd, waits the block and blinks out; a chased mage blocks by itself; readiness only from published cooldowns including the GCD (player MechanicTimers), never assumed. Replay: at most 2 shields per 31 s air phase in every run with the native 7 s spawn (54 of 58 with the 3 s stress spawn). Spirit packs: everyone, the tank included, targets the kill-order spirit; the route shared focus defers to it (spirit_kill_order_focus.patch). Round 4 live: Atramedes is a native TempSummon (intro and the 30 s respawn), filed under Summons; the plan now finds him there and owns the node only while he is engaged.",
+      "known": "Tank 1 (anchor 150,-224.5); gong owner on the ground at the non-relay shield nearest the anchor (250130) until this phase's Searing Flame is spent, then at its first air relay station while the boss is in spell range; ground strikes prefer a non-relay shield in reach; in the air the owner and the backup at relay stations 10 yd from their shield toward the hover point, inside the 11.5 yd click reach (native 12.5) and in 3D spell range (61.5 yd less 0.25) with a 1 yd hold (five native stations: 250128, 250126, 250125, 250122, 250129; owner nearest the hover point, backup farthest from the owner's), sparse-shield fallback out of range only with <= 3 shields and more than the Searing Flame reserve; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check); early strike at a shield only for a lone kiter; strike at an in-reach non-relay shield first, then the one farthest from the flame (tank eligible as kiter); the lone-kiter early strike is suppressed only by an assigned relay in reach of its station's shield; the latest striker (78168) runs on during the redirect. Replay of successive air phases, each after a strategy-gonged ground Searing Flame (flame spawn 7 s and 3 s after liftoff, stack cap 10 and 99): phase 1 (9 shields, 100%) and phase 2 (phase-1 leftovers less one, 60%) first catch at once, later catches within 0.25 s, 2-4 strikes; phase 3 with three shields left (25%: the farthest three for every target and all 120 three-shield sets) first catch within 1.5 s and 3 ticks. User raid experience (2026-09-25, authoritative): melee hold slots at maximum melee range (21.58 yd, melee range 22.83 from CombatReach 20) behind the boss and dodge Sonar Pulse around the boss at that distance; the hunter owns the gongs; the air gong team is the hunter, the mage and the most mobile other player (by capability; balance druid, then rogue); the chased player spends its mobility (Sprint, Dash, Stampeding Roar from 4 s before contact; Blink, Disengage at contact; Aspect of the Cheetah left out: it fights the persistent Aspect of the Hawk) before anyone strikes; the mage with Ice Block ready takes the rescue strike, holds still (still casting), blocks when the flame is within 8 yd, waits the block and blinks out; a chased mage blocks by itself; readiness only from published cooldowns including the GCD (player MechanicTimers), never assumed. Replay: at most 2 shields per 31 s air phase in every run with the native 7 s spawn (54 of 58 with the 3 s stress spawn). Spirit packs: everyone, the tank included, targets the kill-order spirit; the route shared focus defers to it (spirit_kill_order_focus.patch). Round 4 live: Atramedes is a native TempSummon (intro and the 30 s respawn), filed under Summons; the plan now finds him there and owns the node only while he is engaged. Round 3 (user raid experience 2026-09-30, \"everyone as close to 0 sound as possible\"): one hazard field per bot (bomb zones, fire patches, moving Sonar Pulse lanes with their disks' timing, the Reverberating Flame and 2.5 s of its path, the Sonic Breath band); every exit keeps its own point when that clears the whole field, else takes the shortest safe step (melee and the tank inside melee range, air relays in click reach of their shield); the tank holds Atramedes from the melee slot radius; melee walk around him, never through his centre; ground slots move off fire; formation walks, the gong approach and the redirect runner go around fire trails; the Sonic Breath kite and run-ahead bend around disks; the next-Searing-Flame reserve uses a 130k raid-DPS floor (slowest matched T11 kill 131,217), releasing it below 40.8% (ground) or 25.4% (air).",
       "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100, shields per air phase recorded.",
       "source_refs": [
         "client_442_spell_rows_20260925",
@@ -1771,7 +1836,22 @@
         "icy_original",
         "tdb_bindings_20260925",
         "user_raid_experience_20260925",
+        "user_raid_experience_20260930_atramedes_dodge",
         "wowhead_442"
+      ]
+    },
+    {
+      "key": "air_breath_target_and_speed_10n",
+      "modes": [
+        "10N"
+      ],
+      "status": "resolved",
+      "known": "Breath targets are random (Sound balances at 18 Tracking applications with a determinable loudest player); the air catch timing matches the native Building Speed time ramp within 1 s in four of five chases (0.0-0.8 s outside the predicted range: Vahan, Rubælia, Aduktai, Jonson), while Aiada's redirected chase, tracked from a redirect with a head start, was caught later than predicted (20.0 s observed against 16-17 s); Feign Death drops the flame in 4.4.2 (not modelled natively; no canonical bot uses it). The flame speed above 10 Sound is bounded, not measured: by the user decision of 2026-09-30 (\"Bound kiter Sound\") a 10N kill is accepted only while the tracked kiter stays at 10 Sound or less in every chase.",
+      "next": "Live: air catches in the round-3 shard should match the ramp the strategy's time-to-contact uses; every counted kill needs encounter_observations.atramedes with samples_above_10 0 and complete true (run_sanity acceptance_observation).",
+      "source_refs": [
+        "wcl_atramedes_10n_air_20260930",
+        "local_cpp",
+        "user_decision_20260930_atramedes_kiter_sound_bound"
       ]
     }
   ],
@@ -1781,16 +1861,19 @@
     "Every Searing Flame channel ends by a Resonating Clash within 2 s of its start (Vertigo on Atramedes).",
     "No player reaches 100 Sound (no Noisy! aura, no Devastation event).",
     "Tracking Flames target never shares the beam with another player for more than one tick.",
-    "Shield use follows the reserve rule: no Searing Flame without an available shield and no 90-Sound emergency withheld while more shields remain than this phase's Searing Flame needs; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason. Expected spend: 1 per ground phase plus at most 2 per air phase (user raid experience, 2026-09-25); the mage Ice Block rescue (air_ice_block_rescue) used once per fight while Ice Block is ready.",
+    "Shield use follows the reserve rule: no Searing Flame without an available shield and no 90-Sound emergency withheld while more shields remain than this phase's Searing Flame needs; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue, air_ice_block_rescue, and under the kiter Sound bound pre_liftoff_sound_reset, air_kiter_sound_reset, air_kiter_sound_bound) and phase; withheld gongs record their *_at_reserve reason. Expected spend: 1 per ground phase plus at most 2 per air phase (user raid experience, 2026-09-25), plus the pre-liftoff Sound reset when anyone is above 7 Sound in the last 4 s before the liftoff and any Sound-bound reset (round 3 strategy, BotAtramedesSoundBound.h); air strikes and the pre-liftoff reset keep every Searing Flame interrupt still expected (ShieldBudget); the mage Ice Block rescue (air_ice_block_rescue) used once per fight while Ice Block is ready.",
     "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
     "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442.",
     "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second.",
     "Air rescue exposure: while shields remain no player is in the Roaring Flame Breath for more than 2 s at a time (4 ticks of 78353), and an iced mage gains no Sound from the breath. Kite extensions and the Ice Block play delay the strike by design (in the replay the first strike on a mobile target comes up to about 10 s after the flame spawns, and an iced mage holds the flame for 10 s), so the strike time is not an acceptance bound.",
     "Air relay: the gong owner and the backup hold stations in click reach (11.5 yd) of a shield and within 61.5 yd (3D) of the hover point, so their casts keep landing; on the native spawns 250128, 250126, 250125, 250122 and 250129 qualify. In every air phase no player is in the breath for more than 2 s at a time while shields remain.",
     "Spirit packs (bwd.atramedes.north_spirits, south_spirits): after the first 5 s of combat no ranged or healer within 21.5 yd of an engaged spirit (Thunderclap 80649, 20 yd TargetB radius, hits only the tank and melee); kill order in the combat log Corehammer, Anvilrage, Moltenfist, Shadowforge (north) and Angerforge, Thaurissan, Burningeye, Ironstar (south); Chain Lightning 80646 at most 2 targets per cast; no melee inside a whirlwinding spirit's 4 yd 80651 pulse after its first second, and melee keep hitting their target during a Whirlwind (no Whirlwind death); no death; both packs cleared and the Ancient Bell becomes selectable (8 spirits dead).",
-    "Air tactics (user raid experience, 2026-09-25): at most 2 shields per air phase; each chased player with a ready kite extension uses it before a strike (event kiter_mobility_extension, the spell cast); the Ice Block rescue strike, the Ice Block cast within 8 yd of the tracking flame, no Sound on the iced mage, then Blink; melee within 22.83 yd of Atramedes' centre on the ground outside dodges and no Sonar Pulse hit on melee at max range.",
+    "Air tactics (user raid experience, 2026-09-25): at most 2 shields per air phase for catches (a pre-liftoff or Sound-bound reset under the kiter Sound bound comes on top); each chased player with a ready kite extension uses it before a strike (event kiter_mobility_extension, the spell cast); the Ice Block rescue strike, the Ice Block cast within 8 yd of the tracking flame, no Sound on the iced mage, then Blink; melee within 22.83 yd of Atramedes' centre on the ground outside dodges and no Sonar Pulse hit on melee at max range.",
     "Encounter ownership (round 4): from the landing on, every living bot's plan owns bwd.atramedes.encounter while Atramedes is engaged (no raid_mechanic_contract_fail_closed on 41442), the raid leaves the bell stack within the first seconds (tank drag toward (150, -224.5), ranged arc, melee at max range) and no Sonic Breath tick hits more than the kiter plus one player.",
-    "Kill attribution (round 5): the native death of Atramedes is accepted by the route (boss death callback gate=accepted, boss_killed, validation_route_manifest_complete), which needs the adaptive route observer (world.validation_route_atramedes_observation) to have bound the engagement; no route_destination_path_control_level_gap on the gong owner's standby or the air-kite ring waypoints; no validation_route_future_encounter_contamination during the spirit packs."
+    "Kill attribution (round 5): the native death of Atramedes is accepted by the route (boss death callback gate=accepted, boss_killed, validation_route_manifest_complete), which needs the adaptive route observer (world.validation_route_atramedes_observation) to have bound the engagement; no route_destination_path_control_level_gap on the gong owner's standby or the air-kite ring waypoints; no validation_route_future_encounter_contamination during the spirit packs.",
+    "Air phase (T11 gear, round 3 onward): liftoff about 91 s, air shields 1-2 per phase (WCL 10N, seven kills: 1, 1, 1, 2, 1, 1, 1), the Ice Block rescue used at most once per fight with the mage never leaving its bait for a global cooldown, and no boss-window death in the air.",
+    "Kiter Sound bound (10N; user decision 2026-09-30 \"Bound kiter Sound\", source user_decision_20260930_atramedes_kiter_sound_bound): in every air-phase Roaring Flame chase (from the snapshot in which the Reverberating Flame follows a player, by its Tracking aura or as the iced mage it keeps following, until it follows another player, nobody, or the air phase ends) the tracked kiter stays at 10 Sound or less, the range the WCL chases measured. Evidence: the judged attempt's final `.botauto status` raid_runtime.encounter_observations.atramedes (per cohort attempt and map instance): samples_above_10 0, complete true (no sampling gap over 1 s next to the air phase or over 5 s inside a ground engagement, no instance change), and at least one chase when the kill had an air phase. run_sanity acceptance_observation blocks a counted kill otherwise (unproven when the evidence is missing, malformed or incomplete). Strategy (round 3, BotAtramedesSoundBound.h, BotAtramedesKitePath.h): a ground strike in the last 4 s before the published liftoff while anyone is above 7 Sound (pre_liftoff_sound_reset), a strike at once while the chased player (or the striker the flame will track next) is above 7 (air_kiter_sound_reset) or its next breath or fire patch tick would pass 10 (air_kiter_sound_bound), all within the shield budget (withheld as *_at_reserve); the kite path, the redirect run, leaps and relay hold points avoid Sonar Bomb zones and fire patches.",
+    "Raid-wide Sound (10N; user raid experience 2026-09-30, source user_raid_experience_20260930_atramedes_dodge, \"For atramedes ideally everyone is as close to 0 sound as possible, meaning the bots dodge everything.\"): every role (tank, melee, ranged, healers, the gong relays, the Ice Block mage) stays near 0 Sound from avoidable sources in both phases; in 10N Modulation adds none. Replay evidence (tests/test_atramedes_raid_sound.py, production strategy, 12 whole ground phases with native disks, Sonic Breaths and Searing Flame patches; 60 first and 60 second air phases with Sonar Bombs and fire trails): per-role mean Sound gained per ground phase <= 2 (all roles <= 0.5; before this change 4.7, a tank reaching 100) and per air phase <= 2.5 (all roles <= 1; before 8.2-11.7), with melee out of melee range <= 3% of the ground phase. Live check, not yet gated by run_sanity: Sound per role from the combat log's Sound energizes (77675, 78100, 78023, 92553, 78353) per phase; only the tracked kiter's bound is gated (Kiter Sound bound)."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
@@ -1814,6 +1897,45 @@
       "key": "modulation_repeat_interval",
       "status": "resolved",
       "evidence_gap": "Resolved 2026-09-27: WCL 10N 16.2/16.8 s; native changed from 22-26 s to 16 s (boss_atramedes.cpp)."
+    },
+    {
+      "key": "ground_air_phase_timestamps_10n",
+      "status": "resolved",
+      "modes": [
+        "10N"
+      ],
+      "evidence_gap": "Resolved 2026-09-30: seven 10N kills (first air Tracking 95.1-95.4 s, first melee after landing 127.5-133.0 s) match the native liftoff 91 s, flame 95 s, landing 31 s later (source wcl_atramedes_10n_air_20260930)."
+    },
+    {
+      "key": "breath_initial_target_rule_10n",
+      "status": "resolved",
+      "modes": [
+        "10N"
+      ],
+      "evidence_gap": "Resolved 2026-09-30: random (18 Tracking applications with a determinable loudest player; the target was the loudest twice); ground excludes the tank, air does not; native agrees (source wcl_atramedes_10n_air_20260930)."
+    },
+    {
+      "key": "breath_speed_scaling_with_sound_10n",
+      "status": "resolved_by_user_decision",
+      "modes": [
+        "10N"
+      ],
+      "evidence_gap": "Resolved 2026-09-30 by user decision \"Bound kiter Sound (Recommended): keep the time-only ramp and add a 10N acceptance rule: the tracked kiter stays at 10 Sound or less during the chase\" (source user_decision_20260930_atramedes_kiter_sound_bound). Five catch times match the native time ramp and a Sound-only speed is rejected (source wcl_atramedes_10n_air_20260930), but every measured kiter had 0-10 Sound: an additive Sound term above 10 and the 10-vs-99 stack cap stay unmeasured. The earlier closure \"with bounds\" was rejected on review because nothing kept a 10N kiter inside that range; the acceptance observation (every chase sample at 10 Sound or less, complete server counters) now does, so a high-Sound chase is never accepted."
+    },
+    {
+      "key": "sonar_bomb_count_by_mode_10n",
+      "status": "resolved_by_user_decision",
+      "modes": [
+        "10N"
+      ],
+      "evidence_gap": "Resolved 2026-09-30 by user decision \"Switch to 3\" (source user_decision_20260930_atramedes_sonar_bomb_10n): 3 bombs per wave in 10N (Wowhead 4.4.2); SpellMgrCorrectionsPart04.cpp 92526 MaxAffectedTargets 3. The bots dodge every bomb marker whatever the count."
     }
-  ]
+  ],
+  "fidelity_state_by_mode": {
+    "10N": "accepted",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "10N accepted 2026-09-30: no unresolved claim covers 10N. The last one, sonar_bomb_count_by_mode, was closed for 10N by the user decision \"Switch to 3\" (Wowhead 4.4.2: 3 bombs per wave in normal; native SpellMgr correction for 92526 changed from 5 to 3); Warcraft Logs records only the impacts, so no log could settle it. 10H, 25N and 25H stay blocked: no log, and the count conflict stays open for them. breath_speed_scaling_with_sound was closed for 10N the same day by the user decision \"Bound kiter Sound\" (the review rejected its earlier closure with bounds alone): the native time-only ramp is kept and a 10N kill counts only while the tracked kiter stays at 10 Sound or less in every air-phase chase (acceptance observation), because every measured WCL kiter had 0-10 Sound and an additive Sound term above 10 was never measured."
 }

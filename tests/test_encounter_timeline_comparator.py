@@ -147,8 +147,15 @@ def test_real_targets_derive_cast_exclusions_from_their_dps_references() -> None
     root = Path(__file__).resolve().parents[1]
     targets = root / "experiments/configs/raid_targets"
     nefarian = json.loads((targets / "blackwing_descent_10n_nefarian.json").read_text())
+    # farY2 (Mojov) left the matched set with the tier-11 references, so its exclusion is no longer derived;
+    # the excluded actors of the ten tier-11 kills are.
+    exclusions = timeline_reference_exclusions(root, nefarian)
     assert {("MxFq7TRbvnjGY1hJ", "Jägamara"), ("MxFq7TRbvnjGY1hJ", "Wongelrainer"),
-            ("farY2cm8JMTB1jGh", "Mojov")} <= timeline_reference_exclusions(root, nefarian)
+            ("Z186QkDJrHATNcVW", "Yoshimega"), ("8vxjXMR9fzgbJKBa", "Yodahunter"),
+            ("PkbmWVZ6HrMy1RLB", "Ulthurak"), ("XKF12kztLBgvPn9T", "Urraka"),
+            ("p9Kb2tRF7VwBQPcn", "Ashhy"), ("cYg4C93QNdqKfPF1", "Néawen"),
+            ("cYg4C93QNdqKfPF1", "Roiisoleil")} <= exclusions
+    assert not any(report == "farY2cm8JMTB1jGh" for report, _ in exclusions)
     maloriak = json.loads((targets / "blackwing_descent_10n_maloriak.json").read_text())
     assert ("VL3fW9wNm2PRJDYt", "Labraizz") in timeline_reference_exclusions(root, maloriak)
     magmaw = json.loads((targets / "blackwing_descent_10n_magmaw.json").read_text())

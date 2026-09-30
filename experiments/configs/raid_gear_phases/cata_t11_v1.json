@@ -1,0 +1,209 @@
+{
+  "schema": "raid_gear_phase_v1",
+  "phase_id": "cata_t11",
+  "description": "Tier 11 content-phase gear for canonical raid compositions: what a normal-mode T11 raider wears. Normal T11 raid loot (Blackwing Descent, Bastion of Twilight, Throne of the Four Winds, Baradin Hold Argaloth), the T11 tier pieces bought with those raids' tokens or Justice Points, Justice/Valor and Tol Barad commendation vendor items, Cataclysm launch reputation (gold) vendor items, Cataclysm 4.0 heroic dungeon loot and bind-on-equip crafted items; rare-quality gems; Cataclysm permanent enchants. Every item is at or below the normal T11 item level (359), so heroic T11 (372), Tier 12 (378+) and Tier 13 (384+) loot is out of phase.",
+  "decision_source": {
+    "decided": "2026-09-30",
+    "summary": "User decision: gear the bots according to each raid's content-phase gear; bursting at Dragon Soul gear does not teach the bots mechanics. Blackwing Descent is bound to tier 11.",
+    "quote": "Maybe its better to gear the bots according to each phase gear. Yes bursting can work but it doesnt teach the bots mechanics."
+  },
+  "profile_namespace": "cata_t11",
+  "target_average_item_level": 359,
+  "item_policy": {
+    "max_item_level": 359,
+    "min_item_level": 333,
+    "min_item_level_note": "Level-85 Cataclysm gear starts at 333 (normal dungeons); nothing older is a Tier 11 raider's item.",
+    "min_quality": 2,
+    "max_quality": 4,
+    "max_required_level": 85,
+    "excluded_stats": ["resilience"],
+    "excluded_stats_note": "Player-versus-player items (resilience rating) are not PvE raid gear.",
+    "required_reputation": "excluded_unless_provisioned",
+    "required_reputation_note": "Native equip restrictions are checked against each character's race, class, team, level and provisioned professions (tools/bot_ml/phase_gear_equip_restrictions.py mirrors Player::CanUseItem). The canonical raid provisioning writes no character_reputation rows, so no character holds a Revered or Exalted standing and Player::CanUseItem (Player.cpp:10837) would refuse a reputation-gated item when the inventory loads: such items (the Cataclysm faction quartermasters' Revered and Exalted rewards, for example Signet of the Elder Council and Stump of Time) are excluded until the provisioning grants the reputation. Required spells and holiday items are refused for the same reason."
+  },
+  "sources": {
+    "loot_maps": [
+      {"map_id": 669, "name": "Blackwing Descent", "kind": "raid"},
+      {"map_id": 671, "name": "The Bastion of Twilight", "kind": "raid"},
+      {"map_id": 754, "name": "Throne of the Four Winds", "kind": "raid"},
+      {"map_id": 757, "name": "Baradin Hold", "kind": "raid"},
+      {"map_id": 643, "name": "Throne of the Tides", "kind": "heroic_dungeon"},
+      {"map_id": 644, "name": "Halls of Origination", "kind": "heroic_dungeon"},
+      {"map_id": 645, "name": "Blackrock Caverns", "kind": "heroic_dungeon"},
+      {"map_id": 657, "name": "The Vortex Pinnacle", "kind": "heroic_dungeon"},
+      {"map_id": 670, "name": "Grim Batol", "kind": "heroic_dungeon"},
+      {"map_id": 725, "name": "The Stonecore", "kind": "heroic_dungeon"},
+      {"map_id": 755, "name": "Lost City of the Tol'vir", "kind": "heroic_dungeon"},
+      {"map_id": 36, "name": "Deadmines", "kind": "heroic_dungeon"},
+      {"map_id": 33, "name": "Shadowfang Keep", "kind": "heroic_dungeon"}
+    ],
+    "loot_maps_note": "Zul'Aman and Zul'Gurub (4.1 heroic dungeons, item level 353) are left out: the brief names Tier 11 raid, crafted, Justice/Valor and heroic-dungeon gear, and 4.1 is a later content patch. Adding them is one map row each.",
+    "vendor_currencies": [
+      {"currency_id": 395, "name": "Justice Points"},
+      {"currency_id": 396, "name": "Valor Points"},
+      {"currency_id": 391, "name": "Tol Barad Commendation"}
+    ],
+    "vendor_gold": true,
+    "vendor_required_items": "loot_from_loot_maps",
+    "vendor_required_items_note": "A vendor cost that requires an item (the Tier 11 head and shoulder tokens) is admitted only when that item drops on a loot map above. Honor, Conquest, arena rating and every other currency are out of phase.",
+    "crafted": {
+      "profession_skill_ids": [164, 165, 171, 197, 202, 333, 755, 773],
+      "excluded_bonding": [1],
+      "note": "Bind-on-pickup crafted items need the crafter's own profession, so only bind-on-equip (or unbound) crafted items are admitted."
+    }
+  },
+  "gem_policy": {
+    "max_quality": 3,
+    "min_item_level": 81,
+    "max_item_level": 85,
+    "exclude_item_limit_category": true,
+    "exclude_required_skill": true,
+    "note": "Rare-quality Cataclysm gems (Inferno Ruby, Amberjewel, Ocean Sapphire, Demonseye, Ember Topaz, Dream Emerald cuts and Shadowspirit metas). Epic gems (patch 4.3, e.g. Queen's Garnet) are quality 4 and out of phase; Jewelcrafter-only Chimera's Eye cuts carry an item limit category and a skill requirement."
+  },
+  "enchant_policy": {
+    "applicability_oracle": "spell_equipped_items_dbc",
+    "enchant_id_min": 4060,
+    "enchant_id_max": 4275,
+    "extra_allowed_enchant_ids": [3368],
+    "extra_allowed_note": "3368 Rune of the Fallen Crusader: the Death Knight runeforge (class skill 776), carried from the Blood overlay.",
+    "excluded_stats": ["resilience"],
+    "order": [
+      "catalog profession enchant for the slot (the character's professions do not change with its gear)",
+      "the spec's current canonical profile enchant for the same slot when the phase item has the same inventory type and the enchant applies to it natively (pinned WoWSims preset or Blood overlay authority)",
+      "a proc enchant preference for the archetype (weapon slots)",
+      "the highest stat-weight enchant of the pool that applies to the item natively"
+    ],
+    "proc_enchant_preferences_by_archetype": {
+      "healer": [4097, 4066],
+      "dps_intellect": [4097],
+      "dps_strength": [4099],
+      "dps_agility": [4099, 4083],
+      "tank": [4098, 4227]
+    }
+  },
+  "reforge_policy": {
+    "mode": "single_best_stat_weight",
+    "reforgeable_stats": ["spirit", "dodge", "parry", "hit", "crit", "haste", "expertise", "mastery"],
+    "rating_caps_by_spec": {
+      "balance_druid": {"hit": 1742},
+      "elemental_shaman": {"hit": 1742},
+      "fire_mage": {"hit": 1742},
+      "demonology_warlock": {"hit": 1742},
+      "shadow_priest": {"hit": 1742},
+      "arcane_mage": {"hit": 1742},
+      "frost_mage": {"hit": 1742},
+      "affliction_warlock": {"hit": 1742},
+      "destruction_warlock": {"hit": 1742},
+      "survival_hunter": {"hit": 961},
+      "marksmanship_hunter": {"hit": 961},
+      "beast_mastery_hunter": {"hit": 961},
+      "assassination_rogue": {"hit": 961, "expertise": 781},
+      "combat_rogue": {"hit": 961, "expertise": 781},
+      "subtlety_rogue": {"hit": 961, "expertise": 781},
+      "retribution_paladin": {"hit": 961, "expertise": 781},
+      "blood_death_knight": {"hit": 961, "expertise": 781},
+      "feral_druid_tank": {"hit": 961, "expertise": 781}
+    },
+    "cap_contributors_by_spec": {
+      "balance_druid": {"hit": ["hit", "spirit"]},
+      "elemental_shaman": {"hit": ["hit", "spirit"]}
+    },
+    "note": "One reforge per item: 40% of the item's lowest-weight reforgeable stat into the highest-weight reforgeable stat the item lacks, only when that raises the weighted score and does not push the gear's total rating past the spec's cap (spell hit 17% = 1742, melee/ranged special-attack hit 8% = 961, dodge-cap expertise 26 = 781 rating, all at level 85 before talents). Balance of Power and Elemental Precision count spirit toward the spell hit cap."
+  },
+  "extra_sockets": {
+    "belt_buckle": true,
+    "blacksmith_sockets": "catalog_declared_profession_only"
+  },
+  "stat_weight_overrides_by_spec": {
+    "feral_druid_tank": {"agility": 1.5, "strength": 0.0, "parry": 0.0, "block": 0.0, "intellect": 0.0, "spirit": 0.0},
+    "survival_hunter": {"expertise": 0.0},
+    "marksmanship_hunter": {"expertise": 0.0},
+    "beast_mastery_hunter": {"expertise": 0.0},
+    "balance_druid": {"spirit": 1.0},
+    "elemental_shaman": {"spirit": 1.0},
+    "enhancement_shaman": {"agility": 2.0, "strength": 0.0, "intellect": 0.0, "spell_power": 0.0, "spirit": 0.0, "expertise": 0.9},
+    "feral_druid_dps": {"agility": 2.0, "strength": 0.0, "intellect": 0.0, "spell_power": 0.0, "spirit": 0.0, "expertise": 0.9}
+  },
+  "stat_weight_overrides_note": "Phase-scoped corrections on top of cata_434_combat_loot_profiles.json (which stays unchanged for the shared profiles): the tank archetype has no agility and values parry, which a bear cannot use; hunters gain nothing from expertise on ranged attacks; Balance of Power and Elemental Precision turn spirit into spell hit. Enhancement and Feral (cat) get the caster archetype's weights from the shared manifest; their phase weights value agility instead, which primary_stat_by_spec cross-checks.",
+  "tier_sets_by_spec": {
+    "blood_death_knight": "Magma Plated Battlearmor",
+    "frost_death_knight": "Magma Plated Battlegear",
+    "unholy_death_knight": "Magma Plated Battlegear",
+    "feral_druid_tank": "Stormrider's Battlegarb",
+    "feral_druid_dps": "Stormrider's Battlegarb",
+    "balance_druid": "Stormrider's Regalia",
+    "restoration_druid": "Stormrider's Vestments",
+    "beast_mastery_hunter": "Lightning-Charged Battlegear",
+    "marksmanship_hunter": "Lightning-Charged Battlegear",
+    "survival_hunter": "Lightning-Charged Battlegear",
+    "arcane_mage": "Firelord's Vestments",
+    "fire_mage": "Firelord's Vestments",
+    "frost_mage": "Firelord's Vestments",
+    "holy_paladin": "Reinforced Sapphirium Regalia",
+    "protection_paladin": "Reinforced Sapphirium Battlearmor",
+    "retribution_paladin": "Reinforced Sapphirium Battleplate",
+    "discipline_priest": "Mercurial Vestments",
+    "holy_priest": "Mercurial Vestments",
+    "shadow_priest": "Mercurial Regalia",
+    "assassination_rogue": "Wind Dancer's Regalia",
+    "combat_rogue": "Wind Dancer's Regalia",
+    "subtlety_rogue": "Wind Dancer's Regalia",
+    "elemental_shaman": "Regalia of the Raging Elements",
+    "enhancement_shaman": "Battlegear of the Raging Elements",
+    "restoration_shaman": "Vestments of the Raging Elements",
+    "affliction_warlock": "Shadowflame Regalia",
+    "demonology_warlock": "Shadowflame Regalia",
+    "destruction_warlock": "Shadowflame Regalia",
+    "arms_warrior": "Earthen Battleplate",
+    "fury_warrior": "Earthen Battleplate",
+    "protection_warrior": "Earthen Warplate"
+  },
+  "combat_spell_requirement_exemptions_by_spec": {
+    "assassination_rogue": [
+      {"spell_id": 51723, "name": "Fan of Knives", "decision": "User decision: Assassination never uses Fan of Knives, so its thrown-weapon requirement does not constrain the Assassination loadout; the spell stays provisioned."}
+    ]
+  },
+  "combat_spell_requirement_exemptions_note": "Spells of a spec's action profile whose equipped-item requirement the phase loadout need not meet, because the spec's approved rotation never casts them. An exemption naming a spell the spec does not require fails the build.",
+  "primary_stat_by_spec": {
+    "blood_death_knight": "strength",
+    "frost_death_knight": "strength",
+    "unholy_death_knight": "strength",
+    "feral_druid_tank": "agility",
+    "feral_druid_dps": "agility",
+    "balance_druid": "intellect",
+    "restoration_druid": "intellect",
+    "beast_mastery_hunter": "agility",
+    "marksmanship_hunter": "agility",
+    "survival_hunter": "agility",
+    "arcane_mage": "intellect",
+    "fire_mage": "intellect",
+    "frost_mage": "intellect",
+    "holy_paladin": "intellect",
+    "protection_paladin": "strength",
+    "retribution_paladin": "strength",
+    "discipline_priest": "intellect",
+    "holy_priest": "intellect",
+    "shadow_priest": "intellect",
+    "assassination_rogue": "agility",
+    "combat_rogue": "agility",
+    "subtlety_rogue": "agility",
+    "elemental_shaman": "intellect",
+    "enhancement_shaman": "agility",
+    "restoration_shaman": "intellect",
+    "affliction_warlock": "intellect",
+    "demonology_warlock": "intellect",
+    "destruction_warlock": "intellect",
+    "arms_warrior": "strength",
+    "fury_warrior": "strength",
+    "protection_warrior": "strength"
+  },
+  "primary_stat_note": "Every worn item (trinkets and rings included) must fit the spec's primary stat: an item whose static stats or item-spell stats (on equip, on use, on proc; tools/bot_ml/phase_gear_item_effects.py reads Item-sparse SpellID/SpellTrigger and SpellEffect.dbc) claim only other primary families is refused and fails revalidation. Families: strength (strength, attack power), agility (agility, attack power), intellect (intellect, spirit, spell power, mana regeneration). The declared stat must also be the spec's highest-weighted primary stat.",
+  "item_effect_policy": {
+    "uptime_by_kind": {"equip": 1.0, "use": 0.2, "proc": 0.3},
+    "tank_trinket_preferred_stats": ["stamina", "health", "dodge", "parry", "mastery", "armor"],
+    "note": "An item spell's stats add to its selection score at the uptime of its kind: always for an on-equip aura, about 20 of 120 seconds for an on-use buff, about a third of the time for a proc (internal cooldowns of 45-60 s on 15-20 s buffs; a stacking proc is counted at one stack). A tank's trinket slots prefer a trinket granting stamina, health, dodge, parry, mastery or armor (static or spell) over one that does not."
+  },
+  "tier_set_pieces": 4,
+  "tier_set_slots": [0, 2, 4, 6, 9],
+  "tier_set_note": "Four pieces of the spec's Tier 11 set for the four-piece bonus, in the four tier slots where the set piece costs the least weighted score; the fifth tier slot takes the best item, set or not."
+}

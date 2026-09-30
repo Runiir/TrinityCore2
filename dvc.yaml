@@ -504,6 +504,61 @@ stages:
     metrics:
     - dataset/validation_provisioning_verification/report.json:
         cache: false
+  raid_phase_gear:
+    cmd: python -m tools.bot_ml.build_phase_gear_profiles --compositions-dir
+      experiments/configs/raid_compositions --dbc-dir data/dbc/enUS
+      --shared-gear-profiles dataset/validation_gear_profiles/profiles.json
+      --db-extract-dir dataset/raid_phase_gear_db_extract
+      --output-dir dataset/raid_phase_gear_profiles
+    deps:
+    - tools/bot_ml/build_phase_gear_profiles.py
+    - tools/bot_ml/phase_gear_profiles.py
+    - tools/bot_ml/phase_gear_sources.py
+    - tools/bot_ml/phase_gear_extract.py
+    - tools/bot_ml/phase_gear_oracles.py
+    - tools/bot_ml/phase_gear_selection.py
+    - tools/bot_ml/phase_gear_spell_requirements.py
+    - tools/bot_ml/phase_gear_equip_restrictions.py
+    - tools/bot_ml/phase_gear_item_effects.py
+    - tools/bot_ml/phase_gear_validation.py
+    - tools/bot_ml/build_validation_gear_profiles.py
+    - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/wowsims_gear_binding.py
+    - tools/bot_ml/permanent_enchant_overlays.py
+    - tools/bot_ml/player_gear_acquisition.py
+    - tools/bot_ml/validation_profile_manifests.py
+    - tools/bot_ml/extract_world_knowledge.py
+    - tools/bot_ml/common.py
+    - experiments/configs/raid_gear_phases
+    - experiments/configs/raid_compositions
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/cata_434_combat_loot_profiles.json
+    - experiments/configs/wowsims_cata_p4_gear_profiles.json
+    - experiments/configs/cata_blood_permanent_enchant_overlays_v1.json
+    - sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
+    - sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql
+    - dataset/validation_gear_profiles
+    - dataset/raid_phase_gear_db_extract
+    - dataset/world_planner/item_source_index.jsonl
+    - dataset/world_planner/recipe_source_index.jsonl
+    - data/dbc/enUS/Item.db2
+    - data/dbc/enUS/Item-sparse.db2
+    - data/dbc/enUS/ItemExtendedCost.db2
+    - data/dbc/enUS/ItemSet.dbc
+    - data/dbc/enUS/ItemReforge.dbc
+    - data/dbc/enUS/GemProperties.dbc
+    - data/dbc/enUS/ItemLimitCategory.dbc
+    - data/dbc/enUS/SpellItemEnchantment.dbc
+    - data/dbc/enUS/SpellItemEnchantmentCondition.dbc
+    - data/dbc/enUS/SpellEffect.dbc
+    - data/dbc/enUS/Spell.dbc
+    - data/dbc/enUS/SpellEquippedItems.dbc
+    - data/dbc/enUS/SkillLineAbility.dbc
+    - data/dbc/enUS/DungeonEncounter.dbc
+    - data/dbc/enUS/ChrRaces.dbc
+    outs:
+    - dataset/raid_phase_gear_profiles:
+        persist: true
   raid_shard_provisioning:
     cmd: python -m tools.raid_program.raid_shard_plan --prerequisites-dir
       experiments/configs/raid_prerequisites --provisioning-config
@@ -522,6 +577,7 @@ stages:
     - tools/raid_program/raid_loadout_spells.py
     - tools/raid_program/raid_loadout_sql.py
     - tools/raid_program/bwd_shard_fixtures.py
+    - tools/bot_ml/phase_gear_profiles.py
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/build_validation_gear_profiles.py
     - tools/bot_ml/validation_profile_manifests.py
@@ -532,6 +588,7 @@ stages:
     - tools/bot_ml/common.py
     - experiments/configs/cata_blood_permanent_enchant_overlays_v1.json
     - experiments/configs/raid_compositions
+    - experiments/configs/raid_gear_phases
     - experiments/configs/raid_prerequisites
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/validation_scenarios_cata_001.json
@@ -543,6 +600,7 @@ stages:
     - sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
     - sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql
     - dataset/validation_gear_profiles
+    - dataset/raid_phase_gear_profiles
     - dataset/world_knowledge/trainers.jsonl
     - data/dbc/enUS/SkillLineAbility.dbc
     - data/dbc/enUS/SpellEffect.dbc

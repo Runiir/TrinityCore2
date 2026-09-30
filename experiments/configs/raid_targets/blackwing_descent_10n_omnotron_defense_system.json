@@ -9,41 +9,98 @@
   "encounter_route_node_id": "bwd.omnotron.encounter",
   "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
   "matched_reference_ids": [
-    "Y8ajQ7dbmKMG1RZy-fight24",
-    "xAhkN2y9YP3KRmnJ-fight12"
+    "MxFq7TRbvnjGY1hJ-fight24",
+    "BwaHpnPbjkWtCX4Z-fight26",
+    "TaAF1ncP89KgpbLx-fight12",
+    "mfnZAdFTLkjMBC3z-fight6",
+    "qaKLyFTxkvc9hVpM-fight11",
+    "kCLpgK4xBXcWahN1-fight22",
+    "Z36FdRPNbAgjrqGX-fight13",
+    "w2W84MtybL1VKCvQ-fight12",
+    "VvXJBz2A93FRY4xm-fight15",
+    "MRytXdWJxkBpfPK1-fight26"
   ],
   "reference_status": {
     "state": "matched_wcl_references",
-    "retrieved": "2026-09-27",
+    "retrieved": "2026-09-30",
     "wcl_specs": {
       "blood_death_knight": [
-        27851.8,
-        32643
-      ],
-      "fire_mage": [
-        48982,
-        35203.7
-      ],
-      "elemental_shaman": [
-        51668.9,
-        40901.5
+        18801.5,
+        17827.4,
+        15932.8,
+        13653.1,
+        20007.0,
+        12722.2,
+        15401.3
       ],
       "survival_hunter": [
-        45475.8
+        27574.1,
+        23399.8,
+        23071.7,
+        18018.0,
+        26232.7,
+        24349.2,
+        26238.4
+      ],
+      "retribution_paladin": [
+        22905.0,
+        30387.7,
+        30330.2
+      ],
+      "elemental_shaman": [
+        24496.8,
+        25587.2,
+        20870.9,
+        22028.0,
+        27443.7
+      ],
+      "fire_mage": [
+        35921.2,
+        32153.4,
+        21813.7,
+        19543.5,
+        25936.9,
+        24430.4
+      ],
+      "demonology_warlock": [
+        16130.9,
+        30756.5,
+        32011.6
+      ],
+      "assassination_rogue": [
+        30869.1,
+        30685.0,
+        30308.9,
+        18826.2
       ]
     },
-    "wowsims_fallback_specs": [
-      "retribution_paladin",
-      "assassination_rogue",
-      "demonology_warlock"
-    ],
+    "wcl_spec_kill_counts": {
+      "blood_death_knight": 7,
+      "survival_hunter": 7,
+      "retribution_paladin": 3,
+      "elemental_shaman": 5,
+      "fire_mage": 6,
+      "demonology_warlock": 3,
+      "assassination_rogue": 4
+    },
+    "wcl_spec_targets": {
+      "blood_death_knight": 15932.8,
+      "survival_hunter": 24349.2,
+      "retribution_paladin": 30330.2,
+      "elemental_shaman": 24496.8,
+      "fire_mage": 25183.65,
+      "demonology_warlock": 30756.5,
+      "assassination_rogue": 30496.95
+    },
+    "wowsims_fallback_specs": [],
     "no_reference_specs": [
       "feral_druid_tank"
     ],
-    "consequence": "Blood DK, Fire mage, Elemental shaman and Survival hunter are judged against the median matched WCL DPS; Retribution, Assassination and Demonology fall back to WoWSims (ratio 0.9); the Feral tank has no reference (no matched 10N Omnotron kill had a Feral tank); its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27), so that no longer fails the verdict."
+    "consequence": "Every gated DPS spec (Blood DK, Survival, Fire, Retribution, Assassination, Elemental, Demonology) is judged against the median of 3-7 matched tier-11 WCL kills; no spec falls back to WoWSims. The Feral tank has no reference; its DPS is informational (dps_gate_exempt_specs, user decision 2026-09-27)."
   },
   "unmatched_reference_notes": {
-    "MxFq7TRbvnjGY1hJ-fight24": "Item level 359.9, about 35-40 below the matched kills; 133.2 s with three constructs. Context only (and the source of the Retribution observation 22,905 DPS), never a target."
+    "Y8ajQ7dbmKMG1RZy-fight24": "Raid item level 395.33, outside the tier-11 band; the round-1/2 matched reference, dropped 2026-09-30 (the roster now wears tier-11 phase gear).",
+    "xAhkN2y9YP3KRmnJ-fight12": "Raid item level 401.4, outside the tier-11 band; the round-1/2 matched reference, dropped 2026-09-30. Its cast timeline was replaced by w2W84MtybL1VKCvQ-fight12."
   },
   "kills_per_measurement": 3,
   "kills_per_batch": 5,
@@ -196,5 +253,26 @@
     "shard_run_plan": "experiments/configs/shard_runs/bwd_10n_round2_canonical_c0_v1.json",
     "argv_template_note": "Single-shard scoreboard form; the round-2 parallel run goes through shard_coordinator with the shard run plan. Provisioning of the canonical c0 cohort is package M's guarded apply path."
   },
-  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json"
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+  "reference_item_level": {
+    "band": [
+      352.0,
+      366.0
+    ],
+    "roster_average_item_level": 359,
+    "references": {
+      "MxFq7TRbvnjGY1hJ-fight24": 359.9,
+      "BwaHpnPbjkWtCX4Z-fight26": 356.5,
+      "TaAF1ncP89KgpbLx-fight12": 362.8,
+      "mfnZAdFTLkjMBC3z-fight6": 358.9,
+      "qaKLyFTxkvc9hVpM-fight11": 359.5,
+      "kCLpgK4xBXcWahN1-fight22": 355.4,
+      "Z36FdRPNbAgjrqGX-fight13": 362.1,
+      "w2W84MtybL1VKCvQ-fight12": 358.7,
+      "VvXJBz2A93FRY4xm-fight15": 357.4,
+      "MRytXdWJxkBpfPK1-fight26": 358.8
+    },
+    "median": 358.85,
+    "decision": "user decision 2026-09-30: gear the bots to tier-11 phase gear (about 359) and match WCL kills at raid item level 352-366"
+  }
 }

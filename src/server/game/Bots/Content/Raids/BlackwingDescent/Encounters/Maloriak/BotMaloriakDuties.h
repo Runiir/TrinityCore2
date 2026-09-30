@@ -385,8 +385,8 @@ inline bool OwnCastYieldsToDuty(bool healer, bool castIsHelpful,
 // Bound on the add switch. It normally ends when the chambers are empty and
 // the loose Aberrations are dead (six releases 17-18 s apart, about 110 s
 // from the first); if the reserve stops draining, the cap leaves the
-// phase-two burn well inside the guides' 6-7 minute enrage (the native
-// script has none). The dispatch logs it when it fires.
+// phase-two burn well inside the 10N Berserk at 7 minutes (native since
+// round 3, from a 10N WCL kill). The dispatch logs it when it fires.
 constexpr uint64 AddSwitchCapMs = 180000;
 
 inline bool Contains(std::vector<ObjectGuid> const& guids, ObjectGuid guid)

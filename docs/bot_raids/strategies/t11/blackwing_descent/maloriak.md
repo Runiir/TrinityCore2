@@ -1,15 +1,19 @@
-# Maloriak — research contract v3 (2026-09-25)
+# Maloriak — research contract v4 (2026-09-30)
 
 Scope: Cataclysm Classic 4.4.2-labelled behavior for 10-player Normal (10N), 10-player
 Heroic (10H), 25-player Normal (25N) and 25-player Heroic (25H). The bot program runs the
 4.3.4 client and server with 4.4.2 reference tuning
-(`experiments/configs/cata_raid_acceptance_policy_v1.json`). State: `fidelity_blocked`. Nothing
-here is live-validated. Where the native script and a source disagree, both are kept and the
+(`experiments/configs/cata_raid_acceptance_policy_v1.json`). State: `fidelity_blocked` at contract
+level; per mode (`fidelity_state_by_mode`) 10N is `accepted` (round 3; the round-3 fix of 2026-09-30
+added target-era evidence and a native draw for the Green timers, see "Round-3 fix" below) and 10H,
+25N and 25H are `fidelity_blocked`. Nothing here is live-validated; the 10N acceptance observations are in
+the ledger. Where the native script and a source disagree, both are kept and the
 bot does not treat the disputed value as exact.
 
 Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json`
 (contract) and `maloriak_ledger_v1.json` (values, sources, research completion). WCL references
-(fight 34 extracted): `maloriak_wcl_dps_reference_v1.json`, `maloriak_wcl_cast_timelines_v1.json`. Finish line:
+(the tier-11 set, round 3): `maloriak_wcl_dps_reference_v1.json`; cast timelines (fight 34):
+`maloriak_wcl_cast_timelines_v1.json`. Finish line:
 `experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json`.
 
 ## Contract
@@ -195,20 +199,21 @@ twice. The second assignment now writes `TargetB`, as intended.
 
 Open native fidelity items (recorded, not changed):
 
-- **Biting Chill targets.** The script picks a random target within 60 yd, but the spell's cast
-  range is 10 yd, so a ranged pick fails and only melee-range picks land. The 2012 guide says one
-  melee-range target in 10-man and two in 25-man. Wowhead says three random raid members. Count
-  the live targets before changing the filter.
+- **Biting Chill targets.** The script picked a random target within 60 yd, but the spell's cast
+  range is 10 yd, so a ranged pick failed. Fixed on 10N in round 3 (25 WCL casts, all on
+  melee-range players): the pick is within 10 yd. 25N/10H/25H keep the 60-yd pick (the 2012 guide
+  gives two targets in 25-man).
 - **Shadow Imbued and taunts (heroic).** Icy Veins says "Maloriak will gain Shadow Imbued, making
   him immune to taunts." The native aura (92716, mechanic mask 1614) grants no taunt immunity. The
   bot follows the guide and never taunts under it.
 
+Changed in round 3 from 10N WCL evidence (see "Round 3" below): the Remedy heal ramp (10N),
+Debilitating Slime removing Growth Catalyst (10N), the berserk timer (10N, 7 min), the Prime
+Subject Rend (10N) and the pre-vial opening (10N).
+
 Left unchanged (unresolved; no authoritative value):
 
-- the Remedy heal ramp;
-- the berserk timer (6 min current wording, 7 min normal and 12 min heroic historically);
-- the Prime Subject Rend;
-- Debilitating Slime removing Growth Catalyst (claimed by both Icy Veins pages; no client effect expresses it);
+- the berserk timer on 25N/10H/25H (7 min normal and 12 min heroic historically, 6 min current wording);
 - heroic Fixate;
 - Release Aberrations continuing to be cast after the reserve is empty.
 
@@ -249,7 +254,7 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 | Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued; in phase one holds him at the tank spot (-105.8, -449.0), 36 yd north of the cauldron |
 | Off-tank | Feral (bear) | picks up and taunts loose Aberrations, Prime Subjects and Vile Swills; holds them at an add spot ≥ 20 yd from the boss |
 | Arcane Storm | Retribution (lowest-GUID melee 10 s interrupt) | the owner at the cast; the second short interrupter after 0.8 s of channel; everyone capable after 2 s |
-| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting. An admitted release is published as an interrupt veto, keyed by map, instance and boss GUID, that the kernel profile resolver honours (in round 3 rotation interrupts cut every release); the legacy SelectCombatSpell and BotController paths do not check it |
+| Release Aberrations | nobody | never interrupted (user tactic 2026-09-26). Every phase-one release is published as an interrupt veto, keyed by map, instance and boss GUID, that the kernel profile resolver honours (in an earlier round rotation interrupts cut every release); the legacy SelectCombatSpell and BotController paths do not check it |
 | Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s; an assigned purger or interrupter stops its own hard cast first, only when the duty spell passes every other cast gate (sight, range, cooldown, power, control), and a healer keeps a heal while anyone is below 50% |
 | Raid haste | Elemental Shaman (else a Mage) | in phase two |
 | Flash Freeze | ranged damage dealers | break the nearest block; others leave the 5-yard shatter |
@@ -310,8 +315,9 @@ One spot healer, the lowest-GUID healer, focuses frozen, Consuming Flames and Bi
 below 85%. It yields to the ordinary lowest-health scan while a tank is under 50%, or when another
 player is more than 10 points lower.
 
-Damage dealers burn Aberrations during the slime window, when six are loose (nine while the native
-timer shows Green within 15 s), or below 50% boss health. In phase two they stay on the boss.
+Damage dealers kill every loose Aberration as it comes, one at a time (the weakest first, a trapped
+one last), with no wait for the slime window (user tactic). From the 50% switch until the chambers
+are empty only the Blood DK stays on Maloriak. In phase two they stay on the boss.
 
 ## Encounter damage fidelity
 
@@ -380,18 +386,159 @@ per Prime Subject hit. The boss 10N value is now calibrated (DamageModifier 9.5,
    A Release Aberrations (two kills) or Remedy (three kills) before the first vial came only on
    Red openings, with no rule that fits all eight; it stays open.
 
+## Round 3 (2026-09-30): tier-11 references and the 10N claims
+
+Route: GPT-6.1 Sol through the Codex Chrome plugin in the user's Chrome (profile Runiir), one own
+tab per task, no verification check. Chrome exited during the first parallel batch (about 10:45
+UTC); it was relaunched with the same profile and the rest ran sequentially (ledger source
+`wcl_r3_sol_20260930`, which lists the reports).
+
+References. The roster now wears tier-11 phase gear (about 359). The matched set is nine 10N kills
+at raid item level 355.6-361.0 (the eight round-2 kills plus QfJR9AZw13G6kzXP fight 14, whose Blood
+DK tanked Maloriak: 56 of 57 boss swings). Every reference now carries each gated roster spec it
+fields. Targets (median, kills; all View Unfiltered Damage since the round-3 fix): Blood DK 15,364
+(6), Survival 22,933 (9), Fire 18,702 (4), Retribution 20,071 (4), Assassination 20,706 (4), Elemental
+22,266 (8), Demonology 20,472 (3). The Feral add tank stays exempt.
+
+10N findings (ledger values `*_10N`) and native changes:
+
+- Opening (19 kills; first vial Red 12, Blue 7): an Arcane Storm 10.9-14.9 s after the pull, then
+  one action about 3.2 s after the storm begins. Slots at 14.1-16.4 s were Release Aberrations or
+  Remedy (4 and 4, never before 15.7 s); slots at 17.4-18.1 s were the vial (7 of 11), Remedy (3) or
+  Release (1). Blue openings carry them too, so "Red openings only" is withdrawn. Native 10N: the
+  storm time is drawn from the 19 observed values and the same slot rule decides
+  (`boss_maloriak_shared.h` `PRE_VIAL_*`). After a Release the throw waits for the 1.5 s cast
+  (2.8 s after its begin, 1.6-1.7 s live).
+- Vial offsets (six kills): after a Red or Blue imbue Arcane Storm and Release Aberrations come in a
+  random order, the first at 11.3 s, then Release at 14.6 s or the storm at 16.2 s; Remedy at
+  17.8-21.0 s (Red) or 16.2-19.4 s (Blue); the Green storm begin at 3.6-4.4 s (3.1-6.1 s with the
+  post-cutoff kills, see "Round-3 fix"). Native 10N now follows this (the Blue storm came at 6 s).
+- Biting Chill (25 casts in nine kills): one pick per cast, always a player in melee range (10
+  tanks, 16 melee damage dealers); one cast also caught the player beside the tank (the aura's
+  3-yd area). Native 10N now picks within 10 yd, the spell's range (it picked within 60 yd and
+  failed on ranged picks). This settles the guide conflict for 10N in favour of the 2012 guide.
+- Flash Freeze (16 casts in ten kills, 17 players frozen): always a ranged damage dealer or a
+  healer, never a tank or melee, as both guides say. Native 10N now prefers players beyond 10 yd
+  of Maloriak (the old pick allowed melee players beside him).
+- Health: damage taken minus Remedy healing is 19.76M in two kills (24.92M - 5.16M, 21.26M -
+  1.50M). The native 19,755,160 is right; the Wowhead 24.7M is not.
+- Remedy ramps: tick n heals 25,000 x n (x 0.9 under a healing debuff), 1.25-1.32M per full cast
+  against the flat 250,000 of the client row. Native: `spell_maloriak_remedy` scales every tick; it
+  is bound to the 10N id 77912 only (the 25N/10H/25H ids stay flat) by
+  `sql/custom/world/2026_09_30_21_maloriak_remedy_ramp.sql` (promoted 2026-09-30). An undispelled Remedy in the
+  50% hold now heals about 1.3M.
+- Green: Slime Imbued 7.2 s after the throw; the slime lasts 15 s; Arcane Storm 4.0-4.5 s,
+  Remedy 7.3-10.9 s and the first Release begin 7.3-10.5 s after the imbue (native 5 / 7.5 / 9 s). The slime
+  stripped every Growth Catalyst, the Aberrations' own included; a survivor had it again 5.2 s
+  later. Native (10N; the guides say it for every mode, but only 10N was observed):
+  `StripGrowthCatalystForSlime` removes it and survivors recast after 5.2 s. The round-3 fix draws
+  the 10N storm over 3.1-6.1 s, Remedy over 7.3-14.2 s and the Release begin over 6.415-10.505 s (below).
+- Fourth vial: two long kills threw the next vial 41.65 and 41.67 s after Slime Imbued (native 40 s
+  + 1.3 s throw). The Green-duration conflict is settled for 10N.
+- Enrage: Berserk 64238 at 7:02.6 of a 7:06 kill (cDQCyb4B71Wj9dV8 fight 15; the 2012 guide says 7
+  min on normal). Native 10N now casts it 7 min after the pull.
+- Prime Subjects cast Rend 78034 on their tank 14.1-14.6 s after landing, then 9.7-16.2 s apart
+  (client 1,000 per 3 s per stack, 18 s). Native 10N now does (`boss_maloriak_minions.cpp`); the
+  early removals seen live (2.8-4.9 s) are not modelled.
+- Spell values (U): Consuming Flames 4,500, Biting Chill 5,000, Scorching Blast 400,000 split
+  44,444 over nine players, Arcane Storm 11.8-12.4k (client 11,309), Acid Nova 9,075 (7,500 x
+  1.1^2: Growth Catalyst on Maloriak), Magma Jet 38-41k (client 37,999). The client values hold.
+- Adds: Aberration 0.802 <= m <= 0.824 (30 rows, Growth Catalyst auras counted per swing, own
+  included), set to 0.81; Prime Subject 3.394 <= m <= 3.627 (16 rows), set to 3.5
+  (`sql/custom/world/2026_09_30_20_maloriak_add_damage_modifier.sql`, promoted 2026-09-30). The boss's 9.5 read
+  1.02x WCL in the round-2 shard kills.
+- The live world DB has the historical custom SQL (share-damage attribute on all four Scorching
+  Blast ids, every spell script bound).
+
+The helper creature AIs moved to `boss_maloriak_minions.cpp` (the boss file stays well under
+1,000 lines); `AddSC_boss_maloriak` registers them, so the loader is unchanged, but CMake must be
+reconfigured to pick up the new file.
+
+## Round-3 fix (2026-09-30): unfiltered references and target-era corroboration
+
+Two review findings (GPT-6.1 Sol, round 3) were fixed with a new capture by the same route (ledger
+sources `wcl_maloriak_10n_post_cutoff_20260930` and `official_hotfix_audit_20250113_20250220`;
+archive `artifacts/cata_raid_program/wcl_round3_maloriak_bwd10n_20260930.tar.gz`).
+
+References (finding 6). Fights 34 and 13 had been read in the default damage-done view, which drops
+add damage in phase two, while the bots are scored on all targets. Both were re-read with View
+Unfiltered Damage (options=8192), every player row in both views. Fight 34 is unchanged for every DPS
+player (only the Blood DKs differ: Greysnout 11,793.0 unfiltered, 11,681.9 default). Fight 13 is
+higher unfiltered: Survival 20,488.7 (16,145.0), Retribution 20,432.7 (20,230.9), Demonology 22,112.5
+and 18,830.5 (19,314.1 and 17,145.5). All nine references now use the unfiltered view; the default
+values stay beside them (`dps_default_view`). The Retribution target moves from 19,969.85 to
+20,070.75 and Demonology from 20,060.4 to 20,471.5; the other targets are unchanged, and every gated
+spec keeps at least three kills. The add-tanking Blood DK Orageux (fight 13) stays excluded.
+
+Target era (finding 4). The 10N values came from kills dated 2024-10-01 to 2025-01-13, but the
+fidelity target is the live game on 2025-02-20. Two checks close that gap:
+
+- Official audit: no Cataclysm Classic hotfix or patch-note entry dated 2025-01-13 to 2025-02-20
+  mentions Blackwing Descent, Maloriak, a tier-11 raid, raid boss tuning or a global encounter change.
+  The hotfix thread list jumps from 2024-12-11 to 2025-02-21, the hotfix news article has no Cataclysm
+  Classic section in that interval, and the 4.4.2 patch notes (2025-02-18) have no tier-11 entry. A
+  document audit cannot exclude an unannounced change, so the kills below were compared as well.
+- Five 10N kills after the cutoff (2025-03-02 to 2025-05-13, raid item level 383-400, 150-213 s),
+  compared only on gear-independent mechanics (timers, target counts, base values):
+  - Agree: the opening (storm, then one action about 3.2 s later, or 4.7-4.9 s later as in three
+    pre-cutoff kills);
+    the Red/Blue offsets and Release timing; imbue to next throw 42.55-42.72 s (one 43.06 s); the
+    first vial random (Red 3, Blue 2); Biting Chill one debuffed player per cast at 12.9 / 24.3 / 35.6 s
+    after Frost Imbued (one cast spread to four players inside its 3-yd area); every Remedy tick is
+    25,000 x tick number x a player healing-debuff factor (72 ticks); the phase-two cadence.
+  - Differ: the Arcane Storm after Slime Imbued came 3.66, 4.69, 5.34, 6.18 and 6.57 s after the
+    imbue, against 4.13-4.92 s before the cutoff and the native fixed 4.0 s; one Green Remedy came at
+    14.15 s (7.3-10.9 s before); one Green Release Aberrations began 6.415 s after the imbue (a canceled Begin
+    Cast; 7.3-10.5 s before). Two kills repeat the old timing to 0.01 s, so a uniform timer change
+    does not explain it; the cause is not in the capture, and the audit found no change. One Blue phase
+    also cast Remedy on the storm's slot and the storm 1.6 s late (the native schedule can do the same).
+    Coordinator decision 2026-09-30: model the observed spread (storm Cast 3.66-6.57 s, Remedy up to
+    14.15 s, a Release begin from 6.415 s) natively on 10N only, in the time the script fires at.
+    `EVENT_ARCANE_STORM` fires when the 0.5 s cast begins, so the post-cutoff Cast rows are converted
+    to begins: minus the 0.474-0.531 s begin-to-cast
+    offset of 31 round-2 Begin/Cast pairs they are 3.13-6.10 s, and with the pre-cutoff begins (3.6-4.4 s)
+    the span is 3.1-6.1 s. `EVENT_REMEDY` fires at the cast of an instant spell (Spell.dbc 0 ms; no Begin
+    Cast rows in 22 pre-cutoff casts; the post-cutoff aura application equals the Cast row), so its
+    observed values need no shift. `EVENT_RELEASE_ABERRATIONS` fires when the 1.5 s cast begins: a Begin Cast
+    row (canceled ones included) is a begin as logged and a Cast row is converted by subtracting the 1.5 s
+    cast. The first Release begin after Slime Imbued was 7.299, 7.666, 8.888 (displayed as Canceled) and
+    10.505 s before the cutoff and 6.415 (canceled), 8.905, 9.312 (canceled) and 9.701 s after it; the
+    6.415 s row, omitted from the first round-3 closure, comes 2.6 s before the old fixed 9 s and outside
+    the old 7.7-10.5 s range (which had also left out the 7.299 s round-2 row). After Slime Imbued the native 10N
+    script draws the Arcane Storm uniformly over 3.1-6.1 s, Remedy over 7.3-14.2 s and the Release begin
+    over 6.415-10.505 s (both bounds are Begin Cast rows, so unrounded). Neither Remedy nor Release is
+    drawn before the storm; Release and Remedy overlap in range and may fall in either order (both orders
+    occur in the kills; a Remedy due during the Release cast waits for it, because `UpdateAI` runs no event
+    while Maloriak casts). The draw is `ScheduleGreenPhaseCasts` in `boss_maloriak_shared.h` (ledger
+    `green_release_begins_10N` lists every row); 25N, 10H and 25H keep the fixed 5 / 7.5 / 9 s and draw
+    nothing.
+  - Not observed after the cutoff: a fourth vial (every kill went to phase two after Green), Berserk
+    (the longest kill is 212.8 s), health, melee, spell values, Rend, the Growth Catalyst strip, and
+    the roles or positions of the Biting Chill and Flash Freeze targets. These stay bounded by the
+    pre-cutoff observations and the audit.
+
+Result: the hotfix-cutoff claim and every other 10N part are closed on this evidence or bounded by the
+audit. The live timer claim reopened 10N for the Green timer spread (storm, Remedy and the 6.415 s Release
+begin) and closed again once the native script drew the observed ranges (`wcl_maloriak_10n_post_cutoff_20260930`,
+`official_hotfix_audit_20250113_20250220`); its remaining modes are 10H, 25N and 25H. The per-mode
+research gate accepts 10N again.
+
 ## Unresolved (fidelity blockers)
 
-- Maloriak-specific hotfix carryover to the 2025-02-20 cutoff.
-- Live vial and ability cadence in all modes; heroic and 25-player WCL cadence; the pre-vial
-  Release Aberrations / Remedy on Red openings (10N).
-- Biting Chill target counts (native 60 yd pick vs 10 yd range; guides disagree). The SpellMgr
-  target correction is applied (c0efb93a61).
-- The Green-phase length: 21 s plus a 15 s transition (2012 guide), the next vial 30 s after the
-  15 s slime (2024 guide), or 40 s after the Green imbue (native).
-- Normal health (native vs Wowhead 4.4.2) and the enrage timer.
-- Heroic Prime Subject Fixate, and Rend (seen in the 10N log; spell id and cadence unknown).
-- A live observation of a random first vial, including after a wipe and re-pull.
-- A live read-back of the historical script bindings and `spell_custom_attr`.
-- Melee calibration of Aberration and Prime Subject (Growth Catalyst stacks unknown) and of every
-  25N/10H/25H template. Maloriak 10N: 9.5 staged, awaiting a live +-10% check.
+10N: none (accepted 2026-09-30, kept by the round-3 fix). The live timer claim closed for 10N when
+the native script drew the Green Arcane Storm (3.1-6.1 s), Remedy (7.3-14.2 s) and Release begin (6.415-10.505 s) over the observed
+post-cutoff ranges; the fourth vial is not observed after the cutoff and is bounded by the pre-cutoff
+kills and the official audit. The two round-3 migrations (Remedy binding, add DamageModifiers) are promoted to
+`sql/custom/world`; the round-3 build reconfigures CMake for `boss_maloriak_minions.cpp`.
+
+10H, 25N and 25H:
+
+- Maloriak-specific hotfix carryover to the 2025-02-20 cutoff (no same-mode observation).
+- Vial and ability cadence (no heroic or 25-player WCL kill read).
+- Target counts and spell samples (Biting Chill: two in 25-man per the 2012 guide).
+- 25N health (native 68.7M, Wowhead 86.6M) and the 25N/10H/25H enrage (historical 7 min normal, 12
+  min heroic; none native).
+- Heroic Prime Subject Fixate (no spell data) and the Black-first vial after a wipe and re-pull.
+- Melee calibration of every 25N/10H/25H template (boss, Aberration, Prime Subject, Vile Swill).
+- The Remedy ramp and the slime stripping Growth Catalyst (native on 10N only; the guides say both
+  apply in every mode).

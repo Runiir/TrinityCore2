@@ -21,7 +21,7 @@
     "25N",
     "25H"
   ],
-  "research_state": "raid_program_r1_wcl_10n_extracted",
+  "research_state": "raid_program_r3_t11_references_knockout_census",
   "implementation_classification": [
     "source_present_ready_for_diagnostic_shard",
     "fidelity_blocked"
@@ -48,7 +48,11 @@
     "repo_boss_chimaeron_20260925",
     "wcl_gate_20260925",
     "wcl_MxFq7TRbvnjGY1hJ_27",
-    "wcl_xAhkN2y9YP3KRmnJ_14"
+    "wcl_xAhkN2y9YP3KRmnJ_14",
+    "wcl_t11_chimaeron_refs_20260930",
+    "wcl_chimaeron_mechanics_census_20260930",
+    "client_442_59185_chimaeron_20260930",
+    "user_raid_experience_20260930_chimaeron_berserk"
   ],
   "mode_matrix": {
     "10N": {
@@ -108,12 +112,12 @@
     {
       "state": "phase_one_mixture",
       "entry": "JustEngagedWith",
-      "events": "Caustic Slime 5 s/5 s, Break + Double Attack 5 s/15 s, Massacre 26 s/30 s (4 s cast)",
-      "exit": "knockout roll on Massacre success -> outage; health 20% -> phase two"
+      "events": "Caustic Slime 15 s/6 s (10N; 25N/10H/25H repeat 5 s), Break + Double Attack 5 s/15 s, Massacre 26 s/30 s (4 s cast)",
+      "exit": "knockout on Massacre success (10N by cycle position 0/50/100%; 25N/10H/25H 40/60/80/100%) -> outage; health 20% -> phase two"
     },
     {
       "state": "phase_one_outage",
-      "entry": "Systems Failure 88853 + Reroute Power 88861 (26 s) + Feud 88872 (30 s)",
+      "entry": "Systems Failure 88853 + Reroute Power 88861 (26 s) + Feud 88872 (30 s); on 10N Break and Double Attack are skipped while Feud is up (25N/10H/25H cast them)",
       "exit": "Reroute Power expiry restores the mixture; Feud expires"
     },
     {
@@ -213,7 +217,7 @@
         "25N",
         "25H"
       ],
-      "summary": "Every 5 s two players (10-player) take 235200 Nature split within 6 yd of the impact and -75% hit for 2.5 s; the current victim is excluded and Break-affected players only fill a shortfall.",
+      "summary": "Every 6 s two players (10-player) take 235200 Nature split within 6 yd of the impact and -75% hit for 2.5 s; the current victim is excluded and Break-affected players only fill a shortfall.",
       "values": {
         "damage_by_mode": {
           "10N": 235200,
@@ -224,7 +228,7 @@
         "radius_yards": 6,
         "hit_reduction_pct": -75,
         "debuff_ms": 2500,
-        "repeat_ms": 5000,
+        "repeat_ms": 6000,
         "after_massacre_cast_start_ms": 19000,
         "first_after_engage_ms_native": 15000,
         "first_after_engage_ms_bigwigs": 15000,
@@ -232,7 +236,8 @@
           17.171,
           17.522
         ],
-        "first_after_engage_ms_native_before_2026_09_27": 5000
+        "first_after_engage_ms_native_before_2026_09_27": 5000,
+        "repeat_wcl_10N": "two volleys per 30 s Massacre cycle, 5.8-6.1 s apart, then about 24 s (MxFq7TRbvnjGY1hJ-27, vnwd3D61GcaYfHrg-29, 9DrAgFWwQj4dV2Tq-53); continues during Feud"
       },
       "conflicts": [
         "Repeat: native 5 s; WCL 10N impacts 5.9-6.4 s apart (2 intervals, impact times include missile flight).",
@@ -335,27 +340,48 @@
         "25N",
         "25H"
       ],
-      "summary": "A successful knockout roll after Massacre stuns the Bile-O-Tron (no mixture) for 26 s and pacifies Chimaeron for 30 s; Caustic Slime continues from 19 s after the Massacre cast start.",
+      "summary": "After a Massacre the Bile-O-Tron can be knocked out. On 10N by cycle position (never on the first Massacre since the pull or the last knockout, 50% on the second, always on the third); 25N, 10H and 25H keep the previous 40/60/80/100% roll. A knockout means no mixture for 26 s and Feud pacifies Chimaeron for 30 s (no melee; on 10N also no Break or Double Attack, which the other modes still cast); Caustic Slime continues from 19 s after the Massacre cast start and the next Massacre still comes 30 s after the previous one.",
       "values": {
         "reroute_ms": 26000,
         "feud_ms": 30000,
-        "native_knockout_pct": [
+        "dbm_rule": "after the 2nd or 3rd Massacre, the 3rd always",
+        "native_knockout_pct_by_cycle_position_10N": {
+          "1": 0,
+          "2": 50,
+          "3+": 100
+        },
+        "native_knockout_pct_by_cycle_position_25N_10H_25H": [
           40,
           60,
           80,
           100
         ],
-        "dbm_rule": "after the 2nd or 3rd Massacre, the 3rd always"
+        "native_knockout_pct_before_20260930": [
+          40,
+          60,
+          80,
+          100
+        ],
+        "wcl_10N_census": {
+          "first": "0/30",
+          "second": "11/24",
+          "third": "8/8",
+          "kills": 22
+        },
+        "feud_wcl_10N_ms": 30011
       },
-      "conflicts": [
-        "Knockout probability: native 40% on the first Massacre versus DBM never before the second."
-      ],
+      "conflicts": [],
       "evidence": [
         "client_434_dbc_chimaeron_20260925",
         "dbm_cataclysm_4b02efe_chimaeron",
-        "repo_boss_chimaeron"
+        "repo_boss_chimaeron",
+        "wcl_t11_chimaeron_refs_20260930",
+        "wcl_chimaeron_mechanics_census_20260930"
       ],
-      "confidence": "durations resolved; probability open"
+      "confidence": "10N resolved (durations, cycle rule; second-position chance estimated 11/24); other modes unobserved",
+      "resolved_conflicts": [
+        "Knockout probability: native 40% on the first Massacre versus DBM never before the second. Resolved 2026-09-30 for 10N by the WCL census: never on the first Massacre of a cycle, 11 of 24 on the second, always on the third; native repaired for 10N only (0/50/100% by cycle position; 25N/10H/25H keep 40/60/80/100%)."
+      ]
     },
     {
       "key": "phase_two_mortality",
@@ -383,7 +409,8 @@
         "icy_veins_cata_chimaeron_2024",
         "repo_boss_chimaeron_20260925"
       ],
-      "confidence": "resolved for 10N"
+      "confidence": "resolved for 10N",
+      "soft_enrage": "user raid experience 2026-09-30: \"Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing\". Chimaeron has no berserk; the -99% healing after 20% is the soft enrage."
     },
     {
       "key": "heroic_nefarius",
@@ -418,7 +445,7 @@
   "native_repairs_20260925": [
     {
       "defect": "_killedPlayerCount was never initialized and helper fields survived a compatibility-mode reset",
-      "repair": "Initialize() (called from the constructor and Reset()) restores knockout chance 40, killed-player count 0 and Feud false; engage resets the counter."
+      "repair": "Initialize() (called from the constructor and Reset()) restores knockout chance 40, killed-player count 0 and Feud false; engage resets the counter. (Since 2026-09-30 the knockout state is the cycle count _massacresInCycle = 0 in every mode; the chance derives from it: 40/60/80/100% on 25N/10H/25H, 0/50/100% on 10N.)"
     },
     {
       "defect": "Caustic Slime ignored the official Break exclusion",
@@ -442,20 +469,6 @@
         "wcl_MxFq7TRbvnjGY1hJ_27"
       ],
       "waits_for": "implementation decision: swing-bound application (retail pattern) versus a fixed timer that matches only 4.8 s swings"
-    },
-    {
-      "claim": "Knockout never on the first Massacre, always on the third",
-      "evidence": [
-        "dbm_cataclysm_4b02efe_chimaeron"
-      ],
-      "waits_for": "Systems Failure counts in several longer WCL kills (none in two short 10N kills)"
-    },
-    {
-      "claim": "Caustic Slime repeat about 6 s (native 5 s)",
-      "evidence": [
-        "wcl_MxFq7TRbvnjGY1hJ_27"
-      ],
-      "waits_for": "more WCL intervals"
     }
   ],
   "bot_strategy": {
@@ -491,7 +504,7 @@
     {
       "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
       "lines": "239-276, 317-373",
-      "finding": "Successful Massacre resets melee/Double Attack, applies the 40% then +20% knockout chance, starts Feud on success, and schedules Slime/Break/Double after Massacre; normal event repeats and phase handling are explicit."
+      "finding": "Successful Massacre resets melee/Double Attack, applies the 40% then +20% knockout chance, starts Feud on success, and schedules Slime/Break/Double after Massacre; normal event repeats and phase handling are explicit. Since 2026-09-30, on 10N only: knockout by cycle position (0/50/100%), Slime repeat 6 s, Break and Double Attack skipped during Feud; 25N/10H/25H keep the 40% then +20% roll, the 5 s repeat and the Feud casts."
     },
     {
       "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
@@ -546,7 +559,7 @@
   ],
   "lifecycle": {
     "engage": "Finkle gossip activates Bile-O-Tron; Chimaeron wake action schedules asleep voice events; engage sends encounter frame/world state and schedules phase-one events. Heroic summons Nefarius.",
-    "phase_one": "Break/Double/Slime/Massacre; successful Massacre Bile-O-Tron knockout starts outage and Feud; normal Feud pacifies melee while Slime continues; mixture returns via Reroute.",
+    "phase_one": "Break/Double/Slime/Massacre; the Bile-O-Tron knockout (10N: cycle position 2 at 50%, 3 always; 25N/10H/25H: 40/60/80/100%) starts outage and Feud; normal Feud pacifies melee (10N also stops Break/Double Attack) while Slime continues; mixture returns via Reroute.",
     "phase_two": "Below 20% sets PHASE_2, applies Mortality, schedules immediate Double Attack, stops phase-one event scheduling; heroic Nefarius casts Mocking Shadows.",
     "evade": "Disengage, remove boss auras, despawn Bile-O-Tron/Finkle after 0ms+30s, despawn heroic Nefarius, and despawn boss at evade.",
     "death": "BossAI DONE path, encounter disengage/aura cleanup, Bile-O-Tron shutdown after 6s, Finkle death talk after 6s, heroic Nefarius defeat action; instance DONE notifies generic Nefarius.",
@@ -555,10 +568,10 @@
   "timer_contract": [
     {
       "key": "caustic_slime",
-      "native": "15 s / 5 s; 19 s after Massacre cast start (first cast 5 s until 2026-09-27)",
+      "native": "15 s / 6 s on 10N (25N/10H/25H repeat 5 s); 19 s after Massacre cast start (first cast 5 s until 2026-09-27; 10N repeat 5 s until 2026-09-30)",
       "addons": "BigWigs 15 s after engage; DBM 19 s after Massacre",
-      "status": "first cast and post-Massacre resolved; repeat open",
-      "wcl_10N": "first impacts 17.2 s; post-Massacre impacts 21.5 s after the cast start"
+      "status": "resolved for 10N",
+      "wcl_10N": "first impacts 17.2 s; post-Massacre impacts 21.2-21.7 s after the cast start; second volley 5.8-6.1 s later; no third volley in any of ten cycles"
     },
     {
       "key": "break_and_double_attack",
@@ -576,9 +589,10 @@
     },
     {
       "key": "systems_failure",
-      "native": "26 s offline; 40/60/80/100% knockout",
+      "native": "26 s offline; knockout by Massacre position in the cycle: 10N 0/50/100% (since 2026-09-30), 25N/10H/25H 40/60/80/100%",
       "addons": "DBM 26 s; 2nd or 3rd Massacre",
-      "status": "probability open"
+      "status": "resolved for 10N",
+      "wcl_10N": "census of 22 kills: first-of-cycle 0/30, second 11/24, third 8/8; Feud 30.011 s, cast at the Massacre completion"
     },
     {
       "key": "wake_sequence",
@@ -603,6 +617,14 @@
       ],
       "native": "1 ms after phase two",
       "status": "out of 10N scope"
+    },
+    {
+      "key": "berserk",
+      "native": "none",
+      "addons": "BigWigs Berserk(450) unconditional; DBM NewBerserkTimer(450) commented '--Heroic'",
+      "status": "resolved for every mode: no berserk on normal or heroic (user raid experience 2026-09-30); native unchanged",
+      "user_raid_experience_20260930": "Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing",
+      "wcl_10N": "no Berserk/Enrage row in the longest 10N kill found (vnwd3D61GcaYfHrg-29, 160.2 s)"
     }
   ],
   "acceptance_observations": [
@@ -613,53 +635,102 @@
     "outage: the raid within 6 yd of each Caustic Slime target; zero outage deaths",
     "no taunt landing after Mortality; kill with a native clear and 0 boss-window deaths",
     "encounter_fidelity.boss_melee after-attacker stage within +-10% of the WCL 10N U reference (mean 297,785) once DamageModifier 20 is applied",
-    "first Caustic Slime impact no earlier than about 15 s after engage"
+    "first Caustic Slime impact no earlier than about 15 s after engage",
+    "10N: Systems Failure never on the first Massacre since the pull or the last knockout; always by the third",
+    "10N: two Caustic Slime volleys per Massacre cycle, about 6 s apart",
+    "10N: no Break application or Double Attack buff while Feud is up",
+    "after a wipe and re-pull, no Systems Failure on the new pull's first Massacre (helper_field_reset)"
   ],
   "unresolved": [
     {
       "key": "exact_442_build_and_hotfix_cutoff",
       "status": "fidelity_blocked",
-      "detail": "No 4.4.2 source supplies Chimaeron tuning; 4.4.2 client rows not extracted (4.3.4 rows recorded)."
+      "detail": "10N resolved 2026-09-30: 4.4.2.59185 client rows (wago.tools, extract_442_client_spell_rows --follow-triggers, 19 spell ids) equal the 4.3.4 rows for every 10N value; server-side 10N behaviour is pinned by WCL T11-era kills. Other modes: difficulty rows extracted but no same-mode log pins server hotfix state.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "caustic_target_mapping",
       "status": "repository_repaired_retail_unobserved",
-      "detail": "Break exclusion implemented from the official hotfix; 25N/10H target count mapping still conflicts."
+      "detail": "10N resolved: every WCL 10N volley hits 2 players (fight 27, vnwd3D61GcaYfHrg-29, 9DrAgFWwQj4dV2Tq-53), matching the script's 2. 25N/10H target-count mapping still conflicts.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "bileotron_knockout_probability",
       "status": "fidelity_blocked",
-      "detail": "Native 40/60/80/100% versus DBM 2nd-or-3rd rule; needs WCL counts. Two short WCL 10N kills show no Systems Failure."
+      "detail": "10N resolved 2026-09-30 (WCL census of 22 kills, knockout_census_10N in the ledger): 0 of 30 knockouts on the first Massacre of a cycle, 11 of 24 on the second, 8 of 8 on the third; the cycle restarts after each knockout. Native repaired for 10N only to 0/50/100% by cycle position (Logic::KnockoutChancePct(tenNormal, position)); 25N, 10H and 25H have no sample and keep the previous 40/60/80/100% roll.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "event_cadence",
       "status": "fidelity_blocked",
-      "detail": "Massacre and first Slime (repaired to 15 s) agree with WCL 10N. Open: Break/Double Attack are swing-bound in WCL (13.6 s after Massacre start at 4.8 s swings) versus native 11 s/15 s timers; Slime repeat; wake timing."
+      "detail": "10N resolved 2026-09-30: Slime repeat resolved (two volleys 5.8-6.1 s apart per cycle, native 6 s on 10N; 25N/10H/25H keep 5 s); Break/Double Attack keep native timers by the round-2 decision and are skipped during Feud on 10N (no Double Attack aura inside either observed Feud window; 25N/10H/25H still cast them); wake time is pre-engage (not material); berserk resolved for every mode (source user_raid_experience_20260930_chimaeron_berserk): \"Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing\" - none on normal or heroic, native unchanged, soft enrage is Mortality at 20%. Open for 10H, 25N and 25H: 2 s swings (BaseAttackTime 2000) need their own logs.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "spell_data",
       "status": "partial",
-      "detail": "4.3.4 execution-client rows recorded; 4.4.2 reference extraction pending."
+      "detail": "4.4.2.59185 rows extracted 2026-09-30 for the 10N/25N chain (82705, 82848, 82871, 82881, 82882, 82890, 82934, 82935 difficulty rows, 88826, 88853, 88861, 88872, 90405, 91106, 91304); every 10N and 25N value equals 4.3.4. Heroic Nefarius spells (Mocking Shadows) not extracted.",
+      "modes": [
+        "10H",
+        "25H"
+      ]
     },
     {
       "key": "heroic_shadow_whip",
       "status": "fidelity_blocked",
-      "detail": "Heroic only; delay and Feud removal unobserved."
+      "detail": "Heroic only; delay and Feud removal unobserved.",
+      "modes": [
+        "10H",
+        "25H"
+      ]
     },
     {
       "key": "mode_damage_scaling",
       "status": "fidelity_blocked",
-      "detail": "10N resolved: WCL-derived health equals native and DamageModifier 20 is staged from WCL U samples. 25N/10H/25H health and melee have no same-mode sample."
+      "detail": "10N resolved: WCL-derived health equals native and DamageModifier 20 is staged from WCL U samples. 25N/10H/25H health and melee have no same-mode sample.",
+      "modes": [
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "helper_field_reset",
       "status": "repository_repaired_runtime_unobserved",
-      "detail": "Reset() repaired; needs a controlled reset observation."
+      "detail": "Reset() reinitializes the knockout cycle count, killed-player count, Feud state and taunt immunity. Needs a wipe and re-pull: a stale cycle count would show as a Systems Failure on the new pull's first Massacre.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     },
     {
       "key": "retail_reset_credit_loot",
       "status": "unresolved",
-      "detail": "Retail lockout, loot and achievement persistence not established."
+      "detail": "Retail lockout, loot and achievement persistence not established.",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ]
     }
   ],
   "native_repairs_20260927": [
@@ -683,5 +754,39 @@
       "sql": "sql/custom/world/2026_09_27_20_chimaeron_damage_modifier.sql",
       "registry_patch": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_damage_calibration_registry_patch_v1.json"
     }
-  }
+  },
+  "fidelity_state_by_mode": {
+    "10N": "fidelity_blocked",
+    "10H": "fidelity_blocked",
+    "25N": "fidelity_blocked",
+    "25H": "fidelity_blocked"
+  },
+  "fidelity_state_by_mode_note": "No mode is accepted. Round 3 (2026-09-30) resolves for 10N the knockout rule (WCL census of 22 kills), the Caustic Slime repeat (6 s, three kills), Feud behaviour (30.0 s, Slime continues, no Break or Double Attack), Mortality (no Massacre after it, Double Attack resumes), the 4.4.2 client rows (equal to 4.3.4 for every 10N value) and the tier-11 DPS references. 10N still keeps two unresolved material claims: helper_field_reset (needs a wipe-and-repull observation) and retail_reset_credit_loot; see each unresolved entry's modes. The last part of event_cadence for 10N, the normal-mode berserk, was resolved on 2026-09-30 by user raid experience (no berserk on normal or heroic; native unchanged), so event_cadence stays open only for 10H, 25N and 25H (2 s swings). The native repairs for the knockout rule, the Slime repeat and Feud skipping apply to 10N only; 25N, 10H and 25H keep the previous script rules (tests/test_chimaeron_mode_gating.py).",
+  "native_repairs_20260930": [
+    {
+      "defect": "Knockout roll 40% on the first Massacre, +20% per miss, back to 40% after a knockout (first-Massacre and back-to-back knockouts; round 1 spent most kills in outage)",
+      "repair": "_massacresInCycle counts Massacres since the pull or the last knockout; Logic::KnockoutChancePct(tenNormal, position) gives 0% / 50% / 100% for positions 1 / 2 / 3+ on 10N and the previous 40/60/80/100% on 25N/10H/25H (10N only, gated by IsTenNormal())",
+      "evidence": [
+        "dbm_cataclysm_4b02efe_chimaeron",
+        "wcl_t11_chimaeron_refs_20260930",
+        "wcl_chimaeron_mechanics_census_20260930"
+      ]
+    },
+    {
+      "defect": "Caustic Slime repeat 5 s (three volleys per Massacre cycle)",
+      "repair": "Logic::CausticSlimeRepeatMs: 6 s on 10N, two volleys per cycle as in WCL; 25N/10H/25H keep 5 s (10N only, gated by IsTenNormal())",
+      "evidence": [
+        "wcl_MxFq7TRbvnjGY1hJ_27",
+        "wcl_chimaeron_mechanics_census_20260930"
+      ]
+    },
+    {
+      "defect": "Break and Double Attack cast during Feud (pacify does not block them: no prevention type), stacking Break on the victim while he cannot swing",
+      "repair": "on 10N, EVENT_BREAK and EVENT_DOUBLE_ATTACK skip the cast while _isInFeud (Logic::SkipsBreakAndDoubleAttack); their timers keep running; 25N/10H/25H keep casting them",
+      "evidence": [
+        "bigwigs_cataclysm_v11_0_13_chimaeron",
+        "wcl_chimaeron_mechanics_census_20260930"
+      ]
+    }
+  ]
 }

@@ -11,6 +11,13 @@ evidence: raid program round 1") and makes these changes:
 - Healers pre-heal the Double Attack soaker after each Massacre.
 - The raid pushes during Feud and releases the hold when a tank is down.
 - Hunters stand beyond their minimum range.
+
+Round 3 (2026-09-30, tier-11 gear, about item level 359) replaces the DPS references with seven
+tier-11 kills, resolves the knockout rule, the Slime repeat and Feud behaviour for 10N from WCL
+(see "WCL 10N observations, round 3"), and repairs the native script to match for 10N only: 25N,
+10H and 25H keep the previous script rules (see "Round-3 repairs"). The user then
+settled the berserk (2026-09-30, see "Berserk decision"), so 10N stays `fidelity_blocked` on two
+claims: the helper reset observation and retail reset/credit/loot.
 The fidelity target is Cataclysm Classic 4.4.2 (build 59185); the execution client is
 4.3.4 (build 15595). This page separates encounter truth, current repository behavior
 and the bot tactic. Machine-readable files:
@@ -36,7 +43,10 @@ and the bot tactic. Machine-readable files:
 | Icy Veins, [Chimaeron Encounter Guide](https://www.icy-veins.com/cataclysm-classic/chimaeron-encounter-guide-strategy-abilities-loot), Abide, updated 2024-07-29, read 2026-09-25 | current guide | tactics, swing interval |
 | repository `boss_chimaeron.cpp`, `blackwing_descent.cpp`, `instance_blackwing_descent.cpp` | implementation | native behavior |
 | WCL [MxFq7TRbvnjGY1hJ fight 27](https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=27), 10N kill, 2024-10-28, read 2026-09-27 | observed kill | melee U samples, health, boss timeline, DPS, casts |
-| WCL [xAhkN2y9YP3KRmnJ fight 14](https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14), 10N kill, 2025-06-11, read 2026-09-27 | observed kill | Massacre/Mortality timing, DPS, casts |
+| WCL [xAhkN2y9YP3KRmnJ fight 14](https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=14), 10N kill, 2025-06-11, read 2026-09-27 | observed kill | Massacre/Mortality timing (DPS reference dropped in round 3: item level 401.4) |
+| WCL tier-11 10N kills (nine, 2024-10-10 to 2024-10-28, raid item level 354.8-361.1), read 2026-09-30 | observed kills | DPS references, Massacre/Feud/Mortality times |
+| WCL [Chimaeron 10N rankings](https://classic.warcraftlogs.com/zone/rankings/1023?boss=1023&difficulty=3&size=10&search=duration.95.900), first 12 distinct kills (Phase 4.5), read 2026-09-30 | observed kills | knockout census, Slime cadence, Feud and Mortality events, berserk search |
+| wago.tools 4.4.2.59185 client tables (`extract_442_client_spell_rows --follow-triggers`), read 2026-09-30 | reference client | 4.4.2 spell rows (equal to 4.3.4 for every 10N value) |
 
 ## Encounter truth (10N unless stated)
 
@@ -48,7 +58,8 @@ and the bot tactic. Machine-readable files:
 - **Boss.** Level 88 boss, BaseAttackTime 4000 ms (Icy Veins also reports a 4 s swing), combat
   reach 20 yd (display 33308), so both tank spots and the melee spots are inside his reach.
 - **Caustic Slime** (82871 → 82913 → 82935): first cast 15 s after engage (WCL impacts at 17.2 s,
-  BigWigs 15 s), then every 5 s, 2 random players (the current victim
+  BigWigs 15 s), then every 6 s on 10N (WCL: two volleys per Massacre cycle, 5.8-6.1 s apart; 25N, 10H and 25H keep
+  the native 5 s), 2 random players (the current victim
   excluded) take 235,200 Nature damage split among players within 6 yd of the impact, plus
   -75% hit chance for 2.5 s. The 25-player row is 270,480, which is the value in Wowhead's ability
   table. Since the 4.0.6 hotfix, Break-affected players are only chosen when too few others remain.
@@ -60,11 +71,20 @@ and the bot tactic. Machine-readable files:
   26 s, then every 30 s (native and DBM). Afterwards Chimaeron drops Double Attack and resets his swing
   timer (Blizzard hotfix of January 2011).
 - **Systems Failure.** After some Massacres the Bile-O-Tron is knocked out: stunned (88853), with no
-  mixture for 26 s (Reroute Power 88861). Chimaeron gets Feud (88872) for 30 s and does not melee.
-  Caustic Slime resumes 19 s after the Massacre cast start (native, DBM).
+  mixture for 26 s (Reroute Power 88861). Chimaeron gets Feud (88872) for 30 s (WCL 30.011 s), cast
+  at the Massacre's completion, and does not melee; on 10N no Break or Double Attack lands during it
+  (25N, 10H and 25H still cast them).
+  Caustic Slime continues, from 19 s after the Massacre cast start (native, DBM, WCL). The next
+  Massacre still comes 30 s after the previous one and completes as Feud ends.
+- **Knockout rule (10N, WCL census of 22 kills).** Count the Massacres since the pull or the last
+  knockout: never on the first (0 of 30), about half on the second (11 of 24), always on the third
+  (8 of 8). DBM's comment says the same ("after massacre 2~3 ... 3rd 100%"). 25N, 10H and 25H have
+  no sample and keep the previous 40/60/80/100% roll.
 - **Mortality at 20%**: 82890 reduces healing received by players by 99%. 82934 makes Chimaeron
   immune to taunt (client text) and increases his damage taken by 10%. Slime, Break and Massacre stop.
-  Double Attack comes 1 ms after the transition.
+  Double Attack comes 1 ms after the transition; on 10N a Double Attack that comes due while Feud
+  is still up is held until Feud ends (`Logic::HoldsDoubleAttackForFeudEnd`), then the 15 s cycle
+  restarts. WCL: no Massacre after Mortality, and Double Attack returns every ~14.4 s (swing-bound).
 
 ### Mode matrix
 
@@ -87,11 +107,13 @@ shows "20.7m"), the native value. The guide's 25.9M is not what Classic ran. 25N
 | Massacre | 26 s, then 30 s | DBM 26/30, BigWigs 25 | agree |
 | Break and Double Attack | 5 s, then 15 s | DBM 4.5/15, BigWigs 4.8/14.2; WCL 4.6 s, then every third swing (14.4 s) | agree within a swing |
 | Break after Massacre start | 11 s | DBM 14, BigWigs 13.6; WCL 13.6 s twice, on a swing | native timer kept (doubled swing 13.5 s live) |
-| Caustic Slime after Massacre start | 19 s | DBM 19; WCL impacts at +21.5 s (flight) | agree |
+| Caustic Slime after Massacre start | 19 s | DBM 19; WCL impacts at +21.2-21.7 s (flight) | agree |
+| Caustic Slime repeat | 10N 6 s (5 s until 2026-09-30); 25N/10H/25H 5 s | WCL 10N two volleys per cycle, 5.8-6.1 s apart, never a third | agree on 10N (repaired); other modes unresolved |
 | First Caustic Slime after engage | 15 s (was 5 s until 2026-09-27) | BigWigs 15; WCL impacts at 17.2 s | agree (repaired) |
-| Knockout | 40/60/80/100% per Massacre | DBM: after the 2nd or 3rd, the 3rd always | conflict |
+| Knockout | 10N 0/50/100% by position in the cycle (40/60/80/100% until 2026-09-30); 25N/10H/25H 40/60/80/100% | DBM: after the 2nd or 3rd, the 3rd always; WCL 10N 0/30, 11/24, 8/8 | agree on 10N (repaired); other modes unresolved |
+| Break and Double Attack during Feud | 10N skipped (cast until 2026-09-30); 25N/10H/25H cast | BigWigs stops the normal Break bar; WCL 10N no Double Attack inside Feud | agree on 10N (repaired); other modes unresolved |
 | Wake-up after gossip | 23 s | BigWigs 30 | conflict |
-| Berserk | none | 450 s (DBM marks it heroic) | unresolved |
+| Berserk | none | BigWigs 450 s; DBM marks it heroic; no 10N log past 160 s found | resolved, none in any mode (user raid experience 2026-09-30) |
 
 ## Native script audit (repository)
 
@@ -126,14 +148,28 @@ observable 10N timing. The one real difference is when Break lands:
 So the timer suits the two-tank exchange. Heroic and 25N (2 s swings) should be rechecked before
 reuse.
 
-Still deferred:
+Round-3 repairs (2026-09-30), each backed by the WCL observations below. Repairs 6-8 apply to 10N
+only: the WCL evidence is 10N, and 25N, 10H and 25H keep the rules they had before (base c8e8bfe85b)
+until they have logs of their own. The gate is `GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL`
+(`IsTenNormal()`), the idiom of the other Blackwing Descent scripts. The no-berserk decision below is
+separate and covers every mode.
 
-- The knockout rule. Native: 40% at the first Massacre, +20% per miss, back to 40% after a
-  knockout. DBM: never after the first Massacre, after the 2nd or 3rd, the 3rd always. Round 1
-  knocked out after Massacre 1 in 2 of 4 pulls, then kept knocking out (Massacres 1-3 and 1-4 in a
-  row), so the boss was pacified for most of those kills. Neither WCL kill had a knockout at
-  Massacre 1 or 2. No source gives the Massacre 2 probability, so the native rule is unchanged.
-- The Slime repeat: native 5 s, while the WCL impacts are 5.9-6.4 s apart (2 intervals).
+6. On 10N the knockout roll (40% at the first Massacre, +20% per miss, back to 40% after a knockout)
+   became a cycle count: `_massacresInCycle` counts the Massacres since the pull or the last
+   knockout and `Logic::KnockoutChancePct(tenNormal, position)` gives 0%, 50% and 100% for positions
+   1, 2 and 3+. The other modes still get 40/60/80/100% from the same count. Round 1
+   knocked out after Massacre 1 in 2 of 4 pulls and then after every Massacre, so the boss was
+   pacified for most of those kills. No WCL kill has a first-Massacre or back-to-back knockout.
+7. On 10N Caustic Slime repeats every 6 s instead of 5 s (`Logic::CausticSlimeRepeatMs`). A 5 s repeat
+   adds a third volley 29 s after each Massacre cast start; WCL never shows one in ten cycles. The
+   other modes keep 5 s.
+8. On 10N, Break and Double Attack are skipped while Feud is up; their timers keep running. Pacify
+   does not block them (the spells have no prevention type), so natively Break stacked on the pacified
+   boss's victim during Feud. The other modes keep casting them
+   (`Logic::SkipsBreakAndDoubleAttack`).
+
+`tests/test_chimaeron_mode_gating.py` pins both sides: 10N gets repairs 6-8, and the previous rules
+are compared with the base commit for every other mode.
 
 The boss melee DamageModifier for 10N is 20, derived from WCL. The migration was promoted to
 `sql/custom/world` on 2026-09-27; the DB updater applies it at the next worldserver startup. At modifier 1 a 10N swing rolls 12,142-18,038 before the +1% auto-attack bonus; 20 gives
@@ -205,6 +241,11 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   one recipient. Healer cooldowns, cast from the healers' band:
   - the Discipline Priest casts Power Word: Barrier at 16.5-12 s of Feud remaining (Slimes resume);
   - the Restoration Shaman casts Spirit Link Totem at 11-7 s.
+
+  The two Slime volleys of an outage come at about 15 s and 9 s of Feud left, one for each
+  cooldown. A second outage within their 3 minute cooldowns gets neither: the rule allows one
+  every two to three Massacres, so a 150 s kill can have two. The executor rejects the cast and the
+  healers keep healing by health percentage.
 - **Taunt exchange:**
   - when Double Attack is up and the Break tank holds the boss, the Double Attack tank taunts;
   - once the charge is spent, the Break tank taunts back;
@@ -289,9 +330,83 @@ HTTP requests still get the Cloudflare page. Report `Y8ajQ7dbmKMG1RZy` has no Ch
   to test the 450 s berserk.
 - **Single-tank kills.** Both groups tanked Chimaeron with one Blood DK. He held 4 Break stacks
   without a swap and died to a Mortality swing just before the kill. The canonical bot roster keeps
-  two tanks and the taunt exchange. The matched DPS targets (median across both kills) are Blood DK
-  25,888.5, Survival Hunter 37,218.05 and Retribution Paladin 25,345.0. Fire Mage, Assassination
-  Rogue and Demonology Warlock keep the WoWSims fallback, and the Feral tank has no reference.
+  two tanks and the taunt exchange. The round-1 DPS targets from these two kills (Blood DK
+  25,888.5, Survival Hunter 37,218.05, Retribution Paladin 25,345.0, WoWSims fallback for the other
+  specs) are superseded by the round-3 tier-11 set below.
+
+## WCL 10N observations, round 3 (2026-09-30)
+
+GPT-6.1 Sol read the kills in its own tab of the user's Chrome (`codex exec -m gpt-6.1-sol`, profile
+Runiir). No verification check appeared. Chrome stopped running once mid-read (about 10:40Z); the
+census resumed after it restarted.
+
+**DPS references** (`chimaeron_wcl_dps_reference_v1.json`, raid target `matched_reference_ids`).
+The roster wears tier-11 gear (about 359), so the references are kills with raid item level
+352-366. Seven kills qualify: MxFq7TRbvnjGY1hJ-27 (359.5, 95 s), JLvtbwNpFrzf6qjQ-14 (359.9, 123 s),
+B4J8vQVnbxFdjf3P-22 (361.1, 124 s), HF62ky4w8ThJmrbY-33 (358.2, 122 s), AztLjaG8wJh2fvbk-37 (359.0,
+144 s), TtAL96aBnyHgXNMJ-3 (358.5, 121 s) and zg18Kt3FkAdyv7jn-11 (356.3, 163 s). All are dated
+2024-10-10 to 2024-10-28. xAhkN2y9YP3KRmnJ-14 (401.4) is dropped. Per-spec targets (median, kills):
+
+| Spec | Target | Kills | Before (409-gear set) |
+| --- | ---: | ---: | --- |
+| Blood DK (tank) | 15,316.5 | 5 | 25,888.5 WCL |
+| Survival Hunter | 26,254.9 | 4 | 37,218.05 WCL |
+| Fire Mage | 24,654.6 | 4 | WoWSims fallback 0.9 x 35,139 |
+| Retribution Paladin | 26,133.6 | 4 | 25,345.0 WCL |
+| Assassination Rogue | 26,350.7 | 3 | WoWSims fallback 0.9 x 33,425 |
+| Demonology Warlock | 23,443.3 | 3 | WoWSims fallback 0.9 x 38,038 |
+
+**Knockout census** (ledger `knockout_census_10N`). There are 22 kills:
+
+- the nine tier-11 kills, chosen with a preference for a Feud;
+- the twelve first distinct kills of the Phase 4.5 rankings (95-900 s), chosen before any mechanic
+  was read;
+- xAhkN2y9YP3KRmnJ-14.
+
+| Massacre position in the cycle | Knockouts |
+| --- | ---: |
+| 1st since the pull or the last knockout | 0 / 30 |
+| 2nd | 11 / 24 |
+| 3rd | 8 / 8 |
+
+The Feud preference cannot raise the second-position rate: all nine kills reach a third Massacre,
+where a Feud is certain anyway. The unbiased Phase 4.5 subset alone gives 4 of 12 at the second
+position. The native script uses 50% on 10N (DBM's "2~3"); 25N, 10H and 25H keep 40/60/80/100%.
+
+**Slime, Feud and Mortality** (vnwd3D61GcaYfHrg-29, 160 s, and 9DrAgFWwQj4dV2Tq-53, 117 s):
+
+- Every Massacre cycle has exactly two Slime volleys: the first 17.2-17.7 s after the Massacre
+  completion, the second 5.8-6.1 s later. The next pair follows about 24 s after that.
+- Slime continues during Feud.
+- Feud lasts 30.011 s in both windows. Double Attack is removed 1 ms after Feud starts and is never
+  applied during it.
+- No Massacre follows Mortality. Double Attack resumes every ~14.4 s.
+
+**Berserk.** The longest 10N kill found is vnwd3D61GcaYfHrg-29 at 160 s, with no Berserk or Enrage
+row in the enemy casts or buffs tables. Phase 4.5 lists no normal 10N kill of 180 s or more. The
+Phase 1 query failed to load. Wowhead mentions no enrage. No log could test 450 s, so the question
+went to the user (see "Berserk decision").
+
+### Berserk decision (user raid experience 2026-09-30)
+
+The handoff question (`chimaeron_10n_berserk`) was whether 10N normal has no berserk, or 10N research
+stays blocked until a normal log past 7:30 turns up. The user answered (source
+`user_raid_experience_20260930_chimaeron_berserk`, "user raid experience 2026-09-30"):
+
+> "Chima hc and normal doesnt have berserks. After the 20% its basically a soft enrage. Kill it before it kills you due to the 99% reduced healing"
+
+- There is no berserk on normal or heroic, in any mode. The native script has none and stays
+  unchanged. BigWigs' unconditional `Berserk(450)` and DBM's commented `--Heroic` timer do not apply.
+- The soft enrage is Mortality at 20%: -99% healing received, taunt immunity, no more Massacre. The
+  kill must finish before it kills the raid (`mortality_burn`; deaths after Mortality begins are
+  exempt from the boss-window death gate).
+- This resolves the berserk part of `event_cadence` for every mode. Nothing else was open for 10N
+  (Slime repeat and Feud skipping are resolved, wake time is pre-engage), so `event_cadence` no
+  longer covers 10N. It stays open for 10H, 25N and 25H, where the 2 s swings need their own logs.
+
+**4.4.2 client rows.** They come from wago.tools, build 59185, via `extract_442_client_spell_rows
+--follow-triggers` on 19 spell ids. The 25-player and heroic spell ids are folded into DifficultyID
+rows of 82935/82934. Every 10N value equals the 4.3.4 rows.
 
 ## Live evidence: raid program round 1 (2026-09-27)
 
@@ -323,12 +438,13 @@ mean ratio 0.95-1.01 to WCL). T is the first boss melee.
 
 ## Open items (unresolved)
 
-- WCL 10N: Systems Failure frequency (longer kills), post-Massacre Break timing (swing-bound
-  versus timer), Slime repeat, berserk, and a kill that covers Fire Mage, Assassination Rogue,
-  Demonology Warlock or a Feral tank.
+- Berserk: resolved 2026-09-30 by user raid experience (none on normal or heroic; the soft enrage is
+  Mortality at 20%). `event_cadence` stays open only for 10H, 25N and 25H (2 s swings).
+- A wipe and re-pull, to observe the helper reset. A stale knockout count would show as a Systems
+  Failure on the new pull's first Massacre.
 - The DamageModifier is promoted and the registry row applied (2026-09-27); confirm on a live kill
   that `encounter_fidelity.boss_melee` is within ±10% of WCL.
-- The 4.4.2 client rows for the spell chain (`extract_442_client_spell_rows --follow-triggers`).
+- Heroic Nefarius 4.4.2 rows (Mocking Shadows chain) are not extracted.
 - Heroic behavior (Shadow Whip delay, Mocking Shadows), the 25N/10H Slime target mapping, and
   retail reset, loot and achievement persistence.
 
@@ -339,7 +455,12 @@ mean ratio 0.95-1.01 to WCL). T is the first boss melee.
 2. No Massacre deaths while the mixture is up. Each Double Attack charge is consumed on the Double
    Attack tank.
 3. During an outage the raid is stacked within 6 yd of each Slime target, with no outage deaths.
-4. No taunt lands after Mortality. The kill is a native clear with 0 boss-window deaths.
+4. No taunt lands after Mortality. The kill is a native clear with 0 boss-window deaths before
+   Mortality (deaths after Mortality begins are exempt: `mortality_deaths`, user decision
+   2026-09-27).
+5. Systems Failure only at the second or third Massacre of a cycle, never twice in a row.
+6. Two Caustic Slime volleys per Massacre cycle, about 6 s apart.
+7. No Break application and no Double Attack buff while Feud is up.
 
 ## Live evidence
 

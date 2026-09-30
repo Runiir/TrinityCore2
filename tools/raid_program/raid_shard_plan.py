@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 from typing import Any, Iterable
 
+from tools.bot_ml.phase_gear_profiles import composition_gear_phase, phase_gear_profiles_path, phase_profile_id
 from tools.raid_program import raid_shard_identity as ids
 from tools.raid_program.raid_composition import (
     COMPOSITION_DIR,
@@ -283,7 +284,11 @@ def scenario_starts(path: Path = SCENARIO_CONFIG) -> dict[str, dict[str, Any]]:
     return {str(row["id"]): copy.deepcopy(row.get("start_position") or {}) for row in rows if row.get("start_position")}
 
 
-def _spec_group(catalog: dict[str, dict[str, Any]], spec: str, group: int, mirrors: int | None = None) -> dict[str, Any]:
+def _spec_group(catalog: dict[str, dict[str, Any]], spec: str, group: int, mirrors: int | None = None,
+                gear_phase_id: str | None = None) -> dict[str, Any]:
+    """One talent group. A composition bound to a content phase (``gear_phase``)
+    wears the phase profile ``<phase>/<spec>``; its professions then follow that
+    gear (apply_gear_profiles derives them), not the catalog's gear."""
     bot = catalog_bot(catalog, spec)
     row = {
         "talent_group": group,
@@ -293,10 +298,10 @@ def _spec_group(catalog: dict[str, dict[str, Any]], spec: str, group: int, mirro
         "talents": copy.deepcopy(bot["talents"]),
         "primary_tree_spells": copy.deepcopy(bot.get("primary_tree_spells") or []),
         "glyphs": copy.deepcopy(bot.get("glyphs") or []),
-        "gear_profile_id": str(bot["gear_profile_id"]),
+        "gear_profile_id": phase_profile_id(gear_phase_id, spec) if gear_phase_id else str(bot["gear_profile_id"]),
         "mirrors_talent_group": mirrors,
     }
-    for key in ("consumables", "profession_setup"):
+    for key in ("consumables",) + (() if gear_phase_id else ("profession_setup",)):
         if bot.get(key) is not None:
             row[key] = copy.deepcopy(bot[key])
     if not row.get("consumables") and (fallback := contract_consumables(spec)) is not None:
@@ -327,13 +332,14 @@ def character_group_spells(character: dict[str, Any]) -> dict[str, list[int]]:
     return result
 
 
-def character_loadout_groups(catalog: dict[str, dict[str, Any]], character: dict[str, Any]) -> list[dict[str, Any]]:
+def character_loadout_groups(catalog: dict[str, dict[str, Any]], character: dict[str, Any],
+                             gear_phase_id: str | None = None) -> list[dict[str, Any]]:
     specs = [str(spec) for spec in character["specs"]]
-    groups = [_spec_group(catalog, spec, index) for index, spec in enumerate(specs)]
+    groups = [_spec_group(catalog, spec, index, gear_phase_id=gear_phase_id) for index, spec in enumerate(specs)]
     if len(groups) == 1:
         # A single-spec character mirrors its only build into talent group 1,
         # so every composition character has the same two-group shape.
-        groups.append(_spec_group(catalog, specs[0], 1, mirrors=0))
+        groups.append(_spec_group(catalog, specs[0], 1, mirrors=0, gear_phase_id=gear_phase_id))
     for group in groups:
         if group["mirrors_talent_group"] is None and (spells := character_group_spells(character).get(group["class_spec"])):
             group["spells"] = spells
@@ -346,7 +352,8 @@ def _bot(composition: dict[str, Any], catalog: dict[str, dict[str, Any]], charac
     slot = int(character["slot"])
     key = str(character["character_key"])
     packed = ids.packed_index(raid, mode, int(boss["boss_number"]), copy_index, slot)
-    groups = character_loadout_groups(catalog, character)
+    phase = composition_gear_phase(composition)
+    groups = character_loadout_groups(catalog, character, phase["phase_id"] if phase else None)
     active = next(group for group in groups if group["class_spec"] == spec and group["mirrors_talent_group"] is None)
     source = catalog_bot(catalog, spec)
     namespace = f"cata_raid/{raid}/{ids.mode_info(mode)['token']}/{native_key}/c{copy_index}"
@@ -816,6 +823,14 @@ def load_plan_inputs(composition_path: Path, prerequisites_dir: Path = PREREQUIS
         if not Path(path).is_file():
             raise ShardPlanError(f"plan_source_missing:{name}:{relative(Path(path))}")
         sources[name] = {"path": relative(Path(path)), "sha256": sha256_file(Path(path))}
+    # A composition bound to a content phase also materializes from the phase
+    # profiles (tools.bot_ml.phase_gear_profiles); raid_loadout_sql refuses the
+    # plan when that file is missing or drifted.
+    if composition_gear_phase(composition):
+        phase_profiles = phase_gear_profiles_path()
+        if not phase_profiles.is_file():
+            raise ShardPlanError(f"plan_source_missing:phase_gear_profiles:{relative(phase_profiles)}")
+        sources["phase_gear_profiles"] = {"path": relative(phase_profiles), "sha256": sha256_file(phase_profiles)}
     return composition, prerequisites, defaults, scenario_starts(scenario_config), sources
 
 

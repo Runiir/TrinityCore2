@@ -25,10 +25,11 @@ from tools.raid_program.play_mode_guard import PlayModeEvidenceRefused, refuse_p
 from tools.raid_program.scoreboard_core import native_excluded_entries
 from tools.raid_program.scoreboard_core import (
     ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, clear_kills, exclusion_reason, file_sha256, git_head,
-    label_kills, load_records, load_target, scoreboard_path, utc_now,
+    label_kills, load_records, load_target, scoreboard_path, target_for_records, utc_now,
 )
 from tools.raid_program.scoreboard_record import (
-    fallback_record, kill_line, record_from_run_dir, timeline_reference_exclusions, write_timeline,
+    fallback_record, kill_line, record_from_run_dir, run_dir_shard_record, timeline_reference_exclusions,
+    write_timeline,
 )
 
 PIN_DIR = Path("/tmp")
@@ -161,10 +162,12 @@ def _postprocess(root, target, scenario, label, kill, sha, source_commit) -> dic
                    source_commit=source_commit, worldserver_sha256=sha)
     try:
         kill["analysis_dir"].mkdir(parents=True, exist_ok=True)
-        timeline = write_timeline(kill["output_dir"], root / target["wcl_cast_timelines"],
+        # A roster variant's own WCL cast timelines, as `scoreboard ingest --run-dir` selects them.
+        timeline_target = target_for_records(root, target, [run_dir_shard_record(Path(kill["output_dir"]))])
+        timeline = write_timeline(kill["output_dir"], root / timeline_target["wcl_cast_timelines"],
                                   kill["analysis_dir"] / "timeline.json", target["encounter_route_node_id"],
-                                  timeline_reference_exclusions(root, target), native_excluded_entries(target),
-                                  ) if target.get("wcl_cast_timelines") else None
+                                  timeline_reference_exclusions(root, timeline_target), native_excluded_entries(target),
+                                  ) if timeline_target.get("wcl_cast_timelines") else None
         return record_from_run_dir(root, target, timeline_path=timeline,
                                    summary_output=kill["analysis_dir"] / "summary.json", **options)
     except Exception as error:

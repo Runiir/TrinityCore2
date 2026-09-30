@@ -11,8 +11,9 @@ import pytest
 from tools.raid_program import raid_program, raid_program_state as store
 from tools.raid_program.development_graph import GraphError, STATE_PATH as BOSS_STATE_PATH
 from tools.raid_program.queued_build import DEFAULT_POLICY_RELATIVE
-from tools.raid_program.raid_program_inputs import bind_name, discover_program
+from tools.raid_program.raid_program_inputs import bind_name, discover_program, mode_scoped_research_state, read_json
 from tools.raid_program.raid_program_request import raid_alias_index, resolve_raid_request
+from tools.raid_program.scenario_catalog import STRATEGIES
 
 REAL = Path(__file__).resolve().parents[1]
 REAL_DATA = [
@@ -206,32 +207,49 @@ def _mode_research(repo: Path, mode: str = '10N') -> tuple[str, str | None]:
     return unit['research']['fidelity_state'], gate['detail'] if gate else None
 
 
+def _synthetic_state(tmp_path: Path, contract: dict | None = None, ledger: dict | None = None,
+                     mode: str = '10N') -> tuple[str | None, str | None]:
+    """mode_scoped_research_state for a synthetic contract and ledger; None removes a field.
+
+    The baseline is a clean, fully resolved 10N (contract and ledger agree, one heroic-only claim), so
+    every refusal below comes from the one field the case changes. No real encounter data is read.
+    """
+    base = {'fidelity_state_by_mode': ACCEPTED_10N, 'unresolved': HEROIC_ONLY, 'unresolved_material_count': 1}
+    documents = {'contract': {'ledger_path': 'synthetic_ledger.json', 'fidelity_state': 'fidelity_blocked', **base},
+                 'ledger': dict(base)}
+    for name, fields in (('contract', contract), ('ledger', ledger)):
+        for key, value in (fields or {}).items():
+            if value is None:
+                documents[name].pop(key, None)
+            else:
+                documents[name][key] = value
+    (tmp_path / 'synthetic_ledger.json').write_text(json.dumps(documents['ledger']))
+    return mode_scoped_research_state(tmp_path, documents['contract'], None, mode)
+
+
 def test_mode_scoped_research_state_cannot_bypass_unresolved_claims(tmp_path):
     # Coordinator decision: fidelity_state_by_mode[mode] outranks the contract-level state only when
     # neither the contract nor its ledger lists an unresolved material claim covering that mode.
-    repo = real_copy(tmp_path)
-    contract, ledger = 'magmaw_v1.json', 'magmaw_ledger_v1.json'
-    # The bypass: the contract says 10N accepted while its own unresolved claims carry no mode scope.
-    _set_research(repo, contract, fidelity_state='fidelity_blocked', fidelity_state_by_mode=ACCEPTED_10N)
-    state, detail = _mode_research(repo)
-    assert state == 'fidelity_blocked' and 'has no mode scope' in detail
+    # Synthetic contract and ledger, so the proof does not depend on any real boss's current claims.
+    assert _synthetic_state(tmp_path) == ('accepted', None)  # control: the clean baseline is accepted
+    # The bypass: the contract says 10N accepted while its own unresolved claim carries no mode scope.
+    state, detail = _synthetic_state(tmp_path, contract={'unresolved': [{'key': 'barrier'}]})
+    assert state == 'fidelity_blocked' and 'contract unresolved claim barrier has no mode scope' in detail
     # A claim scoped to 10N blocks 10N.
-    _set_research(repo, contract, unresolved=[{'key': 'barrier', 'modes': ['10N', '25N']}], unresolved_material_count=1)
-    _set_research(repo, ledger, fidelity_state_by_mode=ACCEPTED_10N, unresolved=HEROIC_ONLY, unresolved_material_count=1)
-    state, detail = _mode_research(repo)
+    state, detail = _synthetic_state(tmp_path, contract={'unresolved': [{'key': 'barrier', 'modes': ['10N', '25N']}]})
     assert state == 'fidelity_blocked' and 'contract unresolved claim barrier covers 10N' in detail
     # A bare-string claim covers every mode.
-    _set_research(repo, contract, unresolved=['barrier'])
-    assert 'claim barrier has no mode scope' in _mode_research(repo)[1]
+    state, detail = _synthetic_state(tmp_path, contract={'unresolved': ['barrier']})
+    assert state == 'fidelity_blocked' and 'claim barrier has no mode scope' in detail
     # The ledger must agree: a 10N claim there blocks even when the contract is clean.
-    _set_research(repo, contract, unresolved=HEROIC_ONLY)
-    _set_research(repo, ledger, unresolved=[{'key': 'static_shock', 'modes': ['10N']}])
-    assert 'ledger unresolved claim static_shock covers 10N' in _mode_research(repo)[1]
-    # So must its per-mode state and its count.
-    _set_research(repo, ledger, unresolved=HEROIC_ONLY, fidelity_state_by_mode=None)
-    assert 'ledger fidelity_state_by_mode[10N] is not accepted' in _mode_research(repo)[1]
-    _set_research(repo, ledger, fidelity_state_by_mode=ACCEPTED_10N, unresolved_material_count=2)
-    assert 'does not reconcile' in _mode_research(repo)[1]
+    state, detail = _synthetic_state(tmp_path, ledger={'unresolved': [{'key': 'static_shock', 'modes': ['10N']}]})
+    assert state == 'fidelity_blocked' and 'ledger unresolved claim static_shock covers 10N' in detail
+    # So must its per-mode state and its count, and a claim on another mode does not block 10N.
+    state, detail = _synthetic_state(tmp_path, ledger={'fidelity_state_by_mode': None})
+    assert state == 'fidelity_blocked' and 'ledger fidelity_state_by_mode[10N] is not accepted' in detail
+    state, detail = _synthetic_state(tmp_path, ledger={'unresolved_material_count': 2})
+    assert state == 'fidelity_blocked' and 'does not reconcile' in detail
+    assert _synthetic_state(tmp_path, contract={'unresolved': [{'key': 'other', 'modes': ['25N']}]}) == ('accepted', None)
 
 
 def test_mode_scoped_research_state_accepts_a_fully_resolved_mode(tmp_path):
@@ -293,10 +311,37 @@ def test_non_canonical_claim_modes_block_every_mode(tmp_path, modes):
     assert state == 'fidelity_blocked' and 'hidden_10n_claim has non-canonical modes' in detail
 
 
-def test_real_bwd_contracts_do_not_claim_an_accepted_10n_mode():
-    # Omnotron 10N keeps Barrier absorb, Static Shock centre and Power Conversion open.
-    for unit in discover_program(REAL, 'blackwing_descent', '10N')['units']:
-        assert unit['research']['fidelity_state'] != 'accepted', unit['boss_key']
+def test_real_bwd_contracts_claim_an_accepted_10n_mode_only_when_the_ledger_agrees():
+    # A contract may say 10N accepted (after research and user decisions), but only when the per-mode gate
+    # agrees: contract and ledger both accepted for 10N, both counts reconcile, no unresolved claim covers
+    # 10N. Every contract that does not claim it stays blocked.
+    rows = (read_json(REAL, STRATEGIES).get('raids') or {}).get('blackwing_descent', {}).get('bosses') or []
+    units = {unit['strategy_slug']: unit for unit in discover_program(REAL, 'blackwing_descent', '10N')['units']}
+    assert rows and set(units) == {row['boss_slug'] for row in rows}
+    claiming = 0
+    for row in rows:
+        contract = read_json(REAL, Path(row['contract']))
+        ledger = read_json(REAL, Path(contract.get('ledger_path') or row['ledger']))
+        assert contract and ledger, row['boss_slug']
+        unit = units[row['boss_slug']]
+        assert unit['research']['contract'] == row['contract']
+        claims = (contract.get('fidelity_state_by_mode') or {}).get('10N') == 'accepted'
+        state = mode_scoped_research_state(REAL, contract, row, '10N')
+        if not claims:
+            assert state[0] != 'accepted', row['boss_slug']
+            assert unit['research']['fidelity_state'] != 'accepted', row['boss_slug']
+            continue
+        claiming += 1
+        assert state == ('accepted', None), (row['boss_slug'], state)
+        assert unit['research']['fidelity_state'] == 'accepted', row['boss_slug']
+        # The same agreement, spelled out rather than trusted from the gate.
+        for name, document in (('contract', contract), ('ledger', ledger)):
+            claim_list = document['unresolved']
+            assert document['fidelity_state_by_mode']['10N'] == 'accepted', (row['boss_slug'], name)
+            assert len(claim_list) == document['unresolved_material_count'], (row['boss_slug'], name)
+            assert all(isinstance(claim, dict) and claim.get('modes') and '10N' not in claim['modes']
+                       for claim in claim_list), (row['boss_slug'], name)
+    assert claiming, 'no real BWD contract claims an accepted 10N: the consistency check would be vacuous'
 
 
 def _full_raid(repo: Path, **overrides) -> dict:

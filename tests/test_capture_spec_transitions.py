@@ -460,9 +460,12 @@ def test_the_real_full_raid_authority_binds_the_native_roster_identity():
 def test_contracts_keep_the_numeric_talent_group_mapping():
     scenario, manifest, rows, shard = _real_full_raid()
     from tools.bot_ml.generate_bot_admission_identities import load_gear_profiles
+    from tools.bot_ml.phase_gear_profiles import merge_phase_gear_profiles
 
-    profiles = load_gear_profiles(ROOT / "dataset/validation_gear_profiles/profiles.json",
-                                  ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json")
+    # As the production default loader (load_route_authority): a composition bound to a content phase
+    # (BWD: cata_t11) names ``<phase>/<spec>`` profiles, which live in the phase-gear output.
+    profiles = merge_phase_gear_profiles(load_gear_profiles(ROOT / "dataset/validation_gear_profiles/profiles.json",
+                                                            ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"))
     members = members_from_plan_shard(shard, profiles)
     assert route_authority_from_rows(rows, scenario, members).contracts
     # The druid's group indexes reversed in every contract (wanted spec and role unchanged): group 1 would be

@@ -93,10 +93,13 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert "LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing" in sweep
 
     step = _function(executor, "Outcome ExecuteStepOff(")
-    # The lip, landing, liquid and health are proven (Route::ChooseStepOff
-    # runs ValidateLedgeDrop on every candidate) before the standing report
-    # (Player::m_lastFallZ), and only then does the level step start.
-    assert step.index("Route::ChooseStepOff(drop,") < step.index("ReportStandingPosition(bot)") \
+    # The lip, landing, liquid and health are proven (ChooseClearStepOff
+    # runs ValidateLedgeDrop on every candidate, then the body's fall on an
+    # admitted one: tests/test_passenger_fall_body_clearance.py) before the
+    # standing report (Player::m_lastFallZ), and only then does the level
+    # step start.
+    assert step.index("BotLedgeDropBodyClearance::ChooseClearStepOff(drop,") \
+        < step.index("ReportStandingPosition(bot)") \
         < step.index("LaunchCheckedLine(bot, chosen);")
     assert '"native_ledge_drop_position_report_not_applied"' in step
     assert "if (!choice.Verdict.Ok)" in step
@@ -108,19 +111,29 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     # A passenger may drop only from this transport (a pillar top) and the
     # platform keeps still for the step, the native fall and the boarding.
     assert '"native_ledge_drop_on_other_transport"' in step
-    assert step.index("Route::ChooseStepOff(drop,") < step.index("TransportStationaryMs(transport)") \
+    assert step.index("BotLedgeDropBodyClearance::ChooseClearStepOff(drop,") \
+        < step.index("TransportStationaryMs(transport)") \
         < step.index("ReportStandingPosition(bot)")
     assert "Route::NativeFallTimeMs(fromZ - action.LandingZ)" in step
     # First footprint-clear point with a proven landing along the declared
     # heading, level at the member's own feet (no height is chosen for it);
     # the step goes exactly to the candidate that was probed.
     assert "return G3D::Vector3(fromX + headingX * step, fromY + headingY * step, fromZ);" in step
-    assert "return ProbeLedgeDrop(bot, transport, candidateAt(step), action.FloorToleranceYards);" in step
+    assert "return ProbeLedgeDrop(bot, transport, candidateAt(step), action.FloorToleranceYards,\n" \
+        "                action.LandingZ, action.LandingToleranceYards);" in step
+    assert "return ProbeFallBody(bot, transport, candidateAt(step), probe.LandingZ,\n" \
+        "                action.FloorToleranceYards);" in step
     assert "G3D::Vector3 const chosen = candidateAt(choice.StepYards);" in step
     drop = _function(executor, "Route::LedgeDropProbe ProbeLedgeDrop(")
-    # Exactly MoveFall's landing query: WorldObject::GetMapHeight with
-    # MAX_FALL_DISTANCE from the step-off point.
-    assert "bot->GetMapHeight(stepOff.x, stepOff.y, stepOff.z, true,\n        MAX_FALL_DISTANCE)" in drop
+    # MoveFall's landing query (WorldObject::GetMapHeight from the step-off
+    # point), searched no deeper than the declared drop: an unlimited
+    # first-hit query returns a model's underside under the Nefarian
+    # platform's north half (tests/test_nefarian_ledge_drop_floor_query.py).
+    assert "bot->GetMapHeight(stepOff.x, stepOff.y, stepOff.z, true,\n" \
+        "        LedgeDropLandingSearchYards(stepOff.z, declaredLandingZ, landingTolerance));" in drop
+    assert "bot->GetMapHeight(stepOff.x, stepOff.y, stepOff.z, true,\n        MAX_FALL_DISTANCE)" not in drop
+    bound = _function(executor, "float LedgeDropLandingSearchYards(")
+    assert "return Z_OFFSET_FIND_HEIGHT + std::max(0.0f, z - declaredLandingZ) + tolerance;" in bound
     assert "IsInWater(phase, stepOff.x, stepOff.y, landing + 0.1f)" in drop
     assert "PredictFallDamagePct(bot,\n            from.z - landing)" in drop
     # A sloped lip is flagged under every unsupported sample; a static
@@ -132,19 +145,47 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     # Nothing may resume a line through the air after the fall, and the fall
     # origin is reported right before MoveFall (also without a step-off).
     assert fall.index("Clear(MOTION_SLOT_ACTIVE)") < fall.index("ReportStandingPosition(bot)") \
-        < fall.index("LaunchNativeFall(bot, false)")
+        < fall.index("return LaunchFallOnto(bot, floor);")
+    assert "LaunchNativeFall(" not in fall
     assert '"native_ledge_drop_fall_waiting_for_motion"' in fall
     # The landing is proven again where the fall starts (a step cut short or
     # displaced over the void), with MoveFall's own query, before anything
     # is cleared or reported; a mismatch is a counted refusal, never a fall.
     assert "float const floor = bot->GetMapHeight(bot->GetPositionX(), bot->GetPositionY(),\n" \
-        "        bot->GetPositionZ(), true, MAX_FALL_DISTANCE);" in fall
+        "        bot->GetPositionZ(), true, LedgeDropLandingSearchYards(bot->GetPositionZ(),\n" \
+        "            action.LandingZ, action.LandingToleranceYards));" in fall
+    assert "MAX_FALL_DISTANCE" not in fall
     assert fall.index("Route::FallLandsOnDeclaredFloor(floor > INVALID_HEIGHT, floor, action.LandingZ,") \
         < fall.index("Clear(MOTION_SLOT_ACTIVE)")
     assert 'Outcome::Retryable("native_ledge_drop_fall_landing_mismatch")' in fall
     approach = _code(_source("BotValidationRouteNativeApproach.h"))
     assert "!FallLandsOnDeclaredFloor(true, probe.LandingZ, contract.LandingZ," in \
         _function(approach, "inline ApproachVerdict ValidateLedgeDrop(")
+    # The first fall launches onto the floor proven above, with
+    # MotionMaster::MoveFall's own body statement for statement (only the
+    # height differs); nothing else in the executor writes a flag.
+    onto = _function(executor, "Outcome LaunchFallOnto(")
+    move_fall = _code((ROOT / "src/server/game/Movement/MotionMaster.cpp").read_text(encoding="utf-8"))
+    move_fall = _function(move_fall, "void MotionMaster::MoveFall(")
+    for native, ours in (
+        ("_owner->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED)",
+         "bot->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED)"),
+        ("_owner->AddUnitMovementFlag(MOVEMENTFLAG_FALLING);",
+         "bot->AddUnitMovementFlag(MOVEMENTFLAG_FALLING);"),
+        ("_owner->m_movementInfo.SetFallTime(0);", "bot->m_movementInfo.SetFallTime(0);"),
+        ("_owner->SetFall(true);", "bot->SetFall(true);"),
+        ("init.MoveTo(_owner->GetPositionX(), _owner->GetPositionY(), tz + _owner->GetHoverOffset(), false);",
+         "init.MoveTo(bot->GetPositionX(), bot->GetPositionY(), floorZ + bot->GetHoverOffset(), false);"),
+        ("init.SetFall();", "init.SetFall();"),
+        ("MOTION_SLOT_CONTROLLED", "MOTION_SLOT_CONTROLLED"),
+    ):
+        assert native in move_fall, native
+        assert ours in onto, ours
+    # The root check precedes every write, as in MoveFall.
+    assert onto.index("UNIT_STATE_ROOT") < onto.index("AddUnitMovementFlag(")
+    assert "LaunchMoveSpline(std::move(init), 0, MOTION_SLOT_CONTROLLED,\n        EFFECT_MOTION_TYPE);" in onto
+    assert 'Outcome::NotApplicable("native_ledge_drop_fall_held_by_root")' in onto
+    assert executor.count("LaunchFallOnto(") == 2
     launch = _function(executor, "Outcome LaunchNativeFall(")
     assert "bot->GetMotionMaster()->MoveFall();" in launch
     assert "MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE" in launch
@@ -154,7 +195,7 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     land = _function(executor, "Outcome ExecuteLand(")
     assert land.index("NativeFallLandingPending(bot)") < land.index("ReportFallLanding(")
     # No floor under the feet: fall on (uncounted); report only onto a floor.
-    assert land.index("return LaunchNativeFall(bot, true);") < land.index("ReportFallLanding(")
+    assert land.index("return LaunchNativeFall(bot, transport, action.FloorToleranceYards, true);") < land.index("ReportFallLanding(")
     assert "native_ledge_drop_land_no_floor" not in land
     # After the report a zero-length turn replaces the finished fall spline,
     # so Unit::IsFalling() reads the landed member as grounded.
@@ -188,9 +229,10 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
         "HandleMovementOpcode(", "SetFacingTo(", "SetFallInformation", "m_lastFallZ",
         "IsInCombat(",
     ):
-        assert forbidden not in executor, forbidden
-    # Exactly two splines are built here: the checked line and the landing turn.
-    assert executor.count("Movement::MoveSplineInit init(bot);") == 2
+        assert forbidden not in executor.replace(onto, ""), forbidden
+    # Exactly three splines are built here: the checked line, the landing
+    # turn and the fall onto the proven floor.
+    assert executor.count("Movement::MoveSplineInit init(bot);") == 3
 
 
 def test_boarding_reports_are_client_packets_at_the_current_position() -> None:

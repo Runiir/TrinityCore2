@@ -332,11 +332,17 @@ void SpellMgrCorrections::ApplyPart04()
         spellInfo->Effects[EFFECT_1].AuraPeriod = 2000;
     });
 
-    // Sonar Pulse (10 player)
-    ApplySpellFix({
-        92526,
-        92532,
-    }, [](SpellInfo* spellInfo)
+    // Sonar Bomb (10 player normal, SpellDifficulty row 3155 index 0)
+    // User decision 2026-09-30: Atramedes 10N launches 3 bombs per wave (current Wowhead 4.4.2
+    // says 3; Warcraft Logs records only the impacts, so no log can settle 3 versus the
+    // historical 5, and the 4.4.2 client has no max-targets row for the spell).
+    ApplySpellFix({ 92526 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->MaxAffectedTargets = 3;
+    });
+
+    // Sonar Bomb (10 player heroic, SpellDifficulty row 3155 index 2; unchanged, still 5)
+    ApplySpellFix({ 92532 }, [](SpellInfo* spellInfo)
     {
         spellInfo->MaxAffectedTargets = 5;
     });

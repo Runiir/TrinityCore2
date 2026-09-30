@@ -39,7 +39,7 @@ def test_holds_clear_native_chase_and_renew_a_lease() -> None:
     block = code[code.index("std::string const& hold = context.AdaptiveNefarianMovementHold;"):]
     block = block[:block.index("DecisionKernel.Submit(std::move(stop));")]
     assert "hold == BotEncounter::Nefarian::WarriorStopHold;" in block
-    assert "BotEncounter::Nefarian::IsPlatformHold(hold);" in block
+    assert "BotEncounter::Nefarian::IsPlatformHold(hold)\n        || BotEncounter::Nefarian::IsPillarHold(hold);" in block
     assert "hold == BotEncounter::Nefarian::LegInFlightHold;" in block
     assert "? BotMovementArbitration::Owner::Hazard : BotMovementArbitration::Owner::Mechanic;" in block
     assert "Priority::Survival" in block
@@ -193,3 +193,41 @@ def test_onyxia_unkillable_flag_goes_with_the_landing() -> None:
     appeared = onyxia[onyxia.index("void JustAppeared() override"):]
     appeared = appeared[:appeared.index("\n    }\n")]
     assert "me->SetUnkillable(true);" in appeared
+
+
+def test_refused_steps_are_visible_in_the_decision_trace() -> None:
+    """Round 3 (E1): round 2's pillar-1 step-offs were refused every decision
+    and the reason never reached the evidence. A Retryable or Unsafe answer to
+    the plan's movement step (surface walk, descent, crossing or ascent stage)
+    is recorded as nefarian_move_refused:<mechanic>:<executor reason>,
+    repeats coalesced; a committed step records nothing new."""
+    code = _code(CANDIDATES)
+    leg = code[code.index("if (context.AdaptiveNefarianMovement\n"):]
+    leg = leg[:leg.index("context.State.DecisionKernel.Submit(std::move(movement));")]
+    assert "mechanic = proposal.Id.Mechanic," in leg
+    refused = leg[leg.index("else if (outcome.Result == BotActionArbitration::Disposition::Retryable"):]
+    assert "|| outcome.Result == BotActionArbitration::Disposition::Unsafe)" in refused
+    assert "std::string(BotEncounter::Nefarian::MoveRefusedPrefix)\n                    + mechanic + \":\" + outcome.Reason;" in refused
+    assert "RecordDecisionTrace(context.State, \"adaptive_nefarian\", refused.c_str(),\n                    nullptr, 0, \"refused\", outcome.Reason.c_str(), true);" in refused
+    assert refused.index("RecordDecisionTrace") < refused.index("return outcome;")
+    movement = (BOTS / "Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMovement.h").read_text()
+    assert 'constexpr std::string_view MoveRefusedPrefix = "nefarian_move_refused:";' in movement
+
+
+def test_bone_warrior_watch_is_recorded_once_per_cohort() -> None:
+    """Round 3 (E3): the acceptance observation (BotNefarianWarriorWatch.h)
+    runs for one reporter per cohort, in the watch of the cohort's attempt
+    bound to the snapshot's instance (review round 3:
+    BotNefarianObservationStore.h, replayed by
+    tests/test_nefarian_observation_scope.py), and each violation becomes one
+    decision-trace entry naming the warrior."""
+    code = _code(CANDIDATES)
+    watch = code[code.index("if (context.AdaptiveNefarianOwnsNode && Cohort().EncounterSnapshot"):]
+    watch = watch[:watch.index("auto renewLease")]
+    assert "ReportsWarriorWatch(*Cohort().EncounterSnapshot, context.Bot->GetGUID())" in watch
+    assert "SharedWarriorWatch" not in code
+    assert ("Observations().ObserveWarriors(cohortId, observationAttempt, board.CurrentScope,\n"
+            "                view, { board.Revision, board.ObservedAtMs },\n"
+            "                BotEncounter::Nefarian::ObservationClockMs(\n"
+            "                    GameTime::GetGameTimeSteadyPoint()));") in watch
+    assert "ObjectAccessor::GetUnit(*context.Bot, violation.Warrior), 0, \"observation\"," in watch

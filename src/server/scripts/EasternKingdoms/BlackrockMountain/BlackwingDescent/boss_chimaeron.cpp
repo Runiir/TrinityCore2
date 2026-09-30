@@ -148,9 +148,10 @@ struct boss_chimaeron : public BossAI
     void Initialize()
     {
         me->SetReactState(REACT_PASSIVE);
-        _knockOutChance = 40;
+        _massacresInCycle = 0;
         _killedPlayerCount = 0;
         _isInFeud = false;
+        _doubleAttackHeldByFeud = false;
     }
 
     void Reset() override
@@ -196,7 +197,8 @@ struct boss_chimaeron : public BossAI
         events.SetPhase(PHASE_1);
         // First Caustic Slime at 15 s (BigWigs); WCL MxFq7TRbvnjGY1hJ fight 27
         // (10N) shows the first two 82935 impacts at 17.2/17.5 s after the
-        // missile flight, and no earlier slime. Repeat stays 5 s.
+        // missile flight, and no earlier slime. The repeat is 6 s on 10N and 5 s
+        // elsewhere (Logic::CausticSlimeRepeatMs).
         events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 15s, 0, PHASE_1);
         events.ScheduleEvent(EVENT_BREAK, 5s, 0, PHASE_1);
         events.ScheduleEvent(EVENT_DOUBLE_ATTACK, 5s, 0, PHASE_1);
@@ -301,9 +303,12 @@ struct boss_chimaeron : public BossAI
                 /*
                     Patch 4.1.0 (2011-04-26): The Bile-O-Tron 800 in the Chimaeron encounter is now more resistant to being
                     knocked offline many times in rapid succession.
+                    10N (WCL census): never on the first Massacre of a cycle, about half on the second, always on the third.
+                    25N/10H/25H keep the previous 40/60/80/100% roll (Logic::KnockoutChancePct); the cycle restarts
+                    after each knockout in every mode.
                 */
-
-                if (roll_chance_i(_knockOutChance))
+                ++_massacresInCycle;
+                if (roll_chance_i(Logic::KnockoutChancePct(IsTenNormal(), _massacresInCycle)))
                 {
                     if (bileOTron->IsAIEnabled())
                         bileOTron->AI()->DoAction(ACTION_KNOCK_OUT_BILE_O_TRON);
@@ -314,10 +319,8 @@ struct boss_chimaeron : public BossAI
 
                     me->StopMoving();
                     DoCastSelf(SPELL_FEUD);
-                    _knockOutChance = 40;
+                    _massacresInCycle = 0;
                 }
-                else
-                    _knockOutChance += 20;
                 break;
             }
             default:
@@ -341,6 +344,13 @@ struct boss_chimaeron : public BossAI
                 break;
             case ACTION_END_FEUD:
                 _isInFeud = false;
+                // A Mortality Double Attack that came due inside Feud was held
+                // (EVENT_DOUBLE_ATTACK): cast it now and restart its 15 s cycle.
+                if (_doubleAttackHeldByFeud)
+                {
+                    _doubleAttackHeldByFeud = false;
+                    events.ScheduleEvent(EVENT_DOUBLE_ATTACK, 1ms, 0, PHASE_2);
+                }
                 break;
             default:
                 break;
@@ -376,10 +386,15 @@ struct boss_chimaeron : public BossAI
                 case EVENT_CAUSTIC_SLIME:
                     if (SelectTarget(SELECT_TARGET_RANDOM, 0, NonTankTargetSelector(me)))
                         DoCastAOE(SPELL_CAUSTIC_SLIME_TARGETING, true);
-                    events.Repeat(5s);
+                    events.Repeat(Logic::CausticSlimeRepeatMs(IsTenNormal()));
                     break;
                 case EVENT_BREAK:
-                    DoCastVictim(SPELL_BREAK);
+                    // 10N: Feud pacifies his melee and Break and Double Attack are
+                    // skipped while it lasts (Logic::SkipsBreakAndDoubleAttack).
+                    // Pacify does not block these spells (no prevention type), so
+                    // skip them here. 25N/10H/25H keep casting them.
+                    if (!Logic::SkipsBreakAndDoubleAttack(IsTenNormal(), _isInFeud))
+                        DoCastVictim(SPELL_BREAK);
                     events.Repeat(15s);
                     break;
                 case EVENT_MASSACRE:
@@ -392,7 +407,16 @@ struct boss_chimaeron : public BossAI
                     events.RescheduleEvent(EVENT_DOUBLE_ATTACK, 11s, 0, PHASE_1);
                     break;
                 case EVENT_DOUBLE_ATTACK:
-                    DoCastSelf(SPELL_DOUBLE_ATTACK, true);
+                    // Mortality: hold the attack that comes due inside Feud for
+                    // ACTION_END_FEUD instead of consuming it and waiting a whole
+                    // repeat (Logic::HoldsDoubleAttackForFeudEnd).
+                    if (Logic::HoldsDoubleAttackForFeudEnd(IsTenNormal(), _isInFeud, events.IsInPhase(PHASE_2)))
+                    {
+                        _doubleAttackHeldByFeud = true;
+                        break;
+                    }
+                    if (!Logic::SkipsBreakAndDoubleAttack(IsTenNormal(), _isInFeud))
+                        DoCastSelf(SPELL_DOUBLE_ATTACK, true);
                     events.Repeat(15s);
                     break;
                 case EVENT_SNORT:
@@ -417,9 +441,14 @@ struct boss_chimaeron : public BossAI
         DoMeleeAttackIfReady();
     }
 private:
-    uint8 _knockOutChance = 40;
+    // The WCL evidence behind the knockout cycle, the 6 s Slime repeat and the
+    // Feud skipping is 10N only; the other modes keep the previous rules.
+    bool IsTenNormal() const { return GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL; }
+
+    uint8 _massacresInCycle = 0;
     uint8 _killedPlayerCount = 0;
     bool _isInFeud = false;
+    bool _doubleAttackHeldByFeud = false;
 };
 
 struct npc_chimaeron_finkle_einhorn : public ScriptedAI

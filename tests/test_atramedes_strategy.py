@@ -28,6 +28,7 @@ INCLUDES = [
 
 PROGRAM = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationStore.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -43,6 +44,20 @@ namespace G = BotEncounter::Atramedes::Geometry;
 
 static ObjectGuid PlayerGuid(uint32 counter) { return ObjectGuid(HighGuid::Player, counter); }
 static ObjectGuid UnitGuid(uint32 entry, uint32 counter) { return ObjectGuid(HighGuid::Unit, entry, counter); }
+
+// A shield creature's runtime GUID counter. Native creature loading generates it independently of the
+// database spawn id (A::ShieldSpawn::SpawnId), so a fixture never gives the two the same value: a lookup
+// that compared them would pass on a fixture that did (round 3 review, BotAtramedesDodge.h).
+static uint32 ShieldCounter(uint32 spawnId) { return spawnId - 249000u; }
+static uint32 ShieldSpawnId(ObjectGuid guid) { return guid.GetCounter() + 249000u; }
+static ObjectGuid ShieldGuid(uint32 spawnId)
+{
+    for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
+        if (spawn.SpawnId == spawnId)
+            return UnitGuid(spawn.Entry, ShieldCounter(spawnId));
+    assert(false && "not a shield spawn");
+    return ObjectGuid();
+}
 
 static ActorSnapshot MakePlayer(uint32 counter, char const* role, char const* spec, float x, float y)
 {
@@ -80,7 +95,7 @@ enum Slot : uint32
 static Vector3 OwnerStand()
 {
     // Duty shield rank 0: spawn 250130 (181.769, -253.035) is nearest the anchor.
-    A::ShieldFact shield{ UnitGuid(42954, 250130), { 181.769f, -253.035f, 76.7294f } };
+    A::ShieldFact shield{ ShieldGuid(250130), { 181.769f, -253.035f, 76.7294f } };
     return A::ShieldStandPoint(shield);
 }
 
@@ -119,7 +134,7 @@ static Blackboard Board()
     board.Summons.push_back(boss);
     for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
     {
-        ActorSnapshot shield = MakeUnit(spawn.Entry, spawn.SpawnId, spawn.X, spawn.Y,
+        ActorSnapshot shield = MakeUnit(spawn.Entry, ShieldCounter(spawn.SpawnId), spawn.X, spawn.Y,
             ActorKind::Interactable);
         shield.Position.Z = spawn.Z;
         shield.Selectable = true;
@@ -296,14 +311,14 @@ static void TestSearingFlameGong()
     CastOnBoss(board, A::SearingFlameSpell);
     AdaptiveAtramedesPlan owner = Plan(board, Hunter);
     BotNativeAction::SpellClick const* click = ClickOf(owner);
-    assert(click && click->Target == UnitGuid(42954, 250130));
+    assert(click && click->Target == ShieldGuid(250130));
     assert(owner.GongReason == "searing_flame");
     assert(owner.Interaction->Id.Strategy == "adaptive_atramedes");
     assert(owner.Interaction->ExpiresAtMs == board.ObservedAtMs + 750);
     assert(CountClicks(board) == 1);
 
     // Vertigo already landed: never strike twice.
-    AddAura(Boss(board), A::VertigoAuras.front(), UnitGuid(42954, 250130));
+    AddAura(Boss(board), A::VertigoAuras.front(), ShieldGuid(250130));
     assert(CountClicks(board) == 0);
 
     // Owner away from every shield: it runs back with survival priority.
@@ -326,7 +341,7 @@ static void TestSearingFlameGong()
     Member(board, Mage).Position = { 180.0f, -193.0f, 75.0f };
     assert(!ClickOf(Plan(board, Hunter)));
     AdaptiveAtramedesPlan backup = Plan(board, Mage);
-    assert(ClickOf(backup) && ClickOf(backup)->Target == UnitGuid(42956, 250131));
+    assert(ClickOf(backup) && ClickOf(backup)->Target == ShieldGuid(250131));
     assert(CountClicks(board) == 1);
     // Once the breath is over the Tracking Flames lingers (10 s), but the
     // owner is on gong duty again.
@@ -341,11 +356,11 @@ static void TestSearingFlameGong()
     CastOnBoss(board, A::SearingFlameSpell);
     Member(board, Hunter).Position = { 174.5f, -258.7f, 75.0f };
     BotNativeAction::SpellClick const* kept = ClickOf(Plan(board, Hunter));
-    assert(kept && kept->Target == UnitGuid(42954, 250130));
+    assert(kept && kept->Target == ShieldGuid(250130));
     // Only a relay shield in reach: it is struck (Searing Flame outranks it).
     Member(board, Hunter).Position = { 166.0f, -259.0f, 75.0f };
     BotNativeAction::SpellClick const* spent = ClickOf(Plan(board, Hunter));
-    assert(spent && spent->Target.GetCounter() == 250128);
+    assert(spent && ShieldSpawnId(spent->Target) == 250128);
 
     // Standby: while this ground phase's Searing Flame is pending (or the
     // schedule is unknown) the owner holds non-relay shield 250130; once it
@@ -362,7 +377,7 @@ static void TestSearingFlameGong()
     assert(Mechanic(airStandby) == "gong_owner_air_standby");
     A::Facts const standbyFacts = A::BuildFacts(board);
     std::vector<A::ShieldFact> const standbyRelays = A::RelayShields(standbyFacts);
-    assert(!standbyRelays.empty() && standbyRelays.front().Guid.GetCounter() == 250128);
+    assert(!standbyRelays.empty() && ShieldSpawnId(standbyRelays.front().Guid) == 250128);
     Vector3 const airStation = A::AirStationPoint(standbyRelays.front());
     assert(G::Distance2d({ MoveOf(airStandby)->X, MoveOf(airStandby)->Y, 75.0f },
         airStation) < 0.1f);
@@ -401,7 +416,11 @@ static void TestSoundGongs()
     board = Board();
     AddTimer(Boss(board), A::TakeOffSpell, 40000);
     assert(A::SearingFlameReserve(A::BuildFacts(board)).Total() == 1);
+    // The next phase's reserve holds above 40.8% (a 130k T11 raid-DPS floor
+    // over the 82 s to that Searing Flame, BotAtramedesGongPolicy.h).
     Boss(board).HealthPct = 45.0f;
+    assert(A::SearingFlameReserve(A::BuildFacts(board)).Total() == 1);
+    Boss(board).HealthPct = 40.0f;
     assert(A::SearingFlameReserve(A::BuildFacts(board)).Total() == 0);
     AddTimer(Boss(board), A::SearingFlameSpell, 20000);
     assert(A::SearingFlameReserve(A::BuildFacts(board)).Total() == 1);
@@ -612,7 +631,7 @@ static void TestAirPhaseTargetsAndSpread()
     std::vector<A::ShieldFact> const relays = A::RelayShields(slackFacts);
     std::vector<uint32> relayIds;
     for (A::ShieldFact const& relay : relays)
-        relayIds.push_back(relay.Guid.GetCounter());
+        relayIds.push_back(ShieldSpawnId(relay.Guid));
     assert((relayIds == std::vector<uint32>{ 250128, 250126, 250125, 250122, 250129 }));
     for (A::ShieldFact const& shield : slackFacts.Shields)
     {
@@ -623,7 +642,7 @@ static void TestAirPhaseTargetsAndSpread()
             <= A::ShieldClickDistance;
         assert(inReach);
         assert((inRange && inReach) == (std::find(relayIds.begin(), relayIds.end(),
-            shield.Guid.GetCounter()) != relayIds.end()));
+            ShieldSpawnId(shield.Guid)) != relayIds.end()));
     }
     // Owner at the station nearest the hover point (250128), backup at the
     // in-range one farthest from it (250129, north-east).
@@ -635,7 +654,7 @@ static void TestAirPhaseTargetsAndSpread()
         <= A::ShieldClickDistance);
     std::optional<A::ShieldFact> const backupShield = A::AirRelayShieldFor(slack, slackFacts,
         relayDuties, PlayerGuid(Mage));
-    assert(backupShield && backupShield->Guid.GetCounter() == 250129);
+    assert(backupShield && ShieldSpawnId(backupShield->Guid) == 250129);
     assert(Mechanic(Plan(slack, Mage)) == "air_relay_station");
     // A kiting owner leaves its station; the backup keeps its own (already
     // there) while a second station exists ...
@@ -646,20 +665,20 @@ static void TestAirPhaseTargetsAndSpread()
     assert(!A::AirRelayShieldFor(slack, kiting, relayDuties, PlayerGuid(Hunter)));
     std::optional<A::ShieldFact> const kept = A::AirRelayShieldFor(slack, kiting, relayDuties,
         PlayerGuid(Mage));
-    assert(kept && kept->Guid.GetCounter() == 250129);
+    assert(kept && ShieldSpawnId(kept->Guid) == 250129);
     // ... and takes the single station over when it is the only one.
     Blackboard single = slack;
     single.Interactables.erase(std::remove_if(single.Interactables.begin(),
         single.Interactables.end(), [](ActorSnapshot const& shield)
         {
-            uint32 const id = shield.Guid.GetCounter();
+            uint32 const id = ShieldSpawnId(shield.Guid);
             return id != 250128 && id != 250130 && id != 250131 && id != 250123;
         }), single.Interactables.end());
     A::Facts const singleFacts = A::BuildFacts(single);
     assert(A::RelayShields(singleFacts).size() == 1);
     std::optional<A::ShieldFact> const taken = A::AirRelayShieldFor(single, singleFacts,
         relayDuties, PlayerGuid(Mage));
-    assert(taken && taken->Guid.GetCounter() == 250128);
+    assert(taken && ShieldSpawnId(taken->Guid) == 250128);
 
     // Sparse fallback: with 3 or fewer shields left, none in range and the
     // budget still allowing an air rescue, the owner guards the shield
@@ -669,7 +688,7 @@ static void TestAirPhaseTargetsAndSpread()
     A::Facts const sparseFacts = A::BuildFacts(sparse);
     assert(sparseFacts.Shields.size() > A::SearingFlameReserve(sparseFacts).Total());
     std::vector<A::ShieldFact> const fallback = A::RelayShields(sparseFacts);
-    assert(fallback.size() == 1 && fallback.front().Guid == UnitGuid(42954, 250130));
+    assert(fallback.size() == 1 && fallback.front().Guid == ShieldGuid(250130));
     Vector3 const guard = A::AirStationPoint(fallback.front());
     assert(!A::StationInRange(guard));
     Member(sparse, Hunter).Position = { guard.X + 3.0f, guard.Y, 75.0f };
@@ -749,7 +768,7 @@ static void TestAirKiteAndRescue()
     assert(A::AirKiteDirection(A::BuildFacts(board), Member(board, Mage)) == 1);
     AdaptiveAtramedesPlan rescue = Plan(board, Mage);
     assert(rescue.GongReason == "air_breath_rescue");
-    assert(ClickOf(rescue) && ClickOf(rescue)->Target == UnitGuid(42956, 250122));
+    assert(ClickOf(rescue) && ClickOf(rescue)->Target == ShieldGuid(250122));
     assert(CountClicks(board) == 1);
     // Farther from contact (15.6 yd, 5 stacks: 2.5 s), but the next shield
     // ahead (250125) is 2.8 s from reach: strike now rather than be caught
@@ -788,8 +807,8 @@ static void TestAirKiteAndRescue()
     board = AirBoard();
     board.Summons.push_back(MakeUnit(A::ReverberatingFlameEntry, 81, 120.0f, -240.0f,
         ActorKind::Summon));
-    Member(board, Balance).Auras.push_back({ A::AirClashAura, UnitGuid(42956, 250122), 0, 9000 });
-    Member(board, Warlock).Auras.push_back({ A::AirClashAura, UnitGuid(42954, 250130), 0, 17000 });
+    Member(board, Balance).Auras.push_back({ A::AirClashAura, ShieldGuid(250122), 0, 9000 });
+    Member(board, Warlock).Auras.push_back({ A::AirClashAura, ShieldGuid(250130), 0, 17000 });
     A::Facts const redirect = A::BuildFacts(board);
     assert(redirect.AirKiter.IsEmpty());
     assert(A::AirRedirectRunner(board, redirect)->Guid == PlayerGuid(Warlock));
@@ -805,7 +824,7 @@ static void TestAirKiteAndRescue()
     Member(board, Warlock).Position = { 180.0f, -197.0f, 75.0f };
     assert(!ClickOf(Plan(board, Mage)));
     AdaptiveAtramedesPlan relay = Plan(board, Warlock);
-    assert(ClickOf(relay) && ClickOf(relay)->Target == UnitGuid(42956, 250131));
+    assert(ClickOf(relay) && ClickOf(relay)->Target == ShieldGuid(250131));
     assert(CountClicks(board) == 1);
 
     // A striker in reach of relay shield 250128 and of 250130 strikes 250130
@@ -821,10 +840,10 @@ static void TestAirKiteAndRescue()
         A::Facts const keepFacts = A::BuildFacts(keep);
         std::vector<A::ShieldFact> const keepRelays = A::RelayShields(keepFacts);
         assert(std::any_of(keepRelays.begin(), keepRelays.end(),
-            [](A::ShieldFact const& shield) { return shield.Guid.GetCounter() == 250128; }));
+            [](A::ShieldFact const& shield) { return ShieldSpawnId(shield.Guid) == 250128; }));
         AdaptiveAtramedesPlan keeper = Plan(keep, Warlock);
         assert(keeper.GongReason == "air_breath_rescue");
-        assert(ClickOf(keeper) && ClickOf(keeper)->Target == UnitGuid(42954, 250130));
+        assert(ClickOf(keeper) && ClickOf(keeper)->Target == ShieldGuid(250130));
         assert(CountClicks(keep) == 1);
     }
 
@@ -885,7 +904,7 @@ static void TestAirKiteAndRescue()
     AddFlame(board, Member(board, Tank), { 104.5f, -263.8f, 75.0f }, 6);
     AdaptiveAtramedesPlan tankRescue = Plan(board, Tank, "tank");
     assert(tankRescue.Duty == "roaring_flame_breath_kiter");
-    assert(ClickOf(tankRescue) && ClickOf(tankRescue)->Target == UnitGuid(42956, 250122));
+    assert(ClickOf(tankRescue) && ClickOf(tankRescue)->Target == ShieldGuid(250122));
     assert(CountClicks(board) == 1);
 
     // A 90-Sound emergency still gongs while the rescue budget is spent:
@@ -901,7 +920,7 @@ static void TestAirKiteAndRescue()
     assert(A::SearingFlameReserve(A::BuildFacts(board)).Total() == 1);
     AdaptiveAtramedesPlan loud = Plan(board, Mage);
     assert(loud.GongReason == "sound_emergency");
-    assert(ClickOf(loud) && ClickOf(loud)->Target == UnitGuid(42956, 250131));
+    assert(ClickOf(loud) && ClickOf(loud)->Target == ShieldGuid(250131));
 
     // During a redirect the flame is interrupted: no Tracking channel and no
     // Tracking aura, so nobody is the kiter and no second shield is spent.
@@ -962,6 +981,19 @@ static void TestAirKiteKeepsDirection()
 // Replay variants (user raid experience, 2026-09-25): the canonical roster's
 // mobility published as spell timers (all ready), the mage's Ice Block ready
 // or on its cooldown, or no mage at all.
+// The last 8 s of the ground phase count the published liftoff timer down to
+// the liftoff; a strike there runs natively (every Sound bar to 0, Vertigo
+// 5 s, which holds the liftoff until it ends). Optional native Sound sources
+// (the kiter Sound bound, user decision 2026-09-30):
+//   GroundSound  Sound carried from the ground into the liftoff (a Sonic
+//                Breath tick is +20, a Sonar Pulse disk tick +3);
+//   Bombs        Sonar Bomb from the hover on: every 3 s 92526 marks 3
+//                random players (10N), each summons marker 49623 (6 s) and
+//                92553 lands 2.5 s later: +20 Sound within 6 yd;
+//   FirePatches  the flame's 78354 drops a 42001 patch at the flame every
+//                250 ms when none is within 2 yd; each patch ticks 78023
+//                every second (+5 Sound within 3 yd) and outlasts the phase.
+// The spawn burst 78555 (+10 within 8 yd) is not modelled.
 struct ReplayOptions
 {
     bool Mobility = false;
@@ -970,6 +1002,10 @@ struct ReplayOptions
     // A later air phase (about 124 s after the previous one): Dash (180 s)
     // is still cooling down.
     uint32 DashRemainingMs = 0;
+    std::vector<std::pair<uint32, uint32>> GroundSound;
+    bool Bombs = false;
+    bool FirePatches = false;
+    uint32 Seed = 1;
 };
 
 struct AirReplay
@@ -992,7 +1028,40 @@ struct AirReplay
     bool DoubleClick = false;
     std::vector<uint32> ShieldsLeft;
     std::vector<std::string> StrikeReasons;
+    // The acceptance observation over the air phase: the production counters
+    // (BotAtramedesObservationCounters.h) fed with every snapshot's chase
+    // sample (SampleChase), as the server store is.
+    uint32 Chases = 0;
+    uint32 MaxKiterSound = 0;
+    uint64 KiterSamplesAboveBound = 0;
+    int FirstChaseSound = -1;
+    // Ground strikes of the last 8 s before the liftoff and their reasons.
+    int GroundStrikes = 0;
+    std::vector<std::string> GroundReasons;
+    // Distinct gong reasons withheld by the shield budget (`*_at_reserve`).
+    std::vector<std::string> Withheld;
+    int BombHits = 0;
+    int KiterBombHits = 0;
+    int FireTicks = 0;
+    int KiterFireTicks = 0;
+    // Raid-wide Sound (tests/test_atramedes_raid_sound.py): per player slot,
+    // the Sound gained from every hazard while not chased (Gained), while
+    // chased (KiterGained), and the highest bar reached.
+    std::map<uint32, uint32> Gained;
+    std::map<uint32, uint32> KiterGained;
+    std::map<uint32, uint32> MaxBar;
+    // Decision steps (250 ms) in which each player moved: the cast time a
+    // dodge costs.
+    std::map<uint32, int> MovingSteps;
 };
+
+static void NoteSound(AirReplay& result, ActorSnapshot& player, uint32 sound, bool chased)
+{
+    uint32 const slot = player.Guid.GetCounter();
+    player.AlternatePower = std::min<uint32>(100, player.AlternatePower + sound);
+    (chased ? result.KiterGained : result.Gained)[slot] += sound;
+    result.MaxBar[slot] = std::max(result.MaxBar[slot], player.AlternatePower);
+}
 
 static void MoveBots(Blackboard& board, std::map<ObjectGuid, Vector3> const& destinations)
 {
@@ -1012,11 +1081,90 @@ static void StepPlans(Blackboard& board)
     std::map<ObjectGuid, Vector3> destinations;
     for (ActorSnapshot const& player : board.Players)
         if (player.Alive)
-            if (BotNativeAction::Move const* move = MoveOf(AdaptiveAtramedesStrategy().Propose(
-                    board, player.Guid, player.Role.c_str())))
+        {
+            AdaptiveAtramedesPlan const plan = AdaptiveAtramedesStrategy().Propose(
+                board, player.Guid, player.Role.c_str());
+            if (BotNativeAction::Move const* move = MoveOf(plan))
                 destinations[player.Guid] = { move->X, move->Y, 75.0f };
+        }
     MoveBots(board, destinations);
 }
+
+static void NoteWithheld(AirReplay& result, std::string_view reason)
+{
+    std::string const text(reason);
+    if (text.size() > 11 && text.compare(text.size() - 11, 11, "_at_reserve") == 0
+        && std::find(result.Withheld.begin(), result.Withheld.end(), text) == result.Withheld.end())
+        result.Withheld.push_back(text);
+}
+
+// One decision step without a flame in which a strike runs natively: the
+// shield is used and every Sound bar goes to 0 (77709); on the ground
+// Atramedes takes Vertigo (77717, 5 s), in the air the striker keeps
+// Resonating Clash (78168, 15 s). Returns the strike's gong reason.
+static std::string StepPlansNative(Blackboard& board, bool air, AirReplay& result)
+{
+    ++board.Revision;
+    board.ObservedAtMs += 250;
+    std::map<ObjectGuid, Vector3> destinations;
+    ObjectGuid clicker;
+    ObjectGuid clicked;
+    std::string reason;
+    for (ActorSnapshot const& player : board.Players)
+    {
+        if (!player.Alive)
+            continue;
+        AdaptiveAtramedesPlan const plan = AdaptiveAtramedesStrategy().Propose(board, player.Guid,
+            player.Role.c_str());
+        NoteWithheld(result, plan.GongReason);
+        if (BotNativeAction::SpellClick const* click = ClickOf(plan))
+        {
+            if (!clicker.IsEmpty())
+                result.DoubleClick = true;
+            else
+            {
+                clicker = player.Guid;
+                clicked = click->Target;
+                reason = std::string(plan.GongReason);
+            }
+            continue;
+        }
+        if (BotNativeAction::Move const* move = MoveOf(plan))
+            destinations[player.Guid] = { move->X, move->Y, 75.0f };
+    }
+    MoveBots(board, destinations);
+    ActorSnapshot& boss = Boss(board);
+    boss.Auras.erase(std::remove_if(boss.Auras.begin(), boss.Auras.end(),
+        [&board](AuraSnapshot const& aura)
+        {
+            return A::IsAnyOf(A::VertigoAuras, aura.SpellId) && aura.ExpiresAtMs <= board.ObservedAtMs;
+        }), boss.Auras.end());
+    if (clicker.IsEmpty())
+        return reason;
+    board.Interactables.erase(std::find_if(board.Interactables.begin(), board.Interactables.end(),
+        [clicked](ActorSnapshot const& shield) { return shield.Guid == clicked; }));
+    for (ActorSnapshot& player : board.Players)
+        player.AlternatePower = 0;
+    if (air)
+        Member(board, clicker.GetCounter()).Auras.push_back({ A::AirClashAura, clicked, 0,
+            board.ObservedAtMs + 15000 });
+    else
+        boss.Auras.push_back({ A::VertigoAuras.front(), clicked, 0, board.ObservedAtMs + 5000 });
+    return reason;
+}
+
+// Deterministic pseudo-random roster picks for the Sonar Bomb waves.
+struct ReplayRandom
+{
+    uint32 State;
+    uint32 Next()
+    {
+        State ^= State << 13;
+        State ^= State >> 17;
+        State ^= State << 5;
+        return State;
+    }
+};
 
 static std::vector<uint32> AllShieldIds()
 {
@@ -1031,7 +1179,7 @@ static void KeepShieldIds(Blackboard& board, std::vector<uint32> const& shields)
     board.Interactables.erase(std::remove_if(board.Interactables.begin(), board.Interactables.end(),
         [&shields](ActorSnapshot const& shield)
         {
-            return std::find(shields.begin(), shields.end(), shield.Guid.GetCounter()) == shields.end();
+            return std::find(shields.begin(), shields.end(), ShieldSpawnId(shield.Guid)) == shields.end();
         }), board.Interactables.end());
 }
 
@@ -1050,12 +1198,15 @@ static std::vector<uint32> AfterGroundSearing(std::vector<uint32> shields, float
     for (int step = 0; step < 40; ++step)
     {
         for (ActorSnapshot const& player : board.Players)
-            if (BotNativeAction::SpellClick const* click = ClickOf(AdaptiveAtramedesStrategy().Propose(
-                    board, player.Guid, player.Role.c_str())))
+        {
+            AdaptiveAtramedesPlan const plan = AdaptiveAtramedesStrategy().Propose(
+                board, player.Guid, player.Role.c_str());
+            if (BotNativeAction::SpellClick const* click = ClickOf(plan))
             {
-                shields.erase(std::find(shields.begin(), shields.end(), click->Target.GetCounter()));
+                shields.erase(std::find(shields.begin(), shields.end(), ShieldSpawnId(click->Target)));
                 return shields;
             }
+        }
         StepPlans(board);
     }
     assert(false && "Searing Flame never gonged");
@@ -1124,13 +1275,30 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
         for (ActorSnapshot& player : board.Players)
             if (player.Guid != PlayerGuid(targetSlot))
                 player.Alive = false;
+    AirReplay result;
     // The ground formation at liftoff, after this ground phase's Searing
     // Flame (published schedule without its timer): the owner at its air
-    // standby, the ranged arc around the boss on the tank anchor.
+    // standby, the ranged arc around the boss on the tank anchor. The
+    // published liftoff timer counts down over the last 8 s; a Vertigo
+    // holds the liftoff until it ends.
     Boss(board).Position = A::TankAnchor;
-    AddTimer(Boss(board), A::TakeOffSpell, 30000);
-    for (int step = 0; step < 32; ++step)
-        StepPlans(board);
+    for (auto const& [slot, sound] : options.GroundSound)
+        Member(board, slot).AlternatePower = sound;
+    AddTimer(Boss(board), A::TakeOffSpell, 8000);
+    for (int step = 0; step < 64; ++step)
+    {
+        MechanicTimerSnapshot& liftoffTimer = Boss(board).MechanicTimers.back();
+        if (!liftoffTimer.RemainingMs && !A::FindAnyAura(Boss(board), A::VertigoAuras))
+            break;
+        std::string const reason = StepPlansNative(board, false, result);
+        if (!reason.empty())
+        {
+            ++result.GroundStrikes;
+            result.GroundReasons.push_back(reason);
+        }
+        liftoffTimer.RemainingMs = liftoffTimer.RemainingMs > 250 ? liftoffTimer.RemainingMs - 250 : 0;
+    }
+    assert(!A::FindAnyAura(Boss(board), A::VertigoAuras));
     ActorSnapshot& liftoff = Boss(board);
     liftoff.MechanicTimers.clear();
     liftoff.Position = A::HoverPoint;
@@ -1138,7 +1306,14 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
     liftoff.ReactAggressive = false;
     liftoff.VictimGuid = ObjectGuid();
     for (float t = 0.25f; t <= flameDelayS + 0.001f; t += 0.25f)
-        StepPlans(board);
+    {
+        std::string const reason = StepPlansNative(board, true, result);
+        if (!reason.empty())
+        {
+            ++result.Strikes;
+            result.StrikeReasons.push_back(reason);
+        }
+    }
 
     ActorSnapshot& target = Member(board, targetSlot);
     AddFlame(board, target, target.Position, 0);
@@ -1166,11 +1341,30 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
     float contactOpen = -1.0f;
     uint32 mageSoundAtIce = 0;
     int consecutive = 0;
-    AirReplay result;
+    A::ObservationCounters counters;
+    counters.Begin(1);
+    // Sonar Bomb markers (guid counter, landing time, despawn time) and fire
+    // patches (guid counter, next tick).
+    struct Bomb { uint32 Counter; float LandsAt; float GoneAt; Vector3 At; bool Landed; };
+    std::vector<Bomb> bombs;
+    std::map<uint32, float> patchTicks;
+    uint32 nextHazardCounter = 5000;
+    float nextWave = 3.0f;
+    ReplayRandom random{ options.Seed * 2654435761u + targetSlot * 40503u + uint32(flameDelayS * 7.0f) + 1u };
+    auto soundHit = [&result, &tracked](ActorSnapshot& player, uint32 sound)
+    {
+        NoteSound(result, player, sound, player.Guid == tracked);
+    };
     for (float t = 0.25f; t <= seconds + 0.001f; t += 0.25f)
     {
         ++board.Revision;
         board.ObservedAtMs += 250;
+        {
+            A::ChaseSample const sample = A::SampleChase(board);
+            counters.Record(1, sample);
+            if (sample.Kiter && result.FirstChaseSound < 0)
+                result.FirstChaseSound = int(sample.Sound);
+        }
         for (ActorSnapshot& player : board.Players)
             previous[player.Guid] = player.Position;
         A::Facts const facts = A::BuildFacts(board);
@@ -1211,6 +1405,7 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 continue;
             AdaptiveAtramedesPlan plan = AdaptiveAtramedesStrategy().Propose(
                 board, player.Guid, player.Role.c_str());
+            NoteWithheld(result, plan.GongReason);
             if (BotNativeAction::SpellClick const* click = ClickOf(plan))
             {
                 if (!clicker.IsEmpty())
@@ -1335,7 +1530,11 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
             auto itr = destinations.find(player.Guid);
             if (player.Alive && itr != destinations.end()
                 && !A::FindAura(player, A::IceBlockAura))
+            {
+                Vector3 const from = player.Position;
                 Advance(player.Position, itr->second, M::RunSpeed(player) * 0.25f);
+                result.MovingSteps[player.Guid.GetCounter()] += G::Distance2d(from, player.Position) > 0.05f;
+            }
         }
         for (ActorSnapshot& player : board.Players)
         {
@@ -1408,7 +1607,7 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 // Ice Block: immune to the fire damage and its Sound energize.
                 if (A::FindAura(player, A::IceBlockAura))
                     continue;
-                player.AlternatePower = std::min<uint32>(100, player.AlternatePower + 3);
+                NoteSound(result, player, 3, player.Guid == tracked);
                 if (player.Guid == tracked)
                 {
                     kiterHit = true;
@@ -1424,13 +1623,105 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 result.MaxSteadyConsecutiveTicks = std::max(result.MaxSteadyConsecutiveTicks,
                     consecutive);
         }
+
+        // Sonar Bombs: a wave marks 3 random living players every 3 s, each
+        // bomb lands 2.5 s later (+20 Sound within 6 yd) and its marker
+        // despawns after 6 s. Iced players are immune.
+        if (options.Bombs)
+        {
+            for (Bomb& bomb : bombs)
+                if (!bomb.Landed && t + 0.001f >= bomb.LandsAt)
+                {
+                    bomb.Landed = true;
+                    for (ActorSnapshot& player : board.Players)
+                        if (player.Alive && !A::FindAura(player, A::IceBlockAura)
+                            && G::Distance2d(player.Position, bomb.At) <= A::SonarBombRadius)
+                        {
+                            soundHit(player, 20);
+                            ++result.BombHits;
+                            result.KiterBombHits += player.Guid == tracked;
+                        }
+                }
+            for (Bomb const& bomb : bombs)
+                if (t + 0.001f >= bomb.GoneAt)
+                    board.Summons.erase(std::remove_if(board.Summons.begin(), board.Summons.end(),
+                        [&bomb](ActorSnapshot const& actor)
+                        {
+                            return actor.Entry == A::SonarBombMarkerEntry
+                                && actor.Guid.GetCounter() == bomb.Counter;
+                        }), board.Summons.end());
+            bombs.erase(std::remove_if(bombs.begin(), bombs.end(),
+                [t](Bomb const& bomb) { return t + 0.001f >= bomb.GoneAt; }), bombs.end());
+            if (t + 0.001f >= nextWave)
+            {
+                nextWave += 3.0f;
+                std::vector<ActorSnapshot const*> living;
+                for (ActorSnapshot const& player : board.Players)
+                    if (player.Alive)
+                        living.push_back(&player);
+                for (std::size_t pick = 0; pick < 3 && !living.empty(); ++pick)
+                {
+                    std::size_t const index = random.Next() % living.size();
+                    Vector3 const at = living[index]->Position;
+                    living.erase(living.begin() + std::ptrdiff_t(index));
+                    uint32 const counter = nextHazardCounter++;
+                    board.Summons.push_back(MakeUnit(A::SonarBombMarkerEntry, counter, at.X, at.Y,
+                        ActorKind::Summon));
+                    bombs.push_back({ counter, t + 2.5f, t + 6.0f, at, false });
+                }
+            }
+        }
+        // Roaring Flame patches along the flame's path, each ticking every
+        // second from its spawn (+5 Sound within 3 yd).
+        if (options.FirePatches)
+        {
+            for (ActorSnapshot const& patch : board.Summons)
+            {
+                if (patch.Entry != A::RoaringFlamePatchEntry)
+                    continue;
+                float& next = patchTicks[patch.Guid.GetCounter()];
+                if (t + 0.001f < next)
+                    continue;
+                next += 1.0f;
+                for (ActorSnapshot& player : board.Players)
+                    if (player.Alive && !A::FindAura(player, A::IceBlockAura)
+                        && G::Distance2d(player.Position, patch.Position) <= A::FirePatchRadius)
+                    {
+                        soundHit(player, 5);
+                        ++result.FireTicks;
+                        result.KiterFireTicks += player.Guid == tracked;
+                    }
+            }
+            Vector3 const at = flame().Position;
+            bool const covered = std::any_of(board.Summons.begin(), board.Summons.end(),
+                [&at](ActorSnapshot const& actor)
+                {
+                    return actor.Entry == A::RoaringFlamePatchEntry && G::Distance2d(actor.Position, at) <= 2.0f;
+                });
+            if (!covered)
+            {
+                uint32 const counter = nextHazardCounter++;
+                board.Summons.push_back(MakeUnit(A::RoaringFlamePatchEntry, counter, at.X, at.Y,
+                    ActorKind::Summon));
+                patchTicks[counter] = t + 1.0f;
+            }
+        }
         for (ActorSnapshot const& player : board.Players)
             result.MaxSound = std::max(result.MaxSound, player.AlternatePower);
     }
+    {
+        A::ChaseSample const sample = A::SampleChase(board);
+        counters.Record(1, sample);
+    }
+    result.Chases = counters.Chases();
+    result.MaxKiterSound = counters.MaxKiterSound();
+    result.KiterSamplesAboveBound = counters.SamplesAboveBound();
     for (ActorSnapshot const& shield : board.Interactables)
-        result.ShieldsLeft.push_back(shield.Guid.GetCounter());
+        result.ShieldsLeft.push_back(ShieldSpawnId(shield.Guid));
     return result;
 }
+
+// ---- end of the air-phase replay harness ----
 
 // Every target of successive 31 s air phases, the tank included, from the
 // ground formation at liftoff with the flame spawned on the target after the
@@ -1672,6 +1963,15 @@ static void TestAirAbilities()
         Blackboard cold = board;
         AddAura(Member(cold, Mage), A::HypothermiaAura, PlayerGuid(Mage));
         assert(A::DecideGong(cold, A::BuildFacts(cold), duties).Reason == "air_breath_rescue");
+        // A global cooldown from its last cast at the boss (Ice Block is
+        // GCD-bound, published readiness includes it) does not hand the
+        // rescue to someone else; the real cooldown does.
+        Blackboard gcd = board;
+        Member(gcd, Mage).MechanicTimers.front().RemainingMs = 1200;
+        assert(!A::IceBlockReady(Member(gcd, Mage)) && A::IceBlockAvailable(Member(gcd, Mage)));
+        assert(A::DecideGong(gcd, A::BuildFacts(gcd), duties).Reason == "air_ice_block_rescue");
+        Member(gcd, Mage).MechanicTimers.front().RemainingMs = 1600;
+        assert(A::DecideGong(gcd, A::BuildFacts(gcd), duties).Reason == "air_breath_rescue");
     }
 
     // Bait: the mage struck (newest Resonating Clash) and the flame is being
@@ -1699,6 +1999,25 @@ static void TestAirAbilities()
     assert(A::BuildFacts(board).AirKiter == PlayerGuid(Mage));
     assert(!Plan(board, Mage).Interaction && !Plan(board, Mage).Movement);
     assert(CountClicks(board) == 0);
+    // Within one global cooldown of the trigger (8 + 5 x 1.5 = 15.5 yd at no
+    // stack) it starts no new cast, so the block is castable on arrival.
+    assert(A::IceBaitQuietYards(redirected) > 12.0f);
+    assert(Plan(board, Mage).SuppressOffense);
+    // A global cooldown still running: the bait holds, no cast, no strike,
+    // and the bait survives it (it used to flicker off and send the mage
+    // running as the redirect runner).
+    Member(board, Mage).MechanicTimers.front().RemainingMs = 900;
+    {
+        AdaptiveAtramedesPlan wait = Plan(board, Mage);
+        assert(!wait.Interaction && !wait.Movement && wait.SuppressOffense);
+        assert(CountClicks(board) == 0);
+        Blackboard close = board;
+        close.Summons.back().Position = G::PointAt(Member(close, Mage).Position, 0.0f, 7.0f, 75.0f);
+        AdaptiveAtramedesPlan pending = Plan(close, Mage);
+        assert(!pending.Interaction && !pending.Movement && pending.SuppressOffense);
+        assert(CountClicks(close) == 0);
+    }
+    Member(board, Mage).MechanicTimers.front().RemainingMs = 0;
     // Close: Ice Block.
     redirected.Position = G::PointAt(Member(board, Mage).Position, 0.0f, 7.0f, 75.0f);
     AdaptiveAtramedesPlan block = Plan(board, Mage);
@@ -1751,6 +2070,43 @@ static void TestAirAbilities()
     AdaptiveAtramedesPlan selfBlock = Plan(board, Mage);
     assert(castOf(selfBlock) && castOf(selfBlock)->SpellId == M::IceBlockSpell);
     assert(!selfBlock.Movement && CountClicks(board) == 0);
+    // On the global cooldown with the flame still ahead of contact (six
+    // stacks, 9 yd, contact in 0.9 s) and the block ready within that less a
+    // decision step: still no shield, it kites on without starting a cast,
+    // and blocks once castable.
+    for (MechanicTimerSnapshot& timer : Member(board, Mage).MechanicTimers)
+        if (timer.SpellId == M::IceBlockSpell)
+            timer.RemainingMs = 600;
+    board.Summons.back().Position = { 110.0f, -271.0f + 9.06f, 75.0f };
+    board.Summons.back().Auras.clear();
+    AuraSnapshot sixStacks;
+    sixStacks.SpellId = 78218;
+    sixStacks.CasterGuid = board.Summons.back().Guid;
+    sixStacks.Stacks = 6;
+    board.Summons.back().Auras.push_back(sixStacks);
+    A::GongDecision const pendingSelf = A::DecideGong(board, A::BuildFacts(board),
+        A::BuildDutyPlan(board));
+    assert(!pendingSelf.Required && pendingSelf.Withheld == "kiter_ice_block");
+    AdaptiveAtramedesPlan pendingBlock = Plan(board, Mage);
+    assert(!pendingBlock.Interaction && pendingBlock.Movement && pendingBlock.SuppressOffense);
+    assert(CountClicks(board) == 0);
+    // A block that would come after the flame (round 3 review: 1.2 s left,
+    // contact in 0.9 s) takes breath ticks meanwhile: the rescue goes ahead
+    // instead of waiting for it (tests/test_atramedes_ice_block_timing.py).
+    for (MechanicTimerSnapshot& timer : Member(board, Mage).MechanicTimers)
+        if (timer.SpellId == M::IceBlockSpell)
+            timer.RemainingMs = 1200;
+    // The mage's Blink (ready here) comes first; with Blink spent too, the strike.
+    A::GongDecision const lateSelf = A::DecideGong(board, A::BuildFacts(board),
+        A::BuildDutyPlan(board));
+    assert(!lateSelf.Required && lateSelf.Withheld == "kiter_mobility_extension");
+    for (MechanicTimerSnapshot& timer : Member(board, Mage).MechanicTimers)
+        if (timer.SpellId == M::BlinkSpell)
+            timer.RemainingMs = 15000;
+    A::GongDecision const strikeSelf = A::DecideGong(board, A::BuildFacts(board),
+        A::BuildDutyPlan(board));
+    assert(strikeSelf.Required && strikeSelf.Reason == "air_breath_rescue"
+        && strikeSelf.Withheld.empty());
 }
 
 // The user's air tactics (user raid experience, 2026-09-25) on the canonical
@@ -1930,7 +2286,7 @@ static void TestDifficultyVariants()
     CastOnBoss(board, 92404);
     assert(A::BuildFacts(board).SonicBreathActive);
     CastOnBoss(board, A::SearingFlameSpell);
-    AddAura(Boss(board), 92390, UnitGuid(42954, 250130));
+    AddAura(Boss(board), 92390, ShieldGuid(250130));
     assert(A::BuildFacts(board).BossStunned);
     assert(CountClicks(board) == 0);
 }

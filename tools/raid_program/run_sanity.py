@@ -10,7 +10,8 @@ unit with any ``blocking`` finding even when ``evaluate_target`` passes, and lis
 
 A check that needs a field an older counted record lacks reports ``not_evaluable`` instead of
 guessing: one ``warn`` finding per check and reason, with ``evidence.status == "not_evaluable"`` and
-the kill ids.
+the kill ids. The one exception is ``acceptance_observation`` (a round 3 acceptance requirement): its
+unavailable or unproven evidence is a blocking ``unproven`` finding per counted kill, below.
 New records carry those fields in ``sanity_inputs`` (tools/raid_program/run_sanity_inputs.py).
 
 Checks (thresholds are the module constants):
@@ -42,6 +43,36 @@ instant_revive (blocking)
 idle_actor (blocking)
     A non-healer actor outside dps_gate_exempt_specs below IDLE_DPS_RATIO of its reference DPS (the
     verdict's target_dps), or with damage uptime below IDLE_UPTIME (stranded or stuck bots).
+acceptance_observation (blocking; warn)
+    On NEFARIAN_SCENARIOS (BWD 10N round 3). Blocking when the decision trace of the boss window holds a
+    ``nefarian_bone_warrior_active_over_45s`` or ``nefarian_bone_warrior_on_pillar`` entry
+    (sanity_inputs.nefarian_observations). A warn lists the most frequent ``nefarian_move_refused:<mechanic>:
+    <reason>`` steps of each idle_actor. Fails closed and blocking: the round 3 acceptance needs affirmative
+    zero-violation evidence, so a counted kill whose record has no usable counts (records before
+    sanity_inputs.nefarian_observations, malformed or missing counts, no trace file) or whose zero is not
+    proven complete (``decision_trace.complete`` is anything but ``True``: an incomplete trace, or no claim at
+    all) is a blocking ``unproven`` finding, never a warning and never a pass. A count above zero blocks
+    whatever the coverage. The run harness retains the decision trace only on request
+    (``--retain-trace-route-node``) or after a terminal failure, and a bounded tail proves nothing about the
+    window, so a plain shard kill is evaluated from the server's per-attempt counters in its final status
+    (decision_trace.source ``server_status``, complete: bound to the judged capture's cohort, server, attempt
+    and combat-log lifecycle, read after the window closed). Only a server that exported no counters at all
+    leaves the trace as the source (a status whose keys lack the block; a block or container that is present
+    but null or not an object is malformed, not absent), and then its rows must be the judged capture's (each
+    entry's cohort, server epoch and attempt; rows of another capture are excluded, rows of unknown provenance
+    are ``row_identity_missing``) and cover the window (run_sanity_inputs.scan_decision_trace); explicit native
+    incompleteness (``complete: false``), an unreadable final report or any other unusable export stays a
+    blocking ``unproven`` finding whatever the retained rows (``decision_trace.incomplete_reason``
+    ``native_counters_<state>``). A kill the verdict
+    does not count reports nothing for missing evidence.
+    On ATRAMEDES_SCENARIOS (BWD 10N round 3; user decision 2026-09-30, "Bound kiter Sound"): blocking when the
+    server's counters (sanity_inputs.atramedes_observations, the final status's
+    encounter_observations.atramedes) record a chase sample with the tracked kiter above 10 Sound, the range
+    the WCL chases measured, so the unmeasured high-Sound flame speed never counts as accepted. Fails closed
+    the same way: missing or malformed counts, a block that is not the judged capture's final export,
+    ``complete`` anything but ``True``, or no chase although the kill had an air phase (the counters saw one,
+    or the boss window reached AIR_PHASE_CERTAIN_AFTER_SEC) is a blocking ``unproven`` finding. Other
+    scenarios get neither check.
 boss_melee_fidelity (warn)
     A calibrated creature's after-attacker melee mean is outside +-MELEE_TOLERANCE of the WCL mean over
     at least MELEE_MIN_SWINGS swings, or the harness judged the encounter not Blizzlike.
@@ -69,7 +100,9 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.play_mode_guard import find_play_markers
-from tools.raid_program.run_sanity_inputs import enrage_rows
+from tools.raid_program.run_sanity_inputs import (
+    ATRAMEDES_KEYS, ATRAMEDES_SCENARIOS, ATRAMEDES_SOUND_BOUND, BONE_WARRIOR_KEYS, NEFARIAN_SCENARIOS, enrage_rows,
+)
 from tools.raid_program.scoreboard_core import (
     ROOT, dps_gate_exempt_specs, healer_roles, is_dps_gate_exempt, label_kills, load_records, load_target,
     native_excluded_entries, reference_targets, roster, target_for_records,
@@ -90,13 +123,71 @@ HALF_HEALTH_MIN_HITS = 20
 INSTANT_REVIVE_MS = 250
 EVIDENCE_BUDGET = 1800  # program assess keeps evidence up to 2,000 JSON bytes
 NOT_EVALUABLE = "not_evaluable"
+UNPROVEN = "unproven"  # acceptance evidence that is unavailable or not proven complete (blocking)
 UNMEASURED_REASONS = frozenset({"unmeasured_boss_window", "no_measurement_validity"})
 EXCLUDED_REASONS = frozenset({"stalled_boss_window", "voided", "interrupted", "infrastructure_failure",
                               "no_evidence", "postprocess_error", "enemy_scope_mismatch"})
 LOG_DEATH_BASES = frozenset({"combat_log_lethal_damage", "combat_log_lethal_damage_unreconciled",
                              ENCOUNTER_RECONCILED_BASIS})
+TOP_REFUSED_REASONS = 3
+# Atramedes lifts off 91 s after the pull (boss_atramedes.cpp EVENT_LIFTOFF; a Vertigo or a ground cast delays
+# it by a few seconds) and the flame tracks its first target about 4-7 s later (WCL 10N: 95.1-95.4 s). A boss
+# window this long had an air phase with a chase.
+AIR_PHASE_CERTAIN_AFTER_SEC = 110.0
+ATRAMEDES_ABOVE = f"samples_above_{ATRAMEDES_SOUND_BOUND}"
+# not_evaluable reasons of the retained decision trace (run_sanity_inputs.scan_decision_trace incomplete_reason).
+TRACE_GAPS = {
+    "no_trace_file": "the run directory holds no retained decision trace (trace_history.jsonl.gz, "
+                     "terminal_trace_drain.jsonl.gz)",
+    "boss_window_unknown": "the record has no analysed boss window to scope its decision trace",
+    "unreadable": "a retained decision-trace file is unreadable or has malformed rows",
+    "no_window_rows": "the retained decision trace has no rows inside the boss window",
+    "sequence_gaps": "the retained decision trace lost rows inside the boss window (missing per-bot sequence numbers)",
+    "unsequenced_rows": "the retained decision trace has rows without a sequence number in the boss window",
+    "actors_without_rows": "the retained decision trace has no rows of some actors of the boss window",
+    "sequence_conflicts": "the retained decision trace holds one sequence number at two different times",
+    "window_start_not_covered": "the retained decision trace does not cover the boss window start "
+                                "(its rows begin inside the window, as a bounded tail's do)",
+    "window_end_not_covered": "the retained decision trace does not cover the boss window end "
+                              "(its rows stop inside the window)",
+    "capture_unidentified": "the judged combat-log capture does not identify its cohort, server epoch and attempt, "
+                            "so no retained decision-trace row can be tied to it",
+    "row_identity_missing": "retained decision-trace rows do not name (or name unusably) their cohort, server epoch "
+                            "and attempt, so their provenance cannot be established",
+    "row_identity_conflict": "retained decision-trace rows contradict themselves on their cohort, server epoch or "
+                             "attempt, so their provenance cannot be established",
+    "other_capture_rows": "the retained decision trace holds only rows of another cohort, server epoch or attempt "
+                          "than the judged capture",
+}
+# The server exported its observation counters but they were not usable (run_sanity_inputs.nefarian_inputs sets
+# incomplete_reason native_counters_<state>): dense retained decision rows never override that.
+NATIVE_COUNTER_GAPS = {
+    "incomplete": "the server's observation counters report an incomplete observer (complete is not true)",
+    "malformed": "the server's observation counters are malformed",
+    "unreadable": "the run's final report.json exists but is unreadable, so its observation counters cannot be judged",
+    "attempt_mismatch": "the server's observation counters do not belong to one attempt of the final status",
+    "capture_mismatch": "the server's observation counters belong to another cohort, server, attempt or "
+                        "combat-log lifecycle than the judged capture",
+    "capture_identity_missing": "the server's observation counters cannot be tied to the judged capture (its "
+                                "cohort, server, attempt or combat-log lifecycle is not identified)",
+    "window_unknown": "the record has no analysed boss window to judge the server's observation counters against",
+    "no_snapshot_time": "the status that holds the server's observation counters has no read time",
+    "before_window_end": "the status that holds the server's observation counters was read before the boss "
+                         "window ended",
+    "observation_time_missing": "the server's observation counters do not say when their observer first and last "
+                                "observed (first_observed_at_ms / last_observed_at_ms), so the status read time "
+                                "cannot stand in for the observation window",
+    "observation_started_after_window": "the server's observer first observed after the boss window started (beyond "
+                                        "its gap bound), so the start of the window was not observed",
+    "observation_ended_before_window": "the server's observer last observed before the boss window ended (beyond "
+                                       "its gap bound): a late status read time does not prove observation up to the "
+                                       "end of the window",
+}
+NO_COMPLETENESS_CLAIM = ("the record makes no completeness claim for its observation counts "
+                         "(decision_trace.complete is not true)")
 CHECK_ORDER = ("duration_outlier", "enrage_reached", "death_signal_conflict", "repeated_deaths", "health_pinned_half",
-               "instant_revive", "idle_actor", "boss_melee_fidelity", "unmeasured_kills", "excluded_kills")
+               "instant_revive", "idle_actor", "acceptance_observation", "boss_melee_fidelity", "unmeasured_kills",
+               "excluded_kills")
 
 
 def _fit(evidence: dict[str, Any], budget: int = EVIDENCE_BUDGET) -> dict[str, Any]:
@@ -385,9 +476,8 @@ def check_instant_revive(ctx: _Label, record: dict[str, Any], out: list) -> None
                         {"limit_ms": INSTANT_REVIVE_MS, "actors": rows, **extra}))
 
 
-def check_idle(ctx: _Label, record: dict[str, Any], out: list) -> None:
-    if _window_sec(record) is None:
-        return
+def idle_actors(ctx: _Label, record: dict[str, Any]) -> list[dict[str, Any]]:
+    """The non-healer actors of a kill below IDLE_DPS_RATIO of their reference DPS or IDLE_UPTIME uptime."""
     idle = []
     for actor in record.get("actors") or []:
         actor_id = str(actor.get("actor_id"))
@@ -407,6 +497,13 @@ def check_idle(ctx: _Label, record: dict[str, Any], out: list) -> None:
             idle.append({"id": actor_id, "spec": spec, "dps": _round(dps, 1),
                          "ref": _round(reference, 1), "ratio": _round(dps / float(reference)) if reference else None,
                          "uptime": _round(uptime), "why": "+".join(why)})
+    return idle
+
+
+def check_idle(ctx: _Label, record: dict[str, Any], out: list) -> None:
+    if _window_sec(record) is None:
+        return
+    idle = idle_actors(ctx, record)
     if not idle:
         return
     severity, note, extra = ctx.severity(record)
@@ -418,6 +515,184 @@ def check_idle(ctx: _Label, record: dict[str, Any], out: list) -> None:
     out.append(_finding("idle_actor", severity, record["kill_id"],
                         f"{len(idle)} actor(s) below {IDLE_DPS_RATIO:.0%} of reference DPS or {IDLE_UPTIME:.0%} damage "
                         f"uptime (stranded or stuck): {shown}{'...' if len(idle) > 4 else ''}{note}", evidence))
+
+
+def _gap_text(code: str) -> str:
+    """The reason of a decision_trace.incomplete_reason: a trace gap, or an unusable native counter export."""
+    if code.startswith("native_counters_"):
+        state = code.removeprefix("native_counters_")
+        why = NATIVE_COUNTER_GAPS.get(state) or f"the server's observation counters were not usable ({state})"
+        return f"{why}; the retained decision trace cannot vouch for a zero over them"
+    return TRACE_GAPS.get(code, f"the retained decision trace is incomplete ({code})")
+
+
+def _identity_evidence(counters: Any) -> dict[str, Any]:
+    """The capture-identity fields the server counters were refused on (run_sanity_inputs._refused_counters)."""
+    if not isinstance(counters, dict):
+        return {}
+    return {key: counters[key] for key in ("identity_conflicts", "identity_missing") if counters.get(key)}
+
+
+def _count(value: Any) -> int | None:
+    """A stored count, or None when it is not a non-negative integer (a malformed field is not a zero)."""
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def _top_refusals(observations: dict[str, Any], actor: str) -> list[dict[str, Any]]:
+    """The TOP_REFUSED_REASONS most frequent "<mechanic>:<reason>" movement refusals of one actor."""
+    rows = (observations.get("move_refused") or {}).get(actor)
+    counted = [(count, reason) for reason, count in (rows.items() if isinstance(rows, dict) else ())
+               if _count(count)]
+    top = sorted(counted, key=lambda row: (-row[0], row[1]))[:TOP_REFUSED_REASONS]
+    return [{"reason": reason, "count": count} for count, reason in top]
+
+
+def _unproven(ctx: _Label, record: dict[str, Any], out: list, why: str, reason: str | None,
+              trace: dict[str, Any]) -> None:
+    """A counted kill's acceptance observation is unavailable or not proven complete: blocking."""
+    if ctx.eligibility(record) is not None:  # a kill the verdict does not count never reaches acceptance
+        return
+    counters = trace.get("server_counters")
+    states = counters.get("states") if isinstance(counters, dict) else None
+    identity = _identity_evidence(counters)
+    detail = f"{states}, {identity}" if identity else f"{states}"
+    note = f"; the server's status counters were not used ({detail})" if states else ""
+    out.append(_finding("acceptance_observation", "blocking", record["kill_id"],
+                        f"the Nefarian acceptance observation is unproven: {why}{note}. The round 3 acceptance needs "
+                        "affirmative zero bone-warrior violations (active over 45 s, on a pillar); unavailable "
+                        "evidence is not a pass",
+                        {"status": UNPROVEN, "reason": reason, "trace_complete": trace.get("complete"),
+                         "observation_source": trace.get("source") or "decision_trace",
+                         **({"server_counter_states": states} if states else {}), **identity}))
+
+
+def check_acceptance_observation(ctx: _Label, record: dict[str, Any], out: list) -> None:
+    """The Nefarian strategy's decision-trace observations (sanity_inputs.nefarian_observations).
+
+    Fails closed and blocking: without the counts, or with a zero the record does not affirmatively prove
+    complete (``decision_trace.complete is True``), a counted kill is an ``unproven`` blocking finding. A count
+    above zero is evidence whatever the trace coverage.
+    """
+    if ctx.scenario not in NEFARIAN_SCENARIOS:
+        return
+    observations = _inputs(record, "nefarian_observations")
+    trace = _inputs(record, "decision_trace")
+    trace = trace if isinstance(trace, dict) else {}
+    counts = {key: _count(observations.get(key)) for key in BONE_WARRIOR_KEYS} if isinstance(observations, dict) else {}
+    if not counts or None in counts.values():
+        if observations is None and "nefarian_observations" in (record.get("sanity_inputs") or {}):
+            code = trace.get("incomplete_reason") or "no_window_rows"
+            _unproven(ctx, record, out, _gap_text(code), code, trace)
+        else:
+            _unproven(ctx, record, out, "the record has no usable decision-trace observation counts (records before "
+                      "sanity_inputs.nefarian_observations, or malformed counts)", None, trace)
+        return
+    severity, note, extra = ctx.severity(record)
+    complete = trace.get("complete")  # only True is a coverage claim
+    source = trace.get("source") or "decision_trace"
+    coverage = {"trace_complete": complete, "trace_incomplete_reason": trace.get("incomplete_reason"),
+                "observation_source": source}
+    if any(counts.values()):
+        where = "the server's status counters record" if source == "server_status" else "the decision trace records"
+        out.append(_finding("acceptance_observation", severity, record["kill_id"],
+                            f"{where} {counts['bone_warrior_active_over_45s']} bone warrior(s) "
+                            f"active over 45 s and {counts['bone_warrior_on_pillar']} on a pillar structure (the "
+                            f"round 3 acceptance observation allows none){note}",
+                            {**counts, **coverage, **extra}))
+    elif complete is not True:
+        code = trace.get("incomplete_reason")
+        _unproven(ctx, record, out, _gap_text(code) if code else NO_COMPLETENESS_CLAIM, code, trace)
+    listed = []
+    for row in idle_actors(ctx, record) if _window_sec(record) is not None else []:
+        refusals = _top_refusals(observations, row["id"])
+        if refusals:
+            listed.append({"id": row["id"], "name": (ctx.roster.get(row["id"]) or {}).get("name"),
+                           "spec": row["spec"], "why": row["why"], "move_refused": refusals})
+    if listed:
+        shown = "; ".join(f"{row['spec']} (id {row['id']}): " + ", ".join(f"{top['reason']} x{top['count']}"
+                                                                        for top in row["move_refused"])
+                          for row in listed[:4])
+        out.append(_finding("acceptance_observation", "warn", record["kill_id"],
+                            f"{len(listed)} idle actor(s) had movement steps refused by the executor: "
+                            f"{shown}{'...' if len(listed) > 4 else ''}{note}",
+                            {"actors": listed, **coverage, **extra}))
+
+
+def _atramedes_unproven(ctx: _Label, record: dict[str, Any], out: list, why: str, reason: str,
+                        evidence: dict[str, Any]) -> None:
+    """A counted Atramedes kill whose kiter Sound evidence is unavailable or not proven complete: blocking."""
+    if ctx.eligibility(record) is not None:  # a kill the verdict does not count never reaches acceptance
+        return
+    out.append(_finding("acceptance_observation", "blocking", record["kill_id"],
+                        f"the Atramedes acceptance observation is unproven: {why}. The round 3 acceptance (user "
+                        f"decision 2026-09-30, \"Bound kiter Sound\") needs affirmative evidence that the tracked "
+                        f"kiter stayed at {ATRAMEDES_SOUND_BOUND} Sound or less in every air-phase chase; "
+                        "unavailable evidence is not a pass",
+                        {"status": UNPROVEN, "reason": reason, **evidence}))
+
+
+def _atramedes_consistent(counts: dict[str, int]) -> bool:
+    """The counters' own invariants (BotAtramedesObservationCounters.h); a contradiction is malformed evidence."""
+    samples, above = counts["chase_samples"], counts[ATRAMEDES_ABOVE]
+    return (counts["chases"] <= samples and above <= samples and (counts["chases"] > 0) == (samples > 0)
+            and (counts["chases"] == 0 or counts["air_phases"] > 0)
+            and (above > 0) == (counts["max_kiter_sound"] > ATRAMEDES_SOUND_BOUND))
+
+
+def check_atramedes_observation(ctx: _Label, record: dict[str, Any], out: list) -> None:
+    """The Atramedes kiter Sound bound (sanity_inputs.atramedes_observations, the server's status counters).
+
+    Blocking when a chase sample had the tracked kiter above the bound, whatever the coverage. Fails closed and
+    blocking: missing, malformed or inconsistent counts, counters not proven complete, or no chase although the
+    kill had an air phase are an ``unproven`` finding for a counted kill.
+    """
+    if ctx.scenario not in ATRAMEDES_SCENARIOS:
+        return
+    inputs = record.get("sanity_inputs") if isinstance(record.get("sanity_inputs"), dict) else {}
+    observations = inputs.get("atramedes_observations")
+    server = inputs.get("atramedes_server_counters")
+    states = server.get("states") if isinstance(server, dict) else None
+    evidence: dict[str, Any] = {**({"server_counter_states": states} if states else {}), **_identity_evidence(server)}
+    if "atramedes_observations" not in inputs:
+        _atramedes_unproven(ctx, record, out, "the record has no kiter Sound counts (records before "
+                            "sanity_inputs.atramedes_observations)", "no_field", evidence)
+        return
+    if not isinstance(observations, dict):
+        _atramedes_unproven(ctx, record, out, "the run's final status holds no usable "
+                            "encounter_observations.atramedes block of the judged attempt read after the boss window"
+                            + (f" ({states})" if states else ""), "no_final_status_block", evidence)
+        return
+    counts = {key: _count(observations.get(key)) for key in ATRAMEDES_KEYS}
+    if None in counts.values() or not _atramedes_consistent(counts):
+        _atramedes_unproven(ctx, record, out, "the kiter Sound counts are malformed or contradict each other",
+                            "malformed", {**evidence, "counts": {key: observations.get(key) for key in ATRAMEDES_KEYS}})
+        return
+    complete = observations.get("complete")
+    evidence = {**counts, "max_sample_gap_ms": observations.get("max_sample_gap_ms"),
+                "observation_complete": complete, **evidence}
+    if counts[ATRAMEDES_ABOVE]:
+        severity, note, extra = ctx.severity(record)
+        out.append(_finding("acceptance_observation", severity, record["kill_id"],
+                            f"the server's status counters record {counts[ATRAMEDES_ABOVE]} chase sample(s) with "
+                            f"the tracked kiter above {ATRAMEDES_SOUND_BOUND} Sound (loudest "
+                            f"{counts['max_kiter_sound']}) in {counts['chases']} air-phase chase(s): the round 3 "
+                            f"acceptance allows none, the unmeasured high-Sound flame speed is never accepted "
+                            f"(user decision 2026-09-30, \"Bound kiter Sound\"){note}", {**evidence, **extra}))
+        return
+    if complete is not True:
+        _atramedes_unproven(ctx, record, out, "the server's sampling did not cover the attempt (complete is "
+                            f"{complete!r}: a sampling gap, an instance change, a clock that went back, or a "
+                            "sampling that did not span the boss window: the server_counter_states say which)",
+                            "incomplete", evidence)
+        return
+    window = _window_sec(record)
+    long_window = window is not None and window >= AIR_PHASE_CERTAIN_AFTER_SEC
+    if counts["chases"] == 0 and (counts["air_phases"] or long_window):
+        why = (f"the counters saw {counts['air_phases']} air phase(s) but no Roaring Flame chase"
+               if counts["air_phases"] else
+               f"the counters saw no air phase although the boss window lasted {window:.0f} s, past the native "
+               f"liftoff (91 s) and the first chase (limit {AIR_PHASE_CERTAIN_AFTER_SEC:.0f} s)")
+        _atramedes_unproven(ctx, record, out, why, "no_chase_observed", {**evidence, "window_sec": window})
 
 
 def check_melee(ctx: _Label, record: dict[str, Any], out: list) -> None:
@@ -508,7 +783,8 @@ def check_excluded(ctx: _Label, record: dict[str, Any], out: list) -> None:
 
 
 KILL_CHECKS = (check_duration, check_enrage, check_death_signal, check_repeated_deaths, check_health_pinned,
-               check_instant_revive, check_idle, check_melee, check_unmeasured, check_excluded)
+               check_instant_revive, check_idle, check_acceptance_observation, check_atramedes_observation,
+               check_melee, check_unmeasured, check_excluded)
 
 
 def sanity_findings(root: Path, scenario: str, label: str) -> list[dict]:

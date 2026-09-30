@@ -1,0 +1,56 @@
+-- Maloriak 10N adds: Aberration (creature_template 41440) DamageModifier 0.81 and Prime Subject
+-- (41841) DamageModifier 3.5.
+--
+-- Staged 2026-09-30 (BWD 10N round 3). Promotion to sql/custom/world is the
+-- coordinator's step; the registry patch is
+-- experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_damage_calibration_registry_patch_v1.json.
+--
+-- Why the values are 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql set DamageModifier = 1 for every creature,
+-- "pending re-evaluation". Live world DB read back 2026-09-30: 41440 DamageModifier 1,
+-- BaseAttackTime 2000, HealthModifier 2.8 (difficulty entries 49971 / 49977 / 49983); 41841
+-- DamageModifier 1, BaseAttackTime 2000, HealthModifier 100 (49975 / 49981 / 49987).
+-- Native roll at DamageModifier 1 (registry native_roll_at_modifier_1): Aberration 5,953.7 to
+-- 8,901.6; Prime Subject 5,965.9 to 8,913.9.
+--
+-- Matched stage: WCL "U" (unmitigatedAmount) = melee_resolution.after_attacker_bonus_amount.
+-- Growth Catalyst (77987) sits inside U: every Aberration and Prime Subject casts it as a 10-yd
+-- friendly area aura, itself included, and the per-caster stacking rule
+-- (SPELL_ATTR3_DOT_STACKING_RULE) gives one +10% (normal) multiplier per nearby caster. The native
+-- pipeline adds +1% to auto-attacks, and Demoralizing Roar (99) takes 10% off while it is up.
+-- So one row bounds m by U / (max * 1.1^k * 1.01 * r) <= m <= U / (min * 1.1^k * 1.01 * r),
+-- with k the number of Growth Catalyst auras on the attacker at the swing (from the WCL aura
+-- apply/refresh/remove rows, per source) and r 0.9 under Demoralizing Roar, else 1. Read by
+-- GPT-6.1 Sol in the user's Chrome on 2026-09-30 (raw captures ~/.cache/maloriak_wcl_r3/
+-- resultC.json, resultF.json, resultG.json).
+--
+-- Aberration. WCL VL3fW9wNm2PRJDYt fight 13 (10N kill, 2024-10-21): 40 melee rows on the Blood
+-- DK add tank Orageux (0-72 s), 30 landed with U, 43 Growth Catalyst rows (1-3 auras per swing).
+-- No attacker-side debuff on the adds (Scarlet Fever 81130, Demoralizing Shout 1160,
+-- Vindication 26017, Curse of Weakness 702: no rows; 99 only on Maloriak).
+--   U 5,658-8,809; intersection of the 30 row bounds 0.802 <= m <= 0.824;
+--   mean(U / (1.1^k * 1.01)) / native mean 7,427.65 = 0.798. 0.81 is inside the bounds.
+-- Counting only the other casters' auras would give 0.882-0.907; the native aura includes its
+-- caster, so the self-inclusive count is the one that matches the server.
+--
+-- Prime Subject. VL3fW9wNm2PRJDYt fight 13 (6 landed rows, 163-173 s, 22 Growth Catalyst rows)
+-- and QfJR9AZw13G6kzXP fight 14 (10N kill, 2024-10-19; 17 landed rows on the Feral and the Blood
+-- DK, 143-168 s, 30 Growth Catalyst rows; Demoralizing Roar from 147.6 s).
+--   Rows to 156 s (16): bounds 3.394 <= m <= 3.627, mean estimate 3.46. 3.5 is inside.
+--   The eight QfJR rows from 157 s on are left out: their Growth Catalyst counts reach 4-5 from
+--   Aberrations that were being killed, and a dying caster's aura shows no remove row, so k is
+--   overcounted there (with them the bounds cross: 3.394 vs 3.245; all-row mean 3.35).
+--
+-- Scope. Only the 10N entries 41440 and 41841. The 25N, 10H and 25H templates (49971, 49977,
+-- 49983, 49975, 49981, 49987) stay at 1: no same-mode sample.
+--
+-- The migration is idempotent. The reverse is the commented block at the end, not a separate
+-- file. It only restores 1 when the value is still this migration's.
+
+UPDATE `creature_template` SET `DamageModifier` = 0.81 WHERE `entry` = 41440;
+UPDATE `creature_template` SET `DamageModifier` = 3.5 WHERE `entry` = 41841;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41440 AND `DamageModifier` = 0.81;
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41841 AND `DamageModifier` = 3.5;
+-- END REVERSE MIGRATION

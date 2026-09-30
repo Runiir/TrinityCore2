@@ -3,7 +3,7 @@
   "encounter": "atramedes",
   "mode": "10N",
   "status": "extracted",
-  "status_reason": "Read 2026-09-27 04:23-04:33 UTC through codex exec -m gpt-6-astra driving one tab of the user's running Chrome session (coordinator route); no verification page appeared. Earlier routes the same day (headless Playwright, the Codex browser surface, a scratch-profile Chrome) were gated by Cloudflare; see access_attempts. Round 2 (2026-09-27, same route, one plugin tab, no check appeared): five further 10N kills with Balance Druid, Assassination Rogue and Demonology Warlock in the roster (2024-10, 173.6-199.0 s, raid item level 354.2-357.9), read from each fight's damage-done and Summary views; raw extraction wcl_refs.json is scratch only.",
+  "status_reason": "Read 2026-09-27 04:23-04:33 UTC through codex exec -m gpt-6-astra driving one tab of the user's running Chrome session (coordinator route); no verification page appeared. Earlier routes the same day (headless Playwright, the Codex browser surface, a scratch-profile Chrome) were gated by Cloudflare; see access_attempts. Round 2 (2026-09-27, same route, one plugin tab, no check appeared): five further 10N kills with Balance Druid, Assassination Rogue and Demonology Warlock in the roster (2024-10, 173.6-199.0 s, raid item level 354.2-357.9), read from each fight's damage-done and Summary views; raw extraction wcl_refs.json is scratch only. Round 3 (2026-09-30, user decision: tier-11 phase gear, roster average item level about 359): references restricted to raid item level 352-366, T11 era (before 2025-02-20). Read 2026-09-30T10:03Z through codex exec -m gpt-6.1-sol driving one own tab of the user's Chrome (profile Runiir); no check appeared; archived as artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc. The six matched kills (354.2-359.9) stay; 9Rdhq6BkMXKNw3CP fight 13 (356.7, 180 s) is added for Elemental and Survival; xAhkN2y9YP3KRmnJ fight 17 (401.4, 48.5 s) is dropped (dropped_references).",
   "references": [
     {
       "id": "MxFq7TRbvnjGY1hJ-fight32",
@@ -101,105 +101,10 @@
         "One full ground-air-ground cycle: liftoff about 90 s, landing about 129 s, kill at 165.6 s; the gongs were used at pull (two Vertigo 11.8-21.8 s), at Searing Flame and three times after landing.",
         "Average item level 359.9; one Restoration Druid and one Holy Paladin healer, six DPS and two tanks.",
         "Displayed DPS are rounded observations over All Enemies. Actor DPS per spec is the median of that spec's players (two Survival Hunters)."
-      ]
-    },
-    {
-      "id": "xAhkN2y9YP3KRmnJ-fight17",
-      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=17&type=damage-done",
-      "mode": "10N",
-      "date": "2025-06-11",
-      "duration_sec": 48.5,
-      "raid_dps": 538152.7,
-      "average_item_level": 401.4,
-      "target_scope": "All Enemies (Atramedes)",
-      "reference_class": "short_fight_throughput_context",
-      "actor_dps": {
-        "affliction_warlock": 61684.6,
-        "arms_warrior": 71411.6,
-        "blood_death_knight": 33304.8,
-        "elemental_shaman": 57685.6,
-        "enhancement_shaman": 49097.5,
-        "fire_mage": 81123.2,
-        "survival_hunter": 63079.9
-      },
-      "roster": [
-        {
-          "name": "Catamara",
-          "spec": "blood_death_knight",
-          "role": "tank",
-          "dps": 33304.8,
-          "wcl_actor_id": 11
-        },
-        {
-          "name": "Tristu",
-          "spec": "survival_hunter",
-          "role": "dps",
-          "dps": 61120.9,
-          "wcl_actor_id": 6
-        },
-        {
-          "name": "Vitarâ",
-          "spec": "survival_hunter",
-          "role": "dps",
-          "dps": 65038.9,
-          "wcl_actor_id": 16
-        },
-        {
-          "name": "Thorsmage",
-          "spec": "fire_mage",
-          "role": "dps",
-          "dps": 81123.2,
-          "wcl_actor_id": 12
-        },
-        {
-          "name": "Catorì",
-          "spec": "elemental_shaman",
-          "role": "dps",
-          "dps": 47795.8,
-          "wcl_actor_id": 2
-        },
-        {
-          "name": "Heutnich",
-          "spec": "enhancement_shaman",
-          "role": "dps",
-          "dps": 49097.5,
-          "wcl_actor_id": 5
-        },
-        {
-          "name": "Schastnerak",
-          "spec": "elemental_shaman",
-          "role": "dps",
-          "dps": 67575.4,
-          "wcl_actor_id": 7
-        },
-        {
-          "name": "Schlabunsen",
-          "spec": "affliction_warlock",
-          "role": "dps",
-          "dps": 61684.6,
-          "wcl_actor_id": 10
-        },
-        {
-          "name": "Noho",
-          "spec": "arms_warrior",
-          "role": "dps",
-          "dps": 71411.6,
-          "wcl_actor_id": 20
-        },
-        {
-          "name": "Awì",
-          "spec": "restoration_shaman",
-          "role": "healer",
-          "dps": null,
-          "wcl_actor_id": 3
-        }
       ],
-      "deaths": [],
-      "limitations": [
-        "48.5 s kill: it ends before the first liftoff (about 91 s), so it has no air phase and no Searing Flame; not encounter-matched.",
-        "Average item level 401.4, eight DPS, one tank, one healer.",
-        "Throughput context only; not in the raid target's matched_reference_ids."
-      ]
+      "item_level": 359.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
     },
     {
       "id": "PpFW3bgy7m6Kxk1t-fight8",
@@ -310,7 +215,10 @@
         "Two players of unholy_death_knight: actor_dps is their median."
       ],
       "source_ref": "wcl_atramedes_10n_round2_20260927",
-      "extraction_notes": "Average raid item level and zero deaths read in the same fight Rankings view; damage table Total Ilvl is a dash. Separate Tricks of the Trade (Aiada), 12.9 DPS, and unassigned Army of the Dead Ghoul, 1.9 DPS, are included in the raid total. Fire parse 79 is above the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+      "extraction_notes": "Average raid item level and zero deaths read in the same fight Rankings view; damage table Total Ilvl is a dash. Separate Tricks of the Trade (Aiada), 12.9 DPS, and unassigned Army of the Dead Ghoul, 1.9 DPS, are included in the raid total. Fire parse 79 is above the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL.",
+      "item_level": 357.1,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
     },
     {
       "id": "Bgcm6RavhWK7DLd1-fight34",
@@ -421,7 +329,10 @@
         "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
       ],
       "source_ref": "wcl_atramedes_10n_round2_20260927",
-      "extraction_notes": "Average raid item level read in Summary (356.90); damage table Total Ilvl is a dash. Deaths table has no entries. Separate Tricks of the Trade (Quìck), 61.3 DPS, is included in raid total. Assassination parse 84 and Fire parse 14 are outside the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+      "extraction_notes": "Average raid item level read in Summary (356.90); damage table Total Ilvl is a dash. Deaths table has no entries. Separate Tricks of the Trade (Quìck), 61.3 DPS, is included in raid total. Assassination parse 84 and Fire parse 14 are outside the preferred range. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL.",
+      "item_level": 356.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
     },
     {
       "id": "hxz7MH8gW9BYGNdr-fight41",
@@ -535,7 +446,10 @@
         "Deaths: Andremus at 01:44 (tank; the kill completed)."
       ],
       "source_ref": "wcl_atramedes_10n_round2_20260927",
-      "extraction_notes": "Average raid item level (356.50), roles and death read in Summary; damage table Total Ilvl is a dash. Assassination parse 11 is below the preferred range. Header duration is 3:18 while damage Total prints 199.0s. Separate Schurkenhandel (Droors), 38.0 DPS, is included in raid total. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+      "extraction_notes": "Average raid item level (356.50), roles and death read in Summary; damage table Total Ilvl is a dash. Assassination parse 11 is below the preferred range. Header duration is 3:18 while damage Total prints 199.0s. Separate Schurkenhandel (Droors), 38.0 DPS, is included in raid total. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL.",
+      "item_level": 356.5,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
     },
     {
       "id": "jxNrbDtq9BdwAcam-fight30",
@@ -646,7 +560,10 @@
         "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
       ],
       "source_ref": "wcl_atramedes_10n_round2_20260927",
-      "extraction_notes": "Average raid item level (354.20), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+      "extraction_notes": "Average raid item level (354.20), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL.",
+      "item_level": 354.2,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
     },
     {
       "id": "X7tWdbvxYn3MjACD-fight28",
@@ -757,7 +674,204 @@
         "Player parse percentiles span the field (read from the damage table Parse % column); the reference is one player per spec per kill, and the target takes the median across matched kills."
       ],
       "source_ref": "wcl_atramedes_10n_round2_20260927",
-      "extraction_notes": "Average raid item level (357.90), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Balance parse 80 exceeds the preferred range. Assassination, Demonology and Fire are within it. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL."
+      "extraction_notes": "Average raid item level (357.90), roles and empty deaths table read in Summary; damage table Total Ilvl is a dash. Balance parse 80 exceeds the preferred range. Assassination, Demonology and Fire are within it. Boss verified as Atramedes Normal (10 Player), Kill. Duration uses the seconds printed in the damage table Total row. Parse percentiles are the damage table Parse % values, not item-level percentiles. Date is the report creation date displayed by WCL.",
+      "item_level": 357.9,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false
+    },
+    {
+      "id": "9Rdhq6BkMXKNw3CP-fight13",
+      "url": "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13&type=damage-done",
+      "summary_url": "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13&type=summary",
+      "mode": "10N",
+      "date": "2024-10-28",
+      "duration_sec": 180.0,
+      "raid_dps": 145173.6,
+      "average_item_level": 356.7,
+      "item_level": 356.7,
+      "in_item_level_band": true,
+      "after_hotfix_cutoff_2025_02_20": false,
+      "target_scope": "All Enemies (Atramedes and Reverberating Flame), pets included",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "survival_hunter": 25762.0,
+        "elemental_shaman": 27488.0
+      },
+      "actor_item_level": {
+        "survival_hunter": 358.0,
+        "elemental_shaman": 359.0
+      },
+      "actor_parse_percentile": {
+        "survival_hunter": [
+          88.0,
+          79.0
+        ],
+        "elemental_shaman": 90.0
+      },
+      "actor_names": {
+        "survival_hunter": [
+          "Heinberg",
+          "Gobimaru"
+        ],
+        "elemental_shaman": [
+          "Zukku"
+        ]
+      },
+      "roster": [
+        {
+          "name": "Zukku",
+          "spec": "elemental_shaman",
+          "role": "dps",
+          "dps": 27488.0,
+          "active_pct": 99.67,
+          "item_level": 359,
+          "parse_percentile": 90
+        },
+        {
+          "name": "Heinberg",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 26661.6,
+          "active_pct": 99.3,
+          "item_level": 359,
+          "parse_percentile": 88
+        },
+        {
+          "name": "Gobimaru",
+          "spec": "survival_hunter",
+          "role": "dps",
+          "dps": 24862.5,
+          "active_pct": 97.44,
+          "item_level": 357,
+          "parse_percentile": 79
+        },
+        {
+          "name": "Fangorne",
+          "spec": "unholy_death_knight",
+          "role": "dps",
+          "dps": 17147.7,
+          "active_pct": 86.57,
+          "item_level": 357,
+          "parse_percentile": 37
+        },
+        {
+          "name": "Vahan",
+          "spec": "frost_death_knight",
+          "role": "dps",
+          "dps": 16916.5,
+          "active_pct": 67.9,
+          "item_level": 363,
+          "parse_percentile": 39
+        },
+        {
+          "name": "Crstfrclmbus",
+          "spec": "beast_hunter",
+          "role": "dps",
+          "dps": 11818.9,
+          "active_pct": 98.11,
+          "item_level": 347,
+          "parse_percentile": 24
+        },
+        {
+          "name": "Lilholypalx",
+          "spec": "protection_paladin",
+          "role": "tank",
+          "dps": 11670.1,
+          "active_pct": 99.61,
+          "item_level": 357,
+          "parse_percentile": 60
+        },
+        {
+          "name": "Phoenixwings",
+          "spec": "feral_druid_dps",
+          "role": "dps",
+          "dps": 5450.3,
+          "active_pct": 73.53,
+          "item_level": 357,
+          "parse_percentile": 8
+        },
+        {
+          "name": "Zuuri",
+          "spec": "restoration_shaman",
+          "role": "healer",
+          "dps": 3157.9,
+          "active_pct": 69.63,
+          "item_level": 359,
+          "parse_percentile": 89
+        },
+        {
+          "name": "Kardee",
+          "spec": "discipline_priest",
+          "role": "healer",
+          "dps": null,
+          "active_pct": null,
+          "item_level": 352,
+          "parse_percentile": null
+        }
+      ],
+      "deaths": [
+        {
+          "name": "Vahan",
+          "time": "01:58"
+        }
+      ],
+      "phase_coverage": {
+        "air_phase": true,
+        "full_air_phase": true,
+        "air_phase_duration_sec": 30.0,
+        "liftoff_sec": null,
+        "landing_sec": null,
+        "air_phase_abilities_seen": [
+          "Roaring Flame Breath"
+        ],
+        "sonar_bomb_times": null,
+        "roaring_flame_breath_times": [
+          "01:35.769",
+          "01:36.270",
+          "01:36.777",
+          "01:37.267",
+          "01:37.773",
+          "01:47.280",
+          "01:47.769",
+          "01:48.765",
+          "01:49.271",
+          "01:50.274",
+          "01:50.768",
+          "01:52.266",
+          "01:52.772",
+          "01:53.273",
+          "01:53.771",
+          "01:54.278",
+          "01:54.767",
+          "01:55.271",
+          "01:55.772",
+          "01:56.280",
+          "01:56.772",
+          "01:57.274",
+          "01:58.271",
+          "01:58.777",
+          "02:00.767",
+          "02:01.771",
+          "02:02.270",
+          "02:04.770",
+          "02:05.277"
+        ],
+        "ground_cast_after_air": {
+          "ability": "Sonar Pulse",
+          "time": "02:22.163"
+        },
+        "cast_events_url": "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13&type=casts&view=events&hostility=1",
+        "air_damage_events_url": "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13&type=damage-done&view=events&hostility=1&phase=2",
+        "air_phase_duration_source_url": "https://classic.warcraftlogs.com/reports/9Rdhq6BkMXKNw3CP?fight=13&type=damage-done&hostility=1&phase=2",
+        "source": "Required enemy casts events page read successfully. Neither Roaring Flame Breath nor Sonar Bomb is listed among cast events; selecting P2 Airborne yields no cast rows. P2 enemy damage events visibly show Roaring Flame Breath, including resist/absorb/miss events, from 01:35.769 through 02:05.277. P2 table Total reads 30.0s. Full phase coverage is inferred from the recorded complete 30.0s P2 plus resumed ground Sonar Pulse at 02:22.163, well before the 180.0s kill. Exact liftoff/landing and Sonar Bomb times were not shown and remain null."
+      },
+      "limitations": [
+        "Kill 180.0 s at raid item level 356.7 (Summary view), report date 2024-10-28; a full 30.0 s air phase (Roaring Flame Breath damage 1:35.8-2:05.3) and the second ground phase (Sonar Pulse 2:22.2).",
+        "Gap-fill kill for Elemental (Zukku, item level 359, parse 90, 99.67% active) and Survival (Heinberg 88 and Gobimaru 79, item level 359/357, averaged); every other spec in this kill is either not canonical (Unholy, Frost, Beast Mastery, Feral, Protection) or excluded.",
+        "Excluded as player references: Vahan (Frost DK, died 1:58), Phoenixwings (Feral DPS, parse 8, 73.5% active); the Protection Paladin tank is not a canonical tank spec.",
+        "Displayed DPS over All Enemies (Atramedes and Reverberating Flame) with pets attributed to their owners."
+      ],
+      "source_ref": "wcl_atramedes_10n_t11_20260930"
     }
   ],
   "extraction_plan": {
@@ -799,7 +913,7 @@
     }
   },
   "consumers": [
-    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json (matched_reference_ids: fight 32 and the five round-2 kills)",
+    "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json (matched_reference_ids: the seven in-band kills; reference_item_level)",
     "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json (research_completion wcl_dps_references)"
   ],
   "access_attempts": [
@@ -845,36 +959,198 @@
   "report_search": {
     "MxFq7TRbvnjGY1hJ": "fight 32 Atramedes 10N kill (2024-10-28, 2:45)",
     "Y8ajQ7dbmKMG1RZy": "fight 28 Atramedes Heroic 10 kill only; excluded (mode)",
-    "xAhkN2y9YP3KRmnJ": "fight 17 Atramedes 10N kill (2025-06-11, 0:48)",
+    "xAhkN2y9YP3KRmnJ": "fight 17 Atramedes 10N kill (2025-06-11, 0:48); dropped in round 3 (item level 401.4, outside the band)",
     "PpFW3bgy7m6Kxk1t": "fight 8 Atramedes 10N kill (2024-10-05, 182.4 s)",
     "Bgcm6RavhWK7DLd1": "fight 34 Atramedes 10N kill (2024-10-12, 179.3 s)",
     "hxz7MH8gW9BYGNdr": "fight 41 Atramedes 10N kill (2024-10-23, 199.0 s)",
     "jxNrbDtq9BdwAcam": "fight 30 Atramedes 10N kill (2024-10-09, 194.4 s)",
     "X7tWdbvxYn3MjACD": "fight 28 Atramedes 10N kill (2024-10-16, 173.6 s)",
-    "discovery_round2": "WCL Cataclysm Classic zone rankings (zone 1023, boss 1022, Normal, size 10) for Balance Druid, filtered to durations of 130-600 s and to raids that also contain Assassination and Demonology; each candidate verified on its fight page. Ranking rows are discovery only."
+    "discovery_round2": "WCL Cataclysm Classic zone rankings (zone 1023, boss 1022, Normal, size 10) for Balance Druid, filtered to durations of 130-600 s and to raids that also contain Assassination and Demonology; each candidate verified on its fight page. Ranking rows are discovery only.",
+    "9Rdhq6BkMXKNw3CP": "fight 13 Atramedes 10N kill (2024-10-28, 180.0 s, raid item level 356.7); found through the Elemental Shaman rankings (player item level 350-368, 130-300 s, Phase 2 partition)",
+    "9pR7PdKNf6TBbzZj": "fight 13 Atramedes 10N kill (2024-09-27, 2:47); archived by WCL (older than two years), not readable; rejected"
   },
   "canonical_spec_coverage": {
     "wcl_matched": {
       "blood_death_knight": 13292.75,
       "balance_druid": 18355.0,
-      "survival_hunter": 20412.6,
+      "survival_hunter": 21609.55,
       "fire_mage": 18718.9,
       "retribution_paladin": 19929.9,
       "assassination_rogue": 17469.4,
-      "elemental_shaman": 19688.2,
+      "elemental_shaman": 24949.4,
       "demonology_warlock": 20626.1
     },
     "samples": {
       "blood_death_knight": 4,
       "balance_druid": 5,
-      "survival_hunter": 5,
+      "survival_hunter": 6,
       "fire_mage": 3,
       "retribution_paladin": 3,
       "assassination_rogue": 5,
-      "elemental_shaman": 2,
+      "elemental_shaman": 3,
       "demonology_warlock": 5
     },
+    "per_spec_values": {
+      "blood_death_knight": [
+        13254.0,
+        9328.3,
+        14629.8,
+        13331.5
+      ],
+      "balance_druid": [
+        17785.0,
+        16469.9,
+        18355.0,
+        18380.1,
+        20732.0
+      ],
+      "survival_hunter": [
+        25513.1,
+        20409.3,
+        20412.6,
+        20241.0,
+        22806.5,
+        25762.0
+      ],
+      "fire_mage": [
+        22829.3,
+        12786.0,
+        18718.9
+      ],
+      "retribution_paladin": [
+        19929.9,
+        22923.1,
+        17020.2
+      ],
+      "assassination_rogue": [
+        17961.5,
+        23339.0,
+        13878.0,
+        17469.4,
+        16945.7
+      ],
+      "elemental_shaman": [
+        24949.4,
+        14427.0,
+        27488.0
+      ],
+      "demonology_warlock": [
+        20709.1,
+        15045.7,
+        21350.5,
+        16716.5,
+        20626.1
+      ]
+    },
+    "per_spec_item_levels": {
+      "blood_death_knight": [
+        359.9,
+        357.1,
+        356.5,
+        357.9
+      ],
+      "balance_druid": [
+        357.1,
+        356.9,
+        356.5,
+        354.2,
+        357.9
+      ],
+      "survival_hunter": [
+        359.9,
+        357.1,
+        356.5,
+        354.2,
+        357.9,
+        356.7
+      ],
+      "fire_mage": [
+        357.1,
+        356.9,
+        357.9
+      ],
+      "retribution_paladin": [
+        359.9,
+        356.9,
+        356.5
+      ],
+      "assassination_rogue": [
+        357.1,
+        356.9,
+        356.5,
+        354.2,
+        357.9
+      ],
+      "elemental_shaman": [
+        359.9,
+        356.5,
+        356.7
+      ],
+      "demonology_warlock": [
+        357.1,
+        356.9,
+        356.5,
+        354.2,
+        357.9
+      ]
+    },
+    "longer_half_context": {
+      "rule": "context only, not a target: median over in-band kills at or above the boss's median in-band duration",
+      "duration_cut_sec": 180.0,
+      "reference_ids": [
+        "PpFW3bgy7m6Kxk1t-fight8",
+        "hxz7MH8gW9BYGNdr-fight41",
+        "jxNrbDtq9BdwAcam-fight30",
+        "9Rdhq6BkMXKNw3CP-fight13"
+      ],
+      "median": {
+        "blood_death_knight": 11979.05,
+        "balance_druid": 18355.0,
+        "survival_hunter": 20410.95,
+        "fire_mage": 22829.3,
+        "retribution_paladin": 17020.2,
+        "assassination_rogue": 17469.4,
+        "elemental_shaman": 20957.5,
+        "demonology_warlock": 20709.1
+      },
+      "samples": {
+        "blood_death_knight": 2,
+        "balance_druid": 3,
+        "survival_hunter": 4,
+        "fire_mage": 1,
+        "retribution_paladin": 1,
+        "assassination_rogue": 3,
+        "elemental_shaman": 2,
+        "demonology_warlock": 3
+      }
+    },
     "wowsims_fallback": [],
-    "note": "Median over the six matched 10N kills (fight 32 plus the five round-2 kills), one value per kill. elemental_shaman has two samples and fire_mage three; the unmatched 48.5 s kill stays context only."
-  }
+    "note": "Median over the seven in-band 10N kills (raid item level 354.2-359.9, median 356.9), one value per spec per kill. Round 3 changed only two specs: Elemental 19,688.2 -> 24,949.4 (third kill, Zukku 27,488) and Survival 20,412.6 -> 21,609.55 (sixth kill, 25,762); every other median is unchanged. The six seeded kills carry no player item levels (their extraction read raid averages only), so the player-gear rule was applied to the new kill only."
+  },
+  "item_level_band": {
+    "min": 352.0,
+    "max": 366.0,
+    "roster_average_item_level": 359,
+    "decision": "user decision 2026-09-30: regear the bots to tier-11 phase gear (~359) so kills exercise the mechanics; references at raid item level 352-366, players 359 +-12",
+    "roster_source": "dataset/validation_gear_profiles/profiles.json average_item_level"
+  },
+  "actor_dps_rule": "(one value per spec per kill, like the existing manifests):\n- blood_death_knight: the boss tank row (role tank). With several Blood DK tanks,\n  the one with the highest active %, then DPS; the others are excluded.\n- other gated specs: rows in the dps role. Several actors of one spec in a kill\n  are averaged.\n- Outliers are excluded (user clarification 2026-09-30: gear match first, parse\n  secondary, competent representative players): an actor who died before 85% of\n  the kill, an actor below max(50%, raid DPS median active % - 20), an extreme parse (95+ or below 10), or an actor\n  whose own item level is more than 12 from the roster's 359 (outside 347-371).\n- Kills whose raid DPS median activity is below 75% (slowed, achievement or\n  carry kills; competent kills at this gear run 90-98%) are context only.\n- Only kills with raid item level 352-366 enter the median; near-band kills are\n  recorded separately and never enter a target.",
+  "hotfix_cutoff_note": "T11-era kills (before the 2025-02-20T23:00Z 4.4.2 cutoff) are preferred; each reference carries after_hotfix_cutoff_2025_02_20.",
+  "dropped_references": [
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight17",
+      "average_item_level": 401.4,
+      "duration_sec": 48.5,
+      "date": "2025-06-11",
+      "reason": "Round 3 (2026-09-30): raid item level 401.4 is outside the tier-11 band 352-366, and the 48.5 s kill ends before the first liftoff (no air phase). It was throughput context only and never a target."
+    }
+  ],
+  "rejected": [
+    {
+      "report": "9pR7PdKNf6TBbzZj",
+      "fight": 13,
+      "reason": "Archived report dated 2024-09-27; damage activity, Summary raid average, and events unavailable without archive subscription. Header verified Atramedes Normal (10 Player) Kill (2:47).",
+      "raid_item_level": null
+    }
+  ]
 }

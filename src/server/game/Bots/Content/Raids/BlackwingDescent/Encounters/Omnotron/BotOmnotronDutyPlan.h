@@ -6,6 +6,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronShieldLedger.h"
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -40,6 +41,9 @@ struct InterruptDuty
     uint64 Ordinal = 0;
     uint64 CastAgeMs = 0;
     std::vector<ObjectGuid> Pool;
+    // Pool members whose last recorded interrupt is still on its native
+    // (talent and glyph modified) cooldown.
+    std::vector<ObjectGuid> Cooling;
 };
 
 struct DispelDuty
@@ -229,27 +233,26 @@ inline void ChooseDamageTargets(Blackboard const& board,
     plan.DamageFocus = focus ? focus->Actor->Guid : ObjectGuid{};
     plan.DamageFallback = fallback ? fallback->Actor->Guid : ObjectGuid{};
 
-    // A Poison Bomb is killed only where its blast (6 yd) reaches nobody, or
-    // when it already touches its fixate target.
+    // Poison Bombs: kill the one closest to its fixate target first. A bomb
+    // explodes (80092, 6 yd) and leaves a Poison Puddle only when its melee
+    // swing reaches that player (80086 -> Quiet Suicide); a killed bomb just
+    // despawns (native JustDied; WCL 10N: killed bombs dealt no 80092
+    // damage, ledger poison_bomb_death). So a bomb is never spared because
+    // players stand near it: that only let it walk through the raid and
+    // reach its target.
     ActorSnapshot const* urgent = nullptr;
     float urgentDistance = 0.0f;
     for (ActorSnapshot const* bomb : facts.PoisonBombs)
     {
+        if (!bomb->Alive)
+            continue;
         ObjectGuid const fixate = BombFixateTarget(board, *bomb);
         ActorSnapshot const* chased = fixate.IsEmpty() ? nullptr
             : board.FindActor(fixate);
         float const chaseDistance = chased
             ? PlanarDistance(chased->Position, bomb->Position) : 100.0f;
-        bool safe = chaseDistance <= 3.0f;
-        if (!safe)
-        {
-            safe = true;
-            for (ActorSnapshot const& player : board.Players)
-                if (player.Alive && PlanarDistance(player.Position, bomb->Position)
-                        <= PoisonBombBlastRadius + 1.0f)
-                    safe = false;
-        }
-        if (safe && (!urgent || chaseDistance < urgentDistance))
+        if (!urgent || chaseDistance < urgentDistance
+            || (chaseDistance == urgentDistance && bomb->Guid < urgent->Guid))
         {
             urgent = bomb;
             urgentDistance = chaseDistance;
@@ -300,12 +303,12 @@ inline void AssignInterrupts(Blackboard const& board,
             InterruptFor(player.ClassSpec);
         if (!capability)
             continue;
-        // Under Power Conversion every interrupt that lands procs a Converted
-        // Power stack, damaging or not: spell_proc 79729 has SpellTypeMask 0
-        // (all types) and a no-damage spell hit still raises a NODAMAGE proc
-        // (Spell.cpp TargetInfo). The rotation keeps interrupting (one stack
-        // against a 39-41k Annihilator); stacks per interrupt are a live
-        // signal and the retail behaviour an open research question.
+        // Under Power Conversion the rotation keeps interrupting. WCL 10N
+        // (round 3): a landed interrupt without damage gives no Converted
+        // Power stack; the staged spell_proc 79729 SpellTypeMask 1 makes the
+        // native proc agree (with SpellTypeMask 0 it gave one stack per
+        // interrupt, still cheaper than a 39-41k Annihilator). An interrupt
+        // that deals damage still procs one stack.
         // Melee-range interrupts (5 yd) reach the server's melee range
         // (combat reaches plus 4/3 yd); longer ones (Skull Bash 13 yd, ranged)
         // add the construct's combat reach. Half a yard of slack.
@@ -331,14 +334,45 @@ inline void AssignInterrupts(Blackboard const& board,
     plan.Interrupt.Caster = caster.Guid;
     plan.Interrupt.Ordinal = observed.Ordinal;
     plan.Interrupt.CastAgeMs = observed.AgeMs(board.ObservedAtMs);
+    // A member whose last interrupt has not come back cannot cast: the turn
+    // passes to the next ready member, so the 450 ms backup is not the only
+    // answer to a cooling primary. Arcane Annihilator repeats every 6-7 s,
+    // faster than most interrupt cooldowns.
+    // Cooling is decided from the cooldown the bot's own spell history
+    // reported when it cast (InterruptLedger::RecordUse), never from the
+    // capability's base cooldown: talents and glyphs change it (Reverberation
+    // makes Wind Shear 5 s, so a Shaman is ready again 6.5 s after a cast). A
+    // bot with no recorded use is ready.
+    // Only uses before this cast count: a use during it is this cast's own
+    // interrupt, and moving the turn on would send a second interrupt into
+    // a cast the snapshot still shows (the backup keeps its 450 ms delay).
+    std::vector<bool> ready;
     for (Entry const& entry : pool)
+    {
         plan.Interrupt.Pool.push_back(entry.Player->Guid);
+        std::optional<InterruptUse> const use =
+            InterruptLedger::LastUse(board, entry.Player->Guid);
+        bool const cooling = use && use->AtMs < observed.FirstSeenMs
+            && use->CoolingAt(board.ObservedAtMs);
+        ready.push_back(!cooling);
+        if (cooling)
+            plan.Interrupt.Cooling.push_back(entry.Player->Guid);
+    }
     if (pool.empty())
         return;
     std::size_t const turn = std::size_t(observed.Ordinal ? observed.Ordinal - 1 : 0);
-    plan.Interrupt.Primary = pool[turn % pool.size()].Player->Guid;
-    if (pool.size() > 1)
-        plan.Interrupt.Backup = pool[(turn + 1) % pool.size()].Player->Guid;
+    std::vector<std::size_t> order;
+    for (std::size_t step = 0; step < pool.size(); ++step)
+        if (ready[(turn + step) % pool.size()])
+            order.push_back((turn + step) % pool.size());
+    // Nobody recorded as ready: keep the plain rotation (a recorded use may
+    // not have landed); the native executor still checks the cooldown.
+    if (order.empty())
+        for (std::size_t step = 0; step < pool.size(); ++step)
+            order.push_back((turn + step) % pool.size());
+    plan.Interrupt.Primary = pool[order[0]].Player->Guid;
+    if (order.size() > 1)
+        plan.Interrupt.Backup = pool[order[1]].Player->Guid;
 }
 
 inline void AssignDispels(Blackboard const& board, EncounterFacts const& facts,
@@ -430,6 +464,7 @@ inline std::string DutyPlanJson(DutyPlan const& plan)
              << ",\"backup\":" << plan.Interrupt.Backup.GetCounter()
              << ",\"ordinal\":" << plan.Interrupt.Ordinal;
         list("pool", plan.Interrupt.Pool);
+        list("cooling", plan.Interrupt.Cooling);
         json << "},\"dispels\":[";
         for (std::size_t index = 0; index < plan.Dispels.size(); ++index)
             json << (index ? "," : "") << "{\"dispeller\":"

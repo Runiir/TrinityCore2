@@ -33,6 +33,8 @@
 #include "SpellMgr.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
+#include <algorithm>
+#include <list>
 
 // Maloriak spell and aura scripts, split from boss_maloriak.cpp by concern.
 // AddSC_boss_maloriak() calls AddSC_boss_maloriak_spells().
@@ -126,6 +128,27 @@ class spell_maloriak_consuming_flames: public AuraScript
     }
 };
 
+// Remedy 77912 (10N; its 25N/10H/25H variants 92965-92967 are not bound: the
+// evidence is 10N only). WCL 10N
+// VL3fW9wNm2PRJDYt fight 13, two full casts: the heal grows by the base value
+// every tick, 22,500, 45,000, 67,500 ... 225,000 and 250,000 on the tenth
+// (25,000 x tick, less a -10% healing debuff while it was up), about 1.25-1.32M
+// per cast. The client row is a flat 25,000 per second, so the aura script
+// scales each tick by its tick number, as the Wowhead 4.4.2 page says
+// ("increasing each tick").
+class spell_maloriak_remedy : public AuraScript
+{
+    void RampHeal(AuraEffect* aurEff)
+    {
+        aurEff->SetAmount(aurEff->GetBaseAmount() * int32(std::max<uint32>(aurEff->GetTickNumber(), 1)));
+    }
+
+    void Register() override
+    {
+        OnEffectUpdatePeriodic.Register(&spell_maloriak_remedy::RampHeal, EFFECT_0, SPELL_AURA_PERIODIC_HEAL);
+    }
+};
+
 class spell_maloriak_flash_freeze_targeting : public SpellScript
 {
     bool Validate(SpellInfo const* /*spellInfo*/) override
@@ -155,6 +178,23 @@ class spell_maloriak_flash_freeze_targeting : public SpellScript
 
             return false;
         });
+
+        // 10N WCL (ledger flash_freeze_targets_10N): all 16 Flash Freezes in
+        // ten kills froze ranged damage dealers or healers, never a tank or a
+        // melee player, as both guides say ("one ranged player"). Players
+        // beyond Biting Chill's 10-yd melee reach are preferred.
+        Unit* caster = GetCaster();
+        if (caster && caster->GetMap()->GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL)
+        {
+            std::list<WorldObject*> ranged = targets;
+            ranged.remove_if([caster](WorldObject* obj)
+            {
+                Unit const* target = obj->ToUnit();
+                return !target || caster->IsWithinCombatRange(target, FLASH_FREEZE_MIN_RANGE_10N);
+            });
+            if (!ranged.empty())
+                targets.swap(ranged);
+        }
 
         if (!targets.empty())
             Trinity::Containers::RandomResize(targets, 1);
@@ -423,12 +463,44 @@ class spell_maloriak_master_adventurer_award : public AuraScript
 };
 }
 
+namespace BlackwingDescent::Maloriak
+{
+// WCL 10N VL3fW9wNm2PRJDYt fight 13 (Slime Imbued 02:05.122): the Growth
+// Catalyst auras of every Aberration, their own included, were removed at the
+// Debilitating Slime and the auras they had spread 26 ms later; a surviving
+// Aberration's own aura came back 5.2 s later (02:10.332). Both Icy Veins
+// guides say the slime removes Growth Catalyst. The client row of 77615 has
+// no effect that does it, so the script removes the auras and each survivor
+// casts Growth Catalyst again after the observed delay.
+void StripGrowthCatalystForSlime(Creature* source)
+{
+    uint32 const catalyst = sSpellMgr->GetSpellIdForDifficulty(SPELL_GROWTH_CATALYST, source);
+    for (uint32 entry : { uint32(NPC_ABERRATION), uint32(NPC_PRIME_SUBJECT) })
+    {
+        std::list<Creature*> experiments;
+        source->GetCreatureListWithEntryInGrid(experiments, entry, 200.0f);
+        for (Creature* experiment : experiments)
+        {
+            if (!experiment->IsAlive() || !experiment->HasAura(catalyst))
+                continue;
+            experiment->RemoveAurasDueToSpell(catalyst);
+            experiment->m_Events.AddEventAtOffset([experiment]()
+            {
+                if (experiment->IsAlive() && experiment->IsInCombat())
+                    experiment->CastSpell(experiment, SPELL_GROWTH_CATALYST, true);
+            }, Milliseconds(GROWTH_CATALYST_SLIME_RECAST_MS));
+        }
+    }
+}
+}
+
 void AddSC_boss_maloriak_spells()
 {
     using namespace BlackwingDescent::Maloriak;
     RegisterSpellScript(spell_maloriak_throw_bottle);
     RegisterSpellScript(spell_maloriak_throw_bottle_triggered);
     RegisterSpellScript(spell_maloriak_consuming_flames);
+    RegisterSpellScript(spell_maloriak_remedy);
     RegisterSpellScript(spell_maloriak_flash_freeze_targeting);
     RegisterSpellScript(spell_maloriak_flash_freeze_dummy);
     RegisterSpellScript(spell_maloriak_release_experiments);

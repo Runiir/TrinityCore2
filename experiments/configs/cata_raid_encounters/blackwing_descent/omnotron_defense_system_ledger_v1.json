@@ -301,6 +301,43 @@
         "construct_positioning": "xAhkN2y9YP3KRmnJ-12 (one Blood DK tank, one healer): Heart Strike at 00:51.069 and Blood Boil at 00:57.088 each hit Toxitron and Magmatron, Chain Lightning at 01:06.844 hit both; Replay at 00:57.085 shows the two constructs adjacent. Y8ajQ7dbmKMG1RZy-24 (two tanks): Electron and Arcanotron visibly separated at 00:52.611, hits on the two at different times."
       },
       "authority": "same-mode live observations of the 4.4.2 Classic servers"
+    },
+    "wcl_omnotron_10n_r3_20260930": {
+      "title": "Omnotron Defense System 10-player Normal kills on Warcraft Logs, round 3: tier-11 band (Barrier, Static Shock, Power Conversion, Poison Bombs, interrupts)",
+      "publisher": "Warcraft Logs",
+      "urls": [
+        "https://classic.warcraftlogs.com/reports/qaKLyFTxkvc9hVpM?fight=11&type=summary&view=events (Power Conversion window, Wind Shear 00:55.765; Unstable Shield window 01:35.768-01:45.782)",
+        "https://classic.warcraftlogs.com/reports/Z36FdRPNbAgjrqGX?fight=13&type=summary&view=events (Rebuke 01:38.392 under Power Conversion)",
+        "https://classic.warcraftlogs.com/reports/VvXJBz2A93FRY4xm?fight=15&type=summary&view=events (Mind Freeze 00:54.072 under Power Conversion; Barrier 01:36.700-01:46.705)",
+        "https://classic.warcraftlogs.com/reports/TaAF1ncP89KgpbLx?fight=12, mfnZAdFTLkjMBC3z?fight=6, kCLpgK4xBXcWahN1?fight=22, w2W84MtybL1VKCvQ?fight=12, MRytXdWJxkBpfPK1?fight=26, BwaHpnPbjkWtCX4Z?fight=26, MxFq7TRbvnjGY1hJ?fight=24"
+      ],
+      "accessed": "2026-09-30",
+      "retrieved_utc": "2026-09-30T11:54:00Z",
+      "method": "codex exec -m gpt-6.1-sol driving the user's Chrome (profile Runiir) through the Chrome plugin, one own tab per run; rendered Events rows with filter expressions (ability.id, type = \"interrupt\", target.name). First run disconnected after K1 (BwaHpnPbjkWtCX4Z-26); the second run read K2-K10 and closed its tab. No check on WCL pages (one Archon help page showed a check; not submitted). Raw capture ~/.cache/omnotron_wcl_r3/resultA.json, resultA2.json, resultA2.md.",
+      "mode": "10N (every fight labelled 'Normal (10 Player)' Kill; the ten tier-11 DPS references)",
+      "scope": "Barrier 79582 windows with absorbed totals and Backdraft 79617 rows; Unstable Shield 79900 windows with every Static Shock 79912 row and every direct hit on Electron; Power Conversion 79729 windows with Converted Power 79735 rows, interrupts, taunts and direct hits on Arcanotron; Arcane Annihilator begin/interrupt/complete counts; Poison Bomb deaths."
+    },
+    "wcl_omnotron_10n_t11_refs_20260930": {
+      "title": "Omnotron Defense System 10N DPS references at tier-11 gear (raid item level 352-366)",
+      "publisher": "Warcraft Logs",
+      "urls": [
+        "https://classic.warcraftlogs.com/zone/rankings/1023?boss=1027&difficulty=3&size=10&partition=2"
+      ],
+      "accessed": "2026-09-30",
+      "method": "codex exec -m gpt-6.1-sol in the user's Chrome; ten kills 2024-10-05..2024-10-28; manifest experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json; raw captures archived in DVC (artifacts/cata_raid_program/wcl_t11_refs_bwd10n_20260930.tar.gz.dvc).",
+      "mode": "10N",
+      "scope": "per-spec kill DPS for the seven gated specs (3-7 kills each); construct rotation coverage (nine kills damaged all four constructs)"
+    },
+    "user_decision_20260930_omnotron_barrier_absorb_10n": {
+      "title": "User decision: Omnotron 10N Barrier absorb amount",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-30",
+      "quote": "Accept 300,000 (Recommended)",
+      "question": "Accept the 4.4.2 client row (Barrier 79582 absorbs 300,000 on 10N, as native already does) to close the last 10N Omnotron research claim, or keep 10N research blocked until a WCL kill shows a Barrier break? (needs_user_decision omnotron_barrier_absorb_client_row, round-3 handoff)",
+      "used_for": [
+        "barrier_absorb_amount (10N)"
+      ],
+      "claim": "10N Barrier 79582 absorbs 300,000 (4.4.2 client row); WCL lower bound 267,864 unbroken (MxFq7TRbvnjGY1hJ-24, 21 kills, no Backdraft 79617), consistent with the client value; Wowhead 900,000 not adopted. No native change: native already uses 300,000."
     }
   },
   "evidence_policy": {
@@ -474,14 +511,16 @@
       },
       "value": "79729 proc on taken melee/ranged/direct spell damage (proc flags 139944, not periodic) triggers 79735",
       "sources": [
-        "client_442_59185_omnotron",
         "client_434_dbc",
-        "wowhead_cata_classic",
-        "icy_veins_cata_classic"
+        "client_442_59185_omnotron",
+        "icy_veins_cata_classic",
+        "wcl_omnotron_10n_r3_20260930",
+        "wowhead_cata_classic"
       ],
       "evidence": "client_rows_plus_guides",
       "status": "resolved_mechanic",
-      "tactic": "Stop direct damage; DoT ticks do not proc (no periodic proc flag)."
+      "tactic": "Stop direct damage; DoT ticks do not proc (no periodic proc flag).",
+      "wcl_10N_round3_observation": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): a landed interrupt without damage gives no Converted Power 79735. Clean samples: qaKLyFTxkvc9hVpM-11 Wind Shear 00:55.765 (1,307 ms after the previous gain, next gain 00:58.318), Z36FdRPNbAgjrqGX-13 Rebuke 01:38.392 (1.27 s into Power Conversion, first gain 01:41.415), VvXJBz2A93FRY4xm-15 Mind Freeze 00:54.072 (1.03 s into Power Conversion, no direct hit within 600 ms, first gain 00:55.936). The Mind Freeze gains in TaAF1ncP89KgpbLx-12 (02:25.695) and mfnZAdFTLkjMBC3z-6 (01:44.686) share the millisecond with the Death Knight's own melee hit; the w2W84MtybL1VKCvQ-12 gain after Wind Shear coincides with a Smite hit. Native (spell_proc 79729 SpellTypeMask 0) gave one stack per interrupt; sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql (promoted 2026-09-30) sets SpellTypeMask 1 for 79729. No taunt landed on Arcanotron under Power Conversion; a taunt is a no-damage spell hit on the same proc path, so the staged row covers it too (live check: Converted Power stacks per taunt = 0). Open for 10H/25N/25H (91543-91545 unchanged): no same-mode sample."
     },
     {
       "key": "arcane_annihilator",
@@ -557,16 +596,18 @@
       "value": "79900 procs (script) Static Shock 79912 at the attacker; 79912 targets TARGET_DEST_TARGET_ENEMY + 6 yd area",
       "sources": [
         "client_442_59185_omnotron",
-        "wowhead_cata_classic",
         "repo_cpp",
-        "wcl_omnotron_10n_20260927"
+        "wcl_omnotron_10n_20260927",
+        "wcl_omnotron_10n_r3_20260930",
+        "wowhead_cata_classic"
       ],
       "evidence": "client_rows_plus_guide",
-      "status": "stop_damage_resolved; blast centre unresolved (unresolved static_shock_center_attacker_or_construct): the single WCL hit on the attacking tank fits an attacker- and a construct-centred blast alike",
+      "status": "stop_damage_resolved; blast centre resolved for 10N: the attacker (wcl_omnotron_10n_r3_20260930); heroic/25 open",
       "conflicts": [
         "Wowhead text: 'all players within 6 yards of the boss'; its tooltip: 'at a nearby enemy's location'; native casts at the attacker."
       ],
-      "wcl_10N_observation": "Y8ajQ7dbmKMG1RZy fight 24: one Static Shock 79912 hit (00:53.530, U 29,930) on Schanilá, the Protection paladin tanking Electron after Unstable Shield (00:52.957)"
+      "wcl_10N_observation": "Y8ajQ7dbmKMG1RZy fight 24: one Static Shock 79912 hit (00:53.530, U 29,930) on Schanilá, the Protection paladin tanking Electron after Unstable Shield (00:52.957)",
+      "wcl_10N_round3_observation": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): qaKLyFTxkvc9hVpM fight 11, Unstable Shield 01:35.768-01:45.782: the ranged Survival hunter Minimaz was hit alone four times (01:40.034, 01:40.310, 01:42.694, 01:45.033), each 0.5-0.9 s after his own Auto Shot or Cobra Shot on Electron, while the Protection paladin tank Bûggers and four melee next to Electron were not hit; the Frost mage Smf was hit alone at 01:38.505, 1.0 s after her Frostbolt. Melee-triggered bursts (01:38.171: tank plus four melee, 195 ms after the tank's Hammer of the Righteous) land 0.2-0.3 s after the hit. A construct-centred 6 yd blast would hit the tank each time, so the blast is centred on the attacker (Wowhead tooltip 'at a nearby enemy's location', client 79912 TARGET_DEST_TARGET_ENEMY, native cast at the attacker); the Wowhead text 'within 6 yards of the boss' is wrong. Pet and totem hits (Zeke, Searing Totem) never triggered one. Open for 10H/25N/25H: no same-mode sample."
     },
     {
       "key": "incineration_security_measure",
@@ -607,22 +648,26 @@
     {
       "key": "barrier_and_backdraft",
       "modes": {
-        "10N": "absorb 300,000 (client) vs 900,000 (Wowhead)",
+        "10N": "absorb 300,000 (4.4.2 client row, accepted by user decision 2026-09-30; WCL lower bound 267,864) vs 900,000 (Wowhead, not adopted)",
         "10H": "150,000 (client) vs 450,000 (Wowhead)"
       },
       "value": "79582 absorb (aura 69, all schools) 10 s; breaking it (removal by enemy spell) casts Backdraft 79617: 73,124-76,875 fire to every player (10N)",
       "sources": [
-        "client_442_59185_omnotron",
         "client_434_dbc",
-        "wowhead_cata_classic",
-        "warcraft_wiki_legacy",
+        "client_442_59185_omnotron",
         "repo_cpp",
-        "wcl_omnotron_10n_20260927"
+        "user_decision_20260930_omnotron_barrier_absorb_10n",
+        "warcraft_wiki_legacy",
+        "wcl_omnotron_10n_20260927",
+        "wcl_omnotron_10n_r3_20260930",
+        "wowhead_cata_classic"
       ],
       "evidence": "client_rows_conflict_with_guide",
-      "status": "stop_damage_resolved; absorb amount unresolved (unresolved barrier_absorb_amount): 267,864 absorbed without a break cannot distinguish the client 300,000 from Wowhead 900,000",
+      "status": "stop_damage_resolved; 10N absorb amount accepted by user decision 2026-09-30 (client row 300,000; WCL lower bound 267,864, no break in 21 kills); heroic and 25-player absorb unresolved (unresolved barrier_absorb_amount)",
       "tactic": "Stop all damage on the shielded construct; damage focus moves to the newer construct at its activation (5 s before the old one shields) so DoTs age out before the barrier.",
-      "wcl_10N_observation": "MxFq7TRbvnjGY1hJ fight 24: Barrier 00:51.574-01:01.571 (9.997 s, full duration, no break); 69 DoT ticks on Magmatron absorbed 267,864 in total; zero Backdraft 79617 rows in both K1 and K2"
+      "wcl_10N_observation": "MxFq7TRbvnjGY1hJ fight 24: Barrier 00:51.574-01:01.571 (9.997 s, full duration, no break); 69 DoT ticks on Magmatron absorbed 267,864 in total; zero Backdraft 79617 rows in both K1 and K2",
+      "wcl_10N_round3_observation": "Five Barrier windows in the ten tier-11 kills absorbed 111,283-267,864 without a break; no Backdraft 79617 row (21 kills over rounds 2-3).",
+      "user_decision_20260930": "Accept 300,000 (Recommended)"
     },
     {
       "key": "chemical_bomb_and_cloud",
@@ -652,13 +697,14 @@
       },
       "value": "80053 is a 9 s aura with 3 s periodic 80085 summoning one Poison Bomb 42897 (1 per tick in the client row); the bomb fixates (80094, 20 s) a random player farther than 10 yd from Toxitron when possible; its melee swing procs 80086 -> Quiet Suicide 3617 -> Poison Bomb 80092 (73,124-76,875 nature, 6 yd; 10H 194,999-205,000) and Poison Puddle 42920 (30 s, 80097 11,699-12,300 per second, 6 yd)",
       "sources": [
-        "client_442_59185_omnotron",
         "client_434_dbc",
-        "wowhead_cata_classic",
+        "client_442_59185_omnotron",
         "local_dbm_r20241103_omnotron",
         "repo_cpp",
         "tdb_434_22011",
-        "wcl_omnotron_10n_20260927"
+        "wcl_omnotron_10n_20260927",
+        "wcl_omnotron_10n_r3_20260930",
+        "wowhead_cata_classic"
       ],
       "evidence": "client_rows_plus_addon_plus_guide",
       "status": "resolved_for_10N: two casts 45 s apart; no damaging explosion on death (matches native despawn)",
@@ -667,7 +713,8 @@
         "Wowhead: bombs explode when killed; native JustDied only despawns (explosion only on the contact proc).",
         "Resolved for 10N by WCL: killed bombs dealt no 80092 damage."
       ],
-      "wcl_10N_observation": "MxFq7TRbvnjGY1hJ fight 24: Poison Protocol at 22.6 s and 68.0 s after Toxitron's Activated; 5 bomb fixates; zero Poison Bomb 80092 damage rows (bombs killed before contact, no explosion on death). xAhkN2y9YP3KRmnJ fight 12: casts at 22.4 and 67.8 s"
+      "wcl_10N_observation": "MxFq7TRbvnjGY1hJ fight 24: Poison Protocol at 22.6 s and 68.0 s after Toxitron's Activated; 5 bomb fixates; zero Poison Bomb 80092 damage rows (bombs killed before contact, no explosion on death). xAhkN2y9YP3KRmnJ fight 12: casts at 22.4 and 67.8 s",
+      "wcl_10N_round3_observation": "Tier-11 kills: 0-6 Poison Bomb deaths per kill; qaKLyFTxkvc9hVpM-11 127,201, w2W84MtybL1VKCvQ-12 51,867 and MRytXdWJxkBpfPK1-26 53,618 Poison Bomb explosion damage (bombs that reached their target) with 9,510 / 54,052 / 8,809 Poison Puddle damage."
     },
     {
       "key": "poison_soaked_shell",
@@ -828,12 +875,13 @@
       },
       "value": "Power Conversion 79729, Unstable Shield 79900 and Poison Soaked Shell 79835 proc on taken melee/ranged swings and on taken melee-, ranged-, none- and magic-class spell hits (proc flags 139944), not on periodic ticks. A landed spell hit without damage raises a NODAMAGE DamageInfo with PROC_SPELL_TYPE_NO_DMG_HEAL. Power Conversion's spell_proc rows (79729, 91543-91545; re-inserted by 2025_06_20_00 with Cooldown only) have SpellTypeMask 0, so a no-damage interrupt or taunt on Arcanotron under Power Conversion gives one Converted Power stack. Unstable Shield (79900, 91447-91449) and Poison Soaked Shell (79835, 91501-91503) keep their TDB 434.22011 rows with SpellTypeMask 1 (damage), which no later update removes, so CanSpellTriggerProcOnEvent (SpellMgr.cpp:542) rejects a no-damage hit before the Unstable Shield script's CheckProc runs: a taunt or interrupt procs no Static Shock and no Soaked In Poison; damaging hits do. Barrier 79582 is an absorb: any damage including periodic ticks depletes it, and depletion (or a dispel/steal) removes it by enemy spell, which casts Backdraft 79617 on the raid.",
       "sources": [
-        "repo_proc_and_absorb_rules",
+        "client_442_59185_omnotron",
         "repo_cpp",
-        "client_442_59185_omnotron"
+        "repo_proc_and_absorb_rules",
+        "wcl_omnotron_10n_r3_20260930"
       ],
       "evidence": "repository_observed",
-      "status": "native_resolved; retail behaviour of no-damage procs open (research_completion power_conversion_no_damage_proc)",
+      "status": "native_resolved; 10N retail: a non-damaging interrupt gives no Converted Power (wcl_omnotron_10n_r3_20260930); promoted (2026-09-30) spell_proc 79729 SpellTypeMask 1 aligns native (sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql); heroic/25 rows unchanged",
       "implementation_consequence": "Offense restriction keeps shielded constructs out of every bot's allowed set; an interrupt or taunt on one is widened for that single cast only. The rotation keeps interrupting Arcanotron under Power Conversion (one Converted Power stack against a 39-41k Annihilator); a taunt costs a stack only on Arcanotron under Power Conversion. Damage focus leaves a construct alone well before its shield so DoTs expire first."
     }
   ],
@@ -1388,7 +1436,7 @@
   },
   "conflicts": [
     "Wowhead 60/30 s rotation (heroic durations) vs client and DBM 90/45 s on normal.",
-    "Barrier absorb: client 300,000 (10N) / 150,000 (heroic) vs Wowhead 900,000 / 450,000.",
+    "Barrier absorb: client 300,000 (10N) / 150,000 (heroic) vs Wowhead 900,000 / 450,000. 10N resolved 2026-09-30 by user decision \"Accept 300,000 (Recommended)\" (client 300,000); heroic stays open.",
     "Electrical Discharge jumps: Wowhead same damage, Icy Veins increasing, native +20% no-op.",
     "Poison Bomb death: Wowhead explodes, native despawns.",
     "Normal-mode first casts: native Chemical Bomb 27 s, Lightning Conductor 16/21 s, Power Generator 16/20 s, Poison Protocol 16 s vs DBM 11/30 s, 11-15/25 s, 15/30 s, 21 s.",
@@ -1440,11 +1488,12 @@
         "25H"
       ],
       "status": "resolved_for_10N",
-      "known": "All four at 50 s normal / 40 s heroic after activation; Toxitron fixed in round 2. Barrier absorb conflicts (300k client vs 900k guide).",
-      "next": "WCL: absorbed amount on 79582 and Backdraft occurrences in a 10N kill.",
+      "known": "All four at 50 s normal / 40 s heroic after activation; Toxitron fixed in round 2. Barrier absorb 10N: client 300,000 accepted by user decision 2026-09-30 (\"Accept 300,000 (Recommended)\"); the 900k guide conflict stays open for heroic/25-player.",
+      "next": "Live: Backdraft count stays 0 (bots never damage a shielded construct). Heroic/25-player: a same-mode WCL kill with a Barrier absorb total.",
       "source_refs": [
-        "local_dbm_r20241103_omnotron",
         "client_442_59185_omnotron",
+        "local_dbm_r20241103_omnotron",
+        "user_decision_20260930_omnotron_barrier_absorb_10n",
         "wowhead_cata_classic"
       ]
     },
@@ -1530,12 +1579,13 @@
         "10N"
       ],
       "status": "resolved",
-      "known": "Three 10N kills read; matched Y8ajQ7dbmKMG1RZy-fight24 and xAhkN2y9YP3KRmnJ-fight12 (item level 395-401); MxFq7TRbvnjGY1hJ-fight24 is context. WCL covers Blood DK, Fire, Elemental, Survival; Ret/Assassination/Demonology use WoWSims; Feral tank has no reference.",
-      "next": "A later 10N kill with a Feral tank, Retribution, Assassination or Demonology would add references.",
+      "known": "Round 3 (2026-09-30): ten tier-11 10N kills (raid item level 355.4-362.8, band 352-366, roster about 359; user decision 2026-09-30) replace the 395-401 references; every gated spec has 3-7 matched kills (Blood DK 7, Survival 7, Fire 6, Retribution 3, Assassination 4, Elemental 5, Demonology 3) and no spec uses the WoWSims fallback. Nine kills damaged all four constructs. Cast timelines from w2W84MtybL1VKCvQ-fight12 plus Assassination and Demonology from two further references. The Feral tank has no reference (gate-exempt).",
+      "next": "Refresh only if the roster gear phase changes.",
       "source_refs": [
-        "wcl_human_verification_gate_20260925",
         "wcl_access_attempt_20260927",
-        "wcl_omnotron_10n_20260927"
+        "wcl_human_verification_gate_20260925",
+        "wcl_omnotron_10n_20260927",
+        "wcl_omnotron_10n_t11_refs_20260930"
       ]
     },
     {
@@ -1576,13 +1626,14 @@
         "25N",
         "25H"
       ],
-      "status": "open",
-      "known": "Natively every landed interrupt or taunt on Arcanotron under Power Conversion gives one Converted Power stack (spell_proc 79729 SpellTypeMask 0, NODAMAGE proc), at most one per 500 ms (spell_proc Cooldown 500). Unstable Shield and Poison Soaked Shell do not proc on no-damage hits (TDB spell_proc SpellTypeMask 1). WCL round 2: one Wind Shear under Power Conversion (PGAKmyYbanW3wN9z-24, 00:57.288) gave no stack within 0.5 s, but it landed 139 ms after the previous gain, inside the proc cooldown, so it does not decide.",
-      "next": "WCL: an interrupt or taunt of Arcanotron under Power Conversion at least 500 ms after the previous Converted Power (79735) gain, then any gain within 0.5 s. Live: Converted Power stacks per interrupt (contract acceptance observation).",
+      "status": "resolved_for_10N",
+      "known": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): a landed interrupt without damage gives no Converted Power 79735. Clean samples: qaKLyFTxkvc9hVpM-11 Wind Shear 00:55.765 (1,307 ms after the previous gain, next gain 00:58.318), Z36FdRPNbAgjrqGX-13 Rebuke 01:38.392 (1.27 s into Power Conversion, first gain 01:41.415), VvXJBz2A93FRY4xm-15 Mind Freeze 00:54.072 (1.03 s into Power Conversion, no direct hit within 600 ms, first gain 00:55.936). The Mind Freeze gains in TaAF1ncP89KgpbLx-12 (02:25.695) and mfnZAdFTLkjMBC3z-6 (01:44.686) share the millisecond with the Death Knight's own melee hit; the w2W84MtybL1VKCvQ-12 gain after Wind Shear coincides with a Smite hit. Native (spell_proc 79729 SpellTypeMask 0) gave one stack per interrupt; sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql (promoted 2026-09-30) sets SpellTypeMask 1 for 79729. No taunt landed on Arcanotron under Power Conversion; a taunt is a no-damage spell hit on the same proc path, so the staged row covers it too (live check: Converted Power stacks per taunt = 0). Open for 10H/25N/25H (91543-91545 unchanged): no same-mode sample.",
+      "next": "Live: Converted Power 79735 stacks per landed interrupt and per taunt on Arcanotron = 0 after the staged spell_proc row is promoted; heroic/25: a same-mode kill.",
       "source_refs": [
         "repo_proc_and_absorb_rules",
         "wcl_human_verification_gate_20260925",
         "wcl_omnotron_10n_r2_20260927",
+        "wcl_omnotron_10n_r3_20260930",
         "wowhead_cata_classic"
       ]
     },
@@ -1591,15 +1642,59 @@
       "modes": [
         "10N"
       ],
-      "status": "open",
-      "known": "WCL 10N: 267,864 DoT damage absorbed over the full 10 s Barrier without a break or Backdraft (MxFq7TRbvnjGY1hJ-24); no Backdraft 79617 in 11 accessible 10N kills (round 2). The absorb amount stays unresolved.",
-      "next": "WCL: a 10N Barrier that breaks (Backdraft 79617 with the absorbed total) or absorbs more than 300,000 unbroken. Live: Backdraft count stays 0 when DoTs age out as planned.",
+      "status": "resolved_for_10N_by_user_decision",
+      "known": "WCL 10N: no Barrier broke and no Backdraft 79617 in 21 kills (rounds 2-3); largest unbroken absorb 267,864 (MxFq7TRbvnjGY1hJ-24); tier-11 windows 111,283-267,864. The 10N absorb amount is the client 300,000 by user decision 2026-09-30 (\"Accept 300,000 (Recommended)\").",
+      "next": "Live: Backdraft count stays 0 when DoTs age out as planned. Reopen if a live or WCL 10N run logs Backdraft 79617.",
       "source_refs": [
         "client_442_59185_omnotron",
         "repo_proc_and_absorb_rules",
+        "user_decision_20260930_omnotron_barrier_absorb_10n",
         "wcl_omnotron_10n_20260927",
         "wcl_omnotron_10n_r2_20260927",
+        "wcl_omnotron_10n_r3_20260930",
         "wowhead_cata_classic"
+      ]
+    },
+    {
+      "key": "static_shock_centre_10n",
+      "modes": [
+        "10N"
+      ],
+      "status": "resolved",
+      "known": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): qaKLyFTxkvc9hVpM fight 11, Unstable Shield 01:35.768-01:45.782: the ranged Survival hunter Minimaz was hit alone four times (01:40.034, 01:40.310, 01:42.694, 01:45.033), each 0.5-0.9 s after his own Auto Shot or Cobra Shot on Electron, while the Protection paladin tank Bûggers and four melee next to Electron were not hit; the Frost mage Smf was hit alone at 01:38.505, 1.0 s after her Frostbolt. Melee-triggered bursts (01:38.171: tank plus four melee, 195 ms after the tank's Hammer of the Righteous) land 0.2-0.3 s after the hit. A construct-centred 6 yd blast would hit the tank each time, so the blast is centred on the attacker (Wowhead tooltip 'at a nearby enemy's location', client 79912 TARGET_DEST_TARGET_ENEMY, native cast at the attacker); the Wowhead text 'within 6 yards of the boss' is wrong. Pet and totem hits (Zeke, Searing Totem) never triggered one. Open for 10H/25N/25H: no same-mode sample.",
+      "next": "Live: Static Shock 79912 count 0 (bots never damage a shielded Electron); heroic/25: a same-mode kill.",
+      "source_refs": [
+        "wcl_omnotron_10n_r3_20260930",
+        "wowhead_cata_classic",
+        "client_442_59185_omnotron",
+        "repo_cpp"
+      ]
+    },
+    {
+      "key": "arcanotron_interrupt_rotation_10n",
+      "modes": [
+        "10N"
+      ],
+      "status": "resolved",
+      "known": "WCL tier-11 kills interrupt 8-13 of 13-14 Arcane Annihilator casts per full Arcanotron activation (qaKLyFTxkvc9hVpM-11 13/14, Z36FdRPNbAgjrqGX-13 13/14, w2W84MtybL1VKCvQ-12 13/13); casts repeat every 6-7 s (native Repeat 6-7 s). Round 3 bot change: the interrupt ledger records each bot's submitted interrupt and a turn passes over a member still on its client cooldown.",
+      "next": "Live: Arcane Annihilator interrupted on >= 80% of casts and no two interrupts on one cast.",
+      "source_refs": [
+        "wcl_omnotron_10n_r3_20260930",
+        "repo_cpp"
+      ]
+    },
+    {
+      "key": "poison_bomb_kill_priority_10n",
+      "modes": [
+        "10N"
+      ],
+      "status": "resolved",
+      "known": "A killed Poison Bomb despawns without 80092 (poison_bomb_death); only melee contact with its fixate target explodes. Round 3 bot change: ranged damage dealers kill the living bomb nearest its fixate target wherever it stands (the old rule spared a bomb with a player in its 6 yd radius, which let it walk through the raid to its target).",
+      "next": "Live: Poison Bomb 80092 damage rows and Poison Puddle 42920 summons per bomb fixate near 0.",
+      "source_refs": [
+        "wcl_omnotron_10n_r3_20260930",
+        "wcl_omnotron_10n_20260927",
+        "repo_cpp"
       ]
     }
   ],
@@ -1608,35 +1703,32 @@
     {
       "key": "barrier_absorb_amount",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
       ],
       "status": "fidelity_blocked",
-      "evidence_gap": "10N: no Barrier has broken in any WCL 10N kill read so far. MxFq7TRbvnjGY1hJ fight 24 absorbed 267,864 over the full 10 s without a break, which is below both the client 300,000 and Wowhead 900,000. Round 2 (source wcl_omnotron_10n_r2_20260927) found no Backdraft 79617 row in 11 accessible 10-player Normal kills (the three references plus y7tCwfvgZARKd3Vk-4, dXvWgTk3NqypcrbF-29, zPVW3nfwMhgjGAFr-22, PGAKmyYbanW3wN9z-24, 1RLzJNZm9YdBFgTW-6, aXr4Y2hwGczmQMPq-18, BLPabMRV42zjdAGn-2 and LpQ3vHdCj7XqJMAf-4); raids stop damage on Magmatron during Barrier, so a break is rare. Needs a 10N Barrier that breaks (Backdraft 79617 with the absorbed total) or absorbs more than 300,000 unbroken. Heroic: client 150,000 vs Wowhead 450,000, no sample."
+      "evidence_gap": "10N resolved 2026-09-30 by user decision (source user_decision_20260930_omnotron_barrier_absorb_10n): \"Accept 300,000 (Recommended)\". Client row 300,000 (4.4.2.59185; native already uses it); WCL lower bound 267,864 (MxFq7TRbvnjGY1hJ-24). Evidence behind the decision: no Barrier has broken in any WCL 10N kill read (21 kills over rounds 2-3). Round 3 (source wcl_omnotron_10n_r3_20260930) read the ten tier-11 references: five Barrier windows absorbed 159,220 (mfnZAdFTLkjMBC3z-6, full 10 s), 172,072 (Z36FdRPNbAgjrqGX-13, 4.0 s, kill), 111,283 (VvXJBz2A93FRY4xm-15), 232,754 (MRytXdWJxkBpfPK1-26) and 267,864 (MxFq7TRbvnjGY1hJ-24), none broke and no Backdraft 79617 row exists; the other five kills had no Barrier window (Magmatron's shield fell outside the kill). The WCL lower bound is consistent with the client 300,000 and the Wowhead 900,000 alike; raids stop damage on Magmatron during Barrier, so a break is rare and the bots never damage a shielded construct (acceptance: Backdraft 0). Open for 10H, 25N and 25H: heroic client 150,000 vs Wowhead 450,000, no same-mode sample."
     },
     {
       "key": "static_shock_center_attacker_or_construct",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
       ],
       "status": "fidelity_blocked",
-      "evidence_gap": "10N: Y8ajQ7dbmKMG1RZy fight 24 has one Static Shock 79912 hit (00:53.530, U 29,930) on the tank Schanilá, whose melee and Seal of Truth hit Electron at 00:53.435; the tank stood within 6 yd of Electron, so both centres explain it. Round 2 (source wcl_omnotron_10n_r2_20260927): zPVW3nfwMhgjGAFr fight 22 (Unstable Shield 01:37.015) has Static Shock bursts from 01:37.435 to 01:39.323 that each hit 3-6 players at once, among them the Fire Mage Corpsegore, the Elemental Shaman Yapyzzer and the Blood DK tank Lubez in the same burst (01:37.802), plus lone hits on the Guardian Druid tank at 01:40.245 and 01:43.123. Overlapping attacks on Electron do not share the burst timestamps, so no burst can be tied to one attacker, and the Replay gave no calibrated distance. Still needs a burst tied to one ranged attacker with the players' distance to Electron."
+      "evidence_gap": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): qaKLyFTxkvc9hVpM fight 11, Unstable Shield 01:35.768-01:45.782: the ranged Survival hunter Minimaz was hit alone four times (01:40.034, 01:40.310, 01:42.694, 01:45.033), each 0.5-0.9 s after his own Auto Shot or Cobra Shot on Electron, while the Protection paladin tank Bûggers and four melee next to Electron were not hit; the Frost mage Smf was hit alone at 01:38.505, 1.0 s after her Frostbolt. Melee-triggered bursts (01:38.171: tank plus four melee, 195 ms after the tank's Hammer of the Righteous) land 0.2-0.3 s after the hit. A construct-centred 6 yd blast would hit the tank each time, so the blast is centred on the attacker (Wowhead tooltip 'at a nearby enemy's location', client 79912 TARGET_DEST_TARGET_ENEMY, native cast at the attacker); the Wowhead text 'within 6 yards of the boss' is wrong. Pet and totem hits (Zeke, Searing Totem) never triggered one. Open for 10H/25N/25H: no same-mode sample."
     },
     {
       "key": "power_conversion_no_damage_proc",
       "modes": [
-        "10N",
         "10H",
         "25N",
         "25H"
       ],
       "status": "fidelity_blocked",
-      "evidence_gap": "Whether 4.4.2 Power Conversion 79729 grants Converted Power 79735 for a landed interrupt or taunt that deals no damage. Native: yes (spell_proc SpellTypeMask 0), with a 500 ms proc cooldown (sql/updates/world/4.3.4/2025_06_20_01_world.sql sets spell_proc 79729 Cooldown 500). Round 2 (source wcl_omnotron_10n_r2_20260927): PGAKmyYbanW3wN9z fight 24, Power Conversion 00:53.079-01:03.086: Converted Power stack 4 at 00:57.149, Wind Shear interrupts Arcane Annihilator at 00:57.288, stack 3 at 00:57.531, stack 4 again at 00:57.864 together with a melee hit. No gain followed the interrupt within 0.5 s, but the interrupt landed 139 ms after the previous gain, inside a 500 ms proc cooldown if retail has one, so the sample cannot decide. No taunt on Arcanotron was found. Needs an interrupt (or taunt) under Power Conversion at least 500 ms after the previous Converted Power gain."
+      "evidence_gap": "Resolved for 10N (source wcl_omnotron_10n_r3_20260930): a landed interrupt without damage gives no Converted Power 79735. Clean samples: qaKLyFTxkvc9hVpM-11 Wind Shear 00:55.765 (1,307 ms after the previous gain, next gain 00:58.318), Z36FdRPNbAgjrqGX-13 Rebuke 01:38.392 (1.27 s into Power Conversion, first gain 01:41.415), VvXJBz2A93FRY4xm-15 Mind Freeze 00:54.072 (1.03 s into Power Conversion, no direct hit within 600 ms, first gain 00:55.936). The Mind Freeze gains in TaAF1ncP89KgpbLx-12 (02:25.695) and mfnZAdFTLkjMBC3z-6 (01:44.686) share the millisecond with the Death Knight's own melee hit; the w2W84MtybL1VKCvQ-12 gain after Wind Shear coincides with a Smite hit. Native (spell_proc 79729 SpellTypeMask 0) gave one stack per interrupt; sql/custom/world/2026_09_30_30_omnotron_defense_system_power_conversion_proc.sql (promoted 2026-09-30) sets SpellTypeMask 1 for 79729. No taunt landed on Arcanotron under Power Conversion; a taunt is a no-damage spell hit on the same proc path, so the staged row covers it too (live check: Converted Power stacks per taunt = 0). Open for 10H/25N/25H (91543-91545 unchanged): no same-mode sample."
     },
     {
       "key": "heroic_nefarius_selection_order_and_cadence",
@@ -1659,14 +1751,15 @@
     }
   ],
   "open_questions": [
-    "power_conversion_no_damage_proc: does 4.4.2 Power Conversion (79729) grant Converted Power for a landed interrupt or taunt that deals no damage? Native: yes (SpellTypeMask 0, 500 ms proc cooldown); the one WCL interrupt sample (PGAKmyYbanW3wN9z-24) fell inside the proc cooldown. Unstable Shield and Poison Soaked Shell natively do not proc on no-damage hits (SpellTypeMask 1).",
-    "barrier_periodic_break: can remaining DoTs break Magmatron's Barrier on 10N (client absorb 300,000 vs Wowhead 900,000)? No Backdraft in 11 WCL 10N kills."
+    "barrier_absorb_amount (10H/25N/25H): heroic client 150,000 vs Wowhead 450,000, and no same-mode Barrier sample. 10N is closed: client 300,000 by user decision 2026-09-30 (\"Accept 300,000 (Recommended)\"); no Backdraft in 21 WCL 10N kills; largest unbroken absorb 267,864.",
+    "power_conversion_no_damage_proc (10H/25N/25H): does a non-damaging interrupt or taunt proc Converted Power in heroic or 25-player? 10N: no (round 3).",
+    "static_shock_center_attacker_or_construct (10H/25N/25H): attacker centre as on 10N? Needs a same-mode kill."
   ],
   "fidelity_state_by_mode": {
-    "10N": "fidelity_blocked",
+    "10N": "accepted",
     "10H": "fidelity_blocked",
     "25N": "fidelity_blocked",
     "25H": "fidelity_blocked"
   },
-  "fidelity_state_by_mode_note": "No mode is accepted. 10N keeps three unresolved material claims (barrier_absorb_amount, static_shock_center_attacker_or_construct, power_conversion_no_damage_proc; see each unresolved entry's modes); the other modes also keep heroic or non-10N claims. Construct melee, shared health, timers, Electrical Discharge and Poison Bomb death are resolved for 10N from three matched WCL kills."
+  "fidelity_state_by_mode_note": "10N accepted 2026-09-30: no unresolved claim covers 10N. The last one, barrier_absorb_amount, was closed for 10N by the user decision \"Accept 300,000 (Recommended)\" (Barrier 79582 absorbs 300,000 on 10N: the 4.4.2 client row, which native already uses; WCL lower bound 267,864 unbroken over 21 kills, consistent with 300,000). Static Shock centre and Power Conversion were resolved for 10N by wcl_omnotron_10n_r3_20260930 and stay open only for 10H/25N/25H. 10H, 25N and 25H stay blocked: they keep heroic or non-10N claims and have no same-mode sample. Construct melee, shared health, timers, Electrical Discharge and Poison Bomb death are resolved for 10N."
 }
