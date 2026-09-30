@@ -6,6 +6,7 @@
 #include <string>
 
 class BotWorldPopulationMgr;
+class Player;
 
 // Seeded raid lockouts on cohorts (docs/bot_raids/full_raid_parallel_shards.md,
 // package A). A friend of BotWorldPopulationMgr, like
@@ -28,8 +29,17 @@ struct CohortContext
     // of the planned leader, whose seed group then binds to it.
     static std::string ArmAdmission(BotWorldPopulationMgr& mgr, uint32 routeMapId, uint32 leaderGuid);
     // Verify: after every member entered and before the batch is sealed
-    // (before any bot acts), instance id, group bind and live boss states.
+    // (before any bot acts), instance id, group bind, each member's native
+    // instance validity (re-evaluated there, BotMemberInstanceState.h) and
+    // live boss states.
     static std::string VerifyAdmission(BotWorldPopulationMgr& mgr);
+    // Active attempt, per member (the active cohort observation in
+    // EnsureValidationCohortGroup): nullptr, or the typed attempt failure
+    // when the cohort's seeded admission is missing for this attempt or the
+    // member reads m_InstanceValid == false in the original instance.
+    // Always nullptr for a cohort without a seeded lockout.
+    static char const* ActiveMemberFailure(BotWorldPopulationMgr const& mgr, Player const* bot,
+        bool inOriginalInstance);
     // Admission rollback: releases the seed group's bind (in memory, and a
     // synchronous delete of its group_instance row) before the bots leave,
     // then disarms the leader.

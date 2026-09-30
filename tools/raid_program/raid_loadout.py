@@ -43,6 +43,14 @@ HOTFIX_CLASS_COLUMNS = (1, 2)
 HOTFIX_CONTAINER_SLOTS_COLUMN = 28
 HOTFIX_INVENTORY_TYPE_COLUMN = 14
 _ITEM_TABLE_CACHE: dict[Path, dict[str, Any]] = {}
+# Stored for every gear item so the core sets its durability to the item's
+# live native maximum: Item::LoadFromDB clamps a stored value above
+# ItemTemplate::MaxDurability (FillMaxDurability over the item's hotfixed DB2
+# entry, at most 195) down to it, and persists the result. A computed value
+# would miss hotfixes (item 55064, hotfixed to epic: 75, not 65); the old
+# absolute 100 left a raid chest (160) or two-hander (120) partly worn.
+# 65535 is the largest `item_instance`.`durability` (smallint unsigned).
+DURABILITY_CLAMPED_TO_NATIVE_MAXIMUM = 65535
 
 
 class LoadoutError(ValueError):
@@ -242,19 +250,24 @@ def expected_inventory(bot: dict[str, Any], default_consumables: list[dict[str, 
     rows = [{"kind": "bag", "item_guid": bag_guid, "item_id": int(bag["item_id"]), "bag": 0,
              "slot": int(bag["bag_slot"]), "count": 1, "durability": 0, "enchantments": ""}]
     bag_index = {int(row["offset"]): int(row["bag_slot_index"]) for row in loadout["bag_contents"]}
+
+    def durability(item: dict[str, Any]) -> int:
+        # A profile's explicit value stands; otherwise the core's native maximum.
+        return int(item["durability"]) if "durability" in item else DURABILITY_CLAMPED_TO_NATIVE_MAXIMUM
+
     for physical in loadout["physical_items"]:
         offset = int(physical["offset"])
         if offset in active_slots:
             slot = active_slots[offset]
             item = equipped_by_slot[slot]
             rows.append({"kind": "equipped", "item_guid": base + offset, "item_id": int(item["item_id"]),
-                         "bag": 0, "slot": slot, "count": 1, "durability": int(item.get("durability", 100)),
+                         "bag": 0, "slot": slot, "count": 1, "durability": durability(item),
                          "enchantments": runtime_safe_enchantments(item, gem_mapping, dbc_dir)})
         else:
             item = physical["item"]
             rows.append({"kind": "bagged", "item_guid": base + offset, "item_id": int(item["item_id"]),
                          "bag": bag_guid, "slot": bag_index[offset], "count": 1,
-                         "durability": int(item.get("durability", 100)),
+                         "durability": durability(item),
                          "enchantments": runtime_safe_enchantments(item, gem_mapping, dbc_dir)})
     consumables = bot.get("consumables", default_consumables)
     if len(consumables) > MAX_CONSUMABLES:

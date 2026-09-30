@@ -72,6 +72,9 @@ struct Input
     std::map<std::uint64_t, RosterMember> Roster;
     BotValidationRouteNative::RuntimeScope Scope;
     std::uint64_t NowMs = 0;
+    // input.Bot's native life edges (deaths + resurrections) in the cohort
+    // lifecycle (BotNativeLifeEvents): the transport logic's life generation.
+    std::uint64_t LifeGeneration = 0;
     // Cohort observation tick (encounter snapshot revision).
     std::uint64_t Tick = 0;
     bool CompletionAlreadyRecorded = false;

@@ -1,5 +1,6 @@
 #include "Bots/BotRaidLockoutCohortContext.h"
 
+#include "Bots/BotMemberInstanceState.h"
 #include "Bots/BotRaidLockoutSeeder.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Group.h"
@@ -205,6 +206,18 @@ std::string CohortContext::VerifyAdmission(BotWorldPopulationMgr& mgr)
         InstanceGroupBind* bind = group->GetBoundInstance(Difficulty(record.Difficulty), record.MapId);
         if (!bind || !bind->perm || !bind->save || bind->save->GetInstanceId() != record.InstanceId)
             return fail("seeded_lockout_group_bind_mismatch");
+        // The core evaluated m_InstanceValid at LoadFromDB and Group::AddMember,
+        // both against the stray unbound instance LoadFromDB created for the
+        // provisioned map (BotMemberInstanceState.h), never in this one. Now
+        // the member stands in its seeded instance through the permanent group
+        // bind: the native evaluation Group::AddMember makes ("if the same
+        // group invites the player back, cancel the homebind timer").
+        bot->m_InstanceValid = bot->CheckInstanceValidity(false);
+        std::string const invalid = BotMemberInstanceState::AdmissionFailure(bot->m_InstanceValid,
+            state.Guid.GetCounter());
+        if (!invalid.empty())
+            return fail(invalid);
+        bot->m_HomebindTimer = 0;
     }
 
     Readback const readback = ReadbackLockout(record);
@@ -224,6 +237,21 @@ std::string CohortContext::VerifyAdmission(BotWorldPopulationMgr& mgr)
         cohort.Id.c_str(), static_cast<unsigned long long>(cohort.AttemptId), record.InstanceId,
         record.BoundGroupGuid, mgr.Party().Bots.size());
     return "";
+}
+
+char const* CohortContext::ActiveMemberFailure(BotWorldPopulationMgr const& mgr, Player const* bot,
+    bool inOriginalInstance)
+{
+    BotWorldPopulationMgr::CohortRuntime const& cohort = mgr.Cohort();
+    BotWorldPopulationMgr::SeededLockoutRuntime const& lockout = cohort.SeededLockout;
+    BotMemberInstanceState::ActiveFacts facts;
+    facts.LockoutAttached = lockout.Attached;
+    facts.LockoutAdmitted = lockout.Admitted;
+    facts.LockoutAttemptId = lockout.AttemptId;
+    facts.CohortAttemptId = cohort.AttemptId;
+    facts.InOriginalInstance = bot && inOriginalInstance;
+    facts.InstanceValid = bot && bot->m_InstanceValid;
+    return BotMemberInstanceState::ActiveFailureReason(BotMemberInstanceState::EvaluateActive(facts));
 }
 
 void CohortContext::DisarmAdmission(BotWorldPopulationMgr& mgr)

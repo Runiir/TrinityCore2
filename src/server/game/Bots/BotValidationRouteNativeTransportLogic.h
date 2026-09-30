@@ -221,6 +221,10 @@ constexpr std::uint64_t BoardWindowMarginMs = 300;
 // consecutive observations spanning at least this long.
 constexpr std::uint32_t StrandedConfirmObservations = 3;
 constexpr std::uint64_t StrandedConfirmMs = 400;
+// A member held up by liquid waits there, without moving, at most this long
+// (observed time since its first swimming observation) before the node fails
+// typed: long enough for a controlled effect or a surfacing to settle.
+constexpr std::uint64_t SwimmingHoldMaxMs = 10000;
 
 struct TransportMemberObservation
 {
@@ -250,6 +254,13 @@ struct TransportMemberObservation
     // Some floor (static or any model) within ResnapFloorBandYards of the
     // feet; sampled only when neither floor above is underfoot.
     bool FloorNear = false;
+    // Sampled only when neither floor is underfoot: the member's native
+    // liquid status is in or under liquid (Unit::IsInWater), so the liquid
+    // holds it up.
+    bool InLiquid = false;
+    // The member's native life edges this cohort lifecycle (deaths plus
+    // resurrections, BotNativeLifeEvents): a change ends a swimming hold.
+    std::uint64_t LifeGeneration = 0;
     // Final approach. Straight walk (and native fall) time from here.
     float DistanceToApproachStart = 0.0f;
     std::uint64_t ApproachTravelMs = 0;
@@ -472,8 +483,49 @@ inline bool DecideDropInFlight(TransportContract const& contract,
     }
 }
 
-// Settled with no floor within tolerance and never on the platform. A probe
-// miss next to a real floor is repaired by an ordinary native-path move (its
+// No floor underfoot and held up by liquid (not falling): the member swims,
+// it is neither airborne nor stranded (batch 3, Nefarian: a paladin revived
+// at its corpse in the lava pit under the raised platform, (-112.6, -217.1,
+// 2.77), failed the cohort with transport_member_airborne_without_floor).
+// Ordinary point movement is never used in liquid: it has no swimming
+// lifecycle (MOVEMENTFLAG_SWIMMING, swim speed, the shore exit) and the
+// native liquid stages only board a transport's own surface. So the member
+// holds where it is, a route motion of ours is stopped, and after
+// SwimmingHoldMaxMs of observed time the node fails typed. The bound counts
+// observed time, never decisions, so a hold that loses arbitration spends
+// nothing; a floor underfoot, leaving the liquid, boarding, or a death or
+// revival (a new life generation) ends it.
+inline TransportDecision DecideSwimming(TransportContract const& contract,
+    TransportMemberObservation const& observation, TransportMemberState& state)
+{
+    // The member's own ledge drop came down in the liquid, off the platform
+    // it was proven to land on: its landing rule decides.
+    if (state.Approach == ApproachPhase::Landed && contract.Approach.LandOnTransport)
+        return { TransportStep::Fail, "transport_drop_landed_off_platform" };
+    // A surface walk that ended in the liquid is over.
+    if (state.Approach == ApproachPhase::Walking)
+        state.Approach = ApproachPhase::Idle;
+    // Dead members are never observed here (the death flow owns them), so a
+    // death or revival since the hold began is read from the life edges.
+    if (!state.SwimmingSinceMs || state.SwimmingLifeGeneration != observation.LifeGeneration)
+    {
+        state.SwimmingSinceMs = std::max<std::uint64_t>(observation.NowMs, 1);
+        state.SwimmingLifeGeneration = observation.LifeGeneration;
+    }
+    if (observation.NowMs >= state.SwimmingSinceMs + SwimmingHoldMaxMs)
+        return { TransportStep::Fail, "transport_member_swimming_without_exit" };
+    // A stun, root or controlled effect runs its course.
+    if (observation.MemberNotFree)
+        return { TransportStep::Hold, "transport_member_swimming_not_free" };
+    // A route walk of ours that reached the liquid ends here.
+    if (observation.Moving)
+        return { TransportStep::Stop, "transport_member_swimming_stop" };
+    return { TransportStep::Hold, "transport_member_swimming_waiting" };
+}
+
+// Settled with no floor within tolerance, never on the platform and not in
+// liquid (a swimmer is DecideSwimming's). A probe miss next to a real floor
+// is repaired by an ordinary native-path move (its
 // path starts on the nearest navmesh polygon and the spline follows it), a
 // bounded number of times. With no floor anywhere near the feet the member
 // stands on nothing a client could stand on: fail typed, never float it on.
@@ -593,7 +645,10 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
     TransportMemberObservation const& observation, TransportMemberState& state)
 {
     if (!observation.Alive)
+    {
+        state.SwimmingSinceMs = 0;  // a death ends a swimming hold
         return { TransportStep::Hold, "transport_member_dead" };
+    }
     if (observation.OnThisTransport)
         state.Boarded = true;
     if (observation.TransportAmbiguous)
@@ -610,6 +665,7 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         state.Approach = ApproachPhase::Idle;
         state.FloorlessObservations = 0;
         state.FloorlessSinceMs = 0;
+        state.SwimmingSinceMs = 0;
         if (!contract.HasExit())
             return { TransportStep::Done, "transport_boarded" };
         if (!observation.AtExit)
@@ -657,6 +713,15 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
     else if (onPlatformFloor)
         state.PlatformFloorSeen = true;
     bool const settled = !observation.Moving && !observation.Falling;
+    // Held up by liquid: never a stranding confirmation, a re-snap or an
+    // ordinary walk; a fall into it belongs to gravity until it settles.
+    if (floorless && observation.InLiquid && !observation.Falling)
+    {
+        state.FloorlessObservations = 0;
+        state.FloorlessSinceMs = 0;
+        return DecideSwimming(contract, observation, state);
+    }
+    state.SwimmingSinceMs = 0;
     if (floorless && settled && state.PlatformFloorSeen)
     {
         if (!state.FloorlessObservations)

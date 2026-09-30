@@ -214,7 +214,7 @@ struct TransportMemberState
     // Last floor stood on was this platform's; stationary floorless samples.
     bool PlatformFloorSeen = false;
     std::uint32_t FloorlessObservations = 0;
-    std::uint64_t FloorlessSinceMs = 0;
+    std::uint64_t FloorlessSinceMs = 0, SwimmingSinceMs = 0, SwimmingLifeGeneration = 0; // hold starts
     std::string LastReason;
     ApproachPhase Approach = ApproachPhase::Idle;
     std::uint32_t ResnapMoves = 0; // re-snaps without a verified floor

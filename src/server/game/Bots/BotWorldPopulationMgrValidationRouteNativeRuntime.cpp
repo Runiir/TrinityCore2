@@ -463,6 +463,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks,
     observation.FallSplineActive = BotValidationRouteBoardingAction::NativeFallSplineActive(bot);
     observation.LandingPending = BotValidationRouteBoardingAction::NativeFallLandingPending(bot);
     observation.NowMs = input.NowMs;
+    observation.LifeGeneration = input.LifeGeneration;
     observation.StaticFloorUnderfoot = BotValidationRouteBoardingAction::StaticFloorUnderfoot(
         bot, contract.FloorToleranceYards);
     if (transport.Object)
@@ -495,7 +496,11 @@ void RunTransport(Input const& input, Callbacks const& callbacks,
         observation.TravelToBoardMs = uint64(walk / runSpeed * 1000.0f);
     }
     if (!observation.StaticFloorUnderfoot && !observation.TransportFloorUnderfoot)
+    {
         observation.FloorNear = BotTransportSurfaceMovement::FloorNear(bot, ResnapFloorBandYards);
+        // Held up by liquid: the core's own liquid status at the feet.
+        observation.InLiquid = bot->IsInWater();
+    }
     observation.HealthPct = bot->GetMaxHealth()
         ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
     if (approach.Mode == ApproachMode::SurfaceWalk)

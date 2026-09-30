@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotRaidLockoutCohortContext.h"
+#include "Bots/BotMemberInstanceState.h"
 #include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 #include "Bots/BotMeleeResolutionEventJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
@@ -268,6 +269,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
         emitted = true;
         json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
              << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
+             << ",\"instance_state\":" << BotMemberInstanceState::MemberObjectJson(bot)
              << ",\"snapshot\":" << BuildBotDecisionSnapshotJson(state, bot)
              << ",\"diagnosis\":" << BuildBotDiagnosisObjectJson(state, bot) << "}";
 

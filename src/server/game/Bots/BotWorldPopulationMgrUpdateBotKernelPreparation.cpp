@@ -13,6 +13,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeObserver.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotNativeLifeEvents.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
@@ -266,6 +267,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         uint64(Cohort().Raid.WipeGeneration),
                         Party().ValidationRouteGeneration };
                     nativeInput.NowMs = context.DecisionNowMs;
+                    BotNativeLifeEvents::Counts const life = BotNativeLifeEvents::Get(
+                        context.Bot->GetGUID().GetCounter(),
+                        BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId));
+                    nativeInput.LifeGeneration = life.Deaths + life.Resurrections;
                     nativeInput.Tick = blackboard.Revision;
                     nativeInput.BossResetGeneration = Cohort().Raid.BossResetGeneration;
                     nativeInput.CompositionRecovery = Cohort().Raid.RaidInstance

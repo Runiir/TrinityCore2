@@ -1,5 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
-
+#include "Bots/BotMemberInstanceState.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotNativeLifeEvents.h"
 #include "Player.h"
@@ -317,7 +317,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
                 json << "],\"reforge_id\":" << item.ReforgeId << '}';
             }
             json << "]},\"active\":" << (slot.Active ? "true" : "false")
-                 << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << "}";
+                 << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << BotMemberInstanceState::RosterFieldsJson(guid) << "}";
         }
         json << "]}";
         return json.str();
@@ -990,7 +990,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
         }
         json << "]}"
              << ",\"active\":" << (slot.Active ? "true" : "false")
-             << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << '}';
+             << ",\"lease_owned\":" << (slot.LeaseOwned ? "true" : "false") << BotMemberInstanceState::RosterFieldsJson(guid) << '}';
     }
     json << "]";
     AppendRaidPrepullConsumablesJson(json);

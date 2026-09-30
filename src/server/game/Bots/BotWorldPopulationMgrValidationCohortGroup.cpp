@@ -2,6 +2,7 @@
 #include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotHunterPetIdentityContract.h"
+#include "Bots/BotRaidLockoutCohortContext.h"
 #include "Bots/BotValidationRaidAdmissionReadiness.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 #include "Bots/BotMgr.h"
@@ -208,6 +209,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             if (inOriginalInstance && (!bot->GetMap()
                 || uint8(bot->GetMap()->GetDifficulty()) != admission.ExpectedDifficulty))
                 invalidate(state, bot, "validation_active_map_difficulty_drift");
+            // Seeded lockout: an invalid instance starts the homebind pin loop.
+            if (char const* seededFailure = BotRaidLockout::CohortContext::ActiveMemberFailure(
+                    *this, bot, inOriginalInstance))
+                invalidate(state, bot, seededFailure);
             if (!inOriginalInstance && (!state.NativeReleaseRequested
                 || !state.NativeReleaseLandingObserved
                 || !HasNativeRaidCorpseAuthority(state, bot)))
