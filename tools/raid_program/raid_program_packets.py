@@ -128,6 +128,13 @@ def boss_task(unit: dict, last: dict | None) -> tuple[str, str]:
                                            'request), write the raid target, then replace any stub strategy.')
     if 'raid_target' in names:
         return 'raid-tuning-playbook', 'Author the raid target from matched WCL kills, then continue the strategy.'
+    blocking = [row for row in (last or {}).get('sanity') or [] if row.get('severity') == 'blocking']
+    if blocking:
+        return 'raid-performance-loop', ('Investigate before tuning: the last round\'s run-sanity findings make its '
+                                         'measurement untrustworthy (' + '; '.join(
+                                             f"{row['check']}: {row.get('detail') or ''}"[:200] for row in blocking[:4])
+                                         + '). Find and fix the cause (stuck or idle bots, enrage, death signals, '
+                                           'fight length) before any DPS tuning.')
     if last and last.get('outcome') == 'clear' and (last.get('verdict') or {}).get('status') not in (None, 'pass'):
         return 'raid-tuning-playbook', ('Take the largest actor gap of the last verdict (scoreboard show) and make one '
                                         'mechanism change per actor, bundling below 0.85 of target.')
@@ -254,9 +261,15 @@ def worker_packet(root: Path, program: dict, discovery: dict, packet_id: str) ->
         'rules': RULES,
         'handoff': {'schema': HANDOFF_SCHEMA, 'save_as': f'{handoff_dir}/{packet_file(packet_id)}.handoff.json',
                     'required_fields': {name: kind.__name__ for name, kind in HANDOFF_FIELDS.items()},
+                    'optional_fields': {'needs_user_decision': 'list'},
                     'tests_item': {'command': 'str', 'result': 'str'},
                     'patch_requests_item': {'to': '|'.join(PATCH_TARGETS), 'file': 'str', 'patch': 'exact text'},
+                    'needs_user_decision_item': {'id': 'unique str', 'question': 'str', 'options': ['str'],
+                                                 'recommendation': 'str', 'context': 'str'},
+                    'needs_user_decision': ('Only for a choice that needs the user (tactics, roster, fidelity versus '
+                                            'progress); the coordinator asks the user and the build waits for the answer.'),
                     'resolved_inputs': 'names of this packet\'s inputs the change resolves',
+                    'self_path': 'save_as is bookkeeping; listing it in changed_files or new_files is ignored',
                     'return': 'End your final message with this JSON object only.'},
     }
 
@@ -270,7 +283,13 @@ def handoff_directory(program: dict) -> str:
     return f"artifacts/cata_raid_program/raid_programs/{slug}/round{program['round']:02d}"
 
 
-def validate_handoff(handoff: dict, packet: dict, round_number: int) -> None:
+def handoff_files(handoff: dict, save_as: str | None = None) -> list[str]:
+    """Normalized changed and new files of a handoff, without the handoff's own save_as file (bookkeeping)."""
+    files = [normalize_path(path) for path in handoff['changed_files'] + handoff['new_files']]
+    return sorted({path for path in files if path != save_as})
+
+
+def validate_handoff(handoff: dict, packet: dict, round_number: int, save_as: str | None = None) -> None:
     if not isinstance(handoff, dict):
         raise GraphError('handoff must be a JSON object')
     problems = [name for name, kind in HANDOFF_FIELDS.items()
@@ -279,7 +298,7 @@ def validate_handoff(handoff: dict, packet: dict, round_number: int) -> None:
         raise GraphError('handoff fields missing or mistyped: ' + ', '.join(problems))
     if handoff['packet_id'] != packet['packet_id'] or handoff['round'] != round_number:
         raise GraphError('handoff names another packet or round')
-    files = [normalize_path(path) for path in handoff['changed_files'] + handoff['new_files']]
+    files = handoff_files(handoff, save_as)
     outside = [path for path in files if not matches(path, packet['owned_files'])]
     if outside:
         raise GraphError('handoff changed files outside its packet (send patch_requests instead): ' + ', '.join(outside))

@@ -5,14 +5,17 @@ Entry points (all through ``tools.raid_program.raid_workloop``):
     start "implement bwd 10n bots" [--preview]    select or create the raid program
     resume [--program|--boss]                     exact next coordinator action
     program status [--boss KEY]                   compact per-boss table
-    program plan|packet|handoff|reopen|fix|build|run-plan|run|ingest|assess|e2e
+    program plan|packet|handoff|decide|reopen|fix|refresh-data|review-diff|review|build
+    program run-plan|run-batches|run|ingest|assess|e2e
 
 A program holds one unit per boss shard (its seeded-lockout plan, cohort and
 owner skill) and one end-to-end unit (the full-raid cohort on the composed
 route). It references boss-level scenarios by key and never writes the
 boss-level graph. ``raid_workloop`` imports this module only for raid-level
-commands. Nothing here launches agents or servers; ``program build`` is the only
-compiling step and ``program ingest`` the only DVC-archiving step.
+commands. Nothing here launches agents; ``program build`` is the only compiling
+step, ``program run-batches`` the only step that starts shard_coordinator (and so a
+worldserver), ``program refresh-data`` the only DVC repro/push step, and
+``program ingest`` (also run by run-batches) the only evidence-archiving step.
 """
 from __future__ import annotations
 
@@ -20,20 +23,23 @@ import argparse
 import json
 from pathlib import Path
 
+from tools.raid_program import raid_program_batches as batches
 from tools.raid_program import raid_program_build as builds
+from tools.raid_program import raid_program_data as datas
 from tools.raid_program import raid_program_ingest as ingests
 from tools.raid_program import raid_program_packets as packets
+from tools.raid_program import raid_program_review as reviews
 from tools.raid_program import raid_program_rounds as rounds
 from tools.raid_program import raid_program_runs as runs
+from tools.raid_program import raid_program_sanity as sanity
 from tools.raid_program import raid_program_state as store
 from tools.raid_program.development_graph import GraphError
+from tools.raid_program.raid_program_next import (  # noqa: F401 - re-exported for callers of this module
+    COORDINATOR, NEW_RUN_DIR, WORKLOOP, current as _current, evidence_retry as _evidence_retry, next_step,
+    policy as _policy, round_label)
 from tools.raid_program.raid_program_request import raid_aliases, resolve_raid_request
 
-WORKLOOP = 'pixi run python -m tools.raid_program.raid_workloop'
-COORDINATOR = 'pixi run python -m tools.raid_program.shard_coordinator'
 RESUME_SCHEMA = 'raid_program_resume_v1'
-# experiments.archive_run_evidence archives (and deletes) only /tmp paths, so shard runs are written there.
-NEW_RUN_DIR = '/tmp/<new run directory>'
 FINISH_LINE = {
     'boss_unit': ('accepted in a round when its latest shard run is a native clear, its scoreboard verdict passes '
                   '(every non-healer actor at the raid target\'s WCL ratio, native clears, no boss-window deaths) on '
@@ -97,10 +103,6 @@ def _loaded(root: Path) -> tuple[dict, dict, str]:
     return state, program, store.state_sha256(data)
 
 
-def _current(program: dict) -> dict:
-    return program['rounds'][-1] if program['rounds'] and program['rounds'][-1]['round'] == program['round'] else {}
-
-
 def resume(root: Path) -> dict:
     state, program, sha = _loaded(root)
     discovery = rounds.discover(root, program)
@@ -126,6 +128,10 @@ def resume(root: Path) -> dict:
                                   'error': row['evidence'].get('error'), 'retry': _evidence_retry(program, row, root)}
                                  for row in runs._pending(program)],
         'changed_inputs_since_creation': changed,
+        'open_user_decisions': [{key: row.get(key) for key in ('id', 'question', 'options', 'recommendation', 'context',
+                                                               'packet_id')} for row in reviews.open_decisions(program)],
+        'review': _review_state(program),
+        'last_sanity': _last_sanity(program),
         'build_policy': _policy(root),
         'finish_line': FINISH_LINE, 'rules': RULES,
         'parent_objective_complete': program['stage'] == 'complete',
@@ -139,159 +145,28 @@ def resume(root: Path) -> dict:
     }
 
 
-def _evidence_retry(program: dict, row: dict, root: Path) -> str:
-    """--archive-pending while the evidence is archivable (root holds the run, or a completed archive), else --evidence-lost."""
-    if runs.evidence_gone(root, program['program_id'], row):
-        return f'{WORKLOOP} program e2e --evidence-lost <reason>'
-    return f'{WORKLOOP} program e2e --archive-pending'
+def _review_state(program: dict) -> dict | None:
+    holder = _current(program)
+    if program['stage'] not in ('review', 'build') and not holder.get('reviews'):
+        return None
+    latest = reviews.latest_review(holder) if holder else None
+    return {'reviews': len(holder.get('reviews') or []),
+            'latest': {key: latest.get(key) for key in ('verdict', 'reviewer', 'diff_sha256', 'recorded_utc')}
+            if latest else None}
+
+
+def _last_sanity(program: dict) -> dict | None:
+    assessed = next((row for row in reversed(program['rounds']) if row.get('assessment')), None)
+    if not assessed:
+        return None
+    blocked, warned = sanity.assessment_lines(assessed['assessment'])
+    return {'round': assessed['round'], 'investigate_before_tuning': blocked, 'warnings': warned}
 
 
 def _handoff_state(handoff: dict | None) -> str:
     if not handoff:
         return 'pending'
     return 'abandoned' if handoff.get('abandoned') else 'external' if handoff.get('external') else 'recorded'
-
-
-def _policy(root: Path) -> dict:
-    try:
-        path, policy, _ = builds.build_policy(root)
-    except (OSError, ValueError, KeyError, RuntimeError) as error:
-        return {'error': str(error)[:200]}
-    return {'path': path.as_posix(), 'policy_id': policy.get('policy_id'),
-            'maximum_compiler_jobs': policy['parallelism']['maximum_compiler_jobs']}
-
-
-def round_label(program: dict) -> str:
-    current = _current(program)
-    if current.get('label'):
-        return current['label']
-    commit = ((current.get('build') or {}).get('source_commit') or 'build')[:10]
-    return f"{program['program_id'].replace(':', '_').lower()}-r{program['round']:02d}-{commit}"
-
-
-def next_step(root: Path, program: dict, discovery: dict, sha: str) -> tuple[str, list[str]]:
-    stage, number, expect = program['stage'], program['round'], f'--expect {sha}'
-    current = _current(program)
-    if stage == 'plan':
-        open_units = [k for k, u in program['units'].items() if u['status'] != 'accepted']
-        raid = [f"{item['input']} ({item['owner_skill']})" for item in discovery['raid_inputs']]
-        return (f'Round {number} plan: freeze one work packet per open boss unit ({", ".join(open_units) or "none"}), '
-                'the shards packet when shard or e2e inputs are missing, and the research packet for raid-level '
-                'research inputs (the script-readiness audit waits until every boss unit is accepted)'
-                + (f"; raid-level inputs open: {', '.join(raid)}" if raid else '')
-                + '. Then spawn one implementation agent per packet (no model override), each given its packet JSON; '
-                  'agents edit only owned files and return the handoff JSON.',
-                [f'{WORKLOOP} program plan {expect}',
-                 f'{WORKLOOP} program packet --id <packet_id> --output /tmp/<packet_id>.json'])
-    if stage == 'implement':
-        pending = [key for key, row in current['packets'].items() if not row['handoff']]
-        return (f'Round {number} implement: {len(pending)} packets await handoffs ({", ".join(pending)}). Give each '
-                'agent its packet; save each final handoff JSON at the packet\'s handoff.save_as path and record it '
-                '(or --abandon REASON, or --external REASON naming the commits of work done outside the program). '
-                'Route patch requests: shard files to the shards packet, research files to the research packet (or '
-                'apply them yourself when there is none), coordinator files yourself. Review class_native and '
-                'shared_runtime changes in a separate session per the playbook risk tier.',
-                [f'{WORKLOOP} program packet --id {key} --output /tmp/{packets.packet_file(key)}.json' for key in pending]
-                + [f'{WORKLOOP} program handoff --id <packet_id> --file <handoff.json> {expect}'])
-    if stage == 'build':
-        policy = _policy(root)
-        return (f'Round {number} build: confirm every agent has stopped (an edit during the build aborts it). Apply '
-                'the remaining patch requests; if compositions, scenario rows, profiles or prerequisites changed, '
-                'reproduce their DVC stages and rebind the runtime asset closure (raid-shard-architecture); run the '
-                'packets\' focused tests and report earlier failures; commit everything including the program state. '
-                'The dry run shows the ownership check of every file changed since the plan commit. Then build that '
-                f"commit once through queued_build with {policy.get('path')} ({policy.get('maximum_compiler_jobs')} "
-                'compiler jobs from the policy). Never build while a worldserver runs. Commit the recorded build. '
-                'An interrupted build is adopted with --finish; a packet that must change again is reopened; a '
-                'coordinator repair is recorded with program fix.',
-                [f'{WORKLOOP} program build --dry-run', f'{WORKLOOP} program build {expect}',
-                 f'{WORKLOOP} program build --finish [--queue-receipt <ticket.json>] {expect}',
-                 f'{WORKLOOP} program reopen --id <packet_id> --reason <text> {expect}',
-                 f'{WORKLOOP} program fix --reason <text> {expect}'])
-    if stage == 'run':
-        return _run_step(program, discovery, current, expect)
-    if stage == 'e2e':
-        return _e2e_step(root, program, discovery, expect)
-    older = runs._pending(program)
-    if older:
-        return ('Parent objective accepted (parent_objective_complete): every boss unit and the end-to-end unit passed. '
-                f'{len(older)} older e2e evidence archive(s) are still open (see pending_e2e_evidence); archive or close '
-                'them, then report the evidence.',
-                sorted({_evidence_retry(program, row, root) for row in older}))
-    return ('Parent objective accepted (parent_objective_complete): every boss unit and the end-to-end unit passed. '
-            'Report the evidence.', [])
-
-
-def _run_step(program: dict, discovery: dict, current: dict, expect: str) -> tuple[str, list[str]]:
-    label = round_label(program)
-    if not current.get('plans_written'):
-        ready = [unit['boss_key'] for unit in discovery['units'] if unit['ready_to_run']]
-        return (f"Round {program['round']} run: write the shard run plans for every ready shard ({', '.join(ready) or 'none'}); "
-                'all ready shards share one worldserver in batches of the coordinator\'s shard capacity.',
-                [f'{WORKLOOP} program run-plan {expect}'])
-    plans = current.get('run_plans') or []
-    if not plans:
-        return (f"Round {program['round']} run: no shard is ready to run (see status_table missing inputs). "
-                'Close the round so the next one plans that work.', [f'{WORKLOOP} program assess {expect}'])
-    recorded = {run['batch'] for run in current.get('runs') or []}
-    commands = []
-    slug = program['program_id'].replace(':', '_').lower()
-    for plan in plans:
-        output = f"/tmp/{slug}-r{program['round']:02d}-b{plan['batch']}-<utc stamp>"
-        commands += [f"{COORDINATOR} --plan {plan['path']} --output-dir {output} --dry-run",
-                     f"{COORDINATOR} --plan {plan['path']} --output-dir {output}",
-                     f'{WORKLOOP} program run --shard-run <output-dir>/shard_run.json {expect}',
-                     f"{WORKLOOP} program run --failed-batch {plan['batch']} --reason <why no shard_run.json> {expect}"]
-    targets = [unit['boss_key'] for unit in discovery['units'] if unit['raid_target']['present'] and unit['ready_to_run']]
-    commands += [f'{WORKLOOP} program ingest --label {label} {expect}',
-                 f'{WORKLOOP} program assess --label {label} {expect}']
-    missing = [plan['batch'] for plan in plans if plan['batch'] not in recorded]
-    return (f"Round {program['round']} run: run every batch through shard_coordinator (one worldserver, seeded "
-            'lockouts, completion watchdog) into a new output directory under /tmp and record each shard_run.json, or record a '
-            'batch that produced none with --failed-batch'
-            + (f" (batches without a run: {missing})" if missing else '')
-            + f". Then archive and record the kills of the bosses with a raid target ({', '.join(targets) or 'none'}) "
-              f'with program ingest under label {label} (it records each kill, then archives its evidence to DVC and '
-            'removes the /tmp copy); repeat a batch (same plan, new /tmp output directory) and ingest '
-              'again until those bosses reach their target\'s kills_per_measurement; then assess every boss '
-              '(verdict where a target exists, typed stall otherwise), run dvc status and dvc push, and commit.',
-            commands)
-
-
-def _e2e_step(root: Path, program: dict, discovery: dict, expect: str) -> tuple[str, list[str]]:
-    e2e = discovery['e2e']
-    awaiting = runs.awaiting_evidence(program)
-    if awaiting:
-        error = (awaiting.get('evidence') or {}).get('error')
-        if _evidence_retry(program, awaiting, root).endswith('--archive-pending'):
-            failing = (awaiting.get('evidence') or {}).get('state') == 'failed'
-            return ('End-to-end: the clear is recorded but its evidence is not archived yet'
-                    + (f' (last error: {error})' if error else '') + '. The unit is accepted, and the program '
-                    'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.'
-                    + (' If the archive keeps failing (for example DVC is unreachable), abandon this attempt with '
-                       'program e2e --failed REASON; the next round re-runs the full route and the kept evidence '
-                       'can still be archived later.' if failing else ''),
-                    [f'{WORKLOOP} program e2e --archive-pending']
-                    + ([f'{WORKLOOP} program e2e --failed <reason> {expect}'] if failing else []))
-        return ('End-to-end: the clear\'s /tmp run root is gone and no completed archive exists, so its evidence is '
-                'lost. Record that; the unit reopens and the next round re-runs the full route.',
-                [f'{WORKLOOP} program e2e --evidence-lost <reason> {expect}'])
-    if not e2e['ready_to_run'] or discovery['raid_inputs']:
-        blockers = [item['input'] for item in e2e['missing_inputs'] + discovery['raid_inputs']]
-        return ('End-to-end: the unit cannot run (' + ', '.join(blockers) + '). Leave the e2e stage so the next round '
-                'plans that work.', [f'{WORKLOOP} program e2e --failed "missing inputs: {", ".join(blockers)}" {expect}'])
-    plans = (runs.e2e_round(program) if program['rounds'] else {}).get('run_plans') or []
-    commands = [f"pixi run python -m tools.raid_program.raid_route_composer --composition {e2e['route_composition']} --check"]
-    if not plans:
-        commands.append(f'{WORKLOOP} program run-plan {expect}')
-    else:
-        commands += [f"{COORDINATOR} --plan {plans[-1]['path']} --output-dir {NEW_RUN_DIR} --dry-run",
-                     f"{COORDINATOR} --plan {plans[-1]['path']} --output-dir {NEW_RUN_DIR}",
-                     f'{WORKLOOP} program e2e --shard-run <output-dir>/shard_run.json {expect}']
-    commands.append(f'{WORKLOOP} program e2e --failed <why the plan cannot run or produced no shard_run.json> {expect}')
-    return (f"End-to-end: every boss unit is accepted. Check the composed route, write the e2e run plan (the full-raid "
-            f"cohort {e2e['cohort_id']} on a fresh instance, no seeded lockout), run it with shard_coordinator under "
-            'the completion watchdog and record it. A failed or unrunnable e2e opens another round.', commands)
 
 
 def status(root: Path, boss: str | None = None) -> dict:
@@ -335,7 +210,6 @@ def packet(root: Path, packet_id: str) -> dict:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog='raid_workloop program', description='Raid-program rounds')
     verbs = result.add_subparsers(dest='verb', required=True)
-    writers = []
     status_parser = verbs.add_parser('status', help='Compact per-boss table (read-only)')
     status_parser.add_argument('--boss', help='Full detail of one boss unit')
     packet_parser = verbs.add_parser('packet', help='Worker packet of one round packet (read-only)')
@@ -348,11 +222,25 @@ def parser() -> argparse.ArgumentParser:
     handoff.add_argument('--file', type=Path)
     handoff.add_argument('--abandon', metavar='REASON', help='The packet produced nothing this round')
     handoff.add_argument('--external', metavar='REASON', help='The work landed outside the program (name the commits)')
-    reopen = verbs.add_parser('reopen', help='Send one packet back to implementation (implement or build stage)')
+    decide = verbs.add_parser('decide', help='Record the user\'s answer to a needs_user_decision item, verbatim')
+    decide.add_argument('--decision-id', required=True)
+    decide.add_argument('--answer', required=True, help='The user\'s exact words')
+    reopen = verbs.add_parser('reopen', help='Send one packet back to implementation (implement, review or build stage)')
     reopen.add_argument('--id', required=True)
     reopen.add_argument('--reason', required=True)
-    fix = verbs.add_parser('fix', help='Record a coordinator fix in the current round (implement or build stage)')
+    fix = verbs.add_parser('fix', help='Record a coordinator fix in the current round (implement, review or build stage)')
     fix.add_argument('--reason', required=True)
+    refresh = verbs.add_parser('refresh-data', help='dvc status/repro of the raid stages, chmod 0644, closure rebind, '
+                               'dvc push; lists the files to commit')
+    review_diff = verbs.add_parser('review-diff', help='Write the round diff (plan commit to working tree, bookkeeping '
+                                   'excluded) and print its sha256 (read-only)')
+    review_diff.add_argument('--output', type=Path, required=True, help='A file outside the source tree')
+    review = verbs.add_parser('review', help='Record one review of the round diff (accept -> build, reject -> review)')
+    review.add_argument('--verdict', choices=reviews.VERDICTS)
+    review.add_argument('--diff-sha256', help='The sha256 printed by review-diff')
+    review.add_argument('--reviewer', help='Who reviewed (a separate session)')
+    review.add_argument('--report', type=Path, help='The reviewer\'s report file')
+    review.add_argument('--empty-diff', action='store_true', help='Accept a round with no source change (verified)')
     build = verbs.add_parser('build', help='One configure + worldserver build of the committed round')
     build.add_argument('--dry-run', action='store_true')
     build.add_argument('--finish', action='store_true', help='Adopt a completed worldserver ticket; never compiles')
@@ -363,6 +251,14 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--shard-run', type=Path)
     run.add_argument('--failed-batch', type=int)
     run.add_argument('--reason')
+    run_batches = verbs.add_parser('run-batches', help='Run, record and ingest batches until the target bosses have '
+                                   'their counted kills (never commits)')
+    run_batches.add_argument('--label', required=True)
+    run_batches.add_argument('--max-batches', type=int, default=batches.MAX_BATCHES)
+    run_batches.add_argument('--wait-seconds', type=int, default=batches.WAIT_SECONDS,
+                             help='How long stray pytest fake worldservers are waited out')
+    run_batches.add_argument('--batch-timeout-seconds', type=int, default=batches.BATCH_TIMEOUT_SECONDS,
+                             help='Emergency cap of one shard_coordinator run (the shard watchdogs end it first)')
     ingest = verbs.add_parser('ingest', help='Archive and record the round\'s kills of bosses with a raid target')
     ingest.add_argument('--label', required=True)
     assess = verbs.add_parser('assess', help='Judge every boss and open the next round or the e2e unit')
@@ -373,9 +269,19 @@ def parser() -> argparse.ArgumentParser:
     e2e.add_argument('--archive-pending', action='store_true', help='Retry archiving recorded e2e evidence')
     e2e.add_argument('--evidence-lost', metavar='REASON',
                      help='Close e2e evidence whose /tmp root is gone; a lost clear reopens the e2e unit')
-    for writer in (plan, handoff, reopen, fix, build, run_plan, run, ingest, assess, e2e):
+    for writer in (plan, handoff, decide, reopen, fix, refresh, review, build, run_plan, run, run_batches, ingest,
+                   assess, e2e):
         writer.add_argument('--expect', help='state_sha256 from resume; rejects a stale writer')
     return result
+
+
+def _assessment_summary(state: dict) -> dict:
+    program = rounds.active(state)
+    assessed = next(row for row in reversed(program['rounds']) if row.get('assessment'))
+    blocked, warned = sanity.assessment_lines(assessed['assessment'])
+    return {'round': assessed['round'], 'investigate_before_tuning': blocked, 'sanity_warnings': warned,
+            'units': {key: {'status': row['status'], 'not_accepted_because': row['not_accepted_because']}
+                      for key, row in assessed['assessment']['units'].items()}}
 
 
 def command(root: Path, argv: list[str]) -> dict:
@@ -390,11 +296,21 @@ def command(root: Path, argv: list[str]) -> dict:
         if args.output:
             args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         return result
+    if verb == 'review-diff':
+        return reviews.review_diff(root, args.output)
     extra: dict = {}
     if verb == 'plan':
         rounds.plan(root, args.boss or None, expect)
     elif verb == 'handoff':
         rounds.record_handoff(root, args.id, args.file, args.abandon, expect, args.external)
+    elif verb == 'decide':
+        reviews.decide(root, args.decision_id, args.answer, expect)
+        extra['decision'] = args.decision_id
+    elif verb == 'refresh-data':
+        extra['refresh_data'] = datas.refresh_data(root, expect)
+    elif verb == 'review':
+        reviews.record_review(root, args.verdict, args.diff_sha256, args.reviewer, args.report, expect, args.empty_diff)
+        extra['review'] = reviews.latest_review(rounds.current_round(rounds.active(store.load(root)[0])))
     elif verb == 'reopen':
         rounds.reopen_packet(root, args.id, args.reason, expect)
     elif verb == 'fix':
@@ -408,12 +324,18 @@ def command(root: Path, argv: list[str]) -> dict:
         extra = runs.run_plans(root, expect, args.replan)
     elif verb == 'run':
         runs.record_run(root, args.shard_run, expect, args.failed_batch, args.reason)
+    elif verb == 'run-batches':
+        extra['run_batches'] = batches.run_batches(root, args.label, expect, args.max_batches,
+                                                   wait_seconds=args.wait_seconds,
+                                                   batch_timeout=args.batch_timeout_seconds)
+        extra['exit_status'] = extra['run_batches']['exit_status']
     elif verb == 'ingest':
         extra['ingest'] = ingests.ingest(root, args.label, expect)
         if extra['ingest']['errors']:
             extra['exit_status'] = 1  # raid_workloop exits non-zero; the errors carry their retry commands
     elif verb == 'assess':
         rounds.assess(root, args.label, expect)
+        extra['assessment'] = _assessment_summary(store.load(root)[0])
     elif args.archive_pending:
         runs.archive_pending_e2e(root)
     elif args.evidence_lost:

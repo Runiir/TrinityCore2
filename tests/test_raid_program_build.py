@@ -11,15 +11,18 @@ from tools.raid_program import raid_program_rounds as rounds, raid_program_runs 
 from tools.raid_program.development_graph import GraphError
 
 from tests.test_raid_program_rounds import (  # noqa: F401 - the world fixture is used by name
-    BINARY, RAID, both, commit_all, fake_build, program, runner, shard_run, world,
+    BINARY, RAID, accept_review, both, commit_all, fake_build, program, runner, shard_run, world,
 )
 
 GOOD = lambda path, policy: {'gate_bearing': True, 'classification': 'success'}  # noqa: E731
 
 
-def to_build(root: Path) -> None:
+def to_build(root: Path, review_now: bool = False) -> None:
+    """Hand every packet off; ``review_now`` also accepts the working-tree diff so the next commit holds stage build."""
     for packet_id in list(rounds.current_round(program(root))['packets']):
         rounds.record_handoff(root, packet_id, None, external_reason='work in the commits below')
+    if review_now:
+        accept_review(root, worktree=True)
 
 
 def test_build_refuses_a_file_two_packets_can_own(world):
@@ -53,7 +56,7 @@ def test_finish_adopts_a_completed_ticket_of_this_round(world, tmp_path_factory)
     root, tmp = world['root'], tmp_path_factory.mktemp('queue')
     planned = commit_all(root, 'program selected')
     rounds.plan(root)
-    to_build(root)
+    to_build(root, review_now=True)
     launched = commit_all(root, 'build stage committed')
     with pytest.raises(GraphError, match='another worktree'):
         builds.finish(root, _ticket(tmp, root, launched, worktree=str(tmp)), verifier=GOOD)
@@ -76,7 +79,7 @@ def test_finish_adopts_after_coordination_only_commits(world, tmp_path_factory):
     root, tmp = world['root'], tmp_path_factory.mktemp('queue')
     commit_all(root, 'program selected')
     rounds.plan(root)
-    to_build(root)
+    to_build(root, review_now=True)
     launched = commit_all(root, 'build stage committed')
     (root / 'artifacts/cata_raid_program/note.json').write_text('{}\n')
     commit_all(root, 'coordination-only commit')
@@ -92,6 +95,7 @@ def test_finish_refuses_ownership_conflicts_like_build(world, tmp_path_factory):
     to_build(root)
     (root / 'sql/w').mkdir(parents=True)
     (root / 'sql/w/alpha_beta.sql').write_text('-- both\n')
+    accept_review(root, worktree=True)
     launched = commit_all(root, 'build stage with an ambiguous file')
     with pytest.raises(GraphError, match='two packets'):
         builds.finish(root, _ticket(tmp, root, launched), verifier=GOOD)
@@ -144,3 +148,24 @@ def test_ingest_needs_a_recorded_build(world):
     to_build(root)
     with pytest.raises(GraphError, match='not run'):
         ingests.ingest(root, 'lbl')
+
+
+def test_finish_refuses_stale_data(world, tmp_path_factory):
+    root, tmp = world['root'], tmp_path_factory.mktemp('queue')
+    (root / 'dvc.lock').write_text('schema: 2.0\n')
+    commit_all(root, 'program selected')
+    rounds.plan(root)
+    to_build(root, review_now=True)
+    launched = commit_all(root, 'build stage committed')
+    world['data_gate'] = {'ok': False, 'problems': ['stale raid DVC stages: validation_scenarios'], 'warnings': []}
+    with pytest.raises(GraphError, match=r'build --finish refused: data: stale raid DVC stages: validation_scenarios '
+                                         r'-> program refresh-data .*then program build \(a new build'):
+        builds.finish(root, _ticket(tmp, root, launched), verifier=GOOD)
+    assert program(root)['stage'] == 'build'
+    world['data_gate'] = {'ok': True, 'problems': [], 'warnings': []}
+    (root / 'dvc.lock').write_text('schema: 2.0\nstages: {}\n')  # an uncommitted refresh: not the ticket's data
+    with pytest.raises(GraphError, match='data: the raid data files .* differ from'):
+        builds.finish(root, _ticket(tmp, root, launched), verifier=GOOD)
+    (root / 'dvc.lock').write_text('schema: 2.0\n')
+    record = builds.finish(root, _ticket(tmp, root, launched), verifier=GOOD)
+    assert record['adopted'] and record['gates']['ok'] and program(root)['stage'] == 'run'

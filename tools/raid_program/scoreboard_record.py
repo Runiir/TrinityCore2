@@ -14,7 +14,11 @@ vs WCL, tools/bot_ml/live_validation_fidelity.py) and encounter_rng (random
 encounter events such as Magmaw's Massive Crash side,
 tools/bot_ml/live_validation_encounter_rng.py) are informational: nothing in
 counting or the verdict reads them. rng_backfill attaches encounter_rng to kills
-recorded before the harness wrote it, as separate append-only lines.
+recorded before the harness wrote it, as separate append-only lines. sanity_inputs
+(tools/raid_program/run_sanity_inputs.py: a lethal-damage scan that ignores the
+route_deaths == 0 shortcut, the native death signal, combat-log retention and the
+pulls of a scripted enrage) is also informational: only run_sanity reads it, and
+records written before it existed lack it.
 """
 from __future__ import annotations
 
@@ -462,11 +466,14 @@ def record_from_run_dir(root: Path, target: dict[str, Any], *, scenario: str, la
     if summary_output is not None:
         summary_output.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     timeline = json.loads(timeline_path.read_text()) if timeline_path is not None else None
-    return record_from_summary(
+    record = record_from_summary(
         summary, root=root, target=target, scenario=scenario, label=label, kill_id=kill_id,
         deaths=death_evidence(run_dir, node, summary.get("route_deaths"), target), timeline=timeline,
         source_commit=source_commit, evidence_pointer=evidence_pointer,
         report_present=summary["report_present"], reached_encounter=run_dir_reached_encounter(run_dir, node))
+    # Additive and informational (run_sanity's inputs); never read by counting or the verdict.
+    from tools.raid_program.run_sanity_inputs import sanity_input_fields
+    return record | sanity_input_fields(run_dir, {**target, "scenario": scenario}, root)
 
 
 def fallback_record(root: Path, target: dict[str, Any], *, scenario: str, label: str, kill_id: str,

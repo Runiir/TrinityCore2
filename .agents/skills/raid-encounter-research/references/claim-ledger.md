@@ -25,6 +25,12 @@ implementation_consequence
 acceptance_observation
 ```
 
+In the contract's and the ledger's `unresolved` lists, write every open claim
+as an object with `key`, `status`, `evidence_gap` and `modes`. `modes` lists
+only canonical modes (`10N`, `25N`, `10H`, `25H`); `shared` becomes all four. A
+claim with no `modes` blocks every mode in the per-mode research gate (see
+SKILL.md).
+
 Required mechanic coverage:
 
 - legitimate engage, prerequisite, reset, wipe, death, credit, save/load;

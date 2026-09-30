@@ -21,6 +21,21 @@ number does not make it wrong when range, LOS, duty, setup or a mechanic is the
 first failure. Keep reusable class calibration (dummy, shared across bosses)
 separate from per-boss encounter validation.
 
+## "Investigate before tuning" packets
+
+A raid-program packet whose task says "Investigate before tuning" carries
+blocking run-sanity findings. The last round's numbers for that boss are not
+real yet, so find and fix the cause before any DPS change:
+
+1. Triage each finding with the playbook's
+   [sanity table](../raid-tuning-playbook/SKILL.md#sanity-findings-is-the-result-real),
+   in its order.
+2. Name the first broken edge for it, and route it with the table below.
+   Stranded or idle bots are usually movement, range or encounter positioning,
+   not rotation.
+3. In the handoff, state the confirmed cause and its evidence (kill id, trace
+   rows), and the observation the next run must show.
+
 ## Route to one owner
 
 | Broken edge | Specialist skill |

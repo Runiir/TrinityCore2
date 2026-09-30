@@ -1,11 +1,13 @@
 """Round state machine of a raid program (core transitions).
 
-    plan -> implement -> build -> run -> (assess) -> plan of the next round
-                                              \\-> e2e -> complete
+    plan -> implement -> review -> build -> run -> (assess) -> plan of the next round
+                                                        \\-> e2e -> complete
 
 ``plan`` freezes one worker packet per open boss unit (plus the shards and
 research packets when needed) and the plan-time commit; ``implement`` records
-one validated handoff per packet (``reopen`` sends a packet back from build);
+one validated handoff per packet (and its user decisions); ``review``
+(raid_program_review) records the review of the round diff, an accept moves
+to ``build`` (``reopen`` sends a packet back from review or build);
 ``build`` (raid_program_build) configures and builds the committed tree once;
 ``run`` (raid_program_runs) writes shard run plans and records each run or
 batch failure; ``ingest`` (raid_program_ingest) archives and records the kills
@@ -25,6 +27,10 @@ from tools.raid_program import raid_program_packets as packets
 from tools.raid_program import raid_program_state as store
 from tools.raid_program.development_graph import GraphError, utc_now
 from tools.raid_program.raid_program_inputs import discover_program
+
+
+# Stages between the plan and the build: a packet can be reopened and the coordinator can record a fix.
+OPEN_ROUND_STAGES = ('implement', 'review', 'build')
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -161,6 +167,8 @@ def record_handoff(root: Path, packet_id: str, handoff_path: Path | None, abando
         raise GraphError('no packet ' + packet_id + ' in round ' + str(program['round']))
     if abandon_reason and external_reason:
         raise GraphError('a packet is either abandoned or done externally, not both')
+    from tools.raid_program import raid_program_review as review
+    decisions: list[dict] = []
     if abandon_reason or external_reason:
         kind = 'abandoned' if abandon_reason else 'external'
         record = {kind: True, 'reason': abandon_reason or external_reason, 'recorded_utc': utc_now()}
@@ -168,33 +176,37 @@ def record_handoff(root: Path, packet_id: str, handoff_path: Path | None, abando
         if handoff_path is None or not handoff_path.is_file():
             raise GraphError('handoff file required (or --abandon/--external REASON)')
         handoff = json.loads(handoff_path.read_text(encoding='utf-8'))
-        packets.validate_handoff(handoff, packet, program['round'])
+        save_as = review.handoff_save_as(program, packet_id)
+        packets.validate_handoff(handoff, packet, program['round'], save_as)
+        decisions = review.validate_decisions(handoff.get('needs_user_decision'))
         record = repo_ref(root, handoff_path) | {
             'recorded_utc': utc_now(), 'patch_requests': len(handoff['patch_requests']),
             'resolved_inputs': [str(name) for name in handoff['resolved_inputs']],
-            'changed_files': sorted(set(handoff['changed_files'] + handoff['new_files']))}
+            'changed_files': packets.handoff_files(handoff, save_as),
+            'user_decisions': [item['id'] for item in decisions]}
 
     def reducer(state: dict) -> dict:
         target = active(state)
         require(target, 'implement')
-        row = current_round(target)['packets'][packet_id]
-        row['handoff'] = record
+        holder = current_round(target)
+        review.merge_decisions(holder, packet_id, decisions)
+        holder['packets'][packet_id]['handoff'] = record
         store.history(target, 'handoff', round=target['round'], packet=packet_id, abandoned=bool(abandon_reason),
-                      external=bool(external_reason))
-        if all(item['handoff'] for item in current_round(target)['packets'].values()):
-            target['stage'] = 'build'
+                      external=bool(external_reason), user_decisions=[item['id'] for item in decisions])
+        if all(item['handoff'] for item in holder['packets'].values()):
+            target['stage'] = 'review'  # the round diff is reviewed (program review) before it is built
         return state
     return store.update(root, reducer, expected_sha256)
 
 
 def reopen_packet(root: Path, packet_id: str, reason: str, expected_sha256: str | None = None) -> dict:
-    """Send one packet back to implementation (from implement or build; never during run)."""
+    """Send one packet back to implementation (from implement, review or build; never during run)."""
     if not reason:
         raise GraphError('reopen needs a reason')
 
     def reducer(state: dict) -> dict:
         target = active(state)
-        require(target, 'implement', 'build')
+        require(target, *OPEN_ROUND_STAGES)
         row = current_round(target)['packets'].get(packet_id)
         if row is None:
             raise GraphError('no packet ' + packet_id + ' in round ' + str(target['round']))
@@ -214,7 +226,7 @@ def record_fix(root: Path, reason: str, expected_sha256: str | None = None) -> d
 
     def reducer(state: dict) -> dict:
         target = active(state)
-        require(target, 'implement', 'build')
+        require(target, *OPEN_ROUND_STAGES)
         current_round(target).setdefault('coordinator_fixes', []).append(
             {'reason': reason, 'head': head, 'utc': utc_now()})
         store.history(target, 'coordinator_fix', round=target['round'], reason=reason)
@@ -269,10 +281,16 @@ def _judge(unit: dict | None, rows: list[dict], verdict: dict | None) -> list[st
 
 
 def assess(root: Path, label: str | None = None, expected_sha256: str | None = None) -> dict:
-    """Judge every boss unit; accepted units stay accepted only when they pass again this round."""
+    """Judge every boss unit; accepted units stay accepted only when they pass again this round.
+
+    Every boss with a raid target that ran is also checked by run_sanity: any blocking finding keeps
+    the unit open even when its verdict passes. A missing run_sanity module fails assess loudly.
+    """
+    from tools.raid_program import raid_program_sanity as sanity
     _, program, data = load_active(root)
     require(program, 'run')
     check_expected(data, expected_sha256)
+    sanity_check = sanity.load_sanity()
     rounds = current_round(program)
     missing_batches = [plan['batch'] for plan in rounds['run_plans']
                        if not any(run['batch'] == plan['batch'] for run in rounds['runs'])]
@@ -296,11 +314,14 @@ def assess(root: Path, label: str | None = None, expected_sha256: str | None = N
         outcomes = [classify(row) for row in rows]
         verdict = verdict_for(root, unit, label, rounds.get('build')) if unit and rows else None
         reasons = _judge(unit, rows, verdict)
+        findings = (sanity.unit_findings(sanity_check, root, unit['raid_target']['scenario'], label)
+                    if verdict is not None else [])
+        reasons += ['sanity:' + row['check'] for row in sanity.blocking(findings)]
         results[key] = {'round': program['round'], 'runs': len(rows), 'clears': outcomes.count('clear'),
                         'outcome': outcomes[-1] if outcomes else 'not_run', 'verdict': verdict,
                         'missing_inputs': [item['input'] for item in (unit or {}).get('missing_inputs', [])],
                         'status': 'open' if reasons else 'accepted', 'not_accepted_because': reasons,
-                        'reopened': record['status'] == 'accepted' and bool(reasons)}
+                        'reopened': record['status'] == 'accepted' and bool(reasons), 'sanity': findings}
     raid_inputs = [item['input'] for item in discovery['raid_inputs']]
 
     def reducer(state: dict) -> dict:

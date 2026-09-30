@@ -19,11 +19,12 @@ the measuring harness, not the goal.
    A raid-level request (`start "implement bwd 10n bots"`) runs this loop for
    every boss at once, in rounds ([raid program](../trinity-orchestrator/references/raid-program.md)):
    - Each boss packet is one pass of steps c–d for its boss.
-   - The round's shard runs replace `scoreboard run`. `raid_workloop program ingest --label L`
-     archives each shard's evidence to DVC and records its kills under one round
-     label. A kill without an evidence pointer never counts. Then judge and
-     compare that label with `scoreboard verdict` and `scoreboard show` as in
-     steps e–g.
+   - The round's shard runs replace `scoreboard run`. `raid_workloop program run-batches --label L`
+     runs the batches and, after each one, does what `program ingest` does:
+     records every kill under one round label and archives its evidence to
+     DVC. A kill without an evidence pointer never counts. Then
+     judge and compare that label with `scoreboard verdict` and `scoreboard show`
+     as in steps e–g, after the [sanity check](#sanity-findings-is-the-result-real).
    - The finish line below applies to every boss unit. The end-to-end clear
      comes last.
 2. Open the target file `experiments/configs/raid_targets/<scenario>.json`
@@ -45,7 +46,9 @@ the measuring harness, not the goal.
    so an uncalibrated or mismatched boss is open fidelity work (the scenario's
    `encounter_damage_fidelity` requirement): calibrate it from matched WCL
    damage stages, stage the migration in `sql/custom/staged/world/`, and
-   record it in the registry.
+   record it in the registry. The coordinator then moves the migration to
+   `sql/custom/world/` before the run, because the world updater applies only
+   that directory.
 
 ## 2. Finish line, metric and thresholds
 
@@ -56,7 +59,13 @@ verified WoWSims DPS), every kill is a native clear, and there are 0 deaths in
 the boss window. `scoreboard verdict` computes this from the target file and
 prints each actor's `reference_basis`. Status `no_reference` means the spec has
 neither reference: that is reference work to do, not a pass. Healers have no
-DPS target; they pass with the encounter.
+DPS target; they pass with the encounter. The Feral tank is exempt from DPS
+parity too, and the Blood DK tank is gated (user decision 2026-09-27).
+
+In round 2 the WoWSims fallback overstated targets by 20–50%. Before you tune
+an actor against a fallback, find more matched WCL kills with its spec
+([raid-encounter-research](../raid-encounter-research/SKILL.md), "Matched WCL
+references before WoWSims fallbacks").
 
 **DPS** means encounter-window DPS: the actor's originated damage from the first
 to the last originated hostile damage in the boss window, divided by that
@@ -79,6 +88,44 @@ Each threshold has one meaning:
 | 95% of self-provided WoWSims (`dps_gate`) | Legacy gate, checked only when a graph assessment cites no scoreboard verdict; not the finish line or a tuning target | Legacy graph assessment |
 | 85% of target (0.85) | Bundling trigger: below it, batch the actor's diagnosed error-ledger fixes into one change (step d) | Keep/revert batch planning |
 | 92.3%, "75/85% flags" | Historical; ignore | None |
+
+### Sanity findings: is the result real?
+
+A kill can pass or fail its verdict and still not measure the bots. The sanity
+checks (`tools.raid_program.run_sanity.sanity_findings`) find such kills. In a
+raid program, `program assess` runs them and lists them in `next_action` as
+"investigate before tuning". For a boss-level label, run them yourself:
+
+```sh
+pixi run python -c "import json, pathlib; from tools.raid_program.run_sanity import sanity_findings; print(json.dumps(sanity_findings(pathlib.Path('.'), '<scenario>', '<label>'), indent=1))"
+```
+
+| Check | Severity | What it means | Investigate first |
+| --- | --- | --- | --- |
+| `death_signal_conflict` | blocking | Lethal events with zero native deaths, or the record's conflict flag. The death count is unknown. | The native death and resurrection counters and any in-place revive path. Nefarian round 1 had 1,103 lethal events and 0 native deaths: bots died and were revived in place on a transport at 50% health (fixed in round 2). This is a runtime or harness defect, not a DPS problem. |
+| `idle_actor` | blocking | A non-healer, non-exempt actor is below 25% of its target, or its damage uptime is below 20%: it is stranded or stuck. | That actor's trace: position, target, movement and rejection reasons (`max_range_exceeded`, `min_range_required`, `out_of_range`). Round-1 cases were all positioning or range, not rotation: the Demonology warlock at 0.36 on Atramedes (its range cap fell inside the boss's hitbox), the Survival hunter at 33% on Chimaeron (minimum range), and the Elemental shaman hovering off a Nefarian pillar. |
+| `enrage_reached` | blocking | The kill ran past the boss's known enrage (`enrage_after_ms` in the calibration registry). On a live server that is a wipe, and everything after it is inflated. | Why the kill was slow: `idle_actor` first, then `duration_outlier`, then the largest DPS gap. |
+| `duration_outlier` | blocking | The boss window is more than 2.0× the longest matched WCL kill. Nefarian round 1 ran 18 minutes against 4–6. Window DPS over it cannot be compared with WCL. | Idle or stranded actors in the same kill, then the phase that ran long (timeline): a phase that never advanced, a revive loop, or a mechanic that stalled. |
+| `boss_melee_fidelity` | warn | A calibrated creature's melee mean is outside ±10% of the WCL mean. | Post-enrage swings first (Nefarian's 4.35 ratio was Berserk). Then check that the promoted SQL was loaded, then mitigation debuffs. |
+| `unmeasured_kills` | warn | Some kills were excluded as unmeasured or truncated, such as a truncated combat-log export. | Run more batches to reach `kills_per_measurement`. If it repeats, check the cleanup budget and `/tmp` headroom. |
+| `excluded_kills` | warn | Some kills were excluded as stalled or voided. | Each kill's terminal reason. Route a repeated stall to its mechanism owner (raid-performance-loop). |
+
+Rules:
+
+1. A blocking finding means the result is not real yet. Do not tune DPS
+   against that kill, compare labels with it, or accept it. Find and fix the
+   cause, then measure again.
+2. Investigate in the table's order: `death_signal_conflict`, `idle_actor`,
+   `enrage_reached`, `duration_outlier`, then the warnings. An unknown death
+   count invalidates everything else, and idle actors are the usual cause of
+   long fights and enrages.
+3. For a warning, note it in the handoff and draw no conclusion from the
+   metric it names.
+4. A finding names a mechanism, not a DPS gap. Route it through
+   [raid-performance-loop](../raid-performance-loop/SKILL.md) to its owner:
+   encounter positioning, class range, or runtime and harness. Before acting
+   on an agent's explanation of a finding, check the explanation against the
+   evidence (trinity-orchestrator, "Check agent claims before acting").
 
 ## 3. The loop
 
@@ -126,7 +173,9 @@ so each label maps to one commit.
 with the baseline's route, roster and configuration. Nothing else may differ
 between the two labels.
 
-**f. Keep or revert.** Run
+**f. Keep or revert.** First run the sanity checks on both labels. A label
+with a blocking finding cannot decide keep or revert (see the sanity section).
+Then run
 `scoreboard show --scenario S --label <change-label> --actor <target-actor-id>`.
 It compares against the recorded baseline (`--vs L` overrides). With at least 3
 counted native-clear kills per label, `show` classifies each metric with a
@@ -212,16 +261,24 @@ trash).
   timer; reaching an emergency wall-clock cap is a failure.
 - **Builds.** Never build while a worldserver runs, and never edit while a build
   runs. Build only through `workflow_build run`, or `raid_workloop program build`
-  for a raid program round. Both use queued_build's default policy and take the
-  job count from it. Documentation and progress commits need no rebuild.
+  for a raid program round (one build per round). Both use queued_build's
+  default policy (host8: 8 jobs) and take the job count from it. Documentation
+  and progress commits need no rebuild.
+- **Scope.** Raid and canonical scope only. Stonecore, the dummy calibration
+  and Magmaw `b5-d1898555` must stay reproducible.
 - **Source size.** C/C++ files stay below 1,000 lines; see AGENTS.md for the hook.
 - **Storage.** Python runs through Pixi, code and configuration live in Git,
-  generated data lives in DVC, and as little as possible stays on disk.
+  generated data lives in DVC, and as little as possible stays on disk. `/tmp`
+  has a per-user quota; put scratch in `~/.cache`.
 - **Tests.** Report every earlier failing test, even when a narrower rerun
-  passes, and classify its relevance.
-- **Models.** No subagent model is enforced (AGENTS.md); keep implementer and
-  reviewer in separate sessions. Model advisors (Jev, Laya) are not part of the
-  workflow.
+  passes. Classify it with `pixi run python -m tools.raid_program.test_baseline check <pytest args>`:
+  only `new_failures` belong to your change. Never call a failure pre-existing
+  without that output.
+- **Models and review.** Follow trinity-orchestrator's worker model table and
+  its GPT-6.1 Sol review loop. Keep implementer and reviewer in separate
+  sessions. Model advisors (Jev, Laya) are not part of the workflow.
+- The orchestrator's [standing rules](../trinity-orchestrator/SKILL.md#standing-rules)
+  cover the rest: boss-damage SQL, `/tmp`, and pytest fakes named `worldserver`.
 
 Stop only when one of these holds:
 - `scoreboard verdict` passes every actor (for a raid program: every boss unit

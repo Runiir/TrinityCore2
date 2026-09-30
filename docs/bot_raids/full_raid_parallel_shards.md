@@ -1,7 +1,10 @@
 # Full-raid bots: parallel boss shards
 
-Status (2026-09-25): foundation round 1 is done; round 2 is in progress. Seeded lockouts and parallel shards are
-proven live. Only Magmaw 10N has a real bot strategy; the other bosses start with the boss rounds.
+Status (2026-09-29): the foundation rounds are done. The raid program
+(`raid_workloop start "implement bwd 10n bots"`) has run two rounds on BWD 10N,
+and no boss unit is accepted yet. The hand-off hardening at the end of this
+document turns the coordinator's round-1 and round-2 judgment calls into tracker
+commands and skill rules.
 Goal: every boss of every Cataclysm raid is played by bots, then a full end-to-end
 clear (trash, bosses and interactions). Blackwing Descent 10N comes first; Bastion of
 Twilight, Throne of the Four Winds, Firelands and Dragon Soul reuse everything here.
@@ -17,9 +20,8 @@ then run from the same prompt shape.
 
 This means every piece here must be reachable from the raid-level workloop and from
 the skills and AGENTS.md routing a fresh agent reads, with no knowledge carried over
-from the session that built it. Today `raid_workloop start "implement bwd 10n bots"`
-fails with `unknown or ambiguous boss/raid: bwd`: the workloop, AGENTS.md and the
-orchestrator skill are boss-level only.
+from the session that built it. Since 2026-09-25 `raid_workloop start "implement bwd 10n bots"`
+selects the raid program, and AGENTS.md routes raid-level requests to it.
 
 ## Decisions (user, 2026-09-25)
 
@@ -821,3 +823,32 @@ Two follow-ups from the review:
   composition.
 - **End-to-end.** The composed full route: trash, all six bosses, a bot clicking the
   orb, the elevator, then Nefarian. After that, the other raids.
+
+## Raid program rounds 1–2 (2026-09-27) and hand-off hardening (2026-09-29)
+
+- **Round 1** (553da85c98) covered WCL research, references and damage
+  calibration for all six bosses. GPT-6.1 Sol accepted it after five review
+  passes. Three batches each gave six native clears (label
+  `blackwing_descent_10n-r01-553da85c98`). No unit was accepted.
+- **Round 2** (dc32876966, build a82a035b81) covered encounter tuning, raid
+  class rotations and native death fidelity. It was accepted after four review
+  passes and ran three batches (label `blackwing_descent_10n-r02-a82a035b81`).
+
+Each gap below needed coordinator judgment in those rounds. It now lives in a
+tracker command or a skill rule, so a less capable agent can run the loop.
+
+| Gap in rounds 1–2 | Where it lives now |
+| --- | --- |
+| Agents tried curl, headless Playwright, a scratch-profile Chrome and a browser surface before the working WCL route | raid-encounter-research, "WCL access" |
+| WoWSims fallbacks overstated targets by 20–50% | raid-encounter-research, "Matched WCL references before WoWSims fallbacks" |
+| Review took five and four passes; in round 2, fixes introduced new regressions twice; nothing tied the build to a review | `program review-diff` and `program review` gate the build; trinity-orchestrator, "Review loop" and "Pre-review checklist" |
+| Wrong agent diagnoses: the BDK cooldowns, the Chimaeron "route stall" (it was the watchdog), the Remedy dispel | trinity-orchestrator, "Check agent claims before acting" |
+| Policy choices surfaced mid-round: the tank DPS gate, Mortality deaths, Maloriak's threshold, Fan of Knives | the handoff's `needs_user_decision` and `program decide`; trinity-orchestrator, "When to ask the user" |
+| Nefarian's 18-minute kill, 1,103 lethal events with 0 native deaths, and stranded bots were judged by hand | `run_sanity` findings in `program assess`; raid-tuning-playbook, sanity table |
+| "Pre-existing" test failures were claimed without a baseline | `test_baseline check`; trinity-orchestrator, "Known test failures" |
+| DVC repro, 0644 modes and the closure rebind ran through a `/tmp` script | `program refresh-data` |
+| The batch loop (wait for servers, headroom, run, record, ingest, repeat) was run by hand | `program run-batches` |
+| No rule for which model a worker uses | trinity-orchestrator, "Worker model" (user decisions 2026-09-29) |
+
+The command-by-command round is in
+`.agents/skills/trinity-orchestrator/references/raid-program.md`.

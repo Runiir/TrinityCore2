@@ -3,7 +3,10 @@
 ``build`` configures and builds the committed tree once through queued_build
 with its default policy; the job count comes from the policy. Before building,
 every file changed since the round's plan commit is matched against the
-packets' owned patterns: a file two packets can own stops the build. Step
+packets' owned patterns: a file two packets can own stops the build. The build
+is also refused while a user decision is open, without an accepted review of
+exactly the committed round diff, or while the raid DVC data is stale (see
+``gates``). Rounds built before these gates existed are never re-gated. Step
 results are persisted after each step in the queue's receipt directory
 (outside the worktree, so no edit touches the tree mid-build). ``finish``
 adopts a completed, gate-bearing worldserver ticket (like ``workflow_build
@@ -70,6 +73,65 @@ def ownership_check(root: Path, program: dict) -> dict:
     return {'checked': True, 'base': base, 'head': head, **owners}
 
 
+def gates(root: Path, program: dict, commit: str = 'HEAD', data_status: Callable[[Path], dict] | None = None) -> dict:
+    """Build gates for ``commit``: every user decision answered, an accepted review of exactly its round diff,
+    and current raid DVC data (stages and closure). Each row has ``ok`` and its problem.
+
+    The data gate reads the workspace (DVC status and payloads), so it speaks for ``commit`` only while the
+    data-defining files (dvc.lock and both closure manifests) in the workspace equal those of ``commit``."""
+    from tools.raid_program import raid_program_data as data, raid_program_review as review
+    return {'decisions': review.decision_gate(program), 'review': review.review_gate(root, program, commit),
+            'data': _data_at(root, commit, (data_status or data.data_gate)(root))}
+
+
+def _data_at(root: Path, commit: str, gate: dict) -> dict:
+    """The workspace data gate, refused when the workspace's data-defining files differ from ``commit``'s."""
+    from tools.raid_program.raid_program_data import DATA_FILES
+    from tools.raid_program.raid_program_review import EMPTY_TREE
+    if not gate.get('ok'):
+        return gate
+    resolved = commit if commit != 'HEAD' or rounds.git_head(root) else EMPTY_TREE  # no commit yet: the empty tree
+    completed = _git(root, 'diff', '--quiet', resolved, '--', *DATA_FILES)
+    if completed.returncode == 1:
+        problem = (f"the raid data files ({', '.join(DATA_FILES)}) in the workspace differ from {commit[:12]} "
+                   '(an uncommitted refresh-data?), so the data gate does not speak for that commit')
+    elif completed.returncode:
+        problem = f'cannot compare the raid data files with {commit[:12]}: ' + completed.stderr.decode(errors='replace')[-200:]
+    else:
+        return gate
+    return gate | {'ok': False, 'problems': [*gate.get('problems', []), problem]}
+
+
+GATE_FIXES = {
+    'decisions': 'ASK THE USER each open decision (resume lists them) and record it with program decide',
+    'review': ('program review-diff --output <file outside the tree>, a reviewer in a separate session, then program '
+               'review --verdict ... (reject: reopen the owning packet or fix coordinator files, then re-review)'),
+    'data': 'program refresh-data --expect <state_sha256>, then commit the files it lists',
+}
+# --finish adopts a ticket only when its commit already holds current data; refreshed data needs a new build.
+FINISH_FIXES = GATE_FIXES | {
+    'data': ('program refresh-data --expect <state_sha256>, commit the files it lists, have the new round diff '
+             'reviewed if it changed, then program build (a new build of that commit): --finish only adopts a ticket '
+             'whose commit already holds current raid data'),
+}
+
+
+def refuse_on_gates(checks: dict, action: str = 'build', fixes: dict | None = None) -> None:
+    failed = {name: row for name, row in checks.items() if not row.get('ok')}
+    if failed:
+        raise GraphError(f'program {action} refused: ' + ' | '.join(
+            f"{name}: {row.get('problem') or '; '.join(row.get('problems') or [])} -> {(fixes or GATE_FIXES)[name]}"
+            for name, row in failed.items()))
+
+
+def _gate_record(checks: dict) -> dict:
+    """What the build record keeps of its gates: the reviewed diff it built and each gate's outcome."""
+    review = checks.get('review') or {}
+    return {'ok': all(row.get('ok') for row in checks.values()),
+            'review_diff_sha256': review.get('committed_diff_sha256'),
+            'reviewer': (review.get('review') or {}).get('reviewer')}
+
+
 def _binary_sha(receipt: dict) -> str | None:
     produced = [artifact for artifact in receipt.get('output_artifacts') or []
                 if artifact.get('kind') == 'worldserver_elf' and artifact.get('produced_by_ticket') is True]
@@ -105,16 +167,22 @@ def _record(root: Path, data: bytes, record: dict) -> dict:
 
 def build(root: Path, expected_sha256: str | None = None, dry_run: bool = False,
           runner: Callable[..., tuple[int, dict, str, bool]] | None = None,
-          worktree_state: Callable[[Path], dict] | None = None) -> dict:
-    """One configure + worldserver build of the committed tree for the whole round."""
+          worktree_state: Callable[[Path], dict] | None = None,
+          data_status: Callable[[Path], dict] | None = None) -> dict:
+    """One configure + worldserver build of the committed tree for the whole round.
+
+    Refused (before compiling) on an ownership conflict, a dirty tree, an open user decision, a missing or
+    stale accepted review of the committed round diff, or stale raid DVC data. ``--dry-run`` (review or
+    build stage) shows the argv, the ownership check and every gate.
+    """
     from tools.raid_program import queued_build as queue
     _, program, data = rounds.load_active(root)
-    rounds.require(program, 'build')
+    rounds.require(program, *(('review', 'build') if dry_run else ('build',)))
     summary = _policy_summary(root)
     policy = summary.pop('_policy')
     ownership = ownership_check(root, program)
     if dry_run:
-        return summary | {'ownership': ownership}
+        return summary | {'ownership': ownership, 'gates': gates(root, program, data_status=data_status)}
     rounds.check_expected(data, expected_sha256)
     if ownership.get('conflicts'):
         raise GraphError('files changed since the plan match two packets; reopen or fix before building: '
@@ -123,6 +191,8 @@ def build(root: Path, expected_sha256: str | None = None, dry_run: bool = False,
     identity = observe(root)
     if not identity.get('clean'):
         raise GraphError('commit every handoff, patch request and the program state before building (clean tree)')
+    checks = gates(root, program, data_status=data_status)
+    refuse_on_gates(checks)
     run = runner or _queue_runner
     progress = progress_path(root, program)
     progress.parent.mkdir(parents=True, exist_ok=True)
@@ -148,7 +218,7 @@ def build(root: Path, expected_sha256: str | None = None, dry_run: bool = False,
         binary_sha = rounds.sha256_bytes(binary.read_bytes()) if binary.is_file() else None
     record = summary | {'source_commit': identity.get('commit'), 'steps': steps, 'ownership': ownership,
                         'success': bool(complete and binary_sha), 'worldserver_sha256': binary_sha if complete else None,
-                        'recorded_utc': utc_now()}
+                        'gates': _gate_record(checks), 'recorded_utc': utc_now()}
     if complete and not binary_sha:
         record['error'] = 'the build produced no worldserver sha256; a success cannot be recorded'
     return _record(root, data, record)
@@ -165,7 +235,8 @@ def _launch_program(root: Path, commit: str, program_id: str) -> dict | None:
 
 
 def finish(root: Path, queue_receipt: Path | None = None, expected_sha256: str | None = None,
-           verifier: Callable[[Path, dict], dict] | None = None) -> dict:
+           verifier: Callable[[Path, dict], dict] | None = None,
+           data_status: Callable[[Path], dict] | None = None) -> dict:
     """Adopt a completed worldserver ticket of this round's build without compiling again.
 
     The ticket must be gate-bearing, belong to this worktree, build the worldserver from a
@@ -213,8 +284,13 @@ def finish(root: Path, queue_receipt: Path | None = None, expected_sha256: str |
     if ownership.get('conflicts'):
         raise GraphError('files changed since the plan match two packets; reopen or fix before adopting the build: '
                          + json.dumps(ownership['conflicts'])[:600])
+    # The ticket's own commit must carry the accepted review, the answered decisions and current raid data. HEAD
+    # differs from it only in coordination files (checked above), none of which define DVC data, and the data gate
+    # also requires the workspace's data-defining files to equal the ticket commit's.
+    checks = gates(root, program, commit, data_status=data_status)
+    refuse_on_gates(checks, 'build --finish', FINISH_FIXES)
     record = summary | {'source_commit': commit, 'adopted': True, 'success': True, 'worldserver_sha256': binary_sha,
                         'steps': [{'step': 'worldserver_build', 'receipt': str(path), 'exit_status': 0,
                                    'classification': 'success', 'gate_bearing': True}],
-                        'ownership': ownership, 'recorded_utc': utc_now()}
+                        'ownership': ownership, 'gates': _gate_record(checks), 'recorded_utc': utc_now()}
     return _record(root, data, record)

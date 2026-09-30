@@ -37,8 +37,10 @@ contract:
 - **The `shards` packet.** It owns the shared shard data: composition and spec
   selections, scenario rows, profiles, prerequisite data, route composition and
   `dvc.yaml`. It applies the boss packets' patch requests to those files. The
-  coordinator then reproduces DVC stages and rebinds the closure before the
-  round's build.
+  coordinator then runs `raid_workloop program refresh-data --expect <sha>`
+  before the round's review and build. That command reproduces the stale raid
+  stages, sets 0644 modes, rebinds the runtime asset closure and pushes. Never
+  hand-edit the closure manifest or use an old `/tmp` rebind script.
 - **The e2e cohort.** `full_raid` gives the end-to-end cohort's own scenario row
   (`route_scenario_id`), profile and pool tag. These must be one ID, as
   shard_coordinator preflight requires. The composed full route

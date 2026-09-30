@@ -10,7 +10,9 @@ from pathlib import Path
 import pytest
 
 from tools.raid_program import raid_program, raid_program_build as builds, raid_program_ingest as ingests
+from tools.raid_program import raid_program_data as data_module, raid_program_review as review
 from tools.raid_program import raid_program_rounds as rounds, raid_program_runs as runs, raid_program_state as store
+from tools.raid_program import raid_program_sanity as sanity_module
 from tools.raid_program.development_graph import GraphError
 from tools.raid_program.queued_build import DEFAULT_POLICY_RELATIVE
 
@@ -90,7 +92,8 @@ def world(tmp_path, monkeypatch):
     shutil.copy2(REAL / DEFAULT_POLICY_RELATIVE, policy)
     for boss in ('alpha', 'beta'):
         write_target(tmp_path, boss)
-    holder = {'discovery': discovery(), 'verdicts': {}, 'recorded': [], 'archived': [], 'archive_errors': []}
+    holder = {'discovery': discovery(), 'verdicts': {}, 'recorded': [], 'archived': [], 'archive_errors': [],
+              'sanity': {}, 'data_gate': {'ok': True, 'problems': [], 'warnings': []}}
 
     def archive(root, scenario, kill_id, sources, pointers):  # keeps the sources; the deleting one is in test_raid_program_build
         holder['archived'].append((scenario, kill_id, [str(path) for path in sources]))
@@ -101,6 +104,10 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setattr(rounds, 'discover_program', lambda root, raid, mode: copy.deepcopy(holder['discovery']))
     monkeypatch.setattr(rounds, 'verdict_for', lambda root, unit, label, build: copy.deepcopy(
         holder['verdicts'].get(unit['boss_key'])) if label else None)
+    # run_sanity (implementer S) and the DVC data gate are faked: tests never read real records or run dvc.
+    monkeypatch.setattr(sanity_module, 'load_sanity', lambda: lambda root, scenario, label: copy.deepcopy(
+        holder['sanity'].get(scenario, [])))
+    monkeypatch.setattr(data_module, 'data_gate', lambda root, dvc=None: copy.deepcopy(holder['data_gate']))
     rounds.select(tmp_path, holder['discovery'])
     holder['root'] = tmp_path
     return holder
@@ -134,7 +141,19 @@ def runner(binary: str | None = BINARY, fail: str | None = None):
     return run
 
 
+def accept_review(root: Path, worktree: bool = False, reviewer: str = 'separate-session reviewer') -> dict:
+    """Record an accepting review of the round diff (committed, or the working tree before a commit)."""
+    state = program(root)
+    base = review.round_base(state)
+    sha = review.sha256(review.round_diff(root, base) if worktree else review.round_diff(root, base, 'HEAD'))
+    report = root.parent / f'{root.name}-review-{len(rounds.current_round(state).get("reviews") or [])}.md'
+    report.write_text('no findings\n')
+    return review.record_review(root, 'accept', sha, reviewer, report)
+
+
 def fake_build(root: Path, **options) -> dict:
+    if program(root)['stage'] == 'review':
+        accept_review(root)
     return builds.build(root, runner=options.pop('run', runner()),
                         worktree_state=lambda root: {'clean': True, 'commit': 'c' * 40}, **options)
 
@@ -172,7 +191,7 @@ def both(**alpha) -> list[dict]:
 def complete_round(root: Path, verdicts: dict, holder: dict, rows: list[dict], label: str | None = None) -> None:
     for packet_id in rounds.current_round(program(root))['packets']:
         rounds.record_handoff(root, packet_id, None, external_reason='test')
-    assert program(root)['stage'] == 'build'
+    assert program(root)['stage'] == 'review'
     assert fake_build(root)['success']
     plans = runs.run_plans(root)['plans']
     if plans:
@@ -362,6 +381,10 @@ def test_stage_guards_and_stale_writers(world):
         rounds.record_handoff(root, 'boss:alpha', handoff(root, 'boss:alpha', ['sql/w/sub/alpha.sql']))
     rounds.record_handoff(root, 'boss:alpha', None, abandon_reason='agent did not return')
     rounds.record_handoff(root, 'boss:beta', handoff(root, 'boss:beta', ['tests/test_beta_strategy.py', 'sql/w/2026_beta.sql']))
+    assert program(root)['stage'] == 'review'
+    with pytest.raises(GraphError, match='not build'):
+        builds.build(root, runner=runner(), worktree_state=lambda root: {'clean': True, 'commit': 'c' * 40})
+    accept_review(root)
     assert program(root)['stage'] == 'build'
     with pytest.raises(GraphError, match='clean tree'):
         builds.build(root, runner=runner(), worktree_state=lambda root: {'clean': False, 'commit': 'c' * 40})
@@ -396,16 +419,18 @@ def test_build_uses_the_default_policy_job_count(world):
     jobs = policy['parallelism']['maximum_compiler_jobs']
     assert dry['policy']['path'] == DEFAULT_POLICY_RELATIVE.as_posix() and dry['policy']['maximum_compiler_jobs'] == jobs
     assert dry['commands']['worldserver_build'][-2:] == ['--parallel', str(jobs)]
+    assert not dry['gates']['review']['ok'] and dry['gates']['decisions']['ok'] and dry['gates']['data']['ok']
+    accept_review(root)
     assert f"{jobs} compiler jobs from the policy" in raid_program.resume(root)['next_action']
 
 
-def test_reopen_and_coordinator_fix_from_the_build_stage(world):
+def test_reopen_and_coordinator_fix_from_the_review_stage(world):
     root = world['root']
     rounds.plan(root)
     for packet_id in list(rounds.current_round(program(root))['packets']):
         rounds.record_handoff(root, packet_id, None, external_reason='x')
     rounds.record_fix(root, 'repaired a missing include after the handoffs')
-    assert program(root)['stage'] == 'build'
+    assert program(root)['stage'] == 'review'
     assert rounds.current_round(program(root))['coordinator_fixes'][0]['reason'].startswith('repaired')
     rounds.reopen_packet(root, 'boss:beta', 'review found a lawfulness defect')
     state = program(root)
@@ -499,7 +524,7 @@ def test_external_work_is_adopted_without_a_handoff_file(world):
     with pytest.raises(GraphError, match='not both'):
         rounds.record_handoff(root, 'boss:beta', None, abandon_reason='x', external_reason='y')
     rounds.record_handoff(root, 'boss:beta', None, abandon_reason='no agent')
-    assert program(root)['stage'] == 'build'
+    assert program(root)['stage'] == 'review'
     packets = raid_program.resume(root)['packets']
     assert packets['boss:alpha']['handoff'] == 'external' and packets['boss:beta']['handoff'] == 'abandoned'
 

@@ -23,7 +23,9 @@ from tools.raid_program.development_graph import GraphError, digest, utc_now
 STATE_PATH = Path('artifacts/cata_raid_program/raid_program_state_v1.json')
 SCHEMA = 'cata_raid_program_state_v1'
 LOCK_NAME = 'raid-program-state.lock'
-STAGES = ('plan', 'implement', 'build', 'run', 'e2e', 'complete')
+# 'review' (added 2026-09-29) sits between implement and build. Older states never hold it and load unchanged:
+# rounds already built are never gated, and the review gate applies from the next build.
+STAGES = ('plan', 'implement', 'review', 'build', 'run', 'e2e', 'complete')
 FOCUS = ('program', 'boss')
 # A program may be parked (another selected) only between rounds.
 SWITCHABLE_STAGES = ('plan', 'e2e', 'complete')

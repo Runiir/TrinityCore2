@@ -126,3 +126,5 @@ def test_program_verbs_are_forwarded_with_their_own_help(repo):
     completed = subprocess.run([sys.executable, '-m', 'tools.raid_program.raid_workloop', '--root', str(repo),
                                 'program', '--help'], cwd=REAL, text=True, capture_output=True)
     assert completed.returncode == 0 and 'raid_workloop program' in completed.stdout and 'ingest' in completed.stdout
+    for verb in ('refresh-data', 'review-diff', 'review', 'decide', 'run-batches'):
+        assert verb in completed.stdout, verb

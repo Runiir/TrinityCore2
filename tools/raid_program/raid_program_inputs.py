@@ -302,7 +302,7 @@ def _mode_claim_refusal(document: dict, mode: str, name: str) -> str | None:
 def mode_scoped_research_state(root: Path, contract: dict, strategy: dict | None, mode: str) -> tuple[str | None, str | None]:
     """The research state for ``mode`` from a mode override, or (None, None) when there is no override.
 
-    A raid program runs one mode. By the coordinator's decision (not yet ruled on by the user), a
+    A raid program runs one mode. Per the coordinator's decision, confirmed by the user on 2026-09-29, a
     contract that carries fidelity_state_by_mode overrides its contract-level fidelity_state for any
     mode it names (and entirely, when the field is malformed). The override yields 'accepted' only when
     the contract and its ledger both say so and neither lists an unresolved material claim whose

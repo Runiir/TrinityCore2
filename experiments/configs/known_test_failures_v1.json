@@ -1,0 +1,1772 @@
+{
+ "command": "pixi run python -m tools.raid_program.test_baseline refresh",
+ "commit": "94cbcdf3fb847ebc3f7a3892456dde6d3b57bace",
+ "counts": {
+  "checkout_reasons": 0,
+  "environment_only": 24,
+  "failed": 246,
+  "flaky_excluded": 0,
+  "known_failures": 246,
+  "passed": 6614,
+  "skipped": 18,
+  "tests": 6878
+ },
+ "failures": {
+  "tests/test_affliction_doomguard.py::test_production_admission_self_resolution_reservations_and_submission": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['c++', '-std=c++17', '-I', '<root>/src/server/game', '-I', '<root>/src/server/shared', '-I', '<root>/src/common', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_affliction_raid_combat_potion.py::test_native_item_lifecycle_health_ranking_and_reservation[79476-58091]": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_affliction_raid_combat_potion.py::test_native_item_lifecycle_health_ranking_and_reservation[79633-58145]": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_botauto_runtime_profiles_surface": {
+   "environment_only": false,
+   "reason": "assert '\\\\\"active_profile\\\\\"' in '\\n std::string const attemptFailure =\\n Cohort().ValidationAttemptFailureAttemptId == Cohort().AttemptId\\n ...ilure.empty() ? \"null\"\\n : (\"\\\\\"\" + JsonEscape(attemptFailure) + \"\\\\\"\")) << \"}\";\\n return json.s",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_combat_keeps_high_priority_movement_and_selects_instant_dps": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'state->MovementLease.ExpiresAtMs > nowMs' in '\\n if (target && IsImmediateNextValidationRouteEncounterMember(target->ToCreature()))\\n {\\n ResolvedComb...stLifecycleKey, nowMs, 5000))\\n MarkBotBlocked(*state, bot, ToS",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_decision_tick_caps_combat_and_validation_before_minimum_floor": {
+   "environment_only": false,
+   "reason": "AssertionError: context.State.DecisionTimer = std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok)' in '/*\\n * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information\\n *\\n * This program ...rgs::operator=(CastSpellExtraArgs",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_hostile_profile_execution_rejects_buffs_and_defers_moving_cast_time_spells": {
+   "environment_only": false,
+   "reason": "AssertionError: bot->CastSpell(target, action.SpellId, castArgs)",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_move_bot_to_point_keeps_matching_active_motion": {
+   "environment_only": false,
+   "reason": "AssertionError: bot->GetMotionMaster()->MovePoint(0, intent.X, intent.Y, intent.Z",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_move_bot_to_profile_range_projects_approaches_to_terrain": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'return MoveBotToPoint(state, bot, x, y, floorZ, false,' in '\\n if (!bot || !reference)\\n return false;\\n\\n // Ordinary ranged parasite assistance is a bounded singl...angedPosition.GetPositionZ()))\\n return true;\\n }",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_parallel_combat_calibration_is_isolated_and_uses_live_rotations": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'forbidArea, allowMultidot);' in '\\n Player* bot = GetBot(state);\\n CalibrationMetrics& metrics =\\n Cohort().CalibrationMetricsByGuid[stat...metrics.AddThreatChecks;\\n if (retained)\\n ++metrics.AddThreatSuccesses;\\n }",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_persistent_spec_setup_precedes_dummy_and_profile_rotations": {
+   "environment_only": false,
+   "reason": "assert '25780' in '\\n if (!bot || !bot->IsAlive())\\n return false;\\n\\n std::string const role = GetDungeonRole(bot);\\n B... return true;\\n }\\n\\n TryResolveBotBlocker(state, bot, \"persistent_combat_setup_ready\");\\n return false;\\n'",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_playerbot_runtime_roles_drive_universal_profile_combat": {
+   "environment_only": false,
+   "reason": "AssertionError: BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId,",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_quest_first_portfolio_routing_surface": {
+   "environment_only": false,
+   "reason": "assert 'if (MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ()))' in '#include \"Bots/BotWorldPopulationMgrValidationRouteTrashThreatControl.h\"\\n\\n#include \"Bots/BotActionArbiter.h\"\\n#incl...ol TryTan",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search": {
+   "environment_only": false,
+   "reason": "assert 'MoveBotToProfileRange(*state, bot, target, &action, true);' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...= pathRejected ? HazardPlanResult::PathRejected\\",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_rerun206_feral_dps_provisions_and_maintains_cat_form": {
+   "environment_only": false,
+   "reason": "assert '\"feral_druid_dps\": [768, 20484]' in 'from __future__ import annotations\\n\\nimport argparse\\nimport hashlib\\nimport json\\nimport re\\nimport tempfile\\nimpor... str(args.output_dir)}, sort_keys=True))\\n return 0\\n\\n\\nif __name__ == \"__",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'RecordRunStop();' in '\\n std::vector<CohortRuntime*> cohorts;\\n cohorts.reserve(_cohorts.size());\\n for (auto const& [_, runtime] ...\\n {\\n CohortScope scope = ScopeCohort(runtime);\\n if (scope)\\n ShutdownCohort();\\n",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_validation_bot_reattach_only_acks_typed_native_recovery_worldports": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'validation_same_instance_reattach_failed' in '\\n // World::Update passes the time since the previous world tick; a long\\n // diff is a world-thread stall tha... {\\n CohortScope scope = ScopeCohort(runtime);\\n if (sco",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_validation_route_group_focus_reaches_profile_action_without_threat_rewait": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_validation_route_terminal_paths_consume_manifest_without_waiting_for_next_tick": {
+   "environment_only": false,
+   "reason": "assert 'bot->GetSpellMinRangeForTarget(target, spellInfo)' in '#include \"Bots/BotSpellMinimumRange.h\"\\n#include \"Bots/BotBloodDecisionObservation.h\"\\n#include \"Bots/BotFireCombusti...ndidate;\\n }\\n else if (candidatePreferred(candidate, bes",
+   "when": "call"
+  },
+  "tests/test_autonomy_pipeline_smoke.py::test_walkable_descent_uses_native_paths_while_unresolved_falls_stay_fail_closed": {
+   "environment_only": false,
+   "reason": "assert 'else if (!strictNativeDescent && progressiveStaticRoute' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n\\n#include \"Bots/BotExperienceLearningPolicy.h\"\\n#include \"Bots/BotWorldPopu... : nullptr,\\n primaryDisposition, &primaryNativePro",
+   "when": "call"
+  },
+  "tests/test_bot_combat_event_export.py::test_combat_log_epoch_lifecycle_fixture_compiles_party_replacement": {
+   "environment_only": false,
+   "reason": "AssertionError: <tmp> In member function \u2018void BotWorldPopulationMgr::Stop()\u2019:",
+   "when": "call"
+  },
+  "tests/test_bot_combat_event_export.py::test_native_event_sequence_epoch_and_export_contract_is_bounded": {
+   "environment_only": false,
+   "reason": "assert 1024 < 1000",
+   "when": "call"
+  },
+  "tests/test_bot_no_cheat_contract.py::test_dk_unholy_presence_setup_is_a_receipted_native_player_cast": {
+   "environment_only": false,
+   "reason": "assert '{ CLASS_DEATH_KNIGHT, \"dps\", \"frost_death_knight\", 48265, 48265' in '\\n if (!bot || !bot->IsAlive())\\n return false;\\n\\n std::string const role = GetDungeonRole(bot);\\n B... return true;\\n }\\n\\n TryResolveBotBlocker(state, bot, \"per",
+   "when": "call"
+  },
+  "tests/test_bot_no_cheat_contract.py::test_hunter_admission_observes_exact_ordinary_pet_without_manufacturing_state": {
+   "environment_only": false,
+   "reason": "assert '!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)' in '\\n RaidRuntime& raid = Cohort().Raid;\\n if (raid.GroupGuid != group->GetGUID() || raid.AttemptId != Cohort().At...live && !raid.EncounterInProgress\\n && (previousWipeState !",
+   "when": "call"
+  },
+  "tests/test_bot_no_cheat_contract.py::test_melee_autoattack_is_a_persistent_toggle_independent_of_movement_and_gcd": {
+   "environment_only": false,
+   "reason": "assert 3 == 2",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_affliction_module.py::test_affliction_damage_stage_receipt_covers_requested_native_events": {
+   "environment_only": false,
+   "reason": "assert 'std::exchange(\\n PendingOutcome' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotCombatDamageAttribution.h\"\\n#include \"Bots/BotNativeLifeEv...ask, damage, unmitigatedDamage, 0, nowMs, false,\\n relatedEventSequence, nu",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_boss_dispatch_module.py::test_boss_dispatch_preparation_is_not_left_in_monolith": {
+   "environment_only": false,
+   "reason": "assert 'PrepareBossMechanicAction(state, bot, boundRouteTarget, result)' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArriv",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_calibration_bot_json_module.py::test_calibration_bot_action_json_is_not_left_in_monolith": {
+   "environment_only": false,
+   "reason": "assert 'AppendCalibrationBotActionJson(json, metrics);' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArrivalContext.RunTarg",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_movement_module.py::test_point_hazard_submission_keeps_same_tick_damage_movement_compatible": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'state->IsMoving' in 'bool HasMovementCompatibleLease(\\n BotWorldPopulationMgrBotState::WorldBotState const* state,\\n Player const* b...CastSuppressedTargetGuid == target->GetGUID())\\n excludedSpellId = state->Profile",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_admission_module.py::test_validation_admission_keeps_exact_roster_pet_identity_cohort_scoped": {
+   "environment_only": false,
+   "reason": "assert '!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotActiveSpecIdentity.h\"\\n#include \"Bots/BotAdmissionIdentity...e && !raid.EncounterInProgress\\n && (previousWipeStat",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_admission_module.py::test_validation_admission_seed_divergence_fails_closed": {
+   "environment_only": false,
+   "reason": "assert 'bot->GetGroup() == seed' in '#include \"Bots/BotMgr.h\"\\n#include \"Bots/BotRaidAreaAuthority.h\"\\n#include \"Chat.h\"\\n#include \"Config.h\"\\n#include \"D...eft.Score > right.Score;\\n return left.RecipeSpellId < right.RecipeSpellId;\\n });\\n",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_admission_module.py::test_validation_admission_seeds_raid_leader_before_map_entry": {
+   "environment_only": false,
+   "reason": "assert 'PlayerBot raid seed group created' in '#include \"Bots/BotMgr.h\"\\n#include \"Bots/BotRaidAreaAuthority.h\"\\n#include \"Chat.h\"\\n#include \"Config.h\"\\n#include \"D...eft.Score > right.Score;\\n return left.RecipeSpellId < right.RecipeSpellI",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_cohort_runtime_module.py::test_validation_cohort_runtime_pet_pinning_is_scoped_to_cohort_roster": {
+   "environment_only": false,
+   "reason": "assert '!LoadedBotMatchesPinnedHunterPet(bot, slot.ClassSpec)' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotActiveSpecIdentity.h\"\\n#include \"Bots/BotAdmissionIdentity...e && !raid.EncounterInProgress\\n && (previousWipeStat",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_route_drudge_module.py::test_drudge_linked_return_retains_movement_and_continues_combat": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'return RunEntranceMovement(entrance,' in ''",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_route_trash_threat_control_module.py::test_trash_threat_control_block_moves_once_at_terminal_boundary": {
+   "environment_only": false,
+   "reason": "assert 35640 < 31795",
+   "when": "call"
+  },
+  "tests/test_bot_world_population_mgr_validation_route_trash_threat_control_module.py::test_trash_threat_control_keeps_typed_objective_friend_and_post_boundary_state": {
+   "environment_only": false,
+   "reason": "assert 35640 < 31791",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_destructive_lifecycles_flush_before_player_invalidation": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_fingerprint_change_flushes_old_stream_before_replacing_identity": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_fingerprint_db_read_is_not_on_every_decision_tick": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_no_player_flush_uses_stored_identity_and_stream_result": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_persists_fingerprint_deltas_and_dedupes_repeatable_diagnostics": {
+   "environment_only": false,
+   "reason": "assert 'DecisionFingerprintPersistHeartbeatMs' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArrivalContext.RunTargetEngagem",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_route_reset_clears_same_hash_persistence_baseline_without_underflow": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_stop_flushes_pending_tail_with_saturating_deltas": {
+   "environment_only": false,
+   "reason": "assert 'void BotWorldPopulationMgr::FlushDecisionFingerprintMemory' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArrivalCon",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_stream_result_survives_a_to_b_flush": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_hotpath_uses_immutable_guid_index_and_edge_only_formation_payloads": {
+   "environment_only": false,
+   "reason": "assert 'std::unordered_map<uint32, WorldBotState*> stateByGuid' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArrivalContext",
+   "when": "call"
+  },
+  "tests/test_botworld_hotpath_optimization.py::test_semantic_outcome_stats_remain_database_authoritative": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_bwd_shard_fixtures.py::test_live_preparation_materializes_all_110_accounts_and_characters": {
+   "environment_only": false,
+   "reason": "ValueError: Protwar: unknown canonical gear profile 'protection_warrior'",
+   "when": "call"
+  },
+  "tests/test_calibration_chunk_capture.py::test_actual_main_final_drain_overrides_precleanup_watchdog_report[False]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_chunk_capture.py::test_actual_main_final_drain_overrides_precleanup_watchdog_report[True]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_chunk_capture.py::test_synthetic_affliction_final_assembly_keeps_diagnostic_gate_without_raw_artifacts[0]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_chunk_capture.py::test_synthetic_affliction_final_assembly_keeps_diagnostic_gate_without_raw_artifacts[1]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_execute_schedule.py::test_damage_between_schedule_updates_is_observed_before_health_mutation": {
+   "environment_only": false,
+   "reason": "IndexError: list index out of range",
+   "when": "call"
+  },
+  "tests/test_calibration_execute_schedule.py::test_damage_scoring_uses_the_same_half_open_300s_boundary": {
+   "environment_only": false,
+   "reason": "IndexError: list index out of range",
+   "when": "call"
+  },
+  "tests/test_calibration_execute_schedule.py::test_exact_wowsims_single_target_health_schedule_and_boundaries": {
+   "environment_only": false,
+   "reason": "IndexError: list index out of range",
+   "when": "call"
+  },
+  "tests/test_calibration_execute_schedule.py::test_health_schedule_is_fixture_only_and_records_raw_target_reads": {
+   "environment_only": false,
+   "reason": "IndexError: list index out of range",
+   "when": "call"
+  },
+  "tests/test_calibration_execute_schedule.py::test_status_exposes_reconstructable_observations_without_a_pass_flag": {
+   "environment_only": false,
+   "reason": "assert 'std::array<TargetHealthPhaseObservation, 5>' in '#ifndef TRINITY_BOT_WORLD_POPULATION_MGR_H\\n#define TRINITY_BOT_WORLD_POPULATION_MGR_H\\n\\n#include \"ObjectGuid.h\"\\n#i...pedOverride<CohortRuntime> _scope;\\n};\\n\\n#define sBotWorldPopu",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_affliction_launch_reconciles_profession_and_is_idempotent[prior0]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_affliction_launch_reconciles_profession_and_is_idempotent[prior1]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_affliction_launch_reconciles_profession_and_is_idempotent[prior2]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_both_absent_canonical_target_main_preserves_no_profession_path[False]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_both_absent_canonical_target_main_preserves_no_profession_path[True]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[False-pool_tags0]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[False-pool_tags1]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[False-pool_tags2]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[True-pool_tags0]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[True-pool_tags1]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_pool_before_any_reset_or_spell_write[True-pool_tags2]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_main_rejects_runtime_pool_override_before_reset": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_reset_only_calibration_launch_repairs_existing_actor[disabled]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_reset_only_calibration_launch_repairs_existing_actor[inactive]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_actual_reset_only_calibration_launch_repairs_existing_actor[missing]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_affliction_dry_run_and_session_do_not_mutate_professions": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_configured_socket_data_rejects_before_database_access[missing]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_configured_socket_data_rejects_before_database_access[wrong_hash]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_actual_main_repairs_socket_items_and_skill_atomically_then_noop": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_correct_creators_with_native_trailing_separator_are_noop": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_dry_run_socket_plan_has_no_database_access": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[duplicate]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[entry]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[item_readback]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[missing]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[other_field]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[owner]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_item_identity_and_combined_readback_fail_closed[skill_readback]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_missing_both_profession_fields_cannot_hide_profile_socket_requirement": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_profile_drift_preflight_has_no_database_or_reset": {
+   "environment_only": false,
+   "reason": "AttributeError: 'SocketDatabase' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_dps011_profile_manifest_hash_drift_rejects_before_reset": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_fire_without_required_professions_keeps_skill_rows_unchanged": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_frozen_socket_preparation_uses_validated_authority_without_ambient_data[False]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_frozen_socket_preparation_uses_validated_authority_without_ambient_data[True]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>0]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>1]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>2]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>3]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>4]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>5]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[False-<lambda>6]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>0]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>1]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>2]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>3]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>4]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>5]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_invalid_profession_requirements_main_rejects_before_any_mutation[True-<lambda>6]": {
+   "environment_only": false,
+   "reason": "AttributeError: 'Database' object has no attribute 'preparation_order'",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_profession_outside_frozen_authority_rejects_before_mutation": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_profession_readback_failure_rolls_back_spell_and_skill_transaction": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_session_does_not_add_profession_preflight_owner": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_known_spell_preparation.py::test_session_keeps_its_separate_provisioning_owner": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_calibration_self_provided_aura_sources.py::test_actual_reference_observer_attributes_every_wrath_air_application": {
+   "environment_only": false,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_canonical_dps_glyphs.py::test_all_six_bwd_shards_clone_canonical_or_declared_override_glyph_source": {
+   "environment_only": false,
+   "reason": "KeyError: 'catalog:balance_druid'",
+   "when": "call"
+  },
+  "tests/test_cata_raid_dps_acceptance.py::test_static_reference_mismatch_does_not_reserve_a_physical_try": {
+   "environment_only": true,
+   "reason": "tools.bot_ml.live_validation_session.LiveValidationSessionError: unable to determine an exact Git HEAD",
+   "when": "call"
+  },
+  "tests/test_cata_raid_runtime_foundation.py::test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonical_entrance": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'group->GetLeaderGUID() == state.ValidationCohortLeaderGuid' in 'bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context)\\n{\\n ...rldPopulationMgrPlay::Context::Froz",
+   "when": "call"
+  },
+  "tests/test_cata_raid_runtime_foundation.py::test_explicit_runtime_profile_survives_start_config_reload": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_cata_raid_runtime_foundation.py::test_no_pch_runtime_declares_roster_plan_before_use_and_compares_transport_identity_by_guid": {
+   "environment_only": false,
+   "reason": "assert '#include \"VehicleDefines.h\"' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotNativeLifeEvents.h\"\\n#include \"Bots/BotWorldPopulationMgrM...ce2d;\\nusing BotWorldPopulationMgrNativeHelpers::UnitHealthPct;\\nusing BotWorld",
+   "when": "call"
+  },
+  "tests/test_cata_raid_runtime_foundation.py::test_phase1_dead_member_gate_requires_latched_exact_native_full_wipe": {
+   "environment_only": false,
+   "reason": "assert '\"wipe_latched\\\\\":true' in 'ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly\\n && Cohort().Config.ValidationRouteKind == \"bos...ifying free-roam bots retain class self-res.\\n if (!Cohort().Config.ValidationRouteEnable\\n '",
+   "when": "call"
+  },
+  "tests/test_cata_raid_runtime_foundation.py::test_phase1_magmaw_uses_typed_native_full_wipe_recovery_policy": {
+   "environment_only": false,
+   "reason": "KeyError: 'split_member_anchors'",
+   "when": "call"
+  },
+  "tests/test_chainwielder_owner_checkpoint.py::test_generic_controller_route_hold_crosses_kernel_and_route_gate": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['c++', '-std=c++17', '-Wall', '-Wextra', '-Werror', '-I', '<root>/src/common', '-I', '<root>/src/server/game', '-I', '<root>/src/server/game/Entities/Object', '<tmp>', '-o', '<tmp>']' returned non-ze",
+   "when": "call"
+  },
+  "tests/test_chainwielder_prestart_bundle.py::test_target_suffix_reproduces_v19_and_binds_runtime_identity": {
+   "environment_only": false,
+   "reason": "AssertionError: assert {'expected_st...ndex': 2, ...} == {'node_count'...: 'boss', ...}",
+   "when": "call"
+  },
+  "tests/test_chainwielder_profile_authority.py::test_profile_handoff_is_native_resolver_after_route_authority_rejects_future_target": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile)' in 'ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount... if (!selfTarget)\\n a",
+   "when": "call"
+  },
+  "tests/test_composite_fixture_replay_launcher.py::test_build_realization_verifies_both_external_receipts": {
+   "environment_only": true,
+   "reason": "tools.raid_program.composite_fixture_replay_launcher.ReplayPlanError: binary_receipt_binding_mismatch",
+   "when": "call"
+  },
+  "tests/test_development_capture.py::test_development_magmaw_setup_skips_recurrence_but_keeps_strict_gates": {
+   "environment_only": false,
+   "reason": "SystemExit: runtime profile assets rejected: [Errno 2] No such file or directory: '<tmp>'",
+   "when": "call"
+  },
+  "tests/test_development_capture.py::test_development_run_cannot_pass_with_source_only": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_drudge_activation_replay.py::test_exact_drudge_candidates_fail_closed_behind_the_typed_route_latch": {
+   "environment_only": false,
+   "reason": "assert 2 == 3",
+   "when": "call"
+  },
+  "tests/test_drudge_combat_envelope.py::test_entrance_pull_isolates_each_native_rush_landing": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'member->GetExactDist2d(other)' in 'auto rushBaitIsolationSafeAt = [&](Player const* member, uint32 slot,\\n float x, float y)\\n {\\n if (...r && rushBaitIsolationSafeAt(member, slot,\\n member->GetPositionX(), member->G",
+   "when": "call"
+  },
+  "tests/test_drudge_combat_envelope.py::test_established_entrance_maintenance_has_its_native_callbacks_bound": {
+   "environment_only": false,
+   "reason": "assert 'DeclaredAnchorFor(pullOwnerSlot)' in '#include \"Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudge.h\"\\n\\n#include ...n.SpellId);\\n Target = source;\\n State.TargetGuid = source->GetGUID();\\n r",
+   "when": "call"
+  },
+  "tests/test_drudge_lane_canonical_roster_identity.py::test_the_lane_selection_uses_it_and_the_full_route_satisfies_it": {
+   "environment_only": false,
+   "reason": "KeyError: 'split_lane_tank_slots'",
+   "when": "call"
+  },
+  "tests/test_drudge_threat_seed_replay.py::test_profile_candidates_publish_live_cast_time_to_seed_selector": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 'SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;' in 'std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(Player const* bot, Unit const* targe",
+   "when": "call"
+  },
+  "tests/test_elemental_combat_totem_selection.py::test_actual_combat_totem_selector": {
+   "environment_only": true,
+   "reason": "subprocess.CalledProcessError: Command '['git', 'show', '<hex>:src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp']' returned non-zero exit status 128.",
+   "when": "call"
+  },
+  "tests/test_elemental_fulmination_gate.py::test_actual_candidate_builder_and_regular_selection_use_charges": {
+   "environment_only": false,
+   "reason": "TypeError: 'NoneType' object is not subscriptable",
+   "when": "call"
+  },
+  "tests/test_fire_survival_combat_potions.py::test_actual_compiled_combustion_condition": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_friendly_spell_native_range.py::test_actual_try_cast_friendly_spell_defers_range_to_native_cast": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_hunter_calibration_aura_observation.py::test_actual_owner_aura_aggregation_and_serialization": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['<tmp>']' died with <Signals.SIGABRT: 6>.",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[disabled-beast_mastery_hunter]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[disabled-marksmanship_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[disabled-survival_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[inactive-beast_mastery_hunter]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[inactive-marksmanship_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[inactive-survival_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[missing-beast_mastery_hunter]": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[missing-marksmanship_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_actual_hunter_launch_repairs_parent_and_repeated_launch_is_noop[missing-survival_hunter]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_hunter_actual_preparation_rejects_actor_or_readback_and_rolls_back[failed_readback]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_hunter_actual_preparation_rejects_actor_or_readback_and_rolls_back[in_use]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_hunter_actual_preparation_rejects_actor_or_readback_and_rolls_back[online]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_hunter_actual_preparation_rejects_actor_or_readback_and_rolls_back[wrong_class]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<tmp> 2] No such file or directory: 'world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mail_specialization_provisioning.py::test_unlinked_hunter_metadata_rejects_reconciliation_and_main_before_reset": {
+   "environment_only": false,
+   "reason": "tools.raid_program.runtime_asset_safe_io.SafePathError: missing:<root>/unused-world.conf:[Errno 2] No such file or directory: 'unused-world.conf'",
+   "when": "call"
+  },
+  "tests/test_hunter_mark_setup_order.py::test_hunter_mark_obeys_combat_ranking_through_setup_consumer": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_hunter_native_spell_override.py::test_native_override_admission_and_fresh_direct_submission": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['c++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_hunter_readiness_health_gate.py::test_max_hostile_gate_is_appended_bound_exported_and_all_callers_supply_presence": {
+   "environment_only": false,
+   "reason": "assert ': 0.0f, target != nullptr)' in '#include \"Bots/BotSpellMinimumRange.h\"\\n#include \"Bots/BotSpellResolution.h\"\\n#include \"Bots/BotBloodDecisionObservat...lassSpecProfileEscape(candidate ? candidate->RejectReason : \"no_valid_action\") <",
+   "when": "call"
+  },
+  "tests/test_hunter_readiness_health_gate.py::test_readiness_uses_hostile_health_in_actual_selection_branches": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['c++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['<tmp>']' died with <Signals.SIGABRT: 6>.",
+   "when": "call"
+  },
+  "tests/test_magmaw_personal_escape_live_admission.py::test_fresh_fixture_expansion_keeps_launcher_plans_outside_run_root": {
+   "environment_only": false,
+   "reason": "KeyError: 'preflight_handoff'",
+   "when": "call"
+  },
+  "tests/test_magmaw_personal_escape_live_admission.py::test_launcher_repair_keeps_gameplay_and_native_terrain_out_of_scope": {
+   "environment_only": false,
+   "reason": "KeyError: 'acceptance'",
+   "when": "call"
+  },
+  "tests/test_magmaw_personal_escape_live_admission.py::test_reviewed_personal_escape_admits_generic_fixture_replay": {
+   "environment_only": false,
+   "reason": "KeyError: 'implementation_handoff'",
+   "when": "call"
+  },
+  "tests/test_magmaw_support_target_admission.py::test_native_opportunity_and_production_support_selector[26c536140a4e23c43d3d8e5016d3d1aa0463a716-marksmanship_hunter]": {
+   "environment_only": true,
+   "reason": "subprocess.CalledProcessError: Command '['git', 'show', '<hex>:src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h']' returned non-zero exit status 128.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_checkpoint_capture.py::test_capture_modules_and_import_graph_stay_bounded": {
+   "environment_only": false,
+   "reason": "assert False",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_exact_transfer_dialect_composes_and_verifies_atomically": {
+   "environment_only": false,
+   "reason": "tools.raid_program.chainwielder_prestart_bundle.BundleError: magmaw_transfer_ledger_manifest_mismatch",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_bundle_tamper_and_partial_overlay_fail_closed[config]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.chainwielder_prestart_bundle.BundleError: magmaw_transfer_ledger_manifest_mismatch",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_bundle_tamper_and_partial_overlay_fail_closed[partial]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.chainwielder_prestart_bundle.BundleError: magmaw_transfer_ledger_manifest_mismatch",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_bundle_tamper_and_partial_overlay_fail_closed[profile]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.chainwielder_prestart_bundle.BundleError: magmaw_transfer_ledger_manifest_mismatch",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_bundle_tamper_and_partial_overlay_fail_closed[seal]": {
+   "environment_only": false,
+   "reason": "tools.raid_program.chainwielder_prestart_bundle.BundleError: magmaw_transfer_ledger_manifest_mismatch",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_coherent_full_route_semantic_drift[0-kind-trash]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_coherent_full_route_semantic_drift[0-map_id-670]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_coherent_full_route_semantic_drift[3-map_id-670]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_forged_suite_identity[config_identity-forged-config]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_forged_suite_identity[manifest_sha256-0000000000000000000000000000000000000000000000000000000000000000]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_minimal_hand_authored_suite_receipt": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_rejects_partial_or_extra_suite_receipt": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_magmaw_transfer_prestart_bundle.py::test_transfer_route_suffix_substitution_fails_closed": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_marksmanship_steady_shot_aura.py::test_scoped_migration_and_actual_aura_condition_evaluator": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_baseline_inventory_policy_contract_coverage_and_manifest_are_deterministic": {
+   "environment_only": true,
+   "reason": "AssertionError: assert {'artifact_co...e': True, ...} == {'artifact_co...e': True, ...}",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor": {
+   "environment_only": false,
+   "reason": "AssertionError: assert {'allow_area_..., 42347], ...} == {'allow_area_...slot': 2, ...}",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_boss_routes_default_to_long_observation_window": {
+   "environment_only": false,
+   "reason": "SystemExit: validation route selector did not resolve to a scenario node",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts": {
+   "environment_only": false,
+   "reason": "ValueError: Protwar: unknown canonical gear profile 'protection_warrior'",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_main_preserves_watchdog_report": {
+   "environment_only": false,
+   "reason": "tools.bot_ml.live_validation_session.LiveValidationSessionError: unable to determine an exact Git HEAD",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_preserve_worldserver_session_excludes_shutdown": {
+   "environment_only": false,
+   "reason": "SystemExit: calibration reference preflight failed: {\"calibration_mode\": \"single_target_300\", \"hydrate_command\": \"pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate\", \"reasons\": [\"generated_result_artifacts_bound\", \"r",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_rejects_cross_shard_direct_route_session_profile": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_rejects_direct_route_soap_config_bypass": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_live_bot_validation_rejects_soap_route_config_bypass[--validation-route-sequence]": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_phase2_runner_binds_every_attempt_and_requires_external_epoch_database_identity": {
+   "environment_only": true,
+   "reason": "tools.bot_ml.live_validation_session.LiveValidationSessionError: unable to determine an exact Git HEAD",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_phase4_rotation_static_contract_and_manifest_are_deterministic": {
+   "environment_only": false,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_survival_candidate_generates_exact_wowsims_item_payloads": {
+   "environment_only": false,
+   "reason": "assert 20 == (16 + 3)",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_validation_provisioning_generates_reproducible_sql_and_readiness": {
+   "environment_only": false,
+   "reason": "ValueError: Protwar: unknown canonical gear profile 'protection_warrior'",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_validation_provisioning_verifier_accepts_generated_payloads": {
+   "environment_only": false,
+   "reason": "assert 1 == 0",
+   "when": "call"
+  },
+  "tests/test_ml_pipeline.py::test_validation_scenario_manifests_link_routes_mechanics_and_provisioning": {
+   "environment_only": false,
+   "reason": "AssertionError: assert [{'kind': 'tr...nostic', ...}] == []",
+   "when": "call"
+  },
+  "tests/test_native_path_checkpoint.py::test_capture_stops_on_failed_checkpoint_before_stable_or_semantic_stall[False]": {
+   "environment_only": false,
+   "reason": "TypeError: CaptureSetup.__init__() missing 1 required positional argument: 'runtime_asset_closure'",
+   "when": "call"
+  },
+  "tests/test_native_path_checkpoint.py::test_capture_stops_on_failed_checkpoint_before_stable_or_semantic_stall[True]": {
+   "environment_only": false,
+   "reason": "TypeError: CaptureSetup.__init__() missing 1 required positional argument: 'runtime_asset_closure'",
+   "when": "call"
+  },
+  "tests/test_native_path_checkpoint.py::test_normal_fixture_capture_installs_verified_native_dialect": {
+   "environment_only": false,
+   "reason": "assert '**checkpoint_dialect[\"scheduler_kwargs\"]' in 'from __future__ import annotations\\n\\nimport argparse\\nfrom dataclasses import dataclass\\nimport hashlib\\nimport json...uild_identity_before=build_provenance.get(\"build_worktree_identity",
+   "when": "call"
+  },
+  "tests/test_native_path_floor_diagnostic.py::test_native_path_floor_observation_reaches_diagnose_and_trace_json": {
+   "environment_only": false,
+   "reason": "assert '\\\\\"native_path_floor\\\\\"' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrPlay.h\"\\n#include \"Bots/BotRaidLockoutCo... else\\n escaped << c;\\n break;\\n }\\n }\\n return escaped.str();\\n}\\n'",
+   "when": "call"
+  },
+  "tests/test_native_spell_minimum_range.py::test_frozen_2af_rejected_candidate_loses_movement_envelope": {
+   "environment_only": true,
+   "reason": "subprocess.CalledProcessError: Command '['git', 'show', '2af61a1cef:src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp']' returned non-zero exit status 128.",
+   "when": "call"
+  },
+  "tests/test_native_spell_minimum_range.py::test_frozen_433_producer_rejects_native_legal_recorded_point": {
+   "environment_only": true,
+   "reason": "subprocess.CalledProcessError: Command '['git', 'show', '4337116eeb:src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp']' returned non-zero exit status 128.",
+   "when": "call"
+  },
+  "tests/test_phase1_corridor_reengagement.py::test_source_keeps_reengagement_narrow_and_preserves_route_gates": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_phase1_generic_mechanic_smoke.py::test_generic_smoke_executes_every_fixture_contract_and_reconstructs_identity": {
+   "environment_only": true,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_phase1_generic_mechanic_smoke.py::test_independent_verifier_accepts_evidence_source_commit_as_ancestor": {
+   "environment_only": true,
+   "reason": "subprocess.CalledProcessError: Command '['git', 'rev-parse', 'HEAD^']' returned non-zero exit status 128.",
+   "when": "call"
+  },
+  "tests/test_phase1_generic_mechanic_smoke.py::test_raw_evidence_and_independent_verifier_cover_outcomes_and_exact_identity": {
+   "environment_only": true,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_build_control_capture_uses_only_admission_bound_layered_authority": {
+   "environment_only": false,
+   "reason": "SystemExit: runtime profile assets rejected: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_checkpoint_arm_emits_once_at_stable_pre_route_gate_without_full_foundation_acceptance": {
+   "environment_only": false,
+   "reason": "AssertionError: assert b'' == b'botautochai...bbbbbbbbbbb\\n'",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_checkpoint_arm_gate_requires_two_matching_ready_identities": {
+   "environment_only": false,
+   "reason": "assert 0 == 1",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_checkpoint_controller_pre_route_probe_closes_live_ordering_race": {
+   "environment_only": false,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_checkpoint_pre_route_readiness_resolves_watchdog_scope_validator": {
+   "environment_only": false,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_generic_profile_range_capture_preflight_uses_verified_bundle_admission": {
+   "environment_only": false,
+   "reason": "SystemExit: runtime profile assets rejected: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_magmaw_diagnostic_accepts_only_its_materialized_roster_identity": {
+   "environment_only": false,
+   "reason": "assert False is True",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_preflight_reports_coordinator_and_protected_process_overlap": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_phase1_raid_foundation_capture.py::test_targeted_chainwielder_scheduler_binds_stable_runtime_scope_before_demux": {
+   "environment_only": false,
+   "reason": "SystemExit: runtime profile assets rejected: drudge_selected_route_scenario_missing",
+   "when": "call"
+  },
+  "tests/test_phase9_live_qualification.py::test_phase9_serial_plan_covers_targeted_specs_and_protection_regression": {
+   "environment_only": true,
+   "reason": "tools.bot_ml.live_validation_session.LiveValidationSessionError: unable to determine an exact Git HEAD",
+   "when": "call"
+  },
+  "tests/test_player_gear_acquisition.py::test_shard_dps_equipment_matches_promoted_profile_after_all_overlays": {
+   "environment_only": false,
+   "reason": "assert 31 == 30",
+   "when": "call"
+  },
+  "tests/test_profession_enchant_setup.py::test_real_diagnostic_provisioning_sql_keeps_secondaries_and_only_required_tailoring": {
+   "environment_only": false,
+   "reason": "AssertionError: assert 4 == 5",
+   "when": "call"
+  },
+  "tests/test_raid_agent_skill_runtime_bounds.py::test_skill_local_markdown_references_resolve[raid-shard-architecture/SKILL.md]": {
+   "environment_only": true,
+   "reason": "AssertionError: <root>/.agents/skills/raid-shard-architecture/SKILL.md: missing references/sealed-replay.md",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_all_registered_worktrees_share_git_common_queue_state": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_fifo_single_admission_and_cancel_waiter[policy_path0]": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_fifo_single_admission_and_cancel_waiter[policy_path1]": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_killed_cli_lease_owner_is_recovered_without_orphan_child": {
+   "environment_only": false,
+   "reason": "AssertionError: condition did not become true before timeout",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_receipt_rejects_worldserver_not_produced_by_ticket": {
+   "environment_only": true,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_stale_recovery_is_pid_reuse_safe_and_cleans_child_group": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_synthetic_pressure_breach_aborts_complete_process_group": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_two_cli_runs_share_one_fifo_lease_and_emit_valid_receipts": {
+   "environment_only": false,
+   "reason": "AssertionError: condition did not become true before timeout",
+   "when": "call"
+  },
+  "tests/test_raid_build_coordinator.py::test_v8_worldserver_command_and_environment_are_policy_owned": {
+   "environment_only": true,
+   "reason": "tools.raid_program.queued_build.CoordinatorError: fatal: not a git repository (or any of the parent directories): .git",
+   "when": "call"
+  },
+  "tests/test_raid_prerequisites.py::test_spawn_split_matches_the_native_scripts": {
+   "environment_only": false,
+   "reason": "AssertionError: assert None",
+   "when": "call"
+  },
+  "tests/test_raid_workloop.py::test_hagara_catalog_alias_joins_script_readiness": {
+   "environment_only": true,
+   "reason": "tools.raid_program.development_graph.GraphError: use the canonical coordinator worktree; do not fork progress across worktrees",
+   "when": "call"
+  },
+  "tests/test_raid_workloop.py::test_script_readiness_uses_source_tree_identity": {
+   "environment_only": false,
+   "reason": "AssertionError: assert '<hex>...<hex>' == '<hex>...<hex>'",
+   "when": "call"
+  },
+  "tests/test_reference_floor_intent.py::test_reference_floor_is_scoped_and_absent_by_default": {
+   "environment_only": false,
+   "reason": "assert 'if (intent.ReferenceFloorZ)' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n\\n#include \"Bots/BotExperienceLearningPolicy.h\"\\n#include \"Bots/BotWorldPopu... : nullptr,\\n primaryDisposition, &primaryNativeProof,\\n localFallbackAttempted",
+   "when": "call"
+  },
+  "tests/test_reference_floor_intent.py::test_reference_floor_keeps_generic_strictness_and_four_yard_rejection": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_rogue_apl_alignment.py::test_assassination_pinned_apl_refreshes_rupture_and_uses_five_point_cold_blood": {
+   "environment_only": false,
+   "reason": "FileNotFoundError: [Errno 2] No such file or directory: '<root>/artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/<hex>.json'",
+   "when": "call"
+  },
+  "tests/test_rogue_apl_alignment.py::test_combat_pinned_apl_has_no_rupture_and_requires_five_point_eviscerate": {
+   "environment_only": false,
+   "reason": "FileNotFoundError: [Errno 2] No such file or directory: '<root>/artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/<hex>.json'",
+   "when": "call"
+  },
+  "tests/test_rogue_apl_alignment.py::test_combat_revealing_strike_pinned_apl_requires_slice_and_dice_and_at_most_four_points": {
+   "environment_only": false,
+   "reason": "FileNotFoundError: [Errno 2] No such file or directory: '<root>/artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/<hex>.json'",
+   "when": "call"
+  },
+  "tests/test_rotation_mechanics_review.py::test_affliction_runtime_profile_covers_the_pinned_apl_player_spells": {
+   "environment_only": false,
+   "reason": "FileNotFoundError: [Errno 2] No such file or directory: '<root>/artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/native_requests/<hex>.json'",
+   "when": "call"
+  },
+  "tests/test_runtime_asset_parent_callers.py::test_phase9_plan_forwards_runtime_asset_closure": {
+   "environment_only": true,
+   "reason": "tools.bot_ml.live_validation_session.LiveValidationSessionError: unable to determine an exact Git HEAD",
+   "when": "call"
+  },
+  "tests/test_runtime_asset_preflight.py::test_production_cli_rejects_route_change_during_asset_verification": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  },
+  "tests/test_shard_coordinator.py::test_finalized_shard_run_dir_is_ingestible": {
+   "environment_only": true,
+   "reason": "AssertionError: {'closed_utc': '<time>+00:00', 'console': {'abandoned_reply_pending': False, 'healthy': True, 'ser...ucture_failures': [], 'ingest': [['pixi', 'run', 'python', '-m', 'tools.raid_program.scoreboard', 'ingest', ...]], ...}",
+   "when": "call"
+  },
+  "tests/test_shared_instance_fixture.py::test_checked_in_pair_resolves_disjoint_frozen_instances": {
+   "environment_only": false,
+   "reason": "ValueError: fixture input mismatch: dataset/bot_runtime_profiles/profiles.json",
+   "when": "call"
+  },
+  "tests/test_shared_instance_fixture.py::test_pair_provisioning_excludes_other_frozen_pools": {
+   "environment_only": false,
+   "reason": "ValueError: fixture input mismatch: dataset/bot_runtime_profiles/profiles.json",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_cannot_complete_while_falling": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_is_a_typed_movement_intent_not_a_synthetic_motion": {
+   "environment_only": false,
+   "reason": "assert 'BotNativeAction::NativeDescent' in '#include \"Bots/BotWorldPopulationMgr.h\"\\n#include \"Bots/BotWorldPopulationMgrValidationRouteActiveCombat.h\"\\n#include...TrashClusterCleared;\\n return terminalArrivalContext.RunTargetEngagement(\\n ",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_no_progress_is_a_bounded_terminal_attempt_failure": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_proximity_cannot_complete_before_typed_reconciliation": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_reachability_accepts_only_a_complete_native_path": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_rejects_incomplete_primary_path_without_partial_fallback": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_rejects_incomplete_step_and_onward_paths": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_requires_all_five_members_at_barrier": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_requires_exact_onward_path_before_ready": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_terminal_latches_one_cohort_failure_and_event": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_descent_tracks_player_observations_and_requires_cohort_barrier": {
+   "environment_only": false,
+   "reason": "assert 'ValidationRouteDescentDepartureObserved' in '#ifndef TRINITY_BOT_WORLD_POPULATION_MGR_H\\n#define TRINITY_BOT_WORLD_POPULATION_MGR_H\\n\\n#include \"ObjectGuid.h\"\\n#i...pedOverride<CohortRuntime> _scope;\\n};\\n\\n#define sBotWorldPopulati",
+   "when": "call"
+  },
+  "tests/test_stonecore_native_descent.py::test_unsupported_descent_action_terminalizes_the_cohort_once": {
+   "environment_only": false,
+   "reason": "ValueError: substring not found",
+   "when": "call"
+  },
+  "tests/test_validation_route_boss_engagement.py::test_validation_route_boss_engagement_behavior": {
+   "environment_only": false,
+   "reason": "subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', '<tmp>', '-o', '<tmp>']' returned non-zero exit status 1.",
+   "when": "call"
+  },
+  "tests/test_validation_scenario_stage_preflight.py::test_stale_default_route_stage_is_rejected_before_provisioning": {
+   "environment_only": false,
+   "reason": "AssertionError: Regex pattern did not match.",
+   "when": "call"
+  }
+ },
+ "flaky_excluded": {},
+ "generated_at": "2026-09-30T06:19:45Z",
+ "method": {
+  "checkout_reason_rule": "not recorded: the checkout was not clean at the baseline commit before and after the rerun, or changed during it, so a different rerun reason could be an uncommitted regression",
+  "checkout_state": {
+   "after_rerun": {
+    "clean": false,
+    "files_sha256": "14837616d187e4a617a273222685297a9fac37be9c3103e304c25ce578a4115f",
+    "head": "94cbcdf3fb847ebc3f7a3892456dde6d3b57bace",
+    "tracked_changes": 28,
+    "untracked_python_files": 24
+   },
+   "before_rerun": {
+    "clean": false,
+    "files_sha256": "14837616d187e4a617a273222685297a9fac37be9c3103e304c25ce578a4115f",
+    "head": "94cbcdf3fb847ebc3f7a3892456dde6d3b57bace",
+    "tracked_changes": 28,
+    "untracked_python_files": 24
+   },
+   "checkout_reasons_trusted": false,
+   "unchanged": true
+  },
+  "chunk_timeout_sec": 1800,
+  "chunks": 41,
+  "environment_only_rule": "a known failure that passed when rerun once in the main checkout; a dirty checkout can only move a pass from fixed to environment_only_passed",
+  "export": "git archive HEAD, extracted under ~/.cache/trinity-test-baseline/<sha12>-<run id>/tree",
+  "flaky_rule": "failed in some run but not identically in all: excluded from failures, with the failure reasons seen; check calls another reason new",
+  "jobs": 8,
+  "known_failure_rule": "failed in every run with the same normalized reason; every run's pytest chunks completed cleanly",
+  "local_inputs": [
+   {
+    "mode": "symlink",
+    "path": "build"
+   },
+   {
+    "mode": "symlink",
+    "path": "data"
+   },
+   {
+    "mode": "symlink",
+    "path": "models"
+   },
+   {
+    "mode": "symlink",
+    "path": ".pixi"
+   },
+   {
+    "mode": "copy",
+    "path": "trinity-worldserver-test.conf"
+   },
+   {
+    "mode": "copy",
+    "path": "trinity-authserver-test.conf"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/bot_policy_dvclive/eval"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/bot_policy_dvclive/train"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/full_raid_clear_r11_20260927.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_calibration_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validation_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_control_20260921.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_compact_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_compact_v2_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_v2_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v2_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v3_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v4_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_review_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_review_v2_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_review_v3_20260921.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_treatment_20260921.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_drift_review_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_drift_review_retry_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_checkpoint_review_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_calibration_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_review_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_review_20260920.json/examples.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_route_checkpoint_20260920.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_20260922.raw.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_jev_locality_replay_20260919.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.closure.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.raw.tar.zst"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.review.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_master_d495_20260919.review.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_20260922.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/round2_batch1_20260925.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/round2_client_extracts"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/round3_batch1_20260925.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/round4_batch1_20260926.tar.gz"
+   },
+   {
+    "mode": "symlink",
+    "path": "artifacts/cata_raid_program/round5_batch1_20260926.tar.gz"
+   },
+   {
+    "mode": "symlink",
+    "path": "artifacts/cata_raid_program/round6_batch1_20260926.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/round7_batch1_20260926.tar.gz"
+   },
+   {
+    "mode": "symlink",
+    "path": "artifacts/cata_raid_program/round8_batch1_20260927.tar.gz"
+   },
+   {
+    "mode": "symlink",
+    "path": "artifacts/cata_raid_program/round9_batch1_20260927.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/cata_raid_program/wcl_raw_captures_bwd10n_20260927.tar.gz"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/live_validation_blackwing_descent_10n_08_nefarian_10bot_shared_activation"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/live_validation_blackwing_descent_10n_08_nefarian_activation_miss_assist_final_120s"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/live_validation_blackwing_descent_10n_08_nefarian_server_teleport_recovery"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/diagnostics.json"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/dvclive"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_history.json"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_strategy_knobs.json"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/model.json"
+   },
+   {
+    "mode": "copy",
+    "path": "artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase1_catalogs"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase2_evidence_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase3_batch_lifecycle"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase4_rotation_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase5_cohort_ownership_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase6_serial_soak_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase7_role_calibration_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/all_spec_phase8_live_calibration_contract"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/baseline_inventory"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/bot_ml/decision_dataset.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/bot_ml/decision_dataset_manifest.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/evaluations/metrics.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/evaluations/report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_combined"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenario_reports_built"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/blackwing_descent_10n/validation_route_manifest.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/02_corborus"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/03_crystalspawn_corridor"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/04_slabhide"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/06_ozruk"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/bot_pool_reset"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/commands.txt"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/heartbeat_events.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/validation_provisioning_apply"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/worldserver.validation.conf"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/live_validation_scenarios/stonecore_5n/worldserver_output.log"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/processed/frames.jsonl"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/processed/manifest.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/quest_profession_reports/report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/raid_shard_provisioning"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/raw"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/runtime_assets/native_inputs_03cb01db0b.verification.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/validation_gear_profiles"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/validation_provisioning"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/validation_provisioning_verification/report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/validation_run_status"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/validation_scenarios"
+   },
+   {
+    "mode": "symlink",
+    "path": "dataset/world_knowledge"
+   },
+   {
+    "mode": "symlink",
+    "path": "dataset/world_planner"
+   },
+   {
+    "mode": "copy",
+    "path": "dataset/world_validation/planner_report.json"
+   },
+   {
+    "mode": "copy",
+    "path": "dvclive"
+   },
+   {
+    "mode": "copy",
+    "path": "evaluations/bot_policy/diagnostics.json"
+   },
+   {
+    "mode": "copy",
+    "path": "experiments/runs"
+   }
+  ],
+  "local_inputs_rule": "from the checkout: LOCAL_INPUT_DIRS as symlinks, LOCAL_INPUT_FILES as copies, and every DVC output (dvc.lock stage outs, *.dvc outs) present there and absent from the export, copied up to 64 MiB and symlinked above",
+  "pytest_options": [
+   "-p",
+   "no:cacheprovider",
+   "-p",
+   "raid_test_baseline_plugin",
+   "-q",
+   "--tb=no",
+   "--no-header",
+   "--continue-on-collection-errors"
+  ],
+  "runs": 2
+ },
+ "normalization": "first line of the crash message, phase-prefixed unless the test call; checkout, export and home paths, pytest temp paths, hex ids, addresses, timestamps and second durations replaced by placeholders (tools/raid_program/test_baseline.normalize_reason)",
+ "pytest": "9.0.3",
+ "python": "3.14.5",
+ "runs": [
+  {
+   "failed": 246,
+   "passed": 6614,
+   "seconds": 312.3,
+   "skipped": 18,
+   "tests": 6878,
+   "timed_out_chunks": []
+  },
+  {
+   "failed": 246,
+   "passed": 6614,
+   "seconds": 343.8,
+   "skipped": 18,
+   "tests": 6878,
+   "timed_out_chunks": []
+  }
+ ],
+ "schema": "known_test_failures_v1"
+}
