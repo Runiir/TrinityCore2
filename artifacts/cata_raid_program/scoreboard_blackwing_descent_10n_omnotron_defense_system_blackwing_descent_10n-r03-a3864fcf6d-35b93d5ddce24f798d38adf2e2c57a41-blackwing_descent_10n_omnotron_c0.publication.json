@@ -1,0 +1,16 @@
+{
+  "archive_bytes": 2599409,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_omnotron_defense_system_blackwing_descent_10n-r03-a3864fcf6d-35b93d5ddce24f798d38adf2e2c57a41-blackwing_descent_10n_omnotron_c0.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 42105379,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "f1b4fbdba8b8022710c1d01bc0d8a3ba",
+  "remote_sha256": "355b298754e3fb7c546d6bb9a2b3e69ff3d6ee3a3bcfd4211226db0f91277590",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/shards/blackwing_descent_10n_omnotron_c0",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/shards/blackwing_descent_10n_omnotron_c0-analysis"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 14
+}

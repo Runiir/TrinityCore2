@@ -1,0 +1,21 @@
+{
+  "archive_bytes": 29148063,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_runs_r03-b1-35b93d5ddce24f798d38adf2e2c57a41.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 374415311,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "9e44bbb8acce230707b231fd4032978d",
+  "remote_sha256": "f5c65e968de7b7cad1770022f8875b8de19b2d263e0fc4cafe2c0e546eb77db7",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/console_journal.jsonl",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/preparation",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/shard_run.json",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/worldserver.console.log",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/worldserver.crash_backtrace.txt",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/worldserver.gdb",
+    "/tmp/blackwing_descent_10n-r03-a3864fcf6d-b1-20260930T212729Z/worldserver.validation.conf"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 13
+}
