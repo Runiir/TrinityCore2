@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 51,
+      "revision": 52,
       "stage": "build",
       "round": 3,
       "bootstrap_sources": {
@@ -5158,6 +5158,22 @@
                 "worktree": true,
                 "committed": false
               }
+            },
+            {
+              "verdict": "accept",
+              "diff_sha256": "63a7b177caf35c0ab593ca158b9fa474e29efc55beb2d17d29d2a176b16af25f",
+              "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; v5 focused re-review; the three promoted sql/custom/world/2026_09_30_* files were in the reviewed v5 diff but omitted from the pre-commit tracker diff because they are git-ignored until force-added)",
+              "report": {
+                "path": "/home/runiir/.cache/r1_review/round3_v5_verdict_accept.md",
+                "sha256": "986b9116d40183e66315c06b6f75c645de37138b4ec644fcd232da426a689178"
+              },
+              "base": "b3ff1004555603226bea056d299dafb4959be30f",
+              "recorded_utc": "2026-09-30T20:18:00Z",
+              "automatic": false,
+              "matches": {
+                "worktree": true,
+                "committed": true
+              }
             }
           ]
         }
@@ -5633,6 +5649,15 @@
           "verdict": "accept",
           "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; v5 focused re-review over v1-v4 rounds)",
           "diff_sha256": "74ff5e2e46a341179c52e446955de34265b011ada1da9617cc9a4d40dd93fb82"
+        },
+        {
+          "revision": 52,
+          "utc": "2026-09-30T20:18:00Z",
+          "action": "review",
+          "round": 3,
+          "verdict": "accept",
+          "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; v5 focused re-review; the three promoted sql/custom/world/2026_09_30_* files were in the reviewed v5 diff but omitted from the pre-commit tracker diff because they are git-ignored until force-added)",
+          "diff_sha256": "63a7b177caf35c0ab593ca158b9fa474e29efc55beb2d17d29d2a176b16af25f"
         }
       ]
     }
