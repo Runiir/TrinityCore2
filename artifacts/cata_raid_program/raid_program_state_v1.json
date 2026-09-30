@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 53,
+      "revision": 54,
       "stage": "run",
       "round": 3,
       "bootstrap_sources": {
@@ -5259,7 +5259,22 @@
             },
             "recorded_utc": "2026-09-30T20:21:47Z"
           },
-          "run_plans": [],
+          "run_plans": [
+            {
+              "batch": 1,
+              "kind": "boss_shards",
+              "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round03/boss_shards_plan_b1.json",
+              "sha256": "03561708a2a2b9f49a046e93a685be197268e71597750081589823154aabf73f",
+              "cohorts": [
+                "blackwing_descent_10n_magmaw_c0",
+                "blackwing_descent_10n_omnotron_c0",
+                "blackwing_descent_10n_chimaeron_c0",
+                "blackwing_descent_10n_atramedes_c0",
+                "blackwing_descent_10n_maloriak_c0",
+                "blackwing_descent_10n_nefarian_c0"
+              ]
+            }
+          ],
           "runs": [],
           "assessment": null,
           "user_decisions": [
@@ -5734,7 +5749,8 @@
               },
               "recorded_utc": "2026-09-30T20:21:47Z"
             }
-          ]
+          ],
+          "plans_written": true
         }
       ],
       "history": [
@@ -6226,6 +6242,14 @@
           "success": true,
           "source_commit": "a3864fcf6df506981b11b9670f96fdc95deafd46",
           "adopted": false
+        },
+        {
+          "revision": 54,
+          "utc": "2026-09-30T20:24:00Z",
+          "action": "run_plans",
+          "round": 3,
+          "batches": 1,
+          "replan": false
         }
       ]
     }
