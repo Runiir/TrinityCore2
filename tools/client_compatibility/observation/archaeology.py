@@ -65,7 +65,7 @@ class Observer:
                         entry = record["guid"] >> 32 & 0xFFFFF
                         if entry not in TOOLS and entry not in FINDS: continue
                         x, y, z, heading = record["movement"]["position"]
-                        observed = {"guid": record["guid"], "entry": entry, "seen_at": packet["time"],
+                        observed = {"guid": record["guid"], "entry": entry, "map":record['map'], "seen_at": packet["time"],
                                     "position": [x, y, z], "heading_radians": heading, "visible": True}
                         if entry in TOOLS:
                             self.tool = {**observed, "color": TOOLS[entry]}

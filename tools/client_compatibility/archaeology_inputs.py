@@ -6,7 +6,7 @@ import time
 from PIL import Image
 from tools.second_client import ctl
 from . import lab_runtime as lab
-from . import owned_input
+from . import owned_input,ground_navigation
 from .observation import telemetry,travel
 
 FIND_NAMES=['Night Elf Archaeology Find','Nerubian Archaeology Find','Dwarf Archaeology Find',
@@ -45,7 +45,7 @@ def locate_find(inputs,path):
 
 
 def execute(action,tcp,path,recovery=None):
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None
+    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None;ground_route=None
     if action=='survey':inputs.key('2')
     elif action.startswith('turn_'):
         if not tcp['tool']:raise ValueError('turn without a survey observation')
@@ -55,13 +55,7 @@ def execute(action,tcp,path,recovery=None):
         if not tcp['tool']:raise ValueError('walk without a survey observation')
         short,long={'red':(2,6),'yellow':(1,3),'green':(.5,1)}[tcp['tool']['color']]
         hold=short if action=='forward_short' else long
-        if recovery:
-            if recovery['attempt']>=2:inputs.key('e' if recovery['attempt']==2 else 'q',hold=.8)
-            inputs._send(inputs.X.KeyPress,inputs._keycode(inputs.XK.string_to_keysym('w'))[0])
-            try:inputs.key('space',hold=.2);time.sleep(.5)
-            finally:inputs._send(inputs.X.KeyRelease,inputs._keycode(inputs.XK.string_to_keysym('w'))[0])
-            hold=.7
-        else:inputs.key('w',hold=hold)
+        hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
@@ -70,4 +64,4 @@ def execute(action,tcp,path,recovery=None):
     elif action!='observe':raise ValueError('unknown physical action')
     time.sleep(2.5 if action in ['survey','loot'] else .5)
     return {'hold_seconds':hold,'mouse_pixel':pixel,'pixel_source':'ordinary_game_tooltip_hover' if pixel else None,
-            'collision_recovery':recovery}
+            'collision_recovery':recovery,'ground_route':ground_route}
