@@ -21,6 +21,7 @@ def main():
         'pretravel_world_packets.jsonl.gz','pretravel_modern_world.jsonl.gz','travel_ready.png','travel_start.png',
         'travel_protocol_tests.xml','travel_live_validation.json'])
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
+    paths.append(lab.ROOT/'bin/navmesh_probe')
     episodes=[]
     for name in a.episode:
         if Path(name).name!=name:raise ValueError('invalid episode name')
@@ -38,6 +39,7 @@ def main():
                 live.log_metric('actions',len(r['steps']))
                 live.log_metric('collected_finds',len(r.get('finds',[])))
                 live.log_metric('travel_legs',len(r.get('legs_completed',[])))
+                live.log_metric('sites_completed',len(r.get('sites_completed',[])))
                 live.log_metric('duration_seconds',r['finished_at']-r['started_at']);live.next_step()
         metadata={'schema':'client442_travel_checkpoint_v1','code_commit':subprocess.check_output(
             ['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),'closed_episodes':a.episode,

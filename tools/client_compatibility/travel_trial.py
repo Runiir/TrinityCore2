@@ -57,6 +57,7 @@ def run(plan,out,maximum_steps=180):
             if response['model']!=identity['model'] or response['revision']!=identity['revision']:raise RuntimeError('travel model identity changed')
             action=response['answers']['action']['choice']
             if action not in policy.ACTIONS or any(v['truncated_fields'] for v in response['token_budget'].values()):raise RuntimeError('invalid travel decision')
+            if action!=policy.label(s):raise RuntimeError(f'model selected {action} against the observed travel preconditions')
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as image:image.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})

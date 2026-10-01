@@ -40,7 +40,7 @@ def model_state(s):
     elif s['on_taxi']:availability='in taxi transit'
     movement='on foot'
     if s['flying']:movement='airborne at safe route height' if s['at_route_height'] else 'airborne below route height'
-    elif s['falling']:movement='falling'
+    elif s['falling']:movement='falling on a mount' if s['mounted'] else 'falling on foot'
     elif s['mounted']:movement='mounted on ground'
     location='near destination' if s['near_destination'] else 'along route'
     if s['mode']!='flight' and s['destination_reached']:location='arrival confirmed'
@@ -52,12 +52,44 @@ def model_state(s):
     return {'transport':s['mode'],'availability':availability,'movement':movement,'location':location,'interface':interface}
 
 
+def physical_state(action,rng):
+    s={'mode':'flight','available':True,'casting':False,'on_taxi':False,
+       'mounted':False,'flying':False,'falling':False,'at_route_height':False,
+       'near_destination':False,'destination_reached':False,'taxi_map_open':False}
+    if action=='observe':
+        s=physical_state(rng.choice(ACTIONS[:-1]),rng)
+        s[rng.choice(['casting','on_taxi'])]=True
+        if rng.choice([False,True]):s['available']=False
+    elif action=='mount':pass
+    elif action=='takeoff':
+        s['mounted']=True;s['flying']=rng.choice([False,True])
+    elif action=='cruise':s.update(mounted=True,flying=True,at_route_height=True)
+    elif action=='land':
+        s.update(mounted=True,flying=True,near_destination=True,at_route_height=rng.choice([False,True]))
+        if rng.random()<.2:s.update(flying=False,falling=True,at_route_height=False)
+    elif action=='dismount':
+        s['mode']=rng.choice(['flight','taxi','portal']);s.update(mounted=True,near_destination=True)
+        if s['mode']=='flight':s['destination_reached']=True
+    elif action=='interact':s['mode']='taxi'
+    elif action=='taxi':s.update(mode='taxi',taxi_map_open=True)
+    elif action=='portal':s['mode']='portal'
+    elif action=='arrived':s.update(mode=rng.choice(['flight','taxi','portal']),near_destination=True,destination_reached=True)
+    return s
+
+
 def dataset(config):
     splits={}
     for j,split in enumerate(['train','validation','test']):
         rng=random.Random(config['seed']+j);rows=[]
         for action in ACTIONS:
             for i in range(config[split+'_per_action']):
+                if config.get('physical_states_only'):
+                    s=physical_state(action,rng)
+                    assert label(s)==action
+                    order=list(ACTIONS);rng.shuffle(order)
+                    rows.append({'id':f'{split}_{action}_{i}','state':model_state(s),'observed_flags':s,
+                        'question':question(order),'label':action,'source':'physically consistent public route phases'})
+                    continue
                 while True:
                     s={'mode':rng.choice(['flight','taxi','portal']),
                        'available':rng.random()>.05,'casting':rng.random()<.05,'on_taxi':rng.random()<.05,
