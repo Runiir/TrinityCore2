@@ -28,7 +28,14 @@ def main():
         'steep_ground_repair.json','travel_repair_cleanup.json','client442_portal_tables',
         'portal_hotfix_login.png','portal_hotfix_character.png','portal_hotfix_character_ready.png',
         'portal_connect_login.png','portal_connect_character.png','portal_connect_ready.png',
-        'travel_portal_validation.json'])
+        'travel_portal_validation.json','portal_contact_geometry.json',
+        'portal_contact_login.png','portal_contact_character.png','portal_contact_ready.png',
+        'portal_roundtrip_login.png','portal_roundtrip_character.png','portal_roundtrip_ready.png',
+        'portal_return_login.png','portal_return_character.png','portal_return_ready.png',
+        'portal_overhang_ground.json','overhang_recovery_start.png',
+        'flight_recovery_collection_failure.xml','flight_recovery_fixture_failure.xml',
+        'flat_landing_repair.json','flat_landing_repair_25.json','outland_loop_validation.json'])
+    paths.append(lab.ROOT/'data/dbc/enUS/AreaTrigger.dbc')
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
     paths.append(lab.ROOT/'bin/navmesh_probe')
     episodes=[]
