@@ -2,7 +2,7 @@
 
 Both **direct username/password login** and **launcher SSO** now authenticate the real Whitemane 4.4.2 build 60895 client and reach the `Client442 Lab` realm list. The game launches on HDMI-1, the second monitor. The lightweight launcher is available at [127.0.0.1:18081/launcher](http://127.0.0.1:18081/launcher).
 
-World entry remains a separate open requirement. The native worldserver still speaks build 15595. Realm discovery reports its actual 4.3.4 version and sets the version-mismatch flag; modern realm join is rejected until a compatible world adapter exists. No character was created, and movement has not been tested.
+This document records the authentication checkpoint. The subsequent [world movement trial](world_movement_20261001.md) added a build-60895 frontend, entered the native world and validated keyboard movement. Realm discovery now advertises build 60895 when that owned frontend is running and reports the native mismatch otherwise.
 
 ## What was implemented
 
@@ -48,4 +48,4 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml test
 
 `launch-sso` uses only the private saved lab credentials. The browser launcher accepts credentials entered by the user. `stop` terminates only the recorded modern login process group after checking its PID and process start time. `setup --reference /path/to/pinned/TrinityCore` installs the pinned development certificate and provisions the linked account without overwriting an existing verifier. Regenerate protocol definitions with `python -m tools.client_compatibility.auth.generate_schema /path/to/pinned/TrinityCore` through the auth Pixi environment.
 
-The next connection milestone is the **60895 world authentication and transport adapter**, then character initialization and object updates. Starting a compatible login service has not made the native world socket compatible.
+The [world movement trial](world_movement_20261001.md) completed the next connection milestone. Broader gameplay packet translation remains open.

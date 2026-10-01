@@ -10,6 +10,9 @@ protobuf = ">=6,<7"
 pymysql = ">=1.1,<2"
 pytest = ">=9,<10"
 
+[pypi-dependencies]
+pycryptodome = ">=3.23,<4"
+
 [tasks]
 serve = {cmd = "python -m tools.client_compatibility.auth.service", cwd = "../../.."}
 test = {cmd = "python -m pytest tools/client_compatibility/auth/tests -q", cwd = "../../.."}

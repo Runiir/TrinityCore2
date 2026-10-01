@@ -1,6 +1,6 @@
 {
   "schema": "client_harness_isolation_plan_v1",
-  "phase": "60895_direct_and_launcher_auth_verified_world_entry_pending",
+  "phase": "60895_world_entry_and_native_movement_verified",
   "live_launch_allowed": true,
   "database_created": true,
   "client": {
@@ -13,7 +13,7 @@
     "launch_helper_version": "2.1.51",
     "launch_helper_sha256": "b84b94a646210d3494f06f36b62fb5a845a8f3f1e470820304938a1d496d17fb",
     "login_screen_verified": true,
-    "world_entry_verified": false,
+    "world_entry_verified": true,
     "observed_login_endpoint": "127.0.0.1:1119",
     "observed_first_record": "TLS_ClientHello",
     "launch_monitor_ordinal": 2,
@@ -24,7 +24,9 @@
       "direct_username_password",
       "launcher_sso"
     ],
-    "realm_list_verified": true
+    "realm_list_verified": true,
+    "movement_verified": true,
+    "addon_observation_verified": true
   },
   "reference": {
     "repository": "https://github.com/TrinityCore/TrinityCore",
@@ -71,7 +73,8 @@
       "classic_bnet_if_needed": 1119,
       "classic_login_rest_if_needed": 18081,
       "world": 18085,
-      "legacy_instance_if_needed": 18086
+      "legacy_instance_if_needed": 18086,
+      "modern_world_frontend": 18087
     },
     "port_availability_verified": true,
     "remote_admin_enabled": false,
@@ -82,9 +85,11 @@
       "instance": "127.0.0.1:18086",
       "database": "127.0.0.1:13306",
       "classic_bnet": "127.0.0.1:1119",
-      "classic_login_rest": "127.0.0.1:18081"
+      "classic_login_rest": "127.0.0.1:18081",
+      "modern_world_frontend": "127.0.0.1:18087"
     },
-    "classic_bnet_running": true
+    "classic_bnet_running": true,
+    "modern_world_frontend_running": true
   },
   "runtime": {
     "owned_root": "/home/runiir/.local/share/trinity-client442-lab",
@@ -98,7 +103,7 @@
     "client_data_private_write_overlay": "/home/runiir/.local/share/trinity-client442-lab/client/casc-upper",
     "configs_root": "/home/runiir/.local/share/trinity-client442-lab/config"
   },
-  "launch_scope": "isolated_60895_authentication_and_realm_discovery",
+  "launch_scope": "isolated_60895_login_to_native_player_movement",
   "movement_acceptance_requirements": [
     "choose_and_implement_a_60895_compatible_login_and_world_protocol",
     "verify_target_executable_launcher_and_client_data_identity",
@@ -111,23 +116,39 @@
     "verify_server_processes_and_cleanup_are_scoped_to_the_lab"
   ],
   "open_requirements": [
-    "60895_world_authentication_and_realm_join",
-    "60895_world_transport_character_and_object_serialization",
-    "character_world_entry_before_movement_trial"
+    "nearby_NPC_item_gameobject_and_ongoing_value_updates",
+    "spell_action_bar_and_interaction_translation",
+    "archaeology_survey_and_loot_validation"
   ],
   "authentication": {
     "implementation": "tools/client_compatibility/auth",
     "launcher_url": "http://127.0.0.1:18081/launcher",
     "native_account_linked": true,
     "realm_list_ticket_verified": true,
-    "realm_join_compatible": false,
+    "realm_join_compatible": true,
     "password_protocol": "bnet_srp_v2_sha256",
     "launcher_protocol": "cached_web_credentials_ticket",
     "ticket_duration_seconds": 600,
     "new_auth_tables": [
       "lab_login_accounts",
-      "lab_login_tickets"
+      "lab_login_tickets",
+      "lab_world_joins"
     ],
     "evidence_pointer": "artifacts/client_harness/442_modern_auth_20261001.tar.gz.dvc"
+  },
+  "world_compatibility": {
+    "implementation": "tools/client_compatibility/world",
+    "strategy": "modern_frontend_to_authenticated_native_session",
+    "native_gameplay_build": 15595,
+    "client_build": 60895,
+    "world_entry_modes": [
+      "launcher_sso",
+      "direct_username_password"
+    ],
+    "movement_verified": true,
+    "full_gameplay_compatibility": false,
+    "character": "Harnessone",
+    "input_scope": "owned_nested_gamescope_display",
+    "evidence_pointer": "artifacts/client_harness/442_world_movement_20261001.tar.gz.dvc"
   }
 }

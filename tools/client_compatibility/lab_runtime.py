@@ -311,6 +311,16 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
         raise RuntimeError("client differs from the audited executable")
     if launcher and sha256(ROOT / "bin/launcher-game.exe") != HELPER_SHA256:
         raise RuntimeError("launcher helper differs from the tested version")
+    # The client persists the region default (US) after an SSO session. Restore
+    # the private lab endpoints before every launch, including direct login.
+    config_path = folder / "WTF/Config.wtf"
+    import re
+    config = config_path.read_text()
+    for name, value in {"portal": "127.0.0.1", "realmlist": "127.0.0.1:13724"}.items():
+        line = f'SET {name} "{value}"'
+        pattern = rf"(?m)^SET {name} .*$"
+        config = re.sub(pattern, line, config) if re.search(pattern, config) else config + "\n" + line + "\n"
+    private_write(config_path, config)
     for directory in ["casc-upper", "casc-work"]:
         (ROOT / "client" / directory).mkdir(exist_ok=True, mode=0o700)
     env = os.environ.copy()

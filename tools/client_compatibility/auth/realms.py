@@ -6,6 +6,7 @@ import zlib
 
 from tools.client_compatibility.lab_runtime import connection
 from .wire import message
+from tools.client_compatibility.world import joins
 
 ADDRESS = 0x01010001
 SUBREGION = "1-1-0"
@@ -79,17 +80,25 @@ def process(session, request):
             name, build, flags, timezone, icon = cursor.fetchone()
             cursor.execute("SELECT numchars FROM client442_auth.realmcharacters WHERE realmid=1 AND acctid=%s", (session.account["id"],))
             count = cursor.fetchone()
-        # Do not relabel a 4.3.4 listener as 4.4.2. Auth can succeed independently.
+        modern = joins.ready()
+        advertised_build = session.build if modern else build
         entry = {"wowRealmAddress": ADDRESS, "cfgTimezonesID": 1, "populationState": 1,
-            "cfgCategoriesID": timezone, "version": {"versionMajor": 4, "versionMinor": 3,
-                "versionRevision": 4, "versionBuild": build}, "cfgRealmsID": 1,
-            "flags": flags | (0x10 if build != session.build else 0), "name": name,
+            "cfgCategoriesID": timezone, "version": {"versionMajor": 4, "versionMinor": 4 if modern else 3,
+                "versionRevision": 2 if modern else 4, "versionBuild": advertised_build}, "cfgRealmsID": 1,
+            "flags": flags | (0x10 if advertised_build != session.build else 0), "name": name,
             "cfgConfigsID": 1 if icon == 0 else 2, "cfgLanguagesID": 1}
         updates = {"updates": [{"wowRealmAddress": ADDRESS, "update": entry, "deleting": False}]}
         counts = {"counts": [{"wowRealmAddress": ADDRESS, "count": count[0] if count else 0}]}
         return 0, attributes(response, {"Param_RealmList": compressed("JSONRealmListUpdates", updates),
             "Param_CharacterCountList": compressed("JSONRealmCharacterCountList", counts)})
     if command == "Command_RealmJoinRequest_v1":
-        # Native world authentication must be ported before modern join is valid.
-        return 0x800000E1, None
+        if not joins.ready() or params.get("Param_RealmAddress", message("Variant")).uint_value != ADDRESS:
+            return 0x800000E1, None
+        from tools.client_compatibility.world.events import event
+        event("client_variant", session=session.id, status={key: session.client_info.get(key)
+              for key in ["platformType", "clientArch", "type", "build"]})
+        ticket, secret = joins.issue(session.account, session.client_secret, session.client_info)
+        addresses = {"families": [{"family": 1, "addresses": [{"ip": "127.0.0.1", "port": joins.PORT}]}]}
+        return 0, attributes(response, {"Param_RealmJoinTicket": ticket,
+            "Param_ServerAddresses": compressed("JSONRealmListServerIPAddresses", addresses), "Param_JoinSecret": secret})
     return 0xBC7, None
