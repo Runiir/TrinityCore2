@@ -9,7 +9,7 @@ MASTERS=lab.REPO/'experiments/configs/client_harness/public_flightmasters_v1.jso
 PORTALS={0:{'destination_map':530,'approach':[-11890,-3209,-14.56],
     'crossing':[-11924,-3209,-14.79],'trigger':4354,'arrival':[-248.113,922.9,84.3497]},
     530:{'destination_map':0,'approach':[-247.677,835,41.25],
-    'crossing':[-247.677,910,84.35],'trigger':4352,'arrival':[-11896.8,-3206.77,-14.6724]}}
+    'crossing':[-247.677,895.675,144.362],'trigger':4352,'arrival':[-11896.8,-3206.77,-14.6724]}}
 
 
 def flight(map_id,position,id):
@@ -32,13 +32,19 @@ def clearance(map_id,start,goal):
 def prepare_clearance(plan,map_id,position):
     for leg in plan['legs']:
         if leg['mode']=='flight':
-            original=leg['position']
-            leg['position']=ground_navigation.ground_point(map_id,original,maximum_height=original[2]+8)
-            leg['landing_height_source']={'source':'public static NAV_GROUND column',
-                'requested_position':original,'ground_position':leg['position']}
-            profile=clearance(map_id,position,leg['position'])
-            leg['ceiling']=max(leg['ceiling'],profile['ceiling']);leg['height_profile']=profile
-        if leg['mode']=='portal':
+            if leg.get('trigger'):
+                if map_id!=530 or leg['trigger']!=4352 or leg['position']!=PORTALS[530]['crossing']:
+                    raise RuntimeError('unreviewed airborne portal route')
+                leg['ceiling']=leg['position'][2]
+                leg['height_profile']={'source':'reviewed public AreaTrigger 4352 box center; native teleport proximity remains authoritative'}
+            else:
+                original=leg['position']
+                leg['position']=ground_navigation.ground_point(map_id,original,maximum_height=original[2]+8)
+                leg['landing_height_source']={'source':'public static NAV_GROUND column',
+                    'requested_position':original,'ground_position':leg['position']}
+                profile=clearance(map_id,position,leg['position'])
+                leg['ceiling']=max(leg['ceiling'],profile['ceiling']);leg['height_profile']=profile
+        if leg['mode']=='portal' or leg.get('trigger'):
             position=PORTALS[map_id]['arrival'];map_id=leg['destination_map']
         else:position=leg['position']
     return plan
@@ -81,8 +87,8 @@ def to_site(map_id,start,site):
     if map_id!=site['map']:
         portal=PORTALS[map_id]
         legs.extend(same_map(map_id,start,portal['approach']))
-        legs.append({'id':'dark_portal','mode':'portal','map':map_id,'position':portal['crossing'],
-                     'destination_map':portal['destination_map'],'trigger':portal['trigger']})
+        legs.append({'id':'dark_portal','mode':'flight' if map_id==530 else 'portal','map':map_id,'position':portal['crossing'],
+                     'destination_map':portal['destination_map'],'trigger':portal['trigger'],'arrival_radius':.5})
         map_id=portal['destination_map'];start=portal['arrival']
     goal=ground_navigation.ground_point(map_id,site['center'])
     if not site_boundaries.contains(site['polygon'],goal):raise RuntimeError('public landing point falls outside digsite')

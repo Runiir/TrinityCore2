@@ -23,7 +23,8 @@ def progress_metric(action,leg,facts,extra,s):
 
 def state(leg,movement,extra,facts,ui):
     distance=math.dist(facts['position'][:2],leg['position'][:2]) if leg.get('position') else None
-    reached=facts['map']==leg['destination_map'] if leg['mode']=='portal' else (
+    transfer_goal='destination_map' in leg
+    reached=facts['map']==leg['destination_map'] if transfer_goal else (
         facts['map']==leg['map'] and distance is not None and distance<12 and
         abs(facts['position'][2]-leg['position'][2])<leg.get('landing_height_tolerance',8))
     return {'mode':leg['mode'],'available':movement['in_world'] and not facts['transferring'] and
@@ -31,7 +32,7 @@ def state(leg,movement,extra,facts,ui):
         'casting':extra['casting'],'on_taxi':movement['on_taxi'],
         'mounted':extra['mounted'],'flying':extra['flying'],'falling':extra['falling'],
         'at_route_height':facts['position'][2]>=leg.get('ceiling',float('inf'))-3,
-        'near_destination':distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
+        'near_destination':bool(reached) if transfer_goal and leg['mode']=='flight' else distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
         'taxi_map_open':bool(ui['nodes'])}
 
 
@@ -67,7 +68,7 @@ def run(plan,out,maximum_steps=180):
                 from .combat_recovery import withdraw
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
                 continue
-            if leg['mode']=='flight' and math.dist(facts['position'][:2],leg['position'][:2])<60:
+            if leg['mode']=='flight' and not leg.get('trigger') and math.dist(facts['position'][:2],leg['position'][:2])<60:
                 from .hostile_avoidance import landing
                 goal,avoidance=landing(facts['map'],leg['position'],facts['visible_hostiles'],extra['digsite_ids'],facts['position'])
                 if avoidance:
