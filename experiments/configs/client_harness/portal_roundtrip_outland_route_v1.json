@@ -4,7 +4,7 @@
   "setup_teleports": 0,
   "sources": ["AreaTrigger.dbc", "installed 60895 public AreaTrigger records", "ResearchSite/QuestPOIPoint.dbc"],
   "legs": [
-    {"id":"outland_portal_approach","mode":"flight","map":530,"position":[-248.24,1110,54.32],"ceiling":240},
+    {"id":"outland_portal_approach","mode":"flight","map":530,"position":[-248.24,1110,41.68],"ceiling":240},
     {"id":"dark_portal_to_azeroth","mode":"portal","map":530,"position":[-248.24,1042.73,54.32],"destination_map":0,"trigger":4356},
     {"id":"dark_portal_approach","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
     {"id":"dark_portal_to_outland","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
