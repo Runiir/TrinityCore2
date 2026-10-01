@@ -72,6 +72,11 @@ def run(plan,out,maximum_steps=180):
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
                 continue
             if leg['mode']=='flight' and not leg.get('trigger'):
+                from .client_floor_probe import needed as needs_client_floor,verify as verify_client_floor
+                if needs_client_floor(facts,extra,leg):
+                    receipt['safety_recoveries'].append(verify_client_floor(leg,observer,latest))
+                    landing_started=False
+                    continue
                 from .ground_landing import needed,finish
                 if needed(facts,extra,leg):
                     from tools.second_client import ctl
