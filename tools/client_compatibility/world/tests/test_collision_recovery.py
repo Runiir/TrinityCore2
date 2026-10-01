@@ -30,3 +30,12 @@ def test_small_mesh_corner_displacement_is_real_progress():
         step=attempt(i,[0,0,1,0]);step['input']['hold_seconds']=.04
         r.update([step],{'player':{'position':[.25,0,1,0]}})
     assert r.for_action('forward_short') is None
+
+
+def test_observed_wall_memory_survives_a_successful_step_away():
+    r=Recovery();origin=[-2928.4,1636.8,55.08]
+    step=attempt(0,origin+[0]);step['input']['ground_route']={'obstruction_origins':[origin]}
+    r.update([step],{'player':{'position':[-2929.4,1638.4,55.2,0]}})
+    assert r.blocked==0
+    assert r.for_action('forward_short')['ground_obstructions']==[origin]
+    assert r.for_action('survey') is None

@@ -14,8 +14,10 @@ def binary():
     return target
 
 
-def route(map_id,start,goal):
-    command=[str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),*map(str,start[:3]),*map(str,goal[:3])]
+def route(map_id,start,goal,obstructions=()):
+    if len(obstructions)>8:raise ValueError('observed ground obstruction budget exceeded')
+    command=[str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),*map(str,start[:3]),*map(str,goal[:3]),
+        *(str(v) for point in obstructions for v in point[:3])]
     result=subprocess.run(command,capture_output=True,text=True,timeout=10)
     if result.returncode:raise RuntimeError('ground routing: '+result.stderr.strip())
     return json.loads(result.stdout)
@@ -63,11 +65,11 @@ def survey_ray(tcp,distance,digsite_ids):
                 'whole_corridor_inside':True,'source':site['source']}}
 
 
-def survey_detour(tcp,distance,digsite_ids):
+def survey_detour(tcp,distance,digsite_ids,obstructions=()):
     ray=survey_ray(tcp,distance,digsite_ids)
     start=ray['start'];goal=ray['requested_goal']
     site=site_boundaries.sites()[ray['boundary_guard']['site_id']]
-    result=route(tcp['tool'].get('map',0),start,goal)
+    result=route(tcp['tool'].get('map',0),start,goal,obstructions) if obstructions else route(tcp['tool'].get('map',0),start,goal)
     corridor=[start,*result['points']]
     if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):
         raise RuntimeError('ground corridor leaves the observed active digsite')
@@ -76,27 +78,29 @@ def survey_detour(tcp,distance,digsite_ids):
     return result
 
 
-def walk(inputs,tcp,distance,digsite_ids):
+def walk(inputs,tcp,distance,digsite_ids,recovery=None):
     import time
     from .observation.archaeology import Observer,angle_error
-    planned=survey_detour(tcp,distance,digsite_ids);observer=Observer();executed=[]
+    obstructions=(recovery or {}).get('ground_obstructions',[])
+    planned=survey_detour(tcp,distance,digsite_ids,obstructions);observer=Observer();executed=[]
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
     target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:
-        planned=survey_detour(tcp,max(10,distance*2),digsite_ids)
+        planned=survey_detour(tcp,max(10,distance*2),digsite_ids,obstructions)
         target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:raise RuntimeError('navigation mesh provides no useful ground displacement')
-    for _ in range(3):
+    for _ in range(8):
         current=observer.poll(0)['player']['position']
         heading=math.atan2(target[1]-current[1],target[0]-current[0])
         error=angle_error(heading,current[3])
         if abs(error)<=.12:break
-        hold=min(.55,max(.025,abs(error)/math.pi))
+        hold=min(.55,max(.04,abs(error)/math.pi))
         inputs.key('a' if error>0 else 'd',hold=hold);time.sleep(.25)
         executed.append({'key':'a' if error>0 else 'd','hold':hold})
     else:raise RuntimeError('could not face the walkable ground waypoint')
     hold=min(distance/7,math.dist(current[:2],target[:2])/7,2.)
+    planned['walking_goal']=target
     if hold<.02:raise RuntimeError('ground waypoint is too close for a useful walk')
     inputs.key('w',hold=hold);time.sleep(.3)
     executed.append({'key':'w','hold':hold})

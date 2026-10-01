@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <array>
 
 struct TileHeader { uint32_t magic, detourVersion, version, size; uint8_t liquids, padding[3]; };
 static_assert(sizeof(TileHeader) == 20);
@@ -51,7 +52,8 @@ int main(int argc, char** argv)
         float radius = landing ? std::stof(argv[7]) : 4.f;
         if (!std::isfinite(radius) || radius<=0 || radius>30) throw std::runtime_error("invalid landing radius");
         float maximumHeight = below ? std::stof(argv[6]) : INFINITY;
-        if (argc != 9 && !column) throw std::runtime_error("expected data directory, map, start XYZ, goal XYZ; or --ground X Y");
+        if (!column && (argc<9 || argc>33 || (argc-9)%3))
+            throw std::runtime_error("expected map, start XYZ, goal XYZ, optional observed feet XYZ");
         std::filesystem::path directory(argv[1]);
         int map = std::stoi(argv[2]);
         float start[3] = {std::stof(argv[column ? 5 : 4]), column ? 0.f : std::stof(argv[5]), std::stof(argv[column ? 4 : 3])};
@@ -176,6 +178,40 @@ int main(int argc, char** argv)
             }
         }
         filter.setExcludeFlags(0x8000);
+        // At Coilskar a coarse walking surface is 1.5 yards above the
+        // observed client feet beside a solid wall. This is not an ordinary
+        // step. Exclude that nearby raised surface in this local query and
+        // approach the lower floor before following a route around it.
+        dtPolyRef local[4096];int localCount=0,obstructed=0;
+        std::vector<std::array<float,3>> observed{{start[0],start[1],start[2]}},avoided;
+        for (int i=9;i<argc;i+=3)
+            observed.push_back({std::stof(argv[i+1]),std::stof(argv[i+2]),std::stof(argv[i])});
+        for (auto const& feet:observed)
+        {
+            bool mismatch=false;float feetExtents[3]={1,4,1};
+            auto status=query.queryPolygons(feet.data(),feetExtents,&filter,local,&localCount,4096);
+            if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("feet query exceeds budget");
+            for (int i=0;i<localCount;++i)
+            {
+                float point[3];query.closestPointOnPoly(local[i],feet.data(),point,nullptr);
+                if (std::hypot(point[0]-feet[0],point[2]-feet[2])<.35f
+                    && point[1]-feet[1]>1.f && point[1]-feet[1]<4.f) mismatch=true;
+            }
+            if (!mismatch) continue;
+            avoided.push_back(feet);
+            float vicinity[3]={12,6,12};
+            status=query.queryPolygons(feet.data(),vicinity,&filter,local,&localCount,4096);
+            if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("obstruction query exceeds budget");
+            for (int i=0;i<localCount;++i)
+            {
+                float point[3];query.closestPointOnPoly(local[i],feet.data(),point,nullptr);
+                if (std::hypot(point[0]-feet[0],point[2]-feet[2])>12.f
+                    || point[1]-feet[1]<=.8f || point[1]-feet[1]>=4.f) continue;
+                unsigned short flags;mesh.getPolyFlags(local[i],&flags);
+                if (!(flags&0x4000)) { mesh.setPolyFlags(local[i],flags|0x4000);++obstructed; }
+            }
+        }
+        filter.setExcludeFlags(0xc000);
         float startExtents[3] = {4,8,4}, goalExtents[3] = {4,40,4};
         dtPolyRef first = 0, last = 0; float begin[3], end[3];
         query.findNearestPoly(start,startExtents,&filter,&first,begin);
@@ -213,7 +249,14 @@ int main(int argc, char** argv)
         status = query.findStraightPath(begin,end,corridor,count,points,flags,refs,&pointsCount,256);
         if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground route exceeds point budget");
         std::cout << std::setprecision(9) << "{\"schema\":\"public_ground_navmesh_route_v1\",\"loaded_tiles\":" << loaded
-            << ",\"ground_only\":true,\"complete\":true,\"excluded_steep_polygons\":" << steep << ",\"points\":[";
+            << ",\"ground_only\":true,\"complete\":true,\"excluded_steep_polygons\":" << steep
+            << ",\"excluded_obstructed_polygons\":" << obstructed << ",\"obstruction_origins\":[";
+        for (size_t i=0;i<avoided.size();++i)
+        {
+            if (i) std::cout << ',';
+            std::cout << '[' << avoided[i][2] << ',' << avoided[i][0] << ',' << avoided[i][1] << ']';
+        }
+        std::cout << "],\"points\":[";
         for (int i = 0; i < pointsCount; ++i)
         {
             if (i) std::cout << ',';
