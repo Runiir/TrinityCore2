@@ -1,26 +1,58 @@
 {
   "schema": "client_harness_isolation_plan_v1",
-  "phase": "static_compatibility_audit",
+  "phase": "isolated_database_provisioned",
   "live_launch_allowed": false,
-  "database_created": false,
-  "client": {"version": "4.4.2", "build": 60895, "source_folder": "/home/runiir/Games/_whitemane-60895_"},
-  "reference": {"repository": "https://github.com/TrinityCore/TrinityCore", "branch": "cata_classic", "commit": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2"},
+  "database_created": true,
+  "client": {
+    "version": "4.4.2",
+    "build": 60895,
+    "source_folder": "/home/runiir/Games/_whitemane-60895_"
+  },
+  "reference": {
+    "repository": "https://github.com/TrinityCore/TrinityCore",
+    "branch": "cata_classic",
+    "commit": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2"
+  },
   "database": {
     "strategy": "dedicated_mariadb_instance",
     "instance_name": "trinity-client442-db",
     "host": "127.0.0.1",
     "proposed_host_port": 13306,
     "data_volume": "trinity-client442-db-data",
-    "database_names": {"auth": "client442_auth", "world": "client442_world", "characters": "client442_characters", "hotfixes": "client442_hotfixes"},
+    "database_names": {
+      "auth": "client442_auth",
+      "world": "client442_world",
+      "characters": "client442_characters",
+      "hotfixes": "client442_hotfixes"
+    },
     "runtime_user": "client442_runtime",
     "credentials": "generate_for_owned_instance_at_provisioning; do_not_reuse_default_credentials",
-    "allowed_schemas": ["client442_auth", "client442_world", "client442_characters", "client442_hotfixes"],
+    "allowed_schemas": [
+      "client442_auth",
+      "client442_world",
+      "client442_characters",
+      "client442_hotfixes"
+    ],
     "reuse_existing_volume": false,
-    "import_live_boss_database": false
+    "import_live_boss_database": false,
+    "image": "mariadb@sha256:8a99982dced50264560fd8ada91aa34c276636bc02713f01f252c540930f9915",
+    "network": "trinity-client442-net",
+    "schema_source": "this_checkout_4.3.4_15595_base_schemas",
+    "runtime_credentials_verified": true,
+    "world_content_loaded": false,
+    "schema_updates_applied": false,
+    "connection_config": "/home/runiir/.local/share/trinity-client442-lab/database.connections.conf",
+    "evidence_pointer": "artifacts/client_harness/442_database_provision_20261001.tar.gz.dvc"
   },
   "network": {
     "bind_address": "127.0.0.1",
-    "proposed_ports": {"legacy_auth_if_needed": 13724, "classic_bnet_if_needed": 11190, "classic_login_rest_if_needed": 18081, "world": 18085, "legacy_instance_if_needed": 18086},
+    "proposed_ports": {
+      "legacy_auth_if_needed": 13724,
+      "classic_bnet_if_needed": 11190,
+      "classic_login_rest_if_needed": 18081,
+      "world": 18085,
+      "legacy_instance_if_needed": 18086
+    },
     "port_availability_verified": false,
     "remote_admin_enabled": false,
     "soap_enabled": false
