@@ -1,6 +1,7 @@
 """Score closed live travel/archaeology receipts without private server state."""
 import argparse
 import json
+import re
 from . import lab_runtime as lab, site_boundaries
 
 
@@ -14,14 +15,35 @@ def score(directory):
         'sites_completed':root.get('sites_completed',[]),'model_actions':0,'model_policy_matches':0,
         'walks':0,'mounted_moves':0,'boundary_failures':[],'artifact_boundary_checks':[],
         'travel_legs':[],'recoveries':[],'manual_gameplay_interventions':root.get('manual_gameplay_interventions',0),
-        'frames':0,'frame_hash_failures':[],'model_revisions':[],'source_commits':[]}
+        'frames':0,'frame_hash_failures':[],'model_revisions':[],'source_commits':[],
+        'site_find_counts':{},'fresh_sites_fully_completed':[],'model_rejected_decisions':0,
+        'water_transits':[],'mounted_corridor_checks':0}
+    for step in root.get('steps',[]):
+        if step.get('kind')!='dig':continue
+        child=json.loads((directory/step['episode']/'episode.json').read_text())
+        sid=str(step['site'])
+        summary['site_find_counts'][sid]=summary['site_find_counts'].get(sid,0)+len(child.get('finds',[]))
+    summary['fresh_sites_fully_completed']=[s['site'] for s in summary['sites_completed']
+        if summary['site_find_counts'].get(str(s['site']),0)>=3]
     for path,receipt in children:
         if not receipt.get('finished_at'):raise ValueError('open child episode: '+str(path))
         summary['source_commits'].append(receipt.get('code_commit'))
         if receipt.get('model'):summary['model_revisions'].append(receipt['model']['revision'])
         summary['manual_gameplay_interventions']+=receipt.get('manual_gameplay_interventions',0)
         summary['recoveries'].extend(receipt.get('safety_recoveries',[]))
+        summary['model_rejected_decisions']+=len(receipt.get('rejected_decisions',[]))
         summary['travel_legs'].extend(receipt.get('legs_completed',[]))
+        if receipt.get('plan',{}).get('schema')=='public_survey_mounted_move_v1':
+            ancestor=next((p for p in path.parents if re.search(r'_site_\d+$',p.name)),None)
+            if ancestor is None:raise ValueError('mounted survey has no attributable digsite')
+            sid=int(ancestor.name.rsplit('_',1)[1]);polygon=site_boundaries.sites()[sid]['polygon']
+            positions=[s['facts']['position'] for s in receipt['steps'] if s.get('facts',{}).get('position')]
+            for index,position in enumerate(positions):
+                summary['mounted_corridor_checks']+=1
+                if not site_boundaries.contains(polygon,position) or (index and
+                    not site_boundaries.inside_segment(polygon,positions[index-1],position)):
+                    summary['boundary_failures'].append({'episode':str(path.parent.relative_to(directory)),
+                        'observation':index,'position':position,'site':sid})
         for frame in receipt.get('frames',[]):
             file=path.parent/frame['file'];summary['frames']+=1
             if not file.exists() or lab.sha256(file)!=frame['sha256']:
@@ -45,6 +67,17 @@ def score(directory):
                         and s['map']==find['map'] and site_boundaries.contains(s['polygon'],find['position'])]
                     summary['artifact_boundary_checks'].append({'guid':find['guid'],'position':find['position'],
                         'inside_assigned_sites':containing,'step':step['index']})
+    for path in sorted(directory.rglob('water_transit_*.json')):
+        receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['route']['boundary_guard']['site_id']]['polygon']
+        observations=receipt['observations']
+        summary['water_transits'].append({'file':str(path.relative_to(directory)),
+            'completed':receipt['completed'],'failure':receipt['failure'],
+            'swimming_observations':sum(o['travel']['swimming'] for o in observations),
+            'dry_arrival':bool(receipt['completed'] and observations and not observations[-1]['travel']['swimming'])})
+        positions=[o['position'] for o in observations]
+        if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
+            not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
+            summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'water_transit'})
     summary['source_commits']=sorted(set(c for c in summary['source_commits'] if c))
     summary['model_revisions']=sorted(set(summary['model_revisions']))
     summary['model_policy_agreement']=summary['model_policy_matches']/summary['model_actions'] if summary['model_actions'] else None

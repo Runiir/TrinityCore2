@@ -55,7 +55,7 @@ Outland to Eastern Kingdoms through 4352, then back through 4354. The ordinary
 client area-trigger and native transfer packets are retained in
 `travel_portal_validation.json`. No synthetic trigger packet was submitted.
 
-Flat landing points now use MMAP detail triangles, reject slopes above 40
+Flat landing points now use MMAP detail triangles, reject slopes above 20
 degrees and reject ground covered by another surface. Archaeology landings must
 also share a complete ground path with the current site floor. This excludes
 the disconnected Bonechewer building roof that previously allowed Survey casts
@@ -63,10 +63,20 @@ but produced no reachable instrument or find. Entire local walk corridors and
 mounted survey segments must stay inside the assigned public polygon.
 
 For red or yellow instruments the controller mounts and flies to a farther
-public bearing waypoint. Green instruments use ground paths. Find collection
+public bearing waypoint. A clipped in-site survey ray supplies the flight goal;
+it does not require the shallow ground-walking corridor to cross a hillside.
+Flat landing and ground-component checks still apply. Episode 40 had stopped
+on a Coilskar slope where a connected flat destination exists 16 yards below
+the character but the filtered walking path is unavailable. That exact terrain
+fixture now passes the mounted-planning regression. Green instruments use unmounted walk/swim paths. Find collection
 uses the normal tooltip to locate a right-click. If the character overlaps the
 visible find, it first backpedals about 3.5 yards along an in-site ground path;
 standing directly over the artifact previously produced no interaction packet.
+Find clicks hold the physical mouse button for 0.2 seconds, spanning multiple
+frames at the observed 15 FPS. Episode 41's two 0.05-second clicks sent no use
+packet; episode 42 then collected the Draenei find for seven fragments. The
+latter trial stopped on a 38.7-degree landing that kept sliding, which prompted
+the stricter 20-degree standing-surface limit.
 
 Episodes 27, 28 and 29 collected all three Hellfire Basin finds, awarding 5, 4
 and 8 Orc fragments. Episode 29 observed the completed site 343 replaced by
@@ -80,6 +90,10 @@ The bridge now translates owned visible targets, native attack start/stop, and
 ongoing creature health and flag updates. A bounded keyboard melee safety guard
 can clear incidental low-level attackers before Survey resumes. This guard is
 explicitly recorded as code-controlled recovery, not learned Laya combat.
+It can type the normal local `/targetexact` command using an ordinary queried
+creature name, step back from an obstructed approach, and walk a ground route
+toward a genuine ranged attacker. It retains an active melee attack rather than
+repeatedly toggling it. These are physical client inputs, not backend attacks.
 Native monster-move start positions keep its creature observations current.
 Ordinary ground chase, stop, packed path and facing splines are also translated
 to the pinned Classic format, so normal client targeting follows moving mobs.
@@ -92,18 +106,81 @@ Incremental observers retain their offsets across renames, and closed evidence
 includes every retained segment. Rotation preserves actual packet records;
 it does not synthesize state.
 
+Blocked descents get at most three lateral flight probes to another flat point
+connected to the original floor. The actual input and observed displacement are
+recorded. Aggro avoidance also requires a connected flat landing, and its goal
+is frozen during descent. A mount cast interrupted by newly observed combat
+returns to the combat guard instead of treating the key press as a successful
+mount. Travel steering tolerates the observed 15 FPS turn quantum; the earlier
+0.06-radian threshold oscillated between roughly 1.44 and 1.65 radians on a real
+flight. The new 0.12-radian threshold passed the captured-state regression.
+
+Episode 43 exposed a green-lantern wall approach whose coarse MMAP route started
+1.5 yards above the actual client feet. The trial was interrupted after repeated
+small, ineffective moves. Ground routing now compares that surface with observed
+feet, excludes nearby raised polygons in its local query, and retains up to eight
+such observations for the current find. The route approaches the lower floor
+and goes around the obstruction. Episode 44 followed this detour on foot and
+collected Coilskar's final find, replacing site 387 with 345. This recovery never
+mounts at green and never changes shared MMAP tiles.
+
+Episode 44 then collected all three Eclipse Point finds, awarding 6, 6 and 9
+Draenei fragments, and observed site 393 replaced by 371. It automatically used
+Wildhammer Stronghold's normal flight menu to take the instant taxi to Shattrath
+(node 128), then flew to Grangol'var. The earlier completed Coilskar site had
+only one remaining find at this trial's start, so this is one fresh full site,
+not two fresh full sites.
+
+Repeated green-bank approaches at Grangol'var exposed a detour that first went
+south before returning north. Replanning each short Survey step reversed that
+path. The controller now retains its public destination and corners until the
+detour is finished. Episode 45 collected two Grangol'var finds for 6 and 4 Orc
+fragments. A measured 1.08-yard bridge step blocked its third approach. A hop is
+allowed only after failed physical displacement, on dry ground, within four
+yards, with a predicted rise between 0.5 and 1.25 yards. Taller obstacles still
+require a detour. The raised-obstruction filter preserves this low bridge.
+Native melee reach uses its five-yard minimum and full observed XYZ distance;
+episode 46 had incorrectly requested a walking path to an attacker already in
+reach.
+
+Episode 48 stopped beside water because routes excluded `NAV_WATER`. Explicit
+walk/swim queries now admit ground and clean water (flags 1 and 4), excluding
+magma/slime and off-mesh links. Ground and water can overlap near the shoreline,
+so dry endpoints also reject adjacent water at or above their elevation. The
+public Survey bearing can extend up to 56 yards to a reachable dry bank, inside
+the assigned polygon. A water corridor finishes before the next Survey. The
+adapter observes normal `IsSwimming()` pixels, uses bounded keyboard advances,
+and stops on combat, health loss, boundary crossing or repeated blocked moves.
+Mount landings and ordinary ground-only callers retain their solid-ground filter.
+Regression fixtures cover the former failure position and a pond-to-shore route.
+
+Episode 49 crossed the bridge and reached the third artifact. Its gathering
+cast was interrupted by incidental combat. After clearing attackers the fixed
+mouse-search area missed the find, which was left of the character. Collection
+now faces the ordinary visible artifact before backpedalling and searches a
+wider part of the 3D view. It clears a matching tooltip and verifies the same
+cursor point again, avoiding stale names while `GameTooltip` fades.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 85 tests. The first observation-refactor check failed collection because
+passes 101 tests. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
 and the final XML are retained. Earlier missing-Pillow collection and mock-route
 fixture failures are retained with their corrected results.
+The first stricter-slope check also failed two old terrain expectations: a
+column now deliberately rejected, and a landing displaced to a gentler point.
+The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 31 preserve unsuccessful steps, including missing portal
+Episodes 07 through 49 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
-roof surveying, and unsuccessful combat retreats. Successful outcomes do not
+roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
+a ranged attacker beyond the original melee approach limit, interrupted mount
+casts, changing landing goals, steering quantization, and a walking-path
+prerequisite that incorrectly blocked mounted movement, replanned bank detours,
+low bridge steps, unnecessarily requested melee approaches, excluded water,
+and interrupted gathering followed by a missed tooltip. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
