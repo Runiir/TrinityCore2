@@ -15,3 +15,22 @@ def test_visible_living_hostiles_only_and_vertical_clearance(monkeypatch):
     assert h.clear([10,20,30],hostiles) and h.clear([30,20,3],hostiles)
     unit['fields'][INDEX['UNIT_FIELD_HEALTH']]=0
     assert h.visible_hostiles({123:unit},0,1,85)==[]
+
+
+def test_aggro_avoidance_requires_connected_flat_ground(monkeypatch):
+    import math
+    import pytest
+    site={'id':377,'map':530,'polygon':[[-30,-30],[30,-30],[30,30],[-30,30]]}
+    monkeypatch.setattr(h.site_boundaries,'sites',lambda:{377:site})
+    monkeypatch.setattr(h.ground_navigation,'ground_point',lambda m,xy:[*xy,0])
+    origins=[]
+    def flat(m,point,radius,start):
+        origins.append(start);return point
+    monkeypatch.setattr(h.ground_navigation,'landing_point',flat)
+    goal=[0,0,0];hostiles=[{'position':[0,0,0],'clearance_radius':9.5}]
+    point,record=h.landing(530,goal,hostiles,[377],[0,0,100])
+    assert math.dist(point[:2],goal[:2])>9.5 and origins and all(p==goal for p in origins)
+    assert record['position']==point
+    def disconnected(*a,**kw):raise RuntimeError('disconnected roof')
+    monkeypatch.setattr(h.ground_navigation,'landing_point',disconnected)
+    with pytest.raises(RuntimeError):h.landing(530,goal,hostiles,[377],[0,0,100])

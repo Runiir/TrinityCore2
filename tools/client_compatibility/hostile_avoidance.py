@@ -40,8 +40,13 @@ def landing(map_id,goal,hostiles,observed_ids,start=None):
             angle=math.tau*i/16;xy=[goal[0]+math.cos(angle)*radius,goal[1]+math.sin(angle)*radius]
             if sites and not site_boundaries.contains(sites[0]['polygon'],xy):continue
             if sites and start and site_boundaries.contains(sites[0]['polygon'],start) and not site_boundaries.inside_segment(sites[0]['polygon'],start,xy):continue
-            try:point=ground_navigation.ground_point(map_id,xy)
+            try:
+                point=ground_navigation.ground_point(map_id,xy)
+                point=ground_navigation.landing_point(map_id,point,radius=3,start=goal)
             except RuntimeError:continue
+            if sites and (not site_boundaries.contains(sites[0]['polygon'],point) or
+                start and site_boundaries.contains(sites[0]['polygon'],start) and
+                not site_boundaries.inside_segment(sites[0]['polygon'],start,point)):continue
             if clear(point,hostiles):candidates.append(point)
         if candidates:break
     if not candidates:raise RuntimeError('no safe public landing point near visible hostiles')

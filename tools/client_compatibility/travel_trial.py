@@ -69,7 +69,9 @@ def run(plan,out,maximum_steps=180):
                 from .combat_recovery import withdraw
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
                 continue
-            if leg['mode']=='flight' and not leg.get('trigger') and math.dist(facts['position'][:2],leg['position'][:2])<60:
+            if (leg['mode']=='flight' and not leg.get('trigger') and extra['flying']
+                and not leg.get('landing_avoidance_frozen') and facts['position'][2]>leg['position'][2]+15
+                and math.dist(facts['position'][:2],leg['position'][:2])<60):
                 from .hostile_avoidance import landing
                 goal,avoidance=landing(facts['map'],leg['position'],facts['visible_hostiles'],extra['digsite_ids'],facts['position'])
                 if avoidance:
@@ -100,6 +102,7 @@ def run(plan,out,maximum_steps=180):
                 'travel':extra,'facts':facts,'ui':ui,'request':request,'response':response,'action':action,
                 'policy_match':action==policy.label(s),'input':None,'execution_status':'started'}
             history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
+            if action in ['land','dismount']:leg['landing_avoidance_frozen']=True
             step.update(input=travel_inputs.execute(action,leg,facts,extra,observer,latest),execution_status='completed')
             print(json.dumps({'step':index,'leg':leg_index,'action':action,'position':facts['position'][:3]}),flush=True)
             if action=='arrived':

@@ -94,7 +94,10 @@ def execute(action,leg,facts,extra,observer,path):
         # leg. Aura removal can briefly mark a grounded character as falling.
         deadline=time.monotonic()+6
         while True:
-            _,after=archaeology_inputs.screenshot(path)
+            movement,after=archaeology_inputs.screenshot(path)
+            if action=='mount' and movement['in_combat'] and not after['mounted']:
+                return {'physical_keys':keys,'mouse_pixel':None,'collision_recovery':None,
+                    'transition_confirmed':False,'interrupted_by_combat':True}
             confirmed=after['mounted']==(action=='mount') and not after['casting']
             if confirmed and not after['falling']:break
             if time.monotonic()>deadline:raise RuntimeError(f'{action} was not confirmed by addon state')
