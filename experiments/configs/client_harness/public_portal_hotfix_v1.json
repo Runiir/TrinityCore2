@@ -6,11 +6,18 @@
   "wire_layout_source": "https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/HotfixHandler.cs",
   "records": [
     {
-      "push_id": 60895002,
-      "unique_id": 60895002,
+      "push_id": 60895003,
+      "unique_id": 60895003,
       "table_hash": 441483745,
       "record_id": 4352,
-      "data": "0050ad77c333eb5f44ac5c10430011000012020000000000000000000000009a99cd42508dd340cdcc0543000000000100000000000000"
+      "data": "0050ad77c333eb5f44ac5c10430011000012020000000000000000000000009a99cd42a8c60941cdcc0543000000000100000000000000",
+      "original_data": "0050ad77c333eb5f44ac5c10430011000012020000000000000000000000009a99cd42508dd340cdcc0543000000000100000000000000",
+      "compatibility_adjustment": {
+        "box_width_original": 6.611,
+        "box_width_contact": 8.611,
+        "margin_each_side_yards": 1,
+        "reason": "4.4.2 physical collision stops at Y=892.2908 before original Y=892.3695 box boundary; matching private native table keeps proximity authoritative"
+      }
     },
     {
       "push_id": 60895001,
