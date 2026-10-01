@@ -216,7 +216,9 @@ local function travelSample()
     append(bytes, flags, 1)
     append(bytes, math.min(#digsites, 16), 1)
     for i=1,16 do append(bytes, digsites[i] or 0, 2) end
-    local tip = GameTooltip:IsShown() and GameTooltipTextLeft1:GetText() or ""
+    -- A fading tooltip retains its old text for about a second. Export only
+    -- the fully visible tooltip at the current cursor position.
+    local tip = GameTooltip:IsShown() and GameTooltip:GetAlpha() > 0.99 and GameTooltipTextLeft1:GetText() or ""
     local tipFirst, tipSecond = 0, 0
     for i=1,#tip do tipFirst=(tipFirst+tip:byte(i))%255; tipSecond=(tipSecond+tipFirst)%255 end
     append(bytes, tipSecond*256+tipFirst, 2)

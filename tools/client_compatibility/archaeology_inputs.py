@@ -27,7 +27,7 @@ def screenshot(path):
 def locate_find(inputs,path):
     # Search the ordinary 3D view with cursor hover, then verify the game's
     # tooltip against known find names. No teacher pixel or private coordinates.
-    preferred=[(655,331),(640,360),(655,400),(620,400)]
+    preferred=[(640,275),(640,285),(655,275),(655,331),(640,360),(655,400),(620,400)]
     grid=[(x,y) for x in range(320,961,24) for y in range(190,575,24)]
     grid.sort(key=lambda p:(p[0]-655)**2+(p[1]-370)**2)
     deadline=time.monotonic()+40
@@ -38,8 +38,10 @@ def locate_find(inputs,path):
         if extra['tooltip_name_checksum'] in FIND_CHECKSUMS:
             # GameTooltip can remain shown while fading after the cursor
             # leaves an object. Verify this exact point from a cleared tip.
-            inputs.move(400,100);time.sleep(.7)
-            _,cleared=screenshot(path)
+            inputs.move(400,100)
+            for _ in range(6):
+                time.sleep(.25);_,cleared=screenshot(path)
+                if cleared['tooltip_name_checksum'] not in FIND_CHECKSUMS:break
             if cleared['tooltip_name_checksum'] in FIND_CHECKSUMS:continue
             inputs.move(x,y);time.sleep(.3)
             _,confirmed=screenshot(path)
