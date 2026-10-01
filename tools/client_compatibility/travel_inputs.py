@@ -28,7 +28,7 @@ def execute(action,leg,facts,extra,observer,path):
         hold=min(3,max(.15,(leg['ceiling']-position[2])/28.7))
         inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold})
         time.sleep(.3);after=observer.poll()
-        if hold>=.5 and extra['flying'] and after['position'][2]-position[2]<max(.4,hold*2.87):
+        if hold>=.5 and after['position'][2]-position[2]<max(.4,hold*2.87):
             from .flight_recovery import nudge
             if leg.get('blocked_climb_escapes',0)>=5:raise RuntimeError('blocked climb exceeded five bounded escapes')
             collision=nudge(inputs,leg,observer,path,extra)
