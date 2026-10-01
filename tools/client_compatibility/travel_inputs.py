@@ -76,8 +76,7 @@ def execute(action,leg,facts,extra,observer,path):
         if not node:raise RuntimeError('destination has no observed visible taxi button')
         pixel=node['pixel'];inputs.click(*pixel);time.sleep(1)
     elif action=='portal':
-        # The Outland side's public trigger has a 50-yard radius. Its staging
-        # point must remain outside that volume until the crossing leg begins.
+        # Use only the reviewed public entrance and real client trigger.
         if math.dist(position[:2],goal[:2])>90:raise RuntimeError('portal is outside the bounded approach')
         keys=face(inputs,observer,goal)
         hold=min(2,math.dist(observer.poll()['position'][:2],goal[:2])/7)

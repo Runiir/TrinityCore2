@@ -6,13 +6,12 @@ def test_escape_stays_inside_observed_polygon_and_has_terrain_clearance(monkeypa
     site={'id':343,'map':530,'polygon':[[-10,-10],[10,-10],[10,10],[-10,10]]}
     monkeypatch.setattr(recovery.site_boundaries,'sites',lambda:{343:site})
     monkeypatch.setattr(recovery.ground_navigation,'ground_point',lambda m,xy,**kw:[*xy[:2],10])
-    monkeypatch.setattr(recovery.ground_navigation,'route',lambda m,a,b:{'points':[a,b]})
     facts={'map':530,'position':[0,0,60,0]}
-    goal,ground,ids=recovery.waypoint(facts,{'digsite_ids':[343]},[5,0,0])
-    assert ids==[343] and math.isclose(goal[0],-9) and recovery.site_boundaries.contains(site['polygon'],goal)
+    goal,ground,sites=recovery.candidate(facts,{'digsite_ids':[343]},math.pi)
+    assert [s['id'] for s in sites]==[343] and math.isclose(goal[0],-9) and recovery.site_boundaries.contains(site['polygon'],goal)
     monkeypatch.setattr(recovery.ground_navigation,'ground_point',lambda m,xy,**kw:[*xy[:2],55])
     import pytest
-    with pytest.raises(RuntimeError):recovery.waypoint(facts,{'digsite_ids':[343]},[5,0,0])
+    with pytest.raises(RuntimeError):recovery.candidate(facts,{'digsite_ids':[343]},math.pi)
 
 
 def test_climb_watchdog_ignores_horizontal_collision_jitter():

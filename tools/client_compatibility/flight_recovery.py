@@ -4,72 +4,22 @@ import time
 from . import ground_navigation,site_boundaries
 
 
-def waypoint(facts,extra,goal):
-    start=facts['position'];heading=math.atan2(start[1]-goal[1],start[0]-goal[0])
+def candidate(facts,extra,angle):
+    start=facts['position']
     sites=[s for sid,s in site_boundaries.sites().items() if sid in extra['digsite_ids'] and
-           s['map']==facts['map'] and site_boundaries.contains(s['polygon'],start)]
-    floor=ground_navigation.ground_point(facts['map'],start,maximum_height=start[2]-10)
-    for radius in [12.,24.,40.,60.]:
-        for angle in [heading,heading+math.pi/2,heading-math.pi/2]:
-            distance=min([radius,*[site_boundaries.clip_distance(s['polygon'],start,angle,radius) for s in sites]])
-            if distance<3:continue
-            xy=[start[0]+math.cos(angle)*distance,start[1]+math.sin(angle)*distance]
-            try:
-                # A column whose highest ground is below us permits resuming
-                # the climb without the roof that blocked the original column.
-                ground=ground_navigation.ground_point(facts['map'],xy)
-                if ground[2]>start[2]-10:continue
-                corridor=ground_navigation.route(facts['map'],floor,ground)
-            except RuntimeError:continue
-            points=[floor,*corridor['points']]
-            if len(points)>12 or sum(math.dist(a[:2],b[:2]) for a,b in zip(points,points[1:]))>120:continue
-            if any(not site_boundaries.inside_segment(s['polygon'],a,b) for s in sites for a,b in zip(points,points[1:])):continue
-            highest=max(p[2] for p in points)
-            altitude=max(highest+10,min(start[2]-10,highest+60))
-            if altitude>start[2]-5:continue
-            return [*ground[:2],altitude],corridor,[s['id'] for s in sites]
-    raise RuntimeError('no bounded terrain-cleared escape from the blocked climb')
+        s['map']==facts['map'] and site_boundaries.contains(s['polygon'],start)]
+    distance=min([45.,*[site_boundaries.clip_distance(s['polygon'],start,angle,45.) for s in sites]])
+    if distance<3:raise RuntimeError('no useful in-site collision escape')
+    goal=[start[0]+math.cos(angle)*distance,start[1]+math.sin(angle)*distance,start[2]]
+    floor=ground_navigation.ground_point(facts['map'],goal,maximum_height=start[2]-10)
+    if floor[2]>start[2]-10:raise RuntimeError('insufficient public floor clearance')
+    return goal,floor,sites
 
 
 def nudge(inputs,leg,observer,path,extra):
-    from .travel_inputs import face
-    from . import archaeology_inputs
-    before=observer.poll()
-    if not extra['mounted'] or not extra['flyable_area']:raise RuntimeError('blocked-climb escape requires a mount in a flyable area')
-    # The captured portal WMO also blocked descent along a legacy public
-    # corridor. Prefer measured lateral liftoff to assuming the two versions'
-    # overhang collision planes match.
+    if not extra['mounted'] or not extra['flyable_area']:
+        raise RuntimeError('blocked-climb escape requires a mount in a flyable area')
     return grounded_escape(inputs,leg,observer,path,extra)
-    goal,corridor,sites=waypoint(before,extra,leg['position']);keys=[]
-    # Descend into the free space above the public walking corridor, then
-    # follow its corners rather than flying through the underside of the arch.
-    for _ in range(3):
-        current=observer.poll()['position']
-        if current[2]<=goal[2]+2:break
-        hold=min(3,(current[2]-goal[2])/28.7)
-        inputs.key('x',hold=hold);keys.append({'key':'x','hold':hold});time.sleep(.3)
-    else:
-        _,fresh=archaeology_inputs.screenshot(path)
-        return grounded_escape(inputs,leg,observer,path,fresh)
-    for point in corridor['points']:
-        for _ in range(4):
-            current=observer.poll()['position'];distance=math.dist(current[:2],point[:2])
-            if distance<1.5:break
-            keys.extend(face(inputs,observer,point));hold=min(40,distance)/28.7
-            inputs.key('w',hold=hold);keys.append({'key':'w','hold':hold});time.sleep(.3)
-            if math.dist(current[:2],observer.poll()['position'][:2])<min(1,distance*.2):
-                raise RuntimeError('blocked-climb escape encountered a ground-corridor obstruction')
-        else:raise RuntimeError('blocked-climb escape did not reach its corridor corner')
-    movement,after_extra=archaeology_inputs.screenshot(path);after=observer.poll()
-    moved=math.dist(before['position'][:2],after['position'][:2])
-    if movement['dead'] or movement['in_combat'] or not after_extra['mounted']:
-        raise RuntimeError('unsafe state after the blocked-climb escape')
-    if moved<3:raise RuntimeError('blocked-climb escape also encountered a horizontal obstruction')
-    if any(not site_boundaries.contains(site_boundaries.sites()[sid]['polygon'],after['position']) for sid in sites):
-        raise RuntimeError('blocked-climb escape crossed the observed digsite boundary')
-    return {'decision_origin':'physical_collision_guard','reason':'no vertical progress during mounted ascent',
-        'before':before,'after':after,'public_waypoint':goal,'public_ground_corridor':corridor,
-        'constrained_sites':sites,'physical_keys':keys,'horizontal_progress':moved,'time':time.time()}
 
 
 def grounded_escape(inputs,leg,observer,path,extra):
@@ -86,13 +36,9 @@ def grounded_escape(inputs,leg,observer,path,extra):
     angles=[heading-math.pi/2,heading+math.pi/2,heading+math.pi] if previous is None else [previous,previous+math.pi/2,previous-math.pi/2]
     for angle in angles:
         facts=observer.poll();start=facts['position']
-        sites=[s for sid,s in site_boundaries.sites().items() if sid in extra['digsite_ids'] and
-            s['map']==facts['map'] and site_boundaries.contains(s['polygon'],start)]
-        distance=min([45.,*[site_boundaries.clip_distance(s['polygon'],start,angle,45.) for s in sites]])
-        if distance<3:continue
-        goal=[start[0]+math.cos(angle)*distance,start[1]+math.sin(angle)*distance,start[2]]
-        try:floor=ground_navigation.ground_point(facts['map'],goal,maximum_height=start[2]-10)
+        try:goal,floor,sites=candidate(facts,extra,angle)
         except RuntimeError:continue
+        distance=math.dist(start[:2],goal[:2])
         keys=face(inputs,observer,goal);hold=distance/28.7
         codes=[inputs._keycode(inputs.XK.string_to_keysym(k))[0] for k in ['space','w']]
         inputs._tap(codes,hold);keys.append({'keys':['space','w'],'hold':hold});time.sleep(.4)
@@ -105,6 +51,6 @@ def grounded_escape(inputs,leg,observer,path,extra):
             raise RuntimeError('sideways liftoff crossed the observed digsite boundary')
         if moved>=1.5:
             leg['climb_escape_heading']=angle
-            return {'decision_origin':'physical_collision_guard','reason':'blocked liftoff with flight state cleared',
+            return {'decision_origin':'physical_collision_guard','reason':'blocked mounted climb; bounded lateral liftoff',
                 'before':before,'after':after,'attempts':attempts,'horizontal_progress':moved,'time':time.time()}
     raise RuntimeError('three bounded sideways liftoff probes made no useful progress')
