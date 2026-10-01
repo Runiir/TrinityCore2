@@ -37,7 +37,8 @@ def landing_point(map_id,position,radius=30,start=None):
     return json.loads(result.stdout)['position']
 
 
-def survey_detour(tcp,distance,digsite_ids):
+def survey_ray(tcp,distance,digsite_ids):
+    """An in-site public bearing, independent of whether the slope is walkable."""
     start=tcp['player']['position'];heading=tcp['tool']['heading_radians']
     site=site_boundaries.active_site(tcp['tool'].get('map',0),start,digsite_ids)
     requested=distance
@@ -45,21 +46,33 @@ def survey_detour(tcp,distance,digsite_ids):
     recovery=False
     if distance<1.5:
         # At an edge the noisy telescope can point outward. Take a short
-        # inward ground step using the public polygon, then survey again.
+        # inward step using the public polygon, then survey again.
         heading=math.atan2(site['center'][1]-start[1],site['center'][0]-start[0])
         distance=site_boundaries.clip_distance(site['polygon'],start,heading,min(requested,7.))
         recovery=True
     if distance<1.5:raise RuntimeError('no useful in-site survey step')
     goal=[start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]]
     # The waypoint is inferred from the ordinary telescope, never a hidden find.
+    if not site_boundaries.inside_segment(site['polygon'],start,goal):
+        raise RuntimeError('public survey ray leaves the observed active digsite')
+    return {'schema':'public_survey_ray_v1','start':start[:3],'requested_goal':goal,
+            'points':[start[:3],goal],'heading_radians':heading,'ground_only':False,
+            'goal_source':'public_survey_heading_and_color',
+            'boundary_guard':{'site_id':site['id'],'requested_distance':requested,
+                'clipped_distance':distance,'inward_recovery':recovery,
+                'whole_corridor_inside':True,'source':site['source']}}
+
+
+def survey_detour(tcp,distance,digsite_ids):
+    ray=survey_ray(tcp,distance,digsite_ids)
+    start=ray['start'];goal=ray['requested_goal']
+    site=site_boundaries.sites()[ray['boundary_guard']['site_id']]
     result=route(tcp['tool'].get('map',0),start,goal)
     corridor=[start,*result['points']]
     if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):
         raise RuntimeError('ground corridor leaves the observed active digsite')
-    result.update(start=start[:3],requested_goal=goal,goal_source='public_survey_heading_and_color',
-                  boundary_guard={'site_id':site['id'],'requested_distance':requested,
-                                  'clipped_distance':distance,'inward_recovery':recovery,
-                                  'whole_corridor_inside':True,'source':site['source']})
+    result.update(start=start,requested_goal=goal,goal_source=ray['goal_source'],
+                  boundary_guard=ray['boundary_guard'])
     return result
 
 

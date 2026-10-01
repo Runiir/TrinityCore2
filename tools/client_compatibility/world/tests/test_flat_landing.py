@@ -34,3 +34,17 @@ def test_bonechewer_landing_stays_on_the_ground_component_that_supported_survey(
     assert point[2]<10
     path=ground.route(530,origin,point)
     assert abs(path['points'][-1][2]-point[2])<2
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private public-navmesh helper is not provisioned')
+def test_coilskar_flight_can_cross_a_slope_excluded_from_walking():
+    # Actual trial 40 yellow bearing. The destination is 16 yards downhill;
+    # the filtered walking corridor is unavailable, but flat connected ground
+    # exists at the public bearing for a mounted flight.
+    origin=[-2873.942626953125,1676.2451171875,59.17497634887695]
+    goal=[-2853.34468157961,1672.1555394110421,59.17497634887695]
+    with pytest.raises(RuntimeError,match='no connected walkable route'):
+        ground.route(530,origin,goal)
+    point=ground.landing_point(530,goal,start=origin)
+    assert abs(point[2]-42.7713661)<.01
+    assert abs(point[0]-goal[0])<.01 and abs(point[1]-goal[1])<.01
