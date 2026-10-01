@@ -66,12 +66,13 @@ def run(args):
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as img:img.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
-            begin=time.time();executed=inputs.execute(action,tcp,latest,recovery.for_action(action),
-                                                     mounted_moves=getattr(args,'mounted_moves',False))
+            begin=time.time()
             step={'index':index,'started_at':begin,'time':time.time(),'session':tcp['session'],
                 'movement':movement,'travel':extra,'tcp':tcp,'state':state,'request':request,'response':response,
-                'action':action,'policy_match':action==policy.label(state),'input':executed}
-            history.append(step)
+                'action':action,'policy_match':action==policy.label(state),'input':None,'execution_status':'started'}
+            history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
+            executed=inputs.execute(action,tcp,latest,recovery.for_action(action),mounted_moves=getattr(args,'mounted_moves',False))
+            step.update(input=executed,time=time.time(),execution_status='completed')
             if action=='loot':
                 confirmation=collected(tcp['session'],begin)
                 if confirmation:
@@ -93,6 +94,8 @@ def run(args):
         print(failure,flush=True)
     receipt.update(finished_at=time.time(),completed=len(finds)>=args.finds,failure=failure,
         live_action_agreement=sum(s['policy_match'] for s in history)/len(history) if history else None)
+    if failure and history and history[-1]['execution_status']=='started':
+        history[-1].update(execution_status='failed',input_error=failure)
     lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
     latest.unlink(missing_ok=True)
     print(json.dumps({k:receipt[k] for k in ['completed','failure','live_action_agreement']},indent=2),flush=True)

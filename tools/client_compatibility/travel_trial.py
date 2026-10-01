@@ -90,10 +90,11 @@ def run(plan,out,maximum_steps=180):
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
             if action=='arrived' and (policy.label(s)!='arrived' or not s['destination_reached']):
                 raise RuntimeError('model claimed arrival before public observations confirmed it')
-            input_receipt=travel_inputs.execute(action,leg,facts,extra,observer,latest)
-            history.append({'index':index,'time':time.time(),'leg':leg_index,'state':s,'movement':movement,
+            step={'index':index,'time':time.time(),'leg':leg_index,'state':s,'movement':movement,
                 'travel':extra,'facts':facts,'ui':ui,'request':request,'response':response,'action':action,
-                'policy_match':action==policy.label(s),'input':input_receipt})
+                'policy_match':action==policy.label(s),'input':None,'execution_status':'started'}
+            history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
+            step.update(input=travel_inputs.execute(action,leg,facts,extra,observer,latest),execution_status='completed')
             print(json.dumps({'step':index,'leg':leg_index,'action':action,'position':facts['position'][:3]}),flush=True)
             if action=='arrived':
                 finished.append({'leg':leg_index,'name':leg['id'],'time':time.time(),'facts':facts})
@@ -109,6 +110,8 @@ def run(plan,out,maximum_steps=180):
             lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
         if leg_index<len(plan['legs']):raise RuntimeError('travel action budget exhausted')
     except (Exception,KeyboardInterrupt) as e:failure=f'{type(e).__name__}: {e}'
+    if failure and history and history[-1]['execution_status']=='started':
+        history[-1].update(execution_status='failed',input_error=failure)
     receipt.update(finished_at=time.time(),completed=leg_index==len(plan['legs']),failure=failure)
     lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
     print(json.dumps({'completed':receipt['completed'],'failure':failure}),flush=True)
