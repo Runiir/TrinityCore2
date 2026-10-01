@@ -23,7 +23,7 @@ def state(leg,movement,extra,facts,ui):
         'casting':extra['casting'],'on_taxi':movement['on_taxi'],
         'mounted':extra['mounted'],'flying':extra['flying'],'falling':extra['falling'],
         'at_route_height':facts['position'][2]>=leg.get('ceiling',float('inf'))-3,
-        'near_destination':distance is not None and distance<5,'destination_reached':reached,
+        'near_destination':distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
         'taxi_map_open':bool(ui['nodes'])}
 
 
@@ -45,7 +45,7 @@ def run(plan,out,maximum_steps=180):
             with Image.open(latest) as image:ui=taxi.decode_image(image)
             s=state(leg,movement,extra,facts,ui)
             if movement['dead'] or movement['in_combat']:raise RuntimeError('unsafe travel state')
-            request={'model':identity['model'],'state':s}
+            request={'model':identity['model'],'state':policy.model_state(s)}
             req=urllib.request.Request(ENDPOINT,data=json.dumps(request).encode(),headers={'Content-Type':'application/json'})
             with urllib.request.urlopen(req,timeout=15) as r:response=json.load(r)
             if response['model']!=identity['model'] or response['revision']!=identity['revision']:raise RuntimeError('travel model identity changed')

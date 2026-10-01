@@ -12,11 +12,8 @@ from .observation.archaeology import Observer,collected
 from .collision_recovery import Recovery
 
 
-def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--finds',type=int,default=1);parser.add_argument('--maximum-steps',type=int,default=120)
-    parser.add_argument('--final-find-site',type=int,help='verify this seeded site remains visible until its final find is looted')
-    args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
+def run(args):
+    out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
     monitor=json.loads((lab.ROOT/'evidence/client_monitor.json').read_text())
     client=lab.owned_process('client')
     if not client or not monitor['second_monitor_verified'] or monitor['pid']!=client['pid']:raise RuntimeError('owned client monitor unverified')
@@ -26,7 +23,8 @@ def main():
     receipt={'schema':'client442_laya_live_archaeology_v2','model':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'started_at':started,'teacher_mouse_annotations':0,'manual_gameplay_interventions':0,
-        'private_next_find_coordinates_used':False,'frames':[],'finds':finds,'steps':history}
+        'private_next_find_coordinates_used':False,'mounted_red_yellow_moves':getattr(args,'mounted_moves',False),
+        'frames':[],'finds':finds,'steps':history}
     try:
         for index in range(args.maximum_steps):
             movement,extra=inputs.screenshot(latest);tcp=observer.poll(movement['facing_radians'])
@@ -54,7 +52,8 @@ def main():
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as img:img.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
-            begin=time.time();executed=inputs.execute(action,tcp,latest,recovery.for_action(action))
+            begin=time.time();executed=inputs.execute(action,tcp,latest,recovery.for_action(action),
+                                                     mounted_moves=getattr(args,'mounted_moves',False))
             step={'index':index,'started_at':begin,'time':time.time(),'session':tcp['session'],
                 'movement':movement,'travel':extra,'tcp':tcp,'state':state,'request':request,'response':response,
                 'action':action,'policy_match':action==policy.label(state),'input':executed}
@@ -83,6 +82,15 @@ def main():
     lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
     latest.unlink(missing_ok=True)
     print(json.dumps({k:receipt[k] for k in ['completed','failure','live_action_agreement']},indent=2),flush=True)
+    return receipt
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--finds',type=int,default=1);parser.add_argument('--maximum-steps',type=int,default=120)
+    parser.add_argument('--mounted-moves',action='store_true')
+    parser.add_argument('--final-find-site',type=int,help='verify this seeded site remains visible until its final find is looted')
+    run(parser.parse_args())
 
 
 if __name__=='__main__':main()

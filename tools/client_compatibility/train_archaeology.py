@@ -52,6 +52,7 @@ def main():
     splits=policy.dataset(config)
     (out/'dataset.json').write_text(json.dumps(splits,indent=2)+'\n')
     agent=policy.base_agent()
+    print(json.dumps({'stage':'parent_loaded','device':str(agent.device)}),flush=True)
     resume_identity=None
     if args.resume:
         from safetensors.torch import load_file
@@ -63,6 +64,7 @@ def main():
         agent.model.load_state_dict(weights,strict=False)
     for name,parameter in agent.model.named_parameters():parameter.requires_grad_(not name.startswith(('encoder.','act_head.')))
     encoded={split:encode(agent,rows) for split,rows in splits.items()}
+    print(json.dumps({'stage':'dataset_encoded','counts':{k:len(v) for k,v in encoded.items()}}),flush=True)
     optimizer=torch.optim.AdamW([p for p in agent.model.parameters() if p.requires_grad],lr=config['learning_rate'])
     scaler=torch.amp.GradScaler('cuda')
     baseline=evaluate(agent,encoded['test'],config['batch_size']);best=-1.;history=[];started=time.time()

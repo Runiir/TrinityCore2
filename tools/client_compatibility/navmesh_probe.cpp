@@ -19,11 +19,14 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc != 9) throw std::runtime_error("expected data directory, map, start XYZ, goal XYZ");
+        bool column = argc == 6 && std::string(argv[3]) == "--ground";
+        if (argc != 9 && !column) throw std::runtime_error("expected data directory, map, start XYZ, goal XYZ; or --ground X Y");
         std::filesystem::path directory(argv[1]);
         int map = std::stoi(argv[2]);
-        float start[3] = {std::stof(argv[4]), std::stof(argv[5]), std::stof(argv[3])};
-        float goal[3] = {std::stof(argv[7]), std::stof(argv[8]), std::stof(argv[6])};
+        float start[3] = {std::stof(argv[column ? 5 : 4]), column ? 0.f : std::stof(argv[5]), std::stof(argv[column ? 4 : 3])};
+        float goal[3];
+        if (column) std::copy(start,start+3,goal);
+        else { goal[0]=std::stof(argv[7]); goal[1]=std::stof(argv[8]); goal[2]=std::stof(argv[6]); }
         for (float value : start) if (!std::isfinite(value)) throw std::runtime_error("invalid start");
         for (float value : goal) if (!std::isfinite(value)) throw std::runtime_error("invalid goal");
         if (std::hypot(start[0]-goal[0], start[2]-goal[2]) > 600)
@@ -59,6 +62,26 @@ int main(int argc, char** argv)
         dtNavMeshQuery query;
         if (dtStatusFailed(query.init(&mesh,8192))) throw std::runtime_error("query initialization failed");
         dtQueryFilter filter; filter.setIncludeFlags(1); filter.setExcludeFlags(0); // NAV_GROUND only
+        if (column)
+        {
+            float extents[3]={4,2000,4}, chosen[3]; dtPolyRef refs[256]; int count=0;
+            auto status=query.queryPolygons(goal,extents,&filter,refs,&count,256);
+            if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground column query exceeds budget");
+            float best=INFINITY;
+            for (int i=0;i<count;++i)
+            {
+                float point[3];
+                if (dtStatusFailed(query.closestPointOnPoly(refs[i],goal,point,nullptr))) continue;
+                float horizontal=std::hypot(point[0]-goal[0],point[2]-goal[2]);
+                if (horizontal>4) continue;
+                float score=horizontal*100000-point[1];
+                if (score<best) { best=score; std::copy(point,point+3,chosen); }
+            }
+            if (!std::isfinite(best)) throw std::runtime_error("no public walkable ground in destination column");
+            std::cout << std::setprecision(9) << "{\"source\":\"public_static_ground_navmesh\",\"position\":["
+                << chosen[2] << ',' << chosen[0] << ',' << chosen[1] << "]}\n";
+            return 0;
+        }
         float startExtents[3] = {4,8,4}, goalExtents[3] = {4,40,4};
         dtPolyRef first = 0, last = 0; float begin[3], end[3];
         query.findNearestPoly(start,startExtents,&filter,&first,begin);

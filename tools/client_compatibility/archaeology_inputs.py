@@ -44,7 +44,7 @@ def locate_find(inputs,path):
     raise RuntimeError('no archaeology find tooltip in the bounded screen search')
 
 
-def execute(action,tcp,path,recovery=None):
+def execute(action,tcp,path,recovery=None,mounted_moves=False):
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None;ground_route=None
     if action=='survey':inputs.key('2')
     elif action.startswith('turn_'):
@@ -56,7 +56,24 @@ def execute(action,tcp,path,recovery=None):
         short,long={'red':(2,6),'yellow':(1,3),'green':(.5,1)}[tcp['tool']['color']]
         hold=short if action=='forward_short' else long
         with Image.open(path) as image:digsite_ids=travel.decode_image(image)['digsite_ids']
-        hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids)
+        if mounted_moves and tcp['tool']['color']!='green':
+            from . import travel_trial,site_boundaries
+            planned=ground_navigation.survey_detour(tcp,hold*7,digsite_ids)
+            start=tcp['player']['position'];site=site_boundaries.sites()[planned['boundary_guard']['site_id']]
+            targets=[p for p in planned['points'][1:] if math.dist(p[:2],start[:2])>1.5 and
+                     site_boundaries.inside_segment(site['polygon'],start,p)]
+            if not targets:raise RuntimeError('no in-site mounted waypoint from public survey heading')
+            target=targets[-1]
+            route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
+                'map':site['map'],'position':target,'ceiling':max(start[2],target[2])+70,'arrival_radius':1.5}]}
+            directory=path.parent/f'mounted_move_{time.time_ns()}'
+            result=travel_trial.run(route,directory,maximum_steps=45)
+            if not result['completed']:raise RuntimeError('mounted dig movement failed: '+str(result['failure']))
+            _,after=screenshot(path)
+            inside=site_boundaries.contains(site['polygon'],after['world_position'])
+            ground_route={**planned,'mounted_travel_episode':directory.name,
+                'boundary_guard':{**planned['boundary_guard'],'observed_after_inside':inside}}
+        else:hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()

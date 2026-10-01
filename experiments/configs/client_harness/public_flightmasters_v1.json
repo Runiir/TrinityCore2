@@ -1,0 +1,2070 @@
+{
+  "schema": "public_static_flightmasters_v1",
+  "source": "native public NPC spawn/name records joined to TaxiNodes.dbc; no character or dig targets",
+  "nodes": {
+    "2": {
+      "node": 2,
+      "entry": 352,
+      "name": "Dungar Longdrink",
+      "map": 0,
+      "position": [
+        -8835.29,
+        490.398,
+        109.7
+      ],
+      "distance_to_node": 5.817829962757101
+    },
+    "4": {
+      "node": 4,
+      "entry": 523,
+      "name": "Thor",
+      "map": 0,
+      "position": [
+        -10553.6,
+        1034.42,
+        57.0394
+      ],
+      "distance_to_node": 1.7020026942879039
+    },
+    "5": {
+      "node": 5,
+      "entry": 931,
+      "name": "Ariena Stormfeather",
+      "map": 0,
+      "position": [
+        -9435.21,
+        -2234.88,
+        69.1882
+      ],
+      "distance_to_node": 7.052489694048549
+    },
+    "7": {
+      "node": 7,
+      "entry": 1571,
+      "name": "Shellei Brondir",
+      "map": 0,
+      "position": [
+        -3790.12,
+        -780.3,
+        1.60112
+      ],
+      "distance_to_node": 3.481173845815305
+    },
+    "8": {
+      "node": 8,
+      "entry": 1572,
+      "name": "Thorgrum Borrelson",
+      "map": 0,
+      "position": [
+        -5424.85,
+        -2929.87,
+        347.645
+      ],
+      "distance_to_node": 2.969563774174009
+    },
+    "6": {
+      "node": 6,
+      "entry": 1573,
+      "name": "Gryth Thurden",
+      "map": 0,
+      "position": [
+        -4821.12,
+        -1152.4,
+        502.295
+      ],
+      "distance_to_node": 3.1118783167968496
+    },
+    "71": {
+      "node": 71,
+      "entry": 2299,
+      "name": "Borgus Stoutarm",
+      "map": 0,
+      "position": [
+        -8365.08,
+        -2736.93,
+        185.69
+      ],
+      "distance_to_node": 1.5133221467352878
+    },
+    "12": {
+      "node": 12,
+      "entry": 2409,
+      "name": "Felicia Maline",
+      "map": 0,
+      "position": [
+        -10513.8,
+        -1258.79,
+        41.5138
+      ],
+      "distance_to_node": 3.3316581511308603
+    },
+    "16": {
+      "node": 16,
+      "entry": 2835,
+      "name": "Cedrik Prose",
+      "map": 0,
+      "position": [
+        -1239.5,
+        -2514.07,
+        22.1264
+      ],
+      "distance_to_node": 1.4642106239219965
+    },
+    "19": {
+      "node": 19,
+      "entry": 2859,
+      "name": "Gyll",
+      "map": 0,
+      "position": [
+        -14477.9,
+        464.101,
+        36.4656
+      ],
+      "distance_to_node": 4.900374244908314
+    },
+    "74": {
+      "node": 74,
+      "entry": 2941,
+      "name": "Lanie Reed",
+      "map": 0,
+      "position": [
+        -6559.06,
+        -1169.38,
+        309.861
+      ],
+      "distance_to_node": 6.587760031365866
+    },
+    "27": {
+      "node": 27,
+      "entry": 3838,
+      "name": "Vesprystus",
+      "map": 1,
+      "position": [
+        8385.65,
+        979.818,
+        30.9126
+      ],
+      "distance_to_node": 2.220415910323278
+    },
+    "26": {
+      "node": 26,
+      "entry": 3841,
+      "name": "Teldira Moonfeather",
+      "map": 1,
+      "position": [
+        7462.24,
+        -326.546,
+        8.207
+      ],
+      "distance_to_node": 2.3430625123386624
+    },
+    "28": {
+      "node": 28,
+      "entry": 4267,
+      "name": "Daelyshia",
+      "map": 1,
+      "position": [
+        2828.38,
+        -284.25,
+        106.76
+      ],
+      "distance_to_node": 5.112868340186726
+    },
+    "32": {
+      "node": 32,
+      "entry": 4321,
+      "name": "Baldruc",
+      "map": 1,
+      "position": [
+        -3828.88,
+        -4517.51,
+        10.7437
+      ],
+      "distance_to_node": 3.6436610704019876
+    },
+    "33": {
+      "node": 33,
+      "entry": 4407,
+      "name": "Teloren",
+      "map": 1,
+      "position": [
+        2147.09,
+        1535.16,
+        341.322
+      ],
+      "distance_to_node": 2.71595271255548
+    },
+    "37": {
+      "node": 37,
+      "entry": 6706,
+      "name": "Baritanas Skyriver",
+      "map": 1,
+      "position": [
+        136.219,
+        1326.33,
+        193.583
+      ],
+      "distance_to_node": 3.0648846597822432
+    },
+    "39": {
+      "node": 39,
+      "entry": 7823,
+      "name": "Bera Stonehammer",
+      "map": 1,
+      "position": [
+        -7188.6,
+        -3766.39,
+        9.24861
+      ],
+      "distance_to_node": 3.2157315756681233
+    },
+    "43": {
+      "node": 43,
+      "entry": 8018,
+      "name": "Guthrum Thunderfist",
+      "map": 0,
+      "position": [
+        282.096,
+        -2001.28,
+        194.823
+      ],
+      "distance_to_node": 2.2135990796055967
+    },
+    "45": {
+      "node": 45,
+      "entry": 8609,
+      "name": "Alexandra Constantine",
+      "map": 0,
+      "position": [
+        -11110.2,
+        -3437.1,
+        79.282
+      ],
+      "distance_to_node": 2.5091177123647364
+    },
+    "79": {
+      "node": 79,
+      "entry": 10583,
+      "name": "Gryfe",
+      "map": 1,
+      "position": [
+        -7549.46,
+        -1537.84,
+        -271.1
+      ],
+      "distance_to_node": 3.5798441543145203
+    },
+    "49": {
+      "node": 49,
+      "entry": 10897,
+      "name": "Sindrayl",
+      "map": 1,
+      "position": [
+        7454.85,
+        -2491.61,
+        462.699
+      ],
+      "distance_to_node": 5.697185353270475
+    },
+    "52": {
+      "node": 52,
+      "entry": 11138,
+      "name": "Maethrya",
+      "map": 1,
+      "position": [
+        6800.54,
+        -4742.35,
+        701.581
+      ],
+      "distance_to_node": 3.741287603464707
+    },
+    "65": {
+      "node": 65,
+      "entry": 12578,
+      "name": "Mishellena",
+      "map": 1,
+      "position": [
+        6215.3,
+        -1871.17,
+        566.08
+      ],
+      "distance_to_node": 3.2631892932879043
+    },
+    "66": {
+      "node": 66,
+      "entry": 12596,
+      "name": "Bibilfaz Featherwhistle",
+      "map": 0,
+      "position": [
+        928.273,
+        -1429.08,
+        64.8343
+      ],
+      "distance_to_node": 3.2205773628285903
+    },
+    "67": {
+      "node": 67,
+      "entry": 12636,
+      "name": "Georgia",
+      "map": 0,
+      "position": [
+        2272.06,
+        -5343.54,
+        87.0407
+      ],
+      "distance_to_node": 2.907611120001096
+    },
+    "73": {
+      "node": 73,
+      "entry": 15177,
+      "name": "Cloud Skydancer",
+      "map": 1,
+      "position": [
+        -6758.55,
+        775.594,
+        89.1046
+      ],
+      "distance_to_node": 4.847542409670743
+    },
+    "80": {
+      "node": 80,
+      "entry": 16227,
+      "name": "Bragok",
+      "map": 1,
+      "position": [
+        -898.246,
+        -3769.65,
+        11.7933
+      ],
+      "distance_to_node": 4.975335409343098
+    },
+    "100": {
+      "node": 100,
+      "entry": 16822,
+      "name": "Flightmaster Krill Bitterhue",
+      "map": 530,
+      "position": [
+        -665.804,
+        2715.48,
+        94.1981
+      ],
+      "distance_to_node": 7.823534572621354
+    },
+    "93": {
+      "node": 93,
+      "entry": 17554,
+      "name": "Laando",
+      "map": 530,
+      "position": [
+        -1930.02,
+        -11956.8,
+        57.4743
+      ],
+      "distance_to_node": 3.935120471719568
+    },
+    "94": {
+      "node": 94,
+      "entry": 17555,
+      "name": "Stephanos",
+      "map": 530,
+      "position": [
+        -3865.31,
+        -11642.2,
+        -137.566
+      ],
+      "distance_to_node": 2.506636688874055
+    },
+    "101": {
+      "node": 101,
+      "entry": 18785,
+      "name": "Kuma",
+      "map": 530,
+      "position": [
+        199.061,
+        4238.42,
+        121.81
+      ],
+      "distance_to_node": 3.142191861948254
+    },
+    "117": {
+      "node": 117,
+      "entry": 18788,
+      "name": "Munci",
+      "map": 530,
+      "position": [
+        210.492,
+        6065.09,
+        148.396
+      ],
+      "distance_to_node": 3.523855902265058
+    },
+    "119": {
+      "node": 119,
+      "entry": 18789,
+      "name": "Furgu",
+      "map": 530,
+      "position": [
+        -2723.1,
+        7302.84,
+        88.7157
+      ],
+      "distance_to_node": 6.392680946446094
+    },
+    "121": {
+      "node": 121,
+      "entry": 18809,
+      "name": "Furnan Skysoar",
+      "map": 530,
+      "position": [
+        -2995.4,
+        3873.27,
+        9.6248
+      ],
+      "distance_to_node": 8.189667733905138
+    },
+    "129": {
+      "node": 129,
+      "entry": 18931,
+      "name": "Amish Wildhammer",
+      "map": 530,
+      "position": [
+        -323.81,
+        1027.61,
+        54.2399
+      ],
+      "distance_to_node": 7.951495726309724
+    },
+    "125": {
+      "node": 125,
+      "entry": 18937,
+      "name": "Amerun Leafshade",
+      "map": 530,
+      "position": [
+        2187.88,
+        6794.0,
+        183.413
+      ],
+      "distance_to_node": 4.2571092974161555
+    },
+    "122": {
+      "node": 122,
+      "entry": 18938,
+      "name": "Krexcil",
+      "map": 530,
+      "position": [
+        3085.3,
+        3600.82,
+        144.009
+      ],
+      "distance_to_node": 5.578795461773106
+    },
+    "124": {
+      "node": 124,
+      "entry": 18939,
+      "name": "Brubeck Stormfoot",
+      "map": 530,
+      "position": [
+        -3980.97,
+        2156.29,
+        105.233
+      ],
+      "distance_to_node": 1.1177784198973404
+    },
+    "128": {
+      "node": 128,
+      "entry": 18940,
+      "name": "Nutral",
+      "map": 530,
+      "position": [
+        -1831.95,
+        5298.3,
+        -12.3448
+      ],
+      "distance_to_node": 6.390989729839853
+    },
+    "140": {
+      "node": 140,
+      "entry": 19581,
+      "name": "Maddix",
+      "map": 530,
+      "position": [
+        -3062.63,
+        741.933,
+        -10.0639
+      ],
+      "distance_to_node": 8.054669231084242
+    },
+    "139": {
+      "node": 139,
+      "entry": 19583,
+      "name": "Grennik",
+      "map": 530,
+      "position": [
+        4160.16,
+        2957.3,
+        352.298
+      ],
+      "distance_to_node": 3.5235417779675346
+    },
+    "150": {
+      "node": 150,
+      "entry": 20515,
+      "name": "Harpax",
+      "map": 530,
+      "position": [
+        2973.2,
+        1848.45,
+        141.085
+      ],
+      "distance_to_node": 1.7732618897197552
+    },
+    "156": {
+      "node": 156,
+      "entry": 21107,
+      "name": "Rip Pedalslam",
+      "map": 530,
+      "position": [
+        1860.71,
+        5528.27,
+        277.588
+      ],
+      "distance_to_node": 4.9582941157074325
+    },
+    "159": {
+      "node": 159,
+      "entry": 21766,
+      "name": "Alieshor",
+      "map": 530,
+      "position": [
+        -4067.27,
+        1127.53,
+        43.0965
+      ],
+      "distance_to_node": 7.111124643509532
+    },
+    "160": {
+      "node": 160,
+      "entry": 22216,
+      "name": "Fhyn Leafshadow",
+      "map": 530,
+      "position": [
+        2975.63,
+        5499.79,
+        143.668
+      ],
+      "distance_to_node": 1.3927301841643362
+    },
+    "164": {
+      "node": 164,
+      "entry": 22485,
+      "name": "Halu",
+      "map": 530,
+      "position": [
+        963.428,
+        7399.58,
+        29.3317
+      ],
+      "distance_to_node": 3.2746711419879047
+    },
+    "166": {
+      "node": 166,
+      "entry": 22931,
+      "name": "Gorrim",
+      "map": 1,
+      "position": [
+        3968.68,
+        -1325.96,
+        244.76
+      ],
+      "distance_to_node": 4.405752081330435
+    },
+    "167": {
+      "node": 167,
+      "entry": 22935,
+      "name": "Suralais Farwind",
+      "map": 1,
+      "position": [
+        3002.88,
+        -3206.81,
+        190.114
+      ],
+      "distance_to_node": 5.137704400390313
+    },
+    "183": {
+      "node": 183,
+      "entry": 23736,
+      "name": "Pricilla Winterwind",
+      "map": 571,
+      "position": [
+        567.415,
+        -5012.58,
+        11.5673
+      ],
+      "distance_to_node": 1.6111991833905905
+    },
+    "185": {
+      "node": 185,
+      "entry": 23859,
+      "name": "Greer Orehammer",
+      "map": 571,
+      "position": [
+        1343.75,
+        -3287.78,
+        174.536
+      ],
+      "distance_to_node": 0.9219193593519194
+    },
+    "184": {
+      "node": 184,
+      "entry": 24061,
+      "name": "James Ormsby",
+      "map": 571,
+      "position": [
+        2467.34,
+        -5028.79,
+        283.778
+      ],
+      "distance_to_node": 1.7856212942210214
+    },
+    "289": {
+      "node": 289,
+      "entry": 24795,
+      "name": "Surristrasz",
+      "map": 571,
+      "position": [
+        3571.12,
+        5957.59,
+        136.303
+      ],
+      "distance_to_node": 22.942671840633242
+    },
+    "205": {
+      "node": 205,
+      "entry": 24851,
+      "name": "Kiz Coilspanner",
+      "map": 530,
+      "position": [
+        6789.91,
+        -7749.43,
+        126.619
+      ],
+      "distance_to_node": 1.8570089133972292
+    },
+    "213": {
+      "node": 213,
+      "entry": 26560,
+      "name": "Ohura",
+      "map": 530,
+      "position": [
+        13012.7,
+        -6910.98,
+        9.58312
+      ],
+      "distance_to_node": 2.609884684809596
+    },
+    "246": {
+      "node": 246,
+      "entry": 26602,
+      "name": "Kara Thricestar",
+      "map": 571,
+      "position": [
+        4126.8,
+        5309.59,
+        28.8055
+      ],
+      "distance_to_node": 3.5089058160954814
+    },
+    "252": {
+      "node": 252,
+      "entry": 26851,
+      "name": "Nethestrasz",
+      "map": 571,
+      "position": [
+        3647.26,
+        244.051,
+        52.3397
+      ],
+      "distance_to_node": 6.918254219014442
+    },
+    "255": {
+      "node": 255,
+      "entry": 26876,
+      "name": "Samuel Clearbook",
+      "map": 571,
+      "position": [
+        4582.63,
+        -4254.86,
+        182.291
+      ],
+      "distance_to_node": 2.357517346959013
+    },
+    "251": {
+      "node": 251,
+      "entry": 26877,
+      "name": "Derek Rammel",
+      "map": 571,
+      "position": [
+        4606.09,
+        1410.71,
+        194.831
+      ],
+      "distance_to_node": 7.375544891230485
+    },
+    "244": {
+      "node": 244,
+      "entry": 26878,
+      "name": "Rodney Wells",
+      "map": 571,
+      "position": [
+        3712.43,
+        -694.86,
+        215.36
+      ],
+      "distance_to_node": 0.21000733585542744
+    },
+    "245": {
+      "node": 245,
+      "entry": 26879,
+      "name": "Tomas Riverwell",
+      "map": 571,
+      "position": [
+        2272.98,
+        5171.82,
+        11.246
+      ],
+      "distance_to_node": 3.918077079760722
+    },
+    "253": {
+      "node": 253,
+      "entry": 26880,
+      "name": "Vana Grey",
+      "map": 571,
+      "position": [
+        3447.84,
+        -2754.01,
+        199.408
+      ],
+      "distance_to_node": 1.4926455303478396
+    },
+    "247": {
+      "node": 247,
+      "entry": 26881,
+      "name": "Palena Silvercloud",
+      "map": 571,
+      "position": [
+        3506.07,
+        1990.42,
+        65.2658
+      ],
+      "distance_to_node": 2.539638406932467
+    },
+    "226": {
+      "node": 226,
+      "entry": 27046,
+      "name": "Warmage Adami",
+      "map": 571,
+      "position": [
+        3573.9,
+        6661.07,
+        195.263
+      ],
+      "distance_to_node": 1.643716537700751
+    },
+    "309": {
+      "node": 309,
+      "entry": 28037,
+      "name": "The Spirit of Gnomeregan",
+      "map": 571,
+      "position": [
+        5587.64,
+        5830.73,
+        -67.9672
+      ],
+      "distance_to_node": 10.586671997823043
+    },
+    "296": {
+      "node": 296,
+      "entry": 28195,
+      "name": "Bilko Driftspark",
+      "map": 571,
+      "position": [
+        2917.21,
+        4043.44,
+        1.8677
+      ],
+      "distance_to_node": 3.3080881320448605
+    },
+    "294": {
+      "node": 294,
+      "entry": 28196,
+      "name": "Cid Flounderfix",
+      "map": 571,
+      "position": [
+        2793.19,
+        906.36,
+        22.5437
+      ],
+      "distance_to_node": 2.7117253269666772
+    },
+    "295": {
+      "node": 295,
+      "entry": 28197,
+      "name": "Kip Trawlskip",
+      "map": 571,
+      "position": [
+        787.755,
+        -2889.06,
+        6.49197
+      ],
+      "distance_to_node": 2.891384001129568
+    },
+    "308": {
+      "node": 308,
+      "entry": 28574,
+      "name": "Marvin Wobblesprocket",
+      "map": 571,
+      "position": [
+        5505.6,
+        4745.33,
+        -194.35
+      ],
+      "distance_to_node": 2.841956235473517
+    },
+    "305": {
+      "node": 305,
+      "entry": 28615,
+      "name": "Baneflight",
+      "map": 571,
+      "position": [
+        5218.97,
+        -1299.12,
+        242.35
+      ],
+      "distance_to_node": 3.106578608382155
+    },
+    "306": {
+      "node": 306,
+      "entry": 28618,
+      "name": "Danica Saint",
+      "map": 571,
+      "position": [
+        5192.26,
+        -2207.04,
+        239.482
+      ],
+      "distance_to_node": 2.2285103150664587
+    },
+    "85": {
+      "node": 85,
+      "entry": 28621,
+      "name": "Grayson Ironwing",
+      "map": 0,
+      "position": [
+        3131.37,
+        -4357.82,
+        133.579
+      ],
+      "distance_to_node": 4.196250628394079
+    },
+    "304": {
+      "node": 304,
+      "entry": 28623,
+      "name": "Gurric",
+      "map": 571,
+      "position": [
+        5523.68,
+        -2674.97,
+        304.037
+      ],
+      "distance_to_node": 3.4071905374675753
+    },
+    "307": {
+      "node": 307,
+      "entry": 28624,
+      "name": "Maaka",
+      "map": 571,
+      "position": [
+        5780.84,
+        -3598.16,
+        387.238
+      ],
+      "distance_to_node": 4.7437696567123435
+    },
+    "310": {
+      "node": 310,
+      "entry": 28674,
+      "name": "Aludane Whitecloud",
+      "map": 571,
+      "position": [
+        5813.37,
+        453.403,
+        658.834
+      ],
+      "distance_to_node": 4.305355441505441
+    },
+    "315": {
+      "node": 315,
+      "entry": 29480,
+      "name": "Grimwing",
+      "map": 0,
+      "position": [
+        2348.63,
+        -5669.29,
+        382.324
+      ],
+      "distance_to_node": 4.433868569473654
+    },
+    "320": {
+      "node": 320,
+      "entry": 29721,
+      "name": "Skizzle Slickslide",
+      "map": 571,
+      "position": [
+        6188.97,
+        -1056.53,
+        409.906
+      ],
+      "distance_to_node": 4.256641365926318
+    },
+    "321": {
+      "node": 321,
+      "entry": 29750,
+      "name": "Faldorf Bitterchill",
+      "map": 571,
+      "position": [
+        6673.3,
+        -256.596,
+        962.22
+      ],
+      "distance_to_node": 6.611835046487527
+    },
+    "327": {
+      "node": 327,
+      "entry": 29950,
+      "name": "Breck Rockbrow",
+      "map": 571,
+      "position": [
+        8475.49,
+        -337.946,
+        906.009
+      ],
+      "distance_to_node": 3.658814916321797
+    },
+    "326": {
+      "node": 326,
+      "entry": 29951,
+      "name": "Shavalius the Fancy",
+      "map": 571,
+      "position": [
+        8861.33,
+        -1322.39,
+        1033.4
+      ],
+      "distance_to_node": 3.9660547517807805
+    },
+    "336": {
+      "node": 336,
+      "entry": 30271,
+      "name": "Galendror Whitewing",
+      "map": 571,
+      "position": [
+        5032.91,
+        -521.242,
+        226.074
+      ],
+      "distance_to_node": 3.097002365612883
+    },
+    "333": {
+      "node": 333,
+      "entry": 30314,
+      "name": "Morlia Doomwing",
+      "map": 571,
+      "position": [
+        8407.96,
+        2700.43,
+        655.201
+      ],
+      "distance_to_node": 2.2355426815837105
+    },
+    "334": {
+      "node": 334,
+      "entry": 30433,
+      "name": "Aedan Moran",
+      "map": 571,
+      "position": [
+        6162.62,
+        -62.0921,
+        388.264
+      ],
+      "distance_to_node": 2.028918951031442
+    },
+    "331": {
+      "node": 331,
+      "entry": 30569,
+      "name": "Rafae",
+      "map": 571,
+      "position": [
+        6893.54,
+        -4118.87,
+        467.437
+      ],
+      "distance_to_node": 4.160347366935712
+    },
+    "303": {
+      "node": 303,
+      "entry": 30869,
+      "name": "Arzo Safeflight",
+      "map": 571,
+      "position": [
+        5102.75,
+        2187.83,
+        365.708
+      ],
+      "distance_to_node": 2.9195793035758593
+    },
+    "335": {
+      "node": 335,
+      "entry": 31069,
+      "name": "Penumbrius",
+      "map": 571,
+      "position": [
+        6401.22,
+        464.245,
+        512.632
+      ],
+      "distance_to_node": 3.9464868678923515
+    },
+    "325": {
+      "node": 325,
+      "entry": 31078,
+      "name": "Dreadwind",
+      "map": 571,
+      "position": [
+        7429.6,
+        4231.64,
+        314.367
+      ],
+      "distance_to_node": 7.8238942124322675
+    },
+    "322": {
+      "node": 322,
+      "entry": 32571,
+      "name": "Halvdan",
+      "map": 571,
+      "position": [
+        7309.45,
+        -2612.99,
+        814.927
+      ],
+      "distance_to_node": 5.572716502852959
+    },
+    "339": {
+      "node": 339,
+      "entry": 33253,
+      "name": "Delanea",
+      "map": 1,
+      "position": [
+        4969.77,
+        145.836,
+        51.9477
+      ],
+      "distance_to_node": 1.9794326263080047
+    },
+    "340": {
+      "node": 340,
+      "entry": 33849,
+      "name": "Helidan Lightwing",
+      "map": 571,
+      "position": [
+        8481.62,
+        891.614,
+        547.425
+      ],
+      "distance_to_node": 5.846200591718723
+    },
+    "338": {
+      "node": 338,
+      "entry": 34374,
+      "name": "Solais",
+      "map": 1,
+      "position": [
+        3881.6,
+        654.097,
+        10.5395
+      ],
+      "distance_to_node": 1.0946983931199763
+    },
+    "351": {
+      "node": 351,
+      "entry": 34378,
+      "name": "Myre Moonglide",
+      "map": 1,
+      "position": [
+        1902.68,
+        -319.295,
+        118.336
+      ],
+      "distance_to_node": 3.6297654431360367
+    },
+    "364": {
+      "node": 364,
+      "entry": 35136,
+      "name": "Kaluna Songflight",
+      "map": 1,
+      "position": [
+        234.776,
+        -282.104,
+        92.7704
+      ],
+      "distance_to_node": 3.1942857142138075
+    },
+    "361": {
+      "node": 361,
+      "entry": 35137,
+      "name": "Allana Swiftglide",
+      "map": 1,
+      "position": [
+        1269.01,
+        432.595,
+        95.7117
+      ],
+      "distance_to_node": 0.5904457465982161
+    },
+    "365": {
+      "node": 365,
+      "entry": 35138,
+      "name": "Ceyora",
+      "map": 1,
+      "position": [
+        971.71,
+        2012.82,
+        126.669
+      ],
+      "distance_to_node": 2.2528327711288285
+    },
+    "368": {
+      "node": 368,
+      "entry": 35478,
+      "name": "Lastrea Greengale",
+      "map": 1,
+      "position": [
+        -1039.33,
+        1638.46,
+        60.7621
+      ],
+      "distance_to_node": 1.0352083644840742
+    },
+    "367": {
+      "node": 367,
+      "entry": 35481,
+      "name": "Moira Steelwing",
+      "map": 1,
+      "position": [
+        -1696.84,
+        2580.55,
+        136.608
+      ],
+      "distance_to_node": 3.7704484300867804
+    },
+    "369": {
+      "node": 369,
+      "entry": 35556,
+      "name": "Thunk's Wyvern",
+      "map": 1,
+      "position": [
+        -534.007,
+        1056.24,
+        90.4714
+      ],
+      "distance_to_node": 0.7140732924527798
+    },
+    "370": {
+      "node": 370,
+      "entry": 35562,
+      "name": "Korrah's Hippogryph",
+      "map": 1,
+      "position": [
+        -355.231,
+        2476.52,
+        76.2618
+      ],
+      "distance_to_node": 2.7011627743947897
+    },
+    "383": {
+      "node": 383,
+      "entry": 37888,
+      "name": "Frax Bucketdrop",
+      "map": 0,
+      "position": [
+        1939.44,
+        -2694.39,
+        62.1473
+      ],
+      "distance_to_node": 3.4769640792055903
+    },
+    "386": {
+      "node": 386,
+      "entry": 39175,
+      "name": "Flizzy Coilspanner",
+      "map": 1,
+      "position": [
+        -6960.24,
+        -1098.88,
+        -272.567
+      ],
+      "distance_to_node": 4.061621600005626
+    },
+    "387": {
+      "node": 387,
+      "entry": 39210,
+      "name": "John Johnson",
+      "map": 1,
+      "position": [
+        -333.434,
+        -1529.57,
+        87.6299
+      ],
+      "distance_to_node": 3.3719042525594327
+    },
+    "389": {
+      "node": 389,
+      "entry": 39211,
+      "name": "Steve Stevenson",
+      "map": 1,
+      "position": [
+        -3146.38,
+        -2290.83,
+        92.9696
+      ],
+      "distance_to_node": 5.98096599288041
+    },
+    "388": {
+      "node": 388,
+      "entry": 39212,
+      "name": "Bill Williamson",
+      "map": 1,
+      "position": [
+        -2124.98,
+        -3564.37,
+        100.977
+      ],
+      "distance_to_node": 2.69383141696038
+    },
+    "179": {
+      "node": 179,
+      "entry": 40358,
+      "name": "Dyslix Silvergrub",
+      "map": 1,
+      "position": [
+        -4568.4,
+        -3223.19,
+        34.9894
+      ],
+      "distance_to_node": 3.6017517937352364
+    },
+    "31": {
+      "node": 31,
+      "entry": 40367,
+      "name": "Seyala Nightwisp",
+      "map": 1,
+      "position": [
+        -4997.79,
+        68.7326,
+        100.0
+      ],
+      "distance_to_node": 5.291462092341461
+    },
+    "457": {
+      "node": 457,
+      "entry": 40552,
+      "name": "Leora",
+      "map": 1,
+      "position": [
+        9973.32,
+        2623.92,
+        1316.68
+      ],
+      "distance_to_node": 4.913328477466995
+    },
+    "456": {
+      "node": 456,
+      "entry": 40553,
+      "name": "Fidelio",
+      "map": 1,
+      "position": [
+        9873.03,
+        976.488,
+        1310.0
+      ],
+      "distance_to_node": 1.2121639823722068
+    },
+    "513": {
+      "node": 513,
+      "entry": 40768,
+      "name": "Tilly Topspin",
+      "map": 1,
+      "position": [
+        -6077.06,
+        -3915.81,
+        21.6756
+      ],
+      "distance_to_node": 2.9113075872526006
+    },
+    "532": {
+      "node": 532,
+      "entry": 40827,
+      "name": "Thurda",
+      "map": 1,
+      "position": [
+        -9499.33,
+        -2950.92,
+        12.9335
+      ],
+      "distance_to_node": 6.408793170516808
+    },
+    "522": {
+      "node": 522,
+      "entry": 40851,
+      "name": "Swift Seahorse",
+      "map": 0,
+      "position": [
+        -6088.91,
+        4279.49,
+        -353.685
+      ],
+      "distance_to_node": 17.896330128159036
+    },
+    "521": {
+      "node": 521,
+      "entry": 40852,
+      "name": "Swift Seahorse",
+      "map": 0,
+      "position": [
+        -4600.33,
+        3498.12,
+        -106.187
+      ],
+      "distance_to_node": 21.25636745684283
+    },
+    "523": {
+      "node": 523,
+      "entry": 40867,
+      "name": "Swift Seahorse",
+      "map": 0,
+      "position": [
+        -6613.03,
+        4326.62,
+        -567.836
+      ],
+      "distance_to_node": 19.022344889458214
+    },
+    "565": {
+      "node": 565,
+      "entry": 40966,
+      "name": "Selor",
+      "map": 1,
+      "position": [
+        -3141.53,
+        1951.88,
+        41.8074
+      ],
+      "distance_to_node": 4.918795021382324
+    },
+    "539": {
+      "node": 539,
+      "entry": 41214,
+      "name": "Slick Dropdip",
+      "map": 1,
+      "position": [
+        -8684.64,
+        -4093.03,
+        40.5344
+      ],
+      "distance_to_node": 5.190034367103809
+    },
+    "541": {
+      "node": 541,
+      "entry": 41240,
+      "name": "Fiora Moonsoar",
+      "map": 1,
+      "position": [
+        1377.65,
+        1032.1,
+        165.09
+      ],
+      "distance_to_node": 3.2788075148501283
+    },
+    "554": {
+      "node": 554,
+      "entry": 41321,
+      "name": "Elgin Baelor",
+      "map": 0,
+      "position": [
+        -4107.72,
+        -2741.28,
+        19.3422
+      ],
+      "distance_to_node": 5.89098675170208
+    },
+    "552": {
+      "node": 552,
+      "entry": 41322,
+      "name": "Halana",
+      "map": 0,
+      "position": [
+        -3301.34,
+        -2718.41,
+        20.5592
+      ],
+      "distance_to_node": 5.317813964204265
+    },
+    "551": {
+      "node": 551,
+      "entry": 41323,
+      "name": "Damon Baelor",
+      "map": 0,
+      "position": [
+        -3223.91,
+        -1993.14,
+        50.6308
+      ],
+      "distance_to_node": 3.7802174628613785
+    },
+    "553": {
+      "node": 553,
+      "entry": 41325,
+      "name": "Caleb Baelor",
+      "map": 0,
+      "position": [
+        -2659.59,
+        -2453.15,
+        79.5679
+      ],
+      "distance_to_node": 11.566008751987265
+    },
+    "555": {
+      "node": 555,
+      "entry": 41332,
+      "name": "Eeryven Grayer",
+      "map": 0,
+      "position": [
+        -5666.19,
+        -4252.22,
+        407.098
+      ],
+      "distance_to_node": 2.4474051655154043
+    },
+    "41": {
+      "node": 41,
+      "entry": 41383,
+      "name": "Irela Moonfeather",
+      "map": 1,
+      "position": [
+        -4467.67,
+        2191.13,
+        17.9793
+      ],
+      "distance_to_node": 2.5699764452864087
+    },
+    "567": {
+      "node": 567,
+      "entry": 41580,
+      "name": "Aryenda",
+      "map": 1,
+      "position": [
+        -4866.31,
+        1474.77,
+        84.9295
+      ],
+      "distance_to_node": 4.315926908492109
+    },
+    "558": {
+      "node": 558,
+      "entry": 41860,
+      "name": "Elizil Wintermoth",
+      "map": 1,
+      "position": [
+        5165.92,
+        -1761.19,
+        1338.95
+      ],
+      "distance_to_node": 2.532155501445922
+    },
+    "559": {
+      "node": 559,
+      "entry": 41861,
+      "name": "Fayran Elthas",
+      "map": 1,
+      "position": [
+        5584.66,
+        -3567.31,
+        1570.69
+      ],
+      "distance_to_node": 2.601802994146155
+    },
+    "584": {
+      "node": 584,
+      "entry": 42406,
+      "name": "Hoboair",
+      "map": 0,
+      "position": [
+        -9836.03,
+        1273.86,
+        40.5867
+      ],
+      "distance_to_node": 2.4836555571306604
+    },
+    "583": {
+      "node": 583,
+      "entry": 42426,
+      "name": "Tina Skyden",
+      "map": 0,
+      "position": [
+        -10876.5,
+        1543.66,
+        54.6127
+      ],
+      "distance_to_node": 0.880753910507129
+    },
+    "582": {
+      "node": 582,
+      "entry": 42983,
+      "name": "Bartlett the Brave",
+      "map": 0,
+      "position": [
+        -9435.71,
+        87.6111,
+        57.2108
+      ],
+      "distance_to_node": 3.0406236271938405
+    },
+    "589": {
+      "node": 589,
+      "entry": 43000,
+      "name": "Goss the Swift",
+      "map": 0,
+      "position": [
+        -9480.08,
+        -1304.79,
+        44.2329
+      ],
+      "distance_to_node": 4.786088387004784
+    },
+    "590": {
+      "node": 590,
+      "entry": 43042,
+      "name": "Robert Rhodes",
+      "map": 0,
+      "position": [
+        -12823.3,
+        -414.438,
+        13.0509
+      ],
+      "distance_to_node": 5.548419095710443
+    },
+    "591": {
+      "node": 591,
+      "entry": 43043,
+      "name": "Colin Swifthammer",
+      "map": 0,
+      "position": [
+        -13601.3,
+        -91.0451,
+        38.7655
+      ],
+      "distance_to_node": 5.593603217187749
+    },
+    "195": {
+      "node": 195,
+      "entry": 43045,
+      "name": "James Stillair",
+      "map": 0,
+      "position": [
+        -11340.7,
+        -218.703,
+        75.2972
+      ],
+      "distance_to_node": 3.795270977465592
+    },
+    "596": {
+      "node": 596,
+      "entry": 43072,
+      "name": "Nora Baldwin",
+      "map": 0,
+      "position": [
+        -9643.32,
+        -3481.94,
+        122.039
+      ],
+      "distance_to_node": 3.055150450602856
+    },
+    "594": {
+      "node": 594,
+      "entry": 43073,
+      "name": "Hanah Southsong",
+      "map": 1,
+      "position": [
+        6077.66,
+        -844.49,
+        412.37
+      ],
+      "distance_to_node": 0.9946706803447294
+    },
+    "595": {
+      "node": 595,
+      "entry": 43079,
+      "name": "Chyella Hushglade",
+      "map": 1,
+      "position": [
+        4736.93,
+        -886.96,
+        343.24
+      ],
+      "distance_to_node": 4.208705414106307
+    },
+    "599": {
+      "node": 599,
+      "entry": 43086,
+      "name": "Skeezie",
+      "map": 0,
+      "position": [
+        -9736.82,
+        -3887.7,
+        22.6664
+      ],
+      "distance_to_node": 3.0318160532279563
+    },
+    "598": {
+      "node": 598,
+      "entry": 43087,
+      "name": "Paola Baldwin",
+      "map": 0,
+      "position": [
+        -10180.7,
+        -3838.31,
+        18.0608
+      ],
+      "distance_to_node": 4.4667169183572275
+    },
+    "600": {
+      "node": 600,
+      "entry": 43088,
+      "name": "Yedrin",
+      "map": 0,
+      "position": [
+        -10114.3,
+        -2853.36,
+        23.4615
+      ],
+      "distance_to_node": 4.388744913112726
+    },
+    "602": {
+      "node": 602,
+      "entry": 43107,
+      "name": "Graham McAllister",
+      "map": 0,
+      "position": [
+        -12765.2,
+        -2919.99,
+        7.13169
+      ],
+      "distance_to_node": 3.434645792622902
+    },
+    "607": {
+      "node": 607,
+      "entry": 43287,
+      "name": "Swift Seahorse",
+      "map": 0,
+      "position": [
+        -5254.65,
+        3882.13,
+        -3.20898
+      ],
+      "distance_to_node": 22.535698155637476
+    },
+    "606": {
+      "node": 606,
+      "entry": 43290,
+      "name": "Francis Greene",
+      "map": 0,
+      "position": [
+        -5307.41,
+        3914.58,
+        3.13782
+      ],
+      "distance_to_node": 3.4449065098806066
+    },
+    "615": {
+      "node": 615,
+      "entry": 43371,
+      "name": "Arlen Marsters",
+      "map": 0,
+      "position": [
+        -9450.27,
+        -2838.51,
+        65.2999
+      ],
+      "distance_to_node": 4.001720123585532
+    },
+    "557": {
+      "node": 557,
+      "entry": 43481,
+      "name": "Dinorae Swiftfeather",
+      "map": 1,
+      "position": [
+        4990.07,
+        -2677.63,
+        1426.61
+      ],
+      "distance_to_node": 2.641166497326219
+    },
+    "616": {
+      "node": 616,
+      "entry": 43549,
+      "name": "Althera",
+      "map": 1,
+      "position": [
+        4062.76,
+        -3969.84,
+        970.398
+      ],
+      "distance_to_node": 4.571691571523894
+    },
+    "618": {
+      "node": 618,
+      "entry": 43570,
+      "name": "Brock Rockbeard",
+      "map": 0,
+      "position": [
+        315.069,
+        -4107.33,
+        118.449
+      ],
+      "distance_to_node": 3.3809982005757786
+    },
+    "622": {
+      "node": 622,
+      "entry": 43697,
+      "name": "John Shelby",
+      "map": 0,
+      "position": [
+        -10732.7,
+        264.283,
+        42.4575
+      ],
+      "distance_to_node": 5.6245712556131675
+    },
+    "619": {
+      "node": 619,
+      "entry": 43701,
+      "name": "Brolan Galebeard",
+      "map": 0,
+      "position": [
+        -5664.08,
+        -497.684,
+        397.424
+      ],
+      "distance_to_node": 4.354142308922339
+    },
+    "620": {
+      "node": 620,
+      "entry": 43702,
+      "name": "Dominic Galebeard",
+      "map": 0,
+      "position": [
+        -5718.93,
+        -1578.47,
+        383.287
+      ],
+      "distance_to_node": 4.793598082049873
+    },
+    "624": {
+      "node": 624,
+      "entry": 43991,
+      "name": "Zaldaan",
+      "map": 530,
+      "position": [
+        -4126.64,
+        -12523.8,
+        44.2277
+      ],
+      "distance_to_node": 4.76809245569903
+    },
+    "86": {
+      "node": 86,
+      "entry": 44230,
+      "name": "Richard Trueflight",
+      "map": 0,
+      "position": [
+        2526.09,
+        -4772.52,
+        104.321
+      ],
+      "distance_to_node": 3.3968667082880257
+    },
+    "630": {
+      "node": 630,
+      "entry": 44231,
+      "name": "Devon Manning",
+      "map": 0,
+      "position": [
+        2264.55,
+        -4414.64,
+        111.781
+      ],
+      "distance_to_node": 3.96899741862688
+    },
+    "87": {
+      "node": 87,
+      "entry": 44232,
+      "name": "Janice Myers",
+      "map": 0,
+      "position": [
+        1879.72,
+        -3694.56,
+        157.77
+      ],
+      "distance_to_node": 3.544934125241697
+    },
+    "84": {
+      "node": 84,
+      "entry": 44233,
+      "name": "William Kielar Jr.",
+      "map": 0,
+      "position": [
+        2968.76,
+        -3031.63,
+        126.909
+      ],
+      "distance_to_node": 3.7716060189483644
+    },
+    "635": {
+      "node": 635,
+      "entry": 44407,
+      "name": "Mixi Sweetride",
+      "map": 0,
+      "position": [
+        -6570.81,
+        -3877.64,
+        391.029
+      ],
+      "distance_to_node": 4.8337381889664695
+    },
+    "633": {
+      "node": 633,
+      "entry": 44409,
+      "name": "Nancy Skybrew",
+      "map": 0,
+      "position": [
+        -6594.81,
+        -3406.54,
+        279.375
+      ],
+      "distance_to_node": 5.41077710661538
+    },
+    "634": {
+      "node": 634,
+      "entry": 44410,
+      "name": "Jake Badlands",
+      "map": 0,
+      "position": [
+        -7036.65,
+        -2568.81,
+        252.401
+      ],
+      "distance_to_node": 2.9115923020280987
+    },
+    "663": {
+      "node": 663,
+      "entry": 47118,
+      "name": "Desmond Chadsworth",
+      "map": 0,
+      "position": [
+        -4169.03,
+        -4750.66,
+        126.869
+      ],
+      "distance_to_node": 2.304088039879923
+    },
+    "650": {
+      "node": 650,
+      "entry": 46006,
+      "name": "Ginny Goodwin",
+      "map": 0,
+      "position": [
+        1373.05,
+        -1278.89,
+        59.5853
+      ],
+      "distance_to_node": 3.296007335233882
+    },
+    "651": {
+      "node": 651,
+      "entry": 46011,
+      "name": "Marge Heffman",
+      "map": 0,
+      "position": [
+        1869.61,
+        -1754.99,
+        60.1496
+      ],
+      "distance_to_node": 5.376916782648133
+    },
+    "662": {
+      "node": 662,
+      "entry": 47119,
+      "name": "Glenn Arbuckle",
+      "map": 0,
+      "position": [
+        -4866.6,
+        -6741.57,
+        9.5001
+      ],
+      "distance_to_node": 3.63016842949239
+    },
+    "658": {
+      "node": 658,
+      "entry": 47121,
+      "name": "Aquinastrasz",
+      "map": 0,
+      "position": [
+        -3029.98,
+        -3942.16,
+        282.248
+      ],
+      "distance_to_node": 3.025039564806754
+    },
+    "664": {
+      "node": 664,
+      "entry": 47147,
+      "name": "Farstad Stonegrip",
+      "map": 0,
+      "position": [
+        -4182.45,
+        -5622.15,
+        25.5601
+      ],
+      "distance_to_node": 2.4949884106416866
+    },
+    "665": {
+      "node": 665,
+      "entry": 47154,
+      "name": "Doran Talonheart",
+      "map": 0,
+      "position": [
+        -3143.99,
+        -4996.11,
+        128.598
+      ],
+      "distance_to_node": 3.4564284210652123
+    },
+    "666": {
+      "node": 666,
+      "entry": 47155,
+      "name": "Shaina Talonheart",
+      "map": 0,
+      "position": [
+        -2687.2,
+        -5430.14,
+        190.29
+      ],
+      "distance_to_node": 3.4340508922865958
+    },
+    "672": {
+      "node": 672,
+      "entry": 47875,
+      "name": "William Henderson",
+      "map": 0,
+      "position": [
+        2837.17,
+        -1503.59,
+        146.02
+      ],
+      "distance_to_node": 4.037741249473733
+    },
+    "673": {
+      "node": 673,
+      "entry": 47927,
+      "name": "Doug Deepdown",
+      "map": 0,
+      "position": [
+        -7123.2,
+        -1239.05,
+        290.164
+      ],
+      "distance_to_node": 2.4242623981299194
+    },
+    "674": {
+      "node": 674,
+      "entry": 48273,
+      "name": "Evax Oilspark",
+      "map": 1,
+      "position": [
+        -10710.2,
+        1060.98,
+        24.2352
+      ],
+      "distance_to_node": 2.179075944046597
+    },
+    "653": {
+      "node": 653,
+      "entry": 48274,
+      "name": "Jock Lindsey",
+      "map": 1,
+      "position": [
+        -8374.98,
+        793.747,
+        148.469
+      ],
+      "distance_to_node": 2.536202648523893
+    },
+    "652": {
+      "node": 652,
+      "entry": 48275,
+      "name": "Kurzel",
+      "map": 1,
+      "position": [
+        -9416.65,
+        -1039.0,
+        113.389
+      ],
+      "distance_to_node": 4.291753112719098
+    },
+    "675": {
+      "node": 675,
+      "entry": 48318,
+      "name": "Hans Oreflight",
+      "map": 0,
+      "position": [
+        -8093.62,
+        -1025.21,
+        132.267
+      ],
+      "distance_to_node": 1.5316279447678036
+    },
+    "676": {
+      "node": 676,
+      "entry": 48321,
+      "name": "Grimly Singefeather",
+      "map": 0,
+      "position": [
+        -7863.11,
+        -1919.15,
+        144.825
+      ],
+      "distance_to_node": 2.8475292234650835
+    },
+    "781": {
+      "node": 781,
+      "entry": 54392,
+      "name": "Ranela Featherglen",
+      "map": 1,
+      "position": [
+        4394.19,
+        -2107.44,
+        1204.37
+      ],
+      "distance_to_node": 3.6012898491754384
+    }
+  }
+}

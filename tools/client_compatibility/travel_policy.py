@@ -5,10 +5,12 @@ from . import lab_runtime as lab
 
 CONFIG=lab.REPO/'experiments/configs/client_harness/laya_travel_training_v1.json'
 ACTIONS=['mount','takeoff','cruise','land','dismount','interact','taxi','portal','arrived','observe']
-DESCRIPTIONS=dict(zip(ACTIONS,['Summon flying mount.','Ascend to route height.','Fly toward waypoint.',
-    'Descend to destination ground.','Remove mount while grounded.','Open nearby flight master.',
-    'Click destination in taxi map.','Walk into portal.','Finish completed leg.','Wait while unavailable.']))
-INSTRUCTIONS='Choose the next safe travel action. Mount before flying. Ascend before cruising. Land near the waypoint and dismount. Use taxi or portal only at its interface. Wait during casting or transfer.'
+DESCRIPTIONS=dict(zip(ACTIONS,['Mount when on foot along flight route.','Ascend when mounted below safe flight height.',
+    'Fly toward waypoint at safe height.','Land when airborne near destination.',
+    'Dismount on destination ground.','Open nearby flight master before taxi map.',
+    'Select destination in open taxi map.','Walk through portal at entrance.',
+    'Finish a confirmed arrival.','Wait while unavailable, casting or in transit.']))
+INSTRUCTIONS='Choose the next safe travel action from the observed transport, movement, location and interface facts.'
 
 
 def question(order=ACTIONS):
@@ -30,6 +32,26 @@ def label(s):
     return 'portal'
 
 
+def model_state(s):
+    """Describe measured facts; do not include a recommended action or mask."""
+    availability='ready'
+    if not s['available']:availability='unavailable'
+    elif s['casting']:availability='casting'
+    elif s['on_taxi']:availability='in taxi transit'
+    movement='on foot'
+    if s['flying']:movement='airborne at safe route height' if s['at_route_height'] else 'airborne below route height'
+    elif s['falling']:movement='falling'
+    elif s['mounted']:movement='mounted on ground'
+    location='near destination' if s['near_destination'] else 'along route'
+    if s['mode']!='flight' and s['destination_reached']:location='arrival confirmed'
+    elif s['mode']=='flight' and s['near_destination'] and not s['flying'] and not s['falling']:
+        location='on destination ground'
+    interface='none'
+    if s['mode']=='taxi':interface='open taxi map' if s['taxi_map_open'] else 'near flight master'
+    elif s['mode']=='portal':interface='near portal entrance'
+    return {'transport':s['mode'],'availability':availability,'movement':movement,'location':location,'interface':interface}
+
+
 def dataset(config):
     splits={}
     for j,split in enumerate(['train','validation','test']):
@@ -49,7 +71,7 @@ def dataset(config):
                     if s['taxi_map_open'] and (s['flying'] or s['mode']!='taxi'):continue
                     if label(s)==action:break
                 order=list(ACTIONS);rng.shuffle(order)
-                rows.append({'id':f'{split}_{action}_{i}','state':s,'question':question(order),
+                rows.append({'id':f'{split}_{action}_{i}','state':model_state(s),'observed_flags':s,'question':question(order),
                     'label':action,'source':'synthetic public travel policy; no hidden game state'})
         rng.shuffle(rows);splits[split]=rows
     return splits

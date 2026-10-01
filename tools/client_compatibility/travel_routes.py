@@ -1,0 +1,59 @@
+"""Plan public flights/taxis and the bidirectional Dark Portal connection."""
+import json
+import math
+from . import lab_runtime as lab,ground_navigation,site_boundaries
+from .observation.map_data import catalog
+from .world.taxi import route as taxi_path
+
+MASTERS=lab.REPO/'experiments/configs/client_harness/public_flightmasters_v1.json'
+PORTALS={0:{'destination_map':530,'approach':[-11890,-3209,-14.56],
+    'crossing':[-11924,-3209,-14.79],'trigger':4354,'arrival':[-248.113,922.9,84.3497]},
+    530:{'destination_map':0,'approach':[-248.24,1110,54.32],
+    'crossing':[-248.24,1042.73,54.32],'trigger':4356,'arrival':[-11877.7,-3204.49,-8.02]}}
+
+
+def flight(map_id,position,id):
+    return {'id':id,'mode':'flight','map':map_id,'position':position,
+            'ceiling':max(230,position[2]+100)}
+
+
+def same_map(map_id,start,goal):
+    masters=json.loads(MASTERS.read_text())['nodes'];c=catalog();known={int(k) for k in masters}
+    candidates=[m for m in masters.values() if m['map']==map_id]
+    nearest=lambda p:sorted(candidates,key=lambda m:math.dist(m['position'][:2],p[:2]))[:4]
+    best=math.dist(start[:2],goal[:2])/28.7;pair=None
+    for source in nearest(start):
+        for end in nearest(goal):
+            if source['node']==end['node']:continue
+            try:taxi_path(source['node'],end['node'],known,c['taxi_paths'])
+            except ValueError:continue
+            cost=(math.dist(start[:2],source['position'][:2])+math.dist(end['position'][:2],goal[:2]))/28.7+15
+            if cost+5<best:best=cost;pair=(source,end)
+    legs=[]
+    if pair:
+        source,end=pair
+        # Land beside the vendor and face them for a tooltip-guided click.
+        staging=[source['position'][0]+3,*source['position'][1:]]
+        legs.append(flight(map_id,staging,'approach_flightmaster'))
+        legs.append({'id':'instant_taxi','mode':'taxi','map':map_id,
+            'position':c['taxi_nodes'][end['node']]['position'],'destination':end['node'],
+            'vendor_position':source['position'],'name':source['name']})
+    legs.append(flight(map_id,goal,'approach_destination'))
+    return legs
+
+
+def to_site(map_id,start,site):
+    if map_id not in PORTALS or site['map'] not in PORTALS:
+        raise RuntimeError('this verified route catalog currently covers Eastern Kingdoms and Outland')
+    legs=[]
+    if map_id!=site['map']:
+        portal=PORTALS[map_id]
+        legs.extend(same_map(map_id,start,portal['approach']))
+        legs.append({'id':'dark_portal','mode':'portal','map':map_id,'position':portal['crossing'],
+                     'destination_map':portal['destination_map'],'trigger':portal['trigger']})
+        map_id=portal['destination_map'];start=portal['arrival']
+    goal=ground_navigation.ground_point(map_id,site['center'])
+    if not site_boundaries.contains(site['polygon'],goal):raise RuntimeError('public landing point falls outside digsite')
+    legs.extend(same_map(map_id,start,goal));legs[-1]['site_id']=site['id']
+    return {'schema':'client442_public_site_route_v1','site':site['id'],'legs':legs,
+            'source':'public digsite polygons, NPC spawns, taxi graph and static navigation mesh'}

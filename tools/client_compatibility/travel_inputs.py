@@ -31,7 +31,7 @@ def execute(action,leg,facts,extra,observer,path):
         if not extra['mounted'] or not extra['flying']:raise RuntimeError('model attempted unmounted flight')
         keys=face(inputs,observer,goal)
         distance=math.dist(observer.poll()['position'][:2],goal[:2])
-        hold=min(4,max(.08,(distance-2)/28.7))
+        hold=min(4,max(.03,(distance-min(2,leg.get('arrival_radius',5)*.4))/28.7))
         inputs.key('w',hold=hold);keys.append({'key':'w','hold':hold})
     elif action=='land':
         if not goal:raise RuntimeError('landing without a public ground waypoint')

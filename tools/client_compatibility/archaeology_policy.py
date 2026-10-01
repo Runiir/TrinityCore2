@@ -75,6 +75,10 @@ def dataset(config):
 
 
 def base_agent():
+    import torch
+    # Large default CPU thread pools make checkpoint initialization contend
+    # heavily with the independent running raid server on this host.
+    torch.set_num_threads(4)
     import laya
     from huggingface_hub import snapshot_download
     snapshot=snapshot_download('convaiinnovations/laya',revision=REVISION,allow_patterns=['typed-decisions/*'])
