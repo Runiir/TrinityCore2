@@ -1,0 +1,14 @@
+{
+  "schema": "client442_public_travel_route_v1",
+  "id": "azeroth_outland_roundtrip_then_hellfire_basin",
+  "setup_teleports": 0,
+  "sources": ["AreaTrigger.dbc", "installed 60895 public AreaTrigger records", "private matched portal contact correction", "ResearchSite/QuestPOIPoint.dbc"],
+  "legs": [
+    {"id":"dark_portal_approach","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
+    {"id":"dark_portal_to_outland_first","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
+    {"id":"dark_portal_to_azeroth","mode":"flight","map":530,"position":[-247.677,895.675,144.362],"ceiling":144.362,"destination_map":0,"trigger":4352,"arrival_radius":0.5},
+    {"id":"dark_portal_approach_again","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
+    {"id":"dark_portal_to_outland_again","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
+    {"id":"hellfire_basin_digsite","mode":"flight","map":530,"position":[-300.5,3196.833,100.57],"ceiling":240,"site_id":343}
+  ]
+}
