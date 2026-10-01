@@ -43,7 +43,8 @@ def main():
             'boundary_world_ready.png','boundary_live_validation.json','boundary_map.png',
             'public_boundary_return.json','reachability_deployment.json','ground_navigation_setup.json',
             'ground_navigation_ready.png','client_monitor.json','world_packets.jsonl']
-    recent.append('collection_scoring_corrections.json')
+    recent.extend(['collection_scoring_corrections.json','loot_lifecycle_deployment.json',
+                   'loot_lifecycle_validation.json','lifecycle_pending_map.png'])
     names=recent if args.incremental else names+recent
     paths.extend(lab.ROOT/'evidence'/name for name in names)
     for name in args.episode:
@@ -56,7 +57,7 @@ def main():
         paths.append(directory)
     paths.extend([lab.ROOT/'logs/modern_world.jsonl',lab.ROOT/'logs/native_build.log',lab.ROOT/'bin/worldserver'])
     paths.extend([lab.ROOT/'logs/native_reachability_build.log',lab.ROOT/'bin/navmesh_probe',
-                  lab.ROOT/'data/dbc/enUS/QuestPOIPoint.dbc'])
+                  lab.ROOT/'logs/native_loot_lifecycle_build.log',lab.ROOT/'data/dbc/enUS/QuestPOIPoint.dbc'])
     metadata={'schema':'client442_archaeology_checkpoint_v1',
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'closed_episodes':args.episode,'authentication_bodies_and_credentials_excluded':True,
