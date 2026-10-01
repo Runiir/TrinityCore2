@@ -193,11 +193,17 @@ def stop(kind: str) -> None:
     if info:
         os.killpg(info["pid"], signal.SIGTERM)
         print(f"Sent SIGTERM to owned {kind} process group {info['pid']}")
-        for _ in range(100):
-            if not owned_process(kind):
+        for _ in range(300):
+            members=[]
+            for proc in Path('/proc').iterdir():
+                if not proc.name.isdigit():continue
+                try:fields=(proc/'stat').read_text().rsplit(')',1)[1].split()
+                except (FileNotFoundError,ProcessLookupError):continue
+                if fields[0]!='Z' and int(fields[2])==info['pid']:members.append(proc.name)
+            if not members:
                 return
             time.sleep(0.1)
-        raise RuntimeError(f"owned {kind} has not stopped after SIGTERM")
+        raise RuntimeError(f"owned {kind} process group has not stopped after SIGTERM")
 
 
 def prepare_client() -> None:
