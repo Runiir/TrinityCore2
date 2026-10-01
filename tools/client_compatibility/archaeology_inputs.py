@@ -28,15 +28,20 @@ def locate_find(inputs,path):
     # Search the ordinary 3D view with cursor hover, then verify the game's
     # tooltip against known find names. No teacher pixel or private coordinates.
     preferred=[(655,331),(640,360),(655,400),(620,400)]
-    grid=[(x,y) for x in range(500,781,20) for y in range(240,541,20)]
+    grid=[(x,y) for x in range(320,961,24) for y in range(190,575,24)]
     grid.sort(key=lambda p:(p[0]-655)**2+(p[1]-370)**2)
-    deadline=time.monotonic()+25
+    deadline=time.monotonic()+40
     for x,y in [*preferred,*grid]:
         if time.monotonic()>deadline:break
         inputs.move(x,y);time.sleep(.2)
         _,extra=screenshot(path)
         if extra['tooltip_name_checksum'] in FIND_CHECKSUMS:
-            time.sleep(.3)
+            # GameTooltip can remain shown while fading after the cursor
+            # leaves an object. Verify this exact point from a cleared tip.
+            inputs.move(400,100);time.sleep(.7)
+            _,cleared=screenshot(path)
+            if cleared['tooltip_name_checksum'] in FIND_CHECKSUMS:continue
+            inputs.move(x,y);time.sleep(.3)
             _,confirmed=screenshot(path)
             if confirmed['tooltip_name_checksum']!=extra['tooltip_name_checksum']:continue
             with Image.open(path) as image:image.save(path.parent/'localized_find.webp',lossless=True)
@@ -98,6 +103,12 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
         start=tcp['player']['position'];find=min(tcp['finds'],key=lambda f:math.dist(f['position'][:2],start[:2]))
+        from .travel_inputs import face
+        from .observation.transport import Observer as TransportObserver
+        observer=TransportObserver()
+        facing_keys=face(inputs,observer,find['position'])
+        time.sleep(.4);start=observer.poll()['position']
+        loot_approach={'source':'ordinary visible artifact bearing','physical_keys':facing_keys}
         if math.dist(find['position'][:2],start[:2])<3:
             from . import site_boundaries
             _,extra=screenshot(path)
@@ -115,7 +126,7 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             after=Observer().poll(start[3])['player']['position']
             if not site_boundaries.contains(site['polygon'],after):raise RuntimeError('loot approach left the digsite')
             loot_approach={'source':'visible owned artifact overlaps player feet','before':start,'after':after,
-                'physical_keys':[{'key':'s','hold':distance/4.5}],'observed_after_inside':True}
+                'physical_keys':[*facing_keys,{'key':'s','hold':distance/4.5}],'observed_after_inside':True}
         pixel=locate_find(inputs,path)
         # The owned Classic client can render at 15 FPS. Keep the button down
         # for multiple frames so the physical use action is observed reliably.
