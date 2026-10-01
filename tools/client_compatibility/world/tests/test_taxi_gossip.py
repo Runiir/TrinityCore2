@@ -46,6 +46,7 @@ def test_stale_creature_query_dispatch_keeps_session_open():
     import asyncio
     from tools.client_compatibility.world.service import Session
     session=Session.__new__(Session);session.owner=session;session.created=True
+    session.crypt=SimpleNamespace(key=b'test session key')
     session.world=session;session.visible_units={};sent=[]
     session.send=lambda name,body:sent.append((name,body))
     asyncio.run(session.handle('CMSG_QUERY_CREATURE',Writer().pack('I',999).finish()))

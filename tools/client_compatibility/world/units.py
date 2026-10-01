@@ -15,7 +15,8 @@ def block(snapshot,character):
     # position is rendered with its actual speeds, without inventing a spline.
     w.guid(*identity).pack('IIII4fffII',move['flags'],modern_flags2(move['flags2']),0,
         move['time'],*move['position'],move['pitch'],0,0,0).bits(0,8)
-    w.pack('9fIf17f',*move['speeds'],0,1,2,65,1,3,10,100,90,140,180,360,90,270,30,80,2.75,7,.4).bits(0,1).flush()
+    w.pack('9fIf17f',*move['speeds'],0,1,2,65,1,3,10,100,90,140,180,360,90,270,30,80,2.75,7,.4).bits(0,1).pack('I',0)
+    # PauseTimesCount is present for every create, even without a spline.
     fields=Writer().pack('B',0).raw(bytes([0,5,255,1]))
     values=field_values(snapshot,character)
     for kind in ['ObjectData','UnitData']:serialize(fields,kind,values[kind],visibility=0)
