@@ -30,7 +30,7 @@ def ground_point(map_id,xy,maximum_height=None):
     return json.loads(result.stdout)['position']
 
 
-def landing_point(map_id,position,radius=20):
+def landing_point(map_id,position,radius=30):
     result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--landing',
         *map(str,position[:3]),str(radius)],capture_output=True,text=True,timeout=10)
     if result.returncode:raise RuntimeError('public flat landing: '+result.stderr.strip())
