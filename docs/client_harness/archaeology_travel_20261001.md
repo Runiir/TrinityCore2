@@ -311,6 +311,9 @@ Trials 53 through 59 follow in
 The archive is 1,015,398,006 bytes with SHA-256
 `147de2228b459e71e24d98e9f5f73d73a486da18e945a1631f08f4383f7eebdd`.
 Scoped status, push and cloud status confirmed synchronization with the remote.
+All 835 closed PNG/WebP files matched archived bytes and hashes before removing
+934,826,475 local bytes. The following checkpoint includes
+`navigation_collection_repairs_cleanup.json` with the verification manifest.
 
 ## Running the loop
 
