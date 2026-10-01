@@ -26,6 +26,11 @@ def candidates(tcp,site,obstructions=()):
         except RuntimeError:continue
         result.append(route)
     if not result:
+        # A telescope base cannot override a known slippery hillside. Only
+        # unavailable/unknown or normally walkable starting terrain qualifies.
+        try:surface=ground.probe_surface(site['map'],start)
+        except RuntimeError:surface=None
+        if surface and surface['detail_slope_degrees']>35:return []
         # The old mesh can omit a grounded client patch. A recently observed
         # telescope base is an ordinary ground sample, not the hidden find.
         tool=tcp['tool'];point=tool.get('position');age=time.time()-tool.get('seen_at',0)

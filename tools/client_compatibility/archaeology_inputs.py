@@ -87,23 +87,9 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False,object_observer=No
             targets=[p for p in planned['points'][1:] if math.dist(p[:2],start[:2])>1.5 and
                      site_boundaries.inside_segment(site['polygon'],start,p)]
             if not targets:raise RuntimeError('no in-site mounted waypoint from public survey heading')
-            target=None;attempts=[]
-            # A short telescope move can end against a hill. Try farther
-            # public-bearing waypoints so flight can cross its steep face.
-            heading=planned['heading_radians']
-            farther=[]
-            for scale in [2,3]:
-                distance=site_boundaries.clip_distance(site['polygon'],start,heading,min(84,hold*7*scale))
-                farther.append([start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]])
-            for waypoint in [*reversed(targets),*farther]:
-                try:candidate=ground_navigation.landing_point(site['map'],waypoint,start=start)
-                except RuntimeError:continue
-                attempts.append({'waypoint':waypoint,'landing':candidate})
-                if math.dist(candidate[:2],start[:2])>=3 and site_boundaries.inside_segment(site['polygon'],start,candidate):
-                    target=candidate;break
-            if target is None:raise RuntimeError('no flatter in-site landing near the public survey waypoint')
-            planned['mounted_landing']={'requested':targets[-1],'selected':target,'maximum_detail_slope_degrees':20,
-                'attempts':attempts,'source':'public static ground detail triangles; no private find coordinates'}
+            from .survey_landing import select
+            target,planned['mounted_landing']=select(site,start,planned['heading_radians'],hold*7)
+            planned['mounted_landing']['requested']=targets[-1]
             profile=travel_routes.clearance(site['map'],start,target)
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
                 'map':site['map'],'position':target,'ceiling':profile['ceiling'],'height_profile':profile,'arrival_radius':3,

@@ -34,6 +34,15 @@ def test_trial64_slide_face_is_rejected_before_the_short_probe():
         ground.safe_walk_segment(530,start,[-3269.2394,900.511,33.6])
 
 
+def test_recent_telescope_cannot_override_a_known_steep_face(monkeypatch):
+    monkeypatch.setattr(ground,'route',lambda *a,**kw: (_ for _ in ()).throw(RuntimeError('no route')))
+    monkeypatch.setattr(ground,'probe_surface',lambda *a:{'detail_slope_degrees':44})
+    monkeypatch.setattr(escape.time,'time',lambda:105)
+    tcp={'player':{'position':[0,0,0]},'tool':{'heading_radians':0,'position':[2,0,0],'seen_at':100}}
+    site={'map':530,'polygon':[[-10,-10],[10,-10],[10,10],[-10,10]]}
+    assert not escape.candidates(tcp,site)
+
+
 @pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper is absent')
 def test_recent_telescope_base_can_bridge_a_missing_ground_column(monkeypatch):
     tcp={'player':{'position':[-3269.39013671875,894.5518798828125,23.10196304321289,4.184597]},
