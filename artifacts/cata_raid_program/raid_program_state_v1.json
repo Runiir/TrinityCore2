@@ -12,7 +12,7 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 75,
+      "revision": 76,
       "stage": "run",
       "round": 4,
       "bootstrap_sources": {
@@ -8779,7 +8779,22 @@
             },
             "recorded_utc": "2026-10-01T01:01:43Z"
           },
-          "run_plans": [],
+          "run_plans": [
+            {
+              "batch": 1,
+              "kind": "boss_shards",
+              "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_shards_plan_b1.json",
+              "sha256": "8dbf66ca3abbee3000d0f4bce8708cb2aa0f6e4a54d495d524b48697dcbd9c5c",
+              "cohorts": [
+                "blackwing_descent_10n_magmaw_c0",
+                "blackwing_descent_10n_omnotron_c0",
+                "blackwing_descent_10n_chimaeron_c0",
+                "blackwing_descent_10n_atramedes_c0",
+                "blackwing_descent_10n_maloriak_c0",
+                "blackwing_descent_10n_nefarian_c0"
+              ]
+            }
+          ],
           "runs": [],
           "assessment": null,
           "user_decisions": [],
@@ -8989,7 +9004,8 @@
               },
               "recorded_utc": "2026-10-01T01:01:43Z"
             }
-          ]
+          ],
+          "plans_written": true
         }
       ],
       "history": [
@@ -9678,6 +9694,14 @@
           "success": true,
           "source_commit": "cd860ebe6c90b3488c77c8803f152030f47ac626",
           "adopted": false
+        },
+        {
+          "revision": 76,
+          "utc": "2026-10-01T01:01:50Z",
+          "action": "run_plans",
+          "round": 4,
+          "batches": 1,
+          "replan": false
         }
       ]
     }
