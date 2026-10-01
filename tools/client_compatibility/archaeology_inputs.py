@@ -29,10 +29,17 @@ def locate_find(inputs,path):
     preferred=[(655,331),(640,360),(655,400),(620,400)]
     grid=[(x,y) for x in range(500,781,20) for y in range(240,541,20)]
     grid.sort(key=lambda p:(p[0]-655)**2+(p[1]-370)**2)
+    deadline=time.monotonic()+25
     for x,y in [*preferred,*grid]:
-        inputs.move(x,y);time.sleep(.15)
+        if time.monotonic()>deadline:break
+        inputs.move(x,y);time.sleep(.2)
         _,extra=screenshot(path)
-        if extra['tooltip_name_checksum'] in FIND_CHECKSUMS:return (x,y)
+        if extra['tooltip_name_checksum'] in FIND_CHECKSUMS:
+            time.sleep(.3)
+            _,confirmed=screenshot(path)
+            if confirmed['tooltip_name_checksum']!=extra['tooltip_name_checksum']:continue
+            with Image.open(path) as image:image.save(path.parent/'localized_find.webp',lossless=True)
+            return (x,y)
     raise RuntimeError('no archaeology find tooltip in the bounded screen search')
 
 
@@ -49,7 +56,8 @@ def execute(action,tcp,path):
         hold=short if action=='forward_short' else long;inputs.key('w',hold=hold)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
-        pixel=locate_find(inputs,path);inputs.click(*pixel,button=3)
+        pixel=locate_find(inputs,path)
+        inputs._send(inputs.X.ButtonPress,3);time.sleep(.2);inputs._send(inputs.X.ButtonRelease,3)
     elif action!='observe':raise ValueError('unknown physical action')
     time.sleep(2.5 if action in ['survey','loot'] else .5)
     return {'hold_seconds':hold,'mouse_pixel':pixel,'pixel_source':'ordinary_game_tooltip_hover' if pixel else None}

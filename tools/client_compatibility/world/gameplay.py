@@ -3,7 +3,7 @@ import time
 
 from .buffer import Reader, Writer, player_high
 from .events import event
-from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units
+from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units, transfers
 
 
 async def receive(owner, name, body):
@@ -15,6 +15,10 @@ async def receive(owner, name, body):
         return
     send = owner.world.send
     guid = owner.character["guid"]
+    transfer=transfers.response(owner,name,body)
+    if transfer is not None:
+        send(*transfer)
+        return
     if name == "SMSG_SPELL_START":
         acknowledgement = casting.prepare(owner, body)
         if acknowledgement is not None: send("SMSG_SPELL_PREPARE", acknowledgement)
@@ -58,6 +62,7 @@ async def receive(owner, name, body):
             send("SMSG_MOVE_SET_ACTIVE_MOVER", Writer().guid(guid, player_high()).finish())
             send("SMSG_CONTROL_UPDATE", Writer().guid(guid, player_high()).bits(1, 1).finish())
             owner.created = True
+            transfers.resume(owner)
             event("native_player_created", session=owner.id, guid=guid, map=snapshot["map"], position=snapshot["movement"]["position"])
             visible = gameobjects.updates(owner, body)
             if visible: send(name, visible)

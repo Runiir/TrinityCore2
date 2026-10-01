@@ -54,7 +54,7 @@ def main():
             print(json.dumps({'step':index,'action':action,'finds':len(finds),'policy_match':step['policy_match']}),flush=True)
             if len(finds)>=args.finds:break
         if len(finds)<args.finds:raise RuntimeError('action budget ended before the requested find count')
-    except Exception as error:
+    except (Exception,KeyboardInterrupt) as error:
         failure=f'{type(error).__name__}: {error}'
         print(failure,flush=True)
     receipt.update(finished_at=time.time(),completed=len(finds)>=args.finds,failure=failure,

@@ -4,7 +4,7 @@ import json
 import secrets
 import struct
 
-from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls
+from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers
 from .buffer import Reader, player_high
 from .events import event, packet
 from .legacy import Native
@@ -139,6 +139,10 @@ class Session:
         elif name == "CMSG_LOGOUT_CANCEL":
             if body: raise ValueError("invalid logout cancellation")
             self.owner.native.send(name)
+        elif name in transfers.CLIENT_NAMES:
+            if self is not self.owner.world or not self.owner.character:
+                raise ValueError('transfer acknowledgement outside owned world')
+            self.owner.native.send(*transfers.request(self.owner,name,body))
         elif name in movement_controls.ACKS:
             if not self.owner.created or self is not self.owner.world:
                 raise ValueError("movement acknowledgement before world entry")
@@ -157,6 +161,7 @@ class Session:
             if not owner.created or self is not owner.world:
                 raise ValueError("movement before active world entry")
             state = movement.parse(body, owner.character["guid"])
+            owner.latest_movement=state['position']
             native_name, native_body = movement.encode("CMSG_MOVE_SET_FACING" if name == "CMSG_MOVE_SET_FACING_HEARTBEAT" else name, owner.character["guid"], state)
             owner.native.send(native_name, native_body)
             event("movement_forwarded", session=self.id, name=name, guid=owner.character["guid"], position=state["position"])
