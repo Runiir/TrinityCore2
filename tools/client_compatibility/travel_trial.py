@@ -13,6 +13,14 @@ from .observation.transport import Observer
 ENDPOINT='http://127.0.0.1:8003/v1/systemone'
 
 
+def progress_metric(action,leg,facts,extra,s):
+    """Measure progress toward the phase goal; unrelated XY jitter is no progress."""
+    if action=='takeoff':return action,max(0,leg['ceiling']-facts['position'][2])
+    if action=='land':return action,max(0,facts['position'][2]-leg['position'][2])
+    if action in ['cruise','portal']:return action,math.dist(facts['position'][:2],leg['position'][:2])
+    return (action,facts['map'],extra['mounted'],extra['flying'],extra['casting'],s['taxi_map_open']),None
+
+
 def state(leg,movement,extra,facts,ui):
     distance=math.dist(facts['position'][:2],leg['position'][:2]) if leg.get('position') else None
     reached=facts['map']==leg['destination_map'] if leg['mode']=='portal' else (
@@ -92,8 +100,11 @@ def run(plan,out,maximum_steps=180):
                 leg_index+=1;stalled=0;last_metric=None
                 if leg_index==len(plan['legs']):break
             else:
-                metric=(tuple(round(v) for v in facts['position'][:3]),extra['mounted'],extra['flying'],s['taxi_map_open'],facts['map'],facts['transferring'])
-                stalled=stalled+1 if metric==last_metric else 0;last_metric=metric
+                metric=progress_metric(action,leg,facts,extra,s)
+                improving=last_metric is None or metric[0]!=last_metric[0] or (
+                    metric[1] is not None and metric[1]<last_metric[1]-.5)
+                stalled=0 if improving else stalled+1
+                if improving:last_metric=metric
                 if stalled>=8:raise RuntimeError('travel made no observable progress for eight decisions')
             lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
         if leg_index<len(plan['legs']):raise RuntimeError('travel action budget exhausted')

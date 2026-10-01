@@ -20,13 +20,19 @@ def face(inputs,observer,goal):
 
 
 def execute(action,leg,facts,extra,observer,path):
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None
+    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None
     goal=leg.get('vendor_position') if action=='interact' else leg.get('position')
     position=facts['position']
     if action=='mount':inputs.key('3');keys.append({'key':'3'});time.sleep(2)
     elif action=='takeoff':
         hold=min(3,max(.15,(leg['ceiling']-position[2])/28.7))
         inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold})
+        time.sleep(.3);after=observer.poll()
+        if hold>=.5 and extra['flying'] and after['position'][2]-position[2]<max(.4,hold*2.87):
+            from .flight_recovery import nudge
+            collision=nudge(inputs,leg,observer,path,extra)
+            leg['blocked_climb_escapes']=leg.get('blocked_climb_escapes',0)+1
+            if leg['blocked_climb_escapes']>5:raise RuntimeError('blocked climb exceeded five bounded escapes')
     elif action=='cruise':
         if not extra['mounted'] or not extra['flying']:raise RuntimeError('model attempted unmounted flight')
         keys=face(inputs,observer,goal)
@@ -88,4 +94,5 @@ def execute(action,leg,facts,extra,observer,path):
             if time.monotonic()>deadline:raise RuntimeError(f'{action} was not confirmed by addon state')
             time.sleep(.2)
     time.sleep(.25)
-    return {'physical_keys':keys,'mouse_pixel':pixel,'mouse_source':'ordinary_addon_ui_or_tooltip' if pixel else None}
+    return {'physical_keys':keys,'mouse_pixel':pixel,'mouse_source':'ordinary_addon_ui_or_tooltip' if pixel else None,
+        'collision_recovery':collision}
