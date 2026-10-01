@@ -7,6 +7,16 @@ import time
 from tools.client_compatibility.lab_runtime import ROOT
 
 LOCK = threading.Lock()
+ROTATE_BYTES = 8 * 1024 * 1024
+
+
+def append(path, record):
+    with LOCK:
+        if path.exists() and path.stat().st_size >= ROTATE_BYTES:
+            path.rename(path.with_name(path.name + f'.part-{time.time_ns():020d}'))
+        with path.open('a') as handle:
+            os.chmod(path, 0o600)
+            handle.write(json.dumps(record) + '\n')
 
 
 def event(kind, **fields):
@@ -15,11 +25,7 @@ def event(kind, **fields):
         raise ValueError("unreviewed world diagnostic fields")
     record = {"time": time.time(), "event": kind, **fields}
     path = ROOT / "logs/modern_world.jsonl"
-    with LOCK:
-        if not path.exists() or path.stat().st_size < 16 * 1024 * 1024:
-            with path.open("a") as handle:
-                os.chmod(handle.name, 0o600)
-                handle.write(json.dumps(record) + "\n")
+    append(path, record)
     if kind not in {"modern_packet", "native_packet"}:
         print(json.dumps(record), flush=True)
 
@@ -29,6 +35,8 @@ def capture_packet(name):
     if 'NPC_TEXT' in name:return True
     if any(token in name for token in ['TAXI','GOSSIP','TELEPORT','TRANSFER','NEW_WORLD','TOKEN','WORLD_PORT','WORLDPORT','AREA_TRIGGER']):return True
     return name.startswith(("CMSG_MOVE_", "MSG_MOVE_", "SMSG_MOVE_")) or name in {
+        'CMSG_SET_SELECTION', 'CMSG_ATTACK_SWING', 'CMSG_ATTACK_STOP',
+        'SMSG_ATTACK_START', 'SMSG_ATTACK_STOP', 'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT',
         "CMSG_GAME_OBJ_USE", "CMSG_GAME_OBJ_REPORT_USE", "CMSG_GAMEOBJ_USE", "CMSG_GAMEOBJ_REPORT_USE",
         "CMSG_LOOT_ITEM", "CMSG_LOOT_CURRENCY", "CMSG_AUTOSTORE_LOOT_ITEM", "CMSG_LOOT_RELEASE",
         "SMSG_LOOT_RESPONSE", "SMSG_LOOT_REMOVED", "SMSG_CURRENCY_LOOT_REMOVED", "SMSG_LOOT_RELEASE",
@@ -47,9 +55,5 @@ def capture_packet(name):
 def packet(direction, name, body, session=None):
     if not capture_packet(name): return
     path = ROOT / "evidence/world_packets.jsonl"
-    if path.exists() and path.stat().st_size > 16 * 1024 * 1024:
-        return
-    with LOCK, path.open("a") as handle:
-        os.chmod(path, 0o600)
-        handle.write(json.dumps({"time": time.time(), "session": session, "direction": direction,
-                                 "name": name, "body": body.hex()}) + "\n")
+    append(path, {'time': time.time(), 'session': session, 'direction': direction,
+                  'name': name, 'body': body.hex()})

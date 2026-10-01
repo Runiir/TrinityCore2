@@ -3,6 +3,7 @@ import time
 
 from .buffer import Reader, Writer, player_high
 from .events import event
+from . import combat
 from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units, transfers, taxi, gossip, creature_queries, npc_text
 
 
@@ -15,6 +16,10 @@ async def receive(owner, name, body):
         return
     send = owner.world.send
     guid = owner.character["guid"]
+    combat_reply = combat.response(owner, name, body)
+    if combat_reply is not None:
+        send(*combat_reply)
+        return
     if name=='SMSG_NPC_TEXT_UPDATE':
         reply=npc_text.response(owner,body)
         if reply is not None:send('SMSG_QUERY_NPC_TEXT_RESPONSE',reply)

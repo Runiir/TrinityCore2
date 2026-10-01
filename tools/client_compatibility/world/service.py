@@ -8,6 +8,7 @@ from . import bootstrap, characters, crypto, joins, instance, gameplay, movement
 from .buffer import Reader, Writer, player_high
 from .events import event, packet
 from .legacy import Native
+from . import combat
 from .opcodes import MODERN, MODERN_NAMES
 
 SERVER_HELLO = b"WORLD OF WARCRAFT CONNECTION - SERVER TO CLIENT - V2\n"
@@ -141,6 +142,11 @@ class Session:
         elif name == "CMSG_LOGOUT_CANCEL":
             if body: raise ValueError("invalid logout cancellation")
             self.owner.native.send(name)
+        elif name in combat.CLIENT_NAMES:
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError('combat control outside owned world')
+            translated = combat.request(self.owner, name, body)
+            if translated is not None: self.owner.native.send(*translated)
         elif name=='CMSG_QUERY_CREATURE':
             if not self.owner.created or self is not self.owner.world:raise ValueError('creature query before world entry')
             query=creature_queries.request(self.owner,body)

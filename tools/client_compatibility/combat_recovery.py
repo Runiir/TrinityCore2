@@ -8,6 +8,9 @@ from tools.second_client import ctl
 def withdraw(movement,extra,facts,observer,path):
     if not movement['in_combat']:return None
     if movement['dead'] or movement['health_percent']<50:raise RuntimeError('combat withdrawal requires a living healthy character')
+    if not extra['mounted']:
+        from .combat_clear import run
+        return run(movement, extra, facts, observer, path)
     from .travel_inputs import face
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[]
     start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])

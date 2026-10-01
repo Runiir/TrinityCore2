@@ -34,7 +34,11 @@ def updates(owner,body):
         elif r.get('kind')==3 and r['guid']>>52==0xF13:
             blocks.append(block(r,owner.character));owner.visible_units[r['guid']]=r
         elif r['update_type']==0 and r['guid'] in owner.visible_units:
-            owner.visible_units[r['guid']]['fields'].update(r['fields'])
+            from .player_updates import scalar_block
+            snapshot = owner.visible_units[r['guid']]
+            snapshot['fields'].update(r['fields'])
+            changed = scalar_block(snapshot, owner.character, r['fields'])
+            if changed: blocks.append(changed)
     return packet(map_id,blocks,removed) if blocks or removed else None
 
 

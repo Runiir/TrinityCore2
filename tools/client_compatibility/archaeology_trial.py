@@ -34,6 +34,8 @@ def run(args):
                 transport=TransportObserver();facts=transport.poll()
                 recovery_event=combat_recovery.withdraw(movement,extra,facts,transport,latest)
                 receipt['safety_recoveries'].append(recovery_event)
+                if not recovery_event['still_mounted']:
+                    continue
                 facts=transport.poll();goal=ground_navigation.ground_point(facts['map'],facts['position'])
                 directory=out/f'combat_landing_{index:03d}'
                 result=travel_trial.run({'schema':'public_combat_withdrawal_landing_v1','legs':[
