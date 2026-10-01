@@ -45,7 +45,12 @@ def execute(inputs,tcp,observed_ids,path,obstructions=()):
             keys=face(inputs,observer,target);hold=min(.2,math.dist(current[:2],target[:2])/7)
             inputs.key('w',hold=hold);time.sleep(.35);keys.append({'key':'w','hold':hold})
             movement,extra=screenshot(path);after=observer.poll()['position']
-            probe={'before':current,'after':after,'route':route,'physical_keys':keys}
+            observations=[{'position':after,'movement':movement,'travel':extra}]
+            deadline=time.monotonic()+2.5
+            while extra['falling'] and time.monotonic()<deadline and abs(after[2]-current[2])<=1.5:
+                time.sleep(.2);movement,extra=screenshot(path);after=observer.poll()['position']
+                observations.append({'position':after,'movement':movement,'travel':extra})
+            probe={'before':current,'after':after,'route':route,'physical_keys':keys,'observations':observations}
             trace['probes'].append(probe);lab.private_write(receipt,json.dumps(trace,indent=2)+'\n')
             if not movement['in_world'] or movement['health_percent']<50 or any(movement[k] for k in ['dead','in_combat','on_taxi']):
                 raise RuntimeError('ground escape interrupted by unavailable character')
