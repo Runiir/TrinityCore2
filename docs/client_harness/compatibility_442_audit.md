@@ -1,0 +1,91 @@
+# Whitemane 4.4.2 compatibility with the current Trinity backend
+
+The installed Whitemane executable identifies itself as **4.4.2 build 60895**. This repository's native client protocol is **4.3.4 build 15595**. Connecting the newer client requires a protocol implementation or translation layer covering login, world entry and object state before keyboard movement can be validated. Editing a build number, realm address or port cannot supply that implementation.
+
+This is a static audit, not a failed or successful live connection test. No server was launched, no database was queried or modified, and no client inputs were sent. Work is isolated in `/home/runiir/Games/trinity-442-compatibility` on `codex/442-compatibility-audit`. The existing boss-bot checkout, database and runtime configuration remain outside this work.
+
+## Source and executable identities
+
+- Local baseline: `bdd8b400df906e916aa81947083f3873f11e8001`. This clean baseline does not include the coordinator checkout's uncommitted boss work. The compared transport source belongs to this exact worktree.
+- Classic reference: official TrinityCore `cata_classic`, pinned at `6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2`, dated September 28, 2026. Its base auth database explicitly lists `(60895,4,4,2,NULL)`, Windows x64 WoWC build authentication material, and a default realm build of 60895. That is source support for this build, not proof that this particular patched Whitemane executable connects successfully.
+- Client: `/home/runiir/Games/_whitemane-60895_/WowClassic.exe`, 58,386,064 bytes. SHA256: `9d963af8c7ce67aa9828b834a91f59e41221767801e78a9b91d9ea81971ee796`. Its Windows version resource reports file and product version `4.4.2.60895`.
+- The [DVC evidence pointer](../../artifacts/client_harness/442_compatibility_audit_20261001.tar.gz.dvc) retains selected legacy and Classic source files, file hashes, unified diffs and the generated report. All 68 retained source-file hashes were verified. The audit script reads sources and the executable only.
+
+## Confirmed incompatibilities
+
+| Boundary | Current backend | Classic build 60895 reference | Effect on the movement trial |
+| --- | --- | --- | --- |
+| Login service | `authserver`, legacy logon challenge/proof and realm-list handling | `bnetserver`, Battle.net services, login REST and realm tickets | The newer login flow is not implemented by this authserver. A separate legacy authserver alone cannot accept the modern login flow. |
+| World authentication | Account-name auth packet; 20-byte SHA1 digest and shorter local challenge | Realm-join ticket; 24-byte digest, 32-byte local challenge and HMAC-SHA512-based verification | Packets and session-key derivation require different implementations. |
+| Packet envelope and encryption | Legacy client size/opcode header, legacy server header; ARC4-drop1024 header crypt | Size plus integrity tag, encrypted opcode/payload, 256-bit AES-GCM packet crypt and encrypted-mode negotiation | Neither side can interpret the other's framing or ciphertext. |
+| Opcode dispatch | 16-bit opcode enums and legacy IDs | 32-bit opcode enums and modern IDs | The current dispatch table cannot route modern packets. |
+| Character list and login | Legacy character records and bit/byte-packed GUID handling | Modern character records, GUID representation and login fields | The client must reach character selection and world entry before a walk command can be tested. |
+| Object identity | One 64-bit GUID and legacy high-GUID layout | Two 64-bit words, modern object type formats and packing | Identity translation affects character, player, creature and transport packets. |
+| Object creation and updates | Flat indexed fields and legacy update masks | Generated typed fields, nested/dynamic fields, visibility-aware serializers and change masks | The client cannot render usable player/world state from legacy update blocks. |
+| Movement | Opcode-specific bit/byte sequences in `MovementStructures.cpp` and native unit movement readers | Common `MovementInfo` serializers with different flags, GUIDs, movement-force data and optional blocks | Renaming movement opcodes does not fix position, facing, heartbeat, stop or acknowledgement payloads. |
+| Client tables and terrain | MPQ extraction; 15595 DBC layouts and a small legacy DB2 set | CASC extraction, DB2 metadata/layouts, file-data IDs and hotfix support | Existing extracted assets and data loaders cannot be assumed compatible with the modern data path. |
+| Database model | Legacy account/realm schema and this repository's bot extensions | Battle.net-linked accounts, build authentication keys, modern realm schema, character schema and hotfix database | Classic schema/updater paths must never run against the boss-bot databases. |
+
+The static opcode comparison found **1,346 legacy entries**, **1,673 Classic entries**, and **654 identically named entries shared between them**. All 654 shared names have different numeric values. These are explicit hexadecimal enum entries, not a count of every semantic packet correspondence; renamed packets need separate mapping, and equal IDs would not establish equal payloads.
+
+| Packet | Legacy value | Classic reference value |
+| --- | --- | --- |
+| `CMSG_AUTH_SESSION` | `0x0449` | `0x3A0001` |
+| `SMSG_AUTH_CHALLENGE` | `0x4542` | `0x420000` |
+| `CMSG_PLAYER_LOGIN` | `0x05B1` | `0x390016` |
+| `SMSG_LOGIN_VERIFY_WORLD` | `0x2005` | `0x3B0030` |
+| `SMSG_UPDATE_OBJECT` | `0x4715` | `0x4B0000` |
+| Start forward | `MSG_MOVE_START_FORWARD = 0x7814` | `CMSG_MOVE_START_FORWARD = 0x370000` |
+| Stop | `MSG_MOVE_STOP = 0x320A` | `CMSG_MOVE_STOP = 0x370002` |
+
+The changed object representation also matters for later archaeology. Legacy research sites/projects are fixed player update fields; the Classic reference has dynamic `ResearchSites` and `ResearchSiteProgress` structures. Correct legacy gameplay logic alone cannot populate that newer UI without a serialization mapping. This audit does not establish archaeology gameplay fidelity in either backend.
+
+## What can be reused
+
+The game's underlying concepts remain useful: position/facing, movement validation, terrain/pathfinding, session-to-player ownership and the existing gameplay scripts. Screenshots and keyboard/mouse input are outside the world protocol, so the harness architecture can serve either client after connection works. Read-only addon observations can be version-adapted independently.
+
+The existing encounter dossiers' 4.4.2 research targets do not make this worldserver a 4.4.2 server. They describe intended gameplay behavior; the installed transport, update-field layout and client-data loaders still target 4.3.4.
+
+## Smallest meaningful live milestone
+
+The first useful acceptance sequence is a real local account login, character enumeration, character login, visible world/player creation, then a key-driven forward/stop/turn/jump sequence. Capture screenshots, addon position/facing/speed and the server's matching movement receipt. Confirm that stopping ends displacement and that another client does not receive the input.
+
+That needs compatible login/authentication, encryption, character packets, essential login initialization, GUID/object updates and movement packets. A movement decoder by itself cannot reach this milestone. Confirm correct state on both sides before involving Laya or training a policy.
+
+## Isolation required before any trial
+
+The saved plan is [442_isolation_plan_v1.json](../../experiments/configs/client_harness/442_isolation_plan_v1.json). It is a proposal with launch disabled, not provisioned infrastructure.
+
+Use a **dedicated MariaDB instance and new data volume**, not the existing boss-bot instance. Proposed loopback port: `13306`. Initialize fresh `client442_auth`, `client442_world`, `client442_characters`, and, if required by the chosen modern protocol/core, `client442_hotfixes`. Generate a dedicated runtime user/password. Its grants must cover only these schemas, and no existing live database import is authorized by this audit.
+
+Use independent server config/log/capture directories, client WTF/Cache/Logs, Wine prefix and client working directory. Proposed loopback listener ports are `13724` for legacy auth if a bridge needs it, `11190` for modern Battle.net login, `18081` for login REST, `18085` for world and `18086` for a legacy instance socket if needed. Port availability still needs checking immediately before provisioning. Disable bot autostart, remote admin and SOAP. Do not launch through the existing default `make host-world`/`make host-auth` targets because they derive the shared test configuration.
+
+## Implementation choices
+
+1. **Port the existing backend's client boundary.** Add modern login/framing/authentication and semantic packet serializers while preserving the gameplay engine. This best preserves the current bot/script investment, but touches much more than movement. Replacing a few opcode headers is insufficient.
+2. **Build a protocol bridge.** Present the Classic protocol to the client and translate to the legacy backend. This preserves the legacy server, but still needs authentication, stateful GUID/field mappings, world initialization, movement and related packet translation. No functioning 4.4.2-to-this-backend bridge was found in the inspected tooling; this is an implementation option, not an available dependency.
+3. **Use the Classic core as the experimental runtime and port selected backend work.** Its pinned source already supplies the modern protocol and records build 60895. This reduces transport work, but it does not contain this repository's complete bot/runtime modifications, and it does not automatically inherit their gameplay behavior.
+
+My assessment is to use the pinned Classic code as the reference for a bounded login-to-movement investigation, then decide between a client-boundary port and a separate experimental Classic runtime. Keep that decision separate from the ongoing boss-bot branch. This audit does not authorize migrating its database or replacing its runtime.
+
+## Remaining uncertainties
+
+- The Whitemane executable and launcher may modify authentication, endpoint selection or client behavior. File version alone does not establish vanilla protocol behavior. The inspected Config.wtf uses `portal "US"`; it is not a local lab profile.
+- The inspected client folder has no top-level `Data` directory or `.build.info`. Its actual launcher-managed data location and completeness have not been established. This does not prove the installed client is unusable; it means a standalone modern extractor/client launch needs additional asset-location verification.
+- No launcher, TLS/certificate setup, live packet exchange, account creation, terrain load, character creation, movement or addon API behavior was tested.
+- A static upstream comparison establishes architectural incompatibilities, not an effort estimate or successful port. Exact client packets must be confirmed during the isolated connection milestone.
+
+## Reproduce and inspect
+
+Clone the official `cata_classic` reference without checkout and pin the recorded commit. Run through the existing Pixi environment:
+
+```sh
+pixi run --manifest-path /home/runiir/Games/trinity-cata/pixi.toml python tools/client_compatibility/audit.py \
+  --local-root /home/runiir/Games/trinity-442-compatibility \
+  --reference-root /tmp/trinity-cata-classic-compat-reference \
+  --reference-commit 6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2 \
+  --client /home/runiir/Games/_whitemane-60895_/WowClassic.exe \
+  --output /tmp/a-new-empty-compatibility-evidence-directory
+```
+
+Primary reference files are the pinned [opcode table](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Protocol/Opcodes.h), [world socket](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/WorldSocket.cpp), [authentication packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/AuthenticationPackets.cpp), [movement packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/MovementPackets.cpp), [update fields](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Entities/Object/Updates/UpdateFields.h), and [auth schema](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/sql/base/auth_database.sql). Official [client setup documentation](https://trinitycore.info/install/Client-Setup) describes the modern portal and launcher setup; it does not certify the Whitemane executable.

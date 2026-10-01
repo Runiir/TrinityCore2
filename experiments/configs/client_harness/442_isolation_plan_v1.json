@@ -1,0 +1,49 @@
+{
+  "schema": "client_harness_isolation_plan_v1",
+  "phase": "static_compatibility_audit",
+  "live_launch_allowed": false,
+  "database_created": false,
+  "client": {"version": "4.4.2", "build": 60895, "source_folder": "/home/runiir/Games/_whitemane-60895_"},
+  "reference": {"repository": "https://github.com/TrinityCore/TrinityCore", "branch": "cata_classic", "commit": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2"},
+  "database": {
+    "strategy": "dedicated_mariadb_instance",
+    "instance_name": "trinity-client442-db",
+    "host": "127.0.0.1",
+    "proposed_host_port": 13306,
+    "data_volume": "trinity-client442-db-data",
+    "database_names": {"auth": "client442_auth", "world": "client442_world", "characters": "client442_characters", "hotfixes": "client442_hotfixes"},
+    "runtime_user": "client442_runtime",
+    "credentials": "generate_for_owned_instance_at_provisioning; do_not_reuse_default_credentials",
+    "allowed_schemas": ["client442_auth", "client442_world", "client442_characters", "client442_hotfixes"],
+    "reuse_existing_volume": false,
+    "import_live_boss_database": false
+  },
+  "network": {
+    "bind_address": "127.0.0.1",
+    "proposed_ports": {"legacy_auth_if_needed": 13724, "classic_bnet_if_needed": 11190, "classic_login_rest_if_needed": 18081, "world": 18085, "legacy_instance_if_needed": 18086},
+    "port_availability_verified": false,
+    "remote_admin_enabled": false,
+    "soap_enabled": false
+  },
+  "runtime": {
+    "owned_root": "/home/runiir/.local/share/trinity-client442-lab",
+    "separate_client_working_folder": true,
+    "separate_wine_prefix": true,
+    "separate_client_wtf_cache_logs": true,
+    "separate_config_files": true,
+    "separate_server_logs_and_capture": true,
+    "client_data_read_only": true,
+    "bot_autostart": false
+  },
+  "prelaunch_requirements": [
+    "choose_and_implement_a_60895_compatible_login_and_world_protocol",
+    "verify_target_executable_launcher_and_client_data_identity",
+    "verify_all_proposed_ports_are_free",
+    "create_a_new_owned_database_instance_and_volume",
+    "initialize_the_selected_core_schemas_from_versioned_sources",
+    "verify_runtime_credentials_cannot_access_boss_bot_schemas",
+    "verify_every_database_connection_targets_the_owned_instance",
+    "disable_bot_autostart_admin_and_default_runtime_profiles",
+    "verify_server_processes_and_cleanup_are_scoped_to_the_lab"
+  ]
+}
