@@ -14,9 +14,10 @@ def binary():
     return target
 
 
-def route(map_id,start,goal,obstructions=()):
+def route(map_id,start,goal,obstructions=(),*,allow_swimming=False):
     if len(obstructions)>8:raise ValueError('observed ground obstruction budget exceeded')
-    command=[str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),*map(str,start[:3]),*map(str,goal[:3]),
+    command=[str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),
+        *(['--walk-swim'] if allow_swimming else []),*map(str,start[:3]),*map(str,goal[:3]),
         *(str(v) for point in obstructions for v in point[:3])]
     result=subprocess.run(command,capture_output=True,text=True,timeout=10)
     if result.returncode:raise RuntimeError('ground routing: '+result.stderr.strip())
@@ -65,10 +66,12 @@ def survey_ray(tcp,distance,digsite_ids):
                 'whole_corridor_inside':True,'source':site['source']}}
 
 
-def survey_detour(tcp,distance,digsite_ids,obstructions=()):
+def survey_detour(tcp,distance,digsite_ids,obstructions=(),*,allow_swimming=False):
     ray=survey_ray(tcp,distance,digsite_ids)
     start=ray['start'];goal=ray['requested_goal']
     site=site_boundaries.sites()[ray['boundary_guard']['site_id']]
+    if allow_swimming:
+        return swimming_detour(tcp,ray,site,obstructions)
     result=route(tcp['tool'].get('map',0),start,goal,obstructions) if obstructions else route(tcp['tool'].get('map',0),start,goal)
     corridor=[start,*result['points']]
     if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):
@@ -78,7 +81,29 @@ def survey_detour(tcp,distance,digsite_ids,obstructions=()):
     return result
 
 
-def walk_plan(tcp,distance,digsite_ids,recovery=None):
+def swimming_detour(tcp,ray,site,obstructions):
+    """Extend the public bearing only as far as a reachable dry shore."""
+    start=ray['start'];heading=ray['heading_radians'];attempts=[]
+    for distance in [ray['boundary_guard']['clipped_distance'],7,14,21,35,56]:
+        distance=site_boundaries.clip_distance(site['polygon'],start,heading,distance)
+        goal=[start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]]
+        try:result=route(site['map'],start,goal,obstructions,allow_swimming=True)
+        except RuntimeError as error:
+            attempts.append({'goal':goal,'failure':str(error)});continue
+        corridor=[start,*result['points']]
+        if math.dist(start[:2],corridor[-1][:2])<1.5:continue
+        if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):continue
+        # A dry bank behind the player is not progress along this bearing.
+        progress=(corridor[-1][0]-start[0])*math.cos(heading)+(corridor[-1][1]-start[1])*math.sin(heading)
+        if progress<1.5:continue
+        if sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))>140:continue
+        result.update(start=start,requested_goal=goal,goal_source=ray['goal_source'],
+            dry_goal_attempts=attempts,boundary_guard=ray['boundary_guard'])
+        return result
+    raise RuntimeError('no bounded in-site walk/swim corridor to dry ground along the public survey bearing')
+
+
+def walk_plan(tcp,distance,digsite_ids,recovery=None,*,allow_swimming=False):
     start=tcp['player']['position'];pending=(recovery or {}).get('pending_ground_route')
     if pending:
         site=site_boundaries.active_site(tcp['tool'].get('map',0),start,digsite_ids)
@@ -92,7 +117,7 @@ def walk_plan(tcp,distance,digsite_ids,recovery=None):
                 'remaining_ground_points':remaining,'detour_committed':True,
                 'retained_survey_detour':True,'boundary_guard':{**pending['boundary_guard']}}
     obstructions=(recovery or {}).get('ground_obstructions',[])
-    planned=survey_detour(tcp,distance,digsite_ids,obstructions)
+    planned=survey_detour(tcp,distance,digsite_ids,obstructions,allow_swimming=allow_swimming)
     corridor=[start,*planned['points']]
     length=sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))
     planned['detour_committed']=length>max(distance*1.5,distance+2)
@@ -107,10 +132,13 @@ def low_step_hop(current,target,recovery,grounded=True):
     return None
 
 
-def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True):
+def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True,path=None):
     import time
     from .observation.archaeology import Observer,angle_error
-    planned=walk_plan(tcp,distance,digsite_ids,recovery);observer=Observer();executed=[]
+    planned=walk_plan(tcp,distance,digsite_ids,recovery,allow_swimming=True);observer=Observer();executed=[]
+    if planned.get('water_polygons'):
+        from .swim_navigation import cross
+        return cross(inputs,observer,planned,path)
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
     target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)

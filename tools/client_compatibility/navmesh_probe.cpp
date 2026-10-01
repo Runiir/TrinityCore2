@@ -46,6 +46,8 @@ int main(int argc, char** argv)
     try
     {
         bool below = argc == 7 && std::string(argv[3]) == "--ground-below";
+        bool swimming = argc>3 && std::string(argv[3])=="--walk-swim";
+        if (swimming) { for (int i=3;i<argc-1;++i) argv[i]=argv[i+1];--argc; }
         bool connectedLanding = argc == 11 && std::string(argv[3]) == "--landing";
         bool landing = connectedLanding || (argc == 8 && std::string(argv[3]) == "--landing");
         bool column = below || landing || (argc == 6 && std::string(argv[3]) == "--ground");
@@ -212,6 +214,11 @@ int main(int argc, char** argv)
             }
         }
         filter.setExcludeFlags(0xc000);
+        // MMapDefines.h: ground=1, water=4, magma/slime=8. Keep the
+        // obstruction and landing queries on ground, allowing clean water
+        // only for this explicitly requested walking corridor.
+        dtQueryFilter dryFilter=filter;
+        if (swimming) filter.setIncludeFlags(1|4);
         float startExtents[3] = {4,8,4}, goalExtents[3] = {4,40,4};
         dtPolyRef first = 0, last = 0; float begin[3], end[3];
         query.findNearestPoly(start,startExtents,&filter,&first,begin);
@@ -220,13 +227,30 @@ int main(int argc, char** argv)
         // Consider ground at every elevation in the local column, preferring
         // horizontal proximity and requiring a fully connected walking path.
         dtPolyRef candidates[256], corridor[1024]; int candidatesCount = 0, count = 0;
-        auto status = query.queryPolygons(goal,goalExtents,&filter,candidates,&candidatesCount,256);
+        auto status = query.queryPolygons(goal,goalExtents,&dryFilter,candidates,&candidatesCount,256);
         if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground column exceeds query budget");
         float best = INFINITY;
         for (int i = 0; i < candidatesCount; ++i)
         {
             float point[3];
             if (dtStatusFailed(query.closestPointOnPoly(candidates[i],goal,point,nullptr))) continue;
+            if (swimming)
+            {
+                // Ground polygons can also be pond floors. A ground flag
+                // alone does not prove the endpoint is on a dry bank.
+                dtQueryFilter waterFilter;waterFilter.setIncludeFlags(4);waterFilter.setExcludeFlags(0);
+                dtPolyRef waterRefs[256];int waterCount=0;float column[3]={2,80,2};bool wet=false;
+                auto waterStatus=query.queryPolygons(point,column,&waterFilter,waterRefs,&waterCount,256);
+                if (dtStatusFailed(waterStatus) || (waterStatus & DT_BUFFER_TOO_SMALL))
+                    throw std::runtime_error("water column exceeds query budget");
+                for (int k=0;k<waterCount;++k)
+                {
+                    float surface[3];query.closestPointOnPoly(waterRefs[k],point,surface,nullptr);
+                    if (std::hypot(surface[0]-point[0],surface[2]-point[2])<2.f && surface[1]>=point[1]-.3f)
+                    { wet=true;break; }
+                }
+                if (wet) continue;
+            }
             float score = std::hypot(point[0]-goal[0],point[2]-goal[2])*10000 + std::abs(point[1]-goal[1]);
             if (score >= best) continue;
             dtPolyRef trial[1024]; int length = 0;
@@ -246,10 +270,16 @@ int main(int argc, char** argv)
         if (!last)
             throw std::runtime_error("no connected walkable route");
         float points[3*256]; unsigned char flags[256]; dtPolyRef refs[256]; int pointsCount = 0;
-        status = query.findStraightPath(begin,end,corridor,count,points,flags,refs,&pointsCount,256);
+        status = query.findStraightPath(begin,end,corridor,count,points,flags,refs,&pointsCount,256,
+            swimming ? DT_STRAIGHTPATH_AREA_CROSSINGS : 0);
         if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground route exceeds point budget");
+        int water=0;
+        for (int i=0;i<count;++i) { unsigned short terrain;mesh.getPolyFlags(corridor[i],&terrain);if (terrain&4) ++water; }
         std::cout << std::setprecision(9) << "{\"schema\":\"public_ground_navmesh_route_v1\",\"loaded_tiles\":" << loaded
-            << ",\"ground_only\":true,\"complete\":true,\"excluded_steep_polygons\":" << steep
+            << ",\"ground_only\":" << (water ? "false" : "true") << ",\"water_polygons\":" << water
+            << ",\"swimming_allowed\":" << (swimming ? "true" : "false") << ",\"goal_terrain\":\"ground\""
+            << ",\"allowed_terrain_flags\":" << (swimming ? 5 : 1)
+            << ",\"complete\":true,\"excluded_steep_polygons\":" << steep
             << ",\"excluded_obstructed_polygons\":" << obstructed << ",\"obstruction_origins\":[";
         for (size_t i=0;i<avoided.size();++i)
         {

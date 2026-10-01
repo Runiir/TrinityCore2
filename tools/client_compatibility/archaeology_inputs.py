@@ -93,7 +93,7 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             ground_route={**planned,'mounted_travel_episode':directory.name,
                 'boundary_guard':{**planned['boundary_guard'],'observed_after_inside':inside}}
         else:hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids,recovery,
-            grounded=not any(extra[k] for k in ['mounted','flying','falling','swimming']))
+            grounded=not any(extra[k] for k in ['mounted','flying','falling','swimming']),path=path)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
