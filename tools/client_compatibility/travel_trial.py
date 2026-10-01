@@ -25,7 +25,7 @@ def state(leg,movement,extra,facts,ui):
     distance=math.dist(facts['position'][:2],leg['position'][:2]) if leg.get('position') else None
     reached=facts['map']==leg['destination_map'] if leg['mode']=='portal' else (
         facts['map']==leg['map'] and distance is not None and distance<12 and
-        abs(facts['position'][2]-leg['position'][2])<8)
+        abs(facts['position'][2]-leg['position'][2])<leg.get('landing_height_tolerance',8))
     return {'mode':leg['mode'],'available':movement['in_world'] and not facts['transferring'] and
             not any(movement[k] for k in ['dead','in_combat']),
         'casting':extra['casting'],'on_taxi':movement['on_taxi'],

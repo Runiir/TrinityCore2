@@ -66,6 +66,11 @@ def same_map(map_id,start,goal):
             'position':c['taxi_nodes'][end['node']]['position'],'destination':end['node'],
             'vendor_position':source['position'],'name':source['name']})
     legs.append(flight(map_id,goal,'approach_destination'))
+    if map_id==530 and goal==PORTALS[530]['approach']:
+        # 60895's open stair approach is 20 yards above the legacy ground mesh,
+        # verified by an ordinary grounded client movement packet (loop 20).
+        legs[-1]['landing_height_tolerance']=25
+        legs[-1]['landing_height_note']='60895 stair approach contact Z61.329; legacy column Z41.25'
     return legs
 
 
