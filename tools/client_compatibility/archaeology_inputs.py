@@ -82,7 +82,8 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
                 'attempts':attempts,'source':'public static ground detail triangles; no private find coordinates'}
             profile=travel_routes.clearance(site['map'],start,target)
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
-                'map':site['map'],'position':target,'ceiling':profile['ceiling'],'height_profile':profile,'arrival_radius':3}]}
+                'map':site['map'],'position':target,'ceiling':profile['ceiling'],'height_profile':profile,'arrival_radius':3,
+                'ground_connection_origin':start[:3]}]}
             directory=path.parent/f'mounted_move_{time.time_ns()}'
             result=travel_trial.run(route,directory,maximum_steps=45)
             if not result['completed']:raise RuntimeError('mounted dig movement failed: '+str(result['failure']))

@@ -44,6 +44,12 @@ def execute(action,leg,facts,extra,observer,path):
         if not goal:raise RuntimeError('landing without a public ground waypoint')
         hold=min(3,max(.15,(position[2]-goal[2])/28.7))
         inputs.key('x',hold=hold);keys.append({'key':'x','hold':hold})
+        time.sleep(.25);after=observer.poll()
+        if not leg.get('trigger') and hold>=.2 and position[2]-after['position'][2]<.35:
+            _,fresh=archaeology_inputs.screenshot(path)
+            if fresh['flying']:
+                from .landing_recovery import nudge
+                collision=nudge(inputs,leg,observer,path,fresh)
     elif action=='dismount':
         if extra['flying'] or extra['falling']:raise RuntimeError('model attempted dismount in the air')
         inputs.key('3');keys.append({'key':'3'})

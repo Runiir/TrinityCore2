@@ -1,0 +1,14 @@
+{
+  "schema": "client442_public_descent_recovery_v1",
+  "source": "episode 36 public telescope landing waypoint and connected ground origin; no private find coordinates",
+  "legs": [{
+    "id": "retry_blocked_bonechewer_landing",
+    "mode": "flight",
+    "map": 530,
+    "site_id": 377,
+    "position": [-2969.08765, 3631.77563, -8.86794662],
+    "ground_connection_origin": [-2957.59863, 3637.62744, -10.14255333],
+    "ceiling": 230,
+    "arrival_radius": 3
+  }]
+}

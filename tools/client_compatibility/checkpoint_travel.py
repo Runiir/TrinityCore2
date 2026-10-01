@@ -37,7 +37,10 @@ def main():
         'flat_landing_repair.json','flat_landing_repair_25.json','outland_loop_validation.json',
         'outland_combat_stop.png','outland_attack_probe.png','loot_pose_check.png',
         'combat_login.png','combat_character_login.png','combat_world_login.png',
-        'observation_refactor_collection_failure.xml'])
+        'observation_refactor_collection_failure.xml','landing_recovery_collection_failure.xml',
+        'creature_movement_login.png','creature_movement_character.png','creature_movement_world.png',
+        'creature_position_login.png','creature_position_character.png','creature_position_world.png',
+        'creature_movement_now.png','outland_loop_now.png'])
     paths.append(lab.ROOT/'data/dbc/enUS/AreaTrigger.dbc')
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
     paths.extend(sorted((lab.ROOT/'evidence').glob('world_packets.jsonl.part-*')))
