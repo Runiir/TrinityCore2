@@ -14,8 +14,6 @@ import socket
 import subprocess
 import time
 
-import pymysql
-
 ROOT = Path.home() / ".local/share/trinity-client442-lab"
 REPO = Path(__file__).resolve().parents[2]
 BASE = Path.home() / "Games/trinity-cata"
@@ -38,6 +36,7 @@ def sha256(path: Path) -> str:
 
 
 def connection():
+    import pymysql
     creds = json.loads((ROOT / "secrets/runtime.json").read_text())
     if (creds["host"], creds["port"], creds["user"]) != ("127.0.0.1", 13306, "client442_runtime"):
         raise RuntimeError("credentials do not target the lab")

@@ -2,23 +2,24 @@
 import struct
 from .telemetry import checksum
 
-PACKET = struct.Struct('>4sIIIiiiBB16HH')
+PACKET = struct.Struct('>4sIIIiiiBB16HHBH3xH')
 FLAGS = {'mounted':1, 'flying':2, 'falling':4, 'swimming':8, 'casting':16,
          'indoors':32, 'flyable_area':64, 'world_position_available':128}
 
 
 def decode_packet(data):
     magic, sequence, uptime, world, x, y, z, flags, count, *rest = PACKET.unpack(data)
-    if magic != b'TCA1' or checksum(data[:-2]) != rest[-1] or count > 16:
+    if magic != b'TCA2' or checksum(data[:-2]) != rest[-1] or count > 16:
         raise ValueError('invalid travel telemetry frame')
-    sites = rest[:-1]
+    sites = rest[:16]
     if any(sites[count:]) or any(not n for n in sites[:count]):
         raise ValueError('invalid digsite list')
     status = {name: bool(flags & bit) for name,bit in FLAGS.items()}
     return {'schema':'client442_addon_travel_v1','sequence':sequence,'client_uptime_ms':uptime,
         'world_map':world if status['world_position_available'] else None,
         'world_position':[x/100,y/100,z/100] if status['world_position_available'] else None,
-        'digsite_ids':sites[:count], **status, 'source':'addon_rendered_pixels'}
+        'digsite_ids':sites[:count], 'tooltip_name_checksum':rest[16], 'loot_slots':rest[17],
+        'camera_zoom':rest[18]/100, **status, 'source':'addon_rendered_pixels'}
 
 
 def decode_image(image, x=1025, y=15, cell_size=3.75):

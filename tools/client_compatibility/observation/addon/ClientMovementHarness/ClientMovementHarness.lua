@@ -49,12 +49,12 @@ local sequence, elapsed = 0, 0
 -- come from the same map API used by Blizzard's archaeology overlay.
 local travelPanel = CreateFrame("Frame", "ClientTravelHarnessPanel", UIParent)
 travelPanel:SetScale(1 / UIParent:GetEffectiveScale())
-travelPanel:SetSize(256, 32)
+travelPanel:SetSize(256, 36)
 travelPanel:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -16)
 travelPanel:SetFrameStrata("TOOLTIP")
 travelPanel:EnableMouse(false)
 local travelPixels = {}
-for i = 1, 512 do
+for i = 1, 576 do
     local pixel = travelPanel:CreateTexture(nil, "OVERLAY")
     pixel:SetSize(4, 4)
     pixel:SetPoint("TOPLEFT", travelPanel, "TOPLEFT", ((i-1)%64)*4, -math.floor((i-1)/64)*4)
@@ -91,7 +91,7 @@ local function travelSample()
     if IsIndoors() then flags = flags + 32 end
     if IsFlyableArea() then flags = flags + 64 end
     if posX and posY and posZ and world then flags = flags + 128 end
-    local bytes = {84, 67, 65, 49} -- TCA1
+    local bytes = {84, 67, 65, 50} -- TCA2
     append(bytes, sequence, 4)
     append(bytes, math.floor(GetTime()*1000)%4294967296, 4)
     append(bytes, world or 0, 4)
@@ -101,6 +101,13 @@ local function travelSample()
     append(bytes, flags, 1)
     append(bytes, math.min(#digsites, 16), 1)
     for i=1,16 do append(bytes, digsites[i] or 0, 2) end
+    local tip = GameTooltip:IsShown() and GameTooltipTextLeft1:GetText() or ""
+    local tipFirst, tipSecond = 0, 0
+    for i=1,#tip do tipFirst=(tipFirst+tip:byte(i))%255; tipSecond=(tipSecond+tipFirst)%255 end
+    append(bytes, tipSecond*256+tipFirst, 2)
+    append(bytes, math.min(GetNumLootItems() or 0, 255), 1)
+    append(bytes, integer((GetCameraZoom() or 0)*100, 65535), 2)
+    append(bytes, 0, 3)
     local first, second = 0, 0
     for _, byte in ipairs(bytes) do first=(first+byte)%255; second=(second+first)%255 end
     append(bytes, second*256+first, 2)

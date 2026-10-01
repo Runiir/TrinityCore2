@@ -23,7 +23,7 @@ class Observer:
         entry = next((r for r in reversed(entries) if r["event"] == "native_player_created" and r["guid"] == 1), None)
         if not entry: raise RuntimeError("owned character has not entered the native world")
         self.session, self.started = entry["session"], entry["time"]
-        self.offset, self.tool, self.finds = 0, None, {}
+        self.offset, self.tool, self.finds, self.player = 0, None, {}, None
 
     def poll(self, facing):
         with (lab.ROOT / "evidence/world_packets.jsonl").open() as handle:
@@ -34,6 +34,12 @@ class Observer:
                 packet = json.loads(line)
                 if packet.get("session") != self.session or packet["time"] < self.started:
                     continue
+                if packet['direction']=='from_client':
+                    from ..world import movement
+                    if packet['name'] in movement.SUPPORTED or packet['name']=='CMSG_MOVE_SET_FACING_HEARTBEAT':
+                        state=movement.parse(bytes.fromhex(packet['body']),1)
+                        self.player={'position':list(state['position']),'seen_at':packet['time'],
+                                     'source':'owned_session_client_movement_packets'}
                 if packet["direction"] != "from_native":
                     continue
                 if packet["name"] == "SMSG_DESTROY_OBJECT":
@@ -45,6 +51,9 @@ class Observer:
                     continue
                 if packet["name"] != "SMSG_UPDATE_OBJECT": continue
                 for record in records(bytes.fromhex(packet["body"])):
+                    if record.get('guid')==1 and 'movement' in record:
+                        self.player={'position':list(record['movement']['position']),'seen_at':packet['time'],
+                                     'source':'owned_session_native_visible_player_create'}
                     if record["update_type"] == 3:
                         for guid in record["removed"]:
                             self.finds.pop(guid, None)
@@ -64,7 +73,7 @@ class Observer:
         tool = dict(self.tool) if self.tool else None
         if tool: tool["turn_error_radians"] = angle_error(tool["heading_radians"], facing)
         return {"source": "owned_session_visible_object_tcp_packets", "session": self.session,
-                "tool": tool, "finds": list(self.finds.values())}
+                "tool": tool, "finds": list(self.finds.values()), 'player':self.player}
 
 
 def collected(session, since):
