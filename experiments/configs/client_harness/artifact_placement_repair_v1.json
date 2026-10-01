@@ -1,0 +1,22 @@
+{
+  "schema": "client442_artifact_placement_trial_v1",
+  "character_guid": 1,
+  "account_id": 1,
+  "character_name": "Harnessone",
+  "administrative_setup": {
+    "offline_only": true,
+    "research_slot": 0,
+    "research_site": 163,
+    "finds_completed": 0,
+    "map": 0,
+    "zone": 10,
+    "position": [-10471.1667, -450.0833, 50.5],
+    "orientation": 0.0,
+    "position_source": "public Twilight Grove digsite polygon center; ground corrected by native movement"
+  },
+  "controller_endpoint": "http://127.0.0.1:8002/v1/systemone",
+  "first_acceptance": "one physically collected find, inside the assigned public polygon and visible above ground",
+  "private_next_find_coordinates_used": false,
+  "manual_setup_counts_as_navigation": false,
+  "monitor": "HDMI-1"
+}
