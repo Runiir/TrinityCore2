@@ -371,7 +371,7 @@ std::string BotWorldPopulationMgr::BuildRaidRuntimeJson(bool compactTelemetry) c
              << ",\"reentry_sequence\":" << signal.ReentrySequence
              << ",\"resurrection_sequence\":" << signal.ResurrectionSequence << BotNativeLifeEvents::MemberJsonFields(guid, BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId)) << "}";
     }
-    json << "]}"
+    json << "]}" << BotNativeLifeEvents::FullWipesJsonField(Cohort().Id, BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId))
          << ",\"strategy_id\":\"" << JsonEscape(raid.StrategyId) << "\""
          << ",\"route_progress\":{\"generation\":" << Party().ValidationRouteGeneration
          << ",\"node_index\":" << Party().ValidationRouteManifestIndex << "}" << (HasValidationRouteSpecContracts() ? ",\"spec_contract_scope\":true" : "")

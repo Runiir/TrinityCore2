@@ -268,7 +268,8 @@ def test_candidate_uses_one_latched_native_cast_for_either_window() -> None:
 
     # One latch per attempt/wipe/route: a submitted cast only observes auras.
     submitted = body.index("if (raid->MagmawBloodlustSubmitted)\n    {")
-    selection = body.index("SelectLustWindow(board, headWindow)")
+    # Round 4 may pass the cohort scenario (T11 head-only timing).
+    selection = body.index("SelectLustWindow(board, headWindow")
     assert submitted < selection
     assert "headWindow.reset();" in body
     assert (

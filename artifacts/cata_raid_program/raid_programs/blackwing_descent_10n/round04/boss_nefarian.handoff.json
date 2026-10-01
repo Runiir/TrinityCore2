@@ -1,0 +1,56 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:nefarian",
+  "round": 4,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeObserver.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h",
+    "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md"
+  ],
+  "new_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianDragonTankCare.h",
+    "tests/test_nefarian_dragon_tank_care.py"
+  ],
+  "resolved_inputs": [],
+  "patch_requests": [],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider -q tests/test_nefarian_*.py (after the edits, before the new test existed)",
+      "result": "103 passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider -q tests/test_nefarian_dragon_tank_care.py (first run)",
+      "result": "compile error in the test program: helper names Onyxia/Nefarian were ambiguous with namespace BotEncounter::Nefarian; renamed to OnyxiaOf/NefarianOf; test-only, not a product failure"
+    },
+    {
+      "command": "pre-fix probe: the new test program compiled against the HEAD Nefarian headers plus only the new BotNefarianDragonTankCare.h (not wired), scratch overlay under ~/.cache",
+      "result": "failed as required: 17 CHECK failures (every defensive, every tank heal, and the formation keep); the remaining checks were negative ones"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.test_baseline check -- -p no:cacheprovider tests/test_nefarian_*.py tests/test_raid_boss_lust_nefarian.py",
+      "result": "109 passed, 0 failed; new_failures 0, known 0, flaky 0, pytest_errors 0 (the baseline 94cbcdf3fb84 is older than HEAD 4d4ec2e19360; the tool warns it is stale)"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider -q tests/test_cata_raid_research_contracts.py tests/test_nefarian_research_packet.py",
+      "result": "20 passed"
+    },
+    {
+      "command": "syntax-only compile (build/compile_commands.json flags plus -fsyntax-only) of BotWorldPopulationMgrNefarianCandidates.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp, BotWorldPopulationMgr.cpp and BotWorldPopulationMgrStatus.cpp",
+      "result": "all 0; the only diagnostic is the known <ciso646> warning"
+    }
+  ],
+  "open_items": [
+    "encounter_research input stays open: the contract is still fidelity_blocked, and no fidelity_state_by_mode 10N=accepted was set. Section 10 of the dossier lists the unresolved claims, and none was resolved this round. The round focused on the phase-1 wipe.",
+    "Not verified from traces: the r03 Nefarian shard archives were evicted from the local DVC cache, and this packet may not run DVC. The diagnosis therefore rests on diag_r3.md and the scoreboard rows: death order, killers, and healer HPS. The next run's decision trace should confirm three things. (1) adaptive_nefarian actions dragon_tank_* are committed on the Feral and the healers in phase 1. (2) The healers stand still (no formation legs) while Onyxia is tanked. (3) Dragon separation stays at or above 50 yd after Nefarian lands. The Feral died 8-14 s after the 24 s landing; if Children of Deathwing applied, Onyxia's attack speed doubled. Separation logic is unchanged and unverified at tier-11 fight lengths.",
+    "Onyxia's +12 s breath death: natively she breathes at her victim (DoCastVictim), so the tank always takes it. The reading is an unhealed tank, not a raid facing error. The multi-kill breaths (3 bots at once) came only after both tanks were dead. No facing change was made.",
+    "Coordinator fixes outside this packet, as briefed: the full-wipe revive into a live encounter (death loop, 5 ms instant revive, idle actors) and ending the observer window at a full wipe. The acceptance observation can prove zero bone-warrior violations only after the latter."
+  ],
+  "risks": [
+    "Healer casts now run at Mechanic priority (utility 260), or Survival (utility 150) when the target is below 50%. They go on the dragons' victims only. They are ranked above the shared lowest-member triage, so a non-tank at low health waits one GCD while a victim is below its thresholds. Mana use rises: the Disc casts Greater Heal and Flash Heal on the tank.",
+    "Tank defensives cost GCD and Target lanes for one decision each. Death Strike targets the dragon the Blood DK already holds.",
+    "Formation keep: a caster or healer within 10 yd of its wanted spot, on a safe floor spot that serves its targets, no longer re-walks. The cone and fire rules (FloorPointSafe) and the escapes still move it. Ranged damage dealers can stand up to 10 yd from their old slots.",
+    "The Holy Light, Divine Light and Flash Heal thresholds are tuning choices, not research values. They only choose among the bots' own spells."
+  ],
+  "validation_neutrality": "Only Nefarian-owned headers changed. Every new rule is gated on the Nefarian encounter view (ObserveEncounter owns the node, floor phases only). The observer change adds readiness entries only for Nefarian decisions and deduplicates repeated spell ids, which does not change the SpellUsable result. No pillar, lava, ascent, descent or crossing movement changed, so the no-clipping rule is untouched. No shared runtime, SQL, gear, roster or raid-target file changed. Stonecore, Phase-8 calibration and legacy Magmaw b5 are unaffected."
+}

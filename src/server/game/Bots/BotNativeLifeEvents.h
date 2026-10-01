@@ -45,6 +45,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace BotNativeLifeEvents
 {
@@ -70,10 +71,34 @@ struct Counts
     bool Dead = false;
 };
 
+// One native full-wipe edge (every roster member dead in one raid sample),
+// recorded where UpdateValidationCohortRaidRuntime increments WipeGeneration
+// (BWD 10N round 4, diag_r3 Q3/Q5).  The harness closes a boss window at the
+// first full wipe inside it: the attempt is judged a wipe, and the observer
+// (whose reporter is a living bot) is only required to cover it up to here.
+struct FullWipe
+{
+    uint64 WipeGeneration = 0;
+    uint64 AtMs = 0;
+    uint64 RouteGeneration = 0;
+    std::string NodeId;
+    std::string NodeKind;
+    bool EncounterInProgress = false;
+};
+
+struct FullWipeLedger
+{
+    Scope Of;
+    std::vector<FullWipe> Rows;
+};
+
+constexpr size_t MaxFullWipesPerLifecycle = 32;
+
 struct Registry
 {
     std::mutex Lock;
     std::unordered_map<uint32, Counts> ByGuid;
+    std::unordered_map<std::string, FullWipeLedger> FullWipesByCohort;
     std::unordered_map<std::string, uint64> LifecycleByCohort;
     uint64 LastLifecycleId = 0;
 };
@@ -175,6 +200,64 @@ inline Counts Get(uint32 guid, Scope const& scope)
     if (found == registry.ByGuid.end() || !(found->second.Of == scope))
         return Counts{};
     return found->second;
+}
+
+// Record a full wipe for this cohort's lifecycle scope (bounded; a new scope
+// starts an empty ledger).
+inline void ObserveFullWipe(std::string const& cohortId, Scope const& scope, FullWipe const& wipe)
+{
+    Registry& registry = Instance();
+    std::lock_guard<std::mutex> guard(registry.Lock);
+    FullWipeLedger& ledger = registry.FullWipesByCohort[cohortId];
+    if (!(ledger.Of == scope))
+        ledger = FullWipeLedger{ scope, {} };
+    if (ledger.Rows.size() < MaxFullWipesPerLifecycle)
+        ledger.Rows.push_back(wipe);
+}
+
+inline std::vector<FullWipe> FullWipes(std::string const& cohortId, Scope const& scope)
+{
+    Registry& registry = Instance();
+    std::lock_guard<std::mutex> guard(registry.Lock);
+    auto const found = registry.FullWipesByCohort.find(cohortId);
+    if (found == registry.FullWipesByCohort.end() || !(found->second.Of == scope))
+        return {};
+    return found->second.Rows;
+}
+
+// The raid_runtime "full_wipes" field (leading comma), or nothing without a
+// full wipe in this scope, so a run that never wiped exports unchanged bytes.
+inline std::string FullWipesJsonField(std::string const& cohortId, Scope const& scope)
+{
+    std::vector<FullWipe> const rows = FullWipes(cohortId, scope);
+    if (rows.empty())
+        return {};
+    auto escaped = [](std::string const& value)
+    {
+        std::string out;
+        for (char character : value)
+        {
+            if (character == '"' || character == '\\')
+                out += '\\';
+            if (static_cast<unsigned char>(character) >= 0x20)
+                out += character;
+        }
+        return out;
+    };
+    std::ostringstream out;
+    out << ",\"full_wipes\":[";
+    for (size_t index = 0; index < rows.size(); ++index)
+    {
+        FullWipe const& row = rows[index];
+        out << (index ? "," : "") << "{\"wipe_generation\":" << row.WipeGeneration
+            << ",\"at_ms\":" << row.AtMs
+            << ",\"route_generation\":" << row.RouteGeneration
+            << ",\"route_node_id\":\"" << escaped(row.NodeId) << "\""
+            << ",\"route_node_kind\":\"" << escaped(row.NodeKind) << "\""
+            << ",\"encounter_in_progress\":" << (row.EncounterInProgress ? "true" : "false") << "}";
+    }
+    out << "]";
+    return out.str();
 }
 
 // The native_recovery.members fields (leading comma, no braces).

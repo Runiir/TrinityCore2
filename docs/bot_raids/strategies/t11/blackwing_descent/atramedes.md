@@ -1052,6 +1052,88 @@ evidence per role is not yet exported by the server (only the kiter's chase coun
 - Observation blocks export `first_observed_at_ms`/`last_observed_at_ms`; the harness requires them
   to cover the judged boss window within the observer's gap bound.
 
+## Round 4 fixes (2026-10-01)
+
+Evidence: live r03 (`blackwing_descent_10n-r03-a3864fcf6d`) and its diagnosis (questions 1 and 4).
+
+**Every bot leaves a Sonar Bomb zone first (`BotAtramedesDodge.h` `BombEscape`).** In r03 batch 1 a
+Sonar Bomb (+20) landed on the demonology warlock and on the assassination rogue during the air
+phases. The flame re-tracked a player at 20 Sound, and the chase's first sample broke the 10 Sound
+kiter bound. The replay shows the mechanism. Two duties handled a marker spawned on them (a marker is
+summoned on a random player and its bomb lands 2.5 s later) with a search that was not built for it:
+- The redirect runner, the striker the flame re-tracks next, took the least-cost step toward its
+  kite waypoint. That step prices a crossed bomb zone flat, so it walked on through the marker.
+- The gong relay took the shortest safe step in click reach. It chose points on alternating sides of
+  the marker from one snapshot to the next and stayed inside.
+
+Now a bot inside a bomb zone first takes the walk that spends the least time inside any blast. The
+headings form a fixed 32-way grid around the bot, and the zones chain when they overlap. A second
+inside a blast is worth 48 yd of walking (+20 Sound, priced as fire). An end that the rest of the field
+covers, or one outside the duty's constraint (a relay's click reach), costs 15 yd. The best heading out
+of one blast is the radial one, so successive snapshots keep it.
+- The redirect run and the relay hazard step escape first.
+- The bystander bomb exit keeps its radial exit when that exit is clear. Otherwise it escapes instead
+  of taking the shortest safe step.
+- The bomb exit now outranks the flame-path exit.
+
+Replay (`tests/test_atramedes_raid_sound.py`, 60 first and 60 second air phases, bombs and fire):
+- Bystander bomb Sound falls to 0 per phase in every air scenario (round 3: 0.67-1.33, all of it on
+  the redirect runner and the relays).
+- The all-roles air maximum falls to 6-12 (round 3: 5-25).
+- The ground phases are byte-identical.
+
+A kiter side step out of a bomb zone that every waypoint run meets was tried and rejected: it handed
+the kiter to the flame (breath-caused bound misses 6 -> 25). The kiter bound replay
+(`tests/test_atramedes_kiter_sound_bound.py`, bombs and fire) is unchanged within its noise:
+- Over twelve seeds (348 phases per kind), in the order spawn 3 first, spawn 3 next, spawn 7 first,
+  spawn 7 next: 35/51/45/22 against 38/48/44/18, 153 against 148 in all. The same headers with one
+  constant nudged by 0.01 give 150.
+- The ratchet now holds each stress kind within two phases of round 3 and the total at 34 or less.
+- The kiter's own bombs are the remaining misses. A marker's age is not in the snapshot, so a bomb
+  that has already landed cannot be told from a live one.
+
+**Sound sources in the observation export (`BotAtramedesSoundSources.h`).** Batch 2 had a 20 Sound
+chase sample with no bomb damage event: the combat log records no absorbs, and 20 is also four
+fire-patch ticks. The server's acceptance block
+(`raid_runtime.encounter_observations.atramedes`) now also carries two fields:
+- `sound_samples`, the chase samples as a run-length list: the first sample of each chase and every
+  sample whose Sound changed. Each entry is
+  `{at_ms, kiter, sound, last_increment_source, last_increment, last_increment_at_ms}`.
+- `sound_samples_dropped`: the list holds at most 256 entries, and the rest are counted here.
+
+The last-increment fields describe the kiter's most recent Sound rise, which may predate the chase.
+The source is read off the snapshot that first shows the rise: every source in reach, each only when
+the rise is at least its 10N hit. The sources are `sonar_bomb`, `sonic_breath`, `fire_patch`,
+`roaring_flame` and `sonar_pulse`. A rise with no source in reach is `unattributed`. A player who
+first appears in the sampling with Sound is `before_observation`.
+
+The existing keys and their order are unchanged. Every other cohort's status stays byte-identical, and
+run_sanity reads only the old keys.
+
+**Decision cost (`tests/test_atramedes_decision_cost.py`).** The diagnosis tied the 1-2.4 s air-phase
+ticks under host load to the dodge and kite-path search. A standalone benchmark on the replay harness
+(`pixi run python -m tests.test_atramedes_decision_cost`) times every air decision, with -O2 on one
+core:
+
+| Scenario | Mean per decision | p99 | Max | 10-bot snapshot mean |
+|---|---|---|---|---|
+| Replay | 5.6 -> 4.5 us | 33 -> 20 us | 93 -> 63 us | 71 -> 59 us |
+| 250 lingering fire patches | 21.5 -> 10.4 us | 148 -> 49 us | 339 -> 124 us | 255 -> 126 us |
+
+So the search cannot make a 1 s tick by itself, and the live stalls follow host contention (diagnosis
+question 1). The cuts are exact:
+- A candidate whose score cannot beat the best is skipped before its costly checks (`SafeStep`,
+  `DetourPoint`, `LeastCostStep`), and the cheapest test runs first.
+- A path's zones outside its bounding box are skipped.
+- A run that starts outside a circle and heads away returns 0 without a square root.
+
+The raid-sound and kiter-bound replay outputs are byte-identical before and after. The test holds the
+search bitwise equal to the round-3 reference on 600 random fields, and at least 1.4x faster with 250
+patches (measured 2.2x).
+
+A per-snapshot-revision cache was not added. Tests and callers change a board without bumping its
+revision, so a cache could serve stale facts, and the measured cost does not justify that risk.
+
 ## Sources
 
 1. Wowhead, "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",

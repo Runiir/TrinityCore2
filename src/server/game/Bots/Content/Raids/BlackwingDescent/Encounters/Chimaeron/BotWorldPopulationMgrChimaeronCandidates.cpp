@@ -7,6 +7,9 @@
 #include "Creature.h"
 #include "Pet.h"
 #include "Player.h"
+#include "SpellHistory.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 
 #include <optional>
@@ -58,14 +61,32 @@ void BotWorldPopulationMgr::SubmitAdaptiveChimaeronCandidates(BotUpdateContext& 
             else
                 lustUnknown = true;
         }
-        if (lustUnknown)
+        // Healer mana cooldowns: the snapshot carries no mana, so the healer
+        // checks its own mana line, spell book and cooldown here and skips a
+        // cast it does not need or cannot make (typed, resource-free).
+        bool manaCooldownSkipped = false;
+        if (auto* cast = std::get_if<BotNativeAction::CastSpell>(&intent);
+            cast && BotEncounter::Chimaeron::IsManaCooldownSpell(cast->SpellId))
         {
+            uint32 const maxMana = context.Bot->GetMaxPower(POWER_MANA);
+            float const manaPct = maxMana
+                ? 100.0f * float(context.Bot->GetPower(POWER_MANA)) / float(maxMana) : 100.0f;
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(cast->SpellId);
+            manaCooldownSkipped = !BotEncounter::Chimaeron::ManaCooldownWanted(
+                    cast->SpellId, manaPct)
+                || !context.Bot->HasSpell(cast->SpellId) || !spellInfo
+                || !context.Bot->GetSpellHistory()->IsReady(spellInfo);
+        }
+        if (lustUnknown || manaCooldownSkipped)
+        {
+            char const* const reason = lustUnknown
+                ? BotEncounter::Chimaeron::LustSpellUnknownReason
+                : BotEncounter::Chimaeron::ManaCooldownNotNeededReason;
             action.RequiredResources = BotActionArbitration::Uses(
                 BotActionArbitration::Resource::None);
-            action.Attempt = []()
+            action.Attempt = [reason]()
             {
-                return BotActionArbitration::Outcome::NotApplicable(
-                    BotEncounter::Chimaeron::LustSpellUnknownReason);
+                return BotActionArbitration::Outcome::NotApplicable(reason);
             };
         }
         else

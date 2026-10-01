@@ -1,0 +1,56 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:maloriak",
+  "round": 4,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormationPlan.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormation.h",
+    "tests/test_maloriak_strategy.py",
+    "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md"
+  ],
+  "new_files": [
+    "tests/test_maloriak_round4_reach.py"
+  ],
+  "resolved_inputs": [],
+  "patch_requests": [],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider --basetemp=~/.cache/r4mal/pt tests/test_maloriak_*.py",
+      "result": "67 passed (final). Earlier in this session: 1 failure of tests/test_maloriak_strategy.py::test_maloriak_strategy_replays_canonical_duties (line 418 expected biting_chill_isolation for the chilled rogue at the boss); caused by this change's intended new mechanic, assertion updated to biting_chill_ring_isolation plus a 5.5-yd clearance check; relevant, resolved. One compile failure of the new test (-Werror unused Interrupts helper), fixed with -Wno-unused-function."
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.test_baseline check -- tests/test_maloriak_round4_reach.py tests/test_maloriak_strategy.py",
+      "result": "6 passed; new_failures 0, known_failures 0 (baseline file is from another commit)"
+    },
+    {
+      "command": "new test against HEAD Maloriak headers (pre-fix tree under ~/.cache, OffTankHealReach literal 34)",
+      "result": "fails before the fix: healer slots > 34 yd from the phase-two off-tank (both healers); chilled rogue gets biting_chill_isolation, destination off the melee ring"
+    },
+    {
+      "command": "g++ -fsyntax-only with build/compile_commands.json flags: BotWorldPopulationMgrMaloriakCandidates.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp, BotWorldPopulationMgr.cpp",
+      "result": "all 0 (only the pre-existing <ciso646> warning)"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "result": "ok; BotAdaptiveMaloriakStrategy.h 852 lines, FormationPlan 358, Formation ~280"
+    }
+  ],
+  "open_items": [
+    "Death cause (r03 kill 35b93d, only boss-window death): Feral off-tank died to Prime Subject melee 20 s into phase two after one heal in 14 s; both healers were 43-49 yd away on the phase-two back fan (Feral at the west add spot, 20 deg off the boss front). Same geometry in cd3009 (Feral to 12.7k) and acb506 (43-46 yd). Fixed here: healer phase-two slots on the off-tank's side within 34 yd. Needs live confirmation.",
+    "Actor gaps (counted kill cd3009 / all 4 r03 kills, tier-11 WCL refs): Demonology Warlock 0.41, Assassination Rogue 0.55, Elemental 0.71, Survival 0.72, Retribution 0.78, Fire 0.79, Blood DK 0.92. Encounter-scoped change this round: melee Biting Chill ring (rogue lost 12 s of boss melee in 35b93d; Ret chilled 13 ticks). Expected effect a few percent for rogue/Ret only.",
+    "Class-owned (not in this packet, route to the class rotation owner): Demonology Warlock channels Hellfire (1949) for up to 13 s after the kited Aberration pack leaves its 10-yd radius, damaging only itself (35b93d 61-74 s); Felguard lands ~1.3k DPS melee on Maloriak during the pure burn (AP 10987, 64-106 base weapon, 150 swings in 273 s); only 38-39 Incinerates per kill.",
+    "Class-owned: Assassination Rogue casts 5-6 Envenoms per 260-s kill (Rupture 50-58 ticks, Mutilate ~51): combo points are spent almost only on Rupture; energy-starved stretches of melee-only on Aberrations.",
+    "Structural (user tactic, unchanged): add waves run at about a third of boss-phase raid DPS (240,498-health Aberrations live 7-22 s while kited), and the 50% hold waits on the release timer (35b93d 127-180 s, Remedy heals the boss 50->58%). Fight windows 243-273 s vs WCL 125-210 s; window DPS stays structurally below WCL while all 18 releases go through.",
+    "Stalls (excluded 3 of 4 kills) are host contention per diag_r3; nothing Maloriak-specific found (Maloriak 97 ms/s in combat, lowest but Nefarian).",
+    "dvc pull of the four r03 evidence archives left their objects in the local .dvc/cache (about 9.5 MB); workspace copies and extracts were deleted."
+  ],
+  "risks": [
+    "Phase-two healer slots sit on the off-tank's side 18 yd from the boss; when the off-tank is directly behind the boss they can stand about 10 yd from it. Prime Subjects melee only their victim; Acid Nova is raid-wide, so no new damage source is expected.",
+    "If the off-tank stands ahead of the boss beyond ~38 yd, the arc-edge slot (82 +/- 9 deg) can still be 35-44 yd away; the hysteresis then keeps the healer moving to the slot, not holding elsewhere.",
+    "Hazard shifts (Absolute Zero, jet fire) in ResolveRangedSlot can move a healer slot out of reach for a tick; the next tick recomputes.",
+    "Biting Chill ring trigger is 5 yd (was 6) for melee at the boss only: an ally at 3.0-5.0 yd still triggers; the 3-yd tick radius is exact distance (no hitbox term for generic-family spells), so the ring keeps >= 2.5 yd margin.",
+    "Class-native tier: header-only encounter change in src/server/game/Bots; needs one independent reviewer and the round build."
+  ],
+  "validation_neutrality": "Changes are confined to the Maloriak encounter headers (namespace BotEncounter::Maloriak, route node bwd.maloriak.encounter) and its tests/dossier. No shared runtime, class rotation, SQL, config or harness file changed. Stonecore, Phase-8 dummy calibration and legacy Magmaw b5 do not include these headers' behavior (the strategy returns an empty plan off the Maloriak encounter node), so they stay byte-reproducible. User tactics unchanged: 50% hold, no Remedy dispel during the switch, releases never interrupted, Feral kite, MD/Tricks on the Feral."
+}

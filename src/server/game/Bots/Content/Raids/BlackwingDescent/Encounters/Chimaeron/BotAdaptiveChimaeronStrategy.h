@@ -32,7 +32,10 @@ namespace BotEncounter
 struct AdaptiveChimaeronPlan
 {
     bool OwnsNode = false;
+    // No heal this revision: Mortality (-99% healing), or a healer with no
+    // published target while the mixture is up (HealingHoldReason says so).
     bool HealingDisabled = false;
+    std::string HealingHoldReason;
     bool SuppressOffense = false;
     std::string SuppressReason;
     ObjectGuid DamageTarget;
@@ -94,8 +97,15 @@ public:
             || HasAura(bot, MortalityRaidSpell);
 
         if (role == "healer" && !plan.HealingDisabled)
+        {
             plan.PriorityHealTarget = SelectPriorityHealTarget(board, observation,
                 duties, botGuid);
+            if (MixtureHealingHeld(board, observation, plan.PriorityHealTarget))
+            {
+                plan.HealingDisabled = true;
+                plan.HealingHoldReason = "mixture_floor_only_conserve_mana";
+            }
+        }
 
         // Non-tanks hold from 23% until the release and a settled handoff.
         // Tanks keep threat and self-healing above the handoff line, hold

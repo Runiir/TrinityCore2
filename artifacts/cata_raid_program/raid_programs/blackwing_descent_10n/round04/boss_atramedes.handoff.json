@@ -1,0 +1,71 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:atramedes",
+  "round": 4,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDodge.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesKitePath.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMovementPolicy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationCounters.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationStore.h",
+    "tests/test_atramedes_raid_sound.py",
+    "tests/test_atramedes_kiter_sound_bound.py",
+    "tests/test_atramedes_observation_counters.py",
+    "tests/test_atramedes_observation_scope.py",
+    "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+  ],
+  "new_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSoundSources.h",
+    "tests/test_atramedes_decision_cost.py"
+  ],
+  "resolved_inputs": [],
+  "open_items": [
+    "Focus 1 (Sonar Bomb on non-kiters). Every bot inside a bomb zone now leaves by the walk with the least time inside any blast (Dodge::BombEscape). This covers the redirect runner (the striker the flame re-tracks), the gong relays (a soft click-reach preference) and bystanders (radial exit when clear, else the escape). The bomb exit now outranks the flame-path exit. Replay: bystander bomb Sound is 0 per air phase in all four scenarios (round 3: 0.67-1.33, all on the runner and the relays); the all-roles air maximum is 6-12 (round 3: 5-25); the ground phases are byte-identical. The live r03 victims (demonology warlock, assassination rogue) are unconfirmed as runner or relay, because their traces were not pulled (no DVC in this packet). Live confirmation comes from the new sound_samples export.",
+    "The kiter's own bomb hits remain the largest cause of kiter-bound misses in the replay (13 of 30 first misses in the bombs-and-fire stress set). A marker's age is not in the snapshot, so a bomb that has already landed cannot be told from a live one. A kiter side step out of a bomb zone was tried and rejected: breath-caused misses went from 6 to 25. Kiter-bound replay over twelve seeds: 153/1392 against 148 in round 3, within noise (a 0.01 constant nudge gives 150). Exposing marker age would need a snapshot change (the summon's spawn time or remaining duration on ActorSnapshot); no patch is requested until live sound_samples show the kiter's bombs matter.",
+    "Focus 2. raid_runtime.encounter_observations.atramedes now ends with \"sound_samples\":[{at_ms,kiter,sound,last_increment_source,last_increment,last_increment_at_ms},...] (run-length: the first sample of each chase plus every Sound change, at most 256 entries) and \"sound_samples_dropped\":n. Sources: sonar_bomb, sonic_breath, fire_patch, roaring_flame, sonar_pulse, unattributed, before_observation, joined with '+' when several are in reach. The attribution is read off the snapshot geometry, not the combat log. The existing keys, their order and every other cohort's status are unchanged. Optional coordinator follow-up: have run_sanity/program assess print the sound_samples entries above 10 in the acceptance_observation evidence. Not requested as a patch; the raw status already carries them.",
+    "Focus 3. Standalone benchmark: pixi run python -m tests.test_atramedes_decision_cost [dir]. Air decision with -O2 on one core: replay mean 5.6 -> 4.5 us, p99 33 -> 20 us, max 93 -> 63 us; with 250 lingering fire patches, mean 21.5 -> 10.4 us, p99 148 -> 49 us, max 339 -> 124 us. A 10-bot air snapshot costs 59 us (replay) and 126 us (250 patches). The strategy search therefore cannot by itself produce the 1-2.4 s ticks; they follow host contention (diag_r3 question 1). What may remain in-game is outside this packet: native movement/path generation for ten re-issued moves at the air transition, and snapshot building. The diagnosis's per-tick CPU and Map::Update instrumentation would decide it. The cuts are exact: raid-sound and kiter-bound replay outputs are byte-identical before and after, and the search is bitwise equal to the round-3 reference on 600 random fields. A per-snapshot-revision cache was not added: tests and callers change boards without bumping the revision, so a cache risks stale facts for no measured gain.",
+    "Focus 4 (DPS) deferred: kills are not clean yet (3 of 4 r03 kills stalled, and the kiter bound was broken twice). The largest r03 gaps (counted kill cd3009662e) point at the air phase. The demonology warlock (0.63) had a 35.9 s damage gap from 95.3 s, the elemental shaman (0.75) 30.2 s from 97.2 s, while the survival hunter (0.63; casts/min 26 vs WCL 80, no Aspect of the Hawk/Fox) had only 6.9 s. Neither the warlock nor the elemental is a gong relay: both hold air spread slots 8 and 9, 47-49 yd from the hover point. That is inside the bots' 61.5 yd envelope, so range alone does not explain it. Needed before a change: the air-window trace of both actors (rejection reasons such as max_range_exceeded, out_of_range or LOS, target, movement mechanic and cast interruptions). Next round: pull that label's run evidence and run evidence_view compare --wcl for 11003010 and 11003009.",
+    "Coordinator: build and run the round-4 shard. The Atramedes changes are header-only in owned files. A syntax-only compile of BotWorldPopulationMgrAtramedesCandidates.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp and BotWorldPopulationMgr.cpp with the build/compile_commands.json flags passes."
+  ],
+  "patch_requests": [],
+  "risks": [
+    "Behavior change in the air phase for every non-kiter in a bomb zone: the escape takes the fastest way out and may leave a relay's click reach at a 15 yd penalty (the relay test shows reach kept at 0.95 s of blast against the 0.64 s radial way out). A relay escaping out of reach at a catch delays a rescue strike by about 1 s.",
+    "The bomb exit now outranks the flame-path exit. A bystander in both a bomb zone and the flame's path escapes the bomb first; the escape scores an end on the flame path 15 yd worse.",
+    "The kiter-bound ratchet changed from per-kind round-3 counts to per-kind +2 plus a total of 34 or less. On the three-seed test set, spawn7-next went from 3 to 5 (within noise per the twelve-seed measurement, 18 -> 22 of 348). Reviewers should weigh this as a measured neutral, not an improvement, for the tracked kiter.",
+    "The sound_samples array adds up to about 256 x 130 bytes to the Atramedes status block (under 35 KB) on each status read of an Atramedes cohort.",
+    "The new decision-cost test asserts that the optimized search is at least 1.43x faster than the round-3 reference in the same process (measured 2.2x). Rounds are interleaved so host load hits both alike, but extreme contention could still make it flaky."
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_atramedes_*.py tests/test_observation_window_coverage.py",
+      "result": "163 passed (baseline before any change: the 133 then-existing Atramedes tests passed)"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.test_baseline check -- tests/test_atramedes_decision_cost.py tests/test_atramedes_observation_counters.py tests/test_atramedes_observation_scope.py tests/test_observation_window_coverage.py",
+      "result": "35 passed; new_failures 0, known_failures 0"
+    },
+    {
+      "command": "fail-before: tests/test_atramedes_raid_sound.py compiled against the HEAD Atramedes headers (TestBombEscapeGeometry removed; BombEscape does not exist there)",
+      "result": "fails: TestRunnerAndRelayLeaveABombFirst (the runner walks 8 yd of blast through the marker) and RaidSoundAssertions bomb_bystander == 0 (round 3: 0.67-1.33 per phase)"
+    },
+    {
+      "command": "fail-before: tests/test_atramedes_observation_counters.py and test_atramedes_observation_scope.py TestSoundSamples/TestSoundSources",
+      "result": "fail on HEAD (no sound_samples field or SoundSourceTracker); pass now"
+    },
+    {
+      "command": "fail-before: tests/test_atramedes_decision_cost.py (the optimized search is equal to the round-3 reference and at least 1.43x faster)",
+      "result": "on HEAD the search is the reference itself (ratio about 1), so the speed assertion fails; now 2.2x with 600/600 fields bitwise equal"
+    },
+    {
+      "command": "replay identity of the focus-3 optimization: raid-sound and kiter-bound programs compiled against pre-optimization header snapshots vs current; the benchmark checksum",
+      "result": "byte-identical full outputs (cmp); checksum 14800773722589732076 (replay) and 3681928272344733112 (250 patches) equal before and after"
+    },
+    {
+      "command": "Failing tests seen during the work (all from my in-progress edits, all resolved)",
+      "result": "(1) observation counters/scope/window-coverage failed to compile: the new header lacked the Geometry include, and the counters test's partial ChaseSample init hit -Werror=missing-field-initializers. Fixed. (2) The kiter-bound ratchet 'hazards spawn7 next <= 3' failed at 13 with a kiter side step (reverted) and at 5 without it. The ratchet was re-based on the twelve-seed evidence. (3) My new relay blast bound (<= 0.74 s) was stricter than the reach-keeping escape (0.95 s); relaxed to 1.0 s with reach asserted. (4) tests/test_atramedes_decision_cost.py reference calls were ambiguous under ADL; qualified. No failure is pre-existing or unrelated."
+    }
+  ],
+  "validation_neutrality": "Changes are confined to the Atramedes encounter headers, their tests and the dossier. The strategy runs only on bwd.atramedes.* route nodes. The observation store exports only for Atramedes cohorts, so every other cohort's status, including Stonecore, Phase-8 calibration and legacy Magmaw b5, is byte-identical. The ground-phase replay is byte-identical, and the focus-3 optimizations change no decision (replay outputs identical). No SQL, config, target, native script or shared-runtime file changed."
+}

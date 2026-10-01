@@ -271,9 +271,14 @@ class BossWindow:
         self.last = _int((window or {}).get("last_at_ms"))
         self.known = window is not None and self.first > 0 and self.last >= self.first
         self.start, self.end = (self.first, self.last) if self.known else (0, 0)
+        # A window closed at a native full wipe (analyze_combat_log): the attempt ended there, so nothing
+        # after it is in the window, not even on the encounter node (a revive into the live encounter).
+        self.wipe_at = _int((window or {}).get("full_wipe_at_ms")) or None
 
     def has_event(self, event: Mapping[str, Any]) -> bool:
         at = _int(event.get("timestamp_ms"))
+        if self.known and self.wipe_at is not None and at > self.wipe_at:
+            return False
         return self.known and (event.get("route_node_id") == self.node or self.first <= at <= self.last)
 
     def has_time(self, at: int) -> bool:

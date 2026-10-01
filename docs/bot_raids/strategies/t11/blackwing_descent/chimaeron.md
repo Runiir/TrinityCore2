@@ -239,7 +239,9 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   The first version (bands at 20/24.5/29.5 yd with a 1 yd tolerance) failed that corner in
   review: with the hunter 0.9 yd back and the middle band 0.9 yd forward, the hunter's Slime had
   one recipient. Healer cooldowns, cast from the healers' band:
-  - the Discipline Priest casts Power Word: Barrier at 16.5-12 s of Feud remaining (Slimes resume);
+  - the Discipline Priest casts Power Word: Barrier at 15.5-12.5 s of Feud remaining (16.5-12 s
+    until round 4). WCL puts the volleys at 12.3-12.8 s and 6.2-7.0 s left, so the 10 s Barrier
+    covers both;
   - the Restoration Shaman casts Spirit Link Totem at 11-7 s.
 
   The two Slime volleys of an outage come at about 15 s and 9 s of Feud left, one for each
@@ -269,8 +271,24 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
     Shaman were healing DPS players at 1 health.
   - every mixture-protected player at or below 20,000 health (bot margin over the 10,000 floor) is
     healed in health order, and the healers split that list;
-  - during an outage, healers heal by health percentage;
+  - nothing else is healed while the mixture is up (round 4). Every Massacre sets the raid back to 1
+    health, so health above the floor is lost mana: Wowhead says to heal everyone above 10,000, and
+    Icy Veins heals the Break tank to 10,000 and the Double Attack tank to full. A healer with no
+    entry holds (`HealingDisabled`, reason `mixture_floor_only_conserve_mana`) instead of the
+    runtime's default top-up of the lowest member below 94%. A hostile other than the boss fighting
+    the raid lifts the hold;
+  - during an outage, Feud pacifies the boss for the whole outage, so tanks are ordinary members of
+    the stack. Everyone is first raised above the slime line, lowest absolute health first. The
+    line is the member's share of both volleys (10N 2 × 235,200 / living, 25N 4 × 270,480 / living)
+    plus 10,000: 57,040 with ten alive. Then members below 90% are healed by health percentage;
   - under Mortality nothing is published (healing is 99% reduced).
+- **Healer mana cooldowns** (round 4). While the mixture is up, with no floor, soak or slime-line
+  entry, the Massacre timer at 10 s or more and the boss above 23%, the Holy Paladin proposes
+  Divine Plea and the Restoration Shaman Mana Tide Totem. Divine Plea halves healing for 9 s, so it
+  ends before the Massacre lands. The snapshot carries no mana, so the runtime casts one only below
+  the caster's own mana line (85% and 75%), and only when the spell is known and ready. Otherwise
+  it skips with `chimaeron_mana_cooldown_not_needed`. The canonical Discipline Priest knows neither
+  Shadowfiend nor Hymn of Hope (provisioning), so it has no mana cooldown here.
 - **Burn window** (both guides pause around 22-25%, then lust and push). One sequence, held →
   armed → handoff → push:
   - from 23%, non-tanks hold damage; tanks keep attacking above 21.5% (threat, Death Strike) and
@@ -511,3 +529,33 @@ mean ratio 0.95-1.01 to WCL). T is the first boss melee.
     is engaged.
   - Chimaeron-owned: a boss back asleep at the encounter node is Prewake and is never pulled.
   - Route request: re-run Finkle's gossip after a wipe at the encounter node.
+- Raid program round 3 (label `blackwing_descent_10n-r03-a3864fcf6d`, tier-11 gear, four runs; the
+  diagnosis is in the round-3 coordinator notes): 4/4 wipes at the first outage, which the 10N
+  knockout rule moved to the third Massacre (about 90 s in).
+  - The two Slime volleys after the knockout killed 7-8 members at 1-25k health within 6 s. The
+    stack was correct: the volleys hit 10, 6 and 13 targets.
+  - Healing in the outage window was 0.77-0.81 M, against 1.70 M in round 2. The Discipline Priest
+    did 86-107k there (349k in round 2) and moved to the slow Heal, the pattern of a mana-gated
+    profile.
+  - Between the first two Massacres the healers did 1.19-1.22 M healing. The floor needs about
+    0.2 M; the rest was the runtime's default top-up, which the next Massacre erased.
+  - The tank healer spent the outage on the tanks, although Feud pacifies the boss.
+  - Chimaeron melee was 0.881 times WCL over 30 swings in one run. That is just outside the ±10%
+    band, and the scoreboard recorded it as a warning. It is below WCL, so it does not explain the
+    wipes. The DamageModifier stays at 20.
+- Fixes (round 4, strategy only, native script unchanged): hold the mixture top-up, add the slime
+  line and pacified tanks in the outage, move the Barrier window, and add the healer mana cooldowns
+  (see "Healing" and "Healer mana cooldowns" above).
+- Open (runtime and roster, outside the strategy): the heartbeat status does not show healer mana.
+  The canonical Discipline Priest has no Shadowfiend or Hymn of Hope. Nothing uses mana potions
+  in combat.
+- World-tick spikes after the first Massacre (0.5 s, in every batch, the quiet one included).
+  - The Chimaeron plan is O(players) per bot and revision: duties, the urgency list and the slots,
+    ten members, a few sorts. The native script has no per-tick work that scales with raid health.
+  - What changes at that moment is that all ten members sit at 1 health. That starts the runtime's
+    heal path (`SelectHealSpell`, which builds candidate masks and JSON receipts on every attempt)
+    for every healer on every decision. Mana-gated profiles then return `no_trained_heal` retries,
+    each with a combat-attempt receipt.
+  - The mixture hold removes those attempts while the mixture is up, but it does not prove that
+    they were the cost. Settling it needs per-stall CPU and per-candidate timing in the tick
+    recorder (a runtime request).

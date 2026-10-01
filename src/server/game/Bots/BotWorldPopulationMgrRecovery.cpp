@@ -2,9 +2,11 @@
 
 #include "Bots/BotCanonicalRaidScope.h"
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotFullWipeRelease.h"
 #include "Bots/BotWorldPopulationMgrGhostFlight.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Corpse.h"
+#include "DataStores/DBCStores.h"
 #include "DataStores/DBCStructure.h"
 #include "GameTime.h"
 #include "Group.h"
@@ -335,6 +337,23 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                 state.NativeRecoveryEpisodeRouteGeneration);
         return false;
     };
+
+    // Player::RepopAtGraveyard's own in-place resurrection conditions: after a
+    // native full wipe such a release is no runback (BotFullWipeRelease.h).
+    if (char const* inPlace = BotFullWipeRelease::TerminalReason(
+            BotCanonicalRaidScope::IsCanonicalRaid(Cohort().Raid.RaidInstance,
+                Cohort().Config.ValidationRouteScenarioId),
+            IsNativeRaidRecoveryEvidencePending(),
+            bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST),
+            BotFullWipeRelease::ReleaseRevivesInPlace(bot->GetTransport() != nullptr,
+                [bot]
+                {
+                    AreaTableEntry const* area = sAreaTableStore.LookupEntry(bot->GetAreaId());
+                    return area && area->GetFlags().HasFlag(AreaFlags::NoGhostOnRelease);
+                }(),
+                bot->GetMap() && bot->GetPositionZ() < bot->GetMap()->GetMinHeight(
+                    bot->GetPhaseShift(), bot->GetPositionX(), bot->GetPositionY()))))
+        return terminal(inPlace);
 
     if (!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
     {

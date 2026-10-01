@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotActiveSpecIdentity.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
+#include "Bots/BotNativeLifeEvents.h"
 #include "Bots/BotWorldPopulationMgrCalibrationIdentity.h"
 
 #include "CharmInfo.h"
@@ -636,6 +637,13 @@ void BotWorldPopulationMgr::UpdateValidationCohortRaidRuntime(
         if (previousWipeState != "wiped")
         {
             ++raid.WipeGeneration;
+            // The attempt ends here: the harness closes the boss window at
+            // this edge and judges it a wipe (BotNativeLifeEvents::FullWipe).
+            BotNativeLifeEvents::ObserveFullWipe(Cohort().Id,
+                BotNativeLifeEvents::LifecycleScope(Cohort().Id, Cohort().AttemptId),
+                { raid.WipeGeneration, NowMs(), Party().ValidationRouteGeneration,
+                    Cohort().Config.ValidationRouteNodeId, Cohort().Config.ValidationRouteKind,
+                    raid.EncounterInProgress });
             // A prepared or delivered trash charge belongs to the exact
             // pre-wipe attempt. Never allow a same-node recovery to consume
             // it as a new-attempt lane decision or interval baseline.

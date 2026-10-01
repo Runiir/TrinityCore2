@@ -1,6 +1,14 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotRaidHealerManaStatus.h"
+
+#include "ObjectAccessor.h"
+#include "Player.h"
+
 #include <sstream>
+#include <utility>
+#include <vector>
 
 void BotWorldPopulationMgr::AppendRaidPrepullConsumablesJson(
     std::ostringstream& json) const
@@ -100,4 +108,29 @@ void BotWorldPopulationMgr::AppendRaidPrepullConsumablesJson(
     }
     json << "],\"validation_checkpoint\":"
          << raid.ValidationPrepullCheckpoint.ToJson() << "}";
+
+    // Canonical raids with a healer: the healers' current mana, a sibling
+    // raid_runtime field (BotRaidHealerManaStatus.h); "" everywhere else.
+    if (!BotCanonicalRaidScope::IsCanonicalRaid(raid.RaidInstance,
+            Cohort().Config.ValidationRouteScenarioId))
+        return;
+    std::vector<BotRaidHealerManaStatus::Row> healers;
+    for (auto const& [guid, slot] : raid.RosterByGuid)
+    {
+        if (slot.Role != "healer")
+            continue;
+        BotRaidHealerManaStatus::Row row;
+        row.Guid = guid;
+        row.Name = slot.CharacterName;
+        row.ClassSpec = slot.ClassSpec;
+        if (Player const* healer = ObjectAccessor::FindPlayer(slot.Guid))
+        {
+            row.Present = true;
+            row.Alive = healer->IsAlive();
+            row.Mana = healer->GetPower(POWER_MANA);
+            row.MaxMana = healer->GetMaxPower(POWER_MANA);
+        }
+        healers.push_back(std::move(row));
+    }
+    json << BotRaidHealerManaStatus::JsonField(healers);
 }

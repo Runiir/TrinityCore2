@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
+#include "Bots/BotPetAreaGuard.h"
 #include "Bots/BotProtectedTargetReach.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CellImpl.h"
@@ -334,6 +335,62 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target,
             continue;
         if (reach.From == Anchor::Target && !TargetAnchoredCandidateInReach(reach,
                 creature->GetExactDist2d(target), creature->GetMeleeRange(owner)))
+            continue;
+        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
+                owner->GetGUID().GetRawValue(), creature->GetEntry(),
+                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
+            return true;
+    }
+    return false;
+}
+}
+
+namespace BotPetAreaGuard
+{
+namespace
+{
+// Largest native area radius the spell (or a spell it triggers) can select
+// targets in, as the caster's Spell would compute it; 0 when none resolves.
+float NativeAreaRadius(SpellInfo const* spellInfo, Unit* caster, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return 0.0f;
+    float radius = 0.0f;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        for (SpellTargetIndex index : { SpellTargetIndex::TargetA, SpellTargetIndex::TargetB })
+            if (effect.HasRadius(index))
+                radius = std::max(radius, effect.CalcRadius(caster, index));
+        if (effect.TriggerSpell)
+            radius = std::max(radius, NativeAreaRadius(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), caster, depth + 1));
+    }
+    return radius;
+}
+}
+
+bool PetAreaSpellReachesProtectedTarget(Player* owner, Unit* pet, SpellInfo const* spellInfo)
+{
+    if (owner && !IsScoped(owner->GetGUID().GetRawValue()))
+        return false;
+    if (!owner || !pet || !spellInfo || !pet->IsInWorld())
+        return true;
+    if (!BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
+        return false;
+
+    float const collectRadius = CollectRadius(NativeAreaRadius(spellInfo, pet));
+    std::vector<WorldObject*> nearbyObjects;
+    Trinity::AllWorldObjectsInRange check(pet, collectRadius);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+        pet, nearbyObjects, check);
+    Cell::VisitAllObjects(pet, searcher, BotProtectedTargetReach::VisitRadius(collectRadius));
+    for (WorldObject* object : nearbyObjects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || !creature->IsAlive() || !pet->IsValidAttackTarget(creature))
             continue;
         if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
                 owner->GetGUID().GetRawValue(), creature->GetEntry(),

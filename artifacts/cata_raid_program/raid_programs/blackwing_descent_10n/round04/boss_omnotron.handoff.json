@@ -1,0 +1,57 @@
+{
+ "schema": "raid_program_handoff_v1",
+ "packet_id": "boss:omnotron",
+ "round": 4,
+ "changed_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp",
+  "tests/test_omnotron_research_packet.py",
+  "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md"
+ ],
+ "new_files": [
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronTankSurvival.h",
+  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronPetShieldGuard.h",
+  "tests/test_omnotron_tank_survival.py"
+ ],
+ "resolved_inputs": [],
+ "patch_requests": [],
+ "tests": [
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider tests/test_omnotron_tank_survival.py -q (first run)",
+   "result": "1 failed, 3 passed: test-only compile error (ambiguous ObjectGuid(HighGuid, uint32, int) literal in the test program); fixed with 2u; not a product failure"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider tests/test_omnotron_*.py tests/test_bot_content_ownership_layout.py -q (after tank survival, before updating the capture count)",
+   "result": "1 failed, 55 passed: test_omnotron_research_packet.py::test_runtime_candidate_attempts_capture_only_live_context asserted 5 Attempt lambdas; caused by this change (new candidates, captures comply with the &context rule); the count was updated to 7 with a comment. Relevant, intended contract update"
+  },
+  {
+   "command": "pre-fix probe: new tests run with BotOmnotronTankSurvival.h and BotOmnotronPetShieldGuard.h removed and the candidates cpp at HEAD (scratch copies under ~/.cache, restored afterwards)",
+   "result": "7 failed (all 6 new tests + the updated capture-count test), 11 passed: the tests fail before the fix"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -p no:cacheprovider tests/test_omnotron_*.py -q",
+   "result": "55 passed"
+  },
+  {
+   "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. pixi run python -m tools.raid_program.test_baseline check -- tests/test_omnotron_{defense_system_damage_modifier,positioning,recovery_readycheck,research_packet,route_geometry,strategy,tank_survival}.py tests/test_bot_content_ownership_layout.py",
+   "result": "58 passed, 0 failed; new_failures 0, known_failures 0 (baseline from 94cbcdf3fb, HEAD 4d4ec2e193)"
+  },
+  {
+   "command": "syntax-only compile of BotWorldPopulationMgrOmnotronCandidates.cpp with the build/compile_commands.json flags (-fsyntax-only)",
+   "result": "rc 0; only the pre-existing <ciso646> warning from G3D"
+  }
+ ],
+ "open_items": [
+  "Melee fidelity verdict: DamageModifier 11.2 is correct. Per swing over the four r03 logs, attacker_published_min_damage shows the multiplier (a -10% debuff moves the physical weapon roll, so after_attacker/weapon_roll is always 1.01). Unreduced swings average 62.6-65.6k against the calibrated 63.6k; -10% swings average 55.7-59.0k against 57.3k. The 1.12-1.15x ratio comes from (a) the WCL u_mean including -10% rows while the Feral's constructs never carried one, and (b) 33 Power Generator +50% swings, mostly on ranged players and healers in the generator after the tanks died. Tier-11 armor is irrelevant (the stage is before armor). Scarlet Fever 81130 works natively. Suggest to the coordinator: have run_sanity boss_melee_fidelity compare per multiplier class (published min / (native min x modifier) = 1.0 vs 0.9) and exclude 1.5x generator swings, so the warning stops pointing at DamageModifier.",
+  "Healer idleness outside my files: in cd3009 the Holy paladin cast nothing for 13.6 s while the Feral fell from 140k to 0, and the healers logged 62-78 'no_valid_profile_action requires_ally_target' outcomes per run. The new Omnotron tank-heal duty bypasses this on this boss. The generic healer target selection (raid-role-implementation) should be checked; it may explain the Chimaeron and Nefarian healing collapse as well.",
+  "Felstorm start guard: the coordinator's in-progress BotPetAreaGuard.h / BotActionExecutor.cpp change also covers Omnotron, because the shielded constructs are the owner's current restricted entries (HasProtectedEncounterEntries includes CurrentRestrictedEntriesByOwner). Note that it also refuses Felstorm next to an inactive construct, since every construct entry is restricted. The Omnotron cancel candidate covers a whirl that is already running when a shield goes up.",
+  "Verify live that the Feral knows Demoralizing Roar (99) in bear form, and that Survival Instincts, Frenzied Regeneration (22842, provisioned), Barkskin, Pain Suppression and Lay on Hands appear in action_outcomes. An unknown or cooling spell is skipped silently (HasActiveSpell / SpellHistory IsReady).",
+  "The next live run must show: no boss-window tank death; Static Shock 79912 hits near 0; the Feral's constructs with 0.9x published ranges; the omnotron_tank_* and felstorm_cancel_beside_shield actions in the trace."
+ ],
+ "risks": [
+  "The healer tank-heal duty (Mechanic priority, Survival below 50%) outranks the generic raid healing while a construct victim is under 85% (paladin) or 95% (priest shield). Incineration Security Measure raid healing may suffer, and the paladin spends more mana. The priest heals a tank directly only below 60%/45%, to limit that.",
+  "Felstorm cancel uses WorldSession::HandlePetCancelAuraOpcode (CMSG_PET_CANCEL_AURA). 89751 has no SPELL_ATTR0_CANT_CANCEL (attr0 0x00050010), so it is a normal player action. It costs Felguard damage for the rest of that whirl.",
+  "The survival submission recomputes Observe(board) once per bot per tick while the plan owns the node (10 players, at most 4 constructs). The world-thread cost is small; watch the stall fraction.",
+  "Thresholds are tactic parameters, not research values. The major cooldowns (Survival Instincts, Icebound Fortitude, Pain Suppression) may be spent early on one pull and be missing for a later double-construct window."
+ ],
+ "validation_neutrality": "Every new decision is gated on board.Route.NodeId == bwd.omnotron.encounter, EncounterFacts.Engaged and context.AdaptiveOmnotronOwnsNode, inside the Omnotron-only submitter. No shared file, class profile, SQL, DB value or boss script changed. Stonecore, Phase-8 calibration, legacy Magmaw b5 and every other BWD boss are unaffected (byte-reproducible). Native boss values (DamageModifier 11.2 and every spell value) are unchanged."
+}

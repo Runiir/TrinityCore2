@@ -411,11 +411,13 @@ int main()
         AdaptiveMaloriakPlan const clear = Plan(board, DISC);
         CHECK(clear.Movement && clear.Movement->Id.Mechanic == "flash_freeze_shatter_clearance");
         CHECK(Dist(Destination(clear), block.Position) >= 7.9f);
-        // Biting Chill: step away from the nearest ally.
+        // Biting Chill: a melee player at the boss takes a clear melee ring
+        // point away from its allies (round 4; test_maloriak_round4_reach.py).
         board.Players[ROGUE].Auras.push_back({ 77760, Boss(board).Guid, 1, board.ObservedAtMs + 9000 });
         board.Players[RET].Position = { -107.0f, -457.0f, 73.6f };
         AdaptiveMaloriakPlan const chill = Plan(board, ROGUE);
-        CHECK(chill.Movement && chill.Movement->Id.Mechanic == "biting_chill_isolation");
+        CHECK(chill.Movement && chill.Movement->Id.Mechanic == "biting_chill_ring_isolation");
+        CHECK(Dist(Destination(chill), board.Players[RET].Position) >= 5.49f);
     }
 
     // Add control: Aberrations are burned as they come (in the slime window

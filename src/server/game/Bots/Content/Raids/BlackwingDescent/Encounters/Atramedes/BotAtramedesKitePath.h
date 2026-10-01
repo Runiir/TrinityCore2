@@ -63,6 +63,10 @@ inline float SecondsInside(Vector3 const& from, Vector3 const& to, Vector3 const
     float const a = length * length;
     float const b = 2.0f * (fx * dx + fy * dy);
     float const c = fx * fx + fy * fy - radius * radius;
+    // Starting outside and heading away: never inside (the same 0 the roots
+    // give, without the square root).
+    if (c > 0.0f && b >= 0.0f)
+        return 0.0f;
     float const discriminant = b * b - 4.0f * a * c;
     if (discriminant <= 0.0f)
         return 0.0f;

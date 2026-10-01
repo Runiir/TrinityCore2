@@ -501,14 +501,334 @@ def killed_hostile_damage_reconciliation(
     }
 
 
+def full_wipes_from_status(status: Any) -> list[dict[str, Any]]:
+    """The native full-wipe edges a status exports (``raid_runtime.full_wipes``); [] without one.
+
+    The server's ledger is scoped to the cohort's native attempt; each row is
+    stamped with the status's ``attempt_id`` (when it has one) so a combat log
+    from another attempt is never closed by it.
+    """
+    runtime = status.get("raid_runtime") if isinstance(status, dict) else None
+    rows = runtime.get("full_wipes") if isinstance(runtime, dict) else None
+    if not isinstance(rows, list):
+        return []
+    attempt_id = status.get("attempt_id") if isinstance(status, dict) else None
+    wipes = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        wipe = dict(row)
+        if attempt_id is not None and "attempt_id" not in wipe:
+            wipe["attempt_id"] = attempt_id
+        wipes.append(wipe)
+    return wipes
+
+
+def _int_or_zero(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def matching_full_wipe(
+    full_wipes: list[dict[str, Any]] | None,
+    *,
+    route_generation: int,
+    route_node_id: str,
+    pull_at_ms: int,
+    capture_last_at_ms: int,
+    attempt_id: Any = None,
+) -> dict[str, Any] | None:
+    """The first native full wipe that ends this attempt, or ``None``.
+
+    The wipe belongs to the attempt by its native boundaries, not by outgoing
+    damage (the raid often stops dealing damage before the last member dies):
+    the same native attempt (``attempt_id``, when both sides name one), the
+    same route node and the same route generation, at or after the pull. A
+    wipe that names no route generation is bounded by the generation's last
+    captured event instead, because nothing else bounds it.
+    """
+    if pull_at_ms <= 0:
+        return None
+    wipes = sorted(
+        (row for row in full_wipes or [] if isinstance(row, dict) and _int_or_zero(row.get("at_ms")) > 0),
+        key=lambda row: _int_or_zero(row.get("at_ms")),
+    )
+    for wipe in wipes:
+        at_ms = _int_or_zero(wipe.get("at_ms"))
+        if at_ms < pull_at_ms:
+            continue
+        if attempt_id is not None and wipe.get("attempt_id") is not None and str(wipe["attempt_id"]) != str(attempt_id):
+            continue
+        node = str(wipe.get("route_node_id") or "")
+        if node and node != route_node_id:
+            continue
+        wipe_generation = _int_or_zero(wipe.get("route_generation"))
+        if wipe_generation:
+            if wipe_generation != route_generation:
+                continue
+        elif at_ms > capture_last_at_ms:
+            continue
+        return wipe
+    return None
+
+
+# Fields of a spanning record with no per-record evidence on the wipe's side:
+# they are never estimated. Position samples become missing data (0 samples).
+_UNATTRIBUTABLE_ROW_FIELDS = ("event_count", "raw_amount", "absorbed_amount", "moving_events", "distance_samples")
+
+
+def _row_key(row: dict[str, Any]) -> tuple[str, int, bool]:
+    return (str(row.get("perspective") or ""), _int_or_zero(row.get("actor_guid")), bool(row.get("source_is_pet")))
+
+
+def split_rows_at_full_wipe(
+    rows: list[dict[str, Any]], buckets: list[dict[str, Any]], at_ms: int
+) -> tuple[list[dict[str, Any]], dict[str, Any], set[tuple[str, int, bool]]]:
+    """Keep only the evidence of the attempt that ended at ``at_ms``.
+
+    Records are classified by their exact millisecond timestamps: a record
+    that ends at or before the wipe is kept, one that starts after it is
+    dropped. Only a record that genuinely spans the wipe is split, and only
+    with attributable evidence: its own pre-wipe amount is its
+    actor/perspective/source per-second buckets before the wipe minus every
+    other (non-spanning) record of that key, accepted only when it
+    reconciles on both sides of the wipe. The wipe's own second mixes both
+    sides, so a split is attributable only when that key's bucket for the
+    wipe second is empty (or the wipe is the second's last millisecond);
+    the whole second is never admitted. A spanning record that cannot be
+    attributed (another spanning record of the same key, no buckets, an
+    occupied wipe-second bucket, or buckets that do not reconcile) is never
+    estimated: it is credited with nothing and reported unresolved, which
+    leaves the window unmeasurable (``full_wipe_split_unresolved``).
+
+    Also returns the keys whose wipe-second bucket is attributable to the
+    attempt (a kept record of that key had an event in that second, at or
+    before the wipe); the caller keeps only those wipe-second buckets.
+    """
+    cut_s = at_ms // 1000
+    whole_second_before = at_ms % 1000 == 999
+
+    def side(second: int) -> str:
+        if second < cut_s or (second == cut_s and whole_second_before):
+            return "before"
+        return "wipe" if second == cut_s else "after"
+
+    groups: dict[tuple[str, int, bool], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[_row_key(row)].append(row)
+    sums: dict[tuple[str, int, bool], dict[tuple[str, str], int]] = defaultdict(lambda: defaultdict(int))
+    for bucket in buckets:
+        key = _row_key(bucket)
+        where = side(_int_or_zero(bucket.get("second")))
+        for field in ("amount", "originated_amount"):
+            if field in bucket:
+                sums[key][(field, where)] += _int_or_zero(bucket.get(field))
+        sums[key][("present", where)] += 1
+    kept: list[dict[str, Any]] = []
+    wipe_second_keys: set[tuple[str, int, bool]] = set()
+    dropped = resolved = 0
+    unresolved: list[dict[str, Any]] = []
+    for key, group in groups.items():
+        before = [row for row in group if _int_or_zero(row.get("last_at_ms")) <= at_ms]
+        after = [row for row in group if _int_or_zero(row.get("first_at_ms")) > at_ms]
+        settled = {id(row) for row in (*before, *after)}
+        spanning = [row for row in group if id(row) not in settled]
+        kept.extend(before)
+        dropped += len(after)
+        if whole_second_before or any(_int_or_zero(row.get("last_at_ms")) // 1000 == cut_s for row in before):
+            wipe_second_keys.add(key)
+        if not spanning:
+            continue
+        split = _attributed_split(spanning, before, after, sums.get(key), at_ms)
+        if split is None:
+            unresolved.extend({
+                "perspective": key[0], "actor_guid": key[1], "source_is_pet": key[2],
+                "spell_id": _int_or_zero(row.get("spell_id")),
+                "target_entry": _int_or_zero(row.get("target_entry")),
+                "amount": _int_or_zero(row.get("amount")),
+            } for row in spanning)
+            continue
+        kept.append(split)
+        resolved += 1
+    return kept, {
+        "resolution": "exact_ms_records_one_second_buckets_for_spanning",
+        "excluded_after_wipe": dropped,
+        "spanning_wipe": resolved + len(unresolved),
+        "spanning_split_by_own_second_buckets": resolved,
+        "spanning_unresolved": len(unresolved),
+        "unresolved_records": unresolved,
+    }, wipe_second_keys
+
+
+def _attributed_split(
+    spanning: list[dict[str, Any]],
+    before: list[dict[str, Any]],
+    after: list[dict[str, Any]],
+    sums: dict[tuple[str, str], int] | None,
+    at_ms: int,
+) -> dict[str, Any] | None:
+    """The one spanning record's own pre-wipe part, or ``None`` when it is not attributable."""
+    if len(spanning) != 1 or not sums or not (sums[("present", "before")] or sums[("present", "after")]):
+        return None
+    if sums[("amount", "wipe")] or sums[("originated_amount", "wipe")]:
+        return None  # the wipe's own second mixes both sides: not separable
+    row = spanning[0]
+    split = dict(row)
+    for field in ("amount", "originated_amount"):
+        if field not in row:
+            continue
+        own_before = sums[(field, "before")] - sum(_int_or_zero(other.get(field)) for other in before)
+        own_after = sums[(field, "after")] - sum(_int_or_zero(other.get(field)) for other in after)
+        if own_before < 0 or own_after < 0 or own_before + own_after != _int_or_zero(row.get(field)):
+            return None
+        split[field] = own_before
+    if "shared_amount" in row:
+        split["shared_amount"] = split["amount"] - split.get("originated_amount", split["amount"])
+    for field in _UNATTRIBUTABLE_ROW_FIELDS:
+        if field in split:
+            split[field] = 0
+    split["last_at_ms"] = at_ms
+    split["split_at_full_wipe"] = True
+    split["split_unattributed_fields"] = [field for field in _UNATTRIBUTABLE_ROW_FIELDS if field in row]
+    return split
+
+
+def close_encounters_at_full_wipes(
+    encounters: list[dict[str, Any]], full_wipes: list[dict[str, Any]] | None
+) -> None:
+    """Mark already-aggregated windows that a native full wipe ended.
+
+    Window bounds only: ``analyze_combat_log`` splits the evidence at the wipe
+    *before* it aggregates, so prefer passing ``full_wipes`` there. A window
+    that already carries an ``attempt_outcome`` is left unchanged, as is every
+    window without a matching wipe (byte-identical).
+    """
+    for encounter in encounters:
+        if encounter.get("attempt_outcome"):
+            continue
+        first = _int_or_zero(encounter.get("first_at_ms"))
+        last = _int_or_zero(encounter.get("last_at_ms"))
+        wipe = matching_full_wipe(
+            full_wipes,
+            route_generation=_int_or_zero(encounter.get("route_generation")),
+            route_node_id=str(encounter.get("route_node_id") or ""),
+            pull_at_ms=first,
+            capture_last_at_ms=max(last, _int_or_zero(encounter.get("capture_last_at_ms"))),
+        )
+        if wipe is None:
+            continue
+        at_ms = _int_or_zero(wipe.get("at_ms"))
+        encounter["unclipped_last_at_ms"] = last
+        encounter["last_at_ms"] = at_ms
+        encounter["duration_sec"] = round(max(1.0, (at_ms - first) / 1000.0), 3)
+        _mark_full_wipe(encounter, wipe)
+
+
+def _mark_full_wipe(encounter: dict[str, Any], wipe: dict[str, Any]) -> None:
+    encounter["full_wipe_at_ms"] = _int_or_zero(wipe.get("at_ms"))
+    encounter["full_wipe_generation"] = _int_or_zero(wipe.get("wipe_generation"))
+    encounter["attempt_outcome"] = "full_wipe"
+    encounter["encounter_window_boundary_basis"] = "first_positive_originated_damage_to_full_wipe"
+
+
+def _full_wipe_cuts(
+    by_generation: dict[int, list[dict[str, Any]]],
+    buckets: list[dict[str, Any]],
+    full_wipes: list[dict[str, Any]] | None,
+    attempt_id: Any,
+) -> dict[int, dict[str, Any]]:
+    """Per route generation, the native full wipe that ended its attempt and its pre-wipe evidence."""
+    cuts: dict[int, dict[str, Any]] = {}
+    if not full_wipes:
+        return cuts
+    for generation, rows in by_generation.items():
+        timestamps = [
+            value
+            for row in rows
+            for value in (_int_or_zero(row.get("first_at_ms")), _int_or_zero(row.get("last_at_ms")))
+            if value > 0
+        ]
+        damage = [
+            row for row in rows
+            if row.get("perspective") == "damage_done" and _originated_amount(row) > 0
+        ]
+        damage_timestamps = [
+            value
+            for row in damage
+            for value in (_int_or_zero(row.get("first_at_ms")), _int_or_zero(row.get("last_at_ms")))
+            if value > 0
+        ]
+        capture_last = max(timestamps, default=0)
+        node_id = next((str(row.get("route_node_id") or "") for row in rows if row.get("route_node_id")), "")
+        pull_at_ms = min(damage_timestamps, default=min(timestamps, default=0))
+        wipe = matching_full_wipe(
+            full_wipes,
+            route_generation=generation,
+            route_node_id=node_id,
+            pull_at_ms=pull_at_ms,
+            capture_last_at_ms=capture_last,
+            attempt_id=attempt_id,
+        )
+        if wipe is None:
+            continue
+        at_ms = _int_or_zero(wipe.get("at_ms"))
+        generation_buckets = [
+            row for row in buckets if _int_or_zero(row.get("route_generation")) == generation
+        ]
+        kept, evidence, wipe_second_keys = split_rows_at_full_wipe(rows, generation_buckets, at_ms)
+        cuts[generation] = {
+            "wipe": wipe,
+            "at_ms": at_ms,
+            "rows": kept,
+            "evidence": evidence,
+            "wipe_second_keys": wipe_second_keys,
+            "unclipped_last_at_ms": max(damage_timestamps, default=capture_last),
+            "unclipped_capture_last_at_ms": capture_last,
+            # The attempt's identity and pull stay those of its whole evidence,
+            # even when an unresolved split leaves no credited record.
+            "pull_at_ms": pull_at_ms,
+            "route_node_id": node_id,
+            "route_label": next((str(row.get("route_label") or "") for row in rows if row.get("route_label")), ""),
+        }
+    return cuts
+
+
+def _bucket_in_attempt(row: dict[str, Any], cuts: dict[int, dict[str, Any]]) -> bool:
+    """A per-second bucket belongs to the attempt: before the wipe's second, or in it when attributable."""
+    cut = cuts.get(_int_or_zero(row.get("route_generation")))
+    if cut is None:
+        return True
+    second, cut_s = _int_or_zero(row.get("second")), int(cut["at_ms"]) // 1000
+    return second < cut_s or (second == cut_s and _row_key(row) in cut["wipe_second_keys"])
+
+
+def _drop_after_full_wipe(
+    rows: list[dict[str, Any]], cuts: dict[int, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Drop outcome/rejection records that began after their generation's full wipe."""
+    kept = []
+    for row in rows:
+        cut = cuts.get(_int_or_zero(row.get("route_generation")))
+        if cut is not None and _int_or_zero(row.get("first_at_ms")) > int(cut["at_ms"]):
+            continue
+        kept.append(row)
+    return kept
+
+
 def analyze_combat_log(
     combat_log: dict[str, Any],
     unit_deaths: list[dict[str, Any]] | None = None,
+    full_wipes: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics.
 
     ``unit_deaths`` (optional) confirms deaths whose killing blow was not
-    logged; see ``killed_hostile_damage_reconciliation``.
+    logged; see ``killed_hostile_damage_reconciliation``. ``full_wipes``
+    (optional, the status's ``raid_runtime.full_wipes``) ends an encounter
+    at the first native full wipe of its attempt (same attempt, route node and
+    route generation): its evidence is split at the wipe before aggregation.
     """
     schema_version = _combat_log_schema_version(combat_log)
     friendly_split_available = (
@@ -528,6 +848,16 @@ def analyze_combat_log(
     by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in abilities:
         by_generation[int(row.get("route_generation") or 0)].append(row)
+    logged_counts = (len(buckets), len(action_outcomes), len(candidate_rejections))
+    wipe_cuts = _full_wipe_cuts(by_generation, buckets, full_wipes, combat_log.get("attempt_id"))
+    if wipe_cuts:
+        # A native full wipe ends the attempt: split its evidence at the wipe
+        # before any actor, ability, healing or DPS aggregate is computed.
+        for generation, cut in wipe_cuts.items():
+            by_generation[generation] = cut["rows"]
+        buckets = [row for row in buckets if _bucket_in_attempt(row, wipe_cuts)]
+        action_outcomes = _drop_after_full_wipe(action_outcomes, wipe_cuts)
+        candidate_rejections = _drop_after_full_wipe(candidate_rejections, wipe_cuts)
     action_outcomes_by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in action_outcomes:
         action_outcomes_by_generation[int(row.get("route_generation") or 0)].append(row)
@@ -587,6 +917,10 @@ def analyze_combat_log(
         # Keep the full capture bounds below so the tail remains diagnostic.
         first_ms = min(damage_timestamps, default=capture_first_ms)
         last_ms = max(damage_timestamps, default=capture_last_ms)
+        cut = wipe_cuts.get(generation)
+        if cut is not None:
+            first_ms = int(cut["pull_at_ms"])
+            last_ms = int(cut["at_ms"])
         duration_sec = max(1.0, (last_ms - first_ms) / 1000.0)
         capture_duration_sec = max(
             1.0, (capture_last_ms - capture_first_ms) / 1000.0
@@ -608,6 +942,8 @@ def analyze_combat_log(
         combat_seconds = max(1, len(raw_event_damage_seconds))
         node_id = next((str(row.get("route_node_id") or "") for row in rows if row.get("route_node_id")), "")
         label = next((str(row.get("route_label") or "") for row in rows if row.get("route_label")), "")
+        if cut is not None:
+            node_id, label = node_id or cut["route_node_id"], label or cut["route_label"]
 
         actor_guids = sorted({int(row.get("actor_guid") or 0) for row in rows if int(row.get("actor_guid") or 0)})
         actors: list[dict[str, Any]] = []
@@ -842,15 +1178,28 @@ def analyze_combat_log(
             ),
             "actors": actors,
         })
+        if cut is not None:
+            encounters[-1].update({
+                "unclipped_last_at_ms": cut["unclipped_last_at_ms"],
+                "unclipped_capture_last_at_ms": cut["unclipped_capture_last_at_ms"],
+                "full_wipe_evidence_split": cut["evidence"],
+            })
+            if cut["evidence"]["spanning_unresolved"]:
+                # No attributable split: the attempt's figures are incomplete,
+                # never an estimate, and the window is not measurable.
+                encounters[-1]["full_wipe_split_unresolved"] = True
+                encounters[-1]["full_wipe_split_unresolved_actor_guids"] = sorted({
+                    int(row["actor_guid"]) for row in cut["evidence"]["unresolved_records"]})
+            _mark_full_wipe(encounters[-1], cut["wipe"])
 
     return {
         "schema": "bot_combat_analysis_v3",
         "source_schema_version": combat_log.get("combat_log_schema_version"),
         "tracked_event_count": int(combat_log.get("event_count") or 0),
         "aggregate_count": int(combat_log.get("aggregate_count") or len(abilities)),
-        "second_bucket_count": int(combat_log.get("second_bucket_count") or len(buckets)),
-        "action_outcome_count": len(action_outcomes),
-        "candidate_rejection_count": len(candidate_rejections),
+        "second_bucket_count": int(combat_log.get("second_bucket_count") or logged_counts[0]),
+        "action_outcome_count": logged_counts[1],
+        "candidate_rejection_count": logged_counts[2],
         "recent_event_count": len(combat_log.get("recent_events") or []),
         "recent_events_dropped": int(combat_log.get("recent_events_dropped") or 0),
         "all_events_preserved_in_aggregates": True,

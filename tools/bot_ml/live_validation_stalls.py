@@ -160,6 +160,11 @@ def boss_windows(
             "last_at_ms": last,
             "duration_sec": round((last - first) / 1000.0, 3),
             "boundary_basis": encounter.get("encounter_window_boundary_basis"),
+            # A window closed at a native full wipe (analyze_combat_log): the
+            # attempt is a wipe and nothing after the wipe is measured.
+            **({key: encounter[key] for key in ("attempt_outcome", "full_wipe_at_ms", "unclipped_last_at_ms",
+                                                 "full_wipe_split_unresolved")
+                if key in encounter} if encounter.get("attempt_outcome") == "full_wipe" else {}),
         })
     return windows
 
@@ -373,6 +378,9 @@ def measurement_validity(
         reasons.append("boss_window_stall_fraction_exceeded")
     if window_rows and max_boss_stall >= max_single_stall_sec:
         reasons.append("boss_window_stall_too_long")
+    if any(row.get("full_wipe_split_unresolved") for row in window_rows):
+        # A record spanning the full wipe had no attributable pre-wipe part.
+        reasons.append("full_wipe_split_unresolved")
     return {
         "schema": "bot_measurement_validity_v3",
         "valid_for_dps": not reasons,

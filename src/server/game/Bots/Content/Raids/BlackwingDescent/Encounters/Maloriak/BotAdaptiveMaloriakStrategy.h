@@ -59,6 +59,14 @@ public:
     static constexpr float ShatterExit = Maloriak::ShatterExit;
     static constexpr float BitingChillDanger = 6.0f;
     static constexpr float BitingChillExit = 8.0f;
+    // A chilled melee damage dealer within BitingChillRingReach of the boss
+    // moves only when an ally is closer than the trigger, to a melee ring
+    // point the clearance from every ally. The tick area is 3 yards of exact
+    // distance (spell family generic: no hitbox term), so both keep two
+    // yards or more; the clearance exceeds the trigger (no oscillation).
+    static constexpr float BitingChillRingReach = 8.0f;
+    static constexpr float BitingChillRingTrigger = 5.0f;
+    static constexpr float BitingChillRingClearance = 5.5f;
     static constexpr float MagmaJetsSidestep = 8.0f;
 
     static constexpr float StagingTolerance = 3.0f;
@@ -132,7 +140,7 @@ public:
         Maloriak::BossFrame const frame = Maloriak::ResolveFrame(boss,
             Maloriak::FindPlayer(board, tanks.MainTank));
         bool const mainTank = botGuid == tanks.MainTank;
-        plan.Movement = ProposeHazard(board, observation, *bot, mainTank,
+        plan.Movement = ProposeHazard(board, observation, frame, *bot, mainTank,
             botRole == "tank");
 
         if (mainTank)
@@ -152,7 +160,7 @@ public:
                 plan.Movement = ProposeKiteTrapPost(board, observation, control, *bot);
             if (!plan.Movement)
                 plan.Movement = Maloriak::ProposeFormation(board, observation, *bot,
-                    botRole, frame, plan, ResolveFanBias(observation, control, frame));
+                    botRole, frame, plan, ResolveFanBias(board, observation, control, frame));
         }
         AssignAddControl(control, *bot, tanks, plan);
         return plan;
@@ -330,14 +338,27 @@ private:
     // The ranged fan leans to the side of the kite the off-tank is actually
     // on (Maloriak::OccupiedKite), or of where it holds when it cannot reach
     // a loop, while Aberrations are up in phase one (Maloriak::FanBias); the
-    // Frost Shock owner takes its flank.
-    static Maloriak::FanBias ResolveFanBias(Maloriak::Observation const& observation,
+    // Frost Shock owner takes its flank. In phase two the fan keeps its
+    // spread, and the healers keep the off-tank holding the Prime Subjects
+    // (or an Aberration left) within heal reach (Maloriak::OffTankHold).
+    static Maloriak::FanBias ResolveFanBias(Blackboard const& board,
+        Maloriak::Observation const& observation,
         Maloriak::AddControl const& control, Maloriak::BossFrame const& frame)
     {
         Maloriak::FanBias bias;
-        if ((control.Loose.empty() && control.Pack.empty())
-            || observation.CurrentPhase == Maloriak::Phase::PhaseTwo
-            || control.OffTank.IsEmpty())
+        if (control.OffTank.IsEmpty())
+            return bias;
+        if (observation.CurrentPhase == Maloriak::Phase::PhaseTwo)
+        {
+            ActorSnapshot const* offTank = Maloriak::FindPlayer(board, control.OffTank);
+            bool const holding = !control.Pack.empty() || std::any_of(
+                observation.PrimeSubjects.begin(), observation.PrimeSubjects.end(),
+                [](ActorSnapshot const* subject) { return subject->Attackable; });
+            if (offTank && offTank->Alive && holding)
+                bias.OffTankHold = control.OffTankPosition;
+            return bias;
+        }
+        if (control.Loose.empty() && control.Pack.empty())
             return bias;
         Maloriak::KiteGeometry const kite = Maloriak::OccupiedKite(observation,
             control.OffTankPosition, control.Pack);
@@ -501,7 +522,8 @@ private:
 
     static std::optional<BotNativeAction::Candidate> ProposeHazard(
         Blackboard const& board, Maloriak::Observation const& observation,
-        ActorSnapshot const& bot, bool mainTank, bool tank)
+        Maloriak::BossFrame const& frame, ActorSnapshot const& bot, bool mainTank,
+        bool tank)
     {
         using BotActionArbitration::Priority;
         if (ActorSnapshot const* sphere = NearestWithin(observation.AbsoluteZeros,
@@ -540,8 +562,29 @@ private:
                     nearestDistance = distance;
                 }
             }
-            if (nearest && nearestDistance < BitingChillDanger)
-                return BuildMove(board, Maloriak::AwayFromPoint(bot, nearest->Position,
+            if (!nearest)
+                return std::nullopt;
+            // A melee damage dealer at the boss keeps fighting from a clear
+            // point of the back melee rings (Maloriak::ChillRingPoint).
+            if (bot.Role == "dps" && Maloriak::IsMeleeSpec(bot.ClassSpec)
+                && Maloriak::Distance2d(bot.Position, observation.Boss->Position)
+                    <= BitingChillRingReach)
+            {
+                if (nearestDistance >= BitingChillRingTrigger)
+                    return std::nullopt;
+                std::vector<Vector3> allies;
+                for (ActorSnapshot const& player : board.Players)
+                    if (player.Alive && player.Guid != bot.Guid)
+                        allies.push_back(player.Position);
+                if (std::optional<Vector3> const ring = Maloriak::ChillRingPoint(frame,
+                        Maloriak::CollectFormationHazards(observation), allies,
+                        bot.Position, BitingChillRingClearance))
+                    return BuildMove(board, *ring, "biting_chill_ring_isolation",
+                        nearest->Guid, Priority::Mechanic, 320.0f, false);
+            }
+            else if (nearestDistance >= BitingChillDanger)
+                return std::nullopt;
+            return BuildMove(board, Maloriak::AwayFromPoint(bot, nearest->Position,
                     BitingChillExit), "biting_chill_isolation", nearest->Guid,
                     Priority::Mechanic, 320.0f, false);
         }

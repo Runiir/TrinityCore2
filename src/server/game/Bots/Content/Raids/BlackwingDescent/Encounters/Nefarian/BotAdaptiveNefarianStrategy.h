@@ -20,6 +20,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianStranded.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTankSelfCare.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianDragonTankCare.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianSurfaceIntent.h"
 #include <cmath>
 #include <optional>
@@ -365,6 +366,19 @@ private:
                 for (ActorSnapshot const* warrior : view.BoneWarriors)
                     if (warrior->Guid == plan.DamageTarget)
                         tauntIfLoose(warrior, "bone_warrior_taunt");
+
+        // Round 4: the dragons' victims live on the floor (BotNefarianDragonTankCare.h).
+        // A heal on them outranks the formation walk (Mechanic 200), and an
+        // urgent one only yields to the escapes.
+        for (CareDecision const& care : DecideDragonTankDefensives(view, bot, facts))
+            plan.Actions.push_back(Cast(board, care.Reason, care.Target, care.SpellId,
+                care.Urgent ? Priority::Survival : Priority::Mechanic,
+                care.Urgent ? 160.0f : 262.0f));
+        if (CareDecision const heal = DecideDragonTankHeal(board, view, bot, facts);
+            !heal.Target.IsEmpty())
+            plan.Actions.push_back(Cast(board, heal.Reason, heal.Target, heal.SpellId,
+                heal.Urgent ? Priority::Survival : Priority::Mechanic,
+                heal.Urgent ? 150.0f : 260.0f));
 
         if (phase == Phase::NefarianGround && DecideNaturesGrasp(view, duty, bot, facts))
             plan.Actions.push_back(Cast(board, "bone_warrior_natures_grasp", bot.Guid,

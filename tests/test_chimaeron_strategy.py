@@ -994,8 +994,8 @@ def test_runtime_casts_only_a_lust_spell_the_owner_knows() -> None:
         "context.Bot->HasSpell(BotEncounter::Chimaeron::BloodlustSpell)",
         "context.Bot->HasSpell(BotEncounter::Chimaeron::HeroismSpell)",
         "cast->SpellId = *known;",
-        "BotActionArbitration::Outcome::NotApplicable(\n"
-        "                    BotEncounter::Chimaeron::LustSpellUnknownReason);",
+        "? BotEncounter::Chimaeron::LustSpellUnknownReason",
+        "return BotActionArbitration::Outcome::NotApplicable(reason);",
         "BotActionArbitration::Resource::None);",
     ):
         assert marker in source, marker

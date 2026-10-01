@@ -12,8 +12,8 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 64,
-      "stage": "implement",
+      "revision": 74,
+      "stage": "build",
       "round": 4,
       "bootstrap_sources": {
         "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
@@ -8367,7 +8367,26 @@
                 "pixi run python -m pytest -q tests/test_magmaw_*.py"
               ],
               "inputs": [],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_magmaw.handoff.json",
+                "sha256": "f4177e4d066c97eb4c9d1134d306df3b02d93a98496e3a6d4a80b1d2cfd77353",
+                "recorded_utc": "2026-09-30T22:34:53Z",
+                "patch_requests": 2,
+                "resolved_inputs": [
+                  "magmaw:r03:machine_failure_predicate (Magmaw-side part: pre-pull guard for bot/pet area reach on Magmaw parts; the pet-gate and stale-diagnosis fixes stay with the coordinator)",
+                  "magmaw:t11_gear_readiness (Bloodlust timing moved to the first exposed head for canonical cohorts from the T11 references; c0 DPS parity baseline recorded)"
+                ],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlustTiming.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuard.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuardUnits.h",
+                  "tests/test_magmaw_bloodlust_timing.py",
+                  "tests/test_magmaw_preencounter_guard.py",
+                  "tests/test_magmaw_t11_bloodlust_head_window.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:omnotron": {
               "packet_id": "boss:omnotron",
@@ -8394,7 +8413,22 @@
                 "pixi run python -m pytest -q tests/test_omnotron_*.py"
               ],
               "inputs": [],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_omnotron.handoff.json",
+                "sha256": "16f0f422e14ab20550093f8f1f01812f3155b3687d9e49c6d55684ebfc8fbe5e",
+                "recorded_utc": "2026-09-30T22:42:59Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronPetShieldGuard.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronTankSurvival.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp",
+                  "tests/test_omnotron_research_packet.py",
+                  "tests/test_omnotron_tank_survival.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:chimaeron": {
               "packet_id": "boss:chimaeron",
@@ -8425,7 +8459,24 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_chimaeron.handoff.json",
+                "sha256": "ab0907cd02a74715e4a2645214335d6200a1d14e01771a0432412882c20ff911",
+                "recorded_utc": "2026-09-30T22:32:50Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+                  "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp",
+                  "tests/test_chimaeron_mana_and_outage.py",
+                  "tests/test_chimaeron_strategy.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:atramedes": {
               "packet_id": "boss:atramedes",
@@ -8448,7 +8499,30 @@
                 "pixi run python -m pytest -q tests/test_atramedes_*.py"
               ],
               "inputs": [],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_atramedes.handoff.json",
+                "sha256": "93734cba4349787e9de7830e7211c71226a6bfeca13421a16053dece390c0d88",
+                "recorded_utc": "2026-09-30T23:01:04Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDodge.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesKitePath.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMovementPolicy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationCounters.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationStore.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSoundSources.h",
+                  "tests/test_atramedes_decision_cost.py",
+                  "tests/test_atramedes_kiter_sound_bound.py",
+                  "tests/test_atramedes_observation_counters.py",
+                  "tests/test_atramedes_observation_scope.py",
+                  "tests/test_atramedes_raid_sound.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:maloriak": {
               "packet_id": "boss:maloriak",
@@ -8471,7 +8545,22 @@
                 "pixi run python -m pytest -q tests/test_maloriak_*.py"
               ],
               "inputs": [],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_maloriak.handoff.json",
+                "sha256": "69866483b683713aaab0f1a071b8fceb9cac928a14116baed9185722aef47f7a",
+                "recorded_utc": "2026-09-30T22:33:40Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormation.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormationPlan.h",
+                  "tests/test_maloriak_round4_reach.py",
+                  "tests/test_maloriak_strategy.py"
+                ],
+                "user_decisions": []
+              }
             },
             "boss:nefarian": {
               "packet_id": "boss:nefarian",
@@ -8502,13 +8591,64 @@
                   "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json"
                 }
               ],
-              "handoff": null
+              "handoff": {
+                "path": "artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round04/boss_nefarian.handoff.json",
+                "sha256": "069292aac2d4b272e7373185587205d1c1507e04651c7188bb9af518997460df",
+                "recorded_utc": "2026-09-30T22:34:10Z",
+                "patch_requests": 0,
+                "resolved_inputs": [],
+                "changed_files": [
+                  "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianDragonTankCare.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeObserver.h",
+                  "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h",
+                  "tests/test_nefarian_dragon_tank_care.py"
+                ],
+                "user_decisions": []
+              }
             }
           },
           "build": null,
           "run_plans": [],
           "runs": [],
-          "assessment": null
+          "assessment": null,
+          "user_decisions": [],
+          "coordinator_fixes": [
+            {
+              "reason": "Round 4 coordinator harness fixes (from r03 diagnosis ~/.cache/r3pk/diag_r3.md): Round-4 coordinator fixes for the BWD 10N r03 diagnosis: Also applied the Magmaw packet's two patch requests (pet pre-encounter guard composition in BotActionExecutor.cpp; scenario-aware SelectLustWindow in BotWorldPopulationMgrMagmawBloodlust.cpp).",
+              "head": "4d4ec2e1936050afe9e1880f192526ddefb96f65",
+              "utc": "2026-09-30T23:02:48Z"
+            },
+            {
+              "reason": "Round 4 coordinator harness fixes, detail (report ~/.cache/r4pk/fix_coordinator_r4.md): (1) host-load gate before each batch (tmpfs <=20% RAM, free >=8 GiB, swap <=95% and <=50 pages/s, load1 <=0.5/CPU; waits up to 900 s then typed stop host_busy; per-heartbeat host_load.jsonl) in tools/raid_program/host_load.py; (2) full wipe no longer revives into a live encounter: native full-wipe export, boss window and observation requirement end at the first full wipe, post-wipe deaths excluded, canonical-raid in-place transport release ends the attempt as native_full_wipe_release_revives_in_place; (3) diagnoses older than a bot's latest revive no longer count as bot_diagnosis_error; (4) pet AoE (Felstorm) gate on protected targets by pet position and spell radius (BotPetAreaGuard.h), composed with the Magmaw pre-encounter guard; Magmaw Bloodlust call passes the scenario id (legacy b5 unchanged).",
+              "head": "4d4ec2e1936050afe9e1880f192526ddefb96f65",
+              "utc": "2026-09-30T23:02:56Z"
+            },
+            {
+              "reason": "Round 4 coordinator role/class fixes (report ~/.cache/r4pk/fix_roles_r4.md), canonical raid composition only: generic heal target = most endangered ally within 40 yd and LOS (attacked tank -10 points), fallback to old choice; healer_mana in status.raid_runtime for canonical raids; Demonology Hellfire starts at >=3 engaged enemies around the warlock and is cancelled below 2, Felguard attacks the warlock's target each tick (never protected/next-encounter targets); Assassination adds the Slice-and-Dice-refreshing Envenom and removes the Fan of Knives row (user rule). Cooldown alignment reported only.",
+              "head": "4d4ec2e1936050afe9e1880f192526ddefb96f65",
+              "utc": "2026-09-30T23:21:21Z"
+            }
+          ],
+          "reviews": [
+            {
+              "verdict": "accept",
+              "diff_sha256": "0f4e71e818b2f5cafe9429246287b9782a8e18736162e789d701f4e45c1cb405",
+              "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; full round-4 review v1 then focused v2-v4)",
+              "report": {
+                "path": "/home/runiir/.cache/r1_review/round4_verdict_accept.md",
+                "sha256": "c581f4326f5b0e491eb5e88a778307c97af775a5140de2ccd5fb15115ac0538e"
+              },
+              "base": "0cab643d45c0c370082958ad03d00eb77238549b",
+              "recorded_utc": "2026-10-01T01:00:18Z",
+              "automatic": false,
+              "matches": {
+                "worktree": true,
+                "committed": false
+              }
+            }
+          ]
         }
       ],
       "history": [
@@ -9098,6 +9238,96 @@
             "boss:nefarian",
             "boss:omnotron"
           ]
+        },
+        {
+          "revision": 65,
+          "utc": "2026-09-30T22:32:50Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:chimaeron",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 66,
+          "utc": "2026-09-30T22:33:40Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:maloriak",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 67,
+          "utc": "2026-09-30T22:34:10Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:nefarian",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 68,
+          "utc": "2026-09-30T22:34:53Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:magmaw",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 69,
+          "utc": "2026-09-30T22:42:59Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:omnotron",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 70,
+          "utc": "2026-09-30T23:01:04Z",
+          "action": "handoff",
+          "round": 4,
+          "packet": "boss:atramedes",
+          "abandoned": false,
+          "external": false,
+          "user_decisions": []
+        },
+        {
+          "revision": 71,
+          "utc": "2026-09-30T23:02:48Z",
+          "action": "coordinator_fix",
+          "round": 4,
+          "reason": "Round 4 coordinator harness fixes (from r03 diagnosis ~/.cache/r3pk/diag_r3.md): Round-4 coordinator fixes for the BWD 10N r03 diagnosis: Also applied the Magmaw packet's two patch requests (pet pre-encounter guard composition in BotActionExecutor.cpp; scenario-aware SelectLustWindow in BotWorldPopulationMgrMagmawBloodlust.cpp)."
+        },
+        {
+          "revision": 72,
+          "utc": "2026-09-30T23:02:56Z",
+          "action": "coordinator_fix",
+          "round": 4,
+          "reason": "Round 4 coordinator harness fixes, detail (report ~/.cache/r4pk/fix_coordinator_r4.md): (1) host-load gate before each batch (tmpfs <=20% RAM, free >=8 GiB, swap <=95% and <=50 pages/s, load1 <=0.5/CPU; waits up to 900 s then typed stop host_busy; per-heartbeat host_load.jsonl) in tools/raid_program/host_load.py; (2) full wipe no longer revives into a live encounter: native full-wipe export, boss window and observation requirement end at the first full wipe, post-wipe deaths excluded, canonical-raid in-place transport release ends the attempt as native_full_wipe_release_revives_in_place; (3) diagnoses older than a bot's latest revive no longer count as bot_diagnosis_error; (4) pet AoE (Felstorm) gate on protected targets by pet position and spell radius (BotPetAreaGuard.h), composed with the Magmaw pre-encounter guard; Magmaw Bloodlust call passes the scenario id (legacy b5 unchanged)."
+        },
+        {
+          "revision": 73,
+          "utc": "2026-09-30T23:21:21Z",
+          "action": "coordinator_fix",
+          "round": 4,
+          "reason": "Round 4 coordinator role/class fixes (report ~/.cache/r4pk/fix_roles_r4.md), canonical raid composition only: generic heal target = most endangered ally within 40 yd and LOS (attacked tank -10 points), fallback to old choice; healer_mana in status.raid_runtime for canonical raids; Demonology Hellfire starts at >=3 engaged enemies around the warlock and is cancelled below 2, Felguard attacks the warlock's target each tick (never protected/next-encounter targets); Assassination adds the Slice-and-Dice-refreshing Envenom and removes the Fan of Knives row (user rule). Cooldown alignment reported only."
+        },
+        {
+          "revision": 74,
+          "utc": "2026-10-01T01:00:18Z",
+          "action": "review",
+          "round": 4,
+          "verdict": "accept",
+          "reviewer": "gpt-6.1-sol (sol-reviewer, separate session; full round-4 review v1 then focused v2-v4)",
+          "diff_sha256": "0f4e71e818b2f5cafe9429246287b9782a8e18736162e789d701f4e45c1cb405"
         }
       ]
     }

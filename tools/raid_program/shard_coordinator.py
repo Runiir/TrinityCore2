@@ -48,6 +48,7 @@ import uuid
 from typing import Any, Callable, Mapping, Sequence
 
 from tools.bot_ml import run_live_bot_validation as harness
+from tools.raid_program import host_load
 from tools.raid_program.run_root_headroom import DEFAULT_MIN_HEADROOM_BYTES, GIB, safe_headroom
 from tools.raid_program.shared_instance_console import ConsoleTransport
 
@@ -608,6 +609,11 @@ class ShardTransport:
         self.foreign_payloads = 0
         self.cross_cohort_replies = 0
         self.refused_commands = 0
+        # Every status heartbeat appends a host snapshot (load, swap, tmpfs use:
+        # host_load) so a stall verdict can be read against the host it ran on.
+        self.host_load_path = shard_dir / "host_load.jsonl"
+        self.host_snapshot: Callable[..., dict[str, Any]] = host_load.snapshot
+        self._last_host: dict[str, Any] | None = None
 
     def check(self, command: str) -> None:
         tokens = command.split()
@@ -633,6 +639,8 @@ class ShardTransport:
         cap = self.transition_timeout_sec if verb in self.TRANSITION_VERBS else self.exchange_timeout_sec
         timeout_sec = max(1, min(int(timeout_sec), cap))
         output, returncode, timed_out = self.console(command, timeout_sec, owner=self.spec.cohort_id)
+        if verb == "status":
+            self.record_host_load(command)
         split = demultiplex(output, self.spec.cohort_id,
                             self.START_REPLIES if verb == "start" else frozenset())
         if split.foreign:
@@ -651,6 +659,17 @@ class ShardTransport:
             self._reject({"reason": "start_failed", "command": command, "failure_reason": self.start_refusal})
             return split.text, 1, timed_out
         return split.text, returncode, timed_out
+
+    def record_host_load(self, command: str) -> None:
+        """Append this heartbeat's host snapshot; a failure to write it never fails the heartbeat."""
+        try:
+            row = self.host_snapshot(self.shard_dir, previous=self._last_host)
+            self._last_host = row
+            with self.host_load_path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps({"cohort_id": self.spec.cohort_id, "command": command, **row},
+                                        sort_keys=True) + "\n")
+        except Exception:  # noqa: BLE001 - observation only
+            pass
 
     def refusal_reason(self, text: str) -> str:
         for row in harness.parse_json_objects(text):
@@ -1502,6 +1521,7 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
 
     run_root.mkdir(parents=True, exist_ok=False)
     headroom = require_run_root_headroom(run_root, min_headroom_bytes)
+    host_at_launch = host_load.snapshot(run_root)
     config = write_shard_config(base_config, run_root)
     checks = preflight(plan, config=config, run_root=run_root, scenario_dir=scenario_dir)
     binary_sha256 = sha256(worldserver)
@@ -1542,6 +1562,8 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                    "preparation": {**preparation, "raid_shard_provisioning": error.report}}
     summary["worldserver"] = {"path": str(worldserver), "sha256": binary_sha256, "lifecycle": lifecycle}
     summary["run_root_headroom"] = {"at_launch": headroom, "at_close": safe_headroom(run_root)}
+    summary["host_load"] = {"at_launch": host_at_launch,
+                            "at_close": host_load.snapshot(run_root, previous=host_at_launch)}
     if crash_capture:
         # Only under --gdb-backtrace: a default run's shard_run.json is unchanged.
         summary["worldserver"].update(crash_capture=True,

@@ -3,9 +3,11 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronBurn.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h"
 
 #include <array>
 #include <optional>
+#include <string_view>
 
 // Raid cooldowns, absorbs and the burn lust. Every action is an ordinary
 // native cast of a spell the bot already knows; the executor rejects unknown
@@ -32,12 +34,54 @@ constexpr uint32 SpiritLinkTotemSpell = 98008;
 constexpr uint32 PowerWordShieldSpell = 17;
 constexpr uint32 WeakenedSoulAura = 6788;
 
-// Feud remaining-time windows (Feud starts with the knockout).
-constexpr uint32 BarrierWindowMaxMs = 16500;
-constexpr uint32 BarrierWindowMinMs = 12000;
+// Feud remaining-time windows (Feud starts with the knockout). WCL 10N: the
+// volleys land 17.2-17.7 s and 23.0-23.8 s after the Massacre completion,
+// i.e. at 12.3-12.8 s and 6.2-7.0 s of Feud left. Barrier lasts 10 s, so it
+// is cast at 15.5-12.5 s left to cover both volleys (the round-2 window
+// opened at 16.5 s, which could expire just before the second volley).
+constexpr uint32 BarrierWindowMaxMs = 15500;
+constexpr uint32 BarrierWindowMinMs = 12500;
 constexpr uint32 SpiritLinkWindowMaxMs = 11000;
 constexpr uint32 SpiritLinkWindowMinMs = 7000;
 constexpr float StackPresenceYards = 4.0f;
+
+// Healer mana cooldowns, cast by the healer who knows them while the mixture
+// is up and nothing is at the floor, so the healers reach the predictable
+// late outage (10N: never after the first Massacre of a cycle, always by the
+// third) with mana. Divine Plea halves healing done for 9 s, so it must end
+// before the next Massacre lands (cast start + 4 s): the timer must show at
+// least ManaCooldownMassacreClearMs. The runtime casts one only below its
+// own mana line (ManaCooldownWanted; the snapshot carries no mana).
+constexpr uint32 DivinePleaSpell = 54428;
+constexpr uint32 ManaTideTotemSpell = 16190;
+constexpr uint32 ManaCooldownMassacreClearMs = 10000;
+constexpr float DivinePleaManaPct = 85.0f;
+constexpr float ManaTideManaPct = 75.0f;
+
+inline bool IsManaCooldownSpell(uint32 spellId)
+{
+    return spellId == DivinePleaSpell || spellId == ManaTideTotemSpell;
+}
+
+inline bool ManaCooldownWanted(uint32 spellId, float manaPct)
+{
+    if (spellId == DivinePleaSpell)
+        return manaPct < DivinePleaManaPct;
+    if (spellId == ManaTideTotemSpell)
+        return manaPct < ManaTideManaPct;
+    return false;
+}
+
+constexpr char const* ManaCooldownNotNeededReason = "chimaeron_mana_cooldown_not_needed";
+
+inline uint32 OwnManaCooldown(std::string_view spec)
+{
+    if (spec == "holy_paladin")
+        return DivinePleaSpell;
+    if (spec == "restoration_shaman")
+        return ManaTideTotemSpell;
+    return 0;
+}
 
 constexpr std::array<uint32, 8> RaidHasteAndLockouts = {
     2825, 32182, 80353, 90355,      // active Bloodlust/Heroism/Time Warp/Ancient Hysteria
@@ -104,6 +148,14 @@ inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
                     return CastDecision{ victim->Guid, PainSuppressionSpell,
                         "mortality_pain_suppression" };
             }
+
+    if (phase == Phase::Mixture && !observation.MassacreCasting
+        && observation.MassacreInMs && *observation.MassacreInMs >= ManaCooldownMassacreClearMs
+        && boss.HealthPct > BurnHoldMaxPct)
+        if (uint32 const spell = OwnManaCooldown(observation.Bot->ClassSpec))
+            if (NoUrgentHealing(board, observation, duties))
+                return CastDecision{ botGuid, spell, spell == DivinePleaSpell
+                    ? "mixture_divine_plea" : "mixture_mana_tide_totem" };
     return std::nullopt;
 }
 }

@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 import re
 
 try:
-    from .analyze_combat_log import analyze_combat_log, unit_deaths_from_report
+    from .analyze_combat_log import analyze_combat_log, full_wipes_from_status, unit_deaths_from_report
     from .combat_log_event_stream import (
         CombatLogEventStream,
         combat_log_identity,
@@ -77,7 +77,7 @@ try:
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
     from .phase8_reference_conditions import load_reference_request_binding
 except ImportError:
-    from analyze_combat_log import analyze_combat_log, unit_deaths_from_report
+    from analyze_combat_log import analyze_combat_log, full_wipes_from_status, unit_deaths_from_report
     from combat_log_event_stream import (
         CombatLogEventStream,
         combat_log_identity,
@@ -4256,6 +4256,62 @@ def nested_get(row: dict[str, Any], path: list[str], default: Any = None) -> Any
     return default if value is None else value
 
 
+def latest_native_resurrection_ms(status: Mapping[str, Any] | None) -> dict[int, int]:
+    """Each roster member's latest native resurrection (system ms), from the status's native life edges."""
+    runtime = (status or {}).get("raid_runtime") if isinstance(status, Mapping) else None
+    recovery = runtime.get("native_recovery") if isinstance(runtime, Mapping) else None
+    members = recovery.get("members") if isinstance(recovery, Mapping) else None
+    revived: dict[int, int] = {}
+    for member in members if isinstance(members, list) else []:
+        if not isinstance(member, Mapping):
+            continue
+        try:
+            guid = int(member.get("guid") or 0)
+            at_ms = int(member.get("native_last_resurrection_ms") or 0)
+        except (TypeError, ValueError):
+            continue
+        if guid > 0 and at_ms > 0:
+            revived[guid] = at_ms
+    return revived
+
+
+# The only error diagnosis derived from the bot's own decisions: a latched
+# blocked episode (BotWorldPopulationMgr::MarkBotBlocked). Every other error
+# (bot_not_loaded, bot_loaded_not_in_world, a cohort instance violation, an
+# unreachable route destination) is recomputed from current state on every
+# read, so a revive never makes it stale.
+DECISION_DERIVED_ERROR_DIAGNOSES = frozenset({"blocked_no_fallback"})
+
+
+def diagnosis_predates_revive(row: Mapping[str, Any], revived_at_ms: Mapping[int, int]) -> bool:
+    """True only for a demonstrably stale, decision-derived blocker.
+
+    The diagnosis must be a decision-derived blocker whose blocked episode
+    began (``blocked_start_ms``) before the bot's latest native resurrection,
+    and the bot must not have decided since (``last_decision_tick_ms``, same
+    clock). Such a blocker was formed while the bot was dead (or before it
+    died) and must not count as a live error after the revive. Every other
+    case keeps its error (fail closed): an infrastructure diagnosis recomputed
+    from current state, a bot that has decided or been blocked again since its
+    revive, a bot never revived, and a row without either timestamp.
+    """
+    code = str(nested_get(row, ["diagnosis", "diagnosis_code"], nested_get(row, ["diagnosis_code"], "")) or "")
+    if code not in DECISION_DERIVED_ERROR_DIAGNOSES:
+        return False
+    try:
+        guid = int(nested_get(row, ["identity", "bot_guid"], 0) or 0)
+        last_decision = int(nested_get(row, ["snapshot", "runtime", "last_decision_tick_ms"], 0) or 0)
+        blocked_since = int(nested_get(row, ["snapshot", "runtime", "blocked_start_ms"], 0) or 0)
+    except (TypeError, ValueError):
+        return False
+    revived = revived_at_ms.get(guid, 0)
+    return bool(
+        guid and revived
+        and last_decision and last_decision < revived
+        and blocked_since and blocked_since < revived
+    )
+
+
 def is_route_transition_diagnosis(row: dict[str, Any]) -> bool:
     """Identify a stale error while the native route is handing off a pack.
 
@@ -4960,9 +5016,23 @@ def live_evidence(
         if str(nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], ""))) == "error"
         and is_route_transition_diagnosis(row)
     )
+    # A decision-derived blocker latched, and last decided, before the bot's
+    # latest native resurrection describes the dead bot, not the recovered
+    # raid (BWD 10N round 3 Magmaw: blocked on
+    # "future_encounter_target_forbidden" with no decision for 72 s, read one
+    # heartbeat after the full-wipe recovery, ended the shard). Diagnoses
+    # recomputed from current state (bot_loaded_not_in_world, ...) always count.
+    revived_at_ms = latest_native_resurrection_ms(status)
+    stale_error_diagnoses = sum(
+        1
+        for row in diagnoses
+        if str(nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], ""))) == "error"
+        and not is_route_transition_diagnosis(row)
+        and diagnosis_predates_revive(row, revived_at_ms)
+    )
     actionable_error_diagnoses = max(
         0,
-        diagnosis_severities.get("error", 0) - route_transition_error_diagnoses,
+        diagnosis_severities.get("error", 0) - route_transition_error_diagnoses - stale_error_diagnoses,
     )
     action_names = {
         str(entry.get("action") or entry.get("situation") or "")
@@ -5274,6 +5344,7 @@ def live_evidence(
         "error_diagnoses": diagnosis_severities.get("error", 0),
         "route_transition_error_diagnoses": route_transition_error_diagnoses,
         "actionable_error_diagnoses": actionable_error_diagnoses,
+        "stale_error_diagnoses_before_revive": stale_error_diagnoses,
         "non_spawn_trace_entries": non_spawn_trace_entries,
         "quest_objective_progress": quest_progress,
         "quests_accepted": quests_accepted,
@@ -6224,7 +6295,8 @@ def live_validation_report(
     combat_calibration_transport = classified["combat_calibration_transport"]
     combat_calibration = enrich_combat_calibration_reference(classified["combat_calibration"])
     combat_analysis = (
-        analyze_combat_log(combat_log, unit_deaths_from_report({"status": status, "trace": trace}))
+        analyze_combat_log(combat_log, unit_deaths_from_report({"status": status, "trace": trace}),
+                           full_wipes_from_status(status))
         if combat_log
         else {}
     )
@@ -9765,7 +9837,8 @@ def finalize_attempt_report(
         if final_payloads.get("combat_log"):
             report["combat_log"] = final_payloads["combat_log"]
             report["combat_analysis"] = analyze_combat_log(
-                final_payloads["combat_log"], unit_deaths_from_report(report)
+                final_payloads["combat_log"], unit_deaths_from_report(report),
+                full_wipes_from_status(report.get("status")),
             )
         if final_payloads.get("combat_calibration"):
             report["combat_calibration"] = enrich_combat_calibration_reference(
@@ -9844,7 +9917,8 @@ def finalize_attempt_report(
     )
     if report.get("combat_log"):
         report["combat_analysis"] = analyze_combat_log(
-            report["combat_log"], unit_deaths_from_report(report)
+            report["combat_log"], unit_deaths_from_report(report),
+            full_wipes_from_status(report.get("status")),
         )
     attach_measurement_validity(
         report,

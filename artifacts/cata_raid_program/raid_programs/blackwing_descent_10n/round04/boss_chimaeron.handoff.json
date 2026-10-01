@@ -1,0 +1,56 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:chimaeron",
+  "round": 4,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp",
+    "tests/test_chimaeron_strategy.py",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+    "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md"
+  ],
+  "new_files": [
+    "tests/test_chimaeron_mana_and_outage.py"
+  ],
+  "resolved_inputs": [],
+  "patch_requests": [],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_*.py",
+      "result": "46 passed (baseline before the change: 44 passed)"
+    },
+    {
+      "command": "tests/test_chimaeron_mana_and_outage.py replay compiled against the HEAD Chimaeron headers (scratch include dir, new-symbol lines removed)",
+      "result": "fails before the fix: 18 checks failed (mixture hold, slime line order, three distinct outage targets, pacified tanks, Barrier window, Divine Plea / Mana Tide); passes after"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_chimaeron_*.py tests/test_cata_raid_research_contracts.py tests/test_bot_action_arbitration.py tests/test_native_cast_intent_known_spell.py",
+      "result": "73 passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_raid_program_neutrality.py tests/test_bot_route_prepull_setup_gate.py (with the above)",
+      "result": "passed (41 passed in that combined run)"
+    },
+    {
+      "command": "g++ -fsyntax-only with build/compile_commands.json flags: BotWorldPopulationMgrChimaeronCandidates.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp, BotWorldPopulationMgrEncounterBlackboard.cpp",
+      "result": "rc 0 (only the pre-existing <ciso646> warning)"
+    }
+  ],
+  "open_items": [
+    "encounter_research stays fidelity_blocked for 10N on helper_field_reset and retail_reset_credit_loot. The diagnosis's r03 batch-1 timeline fits a reset cycle count: pull 2 had Massacres at 450/480/510 and deaths from 525, so the knockout came at the pull's third Massacre, while a stale count from pull 1 would have forced it by 480. Confirm from the batch-1 combat log (Systems Failure 88853 / Feud 88872 times) before closing helper_field_reset. This packet did not run DVC.",
+    "Live check for round 4: healer mana at the first outage (the heartbeat status carries no healer mana; the coordinator could add it), healing done in the outage window, a Divine Plea / Mana Tide cast in a mixture window, a Barrier cast at 15.5-12.5 s of Feud left, and 0 outage deaths.",
+    "The canonical Discipline Priest (Bwchinbg) has no Shadowfiend (34433) or Hymn of Hope (64901) in dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1. Adding them is a roster change (DVC repro plus closure rebind), for the coordinator if round-4 mana is still short.",
+    "No in-combat mana potion use exists for healers (consumables are prepull only). This is a coordinator or runtime option if mana is still short.",
+    "0.5 s ticks after the first Massacre: the Chimaeron plan is O(players) per bot and the native script has no health-scaled per-tick work. The likely cost is the runtime heal path (SelectHealSpell mask and JSON receipts, plus no_trained_heal retries from mana-gated profiles) running for every healer while all ten members sit at 1 health. The mixture hold removes those attempts while the mixture is up. Settling it needs per-stall thread CPU and per-candidate timing in BotWorldTickRecorder (runtime, coordinator)."
+  ],
+  "risks": [
+    "A healer that holds may still run its offensive rotation (for example Smite) and spend mana on it. The strategy does not suppress healer offense.",
+    "The mixture hold trusts the 20,000 floor. A player above the floor but below 10,000 after an unprotected non-boss hit (a trash add on the composed route) is covered only because another engaged hostile lifts the hold.",
+    "The slime line (2 x 235,200 / living + 10,000) is a bot margin built from the native split and the round-3 per-member volley damage (up to ~43k). It is not a sourced value.",
+    "The Divine Plea and Mana Tide thresholds (85% and 75%) are bot policy. Divine Plea halves healing for 9 s, and the 10 s Massacre clearance keeps it off the floor window.",
+    "Tanks are ordinary members only while Feud is on the boss. An outage without Feud (never observed on a knockout) keeps the previous tank-first order."
+  ],
+  "validation_neutrality": "All changes are inside the Chimaeron strategy, which only proposes on bwd.chimaeron.* route nodes with a live Chimaeron (entry 43296), plus its own kernel glue. The glue's new branch handles only Divine Plea (54428) and Mana Tide Totem (16190) proposals, which only this strategy emits. The native script, SQL, raid target and roster are unchanged. Stonecore, Phase-8 calibration and legacy Magmaw b5 do not include or reach this code and stay byte-reproducible."
+}

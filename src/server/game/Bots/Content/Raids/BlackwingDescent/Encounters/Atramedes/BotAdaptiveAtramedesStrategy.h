@@ -205,9 +205,11 @@ public:
             return exit;
         if (std::optional<MoveProposal> step = RelayHazardStep(board, facts, duties, self))
             return step;
-        if (std::optional<MoveProposal> exit = FlameExit(board, facts, self))
-            return exit;
+        // A Sonar Bomb (+20) outranks the flame's path (+3 a tick): the bomb
+        // exit's escape already avoids ending on that path.
         if (std::optional<MoveProposal> exit = BombMarkerExit(board, facts, self))
+            return exit;
+        if (std::optional<MoveProposal> exit = FlameExit(board, facts, self))
             return exit;
         if (std::optional<MoveProposal> exit = FirePatchExit(board, facts, self, ring))
             return exit;

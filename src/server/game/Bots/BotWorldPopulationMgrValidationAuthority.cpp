@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
+#include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotPetAreaGuard.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
 #include "Map.h"
@@ -15,6 +17,9 @@ void BotWorldPopulationMgr::ConfigureValidationRouteCombatAuthority(Player* bot)
 
     uint64 const raidAuthorityOwner = bot->GetGUID().GetRawValue();
     BotRaidAreaAuthority::SetCurrentEncounterRestrictions(raidAuthorityOwner, {}, {});
+    // Pet-centred area guard (BotPetAreaGuard.h): canonical raid cohorts only.
+    BotPetAreaGuard::SetScoped(raidAuthorityOwner, BotCanonicalRaidScope::IsCanonicalRaid(
+        Cohort().Raid.RaidInstance, Cohort().Config.ValidationRouteScenarioId));
     // Freeze every later encounter's complete declared creature surface in
     // the shared offensive authority before any route decision can submit a
     // cast.  Trash nodes are encounters too: their pack entries and split

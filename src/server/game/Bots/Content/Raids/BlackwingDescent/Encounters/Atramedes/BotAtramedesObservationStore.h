@@ -38,6 +38,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationCounters.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesObservationExport.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSoundSources.h"
 #include <map>
 #include <mutex>
 #include <string>
@@ -49,13 +50,18 @@ inline constexpr uint64 MaxGroundGapMs = 5000;
 
 // The chase sample of one encounter snapshot: the Sound of the player the
 // Reverberating Flame follows (its Tracking target, or the iced mage it keeps
-// following without one; BuildFacts' AirKiter).
-inline ChaseSample SampleChase(Blackboard const& board)
+// following without one; BuildFacts' AirKiter). With `sources`, the snapshot
+// also updates every player's last Sound rise and the sample carries the
+// kiter's (BotAtramedesSoundSources.h).
+inline ChaseSample SampleChase(Blackboard const& board, SoundSourceTracker* sources = nullptr)
 {
     ChaseSample sample;
+    sample.AtMs = board.ObservedAtMs;
     if (board.Route.NodeId != EncounterNode)
         return sample;
     Facts const facts = BuildFacts(board);
+    if (sources)
+        sources->Observe(board, facts);
     sample.Engaged = facts.CurrentPhase == Phase::Ground || facts.CurrentPhase == Phase::Air;
     sample.Air = facts.CurrentPhase == Phase::Air;
     if (!sample.Air || facts.AirKiter.IsEmpty())
@@ -65,6 +71,12 @@ inline ChaseSample SampleChase(Blackboard const& board)
         {
             sample.Kiter = player.Guid.GetRawValue();
             sample.Sound = SoundOf(player);
+            if (SoundSourceTracker::Last const* last = sources ? sources->Find(sample.Kiter) : nullptr)
+            {
+                sample.Source = last->Source;
+                sample.Increment = last->Increment;
+                sample.IncrementAtMs = last->AtMs;
+            }
         }
     return sample;
 }
@@ -117,7 +129,7 @@ public:
                 record.CoverageLost = true;
             return;
         }
-        ChaseSample const sample = SampleChase(board);
+        ChaseSample const sample = SampleChase(board, &record.Sources);
         Phase const current = sample.Air ? Phase::Air
             : sample.Engaged ? Phase::Ground : Phase::Absent;
         // Every gap that starts in an engaged phase is checked, whatever the
@@ -164,6 +176,8 @@ private:
     {
         ObservationAttempt Attempt;
         ObservationCounters Counters;
+        // Every player's last Sound rise in the attempt.
+        SoundSourceTracker Sources;
         uint32 MapId = 0;
         uint32 InstanceId = 0;
         uint64 LatestMs = 0;

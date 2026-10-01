@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/BotCanonicalRaidScope.h"
 #include "Bots/BotHealSelectionDiagnostic.h"
+#include "Bots/BotRaidHealTriageLive.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/BotSpellQueue.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -566,6 +568,16 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 if (BotEncounter::ActorSnapshot const* priority =
                         Cohort().EncounterSnapshot->FindActor(healTargetGuid))
                     lowestHealth = priority->HealthPct;
+            // Canonical raids: the most endangered ally this healer can reach
+            // (BotRaidHealTriage.h); other scopes keep the lowest-member rule.
+            if (healTargetGuid.IsEmpty() && BotCanonicalRaidScope::IsCanonicalRaid(
+                    Cohort().Raid.RaidInstance, Cohort().Config.ValidationRouteScenarioId))
+                if (std::optional<BotRaidHealTriage::Choice> const choice =
+                        BotRaidHealTriage::SelectForHealer(context.Bot, *Cohort().EncounterSnapshot))
+                {
+                    healTargetGuid = ObjectGuid(choice->Guid);
+                    lowestHealth = choice->HealthPct;
+                }
             if (healTargetGuid.IsEmpty())
                 // Play cohorts also heal their human members; the external
                 // list is always empty for validation cohorts.

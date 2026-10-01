@@ -153,7 +153,11 @@ inline std::optional<MoveProposal> RelayHazardStep(Blackboard const& board,
     if (Dodge::Clear(field, self.Position, 0.0f))
         return std::nullopt;
     Vector3 const station = AirStationFor(facts, *relay);
-    std::optional<Vector3> step = Dodge::SafeStep(field, self, RelayReach(*relay), station);
+    // In a bomb zone: out of every blast soonest, in reach when that costs
+    // no more (Dodge::BombEscape); the shortest safe step can cross a marker.
+    std::optional<Vector3> step = Dodge::BombEscape(field, self, RelayReach(*relay), station);
+    if (!step)
+        step = Dodge::SafeStep(field, self, RelayReach(*relay), station);
     if (!step && StationHazardFree(facts, station))
         step = station;
     if (!step)

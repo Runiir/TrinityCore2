@@ -289,7 +289,9 @@ def test_arena_disc_is_walkable_on_the_map_669_navmesh() -> None:
 def test_runtime_candidate_attempts_capture_only_live_context() -> None:
     source = (CONTENT / "BotWorldPopulationMgrOmnotronCandidates.cpp").read_text(encoding="utf-8")
     captures = re.findall(r"\bAttempt\s*=\s*(\[[^\]]*\])\s*\(", source, re.DOTALL)
-    assert len(captures) == 5
+    # Movement, suppression, interrupt, taunt, dispel, and (round 4) the
+    # Felstorm cancel beside a shield and tank survival.
+    assert len(captures) == 7
     for capture in captures:
         assert "&context" in capture and not re.search(r"(?:\[|,)\s*&\s*(?:,|\])", capture)
     assert "ApplyOffenseRestriction" in source

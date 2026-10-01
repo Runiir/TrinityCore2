@@ -84,6 +84,51 @@ inline std::optional<LustWindow> SelectLustWindow(Blackboard const& board,
             LustTrigger::FirstExposedHead };
     return ObservePreMangleLustWindow(board);
 }
+
+// Tier-11 phase gear (round 4). The canonical c0 roster wears ~359 gear, and
+// its matched T11 kills (magmaw_wcl_cast_timelines_t11_v1.json, 131-171 s)
+// hold raid lust for the first exposed head: RtPXnbZxFkpacw1h fight 6 casts
+// Heroism at 116.069 s, after Mangle ends at 112.904 s, and the matched
+// actors' major cooldowns land on "Exposed Head of Magmaw" (Combustion
+// 125.251, Vendetta 127.281, Dancing Rune Weapon 129.971, Metamorphosis
+// 124.385; Zealotry/Avenging Wrath 118.303). The pre-Mangle lead above comes
+// from the 395-item-level Y8aj kill (111.3 s) and stays the accepted legacy
+// shard's timing, so its b5 verdict remains reproducible.
+constexpr uint32 T11ReferenceHeroismAfterPullMs = 116069;
+constexpr uint32 T11ReferenceMangleEndAfterPullMs = 112904;
+static_assert(T11ReferenceHeroismAfterPullMs > T11ReferenceMangleEndAfterPullMs,
+    "T11 reference lust follows the impale that exposes the head");
+constexpr std::string_view T11TimingEvidence =
+    "wcl_RtPXnbZxFkpacw1h_fight6_heroism_116069ms_after_mangle_end_112904ms";
+
+enum class LustTimingPolicy : uint8
+{
+    PreMangleLeadOrFirstHead,
+    FirstExposedHeadOnly
+};
+
+// Canonical-composition cohorts only (blackwing_descent_10n_magmaw_c<N>_
+// diagnostic); the legacy diagnostic shard and any other scenario keep the
+// pre-Mangle lead.
+inline LustTimingPolicy LustTimingPolicyForScenario(std::string_view scenarioId)
+{
+    return scenarioId != DiagnosticScenario
+            && IsMagmawBloodlustScenario(scenarioId)
+        ? LustTimingPolicy::FirstExposedHeadOnly
+        : LustTimingPolicy::PreMangleLeadOrFirstHead;
+}
+
+inline std::optional<LustWindow> SelectLustWindow(Blackboard const& board,
+    std::optional<HeadWindow> const& headWindow, std::string_view scenarioId)
+{
+    if (LustTimingPolicyForScenario(scenarioId)
+        == LustTimingPolicy::PreMangleLeadOrFirstHead)
+        return SelectLustWindow(board, headWindow);
+    if (!headWindow)
+        return std::nullopt;
+    return LustWindow{ headWindow->BossGuid, headWindow->HeadGuid,
+        LustTrigger::FirstExposedHead };
+}
 }
 
 #endif

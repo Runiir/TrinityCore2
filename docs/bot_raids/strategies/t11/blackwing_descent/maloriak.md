@@ -69,7 +69,8 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
   exit and the Blue spread while they burn Aberrations. Melee damage dealers on an Aberration
   fight it at the off-tank, so the cone is shared by the main tank, the healers and the ranged.
 - Blue: spread at least 5 yards apart. Ranged damage dealers break Flash Freeze blocks; everyone
-  else stays out of the 5-yard shatter; a Biting Chill target steps away from allies.
+  else stays out of the 5-yard shatter; a Biting Chill target steps away from allies (a melee
+  damage dealer at the boss moves to a clear point of the back melee rings instead, round 4).
 - Green: Debilitating Slime doubles damage taken for 15 s.
 - Aberrations are tanked away from Maloriak, a controlled kite rather than a spread. Growth
   Catalyst reaches 10 yards and buffs Maloriak too.
@@ -286,7 +287,9 @@ outside the raid (round 4, `validation_active_instance_drift`).
 - Red: rows in front inside the cone, melee at ±25° beside the tank, Consuming Flames targets
   behind;
 - Blue, Dark and phase two: a fan behind the boss at 18 yd, 40° apart, and melee behind at ±50°
-  (a third melee straight behind at 8 yd). A chilled player keeps its isolation position;
+  (a third melee straight behind at 8 yd). In phase two, while the off-tank holds the Prime
+  Subjects, the healers take back-arc slots on its side (round 4). A chilled player keeps its
+  isolation position;
 - Green and the vial transitions: no formation.
 
 Hazards preempt formations: Absolute Zero (7 yd) and jet fire (4.5 yd), each exiting from the
@@ -522,6 +525,36 @@ audit. The live timer claim reopened 10N for the Green timer spread (storm, Reme
 begin) and closed again once the native script drew the observed ranges (`wcl_maloriak_10n_post_cutoff_20260930`,
 `official_hotfix_audit_20250113_20250220`); its remaining modes are 10H, 25N and 25H. The per-mode
 research gate accepts 10N again.
+
+## Round 4 (2026-10-01): phase-two healer reach and the melee Biting Chill ring
+
+Evidence: the four r03 kills (label blackwing_descent_10n-r03-a3864fcf6d; tier-11 gear).
+
+- **The boss-window death.** Kill 35b93d: the Feral died to Prime Subject melee at +269 s of the
+  window, 20 s into phase two. Both Prime Subjects hit it for about 14k DPS; it took one Holy Light
+  (19.7k) in the 14 s before it died. Both healers stood on the phase-two back fan, 43-49 yd from
+  the Feral at the west add spot (20 degrees off the boss front), out of heal range. The same
+  geometry put the healers 43-61 yd away in kills cd3009 (Feral down to 12.7k) and acb506.
+  Change: in phase two, while the living off-tank holds a Prime Subject or an Aberration, each
+  healer's slot is on the back arc on the off-tank's side, at the off-tank's own angle (at least
+  82 degrees off the front), 18 yd from the boss and 18 degrees apart
+  (`OffTankSideHealerSlot`, `BotMaloriakFormationPlan.h`). A healer farther than 34 yd from the
+  off-tank never keeps its place under the ranged hysteresis. The ranged damage dealers keep the
+  ordinary back fan; phase one is unchanged.
+- **Melee Biting Chill uptime.** Kill 35b93d: the chilled rogue walked 8 yd off its nearest ally,
+  11-15 yd from Maloriak, and landed no melee on him for 12 s (40.6-52.8 s); the Retribution
+  Paladin was chilled for 13 ticks in the same kill. The tick area is 3 yd of exact distance
+  (`WorldObjectSpellAreaTargetCheck`: no hitbox term for a generic-family spell). Change: a chilled
+  melee damage dealer within 8 yd of the boss moves only when an ally is closer than 5 yd, to the
+  nearest point of the back melee rings (3.5 yd, then 5 yd, 15 degrees apart) that keeps 5.5 yd
+  from every ally, clears every hazard and sees the boss past the cauldron
+  (`ChillRingPoint`, `BotMaloriakFormation.h`). With no such point, or away from the boss, it steps
+  8 yd off its nearest ally as before. Tanks still hold; ranged players still step away.
+- Not changed (outside this packet, recorded as open items): the Demonology Warlock (0.41 of
+  target) channels Hellfire at the kited pack after it walks out of the 10-yd radius (35b93d
+  61-74 s, 13 s on itself) and its Felguard lands about 1.3k DPS on Maloriak; the Assassination
+  Rogue (0.55) cast 5-6 Envenoms in each kill; the add waves take about a third of the raid's boss
+  DPS (240,498-health Aberrations live 7-22 s).
 
 ## Unresolved (fidelity blockers)
 

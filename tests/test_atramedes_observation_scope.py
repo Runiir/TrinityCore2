@@ -522,8 +522,70 @@ static void TestObservationTimes()
         "an older snapshot moves neither time");
 }
 
+// Round 4 (live r03 batch 2 had a 20 Sound chase sample nothing could explain): each chase sample in the
+// export names the source of the kiter's last Sound rise, read off the snapshot that shows it, even when the
+// rise came before the chase (the striker a Sonar Bomb hit before the redirected flame re-tracked it).
+static void TestSoundSources()
+{
+    ObservationStore store;
+    Blackboard board = Board("shard", 1, 7);
+    uint64 at = T0;
+    Offer(store, "shard", Attempt1, board, at += 250);
+    Liftoff(board);
+    Track(board, 2);
+    Offer(store, "shard", Attempt1, board, at += 250);
+    // A breath tick on the kiter (the flame 9 yd from it at (146, -225)... moved beside it).
+    board.Summons.back().Position = { 163.0f, -225.0f, 75.0f };
+    Sound(board, 2, 3);
+    Offer(store, "shard", Attempt1, board, at += 250);
+    // The redirect: nobody chased. A Sonar Bomb marker lands on the striker (player 3) at 20.
+    Track(board, 0);
+    ActorSnapshot marker;
+    marker.Guid = UnitGuid(SonarBombMarkerEntry, 950);
+    marker.Entry = SonarBombMarkerEntry;
+    marker.Kind = ActorKind::Summon;
+    marker.Alive = true;
+    marker.Position = { 176.0f, -224.0f, 75.0f };
+    board.Summons.push_back(marker);
+    Sound(board, 3, 20);
+    uint64 const bombAt = at += 250;
+    Offer(store, "shard", Attempt1, board, bombAt);
+    // Two seconds later the flame re-tracks the striker, far from the marker now: its first sample is 20.
+    board.Summons.pop_back();
+    Track(board, 3);
+    Player(board, 3).Position = { 185.0f, -240.0f, 75.0f };
+    Offer(store, "shard", Attempt1, board, at += 2000);
+    // A rise with nothing in reach is unattributed, never guessed.
+    board.Summons.back().Position = { 100.0f, -300.0f, 75.0f };
+    Sound(board, 3, 25);
+    Offer(store, "shard", Attempt1, board, at += 250);
+    std::string const raw = store.JsonField("", "shard", Attempt1, EncounterNode);
+    auto has = [&raw](std::string const& text) { return raw.find(text) != std::string::npos; };
+    CHECK(has("\"kiter\":" + std::to_string(PlayerGuid(2).GetRawValue()) + ",\"sound\":3,"
+        "\"last_increment_source\":\"roaring_flame\",\"last_increment\":3"), raw.c_str());
+    CHECK(has("\"kiter\":" + std::to_string(PlayerGuid(3).GetRawValue()) + ",\"sound\":20,"
+        "\"last_increment_source\":\"sonar_bomb\",\"last_increment\":20,\"last_increment_at_ms\":"
+        + std::to_string(bombAt) + "}"), raw.c_str());
+    CHECK(has("\"sound\":25,\"last_increment_source\":\"unattributed\",\"last_increment\":5"), raw.c_str());
+    CHECK(has(",\"sound_samples_dropped\":0}}"), raw.c_str());
+    // Negative control: the bomb's Sound is not the kiter's until the flame tracks it; no chase sample before.
+    CHECK(raw.find("\"sound\":20") > raw.find("\"sound\":3,"), "the bomb shows up in the striker's chase");
+
+    // A player first seen with Sound: the rise predates the sampling.
+    ObservationStore late;
+    Blackboard loud = Board("shard", 1, 7);
+    Liftoff(loud);
+    Track(loud, 1);
+    Sound(loud, 1, 15);
+    Offer(late, "shard", Attempt1, loud, T0);
+    CHECK(late.JsonField("", "shard", Attempt1, EncounterNode).find(
+        "\"sound\":15,\"last_increment_source\":\"before_observation\"") != std::string::npos,
+        "before the observation");
+}
+
 int main()
 {
+    TestSoundSources();
     TestObservationTimes();
     TestChaseSampling();
     TestAttemptAndInstanceScope();

@@ -72,6 +72,8 @@ struct Zone
     Vector3 Center;
     float Radius = 0.0f;
     bool Fire = false;
+    // A Sonar Bomb marker's zone (BombEscape).
+    bool Bomb = false;
 };
 
 // A moving Sonar Pulse disk: dangerous from HalfWidth behind it to
@@ -194,7 +196,7 @@ inline Field BuildField(Blackboard const& board, Facts const& facts, ActorSnapsh
     Field field;
     float const margin = SoundMargin(self);
     for (ActorSnapshot const* bomb : facts.BombMarkers)
-        field.Zones.push_back({ bomb->Position, BombClearYards + margin, false });
+        field.Zones.push_back({ bomb->Position, BombClearYards + margin, false, true });
     for (ActorSnapshot const* patch : facts.FirePatches)
         field.Zones.push_back({ patch->Position, PatchClearYards + margin, true });
     if (facts.Boss)
@@ -284,8 +286,17 @@ inline bool Clear(Field const& field, Vector3 const& point, float pad = SafetyPa
 inline float PathCost(Field const& field, Vector3 const& from, Vector3 const& to, float speed)
 {
     float cost = 0.0f;
+    // Zones the walk's bounding box (widened by the largest radius) misses
+    // cost nothing: skipped without the circle test.
+    float const reach = std::max(FirePatchRadius + 0.5f, SonarBombRadius);
+    float const minX = std::min(from.X, to.X) - reach;
+    float const maxX = std::max(from.X, to.X) + reach;
+    float const minY = std::min(from.Y, to.Y) - reach;
+    float const maxY = std::max(from.Y, to.Y) + reach;
     for (Zone const& zone : field.Zones)
     {
+        if (zone.Center.X < minX || zone.Center.X > maxX || zone.Center.Y < minY || zone.Center.Y > maxY)
+            continue;
         float const inside = KitePath::SecondsInside(from, to, zone.Center,
             zone.Fire ? FirePatchRadius + 0.5f : SonarBombRadius, speed);
         if (inside > 0.0f)
@@ -370,9 +381,15 @@ inline std::optional<Vector3> SafeStep(Field const& field, ActorSnapshot const& 
     float bestScore = 0.0f;
     auto consider = [&](Vector3 const& point)
     {
+        // Every other term is at least 0 (the ring term at least -0.005): a
+        // candidate whose walk alone reaches the best score cannot win, so
+        // the costly checks are skipped (the choice is unchanged).
+        float const walk = Geometry::Distance2d(from, point);
+        if (best && walk - 0.01f >= bestScore)
+            return;
         if (!Usable(field, constraint, point))
             return;
-        float score = Geometry::Distance2d(from, point) + PathCost(field, from, point, speed)
+        float score = walk + PathCost(field, from, point, speed)
             + (home ? 0.25f * Geometry::Distance2d(point, *home) : 0.0f);
         if (!DiskSafeWalk(field, from, point, speed))
             score += DiskMeetYards;
@@ -399,6 +416,94 @@ inline std::optional<Vector3> SafeStep(Field const& field, ActorSnapshot const& 
     for (float radius : { 1.5f, 3.0f, 4.5f, 6.0f, 7.5f, 9.0f, 10.5f, 12.0f, 14.0f, 16.0f, 18.0f, 21.0f, 24.0f })
         for (int step = 0; step < 32; ++step)
             consider(Geometry::PointAt(from, float(step) * Geometry::TwoPi / 32.0f, radius, from.Z));
+    return best;
+}
+
+// Sonar Bomb escape (round 4; live r03 batch 1: bombs landed on a gong
+// relay and on the striker the redirected flame re-tracks, whose first chase
+// sample was then 20 Sound). A marker is summoned on a random player and its
+// bomb lands 2.5 s later (+20 Sound within 6 yd, from any Sound), so a bot in
+// a bomb zone leaves every bomb blast by the walk that spends the least time
+// inside one: straight out, never through a marker toward some other goal.
+// The walk heading is a fixed 32-way grid from the bot, and the best one out
+// of a single blast is the radial one, so successive snapshots keep one
+// heading (the round-3 relay step and redirect run switched between points on
+// both sides of the marker and stayed inside). Seconds inside a blast weigh
+// most; an end the rest of the field covers, or one outside the constraint
+// (a relay's click reach), costs BombEscapeCoveredYards; then the shorter
+// walk, fire crossed and the distance to `home`.
+// A second inside a blast is worth BombSecondYards of walking (+20 Sound,
+// priced as fire: FireSecondYards per +5).
+inline constexpr float BombSecondYards = FireSecondYards * 4.0f;
+inline constexpr float BombEscapeCoveredYards = 15.0f;
+
+// `point` stands in a Sonar Bomb zone (the trigger BombMarkerExit uses).
+inline bool InBombZone(Field const& field, Vector3 const& point)
+{
+    for (Zone const& zone : field.Zones)
+        if (zone.Bomb && Geometry::Distance2d(zone.Center, point) < zone.Radius)
+            return true;
+    return false;
+}
+
+// How far a walk from `from` along `heading` goes before it leaves `center`'s
+// circle of `radius` (0 when `from` is outside it).
+inline float ExitAlong(Vector3 const& from, float heading, Vector3 const& center, float radius)
+{
+    float const px = from.X - center.X;
+    float const py = from.Y - center.Y;
+    float const c = px * px + py * py - radius * radius;
+    if (c >= 0.0f)
+        return 0.0f;
+    float const b = px * std::cos(heading) + py * std::sin(heading);
+    return -b + std::sqrt(b * b - c);
+}
+
+inline std::optional<Vector3> BombEscape(Field const& field, ActorSnapshot const& self,
+    Constraint const& constraint = {}, std::optional<Vector3> const& home = std::nullopt)
+{
+    if (!InBombZone(field, self.Position))
+        return std::nullopt;
+    float const speed = Mobility::RunSpeed(self);
+    Vector3 const& from = self.Position;
+    std::optional<Vector3> best;
+    float bestScore = 0.0f;
+    for (int step = 0; step < 32; ++step)
+    {
+        float const heading = float(step) * Geometry::TwoPi / 32.0f;
+        // Out of every bomb zone on the way (overlapping zones chain).
+        float run = 0.0f;
+        for (int pass = 0; pass < 4; ++pass)
+        {
+            Vector3 const at = Geometry::PointAt(from, heading, run, from.Z);
+            float further = run;
+            for (Zone const& zone : field.Zones)
+                if (zone.Bomb)
+                    further = std::max(further, run + ExitAlong(at, heading, zone.Center,
+                        zone.Radius + SafetyPad));
+            if (further <= run + 0.01f)
+                break;
+            run = further + 0.05f;
+        }
+        Vector3 const point = Geometry::PointAt(from, heading, run, from.Z);
+        if (!ArenaFloor::Solid(point.X, point.Y) || InBombZone(field, point))
+            continue;
+        float blast = 0.0f;
+        for (Zone const& zone : field.Zones)
+            if (zone.Bomb)
+                blast += KitePath::SecondsInside(from, point, zone.Center, SonarBombRadius, speed);
+        float score = BombSecondYards * blast + run + PathCost(field, from, point, speed)
+            + (home ? 0.25f * Geometry::Distance2d(point, *home) : 0.0f);
+        if (!Clear(field, point))
+            score += BombEscapeCoveredYards;
+        if (!constraint.Allows(point))
+            score += BombEscapeCoveredYards;
+        if (!best || score < bestScore)
+        {
+            best = point;
+            bestScore = score;
+        }
+    }
     return best;
 }
 
@@ -448,12 +553,14 @@ inline std::optional<Vector3> DetourPoint(Field const& field, ActorSnapshot cons
         {
             Vector3 const point = Geometry::PointAt(self.Position,
                 float(step) * Geometry::TwoPi / 32.0f, radius, self.Position.Z);
-            if (!ArenaFloor::Solid(point.X, point.Y) || !Clear(field, point, 0.0f)
-                || !PathClear(field, self.Position, point, speed)
-                || Geometry::Distance2d(point, destination) > remaining - DetourProgressYards)
+            // Cheapest test first; a point whose walk and way on alone reach
+            // the best score cannot win (the choice is unchanged).
+            float const left = Geometry::Distance2d(point, destination);
+            if (left > remaining - DetourProgressYards || (best && radius + left >= bestScore)
+                || !ArenaFloor::Solid(point.X, point.Y) || !Clear(field, point, 0.0f)
+                || !PathClear(field, self.Position, point, speed))
                 continue;
-            float const score = radius + Geometry::Distance2d(point, destination)
-                + 0.5f * PathCost(field, point, destination, speed);
+            float const score = radius + left + 0.5f * PathCost(field, point, destination, speed);
             if (!best || score < bestScore)
             {
                 best = point;
@@ -480,11 +587,14 @@ inline Vector3 LeastCostStep(Field const& field, ActorSnapshot const& self, Vect
         {
             Vector3 const point = Geometry::PointAt(self.Position,
                 float(step) * Geometry::TwoPi / 32.0f, radius, self.Position.Z);
-            if (!ArenaFloor::Solid(point.X, point.Y) || !Clear(field, point, 0.0f)
-                || Geometry::Distance2d(point, destination) > remaining - DetourProgressYards)
+            // As in DetourPoint: cheapest first, and radius plus the way on
+            // bounds the score from below.
+            float const left = Geometry::Distance2d(point, destination);
+            if (left > remaining - DetourProgressYards || radius + left >= bestScore
+                || !ArenaFloor::Solid(point.X, point.Y) || !Clear(field, point, 0.0f))
                 continue;
             float const score = radius + PathCost(field, self.Position, point, speed)
-                + Geometry::Distance2d(point, destination) + 0.5f * PathCost(field, point, destination, speed);
+                + left + 0.5f * PathCost(field, point, destination, speed);
             if (score < bestScore)
             {
                 best = point;
@@ -496,13 +606,18 @@ inline Vector3 LeastCostStep(Field const& field, ActorSnapshot const& self, Vect
 
 // The redirect runner's step toward its kite waypoint (the striker the flame
 // will track next: its Sound opens the next chase under the kiter Sound
-// bound, so fire costs more than distance gained). A detour around the fire
+// bound, so fire costs more than distance gained). Out of a bomb zone first;
+// then a detour around the fire
 // when one exists; else, standing clear, the clear point nearest the
 // waypoint reached without crossing fire and no closer to the flame, or
 // holding; else, standing in fire, the least-cost step out.
 inline Vector3 RunnerStep(Field const& field, ActorSnapshot const& self, Vector3 const& waypoint,
     Vector3 const& flame)
 {
+    // In a bomb zone the runner leaves it first (BombEscape): a bomb that
+    // lands on it opens the next chase at 20 Sound.
+    if (std::optional<Vector3> const escape = BombEscape(field, self, {}, waypoint))
+        return *escape;
     if (std::optional<Vector3> const detour = DetourPoint(field, self, waypoint))
         return *detour;
     if (!Clear(field, self.Position, 0.0f))

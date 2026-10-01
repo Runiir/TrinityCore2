@@ -6,8 +6,10 @@
 // changes them.
 
 #include "Bots/BotSpellResolution.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianDragonTankCare.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPickupMemory.h"
@@ -136,7 +138,25 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
             facts.UnglyphedFrenziedRegeneration.push_back(player.Guid);
         // The spells the duties name: whether the bot knows each one (a spell
         // it lacks is unknown and not ready) and, if so, whether SpellHistory
-        // has it ready.
+        // has it ready. Round 4 adds the floor care of the dragons' victims
+        // (BotNefarianDragonTankCare.h); a spell named twice is observed once.
+        auto observeSpell = [&facts, &player, bot](uint32 spellId)
+        {
+            if (!spellId)
+                return;
+            for (SpellReadiness const& entry : facts.Readiness)
+                if (entry.Actor == player.Guid && entry.SpellId == spellId)
+                    return;
+            BotSpellResolution::Resolved const resolved =
+                BotSpellResolution::Resolve(bot, spellId);
+            bool const known = resolved.Effective
+                && (resolved.Effective != resolved.Requested || bot->HasSpell(spellId));
+            // Power is read for the spell that is cast (the resolved spell).
+            facts.Readiness.push_back({ player.Guid, spellId, known
+                && bot->GetSpellHistory()->IsReady(resolved.Effective), known,
+                !known || BotWorldPopulationMgrNativeHelpers::HasPowerForSpell(
+                    bot, resolved.Effective) });
+        };
         for (uint32 spellId : { InterruptFor(player.ClassSpec).SpellId,
                 ControlFor(player.ClassSpec).SpellId,
                 TauntFor(player.ClassSpec).SpellId,
@@ -144,16 +164,9 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
                 PreAscentShieldFor(player.ClassSpec), PreAscentTopUpFor(player.ClassSpec),
                 TankSelfCareSpellsFor(player.ClassSpec)[0], TankSelfCareSpellsFor(player.ClassSpec)[1],
                 TankSelfCareSpellsFor(player.ClassSpec)[2], CrossingDefensiveFor(player.ClassSpec) })
-        {
-            if (!spellId)
-                continue;
-            BotSpellResolution::Resolved const resolved =
-                BotSpellResolution::Resolve(bot, spellId);
-            bool const known = resolved.Effective
-                && (resolved.Effective != resolved.Requested || bot->HasSpell(spellId));
-            facts.Readiness.push_back({ player.Guid, spellId, known
-                && bot->GetSpellHistory()->IsReady(resolved.Effective), known });
-        }
+            observeSpell(spellId);
+        for (uint32 spellId : DragonTankCareSpellsFor(player.ClassSpec))
+            observeSpell(spellId);
         bool const falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);
         bool const landing = BotValidationRouteBoardingAction::NativeFallLandingPending(bot);
         if (falling || landing)

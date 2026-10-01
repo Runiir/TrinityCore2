@@ -2,6 +2,7 @@
 #define TRINITY_BOT_RAID_CANONICAL_CLASS_ROTATION_H
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRaidCanonicalAssassination.h"
 
 #include <string>
 
@@ -38,9 +39,11 @@
 //   * Assassination: Fan of Knives 51723 never landed (its enemy-targeted row
 //     was out_of_range on every attempt: Maloriak 24, Omnotron 13, 0 damage).
 //     Source: user decision 2026-09-27, "Assasination rogue dont need to use
-//     fok. Its always a dps loss". In a canonical raid the row is never
-//     admitted, the same way as Drain Life (self health ceiling 0); the
-//     Phase 8 and Stonecore rows keep it.
+//     fok. Its always a dps loss". Round 2 set its self health ceiling to 0
+//     (as Drain Life); that still let the range-recovery lane submit it, so
+//     since round 4 the canonical profile drops the row
+//     (BotRaidCanonicalAssassination.h). The Phase 8 and Stonecore rows keep
+//     it.
 //   * Elemental: the canonical shaman has the Elemental Mastery talent 16166
 //     (self, instant, SpellRange 1) but the Phase 8 profile has no row for it,
 //     so it was never cast in any round 1 kill. An offensive-cooldown row is
@@ -118,16 +121,6 @@ inline bool HoldDrainLife(BotActionProfileSpell& spell)
     return true;
 }
 
-// User decision 2026-09-27: Assassination never uses Fan of Knives in raid.
-inline bool DisableFanOfKnives(BotActionProfileSpell& spell)
-{
-    if (spell.SpellId != FanOfKnives || spell.TargetSelector != "enemy"
-        || spell.MaxRange != FanOfKnivesRadius || spell.MaxSelfHealthPct != 1.0f)
-        return false;
-    spell.MaxSelfHealthPct = 0.0f;
-    return true;
-}
-
 // Returns the changed or added rows; the caller tags them. The Demonology
 // profile-level lane (the resolver's default and no-action range) widens with
 // its rows but is not a row, so it is not counted.
@@ -166,14 +159,9 @@ uint32 Apply(BotClassSpecActionProfile& profile, Tag&& tag)
         ++changed;
     }
     else if (profile.ClassId == 4 && profile.SpecTag == "assassination_rogue")
-    {
-        for (BotActionProfileSpell& spell : profile.Spells)
-            if (DisableFanOfKnives(spell))
-            {
-                tag(spell);
-                ++changed;
-            }
-    }
+        // Round 4: Fan of Knives removed, the Slice and Dice refresh Envenom
+        // added (BotRaidCanonicalAssassination.h).
+        changed += BotRaidCanonicalAssassination::Apply(profile, tag);
     return changed;
 }
 }

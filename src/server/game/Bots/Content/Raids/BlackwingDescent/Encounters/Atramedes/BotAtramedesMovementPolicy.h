@@ -258,12 +258,30 @@ inline std::optional<MoveProposal> NearestFootprintExit(Blackboard const& board,
         constraint), mechanic, utility);
 }
 
+// Out of a Sonar Bomb zone: the radial exit from the nearest marker when it
+// is clear and allowed, else the escape that spends the least time in any
+// blast (Dodge::BombEscape), never the shortest safe step through a marker.
 inline std::optional<MoveProposal> BombMarkerExit(Blackboard const& board, Facts const& facts,
     ActorSnapshot const& self, Dodge::Constraint const& constraint = {},
     Dodge::FieldOptions const& options = {})
 {
-    return NearestFootprintExit(board, facts, facts.BombMarkers, self,
-        Dodge::BombClearYards + SoundMargin(self), "sonar_bomb_exit", 510.0f, constraint, options);
+    float const clearance = Dodge::BombClearYards + SoundMargin(self);
+    ActorSnapshot const* nearest = nullptr;
+    for (ActorSnapshot const* marker : facts.BombMarkers)
+        if (Geometry::Distance2d(marker->Position, self.Position) < clearance
+            && (!nearest || Geometry::Distance2d(marker->Position, self.Position)
+                < Geometry::Distance2d(nearest->Position, self.Position)))
+            nearest = marker;
+    if (!nearest)
+        return std::nullopt;
+    Vector3 const radial = Geometry::RadialExit(nearest->Position, self.Position,
+        clearance + 1.5f, Geometry::Bearing(nearest->Position, ArenaCenter));
+    Dodge::Field const field = Dodge::BuildField(board, facts, self, options);
+    if (Dodge::Usable(field, constraint, radial))
+        return Survival(radial, "sonar_bomb_exit", 510.0f);
+    if (std::optional<Vector3> const escape = Dodge::BombEscape(field, self, constraint))
+        return Survival(*escape, "sonar_bomb_exit", 510.0f);
+    return Survival(Dodge::Resolve(field, self, radial, constraint), "sonar_bomb_exit", 510.0f);
 }
 
 inline std::optional<MoveProposal> FirePatchExit(Blackboard const& board, Facts const& facts,

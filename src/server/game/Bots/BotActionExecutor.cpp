@@ -1,4 +1,6 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
+#include "Bots/BotPetAreaGuard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuardUnits.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotCastWhileMoving.h"
@@ -303,12 +305,16 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
                 target->GetGUID(), target->GetPositionX(),
                 target->GetPositionY(), target->GetPositionZ());
 
+        // A pet area command is centred on the pet, so the protected-target
+        // guard scans around the pet with the spell's own radius (BotPetAreaGuard.h).
         if (Pet* pet = bot->GetPet())
             if (pet->GetEntry() == FelguardEntry && pet->IsWithinMeleeRange(target)
                 && !action.SuppressAreaDamage
                 && !pet->HasUnitState(UNIT_STATE_CASTING) && pet->HasSpell(FelstormSpellId))
                 if (SpellInfo const* felstorm = sSpellMgr->GetSpellInfo(FelstormSpellId))
-                    if (pet->GetSpellHistory()->IsReady(felstorm))
+                    if (pet->GetSpellHistory()->IsReady(felstorm)
+                        && !BotPetAreaGuard::PetAreaSpellReachesProtectedTarget(bot, pet, felstorm)
+                        && !BotEncounter::MagmawPreEncounterGuard::EvaluateUnitArea(pet, target, felstorm).Forbidden())
                         pet->CastSpell(pet, FelstormSpellId, false);
     }
 

@@ -50,8 +50,24 @@ static int failures = 0;
 
 using namespace BotEncounter::Atramedes;
 
-static ChaseSample Ground() { return ChaseSample{ true, false, 0, 0 }; }
-static ChaseSample Air(std::uint64_t kiter = 0, std::uint32_t sound = 0) { return ChaseSample{ true, true, kiter, sound }; }
+static ChaseSample Sample(bool air, std::uint64_t kiter, std::uint32_t sound)
+{
+    ChaseSample sample;
+    sample.Engaged = true;
+    sample.Air = air;
+    sample.Kiter = kiter;
+    sample.Sound = sound;
+    return sample;
+}
+static ChaseSample Ground() { return Sample(false, 0, 0); }
+static ChaseSample Air(std::uint64_t kiter = 0, std::uint32_t sound = 0) { return Sample(true, kiter, sound); }
+
+// The block without its round-4 run-length Sound samples (checked on their own below).
+static std::string Counts(std::string const& json)
+{
+    size_t const at = json.find(",\"sound_samples\":");
+    return at == std::string::npos ? json : json.substr(0, at) + "}";
+}
 
 // Every block names its attempt and start lifecycle (here lifecycle 5 + the attempt id).
 static std::string Expected(int air, int chases, int samples, int maxSound, int above, int gap, bool complete,
@@ -65,6 +81,54 @@ static std::string Expected(int air, int chases, int samples, int maxSound, int 
         + ",\"first_observed_at_ms\":0,\"last_observed_at_ms\":0}";
 }
 
+// Round 4: the chase samples as a run-length list with the kiter's last
+// Sound rise (BotAtramedesSoundSources.h), so a sample above the bound can be
+// explained from the export alone.
+static void TestSoundSamples()
+{
+    ObservationCounters counters;
+    CHECK(counters.Begin(5), "attempt 5");
+    auto sample = [](std::uint64_t at, std::uint64_t kiter, std::uint32_t sound, char const* source,
+        std::uint32_t increment, std::uint64_t incrementAt)
+    {
+        ChaseSample chase = Air(kiter, sound);
+        chase.AtMs = at;
+        chase.Source = source;
+        chase.Increment = increment;
+        chase.IncrementAtMs = incrementAt;
+        return chase;
+    };
+    // A chase of 7 at 0, 0, 3, 3: two entries (the chase's first sample, the rise).
+    counters.Record(5, sample(1000, 7, 0, "", 0, 0));
+    counters.Record(5, sample(1100, 7, 0, "", 0, 0));
+    counters.Record(5, sample(1200, 7, 3, "roaring_flame", 3, 1200));
+    counters.Record(5, sample(1300, 7, 3, "roaring_flame", 3, 1200));
+    // Not chased: no entry. The striker 8 re-tracked at 20 by a bomb that
+    // landed before the chase: its first sample names that bomb.
+    counters.Record(5, Air());
+    counters.Record(5, sample(4000, 8, 20, "sonar_bomb", 20, 2500));
+    CHECK(counters.SoundSamples().size() == 3 && counters.SoundSamplesDropped() == 0, "run-length entries");
+    CHECK(counters.SoundSamples().back().Source == "sonar_bomb"
+        && counters.SoundSamples().back().IncrementAtMs == 2500, "the source travels with the sample");
+    std::string const json = counters.Json(5, 6);
+    CHECK(json.find(",\"sound_samples\":[{\"at_ms\":1000,\"kiter\":7,\"sound\":0,\"last_increment_source\":\"\","
+        "\"last_increment\":0,\"last_increment_at_ms\":0},{\"at_ms\":1200,\"kiter\":7,\"sound\":3,"
+        "\"last_increment_source\":\"roaring_flame\",\"last_increment\":3,\"last_increment_at_ms\":1200},"
+        "{\"at_ms\":4000,\"kiter\":8,\"sound\":20,\"last_increment_source\":\"sonar_bomb\","
+        "\"last_increment\":20,\"last_increment_at_ms\":2500}],\"sound_samples_dropped\":0}") != std::string::npos,
+        json.c_str());
+    // A stale attempt exports none; a source is never more than its name.
+    CHECK(counters.Json(6, 7).find(",\"sound_samples\":[],\"sound_samples_dropped\":0}") != std::string::npos,
+        "stale attempt: no samples");
+    counters.Record(5, sample(4100, 8, 23, "fire\"_patch", 3, 4100));
+    CHECK(counters.Json(5, 6).find("\"last_increment_source\":\"fire_patch\"") != std::string::npos, "sanitized");
+    // The cap: every further change is counted as dropped.
+    for (std::uint32_t index = 0; index < 400; ++index)
+        counters.Record(5, sample(5000 + index, 8, index % 2, "", 0, 0));
+    CHECK(counters.SoundSamples().size() == MaxSoundSamples
+        && counters.SoundSamplesDropped() == 4 + 400 - MaxSoundSamples, "capped");
+}
+
 int main()
 {
     CHECK(KiterSoundBound == 10, "the user's bound: 10 Sound, the range the WCL chases measured");
@@ -73,7 +137,7 @@ int main()
     CHECK(!counters.LiveFor(1), "no attempt yet");
     counters.Record(1, Air(7, 50));
     counters.RecordGap(1, 900);
-    CHECK(counters.Json(1, 6) == Expected(0, 0, 0, 0, 0, 0, false, 1), "incomplete zeros before Begin");
+    CHECK(Counts(counters.Json(1, 6)) == Expected(0, 0, 0, 0, 0, 0, false, 1), "incomplete zeros before Begin");
     CHECK(!counters.Begin(0) && !counters.LiveFor(0), "attempt 0 is never an attempt");
 
     // Attempt 3: a ground phase, liftoff (no flame yet), a chase of player 7
@@ -111,25 +175,25 @@ int main()
     counters.RecordGap(3, 400);
     counters.RecordGap(3, 100);
     CHECK(counters.Begin(3) && counters.Chases() == 5, "Begin of the same attempt keeps the counts");
-    std::string const json = counters.Json(3, 8);
+    std::string const json = Counts(counters.Json(3, 8));
     CHECK(json == Expected(3, 5, 12, 16, 2, 400, true, 3), json.c_str());
     // A status read for another attempt never reports this attempt's counts;
     // an uncovered live attempt keeps its counts, never complete.
-    CHECK(counters.Json(4, 9) == Expected(0, 0, 0, 0, 0, 0, false, 4), "stale attempt: incomplete zeros");
-    CHECK(counters.Json(3, 8, false) == Expected(3, 5, 12, 16, 2, 400, false, 3), "uncovered: counts, not complete");
+    CHECK(Counts(counters.Json(4, 9)) == Expected(0, 0, 0, 0, 0, 0, false, 4), "stale attempt: incomplete zeros");
+    CHECK(Counts(counters.Json(3, 8, false)) == Expected(3, 5, 12, 16, 2, 400, false, 3), "uncovered: counts, not complete");
     // The sampling's first and newest sample times (system ms, the combat log's clock) are exported for the live
     // attempt only; the harness holds them against the boss window (run_sanity_inputs.observation_window_coverage).
     std::string const timed = counters.Json(3, 8, true, 1790000010000ull, 1790000250000ull);
     CHECK(timed.find(",\"combat_log_epoch\":8,\"first_observed_at_ms\":1790000010000,"
-        "\"last_observed_at_ms\":1790000250000}") != std::string::npos, "the observation times are exported");
-    CHECK(counters.Json(4, 9, true, 1790000010000ull, 1790000250000ull)
+        "\"last_observed_at_ms\":1790000250000,\"sound_samples\":[") != std::string::npos, "the observation times are exported");
+    CHECK(Counts(counters.Json(4, 9, true, 1790000010000ull, 1790000250000ull))
         == Expected(0, 0, 0, 0, 0, 0, false, 4), "a stale attempt exports no observation times");
 
     // A new attempt resets every counter; a late write of the old one is dropped.
     CHECK(counters.Begin(4) && counters.LiveFor(4) && !counters.LiveFor(3), "attempt 4 replaces 3");
     counters.Record(3, Air(7, 60));
     counters.RecordGap(3, 5000);
-    CHECK(counters.Json(4, 9) == Expected(0, 0, 0, 0, 0, 0, true, 4), "a complete zero of the new attempt");
+    CHECK(Counts(counters.Json(4, 9)) == Expected(0, 0, 0, 0, 0, 0, true, 4), "a complete zero of the new attempt");
     // The chase state resets too: the first sample of the new attempt is a new chase.
     counters.Record(4, Air(9, 0));
     CHECK(counters.AirPhases() == 1 && counters.Chases() == 1, "the new attempt counts from zero");
@@ -147,6 +211,7 @@ int main()
         == ",\"encounter_observations\":{\"atramedes\":{\"a\":1}}", "an empty object");
     CHECK(WithAtramedesObservations(",\"other\":{}", block) == ",\"other\":{}",
         "an unknown shape is left alone (the block is then absent: unproven, never a pass)");
+    TestSoundSamples();
     std::printf("%s\n%s\n", WithAtramedesObservations(nefarian, counters.Json(4, 9)).c_str(),
         WithAtramedesObservations("", counters.Json(4, 9)).c_str());
 
@@ -167,7 +232,10 @@ def test_counter_and_reset_logic(tmp_path):
     assert both["encounter_observations"]["atramedes"] == alone["encounter_observations"]["atramedes"] == {
         "air_phases": 1, "chases": 1, "chase_samples": 1, "max_kiter_sound": 0, "samples_above_10": 0,
         "max_sample_gap_ms": 0, "complete": True, "attempt_id": 4, "combat_log_epoch": 9,
-        "first_observed_at_ms": 0, "last_observed_at_ms": 0}
+        "first_observed_at_ms": 0, "last_observed_at_ms": 0,
+        "sound_samples": [{"at_ms": 0, "kiter": 9, "sound": 0, "last_increment_source": "", "last_increment": 0,
+                           "last_increment_at_ms": 0}],
+        "sound_samples_dropped": 0}
 
 
 def _body(text: str, signature: str) -> str:

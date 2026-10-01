@@ -1,0 +1,59 @@
+{
+  "schema": "raid_program_handoff_v1",
+  "packet_id": "boss:magmaw",
+  "round": 4,
+  "changed_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlustTiming.h",
+    "tests/test_magmaw_bloodlust_timing.py",
+    "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md"
+  ],
+  "new_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuard.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuardUnits.h",
+    "tests/test_magmaw_preencounter_guard.py",
+    "tests/test_magmaw_t11_bloodlust_head_window.py"
+  ],
+  "resolved_inputs": [
+    "magmaw:r03:machine_failure_predicate (Magmaw-side part: pre-pull guard for bot/pet area reach on Magmaw parts; the pet-gate and stale-diagnosis fixes stay with the coordinator)",
+    "magmaw:t11_gear_readiness (Bloodlust timing moved to the first exposed head for canonical cohorts from the T11 references; c0 DPS parity baseline recorded)"
+  ],
+  "patch_requests": [
+    {
+      "to": "coordinator",
+      "file": "src/server/game/Bots/BotActionExecutor.cpp",
+      "patch": "Compose with your BotPetAreaGuard Felstorm gate. Add the include next to the other Bots includes:\n#include \"Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPreEncounterGuardUnits.h\"\nand extend the Felstorm condition:\n                    if (pet->GetSpellHistory()->IsReady(felstorm)\n                        && !BotPetAreaGuard::PetAreaSpellReachesProtectedTarget(bot, pet, felstorm)\n                        && !BotEncounter::MagmawPreEncounterGuard::EvaluateUnitArea(pet, target, felstorm).Forbidden())\n                        pet->CastSpell(pet, FelstormSpellId, false);\nEvaluateUnitArea measures from the pet and from its target (the pet follows its target while it whirls). It uses the triggered whirl radius, each part's runtime combat reach and a 5-yard chase margin, and it is inert once Magmaw is engaged or when no living Magmaw part is within 80 yards (so it has no effect outside BWD). The legacy b5 roster has no Felguard, so the change is inert there."
+    },
+    {
+      "to": "coordinator",
+      "file": "src/server/game/Bots/BotWorldPopulationMgrMagmawBloodlust.cpp",
+      "patch": "In SubmitMagmawBloodlustCandidate replace\n    std::optional<LustWindow> const lustWindow =\n        SelectLustWindow(board, headWindow);\nwith\n    std::optional<LustWindow> const lustWindow =\n        SelectLustWindow(board, headWindow,\n            cohort->Config.ValidationRouteScenarioId);\nThe 3-argument overload (BotMagmawBloodlustTiming.h) keeps the legacy blackwing_descent_10n_magmaw_diagnostic shard on its pre-Mangle lead (b5 unchanged). Canonical blackwing_descent_10n_magmaw_c<N>_diagnostic cohorts lust on the first exposed head, as the T11 references do. tests/test_magmaw_bloodlust_timing.py already accepts either call form."
+    }
+  ],
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider --basetemp=~/.cache/r4magmaw/pt tests/test_magmaw_preencounter_guard.py tests/test_magmaw_t11_bloodlust_head_window.py tests/test_magmaw_bloodlust_timing.py tests/test_magmaw_bloodlust.py",
+      "result": "13 passed. The new tests fail before the change: the guard header and the LustTimingPolicyForScenario/3-argument SelectLustWindow symbols do not exist at HEAD."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 pixi run python -m pytest -q -p no:cacheprovider tests/test_magmaw_*.py",
+      "result": "394 passed, 18 failed. All 18 are known baseline failures per `tools.raid_program.test_baseline check` (0 new): test_magmaw_movement_intent_collection (1, SIGABRT), test_magmaw_personal_escape_live_admission (3, KeyError on handoff fields), test_magmaw_transfer_checkpoint_capture (1, import graph bound), test_magmaw_transfer_prestart_bundle (13, magmaw_transfer_ledger_manifest_mismatch or regex). None of them touches the changed files."
+    },
+    {
+      "command": "c++ -fsyntax-only with the build/compile_commands.json flags of BotActionExecutor.cpp on a TU including BotMagmawPreEncounterGuardUnits.h and BotMagmawBloodlustTiming.h and calling EvaluateUnitArea",
+      "result": "clean (a deliberate syntax error was confirmed to be reported, so the check is real)"
+    }
+  ],
+  "open_items": [
+    "Live T11 c0 run still needed: first-ever c0 head window, hook riders (Retribution plus Assassination, both melee) and a third parasite wave (3 of 7 T11 references have one). The r02 c0 kills ended at 91-95 s, before the head.",
+    "Sole-BDK survival through Mangle at T11 health (about 190k). The T11 BDK reference casts Icebound Fortitude 19.5 s into Mangle; the bot pre-casts it 1.5 s before. Not changed without evidence.",
+    "Healer mana over about 150 s with two healers (Holy Paladin and Discipline Priest). Needs the healer-mana heartbeat readout (diag Q3) before any Magmaw healer change.",
+    "The direct-target pre-boss refusal (EvaluateDirectTarget) is available, but the generic future_encounter_target_forbidden already covers direct offense, so no patch requests it.",
+    "Class owners: align Combustion, Vendetta, Metamorphosis/Doomguard and DRW with the exposed head, as the T11 references do. Assassination cast rate is 23.6 cpm in r02 against 33.1 WCL."
+  ],
+  "risks": [
+    "Head-only lust means no lust at all on a c0 attempt that ends or wipes before the head is exposed. Every T11 reference lasts at least 16 s past the Mangle release.",
+    "The 5-yard chase margin is a bot tolerance. It can refuse Felstorm while the tank still holds a drudge near its spawn (18.9 yards from Magmaw), which costs a little warlock trash DPS but not boss DPS.",
+    "EvaluateUnitArea runs five grid searches (80 yards) per call. It is wired only at the ready-Felstorm gate, so it costs nothing per tick for other spells."
+  ],
+  "validation_neutrality": "The legacy Magmaw b5 shard is unchanged. Its raid target, WCL manifest and timelines are untouched, and the 2-argument SelectLustWindow keeps the pre-Mangle lead for blackwing_descent_10n_magmaw_diagnostic. The Magmaw guard only refuses area spells that would reach an un-engaged Magmaw part, and the legacy roster has no Felguard. Stonecore and Phase-8 calibration never observe a Magmaw part, so the guard is inert there. No native boss value, scoreboard target, sidecar or reference changed."
+}

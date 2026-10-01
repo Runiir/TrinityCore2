@@ -114,6 +114,8 @@ def death_evidence(run_dir: Path | None, encounter_node: str, route_deaths: int 
             continue
         at = int(event.get("timestamp_ms") or 0)
         in_window = event.get("route_node_id") == encounter_node or (first is not None and first <= at <= last)
+        if window and window.get("full_wipe_at_ms") and at > int(window["full_wipe_at_ms"]):
+            in_window = False  # the attempt ended at the full wipe: a later death is the next attempt's
         deaths.append({
             "timestamp_ms": at, "route_node_id": event.get("route_node_id"),
             "actor_id": str(event.get("target_guid")), "name": event.get("target_name"),
@@ -217,8 +219,10 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
     if reached_encounter is None:
         reached_encounter = bool(encounter) or any(
             state and state[0] == node for state in summary.get("heartbeat_route_wipe_states") or [])
-    native_clear = is_native_clear(summary, clear_completion(target))
-    died = bool(summary.get("route_deaths")) or bool(deaths.get("deaths"))
+    # A boss window closed at a native full wipe is judged a wipe, whatever happened after it.
+    full_wipe_at_ms = (summary.get("measurement_validity") or {}).get("full_wipe_at_ms")
+    native_clear = is_native_clear(summary, clear_completion(target)) and not full_wipe_at_ms
+    died = bool(summary.get("route_deaths")) or bool(deaths.get("deaths")) or bool(full_wipe_at_ms)
     return {
         "schema": KILL_SCHEMA,
         "kill_id": kill_id,
@@ -232,6 +236,7 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
         "run_dir": summary.get("run_dir"),
         "evidence_dvc_pointer": evidence_pointer,
         "native_clear": native_clear,
+        **({"boss_window_full_wipe_at_ms": full_wipe_at_ms} if full_wipe_at_ms else {}),
         "native_reason": summary.get("native_reason"),
         "completion_reason": summary.get("completion_reason"),
         "outcome": classify_outcome(report_present=report_present, native_clear=native_clear,
@@ -309,6 +314,8 @@ def measurement_fields(report: dict[str, Any], analysis: dict[str, Any] | None, 
             "stall_count": window.get("stall_count", validity.get("boss_window_stall_count")),
             "unstalled_duration_sec": window.get("unstalled_duration_sec"),
             "thresholds": dict(validity.get("thresholds") or {}),
+            # The boss window ended at a native full wipe: the attempt is a wipe.
+            **({"full_wipe_at_ms": window["full_wipe_at_ms"]} if window.get("full_wipe_at_ms") else {}),
         }
     reconciliation = (analysis or {}).get("killed_hostile_damage_reconciliation")
     if not isinstance(reconciliation, dict):

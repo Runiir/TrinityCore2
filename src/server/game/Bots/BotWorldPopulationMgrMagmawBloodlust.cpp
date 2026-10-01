@@ -213,7 +213,8 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         && raid->MagmawBloodlustHeadGuid != window->HeadGuid)
         headWindow.reset();
     std::optional<LustWindow> const lustWindow =
-        SelectLustWindow(board, headWindow);
+        SelectLustWindow(board, headWindow,
+            cohort->Config.ValidationRouteScenarioId);
     if (!lustWindow)
         return;
     if (lustWindow->Trigger == LustTrigger::FirstExposedHead)

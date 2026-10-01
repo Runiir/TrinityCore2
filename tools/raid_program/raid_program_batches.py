@@ -5,7 +5,10 @@ For each batch it:
 1. waits (bounded) until no ``worldserver*`` process runs. A stray pytest fake
    (its executable under ``/tmp/pytest-of-*`` or ``~/.cache``) is waited out; a
    real worldserver refuses the run at once (never stop a live play server);
-2. checks the run root's writable headroom (``/tmp`` is a tmpfs with a quota);
+2. checks the run root's writable headroom (``/tmp`` is a tmpfs with a quota), then gates on host load
+   (host_load: RAM-backed tmpfs use, MemAvailable, swap use and activity, 1-minute load per CPU): a busy
+   host is waited out (bounded, logged) and then refused as ``host_busy``; the host snapshot is kept
+   in the batch row (``host``);
 3. runs ``shard_coordinator --plan <round plan> --output-dir /tmp/<label>-bN-<utc>
    --gdb-backtrace`` (its log is ``<output-dir>.coordinator.log``); on every exit
    path, Ctrl-C and SIGTERM included, its process group and any worldserver or
@@ -41,6 +44,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
+from tools.raid_program import host_load
 from tools.raid_program import raid_program_ingest as ingests
 from tools.raid_program import raid_program_rounds as rounds
 from tools.raid_program import raid_program_runs as runs
@@ -56,6 +60,8 @@ POLL_SECONDS = 10
 BATCH_TIMEOUT_SECONDS = 11400  # emergency cap only; the shard watchdogs end a run long before it
 COMMIT_PATHS = ('artifacts/cata_raid_program',)
 CLEAN_STOPS = ('targets_met', 'no_target_bosses')
+HOST_WAIT_SECONDS = host_load.WAIT_SECONDS
+HOST_POLL_SECONDS = host_load.POLL_SECONDS
 Coordinator = Callable[[Path, str, Path, Path, int], int]
 
 
@@ -142,6 +148,11 @@ def check_headroom(run_root: Path = RUN_ROOT, reader: Callable[[Path], dict] | N
                          f"{headroom.get('filesystem_available_bytes')}, quota {headroom.get('quota_available_bytes')}). "
                          'Archive old /tmp run directories with DVC and remove them, then run program run-batches again')
     return headroom
+
+
+def sample_host() -> dict:
+    """The host-load gate's reading of the run root's host (patched by tests)."""
+    return host_load.sample(RUN_ROOT)
 
 
 def verdict_count(root: Path, scenario: str, label: str) -> tuple[int, int]:
@@ -265,7 +276,8 @@ def run_batches(root: Path, label: str, expected_sha256: str | None = None, max_
                 coordinator: Coordinator | None = None, ingest=None, inventory=None, headroom=None, counter=None,
                 sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic,
                 stamp: Callable[[], str] | None = None, wait_seconds: int = WAIT_SECONDS,
-                batch_timeout: int = BATCH_TIMEOUT_SECONDS) -> dict:
+                batch_timeout: int = BATCH_TIMEOUT_SECONDS, host=None,
+                host_wait_seconds: float = HOST_WAIT_SECONDS) -> dict:
     """Run, record and ingest batches until the target bosses have their kills or a stop condition holds."""
     program, plans = _preflight(root, label, expected_sha256, max_batches)
     targets = target_units(root, program, plans)
@@ -280,9 +292,9 @@ def run_batches(root: Path, label: str, expected_sha256: str | None = None, max_
         def interrupted(where: str) -> str | None:
             return f"signal {', '.join(guard.signals)} {where}" if guard.signals else None
 
-        def guarded_sleep(seconds: float) -> None:
+        def guarded_sleep(seconds: float, where: str = 'while waiting for worldservers to exit') -> None:
             if guard.signals:
-                raise BatchInterrupted(interrupted('while waiting for worldservers to exit'))
+                raise BatchInterrupted(interrupted(where))
             sleep(seconds)
         for _ in range(max_batches):
             error = interrupted('before the next batch started')
@@ -299,8 +311,16 @@ def run_batches(root: Path, label: str, expected_sha256: str | None = None, max_
                 row['waited'] = wait_for_no_worldserver(inventory, wait_seconds=wait_seconds, sleep=guarded_sleep,
                                                         clock=clock)
                 check_headroom(reader=headroom)
+                row['host'] = host_load.wait_for_quiet_host(
+                    host or sample_host, wait_seconds=host_wait_seconds, poll_seconds=HOST_POLL_SECONDS,
+                    sleep=lambda seconds: guarded_sleep(seconds, 'while waiting for a quiet host'), clock=clock,
+                    log=_log)
             except BatchInterrupted as interrupt:
                 stop, error = 'interrupted', interrupt.reason
+                break
+            except host_load.HostBusyError as busy:  # typed refusal, before or after the first batch
+                batches.append(row | {'host': busy.snapshot, 'refused': busy.reason})
+                stop, error = 'host_busy', str(busy)
                 break
             except GraphError as refusal:
                 if not batches:
@@ -409,6 +429,9 @@ NEXT = {
                            'those pids yourself (ps -o pid,pgid,args -p <pids>); never touch a play server. Once they '
                            'are gone, run program run-batches again. Its output directory is kept; if it holds a '
                            'shard_run.json you may record it with program run --shard-run and ingest it.'),
+    'host_busy': ('The host stayed busy past the bounded wait (see error and batches[-1].host.gate.reasons: RAM-backed '
+                  '/tmp tmpfs use, MemAvailable, swap use or activity, 1-minute load per CPU); nothing was launched '
+                  'for that batch. Free the tmpfs, let other heavy work finish, then run program run-batches again.'),
     'refused': ('A later batch could not launch (see error: a worldserver is running or /tmp lacks headroom); the '
                 'batches before it are recorded. Resolve the cause, then run program run-batches again.'),
 }

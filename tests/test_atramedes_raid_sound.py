@@ -805,8 +805,97 @@ static void TestDetoursProgressAndSlotsAvoidFire()
     assert(G::Distance2d(moved, arc) > 1.0f && A::FireFree(A::BuildFacts(ground), moved));
 }
 
+// Seconds a straight walk from `from` to `to` spends inside any bomb blast
+// (6 yd) of `board`.
+static float BlastSeconds(Blackboard const& board, Vector3 const& from, Vector3 const& to)
+{
+    float seconds = 0.0f;
+    for (ActorSnapshot const& marker : board.Summons)
+        if (marker.Entry == A::SonarBombMarkerEntry)
+            seconds += A::KitePath::SecondsInside(from, to, marker.Position, A::SonarBombRadius, 7.0f);
+    return seconds;
+}
+
+static void TestBombEscapeGeometry()
+{
+    // One zone: the escape is radial, just past the zone, and the fastest.
+    D::Field field;
+    Vector3 const marker{ 140.0f, -225.0f, 75.0f };
+    field.Zones.push_back({ marker, D::BombClearYards, false, true });
+    ActorSnapshot self = MakePlayer(Elemental, "dps", "elemental_shaman", 142.0f, -225.0f);
+    assert(D::InBombZone(field, self.Position));
+    std::optional<Vector3> const escape = D::BombEscape(field, self);
+    assert(escape && !D::InBombZone(field, *escape));
+    assert(std::fabs(G::Bearing(marker, *escape) - G::Bearing(marker, self.Position)) < 0.2f);
+    assert(G::Distance2d(*escape, marker) < D::BombClearYards + D::SafetyPad + 1.0f);
+    assert(std::fabs(D::ExitAlong(self.Position, 0.0f, marker, 6.0f) - 4.0f) < 0.01f);
+    // Negative controls: outside every zone there is nothing to escape, and
+    // a fire patch alone is no bomb zone.
+    self.Position = { 150.0f, -225.0f, 75.0f };
+    assert(!D::BombEscape(field, self));
+    D::Field fire;
+    fire.Zones.push_back({ marker, D::PatchClearYards, true, false });
+    self.Position = marker;
+    assert(!D::InBombZone(fire, self.Position) && !D::BombEscape(fire, self));
+}
+
+// Live r03 batch 1: a Sonar Bomb landed on the striker the redirected flame
+// re-tracks (its first chase sample was 20 Sound) and on a gong relay. Both
+// now leave the zone by the fastest escape instead of walking on through the
+// marker toward their waypoint or station.
+static void TestRunnerAndRelayLeaveABombFirst()
+{
+    Blackboard run = AirBoard();
+    for (ActorSnapshot& player : run.Players)
+        player.Position = A::ArenaCenter;
+    run.Summons.push_back(MakeUnit(A::ReverberatingFlameEntry, 81, 100.0f, -225.0f, ActorKind::Summon));
+    Member(run, Hunter).Auras.push_back({ A::AirClashAura, ShieldGuid(250125), 0, run.ObservedAtMs + 15000 });
+    Vector3 self{};
+    Vector3 waypoint{};
+    for (float degrees = 0.0f; degrees < 360.0f; degrees += 5.0f)
+    {
+        self = G::PointAt(A::ArenaCenter, degrees * A::Geometry::Pi / 180.0f, 50.0f, 75.0f);
+        Member(run, Hunter).Position = self;
+        AdaptiveAtramedesPlan const plain = Plan(run, Hunter);
+        if (Mechanic(plain) == "air_redirect_run" && G::Distance2d(To(plain), self) >= 14.0f
+            && A::ArenaFloor::Solid(self.X, self.Y))
+        {
+            waypoint = To(plain);
+            break;
+        }
+    }
+    assert(G::Distance2d(waypoint, self) >= 14.0f);
+    // A marker 2 yd ahead on the run: the runner stands in its zone.
+    Vector3 const ahead = G::PointAt(self, G::Bearing(self, waypoint), 2.0f, 75.0f);
+    run.Summons.push_back(MakeUnit(A::SonarBombMarkerEntry, 960, ahead.X, ahead.Y, ActorKind::Summon));
+    AdaptiveAtramedesPlan const out = Plan(run, Hunter);
+    assert(Mechanic(out) == "air_redirect_run");
+    assert(G::Distance2d(To(out), ahead) >= D::BombClearYards);
+    // Out the near side (4 yd of blast), not on through the marker (8 yd).
+    assert(BlastSeconds(run, self, To(out)) <= 4.0f / 7.0f + 0.1f);
+
+    // The gong owner at its relay station with a marker 1.5 yd beside it.
+    Blackboard relay = AirBoard();
+    A::Facts const facts = A::BuildFacts(relay);
+    A::ShieldFact const shield = A::RelayShields(facts).front();
+    Vector3 const station = A::AirStationPoint(shield);
+    Member(relay, Hunter).Position = station;
+    Vector3 const beside = G::PointAt(station, G::Bearing(station, shield.Position), 1.5f, 75.0f);
+    relay.Summons.push_back(MakeUnit(A::SonarBombMarkerEntry, 961, beside.X, beside.Y, ActorKind::Summon));
+    AdaptiveAtramedesPlan const step = Plan(relay, Hunter);
+    assert(Mechanic(step) == "air_relay_hazard_step");
+    assert(G::Distance2d(To(step), beside) >= D::BombClearYards);
+    // The radial way out (0.64 s of blast) leaves click reach; the escape
+    // keeps reach for a sideways walk that is still out long before the bomb
+    // lands (2.5 s after the marker).
+    assert(G::Distance3d(A::ArenaFloor::OnFloor(To(step)), shield.Position) <= A::ShieldClickDistance);
+    assert(BlastSeconds(relay, station, To(step)) <= 1.0f);
+}
+
 static void RunRules()
 {
+    TestBombEscapeGeometry();
+    TestRunnerAndRelayLeaveABombFirst();
     TestBombExitAvoidsTheNextZone();
     TestFireTrailExitLeavesTheBand();
     TestMeleeDodgesEveryLaneInRange();
@@ -866,6 +955,9 @@ static void RaidSoundAssertions(SoundBook const& book, SoundBook const& still)
         }
         assert(book.Of(phase, "all").Mean() <= AIR_ALL_MEAN);
         assert(book.Of(phase, "all").Max <= AIR_ALL_MAX);
+        // Round 4: no bomb lands on anyone but the chased player (round 3:
+        // 0.67-1.33 Sound per phase, the redirect runner and gong relays).
+        assert(book.Sources.at(phase).at("bomb_bystander").first == 0);
     }
 }
 '''

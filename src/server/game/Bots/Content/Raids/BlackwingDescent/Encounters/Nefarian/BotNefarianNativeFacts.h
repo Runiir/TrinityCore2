@@ -34,14 +34,17 @@ struct TransportPlacement
 };
 
 // Whether the bot knows a duty spell (Player::HasSpell, through
-// BotSpellResolution) and whether it is ready now (SpellHistory::IsReady); a
-// spell the bot lacks is recorded as unknown and not ready.
+// BotSpellResolution), whether it is ready now (SpellHistory::IsReady) and
+// whether the bot can pay its power cost now (SpellInfo::CalcPowerCost against
+// its current power); a spell the bot lacks is recorded as unknown and not
+// ready.
 struct SpellReadiness
 {
     ObjectGuid Actor;
     uint32 SpellId = 0;
     bool Ready = true;
     bool Known = true;
+    bool Affordable = true;
 };
 
 // The bot's own movement: whether a spline is running and where it ends
@@ -137,6 +140,16 @@ struct NativeFacts
     bool SpellUsable(ObjectGuid actor, uint32 spellId) const
     {
         return SpellKnown(actor, spellId) && SpellReady(actor, spellId);
+    }
+
+    // Whether the bot can pay the spell's power cost now. A spell without an
+    // entry counts as affordable: native submission stays the judge.
+    bool SpellAffordable(ObjectGuid actor, uint32 spellId) const
+    {
+        for (SpellReadiness const& entry : Readiness)
+            if (entry.Actor == actor && entry.SpellId == spellId)
+                return entry.Affordable;
+        return true;
     }
 
     std::vector<PickupState> Pickups;

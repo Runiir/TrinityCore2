@@ -349,6 +349,9 @@ inline uint8 FormationSlot(Blackboard const& board, ObjectGuid guid)
 // Heal and spell range is 40 yards; a spot keeps its targets within 36 so a
 // tank's step or a dragon's turn does not put them out of reach.
 constexpr float SightRangeYards = 36.0f;
+// How far from its wanted spot a caster or healer that already serves its
+// targets may stand before it walks (round 4).
+constexpr float FormationKeepYards = 10.0f;
 
 // Hunter shots and Auto Shot carry a 5 yd minimum range that the spell system
 // extends by the melee range (Spell::GetMinMaxRange; the dragons' melee
@@ -484,6 +487,21 @@ inline std::optional<SurfaceGoal> SightedFormationGoal(MovementContext const& co
             LocalPoint const out{ start.X - targets.front().X, start.Y - targets.front().Y };
             float const heading = Length(out) < 0.1f ? bearing : AngleOf(out);
             start = Offset(targets.front(), heading, minRange + 1.5f);
+        }
+        // Round 4: a member standing on the platform floor near its spot,
+        // where it is safe and serves every target, stays: the search's first
+        // hit moves with every step of a tank or turn of a dragon, and each
+        // walk takes the cast lanes (round 3: the healers cast almost only
+        // instants while the Onyxia tank died).
+        if (LocalPoint const self = BotLocal(context);
+            Distance(self, start) <= FormationKeepYards && OnPlatformFloor(context)
+            && FloorPointSafe(context, self, false) && SpotServes(self, targets, minRange))
+        {
+            SurfaceGoal goal = MakeGoal(context, purpose, Surface::Floor, self, 3.0f, false);
+            goal.Sight = targets;
+            goal.SightRangeYards = SightRangeYards;
+            goal.SightMinRangeYards = minRange;
+            return goal;
         }
         if (std::optional<LocalPoint> const point = SightedSpot(context, start, bearing,
                 targets, minRange))

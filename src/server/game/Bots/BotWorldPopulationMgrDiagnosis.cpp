@@ -743,6 +743,9 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"decision_timer_ms\":" << state.DecisionTimer
          << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
          << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0)
+         // When the current blocked_no_fallback episode began (same clock as
+         // native_last_resurrection_ms); 0 when the bot is not blocked.
+         << ",\"blocked_start_ms\":" << (state.Blocked ? state.BlockedStartMs : uint64(0))
          << ",\"loop_recovery_cooldown_until_ms\":" << state.LoopRecoveryCooldownUntilMs << "}"
          << ",\"movement\":{\"is_moving\":" << (state.IsMoving ? "true" : "false")
          << ",\"native_current_motion_type\":" << (nativeMotion ? uint32(nativeMotion->GetCurrentMovementGeneratorType()) : uint32(MAX_MOTION_TYPE))

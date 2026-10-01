@@ -3,6 +3,7 @@
 #include "Bots/BotFireCombustionObservation.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotRaidDemonologyHellfireLive.h"
 #include "Bots/BotRaidRotationOverrides.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -100,6 +101,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         Cohort().Config.ValidationRouteKind,
         Cohort().Config.ValidationRouteNodeKind,
         Cohort().Raid.EncounterPhase};
+    // Canonical raids: Hellfire starts on the enemies around the warlock, not
+    // the target (BotRaidDemonologyHellfire.h).
+    if (profile.SpecTag == "demonology_warlock" && bot->GetMap() && bot->GetMap()->IsRaid()
+        && BotCanonicalRaidScope::IsCanonicalRaid(Cohort().Raid.RaidInstance,
+            Cohort().Config.ValidationRouteScenarioId))
+        BotRaidDemonologyHellfire::RejectStartsWithoutPack(bot, candidates);
     auto engagedWithBotParty = [bot](Unit* unit) -> bool
     {
         auto belongsToBotParty = [bot](Unit* participant) -> bool

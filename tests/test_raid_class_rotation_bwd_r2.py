@@ -125,18 +125,19 @@ int main() {
     auto rogue = assassination();
     assert(BotRaidRotationOverrides::Apply(rogue) == 1); // round 3 Vendetta only
     assert(rogue.Spells[2].TargetSelector == "enemy");
-    // User decision 2026-09-27: Fan of Knives is never admitted in a canonical
-    // raid (self health ceiling 0, as Drain Life); nothing else on the row moves.
+    // User decision 2026-09-27: Fan of Knives is never used in a canonical
+    // raid. Round 4 removes the row (the round 2 self health ceiling still let
+    // the range-recovery lane submit it; BotRaidCanonicalAssassination.h);
+    // nothing else moves.
     assert(BotRaidRotationOverrides::ApplyCanonical(rogue) == 1);
-    assert(rogue.Spells[2].MaxSelfHealthPct == 0.0f);
-    assert(rogue.Spells[2].TargetSelector == "enemy" && rogue.Spells[2].MaxRange == 10.0f);
-    assert(rogue.Spells[2].MechanicTags == "fan_of_knives,aoe,poison_application" + tag);
+    assert(rogue.Spells.size() == 2);
+    for (auto const& s : rogue.Spells) assert(s.SpellId != 51723);
     assert(rogue.Spells[1].TargetSelector == "enemy" && rogue.Spells[1].MechanicTags == "mutilate");
     assert(rogue.Spells[0].MaxSelfHealthPct == 1.0f && rogue.Spells[1].MaxSelfHealthPct == 1.0f);
     assert(BotRaidRotationOverrides::ApplyCanonical(rogue) == 0);
     auto driftedRogue = assassination("assassination_rogue", 8.0f);
     assert(BotRaidRotationOverrides::ApplyCanonical(driftedRogue) == 0);
-    assert(driftedRogue.Spells[2].MaxSelfHealthPct == 1.0f);
+    assert(driftedRogue.Spells.size() == 3 && driftedRogue.Spells[2].MaxSelfHealthPct == 1.0f);
     auto combat = assassination("combat_rogue");
     assert(BotRaidRotationOverrides::ApplyCanonical(combat) == 0 && combat.Spells[2].MaxSelfHealthPct == 1.0f);
     // Raid scope alone (legacy rosters) keeps Fan of Knives.

@@ -38,7 +38,34 @@ struct FanBias
     bool Active = false;
     float Side = 1.0f;       // +1: the kite is on the +V side of the frame
     ObjectGuid FlankOwner;   // takes the fan's flank end (the Frost Shock owner)
+    // Phase two: where the off-tank holds the Prime Subjects (and any
+    // Aberration left); the healers keep it within heal reach.
+    std::optional<Vector3> OffTankHold;
 };
+
+// Phase two: the off-tank holds the Prime Subjects at an add spot about 28
+// yards from the boss, often ahead of his flank (r03 kill 35b93d: the Feral
+// at the west spot, 20 degrees off the boss front). The 200-degree back fan
+// left both healers 43-61 yards from it in three of four r03 kills: in
+// 35b93d the Feral took one heal in 14 s and died to Prime Subject melee, in
+// cd3009 it fell to 12.7k. The healers take back-arc slots on the
+// off-tank's side instead, at its own angle when that is inside the back
+// arc, else at the arc's edge, 18 degrees apart (5.6 yards at 18 yards).
+constexpr float OffTankHealReach = 34.0f;
+constexpr float HealerSideEdgeDeg = 82.0f;
+constexpr float HealerSideSpacingDeg = 18.0f;
+
+inline Vector3 OffTankSideHealerSlot(BossFrame const& frame,
+    Vector3 const& offTank, std::size_t ordinal, std::size_t count)
+{
+    float const angle = ToFramePolar(frame, offTank).Angle;
+    float const side = angle >= 0.0f ? 1.0f : -1.0f;
+    float const centre = std::max(std::fabs(angle), HealerSideEdgeDeg * Pi / 180.0f);
+    float const offset = count > 1
+        ? (float(ordinal) - float(count - 1) / 2.0f) * HealerSideSpacingDeg * Pi / 180.0f
+        : 0.0f;
+    return FramePolar(frame, RangedSpreadRadius, side * (centre + offset));
+}
 
 inline Vector3 BiasedBackRangedSlot(BossFrame const& frame, std::size_t position,
     std::size_t count, float side)
@@ -198,6 +225,22 @@ inline std::optional<BotNativeAction::Candidate> ProposeFormation(
     std::size_t const index = IndexIn(group, bot.Guid);
     if (index == group.size())
         return std::nullopt;
+    bool const healerReach = bias.OffTankHold
+        && observation.CurrentPhase == Maloriak::Phase::PhaseTwo;
+    auto healerSlot = [&](std::size_t slotIndex) -> std::optional<Vector3>
+    {
+        if (!healerReach || group[slotIndex]->Role != "healer")
+            return std::nullopt;
+        std::size_t ordinal = 0;
+        std::size_t count = 0;
+        for (std::size_t member = 0; member < group.size(); ++member)
+            if (group[member]->Role == "healer")
+            {
+                ordinal += member < slotIndex ? 1 : 0;
+                ++count;
+            }
+        return OffTankSideHealerSlot(frame, *bias.OffTankHold, ordinal, count);
+    };
     auto slotFor = [&](std::size_t slotIndex) -> Vector3
     {
         switch (observation.CurrentPhase)
@@ -208,6 +251,8 @@ inline std::optional<BotNativeAction::Candidate> ProposeFormation(
             default:
                 if (melee)
                     return Maloriak::BackMeleeSlot(frame, slotIndex);
+                if (std::optional<Vector3> const slot = healerSlot(slotIndex))
+                    return *slot;
                 if (bias.Active && observation.CurrentPhase != Maloriak::Phase::PhaseTwo)
                     return BiasedBackRangedSlot(frame,
                         FanPosition(group, slotIndex, bias.FlankOwner), group.size(),
@@ -290,7 +335,11 @@ inline std::optional<BotNativeAction::Candidate> ProposeFormation(
         || Maloriak::CauldronLineClear(bot.Position, frame.Boss);
     if (inSight && Maloriak::Distance2d(bot.Position, destination) <= tolerance)
         return std::nullopt;
-    if (!melee)
+    // A healer out of heal reach of the phase-two off-tank never keeps its
+    // place (the hysteresis below would hold it up to 9 yards off its slot).
+    bool const offTankOutOfReach = healerReach && botRole == "healer"
+        && Maloriak::Distance2d(bot.Position, *bias.OffTankHold) > OffTankHealReach;
+    if (!melee && !offTankOutOfReach)
     {
         std::vector<Vector3> neighbours;
         for (ActorSnapshot const& player : board.Players)

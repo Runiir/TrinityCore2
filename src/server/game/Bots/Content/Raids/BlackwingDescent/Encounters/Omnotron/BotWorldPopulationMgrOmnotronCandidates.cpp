@@ -5,6 +5,8 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronOffenseAuthority.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronPetShieldGuard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronTankSurvival.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
@@ -15,6 +17,8 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "WorldPacket.h"
+#include "WorldSession.h"
 
 #include <optional>
 #include <string>
@@ -34,8 +38,45 @@
 // (one candidate identity per cast) and the attempt tries each known
 // interrupt until one is submitted; interrupts and taunts on a shielded
 // construct run under a SingleCastAllowance.
+using BotWorldPopulationMgrNativeHelpers::HasPowerForSpell;
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+
+namespace
+{
+// The owner's Felguard whirling (Felstorm aura) beside a shielded construct
+// (BotOmnotronPetShieldGuard.h), or an empty GUID.
+ObjectGuid OmnotronFelstormBesideShield(Player* bot,
+    BotEncounter::Omnotron::EncounterFacts const& facts)
+{
+    namespace O = BotEncounter::Omnotron;
+    Pet* pet = bot->GetPet();
+    if (!pet || !pet->IsAlive() || pet->GetEntry() != O::FelguardEntry
+        || !pet->HasAura(O::FelstormAura) || !bot->GetSession()
+        || !O::FelstormReachesShieldedConstruct(facts,
+            { pet->GetPositionX(), pet->GetPositionY(), pet->GetPositionZ() }))
+        return ObjectGuid::Empty;
+    return pet->GetGUID();
+}
+
+// Cancels the pet's Felstorm aura with the client's pet cancel-aura request
+// (CMSG_PET_CANCEL_AURA), as a player right-clicks the pet buff. Returns
+// whether the aura is gone afterwards.
+bool CancelOmnotronPetFelstorm(Player* bot, ObjectGuid petGuid)
+{
+    Pet* live = bot->GetPet();
+    if (!live || live->GetGUID() != petGuid
+        || !live->HasAura(BotEncounter::Omnotron::FelstormAura))
+        return true;
+    if (!bot->GetSession())
+        return false;
+    WorldPacket request(CMSG_PET_CANCEL_AURA, 8 + 4);
+    request << petGuid;
+    request << uint32(BotEncounter::Omnotron::FelstormAura);
+    bot->GetSession()->HandlePetCancelAuraOpcode(request);
+    return !live->HasAura(BotEncounter::Omnotron::FelstormAura);
+}
+}
 
 void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
     BotUpdateContext& context)
@@ -69,6 +110,18 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
         context.State.DecisionKernel.Submit(std::move(movement));
     }
 
+    // Review r4 finding 6: shield suppression and the Felstorm cancel both
+    // need the Pet lane, and suppression (utility 100) commits first. A pet
+    // whirling beside a shielded construct is therefore cancelled by
+    // whichever of the two runs: suppression cancels it itself, and the
+    // standalone cancel below covers a bot that is not suppressing.
+    namespace O = BotEncounter::Omnotron;
+    std::optional<O::EncounterFacts> ownedFacts;
+    if (context.AdaptiveOmnotronOwnsNode && Cohort().EncounterSnapshot)
+        ownedFacts.emplace(O::Observe(*Cohort().EncounterSnapshot));
+    ObjectGuid const felstormPet = ownedFacts
+        ? OmnotronFelstormBesideShield(context.Bot, *ownedFacts) : ObjectGuid::Empty;
+
     if (context.AdaptiveOmnotronSuppressOffense)
     {
         BotActionArbitration::Candidate suppress;
@@ -79,7 +132,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
         suppress.UtilityScore = 100.0f;
         suppress.RequiredResources = BotActionArbitration::Uses(
             BotActionArbitration::Resource::Pet);
-        suppress.Attempt = [this, &context]()
+        suppress.Attempt = [this, &context, felstormPet]()
         {
             bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
                 BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
@@ -92,6 +145,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
                         context.Bot->GetGUID(), COMMAND_FOLLOW },
                     BotMovementArbitration::Owner::Mechanic,
                     BotMovementArbitration::Priority::Mechanic);
+            // A follow command does not end a running whirl.
+            if (!felstormPet.IsEmpty())
+                CancelOmnotronPetFelstorm(context.Bot, felstormPet);
             context.State.TargetGuid.Clear();
             context.Target = nullptr;
             context.Situation = "adaptive_omnotron";
@@ -276,6 +332,101 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
         };
         context.State.DecisionKernel.Submit(std::move(dispel));
     }
+
+    if (!ownedFacts)
+        return;
+    BotEncounter::Blackboard const& board = *Cohort().EncounterSnapshot;
+    O::EncounterFacts const& facts = *ownedFacts;
+
+    // A running Felstorm beside a shielded construct (BotOmnotronPetShieldGuard.h):
+    // the owner cancels the pet's aura with the client's pet cancel-aura
+    // request, as a player right-clicks the pet buff.
+    if (!felstormPet.IsEmpty())
+    {
+        BotActionArbitration::Candidate cancel;
+        cancel.Key = "adaptive_omnotron:felstorm_cancel:"
+            + std::to_string(felstormPet.GetRawValue());
+        cancel.Source = "adaptive_omnotron";
+        cancel.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        cancel.UtilityScore = 95.0f;
+        cancel.RequiredResources = BotActionArbitration::Uses(
+            BotActionArbitration::Resource::Pet);
+        cancel.Attempt = [&context, petGuid = felstormPet]()
+        {
+            Pet* live = context.Bot->GetPet();
+            if (!live || live->GetGUID() != petGuid || !live->HasAura(
+                    BotEncounter::Omnotron::FelstormAura))
+                return BotActionArbitration::Outcome::NotApplicable(
+                    "felstorm_already_ended");
+            bool const cancelled = CancelOmnotronPetFelstorm(context.Bot, petGuid);
+            context.Situation = "adaptive_omnotron";
+            context.Action = "felstorm_cancel_beside_shield";
+            context.State.LastDecisionHandler = "adaptive_omnotron";
+            return cancelled
+                ? BotActionArbitration::Outcome::Submitted("felstorm_cancel_submitted")
+                : BotActionArbitration::Outcome::Retryable("felstorm_cancel_rejected");
+        };
+        context.State.DecisionKernel.Submit(std::move(cancel));
+    }
+
+    // Tank survival (BotOmnotronTankSurvival.h): the first decision this bot
+    // can cast now, judged by its own spell book, native cooldown, power and
+    // movement (FirstSubmittableSurvival). The cast is an ordinary native cast
+    // of that spell on the decision's target. Recomputed from the shared
+    // snapshot; the duty plan's ledgers are not touched here. While this bot
+    // is the assigned Arcane Annihilator interrupter only urgent survival is
+    // submitted, so nonurgent maintenance never takes the interrupt's lanes.
+    BotEncounter::ActorSnapshot const* self = board.FindActor(context.Bot->GetGUID());
+    if (!self)
+        return;
+    bool const moving = context.Bot->isMoving();
+    bool const assignedInterrupt = !context.AdaptiveOmnotronInterruptTargetGuid.IsEmpty();
+    std::vector<O::SurvivalDecision> const decisions
+        = O::DecideSurvivalActions(board, facts, *self, moving);
+    O::SurvivalDecision const* chosen = O::FirstSubmittableSurvival(decisions,
+        assignedInterrupt, [&context, moving](O::SurvivalDecision const& decision)
+        {
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(decision.SpellId);
+            if (!info || !context.Bot->HasActiveSpell(decision.SpellId)
+                || !context.Bot->GetSpellHistory()->IsReady(info)
+                || !HasPowerForSpell(context.Bot, info)
+                || (moving && info->CalcCastTime() > 0))
+                return false;
+            Unit* target = decision.Target == context.Bot->GetGUID() ? context.Bot
+                : ObjectAccessor::GetUnit(*context.Bot, decision.Target);
+            return target && target->IsAlive();
+        });
+    if (!chosen)
+        return;
+    O::SurvivalDecision const decision = *chosen;
+    bool const onSelf = decision.Target == context.Bot->GetGUID();
+    BotNativeAction::Intent intent = BotNativeAction::CastSpell{
+        onSelf ? ObjectGuid::Empty : decision.Target, decision.SpellId };
+    BotActionArbitration::Candidate survival;
+    survival.Key = "adaptive_omnotron:" + std::string(decision.Reason) + ":"
+        + std::to_string(decision.Target.GetRawValue());
+    survival.Source = "adaptive_omnotron";
+    survival.ActionPriority = decision.Urgent
+        ? BotActionArbitration::Priority::Survival
+        : BotActionArbitration::Priority::Mechanic;
+    survival.UtilityScore = decision.Urgent ? 150.0f : 140.0f;
+    survival.RequiredResources = BotNativeAction::RequiredResources(intent);
+    survival.Attempt = [this, &context, intent = std::move(intent),
+        reason = std::string(decision.Reason)]()
+    {
+        BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
+            context.State, context.Bot, intent,
+            BotMovementArbitration::Owner::Mechanic,
+            BotMovementArbitration::Priority::Mechanic);
+        if (outcome.Result == BotActionArbitration::Disposition::Committed)
+        {
+            context.Situation = "adaptive_omnotron";
+            context.Action = reason;
+            context.State.LastDecisionHandler = "adaptive_omnotron";
+        }
+        return outcome;
+    };
+    context.State.DecisionKernel.Submit(std::move(survival));
 }
 
 // Adaptive Omnotron owns targets and movement once a construct is engaged, so

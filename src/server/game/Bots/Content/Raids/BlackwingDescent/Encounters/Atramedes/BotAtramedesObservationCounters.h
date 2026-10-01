@@ -24,8 +24,10 @@
 // complete false.
 // Standard library only, so the logic compiles in a g++ program test.
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace BotEncounter::Atramedes
 {
@@ -45,6 +47,30 @@ struct ChaseSample
     // and that player's Sound.
     std::uint64_t Kiter = 0;
     std::uint32_t Sound = 0;
+    // The snapshot time (system ms) and the source, size and time of the
+    // kiter's last Sound rise, possibly before the chase
+    // (BotAtramedesSoundSources.h; empty when nobody attributed it).
+    std::uint64_t AtMs = 0;
+    std::string Source;
+    std::uint32_t Increment = 0;
+    std::uint64_t IncrementAtMs = 0;
+};
+
+// Round 4: the chase samples as a run-length list, so the export explains
+// every sample, the ones above the bound first of all: an entry for the first
+// sample of each chase and for every sample whose Sound differs from the one
+// before it in the chase (every other sample repeats the entry before it).
+// At most MaxSoundSamples entries; the rest are counted as dropped.
+inline constexpr std::size_t MaxSoundSamples = 256;
+
+struct SoundSampleEntry
+{
+    std::uint64_t AtMs = 0;
+    std::uint64_t Kiter = 0;
+    std::uint32_t Sound = 0;
+    std::string Source;
+    std::uint32_t Increment = 0;
+    std::uint64_t IncrementAtMs = 0;
 };
 
 class ObservationCounters
@@ -84,10 +110,20 @@ public:
             _chaseKiter = 0;
             return;
         }
-        if (sample.Kiter != _chaseKiter)
+        bool const newChase = sample.Kiter != _chaseKiter;
+        if (newChase)
         {
             ++_chases;
             _chaseKiter = sample.Kiter;
+        }
+        if (newChase || sample.Sound != _listedSound)
+        {
+            if (_soundSamples.size() < MaxSoundSamples)
+                _soundSamples.push_back({ sample.AtMs, sample.Kiter, sample.Sound, sample.Source,
+                    sample.Increment, sample.IncrementAtMs });
+            else
+                ++_soundSamplesDropped;
+            _listedSound = sample.Sound;
         }
         ++_chaseSamples;
         if (sample.Sound > _maxKiterSound)
@@ -108,10 +144,13 @@ public:
     std::uint64_t ChaseSamples() const { return _chaseSamples; }
     std::uint32_t MaxKiterSound() const { return _maxKiterSound; }
     std::uint64_t SamplesAboveBound() const { return _samplesAboveBound; }
+    std::vector<SoundSampleEntry> const& SoundSamples() const { return _soundSamples; }
+    std::uint64_t SoundSamplesDropped() const { return _soundSamplesDropped; }
 
     // {"air_phases":n,"chases":n,"chase_samples":n,"max_kiter_sound":n,
     //  "samples_above_10":n,"max_sample_gap_ms":n,"complete":b,"attempt_id":n,
-    //  "combat_log_epoch":n,"first_observed_at_ms":n,"last_observed_at_ms":n}
+    //  "combat_log_epoch":n,"first_observed_at_ms":n,"last_observed_at_ms":n,
+    //  "sound_samples":[...],"sound_samples_dropped":n}
     // for the cohort's current attempt and its start lifecycle
     // (CohortRuntime::CombatLogEpoch), which run_sanity binds to the judged
     // combat-log capture. An uncovered live attempt keeps its counts (a lower
@@ -134,10 +173,35 @@ public:
             + ",\"attempt_id\":" + std::to_string(currentAttemptId)
             + ",\"combat_log_epoch\":" + std::to_string(lifecycle)
             + ",\"first_observed_at_ms\":" + std::to_string(live ? firstObservedAtMs : 0)
-            + ",\"last_observed_at_ms\":" + std::to_string(live ? lastObservedAtMs : 0) + "}";
+            + ",\"last_observed_at_ms\":" + std::to_string(live ? lastObservedAtMs : 0)
+            + ",\"sound_samples\":" + SoundSamplesJson(live)
+            + ",\"sound_samples_dropped\":" + count(_soundSamplesDropped) + "}";
     }
 
 private:
+    // [{"at_ms":n,"kiter":n,"sound":n,"last_increment_source":s,
+    //   "last_increment":n,"last_increment_at_ms":n},...]; the source is one
+    // of BotAtramedesSoundSources.h's names (letters, '_' and '+').
+    std::string SoundSamplesJson(bool live) const
+    {
+        std::string json = "[";
+        if (live)
+            for (SoundSampleEntry const& entry : _soundSamples)
+            {
+                if (json.size() > 1)
+                    json += ',';
+                std::string source;
+                for (char c : entry.Source)
+                    if ((c >= 'a' && c <= 'z') || c == '_' || c == '+')
+                        source += c;
+                json += "{\"at_ms\":" + std::to_string(entry.AtMs) + ",\"kiter\":" + std::to_string(entry.Kiter)
+                    + ",\"sound\":" + std::to_string(entry.Sound) + ",\"last_increment_source\":\""
+                    + source + "\",\"last_increment\":" + std::to_string(entry.Increment)
+                    + ",\"last_increment_at_ms\":" + std::to_string(entry.IncrementAtMs) + "}";
+            }
+        return json + "]";
+    }
+
     std::uint64_t _attemptId = 0;
     bool _live = false;
     bool _inAir = false;
@@ -148,6 +212,9 @@ private:
     std::uint32_t _maxKiterSound = 0;
     std::uint64_t _samplesAboveBound = 0;
     std::uint64_t _maxSampleGapMs = 0;
+    std::uint32_t _listedSound = 0;
+    std::vector<SoundSampleEntry> _soundSamples;
+    std::uint64_t _soundSamplesDropped = 0;
 };
 
 // `field` (the status field another encounter exported:

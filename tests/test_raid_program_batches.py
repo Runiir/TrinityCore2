@@ -20,6 +20,15 @@ from tests.test_raid_program_rounds import (  # noqa: F401 - the world fixture i
 LABEL = 'bwd-r01-test'
 COHORTS = [f'{RAID}_10n_alpha_c0', f'{RAID}_10n_beta_c0']
 PLENTY = {'headroom_bytes': 1 << 40, 'filesystem_available_bytes': 1 << 40, 'quota_available_bytes': None}
+QUIET_HOST = {'memory_total_bytes': 32 << 30, 'memory_available_bytes': 20 << 30, 'swap_used_fraction': 0.1,
+              'swap_io_pages_per_second': 0.0, 'load_1m': 1.0, 'cpu_count': 12, 'load_1m_per_cpu': 0.083,
+              'tmpfs': {'path': '/tmp', 'ram_backed': True, 'used_bytes': 1 << 30}}
+
+
+@pytest.fixture(autouse=True)
+def quiet_host(monkeypatch):
+    """The host-load gate reads a quiet host unless a test injects another reading."""
+    monkeypatch.setattr(batches, 'sample_host', lambda: dict(QUIET_HOST))
 
 
 class Loop:

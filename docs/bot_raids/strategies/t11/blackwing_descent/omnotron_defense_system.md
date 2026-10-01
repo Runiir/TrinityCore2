@@ -11,6 +11,83 @@ unresolved for 10H, 25N and 25H. Per mode, 10N is `accepted` since 2026-09-30
 (user decision on the Barrier absorb, below); the other three modes stay
 `fidelity_blocked`. Nothing below is a bot timer.
 
+## Raid-program round 4 (2026-10-01): tank survival at tier-11 gear
+
+Round 3 (label blackwing_descent_10n-r03-a3864fcf6d) wiped 3 of 4 attempts.
+In each wipe a tank fell first, while the healers were not keeping up with
+it, and the loose constructs killed the raid.
+
+**Construct melee fidelity is correct.** The run_sanity flag read Electron
+1.12-1.15x, Arcanotron 1.129x and Toxitron 1.124x against the WCL mean. The
+four r03 combat logs (711 construct swings) were read per swing:
+- The published damage range (`attacker_published_min_damage`) shows the
+  attacker multiplier on every swing. A -10% debuff moves the physical
+  weapon roll itself (UNIT_MOD_DAMAGE_MAINHAND), so the
+  after-attacker/weapon ratio is always 1.01 and cannot show it.
+- Unreduced swings average 62.6-65.6k against the calibrated 63.6k
+  (DamageModifier 11.2 x 1.01). Swings under a -10% debuff average 55.7-59.0k
+  against 57.3k. DamageModifier 11.2 stays.
+- Scarlet Fever (81130) works: the Blood DK's constructs carry it. Tier-11
+  armor plays no part, because the compared stage is before armor.
+- The ratio is high for two reasons. The WCL mean includes -10% rows (Electron
+  57.5k is almost entirely reduced), while the Feral's constructs never
+  carried a -10% debuff (no Demoralizing Roar was cast: Magmatron 0 of 38 in
+  acb506, Toxitron 0 of 35 in 6a0efb). And 33 swings had Power Generator
+  +50% (1.5x, or 1.35x with the debuff), mostly on ranged players and healers
+  standing in the generator after both tanks were dead. The WCL reference
+  excludes generator windows.
+
+**Why the tanks died:**
+- cd3009: the Feral, alone on Arcanotron (23-31k per swing), fell from 140k
+  to 0 in 14 s. He used no Barkskin, Survival Instincts or Frenzied
+  Regeneration. The Holy paladin cast nothing on him for the last 13.6 s, and
+  the Discipline priest cast Heal and Power Word: Shield.
+- acb506: the Feral picked up Arcanotron at half health, with nothing.
+- acb506 and 6a0efb: a Felguard Felstorm that was already running beside
+  Electron under Unstable Shield hit it for 6 s. Static Shock landed on 2-3
+  players every second: 12 and 17 hits, 280-400k damage, and two
+  damage-dealer deaths at 149.6 s in acb506.
+
+**Bot changes:**
+- `BotOmnotronTankSurvival.h`. A tank that holds a construct uses its own
+  defensives:
+  - Feral: Survival Instincts below 35%, Barkskin below 70% (always while
+    holding two constructs), Frenzied Regeneration below 50%.
+  - Blood DK: Icebound Fortitude below 35%, Vampiric Blood below 50%, Rune
+    Tap below 60%.
+  - With two constructs on one tank, the major cooldown starts at 55%. A
+    major reduction already running (its own, or Pain Suppression or
+    Guardian Spirit) holds the next one back.
+  - The Feral keeps Demoralizing Roar on every active unshielded construct
+    within 10 yd plus the construct's bounding radius when none of 81130,
+    99, 1160, 26017 or 702 is on it.
+- Healers hold up the lowest construct victim within 40 yd:
+  - Holy paladin: Lay on Hands below 15% (no Forbearance), Holy Shock below
+    90%, Flash of Light below 45%, Divine Light below 65%, Holy Light below
+    85%.
+  - Discipline priest: Pain Suppression below 35%, Power Word: Shield below
+    95% (no Weakened Soul), Penance below 60%, Flash Heal below 45%.
+  - Holy priest: Guardian Spirit below 25%, then Flash Heal and Greater Heal.
+  - Below 50% the heal is urgent (Survival priority).
+  - While moving, only instant spells are chosen.
+- The runtime submits the first decision the bot can cast now, checked
+  against its spell book, native cooldown and movement, as an ordinary
+  native cast.
+- `BotOmnotronPetShieldGuard.h`: a warlock whose Felguard is whirling within
+  8 yd plus the construct's bounding radius plus 1 yd of a shielded (or
+  shield-casting) construct cancels the Felstorm aura (89751). It uses the
+  client pet cancel-aura request, as a player right-clicks the pet buff. The
+  coordinator's pet-anchored start guard (BotPetAreaGuard.h) prevents new
+  whirls. This cancel stops a whirl that is already running.
+
+Live checks for round 4:
+- no boss-window tank death;
+- Survival Instincts, Barkskin and Frenzied Regeneration in the Feral's
+  action outcomes;
+- Demoralizing Roar casts;
+- Static Shock 79912 hits near 0;
+- the Feral's constructs showing 0.9x published ranges.
+
 ## Raid-program round 3 (2026-09-30): tier-11 references and 10N claims
 
 The roster now wears tier-11 phase gear (about 359; user decision

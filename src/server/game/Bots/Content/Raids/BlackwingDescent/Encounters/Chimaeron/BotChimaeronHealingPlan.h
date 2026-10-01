@@ -4,6 +4,9 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <functional>
 #include <cstdint>
 #include <vector>
 
@@ -13,9 +16,15 @@
 // health, so the job is a floor: nobody may sit at or below 10,000 health when
 // the next Caustic Slime, boss swing or Massacre lands. The Double Attack tank
 // is the exception: both halves of a doubled swing land back to back, so he is
-// kept near full. During an outage there is no floor and the raid is healed by
-// health percentage. Under Mortality healing is 99% reduced and no heal target
-// is published.
+// kept near full. Nothing else is healed while the mixture is up: every
+// Massacre sets the raid back to 1 health, so health above the floor is lost
+// mana (Wowhead: "heal everyone above 10,000"; Icy Veins: the Break tank to
+// 10,000, the Double Attack tank to full). Round 3 spent 1.2 M healing between
+// the first two Massacres topping the raid, and the healers reached the
+// late outage dry (MixtureHealingHeld below). During an outage there is no
+// floor: the raid is raised above the slime line first, then healed by health
+// percentage. Under Mortality healing is 99% reduced and no heal target is
+// published.
 //
 // Healers split the urgency list instead of all casting on its head: the tank
 // healer (best single-target healer) takes the first tank entry, raid healers
@@ -40,6 +49,72 @@ struct HealUrgency
 };
 
 constexpr float SoakerTopUpPct = 95.0f;
+
+// Outage slime line. Two Caustic Slimes land together (10N: 2 x 235,200
+// Nature, 25N: 4 x 270,480) on different players. Each is split among the
+// players whose centre is within 6 yd of its target (boss_chimaeron.cpp
+// spell_chimaeron_caustic_slime; TARGET_UNIT_DEST_AREA_ENEMY, a 6 yd cylinder
+// with no hitbox expansion for a generic spell). Round 3 (tier-11 gear)
+// measured up to ~43k per member for one volley (batch 3: 133k over 10 plus
+// 181k over 6, 0.3 s apart) and lost 7-8 members at 1-25k. Nothing protects a
+// member without the mixture, so every living member is first raised above
+// the most he can take plus a margin, lowest absolute health first; only then
+// are members topped up by health percentage.
+//
+// The most a member can take is read from where the raid stands, not from a
+// full stack: every living player whose splash reaches him is a possible
+// slime target, each sharing its slime with the players inside its splash,
+// and the volley's slimes land on his worst targets. A stack still forming or
+// a displaced player therefore keeps a higher line. Positions move between
+// the snapshot and the landing, so a member is reached a margin beyond the
+// splash and a slime is shared only by players a margin inside it.
+constexpr uint64 CausticSlimeDamage10 = 235200;
+constexpr uint64 CausticSlimeDamage25 = 270480;
+constexpr std::size_t CausticSlimeVolley10 = 2;
+constexpr std::size_t CausticSlimeVolley25 = 4;
+constexpr float CausticSlimeSplashYards = 6.0f;
+constexpr float CausticSlimeSplashMarginYards = 1.0f;
+constexpr uint64 OutageSlimeMarginHealth = 10000;
+constexpr float OutageTopUpPct = 90.0f;
+
+// Inside a Caustic Slime splash of this radius centred on a slime target: the
+// native area check (planar distance and height difference, centre to centre).
+inline bool WithinSlimeSplash(Vector3 const& target, Vector3 const& member, float radius)
+{
+    float const dx = target.X - member.X;
+    float const dy = target.Y - member.Y;
+    float const dz = target.Z - member.Z;
+    return dx * dx + dy * dy <= radius * radius && std::abs(dz) <= radius;
+}
+
+inline uint64 OutageSlimeSafeHealth(Blackboard const& board, ActorSnapshot const& member)
+{
+    bool const raid25 = board.Players.size() > 10;
+    uint64 const slime = raid25 ? CausticSlimeDamage25 : CausticSlimeDamage10;
+    std::size_t const volley = raid25 ? CausticSlimeVolley25 : CausticSlimeVolley10;
+    std::vector<uint64> shares;
+    for (ActorSnapshot const& target : board.Players)
+    {
+        if (!target.Alive || !WithinSlimeSplash(target.Position, member.Position,
+                CausticSlimeSplashYards + CausticSlimeSplashMarginYards))
+            continue;
+        uint64 sharing = 0;
+        for (ActorSnapshot const& other : board.Players)
+            if (other.Alive && WithinSlimeSplash(target.Position, other.Position,
+                    CausticSlimeSplashYards - CausticSlimeSplashMarginYards))
+                ++sharing;
+        shares.push_back(slime / std::max<uint64>(sharing, 1));
+    }
+    // A living member always reaches himself; a member not alive on the
+    // board is lined as a lone target.
+    if (shares.empty())
+        shares.push_back(slime);
+    std::sort(shares.begin(), shares.end(), std::greater<uint64>());
+    uint64 worst = 0;
+    for (std::size_t index = 0; index < shares.size() && index < volley; ++index)
+        worst += shares[index];
+    return worst + OutageSlimeMarginHealth;
+}
 
 // The player who takes the next doubled swing: the Double Attack tank, or the
 // boss victim once no second tank is left to taunt it.
@@ -73,31 +148,38 @@ inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
     // that releases the push; before it he only needs a buffer (60%).
     float const breakTankTopUpPct = observation.Boss->HealthPct <= BurnHoldMaxPct
         ? BurnReadyTankPct : 60.0f;
+    // Feud pacifies his melee for the whole outage (the mixture returns 4 s
+    // before Feud ends), so no swing is due: tanks are ordinary members of
+    // the stack and the tank healer works the slime line with the others.
+    bool const pacified = phase == Phase::Outage && observation.FeudActive;
 
     for (ActorSnapshot const& player : board.Players)
     {
         if (!player.Alive)
             continue;
         bool const isVictim = player.Guid == victim;
-        bool const tank = IsTank(duties, player.Guid) || isVictim;
+        bool const tank = !pacified && (IsTank(duties, player.Guid) || isVictim);
         bool const atFloor = player.Health <= FloorTargetHealth;
         // Tier 0: boss victim at the floor (next swing within one interval).
         // Tier 1: the soaker below full while a doubled swing is due (the
         //         charge is up, or a Massacre just rescheduled it).
         // Tier 2: mixture-protected member at the floor (absolute health).
-        // Tier 3: outage, by health percentage.
+        // Tier 3: outage, below the slime line (absolute health).
         // Tier 4: tank top-ups while the mixture is up.
+        // Tier 5: outage top-up by health percentage.
         HealUrgency entry{ player.Guid, 255, 0.0f, tank };
-        if (isVictim && atFloor)
+        if (isVictim && atFloor && !pacified)
             entry = { player.Guid, 0, float(player.Health), tank };
-        else if (player.Guid == soaker
+        else if (!pacified && player.Guid == soaker
             && (soakDue || (isVictim && player.Guid == duties.DoubleAttackTank))
             && player.HealthPct < SoakerTopUpPct)
             entry = { player.Guid, 1, player.HealthPct, tank };
         else if (atFloor && HasAura(player, FinklesMixtureSpell))
             entry = { player.Guid, 2, float(player.Health), tank };
-        else if (phase == Phase::Outage && player.HealthPct < 90.0f)
-            entry = { player.Guid, 3, player.HealthPct, tank };
+        else if (phase == Phase::Outage && player.Health < OutageSlimeSafeHealth(board, player))
+            entry = { player.Guid, 3, float(player.Health), tank };
+        else if (phase == Phase::Outage && player.HealthPct < OutageTopUpPct)
+            entry = { player.Guid, 5, player.HealthPct, tank };
         else if (phase == Phase::Mixture && player.Guid == duties.DoubleAttackTank
             && player.HealthPct < 90.0f)
             entry = { player.Guid, 4, player.HealthPct, tank };
@@ -160,6 +242,29 @@ inline ObjectGuid SelectPriorityHealTarget(Blackboard const& board,
     std::size_t const slot = rank - 1 - (soakCover && tankPick.Target == urgency.front().Target
         ? 1 : 0);
     return remaining[slot % remaining.size()];
+}
+
+// The runtime heals the lowest member below 94% whenever no target is
+// published. While the mixture is up that is the top-up the tactic rules
+// out, so a healer with no published target holds for this revision (the
+// plan sets HealingDisabled) and regenerates mana. A hostile other than the
+// boss fighting the raid (a patrol on the composed route) lifts the hold.
+inline bool MixtureHealingHeld(Blackboard const& board, Observation const& observation,
+    ObjectGuid priorityTarget)
+{
+    return observation.Boss && observation.CurrentPhase == Phase::Mixture
+        && priorityTarget.IsEmpty() && !OtherHostileEngaged(board, *observation.Boss);
+}
+
+// No floor, soak or slime-line entry: nothing is at risk right now (tank
+// top-ups may remain). Raid mana cooldowns wait for this.
+inline bool NoUrgentHealing(Blackboard const& board, Observation const& observation,
+    Duties const& duties)
+{
+    for (HealUrgency const& entry : BuildHealUrgency(board, observation, duties))
+        if (entry.Tier <= 3)
+            return false;
+    return true;
 }
 }
 

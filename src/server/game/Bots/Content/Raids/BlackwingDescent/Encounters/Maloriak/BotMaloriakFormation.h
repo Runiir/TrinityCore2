@@ -3,6 +3,7 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakGeometry.h"
 
+#include <algorithm>
 #include <cmath>
 #include <optional>
 #include <string_view>
@@ -194,6 +195,43 @@ inline std::optional<Vector3> ClearMeleeRingPoint(BossFrame const& frame,
                     return point;
             }
     return std::nullopt;
+}
+
+// Biting Chill (77760, ticks 77763) hits allies within 3 yards of its target
+// and picks a player in melee range. A chilled melee damage dealer used to
+// walk 8 yards off its nearest ally, out of reach: in r03 kill 35b93d the
+// rogue stood 11-15 yards from Maloriak and landed no melee on him for 12 s.
+// It now takes the nearest point of the back melee rings (3.5 yards, then 5,
+// 15 degrees apart) that keeps clearance from every ally, is clear of every
+// hazard and sees the boss past the cauldron; nullopt when none does.
+inline std::optional<Vector3> ChillRingPoint(BossFrame const& frame,
+    std::vector<FormationHazard> const& hazards, std::vector<Vector3> const& allies,
+    Vector3 const& from, float clearance)
+{
+    std::optional<Vector3> best;
+    float bestDistance = 0.0f;
+    for (float radius : { MeleeRingRadius, MeleeOuterRingRadius })
+        for (int step = 0; step < 24; ++step)
+        {
+            float const angle = WrapAngle(float(step) * Pi / 12.0f);
+            if (!ArcAdmits(SlotArc::Back, angle))
+                continue;
+            Vector3 const point = FramePolar(frame, radius, angle);
+            if (!FormationPointClear(frame, point, hazards))
+                continue;
+            bool const apart = std::none_of(allies.begin(), allies.end(),
+                [&point, clearance](Vector3 const& ally)
+                {
+                    return Distance2d(point, ally) < clearance;
+                });
+            float const distance = Distance2d(point, from);
+            if (apart && (!best || distance < bestDistance))
+            {
+                best = point;
+                bestDistance = distance;
+            }
+        }
+    return best;
 }
 
 // True when every point of the melee rings the bot can fight from in this

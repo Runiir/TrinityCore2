@@ -1017,6 +1017,61 @@ rejections.
 Life Tap loop and the mage's mana gate (both artefacts of the pin), and the
 hunter's phase-2 melee.
 
+## 7g. BWD 10N raid program, round 3 (analysed in round 4)
+
+Label `blackwing_descent_10n-r03-a3864fcf6d`, the first run at tier-11 phase gear
+(about 359) without the round-2 revive pin. All four attempts wiped in phase 1, and
+phase 2 was never reached.
+
+- **The Feral Onyxia tank died first every time.** Onyxia's melee killed it at
+  +32-38 s. In batch 3 her Shadowflame Breath killed it at +12.2 s. Onyxia breathes at
+  her victim (`DoCastVictim`), so the tank always takes that breath. The +12 s death
+  means the tank had almost no healing, not that the breath was aimed wrongly.
+- **Then the raid died in a chain.** The Blood DK died to dragon melee 6-27 s later.
+  The loose dragons then turned onto the healers and damage dealers: their breaths
+  killed 3 bots at once in batches 1 and 4. Bone warriors finished the rest.
+- **Healing collapsed.** Disc priest HPS was 1.9-4.2k, almost all Power Word: Shield
+  and Prayer of Mending. Three causes combine:
+  - The shared heal candidate triages the lowest member at Support priority, and only
+    at Mechanic priority below 50%.
+  - The plan's formation walks run at Mechanic priority with utility 200 beyond 5 yd.
+    They claim the GCD and cast lanes, and they re-planned whenever a tank stepped or
+    a dragon turned.
+  - While a protected walk runs, the heal guard lets a healer pick instant heals only.
+- **Round 4 changes** (`BotNefarianDragonTankCare.h`, tests
+  `test_nefarian_dragon_tank_care.py`). They apply on the floor, in phase 1 and
+  phase 3:
+  - **Tank defensives.** The player a floor dragon attacks uses its own defensives:
+    - Feral: Barkskin on a breath at it or below 70%, Frenzied Regeneration, and
+      Survival Instincts below 35%.
+    - Blood DK: Anti-Magic Shell on a breath at it, Rune Tap below 60%, Vampiric Blood
+      below 50%, Icebound Fortitude below 35%, and Death Strike on the dragon it holds
+      below 70%.
+  - **Healing the dragons' victims.** Each healer heals the lowest victim it can reach
+    and see.
+    - Priority: Mechanic with utility 260, above the formation walk. Below 50% it is
+      Survival with utility 150, which still yields to every escape.
+    - Disc: Pain Suppression below 30%, Power Word: Shield while the target has
+      neither the shield nor Weakened Soul, Flash Heal below 50%, Penance below 75%,
+      and Greater Heal below 85%.
+    - Holy paladin: Lay on Hands below 15% (never under Forbearance), Holy Shock below
+      90%, Flash of Light below 40%, Divine Light below 65%, and Holy Light below 90%.
+    - While the healer walks it uses instant spells only.
+  - **Formation hold.** A caster or healer that already stands on the platform floor
+    within 10 yd of its wanted spot keeps it if the spot is safe and serves every
+    sight target. It does not walk to the search's next hit.
+  - The observer reports readiness (known and ready) for every spell the new rules
+    name, so the plan never names a spell the bot lacks or that is still on cooldown.
+- **Coordinator fixes, outside this packet:** the harness's full-wipe revive into a
+  live encounter, which caused the death loop, the 5 ms instant revive and the idle
+  actors, and ending the observer window at a full wipe.
+- **Not settled.** The r03 shard archives were evicted, and this packet may not run
+  DVC, so the decision traces were not read. Two questions stay open until the next
+  run's traces are read:
+  - whether Children of Deathwing's 50 yd separation held when Nefarian landed (the
+    tank died 8-14 s after the 24 s landing);
+  - whether the healers were walking when the tank dropped.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). Nefarian and

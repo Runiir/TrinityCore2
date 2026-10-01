@@ -123,6 +123,37 @@ What each item now rests on:
 
 **Melee on the head.** The canonical roster brings Retribution and Assassination melee, which the legacy roster never had. The ranged head hold needs a configured ranged combat range, so it never admitted melee. Instead, `ranged_formation_restore` pulled them back to the support anchor for the whole head window. Now a melee DPS whose damage target is the Exposed Head keeps normal melee closure (`MeleeHeadAttacker`, `tests/test_magmaw_melee_head_hold.py`). Hazards, hooks and Pillars still take precedence.
 
+### Tier-11 readiness of the canonical c0 shard (round 4, 2026-10-01)
+
+Round 3 (`blackwing_descent_10n-r03-a3864fcf6d`) never reached `bwd.magmaw.encounter`. In all four runs the Demonology warlock's Felguard cast Felstorm at the Drudge spawn during `bwd.magmaw.drudges` and hit "Exposed Head of Magmaw". The raid then wiped to Magmaw on trash. The world DB explains the reach: Magmaw 41570 has CombatReach 15 and both Exposed Heads (42347 at the fixed head position, 48270 on Magmaw) have 18.75. The Drudge home spawn is 18.9 yards from Magmaw, so any area effect around a Drudge still at its spawn reaches the head. Under T11 gear the Chainwielder kill takes 57-65 s instead of 46 s, so Felstorm is off cooldown when the Drudges are pulled.
+
+- **Pre-pull guard** (`BotMagmawPreEncounterGuard.h`, with the world adapter `BotMagmawPreEncounterGuardUnits.h`). Until Magmaw is engaged, no bot or pet area effect may reach a living Magmaw part: Magmaw, either Exposed Head or a Pincer. The check uses the native area test (radius plus the part's combat reach) plus a 5-yard chase margin. That margin is a bot tolerance for a pet that follows its target; it is not an encounter value. Both the caster and its target count as area centres. Before the boss step, direct offense on a Magmaw part is also refused; at the boss step the designated pull tank still opens. The guard only refuses: it adds no movement, cast or aura. The r03 Felstorm positions are refused. The r02 Felstorm 35 yards out and the r02 hold point (-310.9, -63.2) are admitted, as long as the pet's target has left the spawn. Wiring it into the Felguard Felstorm gate is a coordinator patch request.
+- **Bloodlust.** The T11 kills keep raid lust for the first exposed head. In `RtPXnbZxFkpacw1h` fight 6, Heroism comes at 116.069 s, after Mangle ends at 112.904 s. The matched actors' major cooldowns also hit the head: Combustion at 125.3 s, Vendetta 127.3 s, Dancing Rune Weapon 130.0 s, Metamorphosis 124.4 s. Every T11 kill lasts at least 16 s past the Mangle release. Canonical cohorts (`blackwing_descent_10n_magmaw_c<N>_diagnostic`) therefore lust on the first exposed head only. The legacy diagnostic shard keeps its pre-Mangle lead at 78.169 s, which comes from the 395-item-level Y8aj kill. The call site passes the scenario through a coordinator patch request.
+- **Fight length.** The r02 c0 kills (409 gear) lasted 91.6/95.4/93.0 s and ended just after the first Mangle, so c0 has never had a head window, hook riders or a third Pillar. At T11 the references last 131-171 s, and 3 of 7 show a third parasite wave. What the longer fight exercises:
+  - **Parasites:** the baiter rotation already handles wave 3.
+  - **Hook riders:** the c0 riders are the Retribution Paladin and Assassination Rogue, the two lowest-GUID non-baiter DPS. Both are melee, and the melee head hold admits them.
+  - **Timers and repeats:** Mangle repeat (95 s), hook lead and Crash timing are native timers and do not depend on gear.
+- **Open, needs a live T11 run:**
+  - Sole-BDK health through Mangle at about 190k max HP. The T11 BDK reference casts Icebound Fortitude 19.5 s into Mangle, not before it.
+  - Healer mana over about 150 s with two healers (Holy Paladin and Discipline Priest; at Chimaeron in r03 the disc priest ran about 70 % dry).
+  - Whether a second Mangle (about 185 s) is reached.
+  - No Magmaw strategy value was changed without that evidence.
+
+DPS parity baseline for c0: r02 means at 409 gear, against the T11 target and the T11 WCL casts per minute from the cast timelines. The r02 DPS is not comparable with the T11 targets; the cast rate carries over.
+
+| Spec | r02 DPS | r02 cpm | T11 target | T11 WCL cpm |
+| --- | ---: | ---: | ---: | ---: |
+| Blood DK (gated tank) | 29,943 | 37.7 | 17,717 | 31.7 |
+| Balance | 40,159 | 46.1 | 20,436 | 40.7 |
+| Survival | 37,988 | 48.6 | 27,410 | 70.2 (incl. Auto Shot) |
+| Fire | 37,591 | 42.2 | 23,396 | 45.0 |
+| Retribution | 39,910 | 38.4 | 23,552 | 35.7 |
+| Assassination | 38,060 | 23.6 | 25,288 | 33.1 |
+| Elemental | 43,455 | 48.6 | 23,683 | 42.5 |
+| Demonology | 31,995 | 47.6 | 20,651 | 38.9 |
+
+The first T11 c0 label is the baseline. Compare each actor with its T11 target. Look first at the cast rates below WCL: Assassination (23.6 against 33.1 cpm, so check Mutilate and energy pooling) and Fire (42.2 against 45.0). Head-window cooldown alignment for Combustion, Vendetta, Metamorphosis and DRW belongs to the class owners.
+
 ### Fire Mage on the canonical roster (round 2, 2026-09-27)
 
 Round 1 (`blackwing_descent_10n-r01-553da85c98`, 3 kills) put the single Fire Mage at 36.4k, 91% of WCL. On `b5-d1898555` the two Fire Mages averaged 42.5k and 46.6k. The retained kills (two b5 kills, all three r01 kills) split the 8-11k loss into two parts:
