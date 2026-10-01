@@ -44,9 +44,14 @@ def run(plan,out,maximum_steps=180):
             deadline=time.monotonic()+20
             while True:
                 facts=observer.poll()
-                try:movement,extra=archaeology_inputs.screenshot(latest);break
+                recent_transfer=any(e['time']>time.time()-20 for e in facts['transfer_events'][-4:])
+                try:
+                    movement,extra=archaeology_inputs.screenshot(latest)
+                    if extra['world_position_available'] and extra['world_map']!=facts['map']:
+                        raise ValueError('addon has not loaded the native destination map')
+                    break
                 except ValueError:
-                    if not facts['transferring'] or time.monotonic()>deadline:raise
+                    if not (facts['transferring'] or recent_transfer) or time.monotonic()>deadline:raise
                     time.sleep(.25)
             with Image.open(latest) as image:ui=taxi.decode_image(image)
             s=state(leg,movement,extra,facts,ui)

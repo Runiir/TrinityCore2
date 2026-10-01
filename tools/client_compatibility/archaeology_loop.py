@@ -39,6 +39,7 @@ def main():
                 if not site:site=min(active,key=lambda s:(s['map']!=facts['map'],math.dist(s['center'],facts['position'][:2])))
                 plan=travel_routes.to_site(facts['map'],facts['position'],site)
             travel_name=f'travel_{count:03d}_site_{site["id"]}'
+            plan=travel_routes.prepare_clearance(plan,facts['map'],facts['position'])
             result=travel_trial.run(plan,out/travel_name)
             receipt['steps'].append({'kind':'travel','episode':travel_name,'site':site['id'],'completed':result['completed']})
             if not result['completed']:raise RuntimeError(result['failure'])

@@ -17,6 +17,29 @@ def flight(map_id,position,id):
             'ceiling':max(230,position[2]+100)}
 
 
+def clearance(map_id,start,goal):
+    distance=math.dist(start[:2],goal[:2]);count=min(160,max(2,math.ceil(distance/50)))
+    heights=[start[2],goal[2]];missing=0
+    for i in range(1,count):
+        xy=[start[a]+(goal[a]-start[a])*i/count for a in range(2)]
+        try:heights.append(ground_navigation.ground_point(map_id,xy)[2])
+        except RuntimeError:missing+=1
+    return {'ceiling':max(230,max(heights)+80),'sampled_ground_columns':len(heights)-2,
+        'missing_ground_columns':missing,'ground_maximum':max(heights),
+        'source':'public static NAV_GROUND height columns; 80-yard obstacle allowance'}
+
+
+def prepare_clearance(plan,map_id,position):
+    for leg in plan['legs']:
+        if leg['mode']=='flight':
+            profile=clearance(map_id,position,leg['position'])
+            leg['ceiling']=max(leg['ceiling'],profile['ceiling']);leg['height_profile']=profile
+        if leg['mode']=='portal':
+            position=PORTALS[map_id]['arrival'];map_id=leg['destination_map']
+        else:position=leg['position']
+    return plan
+
+
 def same_map(map_id,start,goal):
     masters=json.loads(MASTERS.read_text())['nodes'];c=catalog();known={int(k) for k in masters}
     candidates=[m for m in masters.values() if m['map']==map_id]
