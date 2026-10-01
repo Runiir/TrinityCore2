@@ -205,10 +205,27 @@ while the close NPC appeared higher. The search now covers the central vertical
 strip from y160, clears and confirms the exact tooltip point, then holds its
 right click for 0.2 seconds. It does not use teacher mouse coordinates.
 
+Episode 54 found Furgu, but its clicks were outside the client's interaction
+range. The flight landing's five-yard horizontal tolerance left the character
+six yards from the vendor. The bounded ground approach now follows a dry public
+corridor no longer than sixteen yards, verifies actual XYZ distance at most four
+yards, and stops on blocked or unsafe movement. Episode 55 has already followed
+that approach, opened Furgu's normal gossip and taxi menus, taken the instant
+Telaar-to-Honor Hold taxi (node 100), and landed at the next assigned site.
+
+Episode 55 collected two Hellfire Citadel finds for five and eight Orc
+fragments. Its third approach first stopped on a tall pillar, recovered toward
+the pit floor, then slid just outside the three-yard local arrival radius. It
+stopped after three returns to ascent. Nearby raised-floor recovery now covers
+twelve yards after descent begins. A grounded mount already on the correct floor
+can finish a dry corridor of at most sixteen yards with short keyboard advances,
+checking actual floor height, combat, health and the assigned polygon. This
+correction is recorded as code-controlled navigation rather than a model decision.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 107 tests. The new tooltip test initially failed because its test
+passes 111 tests. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -218,7 +235,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 53 preserve unsuccessful steps, including missing portal
+Episodes 07 through 55 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -227,7 +244,8 @@ casts, changing landing goals, steering quantization, and a walking-path
 prerequisite that incorrectly blocked mounted movement, replanned bank detours,
 low bridge steps, unnecessarily requested melee approaches, excluded water,
 and interrupted gathering followed by a missed tooltip, raised-floor proximity
-errors and a missed flight-master tooltip. Successful outcomes do not
+errors, a missed flight-master tooltip, an out-of-range vendor click and landing
+slides outside the local arrival radius. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
