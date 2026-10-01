@@ -233,10 +233,18 @@ through real mouse-wheel inputs and uses at most three distinct dry stances,
 each within normal artifact reach. Each view gets a twelve-second tooltip search.
 Every view, route and outcome is retained even when localization fails.
 
+Episode 57's closer camera view localized the first Arklon find and collected
+eight Draenei fragments. It then exposed an overly broad dry-Survey guard: a
+legacy ground-height discrepancy at dry ruin ledges triggered unnecessary shore
+moves, and the second such move stopped on an obstruction. Shore recovery now
+requires observed swimming or a public `NAV_WATER` surface above the actual feet.
+The helper tests both dry Arklon positions and the genuine submerged pond-floor
+fixture. A ground-height discrepancy alone no longer classifies a dry ruin as wet.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 114 tests. The new tooltip test initially failed because its test
+passes 115 tests. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -246,7 +254,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 56 preserve unsuccessful steps, including missing portal
+Episodes 07 through 57 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -257,7 +265,7 @@ low bridge steps, unnecessarily requested melee approaches, excluded water,
 and interrupted gathering followed by a missed tooltip, raised-floor proximity
 errors, a missed flight-master tooltip, an out-of-range vendor click and landing
 slides outside the local arrival radius and artifact tooltip occlusion by a
-creature's body. Successful outcomes do not
+creature's body and dry ledges incorrectly treated as submerged. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
