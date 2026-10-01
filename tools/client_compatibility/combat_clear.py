@@ -61,9 +61,11 @@ def run(movement, extra, facts, observer, path):
                 record('select', physical_keys=keys); time.sleep(.4)
                 continue
             failed_selections=0
-            distance = math.dist(facts['position'][:2], target['position'][:2])
+            # Unit::IsWithinMeleeRange measures XYZ with a minimum five-yard
+            # reach. Trial 46 needlessly routed toward a 4.7-yard attacker.
+            distance = math.dist(facts['position'][:3], target['position'][:3])
             keys = face(inputs, observer, target['position'])
-            if distance > 4:
+            if distance > 5:
                 route = ground_navigation.route(facts['map'], facts['position'], target['position'])
                 goal = next((p for p in route['points'] if math.dist(p[:2], facts['position'][:2])>1), None)
                 if goal and site_boundaries.inside_segment(site['polygon'], facts['position'], goal):
