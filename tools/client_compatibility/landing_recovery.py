@@ -5,8 +5,10 @@ from . import ground_navigation,site_boundaries
 
 
 def wrong_floor(facts,extra,leg):
+    radius=leg.get('arrival_radius',12)
+    if leg.get('landing_avoidance_frozen'):radius=max(radius,12)
     return not extra['flying'] and not extra['falling'] and facts['map']==leg['map'] and (
-        math.dist(facts['position'][:2],leg['position'][:2])<leg.get('arrival_radius',12)) and (
+        math.dist(facts['position'][:2],leg['position'][:2])<radius) and (
         facts['position'][2]>leg['position'][2]+leg.get('landing_height_tolerance',8))
 
 

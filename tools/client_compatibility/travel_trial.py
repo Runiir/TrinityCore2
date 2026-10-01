@@ -72,6 +72,13 @@ def run(plan,out,maximum_steps=180):
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
                 continue
             if leg['mode']=='flight' and not leg.get('trigger'):
+                from .ground_landing import needed,finish
+                if needed(facts,extra,leg):
+                    from tools.second_client import ctl
+                    ctl._launcher_env=lab.client_environment
+                    receipt['safety_recoveries'].append(finish(ctl.Input(),leg,observer,latest))
+                    landing_started=False
+                    continue
                 from .landing_recovery import wrong_floor,nudge
                 if wrong_floor(facts,extra,leg) and extra['mounted']:
                     from tools.second_client import ctl

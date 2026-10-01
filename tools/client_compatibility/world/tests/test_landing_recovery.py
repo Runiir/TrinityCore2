@@ -37,6 +37,55 @@ def test_trial52_roof_contact_is_not_ground_arrival():
     assert travel_trial.state(leg,movement,extra,facts,{'nodes':[]})['near_destination']
 
 
+def test_trial55_pillar_slide_still_requires_wrong_floor_escape():
+    leg=dict(map=530,position=[-230.654724,3051.86646,-62.0737801],
+        arrival_radius=3,landing_height_tolerance=2,landing_avoidance_frozen=True)
+    facts=dict(map=530,position=[-227.19841,3049.65576,-24.85821,2.598])
+    extra=dict(mounted=True,flying=False,falling=False)
+    assert math.dist(facts['position'][:2],leg['position'][:2])>3
+    assert recovery.wrong_floor(facts,extra,leg)
+    leg['landing_avoidance_frozen']=False
+    assert not recovery.wrong_floor(facts,extra,leg)
+
+
+def test_trial55_correct_floor_slide_needs_short_ground_adjustment():
+    from tools.client_compatibility import ground_landing
+    leg=dict(map=530,position=[-230.654724,3051.86646,-62.0737801],
+        arrival_radius=3,landing_height_tolerance=2,landing_avoidance_frozen=True)
+    facts=dict(map=530,position=[-232.576263,3047.990479,-61.541405,.5309])
+    extra=dict(mounted=True,flying=False,falling=False,swimming=False)
+    assert ground_landing.needed(facts,extra,leg)
+    assert not recovery.wrong_floor(facts,extra,leg)
+    extra['flying']=True
+    assert not ground_landing.needed(facts,extra,leg)
+
+
+def test_trial55_ground_adjustment_physically_enters_arrival_radius(monkeypatch,tmp_path):
+    from tools.client_compatibility import ground_landing,archaeology_inputs,travel_inputs
+    position=[-232.576263,3047.990479,-61.541405,.5309]
+    goal=[-230.654724,3051.86646,-62.0737801]
+    leg=dict(map=530,position=goal,arrival_radius=3,landing_height_tolerance=2,landing_avoidance_frozen=True)
+    class Observer:
+        def poll(self):return {'map':530,'position':position.copy()}
+    class Inputs:
+        def key(self,key,hold):
+            assert key=='w'
+            position[0]+=math.cos(position[3])*hold*14
+            position[1]+=math.sin(position[3])*hold*14
+    def face(_,observer,target):
+        position[3]=math.atan2(target[1]-position[1],target[0]-position[0]);return []
+    monkeypatch.setattr(ground_landing.time,'sleep',lambda _:None)
+    monkeypatch.setattr(travel_inputs,'face',face)
+    monkeypatch.setattr(ground_landing.ground_navigation,'route',lambda *_:{'points':[position[:3],goal[:]]})
+    monkeypatch.setattr(ground_landing.site_boundaries,'sites',lambda:{})
+    monkeypatch.setattr(archaeology_inputs,'screenshot',lambda _:(
+        {'in_world':True,'dead':False,'in_combat':False,'on_taxi':False,'health_percent':100},
+        {'mounted':True,'flying':False,'falling':False,'swimming':False,'digsite_ids':[]}))
+    result=ground_landing.finish(Inputs(),leg,Observer(),tmp_path/'latest.png')
+    assert math.dist(result['after']['position'][:2],goal[:2])<3
+    assert result['physical_keys'] and len(result['observed_positions'])>=2
+
+
 @pytest.mark.skipif(not (recovery.ground_navigation.lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper is absent')
 def test_trial52_roof_escape_keeps_the_original_floor_component():
     facts={'map':530,'position':[-841.319580078125,7606.60009765625,58.38827133178711,4.4956]}
