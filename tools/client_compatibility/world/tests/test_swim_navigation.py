@@ -31,6 +31,18 @@ def test_trial48_extends_the_underwater_survey_goal_to_a_dry_in_site_endpoint():
     assert all(site_boundaries.inside_segment(polygon,a,b) for a,b in zip(plan['points'],plan['points'][1:]))
 
 
+@provisioned
+def test_shallow_submerged_feet_are_not_accepted_as_a_dry_survey_stance():
+    # Trial 51 stopped swimming when touching the pond floor, but its feet
+    # were still below the public water surface and six yards below the find.
+    tcp={'player':{'position':[-2457.881591796875,4958.9521484375,26.857702255249023,2.931098461151123]}}
+    plan=ground.dry_cast_plan(tcp,{'world_map':530,'swimming':False,'digsite_ids':[371]})
+    assert plan and plan['goal_source']=='public_player_facing_and_site_polygon'
+    assert plan['points'][-1][2]>29
+    dry={'player':{'position':[-2468,4964,32.96785,0]}}
+    assert ground.dry_cast_plan(dry,{'world_map':530,'swimming':False,'digsite_ids':[371]}) is None
+
+
 def test_arrival_requires_actual_dry_addon_state():
     goal=[0,0,4];extra=dict(swimming=False,falling=False,mounted=False,flying=False)
     assert dry_arrival([.5,0,4],goal,extra)

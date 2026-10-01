@@ -53,7 +53,15 @@ def locate_find(inputs,path):
 
 def execute(action,tcp,path,recovery=None,mounted_moves=False):
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None;ground_route=None;loot_approach=None
-    if action=='survey':inputs.key('2')
+    if action=='survey':
+        _,extra=screenshot(path)
+        planned=ground_navigation.dry_cast_plan(tcp,extra)
+        if planned:
+            from .observation.archaeology import Observer
+            from .swim_navigation import cross
+            hold,ground_route=cross(inputs,Observer(),planned,path)
+            ground_route['reason']='reach dry shore before the selected Survey cast'
+        inputs.key('2')
     elif action.startswith('turn_'):
         if not tcp['tool']:raise ValueError('turn without a survey observation')
         hold=min(.55,max(.025,abs(tcp['tool']['turn_error_radians'])/math.pi))
@@ -115,20 +123,9 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             from . import site_boundaries
             _,extra=screenshot(path)
             site=site_boundaries.active_site(find['map'],start,extra['digsite_ids'])
-            distance=3.5-math.dist(find['position'][:2],start[:2])
-            goal=[start[0]-math.cos(start[3])*distance,start[1]-math.sin(start[3])*distance,start[2]]
-            if not site_boundaries.inside_segment(site['polygon'],start,goal):
-                raise RuntimeError('overlapping artifact has no in-site backward approach')
-            # Ordinary player feet and the already visible artifact, not a
-            # private target. Moving off the model makes its mouse hit visible.
-            ground_navigation.route(find['map'],start,goal)
-            # Backpedalling is 4.5 yards/second, slower than forward walking.
-            inputs.key('s',hold=distance/4.5);time.sleep(.4)
-            from .observation.archaeology import Observer
-            after=Observer().poll(start[3])['player']['position']
-            if not site_boundaries.contains(site['polygon'],after):raise RuntimeError('loot approach left the digsite')
-            loot_approach={'source':'visible owned artifact overlaps player feet','before':start,'after':after,
-                'physical_keys':[*facing_keys,{'key':'s','hold':distance/4.5}],'observed_after_inside':True}
+            from . import loot_pose
+            loot_approach=loot_pose.approach(inputs,observer,find,site,path)
+            loot_approach['physical_keys']=[*facing_keys,*loot_approach['physical_keys']]
         pixel=locate_find(inputs,path)
         # The owned Classic client can render at 15 FPS. Keep the button down
         # for multiple frames so the physical use action is observed reliably.

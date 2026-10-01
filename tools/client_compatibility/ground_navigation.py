@@ -132,6 +132,33 @@ def low_step_hop(current,target,recovery,grounded=True):
     return None
 
 
+def dry_cast_plan(tcp,extra):
+    """Shallow water may report not-swimming while the feet remain submerged."""
+    start=tcp['player']['position'];map_id=extra['world_map']
+    try:near=route(map_id,start,start,allow_swimming=True)
+    except RuntimeError:near=None
+    if not extra['swimming'] and near and math.dist(start[:3],near['points'][-1])<=1.25:
+        return None
+    site=site_boundaries.active_site(map_id,start,extra['digsite_ids']);choices=[]
+    for index in range(16):
+        heading=start[3]+index*math.tau/16
+        for distance in [7,14,21,35,56]:
+            distance=site_boundaries.clip_distance(site['polygon'],start,heading,distance)
+            goal=[start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]]
+            try:planned=route(map_id,start,goal,allow_swimming=True)
+            except RuntimeError:continue
+            corridor=[start,*planned['points']]
+            if math.dist(start[:2],corridor[-1][:2])<1.5:continue
+            if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):continue
+            length=sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))
+            if length>140:continue
+            planned.update(start=start[:3],requested_goal=goal,goal_source='public_player_facing_and_site_polygon',
+                boundary_guard={'site_id':site['id'],'whole_corridor_inside':True,'source':site['source']})
+            choices.append((length,planned));break
+    if not choices:raise RuntimeError('no bounded dry Survey stance inside the public digsite')
+    return min(choices,key=lambda c:c[0])[1]
+
+
 def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True,path=None):
     import time
     from .observation.archaeology import Observer,angle_error
