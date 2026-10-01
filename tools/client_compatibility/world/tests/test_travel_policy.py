@@ -18,3 +18,16 @@ def test_travel_safety_waits_on_taxi_or_during_transfer():
     assert travel_policy.label(s)=='observe'
     s.update(available=True,on_taxi=True)
     assert travel_policy.label(s)=='observe'
+
+
+def test_grounded_confirmed_flight_arrival_does_not_request_another_climb():
+    leg={'mode':'flight','map':0,'position':[100,200,20],'ceiling':230}
+    movement={'in_world':True,'dead':False,'in_combat':False,'on_taxi':False}
+    extra=dict(casting=False,mounted=True,flying=False,falling=False)
+    facts=dict(position=[107,200,20,0],map=0,transferring=False)
+    s=travel_trial.state(leg,movement,extra,facts,{'nodes':[]})
+    assert s['destination_reached'] and s['near_destination']
+    assert travel_policy.label(s)=='dismount'
+    extra['mounted']=False
+    s=travel_trial.state(leg,movement,extra,facts,{'nodes':[]})
+    assert travel_policy.label(s)=='arrived'
