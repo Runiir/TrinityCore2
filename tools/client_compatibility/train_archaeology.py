@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--resume',type=Path)
     parser.add_argument('--policy',choices=['archaeology','travel'],default='archaeology')
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    start_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip()
     if args.policy=='travel':
         from . import travel_policy as policy
     config=json.loads(args.config.read_text());random.seed(config['seed']);torch.manual_seed(config['seed'])
@@ -93,7 +94,8 @@ def main():
         'parent_revision':policy.REVISION,'adapter_sha256':lab.sha256(out/'adapter.safetensors'),
         'config_sha256':lab.sha256(args.config),'dataset_sha256':lab.sha256(out/'dataset.json'),
         'resume_adapter_sha256':resume_identity['adapter_sha256'] if resume_identity else None,
-        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
+        'code_commit':start_commit,
+        'completion_code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'encoder_frozen':True,'synthetic_labels':True,'baseline_test_accuracy':baseline,
         'validation_accuracy':best,'test_accuracy':test,'history':history,'training_seconds':time.time()-started,
         'shadow_accepted':best>=config['minimum_validation_accuracy'] and test>=config['minimum_test_accuracy'],
