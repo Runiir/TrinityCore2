@@ -1,6 +1,7 @@
 """Bounded keyboard melee recovery for incidental low-level digsite attackers."""
 import json
 import math
+import re
 import time
 from . import lab_runtime as lab, archaeology_inputs, ground_navigation, site_boundaries
 from .travel_inputs import face
@@ -28,14 +29,24 @@ def run(movement, extra, facts, observer, path):
                 return receipt
             target = facts['selected_unit']
             hostiles = {h['guid'] for h in facts['visible_hostiles']}
-            if not target or not target['health'] or target['guid'] not in hostiles:
+            if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:2],target['position'][:2])>12:
                 attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
                 keys=[]
                 if attackers:
                     nearest=min(attackers,key=lambda h:math.dist(facts['position'][:2],h['position'][:2]))
                     if math.dist(facts['position'][:2],nearest['position'][:2])>.5:
                         keys.extend(face(inputs,observer,nearest['position']))
-                inputs.key('Tab');keys.append({'key':'Tab'})
+                    name=facts['visible_unit_names'].get(nearest['guid'])
+                else:name=None
+                # This is the normal local WoW targeting command, typed through
+                # the client. Its name comes from an ordinary creature query.
+                # It avoids Tab skipping an attacker behind terrain/camera.
+                if name and re.fullmatch("[A-Za-z '-]{1,100}",name):
+                    command='/targetexact '+name
+                    inputs.key('Return');inputs.type(command);inputs.key('Return')
+                    keys.append({'local_client_command':command,'source':'ordinary visible creature query'})
+                else:
+                    inputs.key('Tab');keys.append({'key':'Tab'})
                 record('select', physical_keys=keys); time.sleep(.4)
                 continue
             distance = math.dist(facts['position'][:2], target['position'][:2])

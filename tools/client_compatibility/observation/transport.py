@@ -15,11 +15,15 @@ class Observer:
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
         self.gossip=None;self.selected=None;self.attackers=set()
-        self.units={};self.player_level=85;self.player_faction=1
+        self.units={};self.names={};self.player_level=85;self.player_faction=1
         self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
 
     def poll(self):
         for p in self.cursor.poll():
+            if p['direction']=='from_native' and p['name']=='SMSG_CREATURE_QUERY_RESPONSE':
+                from ..world.gossip import text
+                template=Reader(bytes.fromhex(p['body']));entry,=template.unpack('I')
+                if not entry&0x80000000:self.names[entry]=text(template).decode()
             if p.get('session')!=self.session or p['time']<self.started:continue
             name=p['name'];body=bytes.fromhex(p['body']);r=Reader(body)
             if p['direction']=='from_client' and (name in movement.SUPPORTED or name=='CMSG_MOVE_SET_FACING_HEARTBEAT'):
@@ -86,5 +90,6 @@ class Observer:
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
             'gossip_menu':self.gossip,'selected_unit':selected,'attacking_units':sorted(self.attackers),
+            'visible_unit_names':{g:self.names[g>>32&0xFFFFF] for g in self.units if g>>32&0xFFFFF in self.names},
             'visible_hostiles':visible_hostiles(self.units,self.map,self.player_faction,self.player_level),
             'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}
