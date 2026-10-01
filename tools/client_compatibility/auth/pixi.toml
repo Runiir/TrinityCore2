@@ -9,6 +9,7 @@ python = "3.13.*"
 protobuf = ">=6,<7"
 pymysql = ">=1.1,<2"
 pytest = ">=9,<10"
+pillow = ">=12.3.0,<13"
 
 [pypi-dependencies]
 pycryptodome = ">=3.23,<4"
