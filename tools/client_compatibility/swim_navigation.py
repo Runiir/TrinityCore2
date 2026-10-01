@@ -6,12 +6,17 @@ from . import lab_runtime as lab,site_boundaries
 from .observation.archaeology import angle_error
 
 
+class CombatInterrupted(RuntimeError):
+    """A healthy, in-bounds character needs the normal combat recovery."""
+
+
 def available(movement,extra,position,polygon):
-    if not movement['in_world'] or any(movement[k] for k in ['dead','in_combat','on_taxi']):
+    if not movement['in_world'] or any(movement[k] for k in ['dead','on_taxi']):
         raise RuntimeError('walk/swim transit interrupted by unavailable character')
     if movement['health_percent']<50:raise RuntimeError('walk/swim transit health guard')
     if extra['mounted'] or extra['flying']:raise RuntimeError('walk/swim transit must remain unmounted')
     if not site_boundaries.contains(polygon,position):raise RuntimeError('walk/swim transit left the public digsite')
+    if movement['in_combat']:raise CombatInterrupted('physical approach interrupted by combat')
 
 
 def dry_arrival(position,goal,extra):

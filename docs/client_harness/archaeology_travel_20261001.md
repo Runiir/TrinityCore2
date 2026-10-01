@@ -258,10 +258,21 @@ y=370. The cursor now covers the central vertical strip from y=160 to y=512
 before widening. It still clears and reconfirms the game's ordinary tooltip;
 no human pixel annotation is supplied to the run.
 
+Episode 61 localized the previously missed artifact on its first view and
+collected it. The next find spawned after normal mounted yellow moves and
+unmounted green approaches, but an Artifact Seeker engaged during the collection
+stance. A healthy, in-bounds combat interruption now returns to the existing
+bounded physical combat recovery and then retries the find. Death, low health,
+boundary violations and other navigation failures still stop the run. An aborted
+approach is recorded separately from a completed collection click; initial and
+alternate loot stances retain their partial inputs and observed positions.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 119 tests. The new tooltip test initially failed because its test
+passes 121 tests. The combat-interruption change initially failed one older test
+that expected the previous error wording; its failed XML is retained alongside
+the corrected full-suite result. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -271,7 +282,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 60 preserve unsuccessful steps, including missing portal
+Episodes 07 through 61 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -284,7 +295,8 @@ errors, a missed flight-master tooltip, an out-of-range vendor click and landing
 slides outside the local arrival radius and artifact tooltip occlusion by a
 creature's body, dry ledges incorrectly treated as submerged, an unavailable
 forward route at a mesh corner, a premature stop during a small step down and
-an artifact above the bounded cursor search's covered region. Successful outcomes do not
+an artifact above the bounded cursor search's covered region and combat starting
+inside a collection approach. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 

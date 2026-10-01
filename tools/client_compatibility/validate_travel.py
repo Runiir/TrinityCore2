@@ -102,6 +102,12 @@ def score(directory):
         if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
             not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
             summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'ground_escape'})
+    for path in sorted(directory.rglob('loot_pose_*.json')):
+        receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
+        positions=[receipt['before'],*(o['position'] for o in receipt['observations'])]
+        if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
+            not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
+            summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'loot_pose'})
     summary['source_commits']=sorted(set(c for c in summary['source_commits'] if c))
     summary['model_revisions']=sorted(set(summary['model_revisions']))
     summary['model_policy_agreement']=summary['model_policy_matches']/summary['model_actions'] if summary['model_actions'] else None

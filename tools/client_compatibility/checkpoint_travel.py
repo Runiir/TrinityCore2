@@ -42,6 +42,7 @@ def main():
         'water_repair_before.png','water_repair_after.png','water_repair.json','water_loop_completion.json',
         'loot_tooltip_occlusion_56.png','loot_tooltip_hover_56.png','loot_tooltip_hover_56.json',
         'ground_corner_after_59.png','navigation_collection_repairs_cleanup.json',
+        'collection_interrupt_61.png','collection_interrupt_guard_failure.xml',
         'tooltip_hover_diagnostic.png','tooltip_hover_diagnostic.json','outland_repairs_cleanup.json','water_repairs_cleanup.json',
         'creature_movement_login.png','creature_movement_character.png','creature_movement_world.png',
         'creature_position_login.png','creature_position_character.png','creature_position_world.png',

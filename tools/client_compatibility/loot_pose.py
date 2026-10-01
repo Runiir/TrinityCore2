@@ -1,7 +1,8 @@
 """Choose a nearby dry interaction stance from an already visible find."""
 import math
+import json
 import time
-from . import ground_navigation,site_boundaries
+from . import ground_navigation,site_boundaries,lab_runtime as lab
 from .travel_inputs import face
 
 
@@ -26,22 +27,35 @@ def plan(map_id,start,find,polygon,excluded_stances=()):
 def approach(inputs,observer,find,site,path,excluded_stances=()):
     from .archaeology_inputs import screenshot
     from .swim_navigation import available
-    start=observer.poll()['position'];route=plan(site['map'],start,find['position'],site['polygon'],excluded_stances);keys=[]
-    for target in route['points']:
-        for _ in range(3):
-            current=observer.poll()['position'];distance=math.dist(current[:2],target[:2])
-            if distance<=.5:break
-            keys.extend(face(inputs,observer,target))
-            hold=min(1.,distance/7);inputs.key('w',hold=hold);time.sleep(.35)
-            keys.append({'key':'w','hold':hold})
-            movement,extra=screenshot(path);after=observer.poll()['position']
-            available(movement,extra,after,site['polygon'])
-            if extra['swimming']:raise RuntimeError('interaction stance unexpectedly entered water')
-            if math.dist(current[:2],after[:2])<.1:raise RuntimeError('interaction stance movement blocked')
-        else:raise RuntimeError('interaction stance waypoint did not settle')
-    after=observer.poll()['position']
-    if not 2.3<math.dist(after[:3],find['position'])<=5:
-        raise RuntimeError('actual interaction stance is outside safe find reach')
-    keys.extend(face(inputs,observer,find['position']));time.sleep(.4)
-    return {'source':'ordinary visible find and dry public navigation heights','before':start,'after':after,
-        'public_ground_route':route,'physical_keys':keys,'observed_after_inside':True}
+    start=observer.poll()['position'];keys=[]
+    trace={'schema':'public_loot_pose_v1','site_id':site['id'],'started_at':time.time(),
+        'before':start,'find':find,'physical_keys':keys,'observations':[],
+        'completed':False,'failure':None,'source':'ordinary visible find and dry public navigation heights'}
+    evidence=path.parent/f'loot_pose_{time.time_ns()}.json'
+    try:
+        route=plan(site['map'],start,find['position'],site['polygon'],excluded_stances)
+        trace['public_ground_route']=route
+        for target in route['points']:
+            for _ in range(3):
+                current=observer.poll()['position'];distance=math.dist(current[:2],target[:2])
+                if distance<=.5:break
+                keys.extend(face(inputs,observer,target))
+                hold=min(1.,distance/7);inputs.key('w',hold=hold);time.sleep(.35)
+                keys.append({'key':'w','hold':hold})
+                movement,extra=screenshot(path);after=observer.poll()['position']
+                trace['observations'].append({'position':after,'movement':movement,'travel':extra})
+                available(movement,extra,after,site['polygon'])
+                if extra['swimming']:raise RuntimeError('interaction stance unexpectedly entered water')
+                if math.dist(current[:2],after[:2])<.1:raise RuntimeError('interaction stance movement blocked')
+            else:raise RuntimeError('interaction stance waypoint did not settle')
+        after=observer.poll()['position'];trace['after']=after
+        if not 2.3<math.dist(after[:3],find['position'])<=5:
+            raise RuntimeError('actual interaction stance is outside safe find reach')
+        keys.extend(face(inputs,observer,find['position']));time.sleep(.4)
+        trace['completed']=True
+        return {'source':trace['source'],'before':start,'after':after,
+            'public_ground_route':route,'physical_keys':keys,'observed_after_inside':True,
+            'loot_pose_receipt':evidence.name}
+    except BaseException as error:trace['failure']=f'{type(error).__name__}: {error}';raise
+    finally:
+        trace['finished_at']=time.time();lab.private_write(evidence,json.dumps(trace,indent=2)+'\n')

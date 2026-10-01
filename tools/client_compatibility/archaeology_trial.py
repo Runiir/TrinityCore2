@@ -10,6 +10,12 @@ from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs
 from .archaeology_model_service import ENDPOINT,PORT
 from .observation.archaeology import Observer,collected
 from .collision_recovery import Recovery
+from .swim_navigation import CombatInterrupted
+
+
+def repeated_completed(history,action,count):
+    return len(history)>=count and all(s['action']==action and
+        s.get('execution_status')=='completed' for s in history[-count:])
 
 
 def run(args):
@@ -48,8 +54,8 @@ def run(args):
             if extra['mounted'] or extra['flying']:raise RuntimeError('archaeology trial requires landing and dismounting')
             state=policy.observed_state(movement,extra,tcp,history)
             recovery.update(history,tcp)
-            if len(history)>=3 and all(s['action']=='survey' for s in history[-3:]):raise RuntimeError('Survey produced no fresh instrument or find three times')
-            if len(history)>=2 and all(s['action']=='loot' for s in history[-2:]):raise RuntimeError('two physical loot attempts produced no collection')
+            if repeated_completed(history,'survey',3):raise RuntimeError('Survey produced no fresh instrument or find three times')
+            if repeated_completed(history,'loot',2):raise RuntimeError('two physical loot attempts produced no collection')
             if history and len(history)>=4 and all(s['action']=='observe' for s in history[-4:]):raise RuntimeError('repeated waiting without progress')
             request={'model':identity['model'],'state':state}
             req=urllib.request.Request(ENDPOINT,data=json.dumps(request).encode(),headers={'Content-Type':'application/json'})
@@ -73,7 +79,17 @@ def run(args):
                 'movement':movement,'travel':extra,'tcp':tcp,'state':state,'request':request,'response':response,
                 'action':action,'policy_match':action==policy.label(state),'input':None,'execution_status':'started'}
             history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
-            executed=inputs.execute(action,tcp,latest,recovery.for_action(action),mounted_moves=getattr(args,'mounted_moves',False))
+            try:
+                executed=inputs.execute(action,tcp,latest,recovery.for_action(action),mounted_moves=getattr(args,'mounted_moves',False))
+            except CombatInterrupted as error:
+                interrupted,observed=inputs.screenshot(latest)
+                if not interrupted['in_world'] or interrupted['health_percent']<50 or any(interrupted[k] for k in ['dead','on_taxi']):raise
+                step.update(time=time.time(),execution_status='interrupted_by_combat',
+                    input={'interrupted_by_combat':True,'reason':str(error),
+                        'movement':interrupted,'travel':observed})
+                lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
+                print(json.dumps({'step':index,'action':action,'interrupted_by_combat':True}),flush=True)
+                continue
             step.update(input=executed,time=time.time(),execution_status='completed')
             if action=='loot':
                 confirmation=collected(tcp['session'],begin)

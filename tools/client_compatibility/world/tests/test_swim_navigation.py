@@ -66,5 +66,5 @@ def test_water_transit_stops_on_boundary_combat_or_health_loss():
     polygon=[[0,0],[10,0],[10,10],[0,10]]
     available(movement,extra,[5,5,0],polygon)
     with pytest.raises(RuntimeError,match='digsite'):available(movement,extra,[12,5,0],polygon)
-    with pytest.raises(RuntimeError,match='unavailable'):available({**movement,'in_combat':True},extra,[5,5,0],polygon)
+    with pytest.raises(RuntimeError,match='combat'):available({**movement,'in_combat':True},extra,[5,5,0],polygon)
     with pytest.raises(RuntimeError,match='health'):available({**movement,'health_percent':49},extra,[5,5,0],polygon)
