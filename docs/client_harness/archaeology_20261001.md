@@ -40,6 +40,60 @@ was visible. A teacher supplied screen coordinates for the final artifact click
 and loot row. Earlier manual movement and unsuccessful clicks are retained in
 the episode, so they cannot be mistaken for autonomous success.
 
+## Laya decision evaluation
+
+The successful live find took 23 navigation actions: eight Surveys, eight turns
+and seven walks, over approximately 73 seconds before looting. It produced eight
+Night Elf fragments. This is one assisted find, not a measured completion rate.
+The harness supplied `next_instruction` and constrained the choices. Sixteen of
+the 23 navigation decisions offered only the correct progress action and waiting;
+the remaining seven offered short walking, long walking and waiting. Code also
+computed the turn duration and colour-dependent walking distances. A teacher
+supplied both artifact and loot-row mouse coordinates.
+
+The frozen shadow evaluation at code commit `0bcde2f3da` replays those 23
+observations and adds 21 synthetic cases covering telescope colours, opposing
+headings, stale/missing instruments, casting and unavailable characters. It makes
+111 requests to the same pinned local model across three variants. No game input
+or weight training occurs. Raw observations contain ordinary telescope readings
+and action history; the fact summary replaces numeric heading errors with
+left/right/aligned facts. Both variants offer all six navigation actions, with
+general task rules but no supplied next action.
+
+| Variant | Recorded navigation | Synthetic cases | All cases |
+| --- | ---: | ---: | ---: |
+| Original instructions and constrained choices | 23/23 (100%) | Not evaluated | 23/23 |
+| Raw observations, all actions | 8/23 (35%) | 10/21 (48%) | 18/44 (41%) |
+| Relative-heading facts, all actions | 5/23 (22%) | 10/21 (48%) | 15/44 (34%) |
+
+Labels follow the explicit public-telescope control policy. Either bounded walk
+counts as progress when aligned, even if its distance differs from the preferred
+choice; in this run preferred-action and progress scores are identical. These
+are correlated recorded states and synthetic checks, not independent live digs
+or estimates of general archaeology ability.
+
+With raw observations Laya chose Survey on 39 of 44 cases. Both unrestricted
+variants failed both casting/unavailable wait checks. Those requests remained
+in shadow; the live controller's safety guards were not removed. Neither variant
+meets the predeclared 90% preferred-action, 95% progress-action and 100% unsafe-wait
+criteria, so no controller promotion occurred. Simplifying numeric angles into
+relative-heading facts did not improve this configuration. Reported confidence
+is not used as a substitute for measured action correctness.
+
+The evidence supports a working guided archaeology controller. It does not yet
+support reliable independent Laya action selection. Repeated live digs, automatic
+artifact mouse localization, and a comparison with the same controller without
+Laya remain necessary to measure completion reliability and the model's added
+value. The evaluation code and configuration are committed; full requests,
+responses, labels, source episode and DVCLive metrics are checkpointed in
+`artifacts/client_harness/442_laya_archaeology_eval_20261001.tar.gz.dvc`.
+
+To reproduce the shadow evaluation with a new output directory:
+
+```sh
+pixi run --manifest-path /home/runiir/Games/trinity-cata/pixi.toml python -m tools.client_compatibility.evaluate_archaeology --output /path/to/new/evaluation
+```
+
 ## Protocol repairs
 
 - Initialize known spells, action buttons, proficiency, equipment, inventory,
