@@ -193,7 +193,7 @@ def stop(kind: str) -> None:
     if info:
         os.killpg(info["pid"], signal.SIGTERM)
         print(f"Sent SIGTERM to owned {kind} process group {info['pid']}")
-        for _ in range(300):
+        for attempt in range(300):
             members=[]
             for proc in Path('/proc').iterdir():
                 if not proc.name.isdigit():continue
@@ -202,6 +202,19 @@ def stop(kind: str) -> None:
                 if fields[0]!='Z' and int(fields[2])==info['pid']:members.append(proc.name)
             if not members:
                 return
+            if kind == 'client' and attempt >= 30:
+                # Gamescope can exit while its child reaper waits forever.
+                # Kill only that leftover helper, after the owned game group
+                # has no other live members. Never apply this to a server.
+                reapers=[]
+                for pid in members:
+                    try:
+                        proc=Path('/proc')/pid
+                        if (proc/'comm').read_text().strip()=='gamescopereaper' and str(ROOT).encode() in (proc/'cmdline').read_bytes():
+                            reapers.append(int(pid))
+                    except (FileNotFoundError,ProcessLookupError):pass
+                if len(reapers)==len(members):
+                    for pid in reapers:os.kill(pid,signal.SIGKILL)
             time.sleep(0.1)
         raise RuntimeError(f"owned {kind} process group has not stopped after SIGTERM")
 
