@@ -1,0 +1,9 @@
+{
+  "schema": "client442_public_travel_route_v1",
+  "id": "return_to_bonechewer_survey_ground",
+  "setup_teleports": 0,
+  "sources": ["public ResearchSite/QuestPOIPoint polygon and native MMAP ground", "loop 29 successfully surveyed near this public site-center floor"],
+  "legs": [
+    {"id":"bonechewer_ground","mode":"flight","map":530,"position":[-2909.08325,3510.83325,-24.337595],"ceiling":230,"site_id":377}
+  ]
+}

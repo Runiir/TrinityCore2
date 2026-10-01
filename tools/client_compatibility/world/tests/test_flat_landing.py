@@ -23,3 +23,14 @@ def test_survey_flight_respects_explicit_landing_radius():
     facts=dict(position=[107,200,20,0],map=0,transferring=False)
     state=travel_trial.state(dict(mode='flight',map=0,position=[100,200,20],arrival_radius=1.5),movement,extra,facts,{'nodes':[]})
     assert not state['destination_reached'] and not state['near_destination']
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private public-navmesh helper is not provisioned')
+def test_bonechewer_landing_stays_on_the_ground_component_that_supported_survey():
+    origin=[-2907.88159,3512.58374,-24.695236]
+    goal=[-2912.7998,3491.19995,-4.86794662]
+    point=ground.landing_point(530,goal,start=origin)
+    # The failed trial landed on a disconnected roof at Z34.458.
+    assert point[2]<10
+    path=ground.route(530,origin,point)
+    assert abs(path['points'][-1][2]-point[2])<2

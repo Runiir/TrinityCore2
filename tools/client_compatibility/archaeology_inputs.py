@@ -72,7 +72,7 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
                 distance=site_boundaries.clip_distance(site['polygon'],start,heading,min(84,hold*7*scale))
                 farther.append([start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]])
             for waypoint in [*reversed(targets),*farther]:
-                try:candidate=ground_navigation.landing_point(site['map'],waypoint)
+                try:candidate=ground_navigation.landing_point(site['map'],waypoint,start=start)
                 except RuntimeError:continue
                 attempts.append({'waypoint':waypoint,'landing':candidate})
                 if math.dist(candidate[:2],start[:2])>=3 and site_boundaries.inside_segment(site['polygon'],start,candidate):

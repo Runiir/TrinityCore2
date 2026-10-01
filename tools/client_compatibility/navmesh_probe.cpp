@@ -45,7 +45,8 @@ int main(int argc, char** argv)
     try
     {
         bool below = argc == 7 && std::string(argv[3]) == "--ground-below";
-        bool landing = argc == 8 && std::string(argv[3]) == "--landing";
+        bool connectedLanding = argc == 11 && std::string(argv[3]) == "--landing";
+        bool landing = connectedLanding || (argc == 8 && std::string(argv[3]) == "--landing");
         bool column = below || landing || (argc == 6 && std::string(argv[3]) == "--ground");
         float radius = landing ? std::stof(argv[7]) : 4.f;
         if (!std::isfinite(radius) || radius<=0 || radius>30) throw std::runtime_error("invalid landing radius");
@@ -95,6 +96,13 @@ int main(int argc, char** argv)
         dtQueryFilter filter; filter.setIncludeFlags(1); filter.setExcludeFlags(0); // NAV_GROUND only
         if (column)
         {
+            dtPolyRef origin=0;float originPoint[3];
+            if (connectedLanding)
+            {
+                float player[3]={std::stof(argv[9]),std::stof(argv[10]),std::stof(argv[8])}, near[3]={4,8,4};
+                query.findNearestPoly(player,near,&filter,&origin,originPoint);
+                if (!origin) throw std::runtime_error("no public ground near landing origin");
+            }
             float extents[3]={radius,landing ? 80.f : 2000.f,radius}, chosen[3]; dtPolyRef refs[4096]; int count=0;
             auto status=query.queryPolygons(goal,extents,&filter,refs,&count,4096);
             if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground column query exceeds budget");
@@ -115,6 +123,20 @@ int main(int argc, char** argv)
                     { covered=true;break; }
                 }
                 if (covered) continue; // Flat polygons under hills/roofs cannot be landed on.
+                if (connectedLanding)
+                {
+                    dtPolyRef path[1024];int length=0;
+                    auto status=query.findPath(origin,refs[i],originPoint,point,&filter,path,&length,1024);
+                    if (dtStatusFailed(status) || !length || path[length-1]!=refs[i] || (status & DT_PARTIAL_RESULT)) continue;
+                    bool groundOnly=true;
+                    for (int k=0;k<length;++k)
+                    {
+                        dtMeshTile const* tile;dtPoly const* poly;
+                        if (dtStatusFailed(mesh.getTileAndPolyByRef(path[k],&tile,&poly)) || poly->getType()!=DT_POLYTYPE_GROUND)
+                            groundOnly=false;
+                    }
+                    if (!groundOnly) continue;
+                }
                 float score=horizontal*100000+(landing ? std::abs(point[1]-goal[1]) : -point[1]);
                 if (score<best) { best=score; std::copy(point,point+3,chosen);chosenSlope=groundSlope(mesh,refs[i],point); }
             }
