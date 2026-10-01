@@ -74,6 +74,7 @@ def prepare_servers() -> None:
             values.update({"WorldServerPort": "18085", "InstanceServerPort": "18086",
                 "DataDir": f'"{BASE}/data"', "Updates.EnableDatabases": "15", "Console.Enable": "1",
                 "Ra.Enable": "0", "SOAP.Enabled": "0", "BotWorld.Enable": "0",
+                "InstantFlightPaths": "1",
                 "PlayerBot.Enable": "0", "BotWorld.AutoStart": "0", "BotWorld.AutoStartRecording": "0",
                 "BotWorld.PlayMode.Enable": "0", "BotWorld.RuntimeProfile": '""',
                 "BotWorld.ValidationRoute.Enable": "0", "Appender.Server": "2,3,0,Server.log,a",

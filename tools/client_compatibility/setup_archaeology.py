@@ -95,7 +95,13 @@ async def setup(config, flight_only=False):
             n.send("CMSG_MESSAGECHAT_SAY", Writer().pack("I", 7).bits(len(encoded), 9).raw(encoded).finish())
             await asyncio.sleep(delay)
         if flight_only:
+            for spell in config.get('riding_rank_spells', []): await command(f".learn {spell}")
             for spell in config["flight_spells"]: await command(f".learn {spell}")
+            mounts = {config['mount_spell'], *config.get('additional_mount_spells', [])}
+            if config.get('all_compatible_mounts'):
+                from .observation.map_data import mount_spells
+                mounts.update(mount_spells())
+            for spell in sorted(mounts): await command(f".learn {spell}", .05)
             await command(f".setskill {config['riding_skill']} {config['riding_value']} {config['riding_value']}")
             await command(".save", 1)
             n.send("CMSG_LOGOUT_REQUEST")

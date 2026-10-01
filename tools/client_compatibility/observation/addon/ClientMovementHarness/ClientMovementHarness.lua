@@ -45,6 +45,71 @@ local function position()
 end
 
 local sequence, elapsed = 0, 0
+-- A second observation-only packet carries public map/travel state. Digsite IDs
+-- come from the same map API used by Blizzard's archaeology overlay.
+local travelPanel = CreateFrame("Frame", "ClientTravelHarnessPanel", UIParent)
+travelPanel:SetScale(1 / UIParent:GetEffectiveScale())
+travelPanel:SetSize(256, 32)
+travelPanel:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -16, -16)
+travelPanel:SetFrameStrata("TOOLTIP")
+travelPanel:EnableMouse(false)
+local travelPixels = {}
+for i = 1, 512 do
+    local pixel = travelPanel:CreateTexture(nil, "OVERLAY")
+    pixel:SetSize(4, 4)
+    pixel:SetPoint("TOPLEFT", travelPanel, "TOPLEFT", ((i-1)%64)*4, -math.floor((i-1)/64)*4)
+    travelPixels[i] = pixel
+end
+local digsites, nextSites = {}, 0
+local function travelSample()
+    if GetTime() >= nextSites then
+        nextSites = GetTime() + 1
+        digsites = {}
+        local seen = {}
+        if C_ResearchInfo and C_ResearchInfo.GetDigSitesForMap then
+            for _, map in ipairs({1414, 1415, 1945, 113}) do
+                local ok, sites = pcall(C_ResearchInfo.GetDigSitesForMap, map)
+                if ok and sites then
+                    for _, site in ipairs(sites) do
+                        if not seen[site.researchSiteID] then
+                            seen[site.researchSiteID] = true
+                            digsites[#digsites+1] = site.researchSiteID
+                        end
+                    end
+                end
+            end
+        end
+        table.sort(digsites)
+    end
+    local posX, posY, posZ, world = UnitPosition("player")
+    local flags = 0
+    if IsMounted() then flags = flags + 1 end
+    if IsFlying() then flags = flags + 2 end
+    if IsFalling() then flags = flags + 4 end
+    if IsSwimming() then flags = flags + 8 end
+    if UnitCastingInfo("player") or UnitChannelInfo("player") then flags = flags + 16 end
+    if IsIndoors() then flags = flags + 32 end
+    if IsFlyableArea() then flags = flags + 64 end
+    if posX and posY and posZ and world then flags = flags + 128 end
+    local bytes = {84, 67, 65, 49} -- TCA1
+    append(bytes, sequence, 4)
+    append(bytes, math.floor(GetTime()*1000)%4294967296, 4)
+    append(bytes, world or 0, 4)
+    append(bytes, math.floor((posX or 0)*100), 4)
+    append(bytes, math.floor((posY or 0)*100), 4)
+    append(bytes, math.floor((posZ or 0)*100), 4)
+    append(bytes, flags, 1)
+    append(bytes, math.min(#digsites, 16), 1)
+    for i=1,16 do append(bytes, digsites[i] or 0, 2) end
+    local first, second = 0, 0
+    for _, byte in ipairs(bytes) do first=(first+byte)%255; second=(second+first)%255 end
+    append(bytes, second*256+first, 2)
+    for i=1,#bytes*8 do
+        local byte=bytes[math.floor((i-1)/8)+1]
+        local white=math.floor(byte/(2^ (7-((i-1)%8))))%2
+        travelPixels[i]:SetColorTexture(white, white, white, 1)
+    end
+end
 local function sample()
     sequence = (sequence + 1) % 4294967296
     local map, x, y = position()
@@ -81,6 +146,7 @@ local function sample()
             pixels[i]:SetTexture(white, white, white, 1)
         end
     end
+    travelSample()
 end
 
 panel:SetScript("OnUpdate", function(_, delta)

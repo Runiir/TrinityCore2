@@ -30,7 +30,10 @@
   "riding_spell": 90265,
   "riding_skill": 762,
   "riding_value": 375,
-  "flight_spells": [90267],
+  "flight_spells": [54197, 90265, 90267],
+  "riding_rank_spells": [33388, 33391, 34090, 34091],
+  "additional_mount_spells": [23227, 32239, 32240, 32242, 32243, 32244, 32245, 60025, 75207],
+  "all_compatible_mounts": true,
   "mount_spell": 32235,
   "controller": "convaiinnovations/laya-typed-decisions",
   "endpoint": "http://127.0.0.1:8000/v1/systemone"

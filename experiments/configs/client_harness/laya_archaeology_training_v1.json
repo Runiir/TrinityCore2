@@ -1,0 +1,24 @@
+{
+  "schema": "laya_archaeology_head_training_v1",
+  "parent_model": "convaiinnovations/laya-typed-decisions",
+  "parent_revision": "c5d78730f3493e4fe16d61507ef4b78eef7318cf",
+  "seed": 20261001,
+  "train_per_action": 100,
+  "validation_per_action": 30,
+  "test_per_action": 30,
+  "batch_size": 8,
+  "epochs": 25,
+  "learning_rate": 0.0002,
+  "freeze_encoder": true,
+  "minimum_validation_accuracy": 0.99,
+  "minimum_test_accuracy": 0.95,
+  "live_acceptance": {
+    "fully_collected_finds": 6,
+    "distinct_digsites": 2,
+    "teacher_mouse_annotations": 0,
+    "maximum_steps_per_find": 120,
+    "flight_path_trips": 1,
+    "portal_trips": 1,
+    "manual_gameplay_interventions": 0
+  }
+}
