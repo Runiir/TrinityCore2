@@ -195,7 +195,7 @@ int main(int argc, char** argv)
             {
                 float point[3];query.closestPointOnPoly(local[i],feet.data(),point,nullptr);
                 if (std::hypot(point[0]-feet[0],point[2]-feet[2])<.35f
-                    && point[1]-feet[1]>1.f && point[1]-feet[1]<4.f) mismatch=true;
+                    && point[1]-feet[1]>1.25f && point[1]-feet[1]<4.f) mismatch=true;
             }
             if (!mismatch) continue;
             avoided.push_back(feet);
