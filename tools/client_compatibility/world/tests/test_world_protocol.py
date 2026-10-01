@@ -80,7 +80,7 @@ def test_movement_ownership_and_invalid_coordinates():
         with pytest.raises(ValueError): movement.parse(body, 1)
     for name in movement.SUPPORTED:
         native, encoded = movement.encode(name, 1, state)
-        assert native.startswith("MSG_MOVE_") and encoded
+        assert native == ("CMSG_MOVE_SET_CAN_FLY" if name == "CMSG_MOVE_SET_FLY" else "MSG_" + name.removeprefix("CMSG_")) and encoded
 
 
 def test_no_movement_before_world_or_from_realm(monkeypatch):

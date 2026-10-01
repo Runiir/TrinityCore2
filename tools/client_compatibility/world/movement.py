@@ -10,8 +10,13 @@ SEQUENCES = json.loads(Path(__file__).with_name("native_movement.json").read_tex
 SUPPORTED = {"CMSG_MOVE_" + name for name in (
     "START_FORWARD", "START_BACKWARD", "STOP", "START_STRAFE_LEFT", "START_STRAFE_RIGHT",
     "STOP_STRAFE", "START_TURN_LEFT", "START_TURN_RIGHT", "STOP_TURN", "JUMP", "FALL_LAND",
-    "HEARTBEAT", "SET_FACING", "SET_RUN_MODE", "SET_WALK_MODE", "START_PITCH_UP",
-    "START_PITCH_DOWN", "STOP_PITCH", "START_SWIM", "STOP_SWIM")}
+    "HEARTBEAT", "SET_FACING", "SET_PITCH", "SET_RUN_MODE", "SET_WALK_MODE", "START_PITCH_UP",
+    "START_PITCH_DOWN", "STOP_PITCH", "START_SWIM", "STOP_SWIM",
+    "START_ASCEND", "START_DESCEND", "STOP_ASCEND", "SET_FLY")}
+
+
+def modern_flags2(native):
+    return (native & 0x3f) | (0x100 if native & 0x400 else 0)
 
 
 def parse(body, wanted):
@@ -24,8 +29,16 @@ def parse(body, wanted):
     if forces > 16: raise ValueError("excessive movement forces")
     for _ in range(forces): r.guid()
     presence = [r.bits(1) for _ in range(8)]
-    if any(presence[i] for i in (0, 1, 3, 6, 7)) or flags3 or flags >= 1 << 30 or flags2 >= 1 << 12:
+    # Modern swim/flight transition moved from native bit 10 to bit 8.
+    # Terrain-normal and turn-while-falling flags have no native wire field.
+    # Whitemane's observed 0x8000 falling hint is accepted only with actual fall
+    # data; it cannot grant flight or bypass the server's movement authority.
+    allowed_extra = 0x3f | 0x100 | 0x200 | 0x400 | 0x8000
+    if any(presence[i] for i in (0, 1, 3, 6, 7)) or flags3 or flags >= 1 << 30 or flags2 & ~allowed_extra:
         raise ValueError("unsupported movement transport/spline/advanced flags")
+    if flags2 & 0x8000 and not (flags & 0x800 and presence[2]):
+        raise ValueError("falling movement hint without fall state")
+    flags2 = (flags2 & 0x3f) | (0x400 if flags2 & 0x100 else 0)
     m = {"flags": flags, "flags2": flags2, "time": timestamp, "position": (x, y, z, o),
          "pitch": pitch, "fall": bool(presence[2]), "fall_direction": False,
          "fall_time": 0, "zspeed": 0, "sin": 0, "cos": 0, "xyspeed": 0}
@@ -39,13 +52,13 @@ def parse(body, wanted):
     return m
 
 
-def encode(name, guid, m):
-    native = "MSG_" + name.removeprefix("CMSG_")
-    if name not in SUPPORTED or native not in SEQUENCES:
+def encode(name, guid, m, *, acknowledgement=False):
+    native = "CMSG_MOVE_SET_CAN_FLY" if name == "CMSG_MOVE_SET_FLY" else name if acknowledgement else "MSG_" + name.removeprefix("CMSG_")
+    if (not acknowledgement and name not in SUPPORTED) or native not in SEQUENCES:
         raise ValueError("unsupported movement opcode")
     octets = struct.pack("<Q", guid)
     flags, flags2 = m["flags"], m["flags2"]
-    pitch = bool(flags & (0x200000 | 0x1000000) or flags2 & 0x20)
+    pitch = bool(flags & (0x200000 | 0x1000000) or flags2 & 0x10)
     present = {"MovementFlags": bool(flags), "MovementFlags2": bool(flags2),
                "Timestamp": True, "Orientation": abs(m["position"][3]) > 1e-6,
                "Pitch": pitch, "SplineElevation": False}
@@ -63,6 +76,8 @@ def encode(name, guid, m):
             value = octets[int(e[-1])]
             if value: w.pack("B", value ^ 1)
         elif e in {"ZeroBit", "HasTransportData", "HasSpline", "HasHeightChangeFailed"}: w.bits(0, 1)
+        elif e == "Counter" and acknowledgement: w.pack("I", m["ack_index"])
+        elif e == "ExtraElement" and acknowledgement: w.pack("f", m["ack_speed"])
         elif "Transport" in e or e == "HasVehicleId": continue
         elif e == "HasFallData": w.bits(m["fall"], 1)
         elif e == "HasFallDirection":

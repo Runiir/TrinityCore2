@@ -27,6 +27,11 @@ def expression(text, values, variables):
         return text == "true"
     if re.fullmatch(r"-?\d+(?:\.\d+)?f?", text):
         return float(text.removesuffix("f")) if "." in text else int(text)
+    nested_index = re.fullmatch(r"(\w+)\[(\w+)\]\[(\w+)\]", text)
+    if nested_index:
+        array = expression(f"{nested_index[1]}[{nested_index[2]}]", values, variables) or []
+        index = int(expression(nested_index[3], values, variables))
+        return array[index] if index < len(array) else 0
     indexed = re.fullmatch(r"(\w+)\[(\w+)\]", text)
     if indexed:
         array = values.get(indexed[1], [])
@@ -36,11 +41,11 @@ def expression(text, values, variables):
         return variables[text]
     if text.startswith("*"):
         return expression(text[1:], values, variables)
+    member = re.fullmatch(r"(\w+)\.(\w+)", text)
+    if member:
+        return (values.get(member[1]) or {}).get(member[2], 0)
     if re.fullmatch(r"\w+", text):
         return values.get(text, 0)
-    # Empty nested archaeology collections are still represented explicitly.
-    if re.fullmatch(r"\w+\[\w+\]\[\w+\]", text):
-        return 0
     raise ValueError("unsupported create-field expression: " + text)
 
 
@@ -106,7 +111,10 @@ def serialize(writer, kind, values=None, visibility=1):
             nested = re.fullmatch(r"(.+?)(?:\.|->)WriteCreate\(data, owner, receiver\);", line)
             if nested:
                 field = re.match(r"\w+", nested[1])[0]
-                serialize(writer, types[field], expression(nested[1], values, variables) or {}, visibility)
+                nested_type = types[field]
+                dynamic = re.fullmatch(r"DynamicUpdateFieldBase<UF::(\w+)>", nested_type)
+                if dynamic: nested_type = dynamic[1]
+                serialize(writer, nested_type, expression(nested[1], values, variables) or {}, visibility)
                 continue
             bare = re.fullmatch(r"data << (.+);", line)
             if bare:
@@ -119,6 +127,11 @@ def serialize(writer, kind, values=None, visibility=1):
                     writer.pack("ffI", 0, 0, 0)
                 elif field_type.endswith("PerksVendorItem"):
                     writer.raw(bytes(40)).bits(0, 2).flush()
+                elif field_type.endswith("ItemBonusKey"):
+                    value = value or {}
+                    bonuses = value.get("BonusListIDs", [])
+                    writer.pack("iI", value.get("ItemID", 0), len(bonuses))
+                    writer.pack("i" * len(bonuses), *bonuses)
                 elif field_type in FORMATS:
                     writer.pack(FORMATS[field_type], value)
                 else:

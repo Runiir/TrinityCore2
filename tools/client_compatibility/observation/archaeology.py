@@ -1,0 +1,84 @@
+"""Read the owned session's visible survey instruments from decoded TCP packets.
+
+Only ordinary game-object create/remove messages are used. The server's private
+archaeology target and site coordinates are never read.
+"""
+import json
+import math
+
+from .. import lab_runtime as lab
+from ..world.native_objects import records
+
+TOOLS = {206590: "red", 206589: "yellow", 204272: "green"}
+FINDS = {203071, 203078, 204282, 206836, 202655, 207187, 207188, 207189, 207190}
+
+
+def angle_error(heading, facing):
+    return (heading - facing + math.pi) % math.tau - math.pi
+
+
+class Observer:
+    def __init__(self):
+        entries = [json.loads(line) for line in (lab.ROOT / "logs/modern_world.jsonl").read_text().splitlines()]
+        entry = next((r for r in reversed(entries) if r["event"] == "native_player_created" and r["guid"] == 1), None)
+        if not entry: raise RuntimeError("owned character has not entered the native world")
+        self.session, self.started = entry["session"], entry["time"]
+        self.offset, self.tool, self.finds = 0, None, {}
+
+    def poll(self, facing):
+        with (lab.ROOT / "evidence/world_packets.jsonl").open() as handle:
+            handle.seek(self.offset)
+            while line := handle.readline():
+                if not line.endswith("\n"): break
+                self.offset = handle.tell()
+                packet = json.loads(line)
+                if packet.get("session") != self.session or packet["time"] < self.started:
+                    continue
+                if packet["direction"] != "from_native":
+                    continue
+                if packet["name"] == "SMSG_DESTROY_OBJECT":
+                    from ..world.buffer import Reader
+                    r = Reader(bytes.fromhex(packet["body"]))
+                    guid, _ = r.unpack("QB"); r.end()
+                    self.finds.pop(guid, None)
+                    if self.tool and self.tool["guid"] == guid: self.tool["visible"] = False
+                    continue
+                if packet["name"] != "SMSG_UPDATE_OBJECT": continue
+                for record in records(bytes.fromhex(packet["body"])):
+                    if record["update_type"] == 3:
+                        for guid in record["removed"]:
+                            self.finds.pop(guid, None)
+                            if self.tool and self.tool["guid"] == guid: self.tool["visible"] = False
+                    elif record.get("kind") == 5:
+                        from ..world.objects import INDEX
+                        creator = record["fields"].get(INDEX["OBJECT_FIELD_CREATED_BY"], 0) | record["fields"].get(INDEX["OBJECT_FIELD_CREATED_BY"] + 1, 0) << 32
+                        if creator != 1: continue
+                        entry = record["guid"] >> 32 & 0xFFFFF
+                        if entry not in TOOLS and entry not in FINDS: continue
+                        x, y, z, heading = record["movement"]["position"]
+                        observed = {"guid": record["guid"], "entry": entry, "seen_at": packet["time"],
+                                    "position": [x, y, z], "heading_radians": heading, "visible": True}
+                        if entry in TOOLS:
+                            self.tool = {**observed, "color": TOOLS[entry]}
+                        else: self.finds[record["guid"]] = observed
+        tool = dict(self.tool) if self.tool else None
+        if tool: tool["turn_error_radians"] = angle_error(tool["heading_radians"], facing)
+        return {"source": "owned_session_visible_object_tcp_packets", "session": self.session,
+                "tool": tool, "finds": list(self.finds.values())}
+
+
+def collected(session, since):
+    """Confirm a physical loot click using native loot and currency replies."""
+    from ..world.currency import translate
+    from ..world.buffer import Reader
+    replies = [json.loads(line) for line in (lab.ROOT / "evidence/world_packets.jsonl").read_text().splitlines()]
+    replies = [r for r in replies if r.get("session") == session and r["time"] >= since and r["direction"] == "from_native"]
+    if not any(r["name"] == "SMSG_CURRENCY_LOOT_REMOVED" for r in replies): return None
+    for reply in replies:
+        if reply["name"] != "SMSG_SET_CURRENCY": continue
+        r = Reader(translate(reply["name"], bytes.fromhex(reply["body"])))
+        currency, quantity = r.unpack("ii")
+        if quantity > 0:
+            return {"time": reply["time"], "session": session, "currency": currency,
+                    "quantity": quantity, "source": "native_loot_removed_and_currency_reply"}
+    return None

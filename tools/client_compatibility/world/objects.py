@@ -40,28 +40,53 @@ def field_values(snapshot, character):
                 AttackRoundBaseTime=array("UNIT_FIELD_BASEATTACKTIME", 2))
     bytes1, bytes2 = value("UNIT_FIELD_BYTES_1"), value("UNIT_FIELD_BYTES_2")
     unit.update(StandState=bytes1 & 255, VisFlags=bytes1 >> 16 & 255, AnimTier=bytes1 >> 24 & 255,
-                SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255)
+                SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
     player = {"Name": character["name"], "PlayerFlags": value("PLAYER_FLAGS"),
               "NativeSex": character["gender"], "VirtualPlayerRealm": 0x01010001}
+    player["VisibleItems"] = [{"ItemID": value("PLAYER_VISIBLE_ITEM_1_ENTRYID", i * 2)} for i in range(19)]
     active = {"XP": value("PLAYER_XP"), "NextLevelXP": value("PLAYER_NEXT_LEVEL_XP"), "MaxLevel": 85,
-              "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32}
+              "NumBackpackSlots": 16,
+              "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
+              "ProfessionSkillLine": array("PLAYER_PROFESSION_SKILL_LINE_1", 2)}
+    from .inventory import inventory_slots
+    active["InvSlots"] = inventory_slots(native)
+    skill = {}
+    for modern, old in {"SkillLineID": "PLAYER_SKILL_LINEID_0", "SkillStep": "PLAYER_SKILL_STEP_0",
+                        "SkillRank": "PLAYER_SKILL_RANK_0", "SkillMaxRank": "PLAYER_SKILL_MAX_RANK_0",
+                        "SkillTempBonus": "PLAYER_SKILL_MODIFIER_0", "SkillPermBonus": "PLAYER_SKILL_TALENT_0"}.items():
+        skill[modern] = [(value(old, i // 2) >> (i % 2 * 16)) & 65535 for i in range(128)]
+    skill["SkillTempBonus"] = [n - 65536 if n > 32767 else n for n in skill["SkillTempBonus"]]
+    skill["SkillStartingRank"] = skill["SkillRank"]
+    active["Skill"] = skill
+    packed = lambda name: [(value(name, i // 2) >> (i % 2 * 16)) & 65535 for i in range(16)]
+    active["ResearchSites"] = [[n for n in packed("PLAYER_FIELD_RESEARCH_SITE_1") if n]]
+    active["Research"] = [[{"ResearchProjectID": n} for n in packed("PLAYER_FIELD_RESEARCH_PROJECT_1") if n]]
     return {"ObjectData": {"EntryID": value("OBJECT_FIELD_ENTRY"), "Scale": float_value("OBJECT_FIELD_SCALE_X")},
             "UnitData": unit, "PlayerData": player, "ActivePlayerData": active}
 
 
-def create(snapshot, character):
+def player_block(snapshot, character, buttons=None):
     guid, move = snapshot["guid"], snapshot["movement"]
     w = Writer().pack("B", 1).guid(guid, player_high()).pack("B", 7)
     for i in range(19):
         w.bits(i in (0, 4, 15, 17), 1)
-    w.guid(guid, player_high()).pack("IIII4fffII", move["flags"], move["flags2"], 0,
+    from .movement import modern_flags2
+    w.guid(guid, player_high()).pack("IIII4fffII", move["flags"], modern_flags2(move["flags2"]), 0,
         move["time"], *move["position"], move["pitch"], 0, 0, 0).bits(0, 8)
     w.pack("9fIf17f", *move["speeds"], 0, 1, 2, 65, 1, 3, 10, 100, 90, 140, 180,
            360, 90, 270, 30, 80, 2.75, 7, .4).bits(0, 1).pack("I", 0)
-    w.bits(0, 3).flush()  # no scene IDs, runes or action buttons in movement trial
+    w.bits(0, 1).bits(0, 1).bits(buttons is not None, 1).flush()
+    if buttons is not None:
+        w.pack("I" * 180, *buttons)
     fields = Writer().pack("B", 1).raw(bytes([0, 5, 6, 255, 1]))
     for kind, values in field_values(snapshot, character).items():
         serialize(fields, kind, values, visibility=1)
     w.pack("I", len(fields.finish())).raw(fields.finish())
-    data = w.finish()
-    return Writer().pack("HI", snapshot["map"], 1).bits(1, 1).bits(0, 1).pack("I", len(data)).raw(data).finish()
+    return w.finish()
+
+
+def create(snapshot, character, items=(), buttons=None):
+    from .inventory import item_block
+    blocks = [item_block(item) for item in items] + [player_block(snapshot, character, buttons)]
+    data = b"".join(blocks)
+    return Writer().pack("HI", snapshot["map"], len(blocks)).bits(1, 1).bits(0, 1).pack("I", len(data)).raw(data).finish()

@@ -4,7 +4,7 @@ import json
 import secrets
 import struct
 
-from . import bootstrap, characters, crypto, joins, instance, gameplay, movement
+from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls
 from .buffer import Reader, player_high
 from .events import event, packet
 from .legacy import Native
@@ -32,7 +32,7 @@ class Session:
     def send(self, name, body=b""):
         self.writer.write(self.crypt.encode(MODERN[name], body))
         event("modern_packet", session=self.id, direction="to_client", name=name, bytes=len(body))
-        packet("to_client", name, body)
+        packet("to_client", name, body, self.owner.id)
 
     async def receive(self):
         size, = struct.unpack("<I", await self.reader.readexactly(4))
@@ -42,7 +42,7 @@ class Session:
         opcode, body = self.crypt.decode(await self.reader.readexactly(size), tag)
         name = MODERN_NAMES.get(opcode, f"unknown_{opcode:08x}")
         event("modern_packet", session=self.id, direction="from_client", name=name, bytes=len(body))
-        packet("from_client", name, body)
+        packet("from_client", name, body, self.owner.id)
         return name, body
 
     async def authenticate(self, body):
@@ -139,14 +139,63 @@ class Session:
         elif name == "CMSG_LOGOUT_CANCEL":
             if body: raise ValueError("invalid logout cancellation")
             self.owner.native.send(name)
-        elif name in movement.SUPPORTED:
+        elif name in movement_controls.ACKS:
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("movement acknowledgement before world entry")
+            self.owner.native.send(*movement_controls.acknowledgement(self.owner, name, body))
+        elif name == "CMSG_CANCEL_MOUNT_AURA":
+            if not self.owner.created or self is not self.owner.world or body:
+                raise ValueError("invalid dismount request")
+            self.owner.native.send(name)
+        elif name == "CMSG_CANCEL_AURA":
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("aura cancellation before world entry")
+            from . import auras
+            self.owner.native.send(name, auras.cancel(self.owner, body))
+        elif name in movement.SUPPORTED or name == "CMSG_MOVE_SET_FACING_HEARTBEAT":
             owner = self.owner
             if not owner.created or self is not owner.world:
                 raise ValueError("movement before active world entry")
             state = movement.parse(body, owner.character["guid"])
-            native_name, native_body = movement.encode(name, owner.character["guid"], state)
+            native_name, native_body = movement.encode("CMSG_MOVE_SET_FACING" if name == "CMSG_MOVE_SET_FACING_HEARTBEAT" else name, owner.character["guid"], state)
             owner.native.send(native_name, native_body)
             event("movement_forwarded", session=self.id, name=name, guid=owner.character["guid"], position=state["position"])
+        elif name == "CMSG_SET_ACTION_BUTTON":
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("action bar change before world entry")
+            r = Reader(body)
+            action, index = r.unpack("IB"); r.end()
+            if index >= 144: raise ValueError("action bar slot has no native equivalent")
+            from .buffer import Writer
+            self.owner.native.send(name, Writer().pack("BI", index, action).finish())
+        elif name == "CMSG_QUERY_GAME_OBJECT":
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("object query before world entry")
+            self.owner.native.send("CMSG_GAMEOBJECT_QUERY", object_queries.request(self.owner, body))
+        elif name in {"CMSG_GAME_OBJ_USE", "CMSG_GAME_OBJ_REPORT_USE", "CMSG_LOOT_ITEM", "CMSG_LOOT_RELEASE", "CMSG_LOOT_MONEY"}:
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("object interaction before world entry")
+            for native_name, native_body in looting.request(self.owner, name, body):
+                self.owner.native.send(native_name, native_body)
+        elif name == "CMSG_CANCEL_CAST":
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("cancel before world entry")
+            self.owner.native.send(name, casting.cancel(self.owner, body))
+        elif name == "CMSG_CAST_SPELL":
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError("cast before world entry")
+            try:
+                encoded, spell = casting.request(self.owner, body)
+            except ValueError as error:
+                event("cast_translation_rejected", session=self.id, error=str(error))
+                try:
+                    failure = casting.rejected(body)
+                    if failure is not None: self.send("SMSG_CAST_FAILED", failure)
+                except ValueError:
+                    pass
+                return
+            self.owner.native.send(name, encoded)
+            event("cast_forwarded", session=self.id, opcode=spell)
         else:
             event("unmapped_client_packet", session=self.id, name=name, bytes=len(body))
 

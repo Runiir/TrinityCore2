@@ -71,7 +71,7 @@ class Native:
         self.writer.write(header + body)
         if "AUTH" not in name:
             event("native_packet", session=self.session, direction="to_native", name=name, bytes=len(body))
-            packet("to_native", name, body)
+            packet("to_native", name, body, self.session)
 
     async def receive(self):
         raw = await self.reader.readexactly(1)
@@ -97,7 +97,7 @@ class Native:
             opcode &= 0x7FFF
         name = LEGACY_NAMES.get(opcode, f"unknown_{opcode:04x}")
         event("native_packet", session=self.session, direction="from_native", name=name, bytes=len(body))
-        packet("from_native", name, body)
+        packet("from_native", name, body, self.session)
         return name, body
 
     async def close(self):
