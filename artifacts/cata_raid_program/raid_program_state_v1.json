@@ -12,9 +12,9 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 84,
-      "stage": "run",
-      "round": 4,
+      "revision": 85,
+      "stage": "plan",
+      "round": 5,
       "bootstrap_sources": {
         "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
         "experiments/configs/cata_raid_strategy_catalog_v1.json": "a9f43adea13476362e196c2276faefc8aa29a0d44feb00d71a980e843da0421a",
@@ -135,6 +135,31 @@
               "status": "open",
               "not_accepted_because": [
                 "outcome:machine_failure_predicate",
+                "verdict:fail"
+              ],
+              "reopened": false,
+              "sanity": []
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 1,
+              "outcome": "semantic_progress_plateau_watchdog",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_magmaw",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "fail",
+                "reasons": [
+                  "non_clear_kill"
+                ],
+                "kills": 4,
+                "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [],
+              "status": "open",
+              "not_accepted_because": [
+                "outcome:semantic_progress_plateau_watchdog",
                 "verdict:fail"
               ],
               "reopened": false,
@@ -485,6 +510,60 @@
                   }
                 }
               ]
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 4,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_omnotron_defense_system",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "insufficient_kills",
+                "reasons": [
+                  "insufficient_kills",
+                  "unmeasured_boss_window"
+                ],
+                "kills": 2,
+                "target_sha256": "5e53e3bc3431049073a66afcf35248ea69b6176f2d36edf527fef4e071a9806b",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [],
+              "status": "open",
+              "not_accepted_because": [
+                "verdict:insufficient_kills"
+              ],
+              "reopened": false,
+              "sanity": [
+                {
+                  "check": "unmeasured_kills",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_omnotron_c0",
+                  "detail": "not counted (unmeasured_boss_window): combat_log_event_window_misses_boss_window; native_clear=True. A truncated capture (16 MB cap) or missing combat log leaves no boss window to judge",
+                  "evidence": {
+                    "exclusion_reason": "unmeasured_boss_window",
+                    "reasons": [
+                      "combat_log_event_window_misses_boss_window"
+                    ],
+                    "native_clear": true,
+                    "death_basis": "no_route_deaths"
+                  }
+                },
+                {
+                  "check": "unmeasured_kills",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_omnotron_c0",
+                  "detail": "not counted (unmeasured_boss_window): combat_log_event_window_misses_boss_window; native_clear=True. A truncated capture (16 MB cap) or missing combat log leaves no boss window to judge",
+                  "evidence": {
+                    "exclusion_reason": "unmeasured_boss_window",
+                    "reasons": [
+                      "combat_log_event_window_misses_boss_window"
+                    ],
+                    "native_clear": true,
+                    "death_basis": "no_route_deaths"
+                  }
+                }
+              ]
             }
           ]
         },
@@ -771,6 +850,209 @@
                   }
                 }
               ]
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 1,
+              "outcome": "cohort_action_gate_failure_watchdog",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_chimaeron",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "fail",
+                "reasons": [
+                  "non_clear_kill",
+                  "stalled_boss_window"
+                ],
+                "kills": 1,
+                "target_sha256": "94dae1e401f5adacb681b5da91cd3ae25fe909f49b6e5a3c88051623845e9dae",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "outcome:cohort_action_gate_failure_watchdog",
+                "missing_inputs:encounter_research",
+                "verdict:fail",
+                "sanity:idle_actor"
+              ],
+              "reopened": false,
+              "sanity": [
+                {
+                  "check": "idle_actor",
+                  "severity": "blocking",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_chimaeron_c0",
+                  "detail": "6 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.094x/0.659 uptime, survival_hunter 0.0x/0.838 uptime, fire_mage 0.009x/0.74 uptime, retribution_paladin 0.0x/0.734 uptime...",
+                  "evidence": {
+                    "dps_ratio_below": 0.25,
+                    "uptime_below": 0.2,
+                    "actors": [
+                      {
+                        "id": "11002001",
+                        "spec": "blood_death_knight",
+                        "dps": 1445.4,
+                        "ref": 15316.5,
+                        "ratio": 0.094,
+                        "uptime": 0.659,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002003",
+                        "spec": "survival_hunter",
+                        "dps": 0.0,
+                        "ref": 26254.9,
+                        "ratio": 0.0,
+                        "uptime": 0.838,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002004",
+                        "spec": "fire_mage",
+                        "dps": 214.3,
+                        "ref": 24654.6,
+                        "ratio": 0.009,
+                        "uptime": 0.74,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002006",
+                        "spec": "retribution_paladin",
+                        "dps": 0.0,
+                        "ref": 26133.6,
+                        "ratio": 0.0,
+                        "uptime": 0.734,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002008",
+                        "spec": "assassination_rogue",
+                        "dps": 0.0,
+                        "ref": 26350.7,
+                        "ratio": 0.0,
+                        "uptime": 0.821,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002010",
+                        "spec": "demonology_warlock",
+                        "dps": 698.7,
+                        "ref": 23443.3,
+                        "ratio": 0.03,
+                        "uptime": 0.595,
+                        "why": "dps"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "check": "idle_actor",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_chimaeron_c0",
+                  "detail": "3 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.118x/0.776 uptime, fire_mage 0.012x/0.664 uptime, demonology_warlock 0.0x/0.597 uptime (kill not counted: stalled_boss_window)",
+                  "evidence": {
+                    "dps_ratio_below": 0.25,
+                    "uptime_below": 0.2,
+                    "actors": [
+                      {
+                        "id": "11002001",
+                        "spec": "blood_death_knight",
+                        "dps": 1800.9,
+                        "ref": 15316.5,
+                        "ratio": 0.118,
+                        "uptime": 0.776,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002004",
+                        "spec": "fire_mage",
+                        "dps": 304.7,
+                        "ref": 24654.6,
+                        "ratio": 0.012,
+                        "uptime": 0.664,
+                        "why": "dps"
+                      },
+                      {
+                        "id": "11002010",
+                        "spec": "demonology_warlock",
+                        "dps": 0.0,
+                        "ref": 23443.3,
+                        "ratio": 0.0,
+                        "uptime": 0.597,
+                        "why": "dps"
+                      }
+                    ],
+                    "counted": false,
+                    "exclusion_reason": "stalled_boss_window"
+                  }
+                },
+                {
+                  "check": "excluded_kills",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-7e5f010cd69d4980b8b117294cb5c75e-blackwing_descent_10n_chimaeron_c0",
+                  "detail": "not counted (stalled_boss_window): 5.876 s stalled in 10 stall(s), fraction 0.025545 (limit 0.02), longest 0.669 s",
+                  "evidence": {
+                    "exclusion_reason": "stalled_boss_window",
+                    "native_clear": false,
+                    "outcome": "gameplay_failure",
+                    "reasons": [
+                      "boss_window_stall_fraction_exceeded"
+                    ],
+                    "stall_fraction": 0.025545,
+                    "stalled_sec": 5.876,
+                    "max_stall_sec": 0.669,
+                    "stall_count": 10,
+                    "window_duration_sec": 230.026,
+                    "max_stall_fraction": 0.02,
+                    "max_single_stall_sec": 2.0
+                  }
+                },
+                {
+                  "check": "excluded_kills",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_chimaeron_c0",
+                  "detail": "not counted (stalled_boss_window): 3.883 s stalled in 7 stall(s), fraction 0.028841 (limit 0.02), longest 0.581 s",
+                  "evidence": {
+                    "exclusion_reason": "stalled_boss_window",
+                    "native_clear": false,
+                    "outcome": "gameplay_failure",
+                    "reasons": [
+                      "boss_window_stall_fraction_exceeded",
+                      "full_wipe_split_unresolved"
+                    ],
+                    "stall_fraction": 0.028841,
+                    "stalled_sec": 3.883,
+                    "max_stall_sec": 0.581,
+                    "stall_count": 7,
+                    "window_duration_sec": 134.635,
+                    "max_stall_fraction": 0.02,
+                    "max_single_stall_sec": 2.0
+                  }
+                },
+                {
+                  "check": "excluded_kills",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_chimaeron_c0",
+                  "detail": "not counted (stalled_boss_window): 8.619 s stalled in 13 stall(s), fraction 0.053928 (limit 0.02), longest 1.543 s",
+                  "evidence": {
+                    "exclusion_reason": "stalled_boss_window",
+                    "native_clear": false,
+                    "outcome": "gameplay_failure",
+                    "reasons": [
+                      "boss_window_stall_fraction_exceeded",
+                      "full_wipe_split_unresolved"
+                    ],
+                    "stall_fraction": 0.053928,
+                    "stalled_sec": 8.619,
+                    "max_stall_sec": 1.543,
+                    "stall_count": 13,
+                    "window_duration_sec": 159.823,
+                    "max_stall_fraction": 0.02,
+                    "max_single_stall_sec": 2.0
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1018,6 +1300,52 @@
                   }
                 }
               ]
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 4,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_atramedes",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "fail",
+                "reasons": [
+                  "boss_window_deaths",
+                  "below_target",
+                  "encounter_failed"
+                ],
+                "kills": 4,
+                "target_sha256": "57396f6130f17e56d4f3f753fb44e2c76b4a56c97e045f16938e8d89068fffa6",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [],
+              "status": "open",
+              "not_accepted_because": [
+                "verdict:fail",
+                "sanity:acceptance_observation"
+              ],
+              "reopened": false,
+              "sanity": [
+                {
+                  "check": "acceptance_observation",
+                  "severity": "blocking",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_atramedes_c0",
+                  "detail": "the server's status counters record 1 chase sample(s) with the tracked kiter above 10 Sound (loudest 20) in 2 air-phase chase(s): the round 3 acceptance allows none, the unmeasured high-Sound flame speed is never accepted (user decision 2026-09-30, \"Bound kiter Sound\")",
+                  "evidence": {
+                    "air_phases": 1,
+                    "chases": 2,
+                    "chase_samples": 240,
+                    "max_kiter_sound": 20,
+                    "samples_above_10": 1,
+                    "max_sample_gap_ms": 282,
+                    "observation_complete": true,
+                    "server_counter_states": {
+                      "report.json": "complete"
+                    }
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1229,6 +1557,31 @@
                   }
                 }
               ]
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 4,
+              "outcome": "clear",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_maloriak",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "fail",
+                "reasons": [
+                  "boss_window_deaths",
+                  "below_target"
+                ],
+                "kills": 4,
+                "target_sha256": "94fd7b313b9af950d81ae0195ce30893578cd6bce81030c6cbf65f4cc8cefc7a",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [],
+              "status": "open",
+              "not_accepted_because": [
+                "verdict:fail"
+              ],
+              "reopened": false,
+              "sanity": []
             }
           ]
         },
@@ -2010,6 +2363,115 @@
                         "swings": 21,
                         "native_mean": 74623.9,
                         "wcl_mean": 67076.7
+                      }
+                    ],
+                    "blizzlike": true,
+                    "reasons": [],
+                    "tolerance": 0.1,
+                    "min_swings": 10
+                  }
+                }
+              ]
+            },
+            {
+              "round": 4,
+              "runs": 4,
+              "clears": 0,
+              "outcome": "cohort_action_gate_failure_watchdog",
+              "verdict": {
+                "scenario": "blackwing_descent_10n_nefarian",
+                "label": "blackwing_descent_10n-r04-56e0a03c00",
+                "status": "fail",
+                "reasons": [
+                  "non_clear_kill"
+                ],
+                "kills": 4,
+                "target_sha256": "59593b95d774ccbb4dbdf6085720ce671a7d6f1ac6fb8380b9c88e77e5aa777a",
+                "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+              },
+              "missing_inputs": [
+                "encounter_research"
+              ],
+              "status": "open",
+              "not_accepted_because": [
+                "outcome:cohort_action_gate_failure_watchdog",
+                "missing_inputs:encounter_research",
+                "verdict:fail",
+                "sanity:idle_actor",
+                "sanity:idle_actor",
+                "sanity:acceptance_observation"
+              ],
+              "reopened": false,
+              "sanity": [
+                {
+                  "check": "idle_actor",
+                  "severity": "blocking",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-7e5f010cd69d4980b8b117294cb5c75e-blackwing_descent_10n_nefarian_c0",
+                  "detail": "1 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.219x/0.348 uptime",
+                  "evidence": {
+                    "dps_ratio_below": 0.25,
+                    "uptime_below": 0.2,
+                    "actors": [
+                      {
+                        "id": "11005001",
+                        "spec": "blood_death_knight",
+                        "dps": 2666.8,
+                        "ref": 12163.6,
+                        "ratio": 0.219,
+                        "uptime": 0.348,
+                        "why": "dps"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "check": "idle_actor",
+                  "severity": "blocking",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_nefarian_c0",
+                  "detail": "1 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.222x/0.298 uptime",
+                  "evidence": {
+                    "dps_ratio_below": 0.25,
+                    "uptime_below": 0.2,
+                    "actors": [
+                      {
+                        "id": "11005001",
+                        "spec": "blood_death_knight",
+                        "dps": 2694.9,
+                        "ref": 12163.6,
+                        "ratio": 0.222,
+                        "uptime": 0.298,
+                        "why": "dps"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "check": "acceptance_observation",
+                  "severity": "blocking",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_nefarian_c0",
+                  "detail": "the server's status counters record 1 bone warrior(s) active over 45 s and 0 on a pillar structure (the round 3 acceptance observation allows none)",
+                  "evidence": {
+                    "bone_warrior_active_over_45s": 1,
+                    "bone_warrior_on_pillar": 0,
+                    "trace_complete": true,
+                    "trace_incomplete_reason": null,
+                    "observation_source": "server_status"
+                  }
+                },
+                {
+                  "check": "boss_melee_fidelity",
+                  "severity": "warn",
+                  "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_nefarian_c0",
+                  "detail": "Onyxia melee mean 1.111x WCL over 30 swings (tolerance +-10%, min 10 swings)",
+                  "evidence": {
+                    "creatures": [
+                      {
+                        "entry": "41270",
+                        "name": "Onyxia",
+                        "mean_ratio": 1.111,
+                        "swings": 30,
+                        "native_mean": 60524.7,
+                        "wcl_mean": 54464.0
                       }
                     ],
                     "blizzlike": true,
@@ -9293,7 +9755,477 @@
               }
             }
           ],
-          "assessment": null,
+          "assessment": {
+            "label": "blackwing_descent_10n-r04-56e0a03c00",
+            "assessed_utc": "2026-10-01T02:49:14Z",
+            "units": {
+              "magmaw": {
+                "round": 4,
+                "runs": 4,
+                "clears": 1,
+                "outcome": "semantic_progress_plateau_watchdog",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_magmaw",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "fail",
+                  "reasons": [
+                    "non_clear_kill"
+                  ],
+                  "kills": 4,
+                  "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [],
+                "status": "open",
+                "not_accepted_because": [
+                  "outcome:semantic_progress_plateau_watchdog",
+                  "verdict:fail"
+                ],
+                "reopened": false,
+                "sanity": []
+              },
+              "omnotron": {
+                "round": 4,
+                "runs": 4,
+                "clears": 4,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_omnotron_defense_system",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "insufficient_kills",
+                  "reasons": [
+                    "insufficient_kills",
+                    "unmeasured_boss_window"
+                  ],
+                  "kills": 2,
+                  "target_sha256": "5e53e3bc3431049073a66afcf35248ea69b6176f2d36edf527fef4e071a9806b",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [],
+                "status": "open",
+                "not_accepted_because": [
+                  "verdict:insufficient_kills"
+                ],
+                "reopened": false,
+                "sanity": [
+                  {
+                    "check": "unmeasured_kills",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_omnotron_c0",
+                    "detail": "not counted (unmeasured_boss_window): combat_log_event_window_misses_boss_window; native_clear=True. A truncated capture (16 MB cap) or missing combat log leaves no boss window to judge",
+                    "evidence": {
+                      "exclusion_reason": "unmeasured_boss_window",
+                      "reasons": [
+                        "combat_log_event_window_misses_boss_window"
+                      ],
+                      "native_clear": true,
+                      "death_basis": "no_route_deaths"
+                    }
+                  },
+                  {
+                    "check": "unmeasured_kills",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_omnotron_c0",
+                    "detail": "not counted (unmeasured_boss_window): combat_log_event_window_misses_boss_window; native_clear=True. A truncated capture (16 MB cap) or missing combat log leaves no boss window to judge",
+                    "evidence": {
+                      "exclusion_reason": "unmeasured_boss_window",
+                      "reasons": [
+                        "combat_log_event_window_misses_boss_window"
+                      ],
+                      "native_clear": true,
+                      "death_basis": "no_route_deaths"
+                    }
+                  }
+                ]
+              },
+              "chimaeron": {
+                "round": 4,
+                "runs": 4,
+                "clears": 1,
+                "outcome": "cohort_action_gate_failure_watchdog",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_chimaeron",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "fail",
+                  "reasons": [
+                    "non_clear_kill",
+                    "stalled_boss_window"
+                  ],
+                  "kills": 1,
+                  "target_sha256": "94dae1e401f5adacb681b5da91cd3ae25fe909f49b6e5a3c88051623845e9dae",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "outcome:cohort_action_gate_failure_watchdog",
+                  "missing_inputs:encounter_research",
+                  "verdict:fail",
+                  "sanity:idle_actor"
+                ],
+                "reopened": false,
+                "sanity": [
+                  {
+                    "check": "idle_actor",
+                    "severity": "blocking",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_chimaeron_c0",
+                    "detail": "6 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.094x/0.659 uptime, survival_hunter 0.0x/0.838 uptime, fire_mage 0.009x/0.74 uptime, retribution_paladin 0.0x/0.734 uptime...",
+                    "evidence": {
+                      "dps_ratio_below": 0.25,
+                      "uptime_below": 0.2,
+                      "actors": [
+                        {
+                          "id": "11002001",
+                          "spec": "blood_death_knight",
+                          "dps": 1445.4,
+                          "ref": 15316.5,
+                          "ratio": 0.094,
+                          "uptime": 0.659,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002003",
+                          "spec": "survival_hunter",
+                          "dps": 0.0,
+                          "ref": 26254.9,
+                          "ratio": 0.0,
+                          "uptime": 0.838,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002004",
+                          "spec": "fire_mage",
+                          "dps": 214.3,
+                          "ref": 24654.6,
+                          "ratio": 0.009,
+                          "uptime": 0.74,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002006",
+                          "spec": "retribution_paladin",
+                          "dps": 0.0,
+                          "ref": 26133.6,
+                          "ratio": 0.0,
+                          "uptime": 0.734,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002008",
+                          "spec": "assassination_rogue",
+                          "dps": 0.0,
+                          "ref": 26350.7,
+                          "ratio": 0.0,
+                          "uptime": 0.821,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002010",
+                          "spec": "demonology_warlock",
+                          "dps": 698.7,
+                          "ref": 23443.3,
+                          "ratio": 0.03,
+                          "uptime": 0.595,
+                          "why": "dps"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "check": "idle_actor",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_chimaeron_c0",
+                    "detail": "3 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.118x/0.776 uptime, fire_mage 0.012x/0.664 uptime, demonology_warlock 0.0x/0.597 uptime (kill not counted: stalled_boss_window)",
+                    "evidence": {
+                      "dps_ratio_below": 0.25,
+                      "uptime_below": 0.2,
+                      "actors": [
+                        {
+                          "id": "11002001",
+                          "spec": "blood_death_knight",
+                          "dps": 1800.9,
+                          "ref": 15316.5,
+                          "ratio": 0.118,
+                          "uptime": 0.776,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002004",
+                          "spec": "fire_mage",
+                          "dps": 304.7,
+                          "ref": 24654.6,
+                          "ratio": 0.012,
+                          "uptime": 0.664,
+                          "why": "dps"
+                        },
+                        {
+                          "id": "11002010",
+                          "spec": "demonology_warlock",
+                          "dps": 0.0,
+                          "ref": 23443.3,
+                          "ratio": 0.0,
+                          "uptime": 0.597,
+                          "why": "dps"
+                        }
+                      ],
+                      "counted": false,
+                      "exclusion_reason": "stalled_boss_window"
+                    }
+                  },
+                  {
+                    "check": "excluded_kills",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-7e5f010cd69d4980b8b117294cb5c75e-blackwing_descent_10n_chimaeron_c0",
+                    "detail": "not counted (stalled_boss_window): 5.876 s stalled in 10 stall(s), fraction 0.025545 (limit 0.02), longest 0.669 s",
+                    "evidence": {
+                      "exclusion_reason": "stalled_boss_window",
+                      "native_clear": false,
+                      "outcome": "gameplay_failure",
+                      "reasons": [
+                        "boss_window_stall_fraction_exceeded"
+                      ],
+                      "stall_fraction": 0.025545,
+                      "stalled_sec": 5.876,
+                      "max_stall_sec": 0.669,
+                      "stall_count": 10,
+                      "window_duration_sec": 230.026,
+                      "max_stall_fraction": 0.02,
+                      "max_single_stall_sec": 2.0
+                    }
+                  },
+                  {
+                    "check": "excluded_kills",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_chimaeron_c0",
+                    "detail": "not counted (stalled_boss_window): 3.883 s stalled in 7 stall(s), fraction 0.028841 (limit 0.02), longest 0.581 s",
+                    "evidence": {
+                      "exclusion_reason": "stalled_boss_window",
+                      "native_clear": false,
+                      "outcome": "gameplay_failure",
+                      "reasons": [
+                        "boss_window_stall_fraction_exceeded",
+                        "full_wipe_split_unresolved"
+                      ],
+                      "stall_fraction": 0.028841,
+                      "stalled_sec": 3.883,
+                      "max_stall_sec": 0.581,
+                      "stall_count": 7,
+                      "window_duration_sec": 134.635,
+                      "max_stall_fraction": 0.02,
+                      "max_single_stall_sec": 2.0
+                    }
+                  },
+                  {
+                    "check": "excluded_kills",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_chimaeron_c0",
+                    "detail": "not counted (stalled_boss_window): 8.619 s stalled in 13 stall(s), fraction 0.053928 (limit 0.02), longest 1.543 s",
+                    "evidence": {
+                      "exclusion_reason": "stalled_boss_window",
+                      "native_clear": false,
+                      "outcome": "gameplay_failure",
+                      "reasons": [
+                        "boss_window_stall_fraction_exceeded",
+                        "full_wipe_split_unresolved"
+                      ],
+                      "stall_fraction": 0.053928,
+                      "stalled_sec": 8.619,
+                      "max_stall_sec": 1.543,
+                      "stall_count": 13,
+                      "window_duration_sec": 159.823,
+                      "max_stall_fraction": 0.02,
+                      "max_single_stall_sec": 2.0
+                    }
+                  }
+                ]
+              },
+              "atramedes": {
+                "round": 4,
+                "runs": 4,
+                "clears": 4,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_atramedes",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "fail",
+                  "reasons": [
+                    "boss_window_deaths",
+                    "below_target",
+                    "encounter_failed"
+                  ],
+                  "kills": 4,
+                  "target_sha256": "57396f6130f17e56d4f3f753fb44e2c76b4a56c97e045f16938e8d89068fffa6",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [],
+                "status": "open",
+                "not_accepted_because": [
+                  "verdict:fail",
+                  "sanity:acceptance_observation"
+                ],
+                "reopened": false,
+                "sanity": [
+                  {
+                    "check": "acceptance_observation",
+                    "severity": "blocking",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-53d45e46bdbe4e32b04d23111b7c6c69-blackwing_descent_10n_atramedes_c0",
+                    "detail": "the server's status counters record 1 chase sample(s) with the tracked kiter above 10 Sound (loudest 20) in 2 air-phase chase(s): the round 3 acceptance allows none, the unmeasured high-Sound flame speed is never accepted (user decision 2026-09-30, \"Bound kiter Sound\")",
+                    "evidence": {
+                      "air_phases": 1,
+                      "chases": 2,
+                      "chase_samples": 240,
+                      "max_kiter_sound": 20,
+                      "samples_above_10": 1,
+                      "max_sample_gap_ms": 282,
+                      "observation_complete": true,
+                      "server_counter_states": {
+                        "report.json": "complete"
+                      }
+                    }
+                  }
+                ]
+              },
+              "maloriak": {
+                "round": 4,
+                "runs": 4,
+                "clears": 4,
+                "outcome": "clear",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_maloriak",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "fail",
+                  "reasons": [
+                    "boss_window_deaths",
+                    "below_target"
+                  ],
+                  "kills": 4,
+                  "target_sha256": "94fd7b313b9af950d81ae0195ce30893578cd6bce81030c6cbf65f4cc8cefc7a",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [],
+                "status": "open",
+                "not_accepted_because": [
+                  "verdict:fail"
+                ],
+                "reopened": false,
+                "sanity": []
+              },
+              "nefarian": {
+                "round": 4,
+                "runs": 4,
+                "clears": 0,
+                "outcome": "cohort_action_gate_failure_watchdog",
+                "verdict": {
+                  "scenario": "blackwing_descent_10n_nefarian",
+                  "label": "blackwing_descent_10n-r04-56e0a03c00",
+                  "status": "fail",
+                  "reasons": [
+                    "non_clear_kill"
+                  ],
+                  "kills": 4,
+                  "target_sha256": "59593b95d774ccbb4dbdf6085720ce671a7d6f1ac6fb8380b9c88e77e5aa777a",
+                  "worldserver_sha256": "195b84e275264032a61abfe0af12639b7f4b5818f062acfc65f71185f445774f"
+                },
+                "missing_inputs": [
+                  "encounter_research"
+                ],
+                "status": "open",
+                "not_accepted_because": [
+                  "outcome:cohort_action_gate_failure_watchdog",
+                  "missing_inputs:encounter_research",
+                  "verdict:fail",
+                  "sanity:idle_actor",
+                  "sanity:idle_actor",
+                  "sanity:acceptance_observation"
+                ],
+                "reopened": false,
+                "sanity": [
+                  {
+                    "check": "idle_actor",
+                    "severity": "blocking",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-7e5f010cd69d4980b8b117294cb5c75e-blackwing_descent_10n_nefarian_c0",
+                    "detail": "1 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.219x/0.348 uptime",
+                    "evidence": {
+                      "dps_ratio_below": 0.25,
+                      "uptime_below": 0.2,
+                      "actors": [
+                        {
+                          "id": "11005001",
+                          "spec": "blood_death_knight",
+                          "dps": 2666.8,
+                          "ref": 12163.6,
+                          "ratio": 0.219,
+                          "uptime": 0.348,
+                          "why": "dps"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "check": "idle_actor",
+                    "severity": "blocking",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-4c0694fa20494e3fadf3fce03cdd887b-blackwing_descent_10n_nefarian_c0",
+                    "detail": "1 actor(s) below 25% of reference DPS or 20% damage uptime (stranded or stuck): blood_death_knight 0.222x/0.298 uptime",
+                    "evidence": {
+                      "dps_ratio_below": 0.25,
+                      "uptime_below": 0.2,
+                      "actors": [
+                        {
+                          "id": "11005001",
+                          "spec": "blood_death_knight",
+                          "dps": 2694.9,
+                          "ref": 12163.6,
+                          "ratio": 0.222,
+                          "uptime": 0.298,
+                          "why": "dps"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "check": "acceptance_observation",
+                    "severity": "blocking",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_nefarian_c0",
+                    "detail": "the server's status counters record 1 bone warrior(s) active over 45 s and 0 on a pillar structure (the round 3 acceptance observation allows none)",
+                    "evidence": {
+                      "bone_warrior_active_over_45s": 1,
+                      "bone_warrior_on_pillar": 0,
+                      "trace_complete": true,
+                      "trace_incomplete_reason": null,
+                      "observation_source": "server_status"
+                    }
+                  },
+                  {
+                    "check": "boss_melee_fidelity",
+                    "severity": "warn",
+                    "kill_id": "blackwing_descent_10n-r04-56e0a03c00-e17827c7615541368899d042846bb0ed-blackwing_descent_10n_nefarian_c0",
+                    "detail": "Onyxia melee mean 1.111x WCL over 30 swings (tolerance +-10%, min 10 swings)",
+                    "evidence": {
+                      "creatures": [
+                        {
+                          "entry": "41270",
+                          "name": "Onyxia",
+                          "mean_ratio": 1.111,
+                          "swings": 30,
+                          "native_mean": 60524.7,
+                          "wcl_mean": 54464.0
+                        }
+                      ],
+                      "blizzlike": true,
+                      "reasons": [],
+                      "tolerance": 0.1,
+                      "min_swings": 10
+                    }
+                  }
+                ]
+              }
+            },
+            "raid_inputs": [
+              "script_readiness_audit"
+            ]
+          },
           "user_decisions": [],
           "coordinator_fixes": [
             {
@@ -10511,6 +11443,14 @@
           "label": "blackwing_descent_10n-r04-56e0a03c00",
           "kills": 6,
           "errors": 0
+        },
+        {
+          "revision": 85,
+          "utc": "2026-10-01T02:49:14Z",
+          "action": "assess",
+          "round": 4,
+          "label": "blackwing_descent_10n-r04-56e0a03c00",
+          "accepted": []
         }
       ]
     }
