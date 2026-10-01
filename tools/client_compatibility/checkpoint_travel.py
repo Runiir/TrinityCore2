@@ -19,7 +19,9 @@ def main():
     paths=[lab.ROOT/'models/travel-head-v1',lab.ROOT/'models/travel-head-v2',lab.ROOT/'models/travel-head-v3',lab.ROOT/'models/travel-head-startup-failure']
     paths.extend(lab.ROOT/'evidence'/name for name in ['world_packets.jsonl','client_monitor.json',
         'pretravel_world_packets.jsonl.gz','pretravel_modern_world.jsonl.gz','travel_ready.png','travel_start.png',
-        'travel_protocol_tests.xml','travel_live_validation.json'])
+        'travel_protocol_tests.xml','travel_live_validation.json','travel_serving_preflight.json',
+        'taxi_stall.png','taxi_relogin.png','taxi_retry_ready.png','taxi_query_login.png',
+        'taxi_hotfix_login.png','taxi_hotfix_ready.png','travel_live_ready.png'])
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
     paths.append(lab.ROOT/'bin/navmesh_probe')
     episodes=[]
