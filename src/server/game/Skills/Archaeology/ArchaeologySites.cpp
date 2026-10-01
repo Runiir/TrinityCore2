@@ -21,6 +21,7 @@
 #include "GameObjectData.h"
 #include "Language.h"
 #include "Map.h"
+#include "PathGenerator.h"
 #include "Player.h"
 #include "Random.h"
 #include <limits>
@@ -39,6 +40,37 @@ enum SurveyBot
     MED_SURVEYBOT       = 206589,
     CLOSE_SURVEYBOT     = 204272,
 };
+
+namespace
+{
+bool ReachableSurveyTarget(Player* player, SiteData& site, float& distance)
+{
+    // Reject a hidden target inside solid collision or on disconnected ground.
+    // This stays server-side; the client still receives only normal surveying.
+    for (uint32 attempt = 0; attempt < 32; ++attempt)
+    {
+        float ground = player->GetMap()->GetHeight(player->GetPhaseShift(), site.X, site.Y,
+            player->GetPositionZ() + 100.0f, true, 250.0f);
+        if (std::isfinite(ground) && ground > INVALID_HEIGHT)
+        {
+            PathGenerator path(player);
+            if (path.CalculatePath(site.X, site.Y, ground) && path.GetPathType() == PATHFIND_NORMAL)
+            {
+                G3D::Vector3 const& end = path.GetActualEndPosition();
+                if (std::hypot(end.x - site.X, end.y - site.Y) <= 2.0f && std::abs(end.z - ground) <= 2.0f)
+                {
+                    distance = std::pow(player->GetPositionX() - site.X, 2)
+                        + std::pow(player->GetPositionY() - site.Y, 2);
+                    return true;
+                }
+            }
+        }
+        if (!sArchaeologyMgr->SetSiteCoords(site))
+            return false;
+    }
+    return false;
+}
+}
 
 void Archaeology::LoadSitesFromDB()
 {
@@ -96,6 +128,8 @@ void Archaeology::UseSite()
         return;
 
     position--;
+    if (!ReachableSurveyTarget(_player, _site[position], dist))
+        return;
 
     float o = _player->GetOrientation();
     float x = _player->GetPositionX() + cos(o) * 2.0f;

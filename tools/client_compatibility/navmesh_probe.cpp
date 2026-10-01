@@ -59,14 +59,38 @@ int main(int argc, char** argv)
         dtNavMeshQuery query;
         if (dtStatusFailed(query.init(&mesh,8192))) throw std::runtime_error("query initialization failed");
         dtQueryFilter filter; filter.setIncludeFlags(1); filter.setExcludeFlags(0); // NAV_GROUND only
-        float startExtents[3] = {4,8,4}, goalExtents[3] = {8,40,8};
+        float startExtents[3] = {4,8,4}, goalExtents[3] = {4,40,4};
         dtPolyRef first = 0, last = 0; float begin[3], end[3];
         query.findNearestPoly(start,startExtents,&filter,&first,begin);
-        query.findNearestPoly(goal,goalExtents,&filter,&last,end);
-        if (!first || !last) throw std::runtime_error("no walkable ground near route endpoints");
-        dtPolyRef corridor[1024]; int count = 0;
-        auto status = query.findPath(first,last,begin,end,&filter,corridor,&count,1024);
-        if (dtStatusFailed(status) || !count || corridor[count-1] != last || (status & DT_PARTIAL_RESULT))
+        if (!first) throw std::runtime_error("no walkable ground near player feet");
+        // Telescope packets provide heading, not the unknown target's height.
+        // Consider ground at every elevation in the local column, preferring
+        // horizontal proximity and requiring a fully connected walking path.
+        dtPolyRef candidates[256], corridor[1024]; int candidatesCount = 0, count = 0;
+        auto status = query.queryPolygons(goal,goalExtents,&filter,candidates,&candidatesCount,256);
+        if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground column exceeds query budget");
+        float best = INFINITY;
+        for (int i = 0; i < candidatesCount; ++i)
+        {
+            float point[3];
+            if (dtStatusFailed(query.closestPointOnPoly(candidates[i],goal,point,nullptr))) continue;
+            float score = std::hypot(point[0]-goal[0],point[2]-goal[2])*10000 + std::abs(point[1]-goal[1]);
+            if (score >= best) continue;
+            dtPolyRef trial[1024]; int length = 0;
+            auto result = query.findPath(first,candidates[i],begin,point,&filter,trial,&length,1024);
+            if (dtStatusFailed(result) || !length || trial[length-1] != candidates[i] || (result & DT_PARTIAL_RESULT)) continue;
+            bool walking = true;
+            for (int j = 0; j < length; ++j)
+            {
+                dtMeshTile const* routeTile; dtPoly const* poly;
+                if (dtStatusFailed(mesh.getTileAndPolyByRef(trial[j],&routeTile,&poly))
+                    || poly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION) walking = false;
+            }
+            if (!walking) continue;
+            best = score; last = candidates[i]; count = length;
+            std::copy(trial,trial+length,corridor); std::copy(point,point+3,end);
+        }
+        if (!last)
             throw std::runtime_error("no connected walkable route");
         float points[3*256]; unsigned char flags[256]; dtPolyRef refs[256]; int pointsCount = 0;
         status = query.findStraightPath(begin,end,corridor,count,points,flags,refs,&pointsCount,256);

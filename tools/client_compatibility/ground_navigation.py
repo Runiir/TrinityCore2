@@ -37,6 +37,9 @@ def walk(inputs,tcp,distance):
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
     target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
+    if not target:
+        planned=survey_detour(tcp,max(10,distance*2))
+        target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
     if not target:raise RuntimeError('navigation mesh provides no useful ground displacement')
     for _ in range(3):
         current=observer.poll(0)['player']['position']
