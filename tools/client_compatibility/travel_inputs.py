@@ -77,5 +77,15 @@ def execute(action,leg,facts,extra,observer,path):
         inputs.key('w',hold=hold);keys.append({'key':'w','hold':hold});time.sleep(1)
     elif action=='observe':time.sleep(.5)
     elif action!='arrived':raise ValueError('unknown travel action')
+    if action in ['mount','dismount']:
+        # Wait for the visible state transition before another toggle or route
+        # leg. Aura removal can briefly mark a grounded character as falling.
+        deadline=time.monotonic()+6
+        while True:
+            _,after=archaeology_inputs.screenshot(path)
+            confirmed=after['mounted']==(action=='mount') and not after['casting']
+            if confirmed and not after['falling']:break
+            if time.monotonic()>deadline:raise RuntimeError(f'{action} was not confirmed by addon state')
+            time.sleep(.2)
     time.sleep(.25)
     return {'physical_keys':keys,'mouse_pixel':pixel,'mouse_source':'ordinary_addon_ui_or_tooltip' if pixel else None}

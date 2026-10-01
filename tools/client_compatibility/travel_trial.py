@@ -36,6 +36,7 @@ def run(plan,out,maximum_steps=180):
     receipt={'schema':'client442_laya_travel_v1','started_at':time.time(),'model':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'plan':plan,'steps':history,'legs_completed':finished,'frames':[],'safety_recoveries':[],
+        'rejected_decisions':[],
         'manual_gameplay_interventions':0,'teacher_mouse_annotations':0,'private_next_find_coordinates_used':False}
     leg_index=0;stalled=0;last_metric=None
     try:
@@ -71,7 +72,11 @@ def run(plan,out,maximum_steps=180):
             if response['model']!=identity['model'] or response['revision']!=identity['revision']:raise RuntimeError('travel model identity changed')
             action=response['answers']['action']['choice']
             if action not in policy.ACTIONS or any(v['truncated_fields'] for v in response['token_budget'].values()):raise RuntimeError('invalid travel decision')
-            if action!=policy.label(s):raise RuntimeError(f'model selected {action} against the observed travel preconditions')
+            if action!=policy.label(s):
+                receipt['rejected_decisions'].append({'index':index,'time':time.time(),'leg':leg_index,
+                    'state':s,'movement':movement,'travel':extra,'facts':facts,'request':request,
+                    'response':response,'expected':policy.label(s)})
+                raise RuntimeError(f'model selected {action} against the observed travel preconditions')
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as image:image.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
