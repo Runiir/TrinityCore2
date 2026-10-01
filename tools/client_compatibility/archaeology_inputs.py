@@ -115,8 +115,11 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             loot_approach={'source':'visible owned artifact overlaps player feet','before':start,'after':after,
                 'physical_keys':[{'key':'s','hold':distance/4.5}],'observed_after_inside':True}
         pixel=locate_find(inputs,path)
-        inputs.click(*pixel,button=3)
+        # The owned Classic client can render at 15 FPS. Keep the button down
+        # for multiple frames so the physical use action is observed reliably.
+        inputs.click(*pixel,button=3,hold=.2)
     elif action!='observe':raise ValueError('unknown physical action')
     time.sleep(2.5 if action in ['survey','loot'] else .5)
-    return {'hold_seconds':hold,'mouse_pixel':pixel,'pixel_source':'ordinary_game_tooltip_hover' if pixel else None,
+    return {'hold_seconds':hold,'mouse_pixel':pixel,'mouse_hold_seconds':.2 if pixel else None,
+            'pixel_source':'ordinary_game_tooltip_hover' if pixel else None,
             'collision_recovery':recovery,'ground_route':ground_route,'loot_approach':loot_approach}

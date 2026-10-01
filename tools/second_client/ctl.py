@@ -200,12 +200,12 @@ class Input:
     def move(self, x, y):
         self._send(self.X.MotionNotify, x=x, y=y)
 
-    def click(self, x, y, button=1, count=1):
+    def click(self, x, y, button=1, count=1, hold=0.05):
         self.move(x, y)
         time.sleep(0.05)
         for _ in range(count):
             self._send(self.X.ButtonPress, button)
-            try:time.sleep(0.05)
+            try:time.sleep(hold)
             finally:self._send(self.X.ButtonRelease, button)
             time.sleep(0.05)
 
