@@ -4,6 +4,7 @@ from .. import lab_runtime as lab
 from ..world import movement
 from ..world.buffer import Reader
 from ..world.native_objects import records
+from ..world.objects import INDEX
 
 
 class Observer:
@@ -14,6 +15,7 @@ class Observer:
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
         self.gossip=None
+        self.units={};self.player_level=85;self.player_faction=1
 
     def poll(self):
         with (lab.ROOT/'evidence/world_packets.jsonl').open() as handle:
@@ -33,6 +35,7 @@ class Observer:
                     elif name=='SMSG_TRANSFER_PENDING':self.transferring=True
                     elif name=='SMSG_NEW_WORLD':
                         self.map,x,y,z,o=r.unpack('i4f');self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
+                        self.units={}
                     elif name=='SMSG_RESUME_TOKEN':self.transferring=False
                     if any(s in name for s in ['TRANSFER','NEW_WORLD','SUSPEND_TOKEN','RESUME_TOKEN']):
                         self.transfer_events.append({'name':name,'time':p['time']})
@@ -53,9 +56,20 @@ class Observer:
                     elif name=='SMSG_ACTIVATETAXIREPLY':self.taxi_replies.append({'status':r.unpack('I')[0],'time':p['time']})
                     elif name=='SMSG_UPDATE_OBJECT':
                         for record in records(body):
+                            if record['update_type']==3:
+                                for guid in record['removed']:self.units.pop(guid,None)
+                            elif record.get('kind')==3 and record['guid']>>52==0xF13:
+                                self.units[record['guid']]=record
+                            elif record['update_type']==0 and record['guid'] in self.units:
+                                self.units[record['guid']]['fields'].update(record['fields'])
                             if record.get('guid')==1 and 'movement' in record:
                                 self.map=record['map'];self.position=list(record['movement']['position']);self.seen_at=p['time']
+                                self.player_level=record['fields'].get(INDEX['UNIT_FIELD_LEVEL'],85)
+                                self.player_faction=record['fields'].get(INDEX['UNIT_FIELD_FACTIONTEMPLATE'],1)
+                    elif name=='SMSG_DESTROY_OBJECT':self.units.pop(r.unpack('Q')[0],None)
+        from ..hostile_avoidance import visible_hostiles
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
             'gossip_menu':self.gossip,
+            'visible_hostiles':visible_hostiles(self.units,self.map,self.player_faction,self.player_level),
             'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}

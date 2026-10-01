@@ -24,10 +24,24 @@ def run(args):
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'started_at':started,'teacher_mouse_annotations':0,'manual_gameplay_interventions':0,
         'private_next_find_coordinates_used':False,'mounted_red_yellow_moves':getattr(args,'mounted_moves',False),
-        'frames':[],'finds':finds,'steps':history}
+        'frames':[],'finds':finds,'steps':history,'safety_recoveries':[]}
     try:
         for index in range(args.maximum_steps):
             movement,extra=inputs.screenshot(latest);tcp=observer.poll(movement['facing_radians'])
+            if movement['in_combat']:
+                from . import combat_recovery,travel_trial,ground_navigation
+                from .observation.transport import Observer as TransportObserver
+                transport=TransportObserver();facts=transport.poll()
+                recovery_event=combat_recovery.withdraw(movement,extra,facts,transport,latest)
+                receipt['safety_recoveries'].append(recovery_event)
+                facts=transport.poll();goal=ground_navigation.ground_point(facts['map'],facts['position'])
+                directory=out/f'combat_landing_{index:03d}'
+                result=travel_trial.run({'schema':'public_combat_withdrawal_landing_v1','legs':[
+                    {'id':'withdrawal_landing','mode':'flight','map':facts['map'],'position':goal,
+                     'ceiling':facts['position'][2]+20,'arrival_radius':1.5}]},directory,maximum_steps=45)
+                recovery_event['landing_episode']=directory.name
+                if not result['completed']:raise RuntimeError('combat withdrawal landing failed: '+str(result['failure']))
+                continue
             if not movement['in_world'] or any(movement[k] for k in ['dead','in_combat','on_taxi']):raise RuntimeError('character unavailable')
             if extra['mounted'] or extra['flying']:raise RuntimeError('archaeology trial requires landing and dismounting')
             state=policy.observed_state(movement,extra,tcp,history)

@@ -1,0 +1,11 @@
+{
+  "schema": "client442_public_travel_route_v1",
+  "id": "resume_red_reaches_outland_after_recorded_combat_stop",
+  "setup_teleports": 0,
+  "legs": [
+    {"id":"red_reaches_digsite","mode":"flight","map":0,"position":[-12521.5,-3515.08,8.46],"ceiling":230,"site_id":203},
+    {"id":"dark_portal_approach","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
+    {"id":"dark_portal_to_outland","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
+    {"id":"hellfire_basin_digsite","mode":"flight","map":530,"position":[-300.5,3196.833,100.57],"ceiling":240,"site_id":343}
+  ]
+}

@@ -35,7 +35,7 @@ def run(plan,out,maximum_steps=180):
     observer=Observer();history=[];finished=[];latest=out/'latest.png';failure=None
     receipt={'schema':'client442_laya_travel_v1','started_at':time.time(),'model':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
-        'plan':plan,'steps':history,'legs_completed':finished,'frames':[],
+        'plan':plan,'steps':history,'legs_completed':finished,'frames':[],'safety_recoveries':[],
         'manual_gameplay_interventions':0,'teacher_mouse_annotations':0,'private_next_find_coordinates_used':False}
     leg_index=0;stalled=0;last_metric=None
     try:
@@ -54,6 +54,15 @@ def run(plan,out,maximum_steps=180):
                     if not (facts['transferring'] or recent_transfer) or time.monotonic()>deadline:raise
                     time.sleep(.25)
             with Image.open(latest) as image:ui=taxi.decode_image(image)
+            if movement['in_combat']:
+                from .combat_recovery import withdraw
+                receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
+                continue
+            if leg['mode']=='flight' and math.dist(facts['position'][:2],leg['position'][:2])<60:
+                from .hostile_avoidance import landing
+                goal,avoidance=landing(facts['map'],leg['position'],facts['visible_hostiles'],extra['digsite_ids'],facts['position'])
+                if avoidance:
+                    leg.setdefault('landing_avoidance',[]).append(avoidance);leg['position']=goal
             s=state(leg,movement,extra,facts,ui)
             if movement['dead'] or movement['in_combat']:raise RuntimeError('unsafe travel state')
             request={'model':identity['model'],'state':policy.model_state(s)}
