@@ -11,9 +11,9 @@ def records():
     data=json.loads((lab.REPO/'experiments/configs/client_harness/public_portal_hotfix_v1.json').read_text())
     if data['client_build']!=60895:raise ValueError('public hotfix build mismatch')
     rows=data['records']
-    if len(rows)!=1 or (rows[0]['table_hash'],rows[0]['record_id'])!=(0x1A5081E1,4354):
+    if len(rows)!=2 or {(row['table_hash'],row['record_id']) for row in rows}!={(0x1A5081E1,4352),(0x1A5081E1,4354)}:
         raise ValueError('public hotfix allowlist mismatch')
-    if len(bytes.fromhex(rows[0]['data']))!=55:raise ValueError('public portal hotfix layout mismatch')
+    if any(len(bytes.fromhex(row['data']))!=55 for row in rows):raise ValueError('public portal hotfix layout mismatch')
     return rows
 
 

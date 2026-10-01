@@ -8,8 +8,8 @@ from .world.taxi import route as taxi_path
 MASTERS=lab.REPO/'experiments/configs/client_harness/public_flightmasters_v1.json'
 PORTALS={0:{'destination_map':530,'approach':[-11890,-3209,-14.56],
     'crossing':[-11924,-3209,-14.79],'trigger':4354,'arrival':[-248.113,922.9,84.3497]},
-    530:{'destination_map':0,'approach':[-248.24,1110,41.68],
-    'crossing':[-248.24,1042.73,54.32],'trigger':4356,'arrival':[-11877.7,-3204.49,-8.02]}}
+    530:{'destination_map':0,'approach':[-247.677,920,84.35],
+    'crossing':[-247.677,885,84.35],'trigger':4352,'arrival':[-11896.8,-3206.77,-14.6724]}}
 
 
 def flight(map_id,position,id):
@@ -33,7 +33,7 @@ def prepare_clearance(plan,map_id,position):
     for leg in plan['legs']:
         if leg['mode']=='flight':
             original=leg['position']
-            leg['position']=ground_navigation.ground_point(map_id,original)
+            leg['position']=ground_navigation.ground_point(map_id,original,maximum_height=original[2]+8)
             leg['landing_height_source']={'source':'public static NAV_GROUND column',
                 'requested_position':original,'ground_position':leg['position']}
             profile=clearance(map_id,position,leg['position'])
