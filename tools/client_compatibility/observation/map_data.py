@@ -7,11 +7,11 @@ import struct
 from pathlib import Path
 from .. import lab_runtime as lab
 
-DBC = lab.BASE / 'data/dbc/enUS'
+DBC = (lab.ROOT if (lab.ROOT/'data/dbc/enUS/QuestPOIPoint.dbc').exists() else lab.BASE) / 'data/dbc/enUS'
 
 
-def table(name):
-    data = (DBC / (name + '.dbc')).read_bytes()
+def table(name, directory=DBC):
+    data = (directory / (name + '.dbc')).read_bytes()
     magic, count, fields, width, strings_size = struct.unpack_from('<4s4I', data)
     if magic != b'WDBC' or width != fields * 4 or len(data) != 20 + count * width + strings_size:
         raise ValueError('unexpected DBC layout: ' + name)
@@ -30,13 +30,13 @@ def signed(bits):
     return bits - 2**32 if bits >= 2**31 else bits
 
 
-def catalog():
-    blobs, _ = table('QuestPOIBlob')
+def catalog(directory=DBC):
+    blobs, _ = table('QuestPOIBlob', directory)
     blob_map = {r[0]: {'map': r[2], 'world_map_area': r[3]} for r in blobs}
-    points, _ = table('QuestPOIPoint')
+    points, _ = table('QuestPOIPoint', directory)
     polygons = {}
     for r in points: polygons.setdefault(r[3], []).append([signed(r[1]), signed(r[2])])
-    sites, text = table('ResearchSite')
+    sites, text = table('ResearchSite', directory)
     site_map = {}
     for r in sites:
         polygon = polygons.get(r[2], [])
@@ -45,17 +45,17 @@ def catalog():
             'polygon': polygon, 'world_map_area': blob_map[r[2]]['world_map_area'],
             'center': [sum(p[i] for p in polygon)/len(polygon) for i in range(2)],
             'source': 'ResearchSite/QuestPOIBlob/QuestPOIPoint.dbc'}
-    nodes, text = table('TaxiNodes')
+    nodes, text = table('TaxiNodes', directory)
     taxi = {r[0]: {'id': r[0], 'map': r[1], 'position': [floating(v) for v in r[2:5]],
         'name': text(r[5]), 'flags': r[8], 'mounts': list(r[6:8])} for r in nodes}
-    paths, _ = table('TaxiPath')
-    areas, text = table('WorldMapArea')
+    paths, _ = table('TaxiPath', directory)
+    areas, text = table('WorldMapArea', directory)
     maps = {r[0]: {'id': r[0], 'map': r[1], 'area': r[2], 'name': text(r[3]),
         'bounds': [floating(v) for v in r[4:8]]} for r in areas}
     names = ['ResearchSite', 'QuestPOIBlob', 'QuestPOIPoint', 'TaxiNodes', 'TaxiPath', 'WorldMapArea']
     return {'schema': 'client442_public_map_catalog_v1', 'native_build': 15595, 'sites': site_map,
         'taxi_nodes': taxi, 'taxi_paths': [dict(zip(['id','source','destination','cost'], r)) for r in paths],
-        'world_map_areas': maps, 'sources': {name: lab.sha256(DBC/(name+'.dbc')) for name in names}}
+        'world_map_areas': maps, 'sources': {name: lab.sha256(directory/(name+'.dbc')) for name in names}}
 
 
 def mount_spells():

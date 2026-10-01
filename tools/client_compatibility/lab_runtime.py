@@ -71,7 +71,7 @@ def prepare_servers() -> None:
             values.update({"RealmServerPort": "13724", "Updates.EnableDatabases": "0"})
         else:
             values.update({"WorldServerPort": "18085", "InstanceServerPort": "18086",
-                "DataDir": f'"{BASE}/data"', "Updates.EnableDatabases": "15", "Console.Enable": "1",
+                "DataDir": f'"{ROOT if (ROOT / "data/dbc/enUS/QuestPOIPoint.dbc").exists() else BASE}/data"', "Updates.EnableDatabases": "15", "Console.Enable": "1",
                 "Ra.Enable": "0", "SOAP.Enabled": "0", "BotWorld.Enable": "0",
                 "InstantFlightPaths": "1",
                 "PlayerBot.Enable": "0", "BotWorld.AutoStart": "0", "BotWorld.AutoStartRecording": "0",

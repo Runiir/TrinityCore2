@@ -2,7 +2,7 @@
 import json
 import math
 import subprocess
-from . import lab_runtime as lab
+from . import lab_runtime as lab,site_boundaries
 
 
 def binary():
@@ -21,24 +21,41 @@ def route(map_id,start,goal):
     return json.loads(result.stdout)
 
 
-def survey_detour(tcp,distance):
+def survey_detour(tcp,distance,digsite_ids):
     start=tcp['player']['position'];heading=tcp['tool']['heading_radians']
+    site=site_boundaries.active_site(tcp['tool'].get('map',0),start,digsite_ids)
+    requested=distance
+    distance=site_boundaries.clip_distance(site['polygon'],start,heading,distance)
+    recovery=False
+    if distance<1.5:
+        # At an edge the noisy telescope can point outward. Take a short
+        # inward ground step using the public polygon, then survey again.
+        heading=math.atan2(site['center'][1]-start[1],site['center'][0]-start[0])
+        distance=site_boundaries.clip_distance(site['polygon'],start,heading,min(requested,7.))
+        recovery=True
+    if distance<1.5:raise RuntimeError('no useful in-site survey step')
     goal=[start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]]
     # The waypoint is inferred from the ordinary telescope, never a hidden find.
     result=route(tcp['tool'].get('map',0),start,goal)
-    result.update(start=start[:3],requested_goal=goal,goal_source='public_survey_heading_and_color')
+    corridor=[start,*result['points']]
+    if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):
+        raise RuntimeError('ground corridor leaves the observed active digsite')
+    result.update(start=start[:3],requested_goal=goal,goal_source='public_survey_heading_and_color',
+                  boundary_guard={'site_id':site['id'],'requested_distance':requested,
+                                  'clipped_distance':distance,'inward_recovery':recovery,
+                                  'whole_corridor_inside':True,'source':site['source']})
     return result
 
 
-def walk(inputs,tcp,distance):
+def walk(inputs,tcp,distance,digsite_ids):
     import time
     from .observation.archaeology import Observer,angle_error
-    planned=survey_detour(tcp,distance);observer=Observer();executed=[]
+    planned=survey_detour(tcp,distance,digsite_ids);observer=Observer();executed=[]
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
     target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
     if not target:
-        planned=survey_detour(tcp,max(10,distance*2))
+        planned=survey_detour(tcp,max(10,distance*2),digsite_ids)
         target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
     if not target:raise RuntimeError('navigation mesh provides no useful ground displacement')
     for _ in range(3):
@@ -56,4 +73,6 @@ def walk(inputs,tcp,distance):
     executed.append({'key':'w','hold':hold})
     planned.update(physical_inputs=executed,after=observer.poll(0)['player']['position'],
                    steering_source='public_static_ground_navigation_mesh')
+    if not site_boundaries.contains(site_boundaries.sites()[planned['boundary_guard']['site_id']]['polygon'],planned['after']):
+        raise RuntimeError('observed walk crossed the digsite boundary')
     return hold,planned

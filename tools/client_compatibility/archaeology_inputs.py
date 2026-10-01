@@ -55,7 +55,8 @@ def execute(action,tcp,path,recovery=None):
         if not tcp['tool']:raise ValueError('walk without a survey observation')
         short,long={'red':(2,6),'yellow':(1,3),'green':(.5,1)}[tcp['tool']['color']]
         hold=short if action=='forward_short' else long
-        hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7)
+        with Image.open(path) as image:digsite_ids=travel.decode_image(image)['digsite_ids']
+        hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
