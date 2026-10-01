@@ -40,11 +40,23 @@ def evaluate(agent,items,batch_size):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--config',type=Path,default=policy.CONFIG)
+    parser.add_argument('--resume',type=Path)
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    config=json.loads(policy.CONFIG.read_text());random.seed(config['seed']);torch.manual_seed(config['seed'])
+    config=json.loads(args.config.read_text());random.seed(config['seed']);torch.manual_seed(config['seed'])
+    (out/'config.json').write_text(json.dumps(config,indent=2)+'\n')
     splits=policy.dataset(config)
     (out/'dataset.json').write_text(json.dumps(splits,indent=2)+'\n')
     agent=policy.base_agent()
+    resume_identity=None
+    if args.resume:
+        from safetensors.torch import load_file
+        resume_identity=json.loads((args.resume/'receipt.json').read_text())
+        if resume_identity['parent_revision']!=policy.REVISION or resume_identity['adapter_sha256']!=lab.sha256(args.resume/'adapter.safetensors'):
+            raise ValueError('invalid resume checkpoint identity')
+        weights=load_file(str(args.resume/'adapter.safetensors'))
+        if any(k.startswith('encoder.') for k in weights):raise ValueError('resume changes the encoder')
+        agent.model.load_state_dict(weights,strict=False)
     for name,parameter in agent.model.named_parameters():parameter.requires_grad_(not name.startswith(('encoder.','act_head.')))
     encoded={split:encode(agent,rows) for split,rows in splits.items()}
     optimizer=torch.optim.AdamW([p for p in agent.model.parameters() if p.requires_grad],lr=config['learning_rate'])
@@ -71,9 +83,10 @@ def main():
     from safetensors.torch import load_file
     agent.model.load_state_dict(load_file(str(out/'adapter.safetensors')),strict=False)
     test=evaluate(agent,encoded['test'],config['batch_size'])
-    receipt={'schema':'laya_archaeology_head_v1','model':'laya-archaeology-adapter-v1','parent_model':policy.MODEL,
+    receipt={'schema':'laya_archaeology_head_v1','model':config.get('model_id','laya-archaeology-adapter-v1'),'parent_model':policy.MODEL,
         'parent_revision':policy.REVISION,'adapter_sha256':lab.sha256(out/'adapter.safetensors'),
-        'config_sha256':lab.sha256(policy.CONFIG),'dataset_sha256':lab.sha256(out/'dataset.json'),
+        'config_sha256':lab.sha256(args.config),'dataset_sha256':lab.sha256(out/'dataset.json'),
+        'resume_adapter_sha256':resume_identity['adapter_sha256'] if resume_identity else None,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'encoder_frozen':True,'synthetic_labels':True,'baseline_test_accuracy':baseline,
         'validation_accuracy':best,'test_accuracy':test,'history':history,'training_seconds':time.time()-started,
