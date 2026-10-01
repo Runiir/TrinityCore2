@@ -14,7 +14,7 @@ class Observer:
         self.session=entry['session'];self.started=entry['time'];self.offset=0
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
-        self.gossip=None;self.selected=None
+        self.gossip=None;self.selected=None;self.attackers=set()
         self.units={};self.player_level=85;self.player_faction=1
         self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
 
@@ -33,12 +33,19 @@ class Observer:
                 elif name=='SMSG_TRANSFER_PENDING':self.transferring=True
                 elif name=='SMSG_NEW_WORLD':
                     self.map,x,y,z,o=r.unpack('i4f');self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
-                    self.units={}
+                    self.units={};self.attackers=set()
                 elif name=='SMSG_RESUME_TOKEN':self.transferring=False
                 if any(s in name for s in ['TRANSFER','NEW_WORLD','SUSPEND_TOKEN','RESUME_TOKEN']):
                     self.transfer_events.append({'name':name,'time':p['time']})
             if p['direction']=='from_native':
-                if name=='SMSG_ON_MONSTER_MOVE':
+                if name=='SMSG_ATTACK_START':
+                    attacker,victim=r.unpack('QQ')
+                    if victim==1:self.attackers.add(attacker)
+                elif name=='SMSG_ATTACK_STOP':
+                    from ..world.native_objects import guid as native_guid
+                    attacker=native_guid(r);native_guid(r);r.unpack('I')
+                    self.attackers.discard(attacker)
+                elif name=='SMSG_ON_MONSTER_MOVE':
                     from ..world.native_objects import guid as native_guid
                     guid=native_guid(r);r.unpack('B');position=list(r.unpack('3f'))
                     if guid in self.units:
@@ -78,6 +85,6 @@ class Observer:
             for g,u in self.units.items() if modern_guid(g,u['map'])==self.selected),None)
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
-            'gossip_menu':self.gossip,'selected_unit':selected,
+            'gossip_menu':self.gossip,'selected_unit':selected,'attacking_units':sorted(self.attackers),
             'visible_hostiles':visible_hostiles(self.units,self.map,self.player_faction,self.player_level),
             'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}

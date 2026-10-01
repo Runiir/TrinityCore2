@@ -29,7 +29,14 @@ def run(movement, extra, facts, observer, path):
             target = facts['selected_unit']
             hostiles = {h['guid'] for h in facts['visible_hostiles']}
             if not target or not target['health'] or target['guid'] not in hostiles:
-                inputs.key('Tab'); record('select', physical_keys=[{'key': 'Tab'}]); time.sleep(.4)
+                attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
+                keys=[]
+                if attackers:
+                    nearest=min(attackers,key=lambda h:math.dist(facts['position'][:2],h['position'][:2]))
+                    if math.dist(facts['position'][:2],nearest['position'][:2])>.5:
+                        keys.extend(face(inputs,observer,nearest['position']))
+                inputs.key('Tab');keys.append({'key':'Tab'})
+                record('select', physical_keys=keys); time.sleep(.4)
                 continue
             distance = math.dist(facts['position'][:2], target['position'][:2])
             if distance > 12:

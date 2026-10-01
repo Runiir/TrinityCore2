@@ -1,6 +1,10 @@
 # Whitemane 60895 archaeology compatibility trial
 
-## Current repair and adapted-model trials
+This report records the earlier ground-only phase and assisted baseline.
+The later Outland, mounted-movement, taxi and portal trials are recorded in
+[archaeology_travel_20261001.md](archaeology_travel_20261001.md).
+
+## Earlier repair and adapted-model trials
 
 The later trials use a fine-tuned Laya decision head at
 `http://127.0.0.1:8002/v1/systemone`, with the original encoder frozen.

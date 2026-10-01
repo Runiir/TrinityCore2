@@ -34,10 +34,16 @@ def main():
         'portal_return_login.png','portal_return_character.png','portal_return_ready.png',
         'portal_overhang_ground.json','overhang_recovery_start.png',
         'flight_recovery_collection_failure.xml','flight_recovery_fixture_failure.xml',
-        'flat_landing_repair.json','flat_landing_repair_25.json','outland_loop_validation.json'])
+        'flat_landing_repair.json','flat_landing_repair_25.json','outland_loop_validation.json',
+        'outland_combat_stop.png','outland_attack_probe.png','loot_pose_check.png',
+        'combat_login.png','combat_character_login.png','combat_world_login.png',
+        'observation_refactor_collection_failure.xml'])
     paths.append(lab.ROOT/'data/dbc/enUS/AreaTrigger.dbc')
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
+    paths.extend(sorted((lab.ROOT/'evidence').glob('world_packets.jsonl.part-*')))
+    paths.extend(sorted((lab.ROOT/'logs').glob('modern_world.jsonl.part-*')))
     paths.append(lab.ROOT/'bin/navmesh_probe')
+    paths.extend(lab.ROOT/'evidence/reference'/name for name in ['MovementHandler_4_4_0.cs','SplineFlag_6_0_2.cs'])
     episodes=[]
     totals=[]
     for name in a.episode:
