@@ -19,6 +19,7 @@
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
 #include "GameObjectData.h"
+#include "GameObject.h"
 #include "Language.h"
 #include "Map.h"
 #include "PathGenerator.h"
@@ -118,6 +119,34 @@ void Archaeology::VerifySites()
 
 void Archaeology::UseSite()
 {
+    if (ObjectGuid lootGuid = _player->GetLootGUID())
+    {
+        GameObject* find = _player->GetMap()->GetGameObject(lootGuid);
+        if (lootGuid == _pendingFind && find && find->GetOwnerGUID() == _player->GetGUID()
+            && find->loot.loot_type == LOOT_ARCHAEOLOGY && find->loot.isLooted()
+            && _site[_pendingSlot].Entry == _pendingSiteEntry && _site[_pendingSlot].State < DIGS_PER_SITE)
+        {
+            _pendingFind.Clear();
+            ++_site[_pendingSlot].State;
+            if (_site[_pendingSlot].State >= DIGS_PER_SITE)
+                RegeneratePosition(_pendingSlot, Continent(_pendingSlot / CONTINENT_SITES));
+            else
+            {
+                CharacterDatabase.PExecute("UPDATE character_archaeology_sites SET finds = %u WHERE site= %u AND guid= %u",
+                    _site[_pendingSlot].State, _pendingSlot, _player->GetGUID().GetCounter());
+                sArchaeologyMgr->SetSiteCoords(_site[_pendingSlot]);
+            }
+        }
+        return;
+    }
+    if (_pendingFind)
+    {
+        // Repeated Surveys cannot duplicate a still-unlooted artifact. An
+        // expired find consumes no dig; the same hidden target can be retried.
+        if (_player->GetMap()->GetGameObject(_pendingFind))
+            return;
+        _pendingFind.Clear();
+    }
     if (_player->IsFlying() || _player->IsFalling())
         return;
     float dist = 0.0f;
@@ -186,18 +215,20 @@ void Archaeology::UseSite()
         angle = frand(0.0f, float(M_PI * 2));
 
         QuaternionData rot = QuaternionData::fromEulerAnglesZYX(angle, 0.f, 0.f);
-        if (!_player->SummonGameObject(goId, Position(x, y, ground + 0.1f, o), rot, MINUTE))
+        GameObject* find = _player->SummonGameObject(goId, Position(x, y, ground + 0.1f, o), rot, MINUTE);
+        if (!find)
             return;
-        (_site[position].State)++;
-
-        if (_site[position].State >= DIGS_PER_SITE)
-            RegeneratePosition(position, GetContinent());
-        else
-        {
-            CharacterDatabase.PExecute("UPDATE character_archaeology_sites SET finds = %u WHERE site= %u AND guid= %u", _site[position].State, position, _player->GetGUID().GetCounter());
-            sArchaeologyMgr->SetSiteCoords(_site[position]);
-        }
+        _pendingFind = find->GetGUID();
+        _pendingSlot = position;
+        _pendingSiteEntry = _site[position].Entry;
     }
+}
+
+void NotifyArchaeologyFindLooted(Player* player)
+{
+    if (GameObject* find = player->GetMap()->GetGameObject(player->GetLootGUID()))
+        if (find->GetOwnerGUID() == player->GetGUID() && find->loot.loot_type == LOOT_ARCHAEOLOGY && find->loot.isLooted())
+            player->SurveyDigSite();
 }
 
 Continent Archaeology::GetContinent()

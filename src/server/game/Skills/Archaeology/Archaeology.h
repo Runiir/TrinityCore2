@@ -25,6 +25,11 @@
 #define DIGS_PER_SITE 3
 class Player;
 
+// Settle a pending survey find after ordinary owned loot has been removed.
+// Player::SurveyDigSite also processes this completion while a loot GUID is
+// active; that path never creates another survey object.
+void NotifyArchaeologyFindLooted(Player* player);
+
 struct ArchData
 {
     uint32 FragId = 0;
@@ -69,6 +74,9 @@ class Archaeology
         // Site Functionality
         ContinentState _continentState[CONTINENT_SITES];
         std::array<SiteData, CONTINENT_SITES* COUNT_CONT> _site;
+        ObjectGuid _pendingFind;
+        uint32 _pendingSlot = 0;
+        uint16 _pendingSiteEntry = 0;
 
         void LoadSitesFromDB();
         void VerifySites();

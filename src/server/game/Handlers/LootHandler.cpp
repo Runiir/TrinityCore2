@@ -16,6 +16,7 @@
  */
 
 #include "WorldSession.h"
+#include "Archaeology.h"
 #include "Common.h"
 #include "Corpse.h"
 #include "Creature.h"
@@ -97,6 +98,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recvData)
     }
 
     player->StoreLootItem(lguid, lootSlot, loot, gameObject);
+    NotifyArchaeologyFindLooted(player);
 
     // If player is removing the last LootItem, delete the empty container.
     if (loot->isLooted() && lguid.IsItem())
@@ -142,7 +144,10 @@ void WorldSession::HandleLootCurrencyOpcode(WorldPacket& recvData)
             return;
     }
 
+    if (!loot || lootSlot >= loot->items.size())
+        return;
     loot->LootCurrencyInSlot(lootSlot, player);
+    NotifyArchaeologyFindLooted(player);
 }
 
 void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
