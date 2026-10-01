@@ -40,7 +40,7 @@ def response(owner,name,body):
     quests=[]
     for _ in range(quests_count):quests.append((*r.unpack('iiiiB'),text(r)))
     r.end()
-    owner.gossip_menu={'guid':guid,'menu':menu,'options':{row[0] for row in options}}
+    owner.gossip_menu={'guid':guid,'menu':menu,'text_id':text_id,'options':{row[0] for row in options}}
     w=Writer().guid(*gameobjects.modern_guid(guid,record['map'])).pack('5i',menu,0,0,count,quests_count).bits(bool(text_id),1).bits(0,1)
     for index,icon,flags,cost,title,confirm in options:
         w.pack('iBB4i',index,icon,flags,cost,0,0,index)

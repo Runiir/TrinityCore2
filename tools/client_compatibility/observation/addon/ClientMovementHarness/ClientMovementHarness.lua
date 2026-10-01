@@ -45,6 +45,64 @@ local function position()
 end
 
 local sequence, elapsed = 0, 0
+local function captionChecksum(value)
+    local first,second=0,0
+    for i=1,#value do first=(first+value:byte(i))%255;second=(second+first)%255 end
+    return second*256+first
+end
+local gossipPanel=CreateFrame('Frame','ClientGossipHarnessPanel',UIParent)
+gossipPanel:SetScale(1/UIParent:GetEffectiveScale())
+gossipPanel:SetSize(128,36)
+gossipPanel:SetPoint('TOPLEFT',UIParent,'TOPLEFT',16,-200)
+gossipPanel:SetFrameStrata('TOOLTIP');gossipPanel:EnableMouse(false)
+local gossipPixels={}
+for i=1,1112 do
+    local pixel=gossipPanel:CreateTexture(nil,'OVERLAY');pixel:SetSize(2,2)
+    pixel:SetPoint('TOPLEFT',gossipPanel,'TOPLEFT',((i-1)%64)*2,-math.floor((i-1)/64)*2)
+    gossipPixels[i]=pixel
+end
+local function gossipSample()
+    local choices,rows={},{}
+    if GossipFrame and GossipFrame:IsShown() and C_GossipInfo and C_GossipInfo.GetOptions then
+        for _,choice in ipairs(C_GossipInfo.GetOptions() or {}) do
+            if choice.name and choice.gossipOptionID then choices[choice.name]=choice.gossipOptionID end
+        end
+        local width=GetScreenWidth()*UIParent:GetEffectiveScale()
+        local height=GetScreenHeight()*UIParent:GetEffectiveScale()
+        local seen={}
+        local function scan(frame,depth)
+            if depth>8 or not frame:IsShown() then return end
+            if frame.GetRegions then
+                for _,region in ipairs({frame:GetRegions()}) do
+                    if region.GetText then
+                        local text=region:GetText();local id=text and choices[text]
+                        if id and not seen[id] then
+                            local x,y=region:GetCenter()
+                            if x and y then
+                                local scale=region:GetEffectiveScale();seen[id]=true
+                                rows[#rows+1]={id,captionChecksum(text),x*scale/width,y*scale/height}
+                            end
+                        end
+                    end
+                end
+            end
+            if frame.GetChildren then for _,child in ipairs({frame:GetChildren()}) do scan(child,depth+1) end end
+        end
+        scan(GossipFrame,0)
+    end
+    local bytes={84,67,71,49} -- TCG1
+    append(bytes,sequence,4);append(bytes,math.min(#rows,16),1)
+    for i=1,16 do
+        local row=rows[i] or {0,0,0,0}
+        append(bytes,row[1],2);append(bytes,row[2],2)
+        append(bytes,integer(row[3]*65535,65535),2);append(bytes,integer(row[4]*65535,65535),2)
+    end
+    append(bytes,captionChecksum(string.char(unpack(bytes))),2)
+    for i=1,#bytes*8 do
+        local white=math.floor(bytes[math.floor((i-1)/8)+1]/(2^(7-((i-1)%8))))%2
+        gossipPixels[i]:SetColorTexture(white,white,white,1)
+    end
+end
 -- Public taxi-node IDs and centers of the actual visible Blizzard buttons.
 -- The controller clicks these centers with a physical mouse. No protected API
 -- or interaction function is called by this observation addon.
@@ -213,6 +271,7 @@ local function sample()
     end
     travelSample()
     taxiSample()
+    gossipSample()
 end
 
 panel:SetScript("OnUpdate", function(_, delta)

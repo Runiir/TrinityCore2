@@ -4,7 +4,7 @@ import json
 import secrets
 import struct
 
-from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers, taxi, gossip, creature_queries, area_triggers
+from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers, taxi, gossip, creature_queries, area_triggers, npc_text
 from .buffer import Reader, Writer, player_high
 from .events import event, packet
 from .legacy import Native
@@ -144,6 +144,10 @@ class Session:
             if query is None:
                 self.send('SMSG_QUERY_CREATURE_RESPONSE',Writer().raw(body).bits(0,1).finish())
             else:self.owner.native.send('CMSG_CREATURE_QUERY',query)
+        elif name == 'CMSG_QUERY_NPC_TEXT':
+            if not self.owner.created or self is not self.owner.world:
+                raise ValueError('NPC text query outside owned world')
+            self.owner.native.send('CMSG_NPC_TEXT_QUERY',npc_text.request(self.owner,body))
         elif name == 'CMSG_AREA_TRIGGER':
             if not self.owner.created or self is not self.owner.world:
                 raise ValueError('area trigger outside owned world entry')

@@ -5,7 +5,7 @@ from PIL import Image
 from tools.second_client import ctl
 from . import lab_runtime as lab,archaeology_inputs,owned_input
 from .observation.archaeology import angle_error
-from .observation import taxi,telemetry
+from .observation import taxi,telemetry,gossip
 
 
 def face(inputs,observer,goal):
@@ -42,6 +42,13 @@ def execute(action,leg,facts,extra,observer,path):
         inputs.key('3');keys.append({'key':'3'})
     elif action=='interact':
         if not goal or math.dist(position[:3],goal[:3])>8:raise RuntimeError('flight master is out of interaction range')
+        with Image.open(path) as image:options=gossip.decode_image(image)
+        flight=next((o for o in (facts.get('gossip_menu') or {}).get('options',[]) if o['icon']==2),None)
+        caption=next((o for o in options['options'] if flight and o['id']==flight['id'] and
+                      o['caption_checksum']==telemetry.checksum(flight['title'].encode())),None)
+        if caption:
+            pixel=caption['pixel'];inputs.click(*pixel);time.sleep(1)
+            return {'physical_keys':[],'mouse_pixel':pixel,'mouse_source':'ordinary_visible_gossip_caption'}
         keys=face(inputs,observer,goal)
         expected=telemetry.checksum(leg['name'].encode())
         # Locate through the game's tooltip, without annotated teacher pixels.

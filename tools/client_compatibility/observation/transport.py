@@ -13,6 +13,7 @@ class Observer:
         self.session=entry['session'];self.started=entry['time'];self.offset=0
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
+        self.gossip=None
 
     def poll(self):
         with (lab.ROOT/'evidence/world_packets.jsonl').open() as handle:
@@ -40,6 +41,15 @@ class Observer:
                         _,vendor,source,count=r.unpack('IQII');mask=r.raw(count);r.end()
                         self.taxi={'source':source,'vendor':vendor,'seen_at':p['time'],
                             'known':[i*8+b+1 for i,v in enumerate(mask) for b in range(8) if v&(1<<b)]}
+                    elif name=='SMSG_GOSSIP_MESSAGE':
+                        from ..world.gossip import text
+                        guid,menu,text_id,count=r.unpack('QIII');options=[]
+                        if count>64:raise ValueError('excessive gossip menu')
+                        for _ in range(count):
+                            index,icon,flags,cost=r.unpack('iBBI');title=text(r).decode();text(r)
+                            options.append({'id':index,'icon':icon,'title':title})
+                        self.gossip={'guid':guid,'menu':menu,'options':options,'seen_at':p['time']}
+                    elif name=='SMSG_GOSSIP_COMPLETE':self.gossip=None
                     elif name=='SMSG_ACTIVATETAXIREPLY':self.taxi_replies.append({'status':r.unpack('I')[0],'time':p['time']})
                     elif name=='SMSG_UPDATE_OBJECT':
                         for record in records(body):
@@ -47,4 +57,5 @@ class Observer:
                                 self.map=record['map'];self.position=list(record['movement']['position']);self.seen_at=p['time']
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
+            'gossip_menu':self.gossip,
             'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}
