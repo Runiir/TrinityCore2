@@ -82,12 +82,25 @@ def collected(session, since):
     from ..world.buffer import Reader
     replies = [json.loads(line) for line in (lab.ROOT / "evidence/world_packets.jsonl").read_text().splitlines()]
     replies = [r for r in replies if r.get("session") == session and r["time"] >= since and r["direction"] == "from_native"]
-    if not any(r["name"] == "SMSG_CURRENCY_LOOT_REMOVED" for r in replies): return None
+    removed={bytes.fromhex(r['body'])[0] for r in replies if r['name']=='SMSG_CURRENCY_LOOT_REMOVED'}
+    if not removed:return None
+    awarded={}
+    for reply in replies:
+        if reply['name']!='SMSG_LOOT_RESPONSE':continue
+        r=Reader(bytes.fromhex(reply['body']));_,reason=r.unpack('QB')
+        if not reason:continue
+        _,items,currencies=r.unpack('IBB')
+        for _ in range(items):r.unpack('BIIiiiB')
+        for _ in range(currencies):
+            slot,kind,quantity=r.unpack('BII')
+            if slot in removed:awarded[kind]=quantity
+        r.end()
     for reply in replies:
         if reply["name"] != "SMSG_SET_CURRENCY": continue
         r = Reader(translate(reply["name"], bytes.fromhex(reply["body"])))
         currency, quantity = r.unpack("ii")
-        if quantity > 0:
+        if currency in awarded and awarded[currency]>0:
             return {"time": reply["time"], "session": session, "currency": currency,
-                    "quantity": quantity, "source": "native_loot_removed_and_currency_reply"}
+                    "quantity": awarded[currency], "balance":quantity,
+                    "source": "native_loot_amount_removed_and_currency_reply"}
     return None
