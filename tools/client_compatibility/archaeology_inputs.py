@@ -78,7 +78,7 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
                 if math.dist(candidate[:2],start[:2])>=3 and site_boundaries.inside_segment(site['polygon'],start,candidate):
                     target=candidate;break
             if target is None:raise RuntimeError('no flatter in-site landing near the public survey waypoint')
-            planned['mounted_landing']={'requested':targets[-1],'selected':target,'maximum_detail_slope_degrees':40,
+            planned['mounted_landing']={'requested':targets[-1],'selected':target,'maximum_detail_slope_degrees':20,
                 'attempts':attempts,'source':'public static ground detail triangles; no private find coordinates'}
             profile=travel_routes.clearance(site['map'],start,target)
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',

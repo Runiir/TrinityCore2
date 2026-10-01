@@ -8,12 +8,10 @@ from tools.client_compatibility import ground_navigation as ground,lab_runtime a
 @pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private public-navmesh helper is not provisioned')
 def test_landing_rejects_steep_detail_and_covered_flat_ground():
     goal=[-315.518066,3182.38916,120.252457]
-    result=subprocess.run([str(ground.binary()),str(lab.BASE/'data/mmaps'),'530','--landing',
-        *map(str,goal),'20'],capture_output=True,text=True,check=True)
-    landing=json.loads(result.stdout)
-    assert 0<=landing['detail_slope_degrees']<=40
-    assert ground.ground_point(530,landing['position'])==landing['position']
-    assert landing['position'][2]<110
+    # A flat polygon below the hill is covered; its exposed faces are too
+    # steep to stand on. The stricter landing guard must reject this column.
+    with pytest.raises(RuntimeError,match='no public walkable ground'):
+        ground.landing_point(530,goal)
 
 
 def test_survey_flight_respects_explicit_landing_radius():
@@ -46,5 +44,16 @@ def test_coilskar_flight_can_cross_a_slope_excluded_from_walking():
     with pytest.raises(RuntimeError,match='no connected walkable route'):
         ground.route(530,origin,goal)
     point=ground.landing_point(530,goal,start=origin)
-    assert abs(point[2]-42.7713661)<.01
-    assert abs(point[0]-goal[0])<.01 and abs(point[1]-goal[1])<.01
+    assert point[2]<origin[2]-10
+    assert abs(point[0]-goal[0])<.01 and abs(point[1]-goal[1])<30
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private public-navmesh helper is not provisioned')
+def test_coilskar_landing_rejects_the_surface_that_kept_sliding():
+    origin=[-2821.588623046875,1667.5943603515625,18.123668670654297]
+    goal=[-2867.19995,1664,55.6613159]
+    result=subprocess.run([str(ground.binary()),str(lab.BASE/'data/mmaps'),'530','--landing',
+        *map(str,goal),'30',*map(str,origin)],capture_output=True,text=True,check=True)
+    landing=json.loads(result.stdout)
+    assert 0<=landing['detail_slope_degrees']<=20
+    assert abs(landing['position'][0]-goal[0])+abs(landing['position'][1]-goal[1])>1

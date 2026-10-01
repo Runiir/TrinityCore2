@@ -113,7 +113,10 @@ int main(int argc, char** argv)
                 if (dtStatusFailed(query.closestPointOnPoly(refs[i],goal,point,nullptr))) continue;
                 if (point[1]>maximumHeight) continue;
                 float horizontal=std::hypot(point[0]-goal[0],point[2]-goal[2]);
-                if (horizontal>radius || (landing && groundSlope(mesh,refs[i],point)>40.f)) continue;
+                // Trial 42's 38.7-degree detail surface never settled: the
+                // modern mount slid off it and resumed flight three times.
+                // Prefer standing terrain rather than merely walkable slopes.
+                if (horizontal>radius || (landing && groundSlope(mesh,refs[i],point)>20.f)) continue;
                 bool covered=false;
                 if (landing) for (int j=0;j<count;++j)
                 {
