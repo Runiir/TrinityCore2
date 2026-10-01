@@ -205,8 +205,8 @@ class Input:
         time.sleep(0.05)
         for _ in range(count):
             self._send(self.X.ButtonPress, button)
-            time.sleep(0.05)
-            self._send(self.X.ButtonRelease, button)
+            try:time.sleep(0.05)
+            finally:self._send(self.X.ButtonRelease, button)
             time.sleep(0.05)
 
     def _keycode(self, keysym):
@@ -216,11 +216,14 @@ class Input:
         return keycode, self.display.keycode_to_keysym(keycode, 0) != keysym
 
     def _tap(self, keycodes, hold):
-        for keycode in keycodes:
-            self._send(self.X.KeyPress, keycode)
-        time.sleep(hold)
-        for keycode in reversed(keycodes):
-            self._send(self.X.KeyRelease, keycode)
+        pressed=[]
+        try:
+            for keycode in keycodes:
+                self._send(self.X.KeyPress, keycode);pressed.append(keycode)
+            time.sleep(hold)
+        finally:
+            for keycode in reversed(pressed):
+                self._send(self.X.KeyRelease, keycode)
         time.sleep(0.03)
 
     def key(self, combo, hold=0.05):

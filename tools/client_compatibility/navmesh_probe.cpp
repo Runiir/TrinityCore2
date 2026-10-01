@@ -19,7 +19,9 @@ int main(int argc, char** argv)
 {
     try
     {
-        bool column = argc == 6 && std::string(argv[3]) == "--ground";
+        bool below = argc == 7 && std::string(argv[3]) == "--ground-below";
+        bool column = below || (argc == 6 && std::string(argv[3]) == "--ground");
+        float maximumHeight = below ? std::stof(argv[6]) : INFINITY;
         if (argc != 9 && !column) throw std::runtime_error("expected data directory, map, start XYZ, goal XYZ; or --ground X Y");
         std::filesystem::path directory(argv[1]);
         int map = std::stoi(argv[2]);
@@ -72,6 +74,7 @@ int main(int argc, char** argv)
             {
                 float point[3];
                 if (dtStatusFailed(query.closestPointOnPoly(refs[i],goal,point,nullptr))) continue;
+                if (point[1]>maximumHeight) continue;
                 float horizontal=std::hypot(point[0]-goal[0],point[2]-goal[2]);
                 if (horizontal>4) continue;
                 float score=horizontal*100000-point[1];

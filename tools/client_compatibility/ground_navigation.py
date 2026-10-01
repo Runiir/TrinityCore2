@@ -21,8 +21,10 @@ def route(map_id,start,goal):
     return json.loads(result.stdout)
 
 
-def ground_point(map_id,xy):
-    result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--ground',*map(str,xy[:2])],
+def ground_point(map_id,xy,maximum_height=None):
+    mode='--ground' if maximum_height is None else '--ground-below'
+    args=[] if maximum_height is None else [str(maximum_height)]
+    result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),mode,*map(str,xy[:2]),*args],
                           capture_output=True,text=True,timeout=10)
     if result.returncode:raise RuntimeError('public landing ground: '+result.stderr.strip())
     return json.loads(result.stdout)['position']

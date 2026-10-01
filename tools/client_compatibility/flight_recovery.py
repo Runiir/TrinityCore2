@@ -14,7 +14,7 @@ def waypoint(facts,extra,goal):
         xy=[start[0]+math.cos(angle)*distance,start[1]+math.sin(angle)*distance]
         try:
             ground=[ground_navigation.ground_point(facts['map'],[
-                start[i]+(xy[i]-start[i])*t for i in range(2)]) for t in [.5,1.]]
+                start[i]+(xy[i]-start[i])*t for i in range(2)],maximum_height=start[2]-10) for t in [.5,1.]]
         except RuntimeError:continue
         if max(p[2] for p in ground)>start[2]-10:continue
         return [*xy,start[2]],ground,[s['id'] for s in sites]
