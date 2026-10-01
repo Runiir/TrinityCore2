@@ -16,7 +16,7 @@ def main():
     if not a.name.replace('_','').isalnum():raise ValueError('invalid checkpoint name')
     target=lab.REPO/'artifacts/client_harness'/(a.name+'.tar.gz')
     if target.exists() or Path(str(target)+'.dvc').exists():raise ValueError('checkpoint exists')
-    paths=[lab.ROOT/'models/travel-head-v1',lab.ROOT/'models/travel-head-startup-failure']
+    paths=[lab.ROOT/'models/travel-head-v1',lab.ROOT/'models/travel-head-v2',lab.ROOT/'models/travel-head-startup-failure']
     paths.extend(lab.ROOT/'evidence'/name for name in ['world_packets.jsonl','client_monitor.json',
         'pretravel_world_packets.jsonl.gz','pretravel_modern_world.jsonl.gz','travel_ready.png','travel_start.png',
         'travel_protocol_tests.xml','travel_live_validation.json'])
@@ -30,7 +30,7 @@ def main():
         paths.append(path);episodes.append(receipt)
     with tempfile.TemporaryDirectory(dir=lab.ROOT/'run/tmp') as scratch:
         scratch=Path(scratch)
-        training_metrics(lab.ROOT/'models/travel-head-v1',scratch/'training')
+        training_metrics(lab.ROOT/'models/travel-head-v2',scratch/'training')
         with Live(dir=str(scratch/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
             for name,r in zip(a.episode,episodes):
                 live.log_param('episode',name)

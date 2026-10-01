@@ -41,7 +41,13 @@ def run(plan,out,maximum_steps=180):
     try:
         for index in range(maximum_steps):
             leg=plan['legs'][leg_index]
-            movement,extra=archaeology_inputs.screenshot(latest);facts=observer.poll()
+            deadline=time.monotonic()+20
+            while True:
+                facts=observer.poll()
+                try:movement,extra=archaeology_inputs.screenshot(latest);break
+                except ValueError:
+                    if not facts['transferring'] or time.monotonic()>deadline:raise
+                    time.sleep(.25)
             with Image.open(latest) as image:ui=taxi.decode_image(image)
             s=state(leg,movement,extra,facts,ui)
             if movement['dead'] or movement['in_combat']:raise RuntimeError('unsafe travel state')
