@@ -60,10 +60,10 @@ def walk(inputs,tcp,distance,digsite_ids):
     planned=survey_detour(tcp,distance,digsite_ids);observer=Observer();executed=[]
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
-    target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
+    target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:
         planned=survey_detour(tcp,max(10,distance*2),digsite_ids)
-        target=next((p for p in planned['points'][1:] if math.dist(p[:2],planned['start'][:2])>1.5),None)
+        target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:raise RuntimeError('navigation mesh provides no useful ground displacement')
     for _ in range(3):
         current=observer.poll(0)['player']['position']
@@ -75,7 +75,7 @@ def walk(inputs,tcp,distance,digsite_ids):
         executed.append({'key':'a' if error>0 else 'd','hold':hold})
     else:raise RuntimeError('could not face the walkable ground waypoint')
     hold=min(distance/7,math.dist(current[:2],target[:2])/7,2.)
-    if hold<.1:raise RuntimeError('ground waypoint is too close for a useful walk')
+    if hold<.02:raise RuntimeError('ground waypoint is too close for a useful walk')
     inputs.key('w',hold=hold);time.sleep(.3)
     executed.append({'key':'w','hold':hold})
     planned.update(physical_inputs=executed,after=observer.poll(0)['player']['position'],

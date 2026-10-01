@@ -14,7 +14,8 @@ class Recovery:
         if not before:return
         distance=math.dist(before['position'][:2],tcp['player']['position'][:2])
         expected=(previous['input']['hold_seconds'] or .5)*7
-        if distance<max(.75,expected*.2):self.blocked+=1
+        # A short mesh corner can intentionally move less than a yard.
+        if distance<max(.07,expected*.2):self.blocked+=1
         else:self.blocked=0;self.attempts=0
 
     def for_action(self,action):

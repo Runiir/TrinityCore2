@@ -22,3 +22,11 @@ def test_height_change_without_horizontal_progress_is_blocked():
     r=Recovery();r.update([attempt(0,[0,0,1,0])],{'player':{'position':[0,0,6,0]}})
     r.update([attempt(1,[0,0,6,0])],{'player':{'position':[0,0,7,0]}})
     assert r.for_action('forward_short')['attempt']==1
+
+
+def test_small_mesh_corner_displacement_is_real_progress():
+    r=Recovery()
+    for i in range(3):
+        step=attempt(i,[0,0,1,0]);step['input']['hold_seconds']=.04
+        r.update([step],{'player':{'position':[.25,0,1,0]}})
+    assert r.for_action('forward_short') is None

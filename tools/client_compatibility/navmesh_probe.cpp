@@ -82,6 +82,33 @@ int main(int argc, char** argv)
                 << chosen[2] << ',' << chosen[0] << ',' << chosen[1] << "]}\n";
             return 0;
         }
+        // Legacy MMAP ground admits 55-degree slopes. The owned client slid
+        // down a connected 54-degree rock face. Exclude steep polygon planes
+        // in this local copy; shared tiles and native-server navigation stay unchanged.
+        int steep=0;
+        for (int i=0;i<mesh.getMaxTiles();++i)
+        {
+            auto tile=static_cast<dtNavMesh const&>(mesh).getTile(i);
+            if (!tile || !tile->header) continue;
+            for (int j=0;j<tile->header->polyCount;++j)
+            {
+                auto const& poly=tile->polys[j];
+                if (poly.getType()!=DT_POLYTYPE_GROUND || !(poly.flags&1) || poly.vertCount<3) continue;
+                float nx=0,ny=0,nz=0;
+                auto a=tile->verts+poly.verts[0]*3;
+                for (int k=2;k<poly.vertCount;++k)
+                {
+                    auto b=tile->verts+poly.verts[k-1]*3; auto c=tile->verts+poly.verts[k]*3;
+                    float u[3]={b[0]-a[0],b[1]-a[1],b[2]-a[2]},v[3]={c[0]-a[0],c[1]-a[1],c[2]-a[2]};
+                    nx+=u[1]*v[2]-u[2]*v[1];ny+=u[2]*v[0]-u[0]*v[2];nz+=u[0]*v[1]-u[1]*v[0];
+                }
+                if (std::hypot(nx,nz)>std::abs(ny)*0.96f)
+                {
+                    mesh.setPolyFlags(mesh.getPolyRefBase(tile)|j,poly.flags|0x8000);++steep;
+                }
+            }
+        }
+        filter.setExcludeFlags(0x8000);
         float startExtents[3] = {4,8,4}, goalExtents[3] = {4,40,4};
         dtPolyRef first = 0, last = 0; float begin[3], end[3];
         query.findNearestPoly(start,startExtents,&filter,&first,begin);
@@ -119,7 +146,7 @@ int main(int argc, char** argv)
         status = query.findStraightPath(begin,end,corridor,count,points,flags,refs,&pointsCount,256);
         if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground route exceeds point budget");
         std::cout << std::setprecision(9) << "{\"schema\":\"public_ground_navmesh_route_v1\",\"loaded_tiles\":" << loaded
-            << ",\"ground_only\":true,\"complete\":true,\"points\":[";
+            << ",\"ground_only\":true,\"complete\":true,\"excluded_steep_polygons\":" << steep << ",\"points\":[";
         for (int i = 0; i < pointsCount; ++i)
         {
             if (i) std::cout << ',';
