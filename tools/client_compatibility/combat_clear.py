@@ -20,6 +20,7 @@ def run(movement, extra, facts, observer, path):
         lab.private_write(evidence, json.dumps(receipt, indent=2)+'\n')
     try:
         deadline = time.monotonic() + 90
+        failed_selections=0
         while time.monotonic() < deadline:
             movement, extra = archaeology_inputs.screenshot(path); facts = observer.poll()
             if movement['dead'] or movement['health_percent'] < 50: raise RuntimeError('melee recovery lost safe health')
@@ -30,6 +31,7 @@ def run(movement, extra, facts, observer, path):
             target = facts['selected_unit']
             hostiles = {h['guid'] for h in facts['visible_hostiles']}
             if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:2],target['position'][:2])>12:
+                failed_selections+=1
                 attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
                 keys=[]
                 if attackers:
@@ -38,6 +40,14 @@ def run(movement, extra, facts, observer, path):
                         keys.extend(face(inputs,observer,nearest['position']))
                     name=facts['visible_unit_names'].get(nearest['guid'])
                 else:name=None
+                if failed_selections in [3,6,9]:
+                    current=observer.poll()['position'];hold=.8
+                    goal=[current[0]-math.cos(current[3])*hold*4.5,
+                        current[1]-math.sin(current[3])*hold*4.5,current[2]]
+                    if site_boundaries.inside_segment(site['polygon'],current,goal):
+                        ground_navigation.route(facts['map'],current,goal)
+                        inputs.key('s',hold=hold);keys.append({'key':'s','hold':hold,'reason':'open a blocked attacker approach'})
+                        time.sleep(.3)
                 # This is the normal local WoW targeting command, typed through
                 # the client. Its name comes from an ordinary creature query.
                 # It avoids Tab skipping an attacker behind terrain/camera.
@@ -49,6 +59,7 @@ def run(movement, extra, facts, observer, path):
                     inputs.key('Tab');keys.append({'key':'Tab'})
                 record('select', physical_keys=keys); time.sleep(.4)
                 continue
+            failed_selections=0
             distance = math.dist(facts['position'][:2], target['position'][:2])
             if distance > 12:
                 inputs.key('Tab'); record('select', physical_keys=[{'key': 'Tab'}], rejected_distance=distance); time.sleep(.4)
