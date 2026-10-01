@@ -166,7 +166,12 @@ def dry_cast_plan(tcp,extra):
 def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True,path=None):
     import time
     from .observation.archaeology import Observer,angle_error
-    planned=walk_plan(tcp,distance,digsite_ids,recovery,allow_swimming=True);observer=Observer();executed=[]
+    try:planned=walk_plan(tcp,distance,digsite_ids,recovery,allow_swimming=True)
+    except RuntimeError:
+        if not grounded or path is None:raise
+        from .ground_escape import execute
+        return execute(inputs,tcp,digsite_ids,path,(recovery or {}).get('ground_obstructions',[]))
+    observer=Observer();executed=[]
     if planned.get('water_polygons'):
         from .swim_navigation import cross
         return cross(inputs,observer,planned,path)
