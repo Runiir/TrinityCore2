@@ -24,14 +24,21 @@ def screenshot(path):
     return movement,extra
 
 
+def find_hover_points():
+    # Sloping ground puts a nearby, faced artifact well above the character's
+    # feet. Cover the full central vertical strip before the wider radial scan.
+    preferred=[(640,275),(640,285)]
+    vertical=[(640+dx,y) for dx in [0,-16,16,-32,32] for y in range(160,513,16)]
+    grid=[(x,y) for x in range(320,961,24) for y in range(160,575,24)]
+    grid.sort(key=lambda p:(p[0]-640)**2+(p[1]-340)**2)
+    return list(dict.fromkeys([*preferred,*vertical,*grid]))
+
+
 def locate_find(inputs,path,timeout=40):
     # Search the ordinary 3D view with cursor hover, then verify the game's
     # tooltip against known find names. No teacher pixel or private coordinates.
-    preferred=[(640,275),(640,285),(655,275),(655,315),(655,331),(640,340),(640,360),(655,385),(655,400),(620,400)]
-    grid=[(x,y) for x in range(320,961,24) for y in range(190,575,24)]
-    grid.sort(key=lambda p:(p[0]-655)**2+(p[1]-370)**2)
     deadline=time.monotonic()+timeout
-    for x,y in [*preferred,*grid]:
+    for x,y in find_hover_points():
         if time.monotonic()>deadline:break
         inputs.move(x,y);time.sleep(.2)
         _,extra=screenshot(path)

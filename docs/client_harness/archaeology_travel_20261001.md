@@ -251,10 +251,17 @@ A subsequent read-only screenshot confirmed that it settled, unmounted and dry.
 The guard now waits at most 2.5 seconds for that short step to settle before
 accepting it. It retains every probe and failure. It does not mount at green.
 
+Episode 60 resumed normal unmounted green-lantern walking and exposed a separate
+collection search gap. Its artifact was visibly centered above y=240 in all three
+dry stances, while the old radial search spent its twelve-second budget around
+y=370. The cursor now covers the central vertical strip from y=160 to y=512
+before widening. It still clears and reconfirms the game's ordinary tooltip;
+no human pixel annotation is supplied to the run.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 117 tests. The new tooltip test initially failed because its test
+passes 119 tests. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -264,7 +271,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 59 preserve unsuccessful steps, including missing portal
+Episodes 07 through 60 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -276,7 +283,8 @@ and interrupted gathering followed by a missed tooltip, raised-floor proximity
 errors, a missed flight-master tooltip, an out-of-range vendor click and landing
 slides outside the local arrival radius and artifact tooltip occlusion by a
 creature's body, dry ledges incorrectly treated as submerged, an unavailable
-forward route at a mesh corner and a premature stop during a small step down. Successful outcomes do not
+forward route at a mesh corner, a premature stop during a small step down and
+an artifact above the bounded cursor search's covered region. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
@@ -297,6 +305,12 @@ The archive is 489,666,922 bytes with SHA-256
 Scoped status, push and cloud status passed. All 408 closed frames were verified
 against archived bytes and hashes before removing 415,195,898 local bytes.
 The next checkpoint retains `water_repairs_cleanup.json` with those hashes.
+
+Trials 53 through 59 follow in
+`artifacts/client_harness/442_navigation_collection_repairs_20261002.tar.gz.dvc`.
+The archive is 1,015,398,006 bytes with SHA-256
+`147de2228b459e71e24d98e9f5f73d73a486da18e945a1631f08f4383f7eebdd`.
+Scoped status, push and cloud status confirmed synchronization with the remote.
 
 ## Running the loop
 
