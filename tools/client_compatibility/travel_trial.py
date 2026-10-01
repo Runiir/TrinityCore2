@@ -27,13 +27,15 @@ def state(leg,movement,extra,facts,ui):
     reached=facts['map']==leg['destination_map'] if transfer_goal else (
         facts['map']==leg['map'] and distance is not None and distance<leg.get('arrival_radius',12) and
         abs(facts['position'][2]-leg['position'][2])<leg.get('landing_height_tolerance',8))
+    airborne=extra['flying'] or extra['falling']
+    near=bool(reached) or distance is not None and distance<leg.get('arrival_radius',5)
+    if leg['mode']=='flight' and (transfer_goal or not airborne):near=bool(reached)
     return {'mode':leg['mode'],'available':movement['in_world'] and not facts['transferring'] and
             not any(movement[k] for k in ['dead','in_combat']),
         'casting':extra['casting'],'on_taxi':movement['on_taxi'],
         'mounted':extra['mounted'],'flying':extra['flying'],'falling':extra['falling'],
         'at_route_height':facts['position'][2]>=leg.get('ceiling',float('inf'))-3,
-        'near_destination':bool(reached) if transfer_goal and leg['mode']=='flight' else
-            bool(reached) or distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
+        'near_destination':near,'destination_reached':reached,
         'taxi_map_open':bool(ui['nodes'])}
 
 
@@ -69,6 +71,14 @@ def run(plan,out,maximum_steps=180):
                 from .combat_recovery import withdraw
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
                 continue
+            if leg['mode']=='flight' and not leg.get('trigger'):
+                from .landing_recovery import wrong_floor,nudge
+                if wrong_floor(facts,extra,leg) and extra['mounted']:
+                    from tools.second_client import ctl
+                    ctl._launcher_env=lab.client_environment
+                    receipt['safety_recoveries'].append(nudge(ctl.Input(),leg,observer,latest,extra))
+                    landing_started=False
+                    continue
             if (leg['mode']=='flight' and not leg.get('trigger') and extra['flying']
                 and not leg.get('landing_avoidance_frozen') and facts['position'][2]>leg['position'][2]+15
                 and math.dist(facts['position'][:2],leg['position'][:2])<60):

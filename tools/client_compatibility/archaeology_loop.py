@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import time
 import math
-from . import lab_runtime as lab,archaeology_inputs,archaeology_trial,travel_trial,travel_routes,site_boundaries
+from . import lab_runtime as lab,archaeology_inputs,archaeology_trial,travel_trial,travel_routes,site_boundaries,ground_navigation
 from .observation.transport import Observer
 
 
@@ -40,6 +40,10 @@ def main():
                 if not site:site=min(active,key=lambda s:(s['map']!=facts['map'],math.dist(s['center'],facts['position'][:2])))
                 plan=travel_routes.to_site(facts['map'],facts['position'],site)
             already_there=not planned_initial and site['map']==facts['map'] and site_boundaries.contains(site['polygon'],facts['position']) and not any(extra[k] for k in ['mounted','flying','falling'])
+            if already_there:
+                try:floor=ground_navigation.ground_point(facts['map'],facts['position'],maximum_height=facts['position'][2]+1)
+                except RuntimeError:already_there=False
+                else:already_there=abs(floor[2]-facts['position'][2])<=2
             if already_there:
                 receipt['steps'].append({'kind':'already_at_site','site':site['id'],'facts':facts,
                     'travel':extra,'source':'observed grounded player inside assigned public polygon'})

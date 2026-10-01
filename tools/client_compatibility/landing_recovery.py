@@ -4,6 +4,12 @@ import time
 from . import ground_navigation,site_boundaries
 
 
+def wrong_floor(facts,extra,leg):
+    return not extra['flying'] and not extra['falling'] and facts['map']==leg['map'] and (
+        math.dist(facts['position'][:2],leg['position'][:2])<leg.get('arrival_radius',12)) and (
+        facts['position'][2]>leg['position'][2]+leg.get('landing_height_tolerance',8))
+
+
 def alternative(facts,extra,leg):
     start=facts['position'];goal=leg['position']
     sites=[s for sid,s in site_boundaries.sites().items() if sid in extra['digsite_ids'] and
@@ -27,12 +33,14 @@ def alternative(facts,extra,leg):
 def nudge(inputs,leg,observer,path,extra):
     from .travel_inputs import face
     from . import archaeology_inputs
-    if not extra['mounted'] or not extra['flying'] or extra['falling']:
+    raised=wrong_floor(observer.poll(),extra,leg)
+    if not extra['mounted'] or (not extra['flying'] and not raised) or extra['falling']:
         raise RuntimeError('landing collision escape requires licensed mounted flight')
     count=leg.get('landing_collision_escapes',0)
     if count>=3:raise RuntimeError('three alternative landing probes were blocked')
     before=observer.poll();point,sites=alternative(before,extra,leg)
-    inputs.key('space',hold=.4);keys=[{'key':'space','hold':.4}]
+    lift=.7 if raised else .4
+    inputs.key('space',hold=lift);keys=[{'key':'space','hold':lift}]
     keys.extend(face(inputs,observer,point))
     hold=math.dist(observer.poll()['position'][:2],point[:2])/28.7
     inputs.key('w',hold=hold);keys.append({'key':'w','hold':hold});time.sleep(.3)
@@ -42,6 +50,6 @@ def nudge(inputs,leg,observer,path,extra):
     if any(not site_boundaries.contains(s['polygon'],after['position']) for s in sites):
         raise RuntimeError('landing collision escape left the assigned polygon')
     leg.update(position=point,landing_collision_escapes=count+1)
-    return {'decision_origin':'physical_collision_guard','reason':'descent blocked above mapped walking floor',
+    return {'decision_origin':'physical_collision_guard','reason':'grounded above intended floor' if raised else 'descent blocked above mapped walking floor',
         'before':before,'after':after,'public_ground_goal':point,'physical_keys':keys,
         'horizontal_progress':math.dist(before['position'][:2],after['position'][:2]),'time':time.time()}
