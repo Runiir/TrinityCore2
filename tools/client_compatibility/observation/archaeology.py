@@ -70,10 +70,14 @@ class Observer:
                         if entry in TOOLS:
                             self.tool = {**observed, "color": TOOLS[entry]}
                         else: self.finds[record["guid"]] = observed
+        # Rendering can lag behind physical input. Prefer the latest normal
+        # owned movement packet so a stale screenshot cannot reverse a turn.
+        if self.player:facing=self.player['position'][3]
         tool = dict(self.tool) if self.tool else None
         if tool: tool["turn_error_radians"] = angle_error(tool["heading_radians"], facing)
         return {"source": "owned_session_visible_object_tcp_packets", "session": self.session,
-                "tool": tool, "finds": list(self.finds.values()), 'player':self.player}
+                "tool": tool, "finds": list(self.finds.values()), 'player':self.player,
+                'facing_source':self.player['source'] if self.player else 'addon_screenshot'}
 
 
 def collected(session, since):
@@ -82,6 +86,9 @@ def collected(session, since):
     from ..world.buffer import Reader
     replies = [json.loads(line) for line in (lab.ROOT / "evidence/world_packets.jsonl").read_text().splitlines()]
     replies = [r for r in replies if r.get("session") == session and r["time"] >= since and r["direction"] == "from_native"]
+    openings=[i for i,r in enumerate(replies) if r['name']=='SMSG_LOOT_RESPONSE']
+    if not openings:return None
+    replies=replies[openings[0]:openings[1] if len(openings)>1 else len(replies)]
     removed={bytes.fromhex(r['body'])[0] for r in replies if r['name']=='SMSG_CURRENCY_LOOT_REMOVED'}
     if not removed:return None
     awarded={}

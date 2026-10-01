@@ -44,7 +44,7 @@ def locate_find(inputs,path):
     raise RuntimeError('no archaeology find tooltip in the bounded screen search')
 
 
-def execute(action,tcp,path):
+def execute(action,tcp,path,recovery=None):
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None
     if action=='survey':inputs.key('2')
     elif action.startswith('turn_'):
@@ -54,7 +54,14 @@ def execute(action,tcp,path):
     elif action.startswith('forward_'):
         if not tcp['tool']:raise ValueError('walk without a survey observation')
         short,long={'red':(2,6),'yellow':(1,3),'green':(.5,1)}[tcp['tool']['color']]
-        hold=short if action=='forward_short' else long;inputs.key('w',hold=hold)
+        hold=short if action=='forward_short' else long
+        if recovery:
+            if recovery['attempt']>=2:inputs.key('e' if recovery['attempt']==2 else 'q',hold=.8)
+            inputs._send(inputs.X.KeyPress,inputs._keycode(inputs.XK.string_to_keysym('w'))[0])
+            try:inputs.key('space',hold=.2);time.sleep(.5)
+            finally:inputs._send(inputs.X.KeyRelease,inputs._keycode(inputs.XK.string_to_keysym('w'))[0])
+            hold=.7
+        else:inputs.key('w',hold=hold)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
@@ -62,4 +69,5 @@ def execute(action,tcp,path):
         inputs._send(inputs.X.ButtonPress,3);time.sleep(.2);inputs._send(inputs.X.ButtonRelease,3)
     elif action!='observe':raise ValueError('unknown physical action')
     time.sleep(2.5 if action in ['survey','loot'] else .5)
-    return {'hold_seconds':hold,'mouse_pixel':pixel,'pixel_source':'ordinary_game_tooltip_hover' if pixel else None}
+    return {'hold_seconds':hold,'mouse_pixel':pixel,'pixel_source':'ordinary_game_tooltip_hover' if pixel else None,
+            'collision_recovery':recovery}

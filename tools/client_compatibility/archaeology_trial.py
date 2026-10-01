@@ -9,6 +9,7 @@ from PIL import Image
 from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs as inputs,owned_input
 from .archaeology_model_service import ENDPOINT,PORT
 from .observation.archaeology import Observer,collected
+from .collision_recovery import Recovery
 
 
 def main():
@@ -20,7 +21,7 @@ def main():
     if not client or not monitor['second_monitor_verified'] or monitor['pid']!=client['pid']:raise RuntimeError('owned client monitor unverified')
     owned_input.focus()
     with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/health',timeout=5) as r:identity=json.load(r)
-    observer=Observer();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None
+    observer=Observer();recovery=Recovery();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None
     receipt={'schema':'client442_laya_live_archaeology_v2','model':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'started_at':started,'teacher_mouse_annotations':0,'manual_gameplay_interventions':0,
@@ -31,6 +32,7 @@ def main():
             if not movement['in_world'] or any(movement[k] for k in ['dead','in_combat','on_taxi']):raise RuntimeError('character unavailable')
             if extra['mounted'] or extra['flying']:raise RuntimeError('archaeology trial requires landing and dismounting')
             state=policy.observed_state(movement,extra,tcp,history)
+            recovery.update(history,tcp)
             if len(history)>=3 and all(s['action']=='survey' for s in history[-3:]):raise RuntimeError('Survey produced no fresh instrument or find three times')
             if len(history)>=2 and all(s['action']=='loot' for s in history[-2:]):raise RuntimeError('two physical loot attempts produced no collection')
             if history and len(history)>=4 and all(s['action']=='observe' for s in history[-4:]):raise RuntimeError('repeated waiting without progress')
@@ -43,7 +45,7 @@ def main():
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as img:img.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
-            begin=time.time();executed=inputs.execute(action,tcp,latest)
+            begin=time.time();executed=inputs.execute(action,tcp,latest,recovery.for_action(action))
             step={'index':index,'started_at':begin,'time':time.time(),'session':tcp['session'],
                 'movement':movement,'travel':extra,'tcp':tcp,'state':state,'request':request,'response':response,
                 'action':action,'policy_match':action==policy.label(state),'input':executed}
