@@ -66,13 +66,13 @@ def main():
         scratch=Path(scratch)
         for model in models:training_metrics(model,scratch/model.name/'dvclive')
         with Live(dir=str(scratch/'live_trials'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
+            live.log_param('episodes',args.episode)
             for name in args.episode:
                 episode=json.loads((lab.ROOT/'evidence'/name/'episode.json').read_text())
                 live.log_metric('finds',len(episode['finds']))
                 live.log_metric('completed',int(episode.get('completed',False)))
                 live.log_metric('actions',len(episode['steps']))
                 live.log_metric('duration_seconds',episode['finished_at']-episode['started_at'])
-                live.log_param('last_episode',name)
                 live.next_step()
         (scratch/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with tarfile.open(artifact,'w:gz',compresslevel=6) as archive:

@@ -51,6 +51,32 @@ is owned and verified on HDMI-1. The 54 authentication, world and boundary tests
 pass. The first direct `pytest` invocation failed to import `tools`; invoking
 `python -m pytest` in the same Pixi environment repaired test discovery.
 
+Two further bounded live trials passed. `laya_archaeology_boundary_01` took
+30 actions and 89.5 seconds to collect 6 fragments; all ten walks and the
+artifact position were inside the client polygon. It also reproduced early
+site replacement: the backend removed Twilight Grove at artifact spawn, before
+the model's loot click. That left the final artifact visible after its outline
+disappeared.
+
+The native server now retains the site and its find until all owned loot has
+been removed. A repeated Survey cannot duplicate a pending artifact, and an
+expired unlooted find consumes no dig. The ordinary currency/item loot handlers
+settle that pending find, without changing Player's public class layout.
+`archaeology_loot_lifecycle_v1.json` declares a final-find test that sets only
+slot zero to site 163 with two collected finds, preserving position and gear.
+In `laya_archaeology_lifecycle_01`, Laya collected 7 fragments in 49 actions and
+141.6 seconds. All sixteen walks stayed inside the polygon. Addon-visible site
+163 remained assigned before the click, the artifact was inside that still
+visible boundary, and the client replaced it with site 207 after collection.
+Neither trial used teacher click coordinates or private next-find coordinates.
+
+The native build passed with existing G3D `ciso646` warnings. Client restart
+initially exposed a Gamescope reaper left behind after its parent exited;
+cleanup now verifies and removes only that leftover owned helper. Evidence for
+the boundaries, failed ground trials, successful live digs and lifecycle repair
+is checkpointed with DVC and DVCLive in
+`artifacts/client_harness/442_archaeology_boundaries_20261001.tar.gz.dvc`.
+
 The following sections retain the earlier assisted baseline and its evaluation.
 
 ## Earlier assisted baseline
