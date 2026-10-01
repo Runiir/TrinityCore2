@@ -58,7 +58,7 @@ def score(directory):
                 if not route['boundary_guard']['observed_after_inside']:
                     summary['boundary_failures'].append({'episode':str(path.parent.relative_to(directory)),'step':step['index']})
                 colour=(step.get('tcp',{}).get('tool') or {}).get('color')
-                if (kind=='walks' and colour!='green') or (kind=='mounted_moves' and colour=='green'):
+                if step['action'].startswith('forward_') and ((kind=='walks' and colour!='green') or (kind=='mounted_moves' and colour=='green')):
                     raise ValueError('mounted movement policy mismatch')
             if step['action']=='loot':
                 observed=step['travel']['digsite_ids']

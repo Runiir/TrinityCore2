@@ -70,7 +70,7 @@ on a Coilskar slope where a connected flat destination exists 16 yards below
 the character but the filtered walking path is unavailable. That exact terrain
 fixture now passes the mounted-planning regression. Green instruments use unmounted walk/swim paths. Find collection
 uses the normal tooltip to locate a right-click. If the character overlaps the
-visible find, it first backpedals about 3.5 yards along an in-site ground path;
+visible find, it first walks to a nearby dry stance at the find's elevation;
 standing directly over the artifact previously produced no interaction packet.
 Find clicks hold the physical mouse button for 0.2 seconds, spanning multiple
 frames at the observed 15 FPS. Episode 41's two 0.05-second clicks sent no use
@@ -160,11 +160,25 @@ mouse-search area missed the find, which was left of the character. Collection
 now faces the ordinary visible artifact before backpedalling and searches a
 wider part of the 3D view. It clears a matching tooltip and verifies the same
 cursor point again, avoiding stale names while `GameTooltip` fades.
+Episode 50 showed that this fade could last longer than the original 0.7-second
+clear wait. The addon now exports tooltip text only at full opacity, and the
+input adapter polls for clearance before confirming a candidate point. A mouse
+hover timing diagnostic outside the closed model trials is retained separately.
+
+Episode 51 completed a real unmounted water crossing, recording two addon
+swimming observations and a dry arrival before Survey resumed. Its next find
+appeared on a bank. The old backward approach dropped the character about six
+yards below it. Find positioning now selects a complete dry corridor no longer
+than eight yards, a stance within 1.25 yards of the visible find's elevation,
+and actual interaction distance at most five yards. The fixed bank fixture
+passes. Survey also checks public water geometry because touching a shallow pond
+floor can clear `IsSwimming()` while the feet remain submerged. A bounded shore
+move completes before the selected cast, including when there is no telescope.
 
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 101 tests. The first observation-refactor check failed collection because
+passes 103 tests. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
 and the final XML are retained. Earlier missing-Pillow collection and mock-route
 fixture failures are retained with their corrected results.
@@ -172,7 +186,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 49 preserve unsuccessful steps, including missing portal
+Episodes 07 through 51 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -183,6 +197,16 @@ low bridge steps, unnecessarily requested melee approaches, excluded water,
 and interrupted gathering followed by a missed tooltip. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
+
+Trials 07 through 49 are checkpointed in
+`artifacts/client_harness/442_outland_navigation_repairs_20261001.tar.gz.dvc`,
+following `442_travel_transport_repairs_20261001.tar.gz.dvc`. The repair archive
+is 1,550,223,128 bytes with SHA-256
+`19c06d0d5ea754e587286fc32610ed5d1d5c5da5d92ba28aace5e0a4c89ad79a`.
+Scoped DVC status and push passed; cloud status confirmed remote synchronization.
+All 1,910 closed PNG/WebP files matched the archive bytes and hashes before
+1,483,211,654 bytes of local frames were removed. Receipts and the cleanup manifest
+remain local. Live observation journal segments were preserved for the client.
 
 ## Running the loop
 
