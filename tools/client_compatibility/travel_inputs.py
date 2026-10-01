@@ -67,17 +67,9 @@ def execute(action,leg,facts,extra,observer,path):
             return {'physical_keys':[],'mouse_pixel':pixel,'mouse_source':'ordinary_visible_gossip_caption'}
         keys=face(inputs,observer,goal)
         expected=telemetry.checksum(leg['name'].encode())
-        # Locate through the game's tooltip, without annotated teacher pixels.
-        points=[(x,y) for x in range(480,801,20) for y in range(220,561,20)]
-        points.sort(key=lambda p:(p[0]-640)**2+(p[1]-360)**2)
-        deadline=time.monotonic()+30
-        for x,y in points:
-            if time.monotonic()>deadline:break
-            inputs.move(x,y);time.sleep(.15)
-            _,hover=archaeology_inputs.screenshot(path)
-            if hover['tooltip_name_checksum']==expected:
-                pixel=[x,y];inputs.click(x,y,button=3);break
-        if pixel is None:raise RuntimeError('no matching flight-master tooltip in bounded mouse search')
+        from .flightmaster_input import locate
+        pixel=locate(inputs,path,expected)
+        inputs.click(*pixel,button=3,hold=.2)
         time.sleep(1)
     elif action=='taxi':
         with Image.open(path) as image:menu=taxi.decode_image(image)
