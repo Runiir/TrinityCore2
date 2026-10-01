@@ -57,23 +57,32 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
         hold=short if action=='forward_short' else long
         with Image.open(path) as image:digsite_ids=travel.decode_image(image)['digsite_ids']
         if mounted_moves and tcp['tool']['color']!='green':
-            from . import travel_trial,site_boundaries
+            from . import travel_trial,travel_routes,site_boundaries
             planned=ground_navigation.survey_detour(tcp,hold*7,digsite_ids)
             start=tcp['player']['position'];site=site_boundaries.sites()[planned['boundary_guard']['site_id']]
             targets=[p for p in planned['points'][1:] if math.dist(p[:2],start[:2])>1.5 and
                      site_boundaries.inside_segment(site['polygon'],start,p)]
             if not targets:raise RuntimeError('no in-site mounted waypoint from public survey heading')
-            target=None
-            for waypoint in reversed(targets):
+            target=None;attempts=[]
+            # A short telescope move can end against a hill. Try farther
+            # public-bearing waypoints so flight can cross its steep face.
+            heading=tcp['tool']['heading_radians']
+            farther=[]
+            for scale in [2,3]:
+                distance=site_boundaries.clip_distance(site['polygon'],start,heading,min(84,hold*7*scale))
+                farther.append([start[0]+math.cos(heading)*distance,start[1]+math.sin(heading)*distance,start[2]])
+            for waypoint in [*reversed(targets),*farther]:
                 try:candidate=ground_navigation.landing_point(site['map'],waypoint)
                 except RuntimeError:continue
+                attempts.append({'waypoint':waypoint,'landing':candidate})
                 if math.dist(candidate[:2],start[:2])>=3 and site_boundaries.inside_segment(site['polygon'],start,candidate):
                     target=candidate;break
             if target is None:raise RuntimeError('no flatter in-site landing near the public survey waypoint')
             planned['mounted_landing']={'requested':targets[-1],'selected':target,'maximum_detail_slope_degrees':40,
-                'source':'public static ground detail triangles; no private find coordinates'}
+                'attempts':attempts,'source':'public static ground detail triangles; no private find coordinates'}
+            profile=travel_routes.clearance(site['map'],start,target)
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
-                'map':site['map'],'position':target,'ceiling':max(start[2],target[2])+70,'arrival_radius':1.5}]}
+                'map':site['map'],'position':target,'ceiling':profile['ceiling'],'height_profile':profile,'arrival_radius':3}]}
             directory=path.parent/f'mounted_move_{time.time_ns()}'
             result=travel_trial.run(route,directory,maximum_steps=45)
             if not result['completed']:raise RuntimeError('mounted dig movement failed: '+str(result['failure']))
