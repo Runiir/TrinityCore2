@@ -10,6 +10,12 @@ def test_trial68_dragonmaw_center_has_a_nearby_dry_flat_arrival():
     assert site_boundaries.inside_segment(site['polygon'],origin,point)
     assert not ground.water_at(530,point)['water_above_feet']
     assert record['attempts'][-1]['accepted'] and record['dry_arrival_required']
+    assert record['safe_patch']['radius_yards']==1.5
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper absent')
+def test_trial69_tiny_flat_ledge_beside_the_slide_face_is_rejected():
+    with pytest.raises(RuntimeError):ground.safe_landing_patch(530,[-4189.9458,407.542633,79.019104])
 
 
 def test_flat_pond_floor_is_rejected_as_a_flight_arrival(monkeypatch):

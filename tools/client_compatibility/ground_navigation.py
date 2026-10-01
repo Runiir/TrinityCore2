@@ -67,6 +67,23 @@ def landing_point(map_id,position,radius=30,start=None):
     return json.loads(result.stdout)['position']
 
 
+def safe_landing_patch(map_id,position):
+    """Allow steering error around a flat point without landing on a cliff."""
+    samples=[]
+    points=[position[:3],*[[position[0]+1.5*math.cos(i*math.tau/8),
+        position[1]+1.5*math.sin(i*math.tau/8),position[2]] for i in range(8)]]
+    for index,point in enumerate(points):
+        surface=probe_surface(map_id,point)
+        if math.dist(surface['position'][:2],point[:2])>.25 or abs(surface['position'][2]-position[2])>1.25 or not (
+            0<=surface['detail_slope_degrees']<=(20 if index==0 else 35)):
+            raise RuntimeError('flat landing lacks a safe surrounding ground patch')
+        if water_at(map_id,surface['position'])['water_above_feet']:
+            raise RuntimeError('flat landing patch includes submerged ground')
+        samples.append(surface)
+    return {'radius_yards':1.5,'maximum_center_slope_degrees':20,'maximum_perimeter_slope_degrees':35,
+        'maximum_height_difference_yards':1.25,'samples':samples,'source':'public detail terrain around the selected landing'}
+
+
 def survey_ray(tcp,distance,digsite_ids):
     """An in-site public bearing, independent of whether the slope is walkable."""
     start=tcp['player']['position'];heading=tcp['tool']['heading_radians']

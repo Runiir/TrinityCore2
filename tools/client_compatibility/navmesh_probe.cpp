@@ -149,15 +149,20 @@ int main(int argc, char** argv)
                 // modern mount slid off it and resumed flight three times.
                 // Prefer standing terrain rather than merely walkable slopes.
                 if (horizontal>radius || (landing && groundSlope(mesh,refs[i],point)>20.f)) continue;
-                bool covered=false;
+                bool covered=false, ambiguousSlope=false;
                 if (landing) for (int j=0;j<count;++j)
                 {
                     float above[3];
                     if (dtStatusFailed(query.closestPointOnPoly(refs[j],point,above,nullptr))) continue;
-                    if (std::hypot(above[0]-point[0],above[2]-point[2])<.1f && above[1]>point[1]+.5f)
-                    { covered=true;break; }
+                    if (std::hypot(above[0]-point[0],above[2]-point[2])>=.1f) continue;
+                    if (above[1]>point[1]+.5f) { covered=true;break; }
+                    // At Dragonmaw a flat polygon overlaps a 53-degree
+                    // collision face at the same height. Its flat label
+                    // cannot make the actual supporting surface safe.
+                    if (std::abs(above[1]-point[1])<.5f && groundSlope(mesh,refs[j],above)>20.f)
+                        ambiguousSlope=true;
                 }
-                if (covered) continue; // Flat polygons under hills/roofs cannot be landed on.
+                if (covered || ambiguousSlope) continue;
                 if (connectedLanding)
                 {
                     dtPolyRef path[1024];int length=0;

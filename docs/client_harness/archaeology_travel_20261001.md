@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 132 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 133 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 68 preserve unsuccessful steps, including missing portal
+Episodes 07 through 69 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -368,6 +368,20 @@ Site arrival now searches nearby public points within the polygon on the same
 ground component, rejecting submerged surfaces. The exact Dragonmaw fixture
 finds dry flat ground roughly eleven yards from its center. Site and survey
 arrivals both use a 1.5-yard horizontal radius and two-yard height tolerance.
+Episode 69 reached Dragonmaw but produced no instrument after Survey. Ordinary
+packets confirm two completed Survey spells and one cooldown rejection. The
+arrival's nominal flat detail face overlapped a 53.1-degree supporting surface
+at the actual feet. Landing now rejects overlapping steep faces and requires a
+dry 1.5-yard surrounding patch: center slope at most 20 degrees, perimeter at
+most 35 degrees, and height difference at most 1.25 yards. Initial site arrivals
+do not require connection to an unverified arithmetic-center surface; Dragonmaw
+has broad flat ground fifteen yards away and roughly 38 yards below that center.
+Local survey flights retain their known-floor connection requirement.
+The first patch-search suite and the first overlap-filter suite each failed two
+tests. One old fixture accepted a Baa'ri point whose supporting column contains a
+52-degree face; it now explicitly expects rejection. The Dragonmaw search was
+repaired by removing the unverified-center connection requirement. Both failed
+XMLs remain alongside the corrected full-suite result.
 Recent telescope ground samples cannot override a known detail slope above
 35 degrees, even if the sample's elevation is close to the player's feet.
 Successful outcomes do not
@@ -409,6 +423,15 @@ Scoped status, push and cloud status confirmed remote synchronization.
 All 472 closed PNG/WebP files matched the archive bytes and hashes before removing
 415,664,660 local bytes. The next checkpoint includes
 `collection_recovery_repairs_cleanup.json` with the verification manifest.
+
+Trials 64 through 68 follow in
+`artifacts/client_harness/442_dry_shore_site_arrival_repairs_20261002.tar.gz.dvc`.
+The archive is 334,727,677 bytes with SHA-256
+`87b74d2fee0b71ef58e0dd5e14e0b6344997a7d406debc4518fcc979a354a087`.
+Scoped status, push and cloud status confirmed remote synchronization. All 317
+closed PNG/WebP files matched archived bytes and hashes before removing
+246,023,366 local bytes. The next checkpoint includes
+`dry_shore_site_arrival_cleanup.json` with the verification manifest.
 
 ## Running the loop
 

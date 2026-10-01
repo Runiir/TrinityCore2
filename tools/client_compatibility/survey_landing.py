@@ -21,8 +21,13 @@ def select(site,start,heading,distance):
             accepted=(progress>=1.5 and math.dist(point[:2],start[:2])>=3 and
                       site_boundaries.inside_segment(site['polygon'],start,point) and
                       not ground.water_at(site['map'],point)['water_above_feet'])
+            patch=None
+            if accepted:
+                try:patch=ground.safe_landing_patch(site['map'],point)
+                except RuntimeError as error:
+                    accepted=False;attempts.append({'waypoint':waypoint,'landing':point,'failure':str(error)})
             attempts.append({'waypoint':waypoint,'landing':point,'bearing_progress_yards':progress,'accepted':accepted})
             if accepted:
-                return point,{'selected':point,'maximum_detail_slope_degrees':20,'attempts':attempts,
+                return point,{'selected':point,'maximum_detail_slope_degrees':20,'attempts':attempts,'safe_patch':patch,
                     'source':'public telescope bearing, site polygon and static ground detail triangles; no private find coordinates'}
     raise RuntimeError('no progressive flat in-site landing near the public survey bearing')
