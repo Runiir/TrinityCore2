@@ -23,7 +23,7 @@ def face(inputs,observer,goal):
 def execute(action,leg,facts,extra,observer,path):
     from PIL import Image
     from . import archaeology_inputs
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None
+    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None;interaction_approach=None
     goal=leg.get('vendor_position') if action=='interact' else leg.get('position')
     position=facts['position']
     if action=='mount':inputs.key('3');keys.append({'key':'3'});time.sleep(2)
@@ -65,9 +65,11 @@ def execute(action,leg,facts,extra,observer,path):
         if caption:
             pixel=caption['pixel'];inputs.click(*pixel);time.sleep(1)
             return {'physical_keys':[],'mouse_pixel':pixel,'mouse_source':'ordinary_visible_gossip_caption'}
-        keys=face(inputs,observer,goal)
+        from .flightmaster_input import approach,locate
+        interaction_approach=approach(inputs,observer,facts['map'],goal,path)
+        if interaction_approach:keys.extend(interaction_approach['physical_keys'])
+        keys.extend(face(inputs,observer,goal))
         expected=telemetry.checksum(leg['name'].encode())
-        from .flightmaster_input import locate
         pixel=locate(inputs,path,expected)
         inputs.click(*pixel,button=3,hold=.2)
         time.sleep(1)
@@ -99,4 +101,4 @@ def execute(action,leg,facts,extra,observer,path):
             time.sleep(.2)
     time.sleep(.25)
     return {'physical_keys':keys,'mouse_pixel':pixel,'mouse_source':'ordinary_addon_ui_or_tooltip' if pixel else None,
-        'collision_recovery':collision}
+        'collision_recovery':collision,'interaction_approach':interaction_approach}
