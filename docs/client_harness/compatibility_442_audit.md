@@ -54,7 +54,7 @@ That needs compatible login/authentication, encryption, character packets, essen
 
 ## Isolation required before any trial
 
-The saved plan is [442_isolation_plan_v1.json](../../experiments/configs/client_harness/442_isolation_plan_v1.json). It is a proposal with launch disabled, not provisioned infrastructure.
+At the static audit checkpoint, [442_isolation_plan_v1.json](../../experiments/configs/client_harness/442_isolation_plan_v1.json) was a proposal with launch disabled. It now records the subsequently provisioned lab. The [runtime startup trial](runtime_launch_20261001.md) started isolated legacy servers and the 60895 client, confirmed a local TLS login connection, and did not establish world entry. The static findings below remain prerequisites for a playable movement trial.
 
 Use a **dedicated MariaDB instance and new data volume**, not the existing boss-bot instance. Proposed loopback port: `13306`. Initialize fresh `client442_auth`, `client442_world`, `client442_characters`, and, if required by the chosen modern protocol/core, `client442_hotfixes`. Generate a dedicated runtime user/password. Its grants must cover only these schemas, and no existing live database import is authorized by this audit.
 

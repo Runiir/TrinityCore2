@@ -1,12 +1,24 @@
 {
   "schema": "client_harness_isolation_plan_v1",
-  "phase": "isolated_database_provisioned",
-  "live_launch_allowed": false,
+  "phase": "legacy_servers_running_60895_login_blocked",
+  "live_launch_allowed": true,
   "database_created": true,
   "client": {
     "version": "4.4.2",
     "build": 60895,
-    "source_folder": "/home/runiir/Games/_whitemane-60895_"
+    "source_folder": "/home/runiir/Games/_whitemane-60895_",
+    "working_folder": "/home/runiir/.local/share/trinity-client442-lab/client/_whitemane-60895_",
+    "wine_prefix": "/home/runiir/.local/share/trinity-client442-lab/wineprefix",
+    "portal": "127.0.0.1",
+    "launch_helper_version": "2.1.51",
+    "launch_helper_sha256": "b84b94a646210d3494f06f36b62fb5a845a8f3f1e470820304938a1d496d17fb",
+    "login_screen_verified": true,
+    "world_entry_verified": false,
+    "observed_login_endpoint": "127.0.0.1:1119",
+    "observed_first_record": "TLS_ClientHello",
+    "launch_monitor_ordinal": 2,
+    "launch_monitor_name": "HDMI-1",
+    "second_monitor_verified": true
   },
   "reference": {
     "repository": "https://github.com/TrinityCore/TrinityCore",
@@ -39,23 +51,32 @@
     "network": "trinity-client442-net",
     "schema_source": "this_checkout_4.3.4_15595_base_schemas",
     "runtime_credentials_verified": true,
-    "world_content_loaded": false,
-    "schema_updates_applied": false,
+    "world_content_loaded": true,
+    "schema_updates_applied": true,
     "connection_config": "/home/runiir/.local/share/trinity-client442-lab/database.connections.conf",
-    "evidence_pointer": "artifacts/client_harness/442_database_provision_20261001.tar.gz.dvc"
+    "evidence_pointer": "artifacts/client_harness/442_database_provision_20261001.tar.gz.dvc",
+    "content_source": "clean_TDB_434.22011_2022_01_09_plus_this_worktree_updates",
+    "runtime_evidence_pointer": "artifacts/client_harness/442_runtime_launch_20261001.tar.gz.dvc"
   },
   "network": {
     "bind_address": "127.0.0.1",
     "proposed_ports": {
       "legacy_auth_if_needed": 13724,
-      "classic_bnet_if_needed": 11190,
+      "classic_bnet_if_needed": 1119,
       "classic_login_rest_if_needed": 18081,
       "world": 18085,
       "legacy_instance_if_needed": 18086
     },
-    "port_availability_verified": false,
+    "port_availability_verified": true,
     "remote_admin_enabled": false,
-    "soap_enabled": false
+    "soap_enabled": false,
+    "verified_runtime_listeners": {
+      "legacy_auth": "127.0.0.1:13724",
+      "world": "127.0.0.1:18085",
+      "instance": "127.0.0.1:18086",
+      "database": "127.0.0.1:13306"
+    },
+    "classic_bnet_running": false
   },
   "runtime": {
     "owned_root": "/home/runiir/.local/share/trinity-client442-lab",
@@ -65,9 +86,12 @@
     "separate_config_files": true,
     "separate_server_logs_and_capture": true,
     "client_data_read_only": true,
-    "bot_autostart": false
+    "bot_autostart": false,
+    "client_data_private_write_overlay": "/home/runiir/.local/share/trinity-client442-lab/client/casc-upper",
+    "configs_root": "/home/runiir/.local/share/trinity-client442-lab/config"
   },
-  "prelaunch_requirements": [
+  "launch_scope": "isolated_legacy_servers_and_60895_client_diagnostics",
+  "movement_acceptance_requirements": [
     "choose_and_implement_a_60895_compatible_login_and_world_protocol",
     "verify_target_executable_launcher_and_client_data_identity",
     "verify_all_proposed_ports_are_free",
@@ -77,5 +101,11 @@
     "verify_every_database_connection_targets_the_owned_instance",
     "disable_bot_autostart_admin_and_default_runtime_profiles",
     "verify_server_processes_and_cleanup_are_scoped_to_the_lab"
+  ],
+  "open_requirements": [
+    "modern_TLS_Battle_net_and_login_REST_compatible_service",
+    "modern_linked_lab_account_and_realm_ticket_flow",
+    "60895_world_transport_character_and_object_serialization",
+    "character_world_entry_before_movement_trial"
   ]
 }
