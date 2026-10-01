@@ -10,9 +10,10 @@ def modern_guid(native, map_id):
     if not native: return (0, 0)
     high = native >> 52
     if high == 0: return native, player_high()
-    if high != 0xF11: raise ValueError("unsupported game-object identity")
+    types = {0xF11: 11, 0xF13: 8}
+    if high not in types: raise ValueError("unsupported visible-object identity")
     entry = native >> 32 & 0xFFFFF
-    return native & 0xFFFFFFFF, (11 << 58) | (1 << 42) | (map_id << 29) | (entry << 6)
+    return native & 0xFFFFFFFF, (types[high] << 58) | (1 << 42) | (map_id << 29) | (entry << 6)
 
 
 def block(snapshot):

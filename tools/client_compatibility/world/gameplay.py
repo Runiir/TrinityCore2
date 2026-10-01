@@ -3,7 +3,7 @@ import time
 
 from .buffer import Reader, Writer, player_high
 from .events import event
-from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras
+from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units
 
 
 async def receive(owner, name, body):
@@ -61,11 +61,17 @@ async def receive(owner, name, body):
             event("native_player_created", session=owner.id, guid=guid, map=snapshot["map"], position=snapshot["movement"]["position"])
             visible = gameobjects.updates(owner, body)
             if visible: send(name, visible)
+            creatures = units.updates(owner, body)
+            if creatures: send(name, creatures)
     elif name == "SMSG_UPDATE_OBJECT":
         player = player_updates.updates(owner, body)
         if player: send(name, player)
+        research = research_updates.updates(owner, body)
+        if research: send(name, research)
         visible = gameobjects.updates(owner, body)
         if visible: send(name, visible)
+        creatures = units.updates(owner, body)
+        if creatures: send(name, creatures)
     elif name == "SMSG_BIND_POINT_UPDATE":
         if len(body) == 20: send(name, body)
     elif name == "SMSG_TIME_SYNC_REQ":
