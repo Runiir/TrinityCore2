@@ -194,10 +194,23 @@ check elevation before treating an already-in-site character as ready to Survey.
 The raised-stone fixture now rejects both false destination-ground facts and
 premature arrival. It verifies a connected alternative landing below Z50.
 
+Episode 53 collected all three fresh Laughing Skull finds for 9, 5 and 8 Orc
+fragments, observing site 365 replaced by 355. Its second find landed on the
+stone structure twice. The bounded mounted recovery lifted and moved sideways,
+then landed at Z46.697, dismounted and resumed Survey before collecting the find.
+This is a live recovery outcome, with no manual gameplay intervention. The next
+automatic journey reached Telaar but stopped while locating Furgu: the old
+mouse search began at y220 and spent its budget near the center of the view,
+while the close NPC appeared higher. The search now covers the central vertical
+strip from y160, clears and confirms the exact tooltip point, then holds its
+right click for 0.2 seconds. It does not use teacher mouse coordinates.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 105 tests. The first observation-refactor check failed collection because
+passes 107 tests. The new tooltip test initially failed because its test
+environment lacked Pillow; the dependency was added and the full suite passed.
+That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
 and the final XML are retained. Earlier missing-Pillow collection and mock-route
 fixture failures are retained with their corrected results.
@@ -205,7 +218,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 52 preserve unsuccessful steps, including missing portal
+Episodes 07 through 53 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -213,7 +226,8 @@ a ranged attacker beyond the original melee approach limit, interrupted mount
 casts, changing landing goals, steering quantization, and a walking-path
 prerequisite that incorrectly blocked mounted movement, replanned bank detours,
 low bridge steps, unnecessarily requested melee approaches, excluded water,
-and interrupted gathering followed by a missed tooltip. Successful outcomes do not
+and interrupted gathering followed by a missed tooltip, raised-floor proximity
+errors and a missed flight-master tooltip. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
