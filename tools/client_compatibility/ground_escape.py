@@ -15,7 +15,9 @@ def candidates(tcp,site,obstructions=()):
         except RuntimeError:continue
         endpoint=route['points'][-1];corridor=[start,*route['points']]
         if route['water_polygons'] or math.dist(endpoint[:2],start[:2])<1.5:continue
-        if abs(endpoint[2]-start[2])>1.25:continue
+        # A continuous four-yard slope can rise more than a jump threshold.
+        # Match the measured-height guard for the short walking probe below.
+        if abs(endpoint[2]-start[2])>1.5:continue
         if sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))>8:continue
         if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):continue
         result.append(route)
@@ -65,7 +67,8 @@ def execute(inputs,tcp,observed_ids,path,obstructions=()):
                     'goal_source':'public survey bearing and nearby dry recovery corridors',
                     'ground_escape_receipt':receipt.name,'physical_navigation_recovery':True,
                     'boundary_guard':{'site_id':site['id'],'observed_after_inside':True,'whole_corridor_inside':True,'source':site['source']}}
-        raise RuntimeError('four bounded on-foot probes could not leave the navigation corner')
+        raise RuntimeError('no accepted dry recovery corridor' if not routes else
+            'four bounded on-foot probes could not leave the navigation corner')
     except BaseException as error:trace['failure']=f'{type(error).__name__}: {error}';raise
     finally:
         trace['finished_at']=time.time();lab.private_write(receipt,json.dumps(trace,indent=2)+'\n')
