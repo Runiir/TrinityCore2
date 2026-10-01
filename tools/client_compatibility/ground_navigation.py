@@ -33,6 +33,26 @@ def ground_point(map_id,xy,maximum_height=None):
     return json.loads(result.stdout)['position']
 
 
+def probe_surface(map_id,position):
+    result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--ground-below',
+        *map(str,position[:2]),str(position[2]+1)],capture_output=True,text=True,timeout=10)
+    if result.returncode:raise RuntimeError('public walking surface: '+result.stderr.strip())
+    return json.loads(result.stdout)
+
+
+def safe_walk_segment(map_id,start,end):
+    distance=math.dist(start[:2],end[:2]);samples=[]
+    for index in range(math.ceil(distance/.7)+1):
+        ratio=min(1,index*.7/max(distance,.01))
+        point=[start[i]+(end[i]-start[i])*ratio for i in range(3)]
+        surface=probe_surface(map_id,point);slope=surface['detail_slope_degrees']
+        if not 0<=slope<=35 or math.dist(surface['position'][:2],point[:2])>2:
+            raise RuntimeError('walking segment has steep or unavailable detail terrain')
+        samples.append(surface)
+    return {'maximum_detail_slope_degrees':35,'spacing_yards':.7,'samples':samples,
+        'source':'public ground detail triangles along the physical movement segment'}
+
+
 def water_at(map_id,position):
     result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--water',*map(str,position[:3])],
         capture_output=True,text=True,timeout=10)
@@ -194,6 +214,14 @@ def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True,path=None):
     hold=min(distance/7,math.dist(current[:2],target[:2])/7,2.)
     planned['walking_goal']=target
     if hold<.02:raise RuntimeError('ground waypoint is too close for a useful walk')
+    if grounded:
+        ratio=min(1,hold*7/max(.01,math.dist(current[:2],target[:2])))
+        endpoint=[current[i]+(target[i]-current[i])*ratio for i in range(3)]
+        try:planned['walking_surface']=safe_walk_segment(tcp['tool'].get('map',0),current,endpoint)
+        except RuntimeError:
+            if path is None:raise
+            from .ground_escape import execute
+            return execute(inputs,tcp,digsite_ids,path,(recovery or {}).get('ground_obstructions',[]))
     hop=low_step_hop(current,target,recovery,grounded)
     if hop:
         inputs.key('space',hold=.15);executed.append({'key':'space','hold':.15})

@@ -20,6 +20,10 @@ def candidates(tcp,site,obstructions=()):
         if abs(endpoint[2]-start[2])>1.5:continue
         if sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))>8:continue
         if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):continue
+        distance=math.dist(start[:2],endpoint[:2]);ratio=min(1,1.4/distance)
+        probe=[start[i]+(endpoint[i]-start[i])*ratio for i in range(3)]
+        try:route['walking_surface']=ground.safe_walk_segment(site['map'],start,probe)
+        except RuntimeError:continue
         result.append(route)
     return result[:4]
 

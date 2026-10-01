@@ -24,6 +24,7 @@ float groundSlope(dtNavMesh const& mesh, dtPolyRef ref, float const* point)
     dtMeshTile const* tile; dtPoly const* poly;
     if (dtStatusFailed(mesh.getTileAndPolyByRef(ref,&tile,&poly))) return INFINITY;
     auto const& detail=tile->detailMeshes[poly-tile->polys];
+    float closestDistance=INFINITY, closestSlope=INFINITY;
     for (int i=0;i<detail.triCount;++i)
     {
         auto triangle=tile->detailTris+(detail.triBase+i)*4;
@@ -32,13 +33,19 @@ float groundSlope(dtNavMesh const& mesh, dtPolyRef ref, float const* point)
             vertices[j]=triangle[j]<poly->vertCount ? tile->verts+poly->verts[triangle[j]]*3
                 : tile->detailVerts+(detail.vertBase+triangle[j]-poly->vertCount)*3;
         float height;
-        if (!dtClosestHeightPointTriangle(point,vertices[0],vertices[1],vertices[2],height)) continue;
+        bool inside=dtClosestHeightPointTriangle(point,vertices[0],vertices[1],vertices[2],height);
         float u[3],v[3];
         for (int j=0;j<3;++j) { u[j]=vertices[1][j]-vertices[0][j];v[j]=vertices[2][j]-vertices[0][j]; }
         float nx=u[1]*v[2]-u[2]*v[1],ny=u[2]*v[0]-u[0]*v[2],nz=u[0]*v[1]-u[1]*v[0];
-        return std::atan2(std::hypot(nx,nz),std::abs(ny))*180/3.14159265f;
+        float slope=std::atan2(std::hypot(nx,nz),std::abs(ny))*180/3.14159265f;
+        if (inside) return slope;
+        // closestPointOnPoly can land a few float units outside a detail edge.
+        // Accept only a triangle within five centimetres of that projected point.
+        float nearest[3];dtClosestPtPointTriangle(nearest,point,vertices[0],vertices[1],vertices[2]);
+        float distance=dtVdist(nearest,point);
+        if (distance<closestDistance) { closestDistance=distance;closestSlope=slope; }
     }
-    return INFINITY;
+    return closestDistance<.05f ? closestSlope : INFINITY;
 }
 
 int main(int argc, char** argv)

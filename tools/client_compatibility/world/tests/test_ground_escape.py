@@ -17,14 +17,21 @@ def test_trial58_mesh_corner_has_short_dry_sideways_candidates():
 
 
 @pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper is absent')
-def test_baari_gentle_side_slope_is_not_rejected_as_a_jump():
+def test_baari_side_slope_is_rejected_despite_small_endpoint_rise():
     tcp={'player':{'position':[-3271.083251953125,901.8927001953125,35.43161392211914,4.558446884155273]},
          'tool':{'map':530,'heading_radians':4.538603782653809}}
     with pytest.raises(RuntimeError):ground.walk_plan(tcp,3.5,[391],allow_swimming=True)
     routes=escape.candidates(tcp,site_boundaries.sites()[391])
-    assert routes and not routes[0]['water_polygons']
-    assert 1.35<routes[0]['points'][-1][2]-tcp['player']['position'][2]<1.4
-    assert math.dist(routes[0]['points'][-1][:2],tcp['player']['position'][:2])<4.1
+    assert not routes
+    surface=ground.probe_surface(530,tcp['player']['position'])
+    assert surface['detail_slope_degrees']>35
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper is absent')
+def test_trial64_slide_face_is_rejected_before_the_short_probe():
+    start=[-3270.639404,900.496826,34.00499]
+    with pytest.raises(RuntimeError,match='steep'):
+        ground.safe_walk_segment(530,start,[-3269.2394,900.511,33.6])
 
 
 def test_small_step_down_can_settle_before_accepting_the_probe(monkeypatch,tmp_path):

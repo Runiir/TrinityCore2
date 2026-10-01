@@ -283,10 +283,24 @@ zero accepted recovery candidates. The public dry side corridor rises only
 stricter than the existing 1.5-yard observed probe guard. They now match.
 The recovery uses a short walking probe on that continuous slope, with no jump.
 
+Episode 64's first probe resumed movement, but another contour-side probe slid
+roughly nine yards down. The run stopped; a read-only observation confirmed it
+settled dry with full health. The small endpoint rise was misleading: the actual
+detail surface is inclined 43.8 degrees sideways. Walking and recovery now sample
+the specific proposed movement segment every 0.7 yards and reject detail slopes
+above 35 degrees before pressing forward. Nearby edge projections may be within
+two yards; detail triangles within 0.05 yards of a projected edge resolve float
+rounding. Landing's existing 20-degree limit remains separate.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 123 tests. The combat-interruption change initially failed one older test
+passes 124 tests. A first broad slope-filter attempt failed six tests by rejecting
+previously working bank/water routes and one old side-slope expectation. It was
+reverted in favor of checking each actual movement segment. One later test
+exposed an overly narrow surface-projection radius at Arklon's known corner;
+the corrected full suite passes, including the earlier water and bridge fixtures.
+Both failed XML files are retained. The combat-interruption change initially failed one older test
 that expected the previous error wording; its failed XML is retained alongside
 the corrected full-suite result. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
@@ -298,7 +312,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 63 preserve unsuccessful steps, including missing portal
+Episodes 07 through 64 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -314,6 +328,7 @@ forward route at a mesh corner, a premature stop during a small step down and
 an artifact above the bounded cursor search's covered region and combat starting
 inside a collection approach, artifact expiry during combat recovery and a
 gentle side corridor rejected by inconsistent height limits.
+Episode 64 also records the subsequent sideways slide despite a small endpoint rise.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
@@ -344,6 +359,12 @@ Scoped status, push and cloud status confirmed synchronization with the remote.
 All 835 closed PNG/WebP files matched archived bytes and hashes before removing
 934,826,475 local bytes. The following checkpoint includes
 `navigation_collection_repairs_cleanup.json` with the verification manifest.
+
+Trials 60 through 63 follow in
+`artifacts/client_harness/442_collection_recovery_repairs_20261002.tar.gz.dvc`.
+The archive is 500,346,665 bytes with SHA-256
+`2b74518b19e1b16cafa67cd477e7c00e68e630002150bb40ed21e789ca1efc3e`.
+Scoped status, push and cloud status confirmed remote synchronization.
 
 ## Running the loop
 
