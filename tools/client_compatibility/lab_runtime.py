@@ -139,6 +139,7 @@ def owned_process(kind: str):
 
 def free_port(port: int) -> None:
     with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         probe.bind(("127.0.0.1", port))
 
 
@@ -301,7 +302,7 @@ def create_account() -> None:
     print(f"Created isolated account {username}; credentials in {path}")
 
 
-def start_client(launcher: bool = False) -> None:
+def start_client(launcher: bool = False, sso_ticket: str | None = None, game_account: str | None = None) -> None:
     from tools.second_client.place_window import second_monitor
     if owned_process("client"):
         raise RuntimeError("lab client already running")
@@ -324,6 +325,10 @@ def start_client(launcher: bool = False) -> None:
     for key in list(env):
         if key.startswith("WM_"):
             del env[key]
+    if sso_ticket:
+        if not launcher or not game_account or not sso_ticket.startswith("TC-"):
+            raise ValueError("SSO requires the local launcher and a lab account")
+        env.update(WM_PORTAL="127.0.0.1:1119", WM_WEB_TOKEN=sso_ticket, WM_GAME_ACCOUNT=game_account)
     executable = [str(folder / "WowClassic.exe")]
     if launcher:
         executable = [str(ROOT / "bin/launcher-game.exe"), "--exe",
@@ -332,6 +337,8 @@ def start_client(launcher: bool = False) -> None:
             "--version-url", "http://m.gamefreedom.org/w/60895/versions",
             "--cdn-url", "http://m.gamefreedom.org/w/60895/cdn",
             "--realmlist-url", "127.0.0.1", "--locale", "enUS"]
+        if sso_ticket:
+            executable.extend(["--", "-launcherlogin", "-uid", "WoW"])
     # Gamescope owns host X sockets; put only Wine in the data overlay namespace.
     command = ["gamescope", "-w", "1280", "-h", "720", "-W", "1280",
         "-H", "720", "-r", "30", "-o", "15", "--backend", "sdl", "--",
@@ -393,7 +400,7 @@ def main() -> None:
             parser.error("command requires --text")
         server_command(args.text)
     else:
-        print(json.dumps({kind: owned_process(kind) for kind in ["authserver", "worldserver", "client"]}, indent=2))
+        print(json.dumps({kind: owned_process(kind) for kind in ["authserver", "worldserver", "modern_auth", "client"]}, indent=2))
 
 
 if __name__ == "__main__":

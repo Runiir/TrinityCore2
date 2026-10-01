@@ -1,0 +1,3659 @@
+{
+  "source_repository": "https://github.com/TrinityCore/TrinityCore",
+  "source_revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+  "license": "GPL-2.0-or-later",
+  "source_sha256": {
+    "src/server/proto/Client/game_utilities_service.pb.cc": "4449e0fbdb300f3bec7e2e1a327a9f71c0e91b5433ee6b520061aca825c7d0d2",
+    "src/server/proto/Client/rpc_types.pb.cc": "2835dd2187dcc783c7a145b0bd8a0dd678de4b8fb17cca4e2d0aac2bd03df856",
+    "src/server/proto/Client/game_utilities_types.pb.cc": "8bc6ac859e840569739c6b2b94e7dccbcd8edeac48795237592c49e1b3ea2088",
+    "src/server/proto/Client/entity_types.pb.cc": "183832595b5d91b387fe90464595041b304688af809407d12b010a6bc3b2f0c1",
+    "src/server/proto/Client/attribute_types.pb.cc": "9a79b3f2b8502d1b7d91338872d2063f3d72819a60bbfeb57c82d4e42ffc2719",
+    "src/server/proto/Client/account_service.pb.cc": "e663c42c4e6e8524228898b285ec48d687efe5dee5badd7ca15db73ef1ee7e25",
+    "src/server/proto/Client/account_types.pb.cc": "3ad58b1f448c77e38895901ae9b2ac6e07f9d3a208b384b2fa3b172ef2d72ef5",
+    "src/server/proto/Client/challenge_service.pb.cc": "2bf7cb9f9a667f49dc0d0207e35c9a88707913181f275e9da3c5bd4ee6bf3b07",
+    "src/server/proto/Client/authentication_service.pb.cc": "a40880a315f9952bf46aa80405534d659b4b5bca8d01d2a60033a03662a73154",
+    "src/server/proto/Client/connection_service.pb.cc": "8872df49a45574c68efaf0229ecadc75af12da6e411e6a62ebffb343893c29c9",
+    "src/server/proto/Client/semantic_version.pb.cc": "e61f9573020a5ff0fcbd1eee275603926a71ee4b33a5f0efaf2366c36a8cadfa",
+    "src/server/proto/Client/content_handle_types.pb.cc": "b3bd14d58d2729636b60665721d727c4175b51866b769107fae1f1815ec98894"
+  },
+  "files": [
+    {
+      "name": "account_service.proto",
+      "package": "bgs.protocol.account.v1",
+      "dependency": [
+        "account_types.proto",
+        "entity_types.proto",
+        "rpc_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "ResolveAccountRequest",
+          "field": [
+            {
+              "name": "ref",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountReference"
+            },
+            {
+              "name": "fetch_id",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "ResolveAccountResponse",
+          "field": [
+            {
+              "name": "id",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountId"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountFlagUpdateRequest",
+          "field": [
+            {
+              "name": "game_account",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle"
+            },
+            {
+              "name": "flag",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "active",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "SubscriptionUpdateRequest",
+          "field": [
+            {
+              "name": "ref",
+              "number": 2,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.SubscriberReference"
+            }
+          ]
+        },
+        {
+          "name": "SubscriptionUpdateResponse",
+          "field": [
+            {
+              "name": "ref",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.SubscriberReference"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountStateRequest",
+          "field": [
+            {
+              "name": "entity_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "program",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "region",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "options",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldOptions"
+            },
+            {
+              "name": "tags",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountStateResponse",
+          "field": [
+            {
+              "name": "state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountState"
+            },
+            {
+              "name": "tags",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GetSignedAccountStateRequest",
+          "field": [
+            {
+              "name": "account",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountId"
+            }
+          ]
+        },
+        {
+          "name": "GetSignedAccountStateResponse",
+          "field": [
+            {
+              "name": "token",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "GetGameAccountStateRequest",
+          "field": [
+            {
+              "name": "account_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "game_account_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "options",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldOptions"
+            },
+            {
+              "name": "tags",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GetGameAccountStateResponse",
+          "field": [
+            {
+              "name": "state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountState"
+            },
+            {
+              "name": "tags",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GetLicensesRequest",
+          "field": [
+            {
+              "name": "target_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "fetch_account_licenses",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "fetch_game_account_licenses",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "fetch_dynamic_account_licenses",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "program",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "exclude_unknown_program",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "false"
+            }
+          ]
+        },
+        {
+          "name": "GetLicensesResponse",
+          "field": [
+            {
+              "name": "licenses",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountLicense"
+            }
+          ]
+        },
+        {
+          "name": "GetGameSessionInfoRequest",
+          "field": [
+            {
+              "name": "entity_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "GetGameSessionInfoResponse",
+          "field": [
+            {
+              "name": "session_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameSessionInfo"
+            }
+          ]
+        },
+        {
+          "name": "GetGameTimeRemainingInfoRequest",
+          "field": [
+            {
+              "name": "game_account_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "account_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "benefactor_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "GetGameTimeRemainingInfoResponse",
+          "field": [
+            {
+              "name": "game_time_remaining_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameTimeRemainingInfo"
+            }
+          ]
+        },
+        {
+          "name": "GetCAISInfoRequest",
+          "field": [
+            {
+              "name": "entity_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "GetCAISInfoResponse",
+          "field": [
+            {
+              "name": "cais_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.CAIS"
+            }
+          ]
+        },
+        {
+          "name": "GetAuthorizedDataRequest",
+          "field": [
+            {
+              "name": "entity_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "tag",
+              "number": 2,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "privileged_network",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GetAuthorizedDataResponse",
+          "field": [
+            {
+              "name": "data",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AuthorizedData"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountInfoRequest",
+          "field": [
+            {
+              "name": "account_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountInfoResponse",
+          "field": [
+            {
+              "name": "account_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountInfo"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountPlatformRestrictionsRequest",
+          "field": [
+            {
+              "name": "account_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "GetAccountPlatformRestrictionsResponse",
+          "field": [
+            {
+              "name": "restriction_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountPlatformRestrictionInfo"
+            }
+          ]
+        },
+        {
+          "name": "AccountStateNotification",
+          "field": [
+            {
+              "name": "account_state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountState"
+            },
+            {
+              "name": "subscriber_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "account_tags",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            },
+            {
+              "name": "subscription_completed",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountStateNotification",
+          "field": [
+            {
+              "name": "game_account_state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountState"
+            },
+            {
+              "name": "subscriber_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "game_account_tags",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldTags"
+            },
+            {
+              "name": "subscription_completed",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountNotification",
+          "field": [
+            {
+              "name": "game_accounts",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountList"
+            },
+            {
+              "name": "subscriber_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "account_tags",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountSessionNotification",
+          "field": [
+            {
+              "name": "game_account",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle"
+            },
+            {
+              "name": "session_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameSessionUpdateInfo"
+            }
+          ]
+        }
+      ],
+      "service": [
+        {
+          "name": "AccountService",
+          "method": [
+            {
+              "name": "ResolveAccount",
+              "input_type": ".bgs.protocol.account.v1.ResolveAccountRequest",
+              "output_type": ".bgs.protocol.account.v1.ResolveAccountResponse"
+            },
+            {
+              "name": "Subscribe",
+              "input_type": ".bgs.protocol.account.v1.SubscriptionUpdateRequest",
+              "output_type": ".bgs.protocol.account.v1.SubscriptionUpdateResponse"
+            },
+            {
+              "name": "Unsubscribe",
+              "input_type": ".bgs.protocol.account.v1.SubscriptionUpdateRequest",
+              "output_type": ".bgs.protocol.NoData"
+            },
+            {
+              "name": "GetAccountState",
+              "input_type": ".bgs.protocol.account.v1.GetAccountStateRequest",
+              "output_type": ".bgs.protocol.account.v1.GetAccountStateResponse"
+            },
+            {
+              "name": "GetGameAccountState",
+              "input_type": ".bgs.protocol.account.v1.GetGameAccountStateRequest",
+              "output_type": ".bgs.protocol.account.v1.GetGameAccountStateResponse"
+            },
+            {
+              "name": "GetLicenses",
+              "input_type": ".bgs.protocol.account.v1.GetLicensesRequest",
+              "output_type": ".bgs.protocol.account.v1.GetLicensesResponse"
+            },
+            {
+              "name": "GetGameTimeRemainingInfo",
+              "input_type": ".bgs.protocol.account.v1.GetGameTimeRemainingInfoRequest",
+              "output_type": ".bgs.protocol.account.v1.GetGameTimeRemainingInfoResponse"
+            },
+            {
+              "name": "GetGameSessionInfo",
+              "input_type": ".bgs.protocol.account.v1.GetGameSessionInfoRequest",
+              "output_type": ".bgs.protocol.account.v1.GetGameSessionInfoResponse"
+            },
+            {
+              "name": "GetCAISInfo",
+              "input_type": ".bgs.protocol.account.v1.GetCAISInfoRequest",
+              "output_type": ".bgs.protocol.account.v1.GetCAISInfoResponse"
+            },
+            {
+              "name": "GetAuthorizedData",
+              "input_type": ".bgs.protocol.account.v1.GetAuthorizedDataRequest",
+              "output_type": ".bgs.protocol.account.v1.GetAuthorizedDataResponse"
+            },
+            {
+              "name": "GetSignedAccountState",
+              "input_type": ".bgs.protocol.account.v1.GetSignedAccountStateRequest",
+              "output_type": ".bgs.protocol.account.v1.GetSignedAccountStateResponse"
+            },
+            {
+              "name": "GetAccountInfo",
+              "input_type": ".bgs.protocol.account.v1.GetAccountInfoRequest",
+              "output_type": ".bgs.protocol.account.v1.GetAccountInfoResponse"
+            },
+            {
+              "name": "GetAccountPlatformRestrictions",
+              "input_type": ".bgs.protocol.account.v1.GetAccountPlatformRestrictionsRequest",
+              "output_type": ".bgs.protocol.account.v1.GetAccountPlatformRestrictionsResponse"
+            }
+          ]
+        },
+        {
+          "name": "AccountListener",
+          "method": [
+            {
+              "name": "OnAccountStateUpdated",
+              "input_type": ".bgs.protocol.account.v1.AccountStateNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnGameAccountStateUpdated",
+              "input_type": ".bgs.protocol.account.v1.GameAccountStateNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnGameAccountsUpdated",
+              "input_type": ".bgs.protocol.account.v1.GameAccountNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnGameSessionUpdated",
+              "input_type": ".bgs.protocol.account.v1.GameAccountSessionNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "account_types.proto",
+      "package": "bgs.protocol.account.v1",
+      "dependency": [
+        "entity_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "AccountId",
+          "field": [
+            {
+              "name": "id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "AccountLicense",
+          "field": [
+            {
+              "name": "id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "expires",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountHandle",
+          "field": [
+            {
+              "name": "id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "program",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "region",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "AccountReference",
+          "field": [
+            {
+              "name": "id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "email",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "handle",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle"
+            },
+            {
+              "name": "battle_tag",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "phone_number",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "region",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32",
+              "default_value": "0"
+            }
+          ]
+        },
+        {
+          "name": "Identity",
+          "field": [
+            {
+              "name": "account",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountId"
+            },
+            {
+              "name": "game_account",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle"
+            }
+          ]
+        },
+        {
+          "name": "ProgramTag",
+          "field": [
+            {
+              "name": "program",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "tag",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "RegionTag",
+          "field": [
+            {
+              "name": "region",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "tag",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "AccountFieldTags",
+          "field": [
+            {
+              "name": "account_level_info_tag",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "privacy_info_tag",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "parental_control_info_tag",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "game_level_info_tags",
+              "number": 7,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.ProgramTag"
+            },
+            {
+              "name": "game_status_tags",
+              "number": 9,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.ProgramTag"
+            },
+            {
+              "name": "game_account_tags",
+              "number": 11,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.RegionTag"
+            },
+            {
+              "name": "security_status_tag",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountFieldTags",
+          "field": [
+            {
+              "name": "game_level_info_tag",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "game_time_info_tag",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "game_status_tag",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "raf_info_tag",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "AccountFieldOptions",
+          "field": [
+            {
+              "name": "all_fields",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_account_level_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_privacy_info",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_parental_control_info",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_level_info",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_status",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_accounts",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_security_status",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountFieldOptions",
+          "field": [
+            {
+              "name": "all_fields",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_level_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_time_info",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_game_status",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "field_raf_info",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "SubscriberReference",
+          "field": [
+            {
+              "name": "object_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64",
+              "default_value": "0"
+            },
+            {
+              "name": "entity_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "account_options",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldOptions"
+            },
+            {
+              "name": "account_tags",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            },
+            {
+              "name": "game_account_options",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldOptions"
+            },
+            {
+              "name": "game_account_tags",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldTags"
+            },
+            {
+              "name": "subscriber_id",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64",
+              "default_value": "0"
+            }
+          ]
+        },
+        {
+          "name": "OptIns",
+          "field": [
+            {
+              "name": "ids",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "AccountLevelInfo",
+          "field": [
+            {
+              "name": "licenses",
+              "number": 3,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountLicense"
+            },
+            {
+              "name": "default_currency",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "country",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "preferred_region",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "full_name",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "battle_tag",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "muted",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "manual_review",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "account_paid_any",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "identity_check_status",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_ENUM",
+              "type_name": ".bgs.protocol.account.v1.IdentityVerificationStatus"
+            },
+            {
+              "name": "email",
+              "number": 13,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "headless_account",
+              "number": 14,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "test_account",
+              "number": 15,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_sms_protected",
+              "number": 17,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "ratings_board_minimum_age",
+              "number": 18,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "phone_number",
+              "number": 19,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "birthdate",
+              "number": 20,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "legal_country_feature_restrictions_applied",
+              "number": 21,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "opt_ins",
+              "number": 22,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.OptIns"
+            }
+          ]
+        },
+        {
+          "name": "PrivacyInfo",
+          "field": [
+            {
+              "name": "is_using_rid",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_visible_for_view_friends",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_hidden_from_friend_finder",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "game_info_privacy",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_ENUM",
+              "type_name": ".bgs.protocol.account.v1.PrivacyInfo.GameInfoPrivacy",
+              "default_value": "PRIVACY_FRIENDS"
+            },
+            {
+              "name": "only_allow_friend_whispers",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ],
+          "enum_type": [
+            {
+              "name": "GameInfoPrivacy",
+              "value": [
+                {
+                  "name": "PRIVACY_ME",
+                  "number": 0
+                },
+                {
+                  "name": "PRIVACY_FRIENDS",
+                  "number": 1
+                },
+                {
+                  "name": "PRIVACY_EVERYONE",
+                  "number": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ParentalControlInfo",
+          "field": [
+            {
+              "name": "timezone",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "minutes_per_day",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "minutes_per_week",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "can_receive_voice",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "can_send_voice",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "play_schedule",
+              "number": 8,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "can_join_group",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "can_use_profile",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "in_game_purchase_disabled",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "PlayScheduleRestriction",
+          "field": [
+            {
+              "name": "play_schedule",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "timezone",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "GameLevelInfo",
+          "field": [
+            {
+              "name": "is_trial",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_lifetime",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_restricted",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_beta",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "name",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "program",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "licenses",
+              "number": 10,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountLicense"
+            },
+            {
+              "name": "realm_permissions",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "last_logout_time_ms",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "GameTimeInfo",
+          "field": [
+            {
+              "name": "is_unlimited_play_time",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "play_time_expires",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "is_subscription",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_recurring_subscription",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GameTimeRemainingInfo",
+          "field": [
+            {
+              "name": "minutes_remaining",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "parental_daily_minutes_remaining",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "parental_weekly_minutes_remaining",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "seconds_remaining_until_kick",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "GameStatus",
+          "field": [
+            {
+              "name": "is_suspended",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_banned",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "suspension_expires",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "program",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "is_locked",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_bam_unlockable",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "RAFInfo",
+          "field": [
+            {
+              "name": "raf_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            }
+          ]
+        },
+        {
+          "name": "GameSessionInfo",
+          "field": [
+            {
+              "name": "start_time",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "location",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameSessionLocation"
+            },
+            {
+              "name": "has_benefactor",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_using_igr",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "parental_controls_active",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "start_time_sec",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "igr_id",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.IgrId"
+            },
+            {
+              "name": "platform_id",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "igr_paid",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "GameSessionUpdateInfo",
+          "field": [
+            {
+              "name": "cais",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.CAIS"
+            }
+          ]
+        },
+        {
+          "name": "GameSessionLocation",
+          "field": [
+            {
+              "name": "ip_address",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "country",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "city",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "CAIS",
+          "field": [
+            {
+              "name": "played_minutes",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "rested_minutes",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "last_heard_time",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountList",
+          "field": [
+            {
+              "name": "region",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "handle",
+              "number": 4,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle"
+            }
+          ]
+        },
+        {
+          "name": "SecurityStatus",
+          "field": [
+            {
+              "name": "sms_protect_enabled",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "email_verified",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "authenticator_enabled",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "sqa_enabled",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "authenticator_required",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "AccountState",
+          "field": [
+            {
+              "name": "account_level_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountLevelInfo"
+            },
+            {
+              "name": "privacy_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.PrivacyInfo"
+            },
+            {
+              "name": "parental_control_info",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.ParentalControlInfo"
+            },
+            {
+              "name": "game_level_info",
+              "number": 5,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameLevelInfo"
+            },
+            {
+              "name": "game_status",
+              "number": 6,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameStatus"
+            },
+            {
+              "name": "game_accounts",
+              "number": 7,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountList"
+            },
+            {
+              "name": "security_status",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.SecurityStatus"
+            },
+            {
+              "name": "government_curfew",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.PlayScheduleRestriction"
+            }
+          ]
+        },
+        {
+          "name": "AccountStateTagged",
+          "field": [
+            {
+              "name": "account_state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountState"
+            },
+            {
+              "name": "account_tags",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountState",
+          "field": [
+            {
+              "name": "game_level_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameLevelInfo"
+            },
+            {
+              "name": "game_time_info",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameTimeInfo"
+            },
+            {
+              "name": "game_status",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameStatus"
+            },
+            {
+              "name": "raf_info",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.RAFInfo"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountStateTagged",
+          "field": [
+            {
+              "name": "game_account_state",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountState"
+            },
+            {
+              "name": "game_account_tags",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountFieldTags"
+            }
+          ]
+        },
+        {
+          "name": "AuthorizedData",
+          "field": [
+            {
+              "name": "data",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "license",
+              "number": 2,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "IgrId",
+          "field": [
+            {
+              "name": "game_account",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.GameAccountHandle",
+              "oneof_index": 0
+            },
+            {
+              "name": "external_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32",
+              "oneof_index": 0
+            },
+            {
+              "name": "uuid",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING",
+              "oneof_index": 0
+            }
+          ],
+          "oneof_decl": [
+            {
+              "name": "type"
+            }
+          ]
+        },
+        {
+          "name": "IgrAddress",
+          "field": [
+            {
+              "name": "client_address",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "region",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "AccountPrivacySetting",
+          "field": [
+            {
+              "name": "is_using_rid",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_visible_for_view_friends",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_hidden_from_friend_finder",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "only_allow_friend_whispers",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        },
+        {
+          "name": "AccountInfo",
+          "field": [
+            {
+              "name": "battle_tag",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "email",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "phone_number",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "full_name",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "birthdate",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "country",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "default_currency",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "preferred_region",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "ratings_board_minimum_age",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "has_parental_control",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_email_verified",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_sms_protected",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_headless_account",
+              "number": 13,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_employee",
+              "number": 14,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "is_test_account",
+              "number": 15,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "privacy_setting",
+              "number": 16,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.AccountPrivacySetting"
+            }
+          ]
+        },
+        {
+          "name": "RestrictionStatus",
+          "field": [
+            {
+              "name": "active",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "expiration_us",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "AccountPlatformRestrictionInfo",
+          "field": [
+            {
+              "name": "squelched",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.RestrictionStatus"
+            },
+            {
+              "name": "legal_country_feature_restrictions_applied",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.account.v1.RestrictionStatus"
+            }
+          ]
+        }
+      ],
+      "enum_type": [
+        {
+          "name": "IdentityVerificationStatus",
+          "value": [
+            {
+              "name": "IDENT_NO_DATA",
+              "number": 0
+            },
+            {
+              "name": "IDENT_PENDING",
+              "number": 1
+            },
+            {
+              "name": "IDENT_OVER_18",
+              "number": 2
+            },
+            {
+              "name": "IDENT_UNDER_18",
+              "number": 3
+            },
+            {
+              "name": "IDENT_FAILED",
+              "number": 4
+            },
+            {
+              "name": "IDENT_SUCCESS",
+              "number": 5
+            },
+            {
+              "name": "IDENT_SUCC_MNL",
+              "number": 6
+            },
+            {
+              "name": "IDENT_UNKNOWN",
+              "number": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "attribute_types.proto",
+      "package": "bgs.protocol",
+      "dependency": [
+        "entity_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "Variant",
+          "field": [
+            {
+              "name": "bool_value",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "int_value",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_INT64"
+            },
+            {
+              "name": "float_value",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_DOUBLE"
+            },
+            {
+              "name": "string_value",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "blob_value",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "message_value",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "fourcc_value",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "uint_value",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "entity_id_value",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "Attribute",
+          "field": [
+            {
+              "name": "name",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "value",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Variant"
+            }
+          ]
+        },
+        {
+          "name": "AttributeFilter",
+          "field": [
+            {
+              "name": "op",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_ENUM",
+              "type_name": ".bgs.protocol.AttributeFilter.Operation"
+            },
+            {
+              "name": "attribute",
+              "number": 2,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            }
+          ],
+          "enum_type": [
+            {
+              "name": "Operation",
+              "value": [
+                {
+                  "name": "MATCH_NONE",
+                  "number": 0
+                },
+                {
+                  "name": "MATCH_ANY",
+                  "number": 1
+                },
+                {
+                  "name": "MATCH_ALL",
+                  "number": 2
+                },
+                {
+                  "name": "MATCH_ALL_MOST_SPECIFIC",
+                  "number": 3
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "authentication_service.proto",
+      "package": "bgs.protocol.authentication.v1",
+      "dependency": [
+        "entity_types.proto",
+        "rpc_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "LogonRequest",
+          "field": [
+            {
+              "name": "program",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "platform",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "locale",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "email",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "version",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "application_version",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_INT32"
+            },
+            {
+              "name": "public_computer",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "allow_logon_queue_notifications",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "false"
+            },
+            {
+              "name": "cached_web_credentials",
+              "number": 12,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "user_agent",
+              "number": 14,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "device_id",
+              "number": 15,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "phone_number",
+              "number": 16,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "auth_platform",
+              "number": 17,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "LogonResult",
+          "field": [
+            {
+              "name": "error_code",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "account_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "game_account_id",
+              "number": 3,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "email",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "available_region",
+              "number": 5,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "connected_region",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "battle_tag",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "geoip_country",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "session_key",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "restricted_mode",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "client_id",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "LogonUpdateRequest",
+          "field": [
+            {
+              "name": "error_code",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "LogonQueueUpdateRequest",
+          "field": [
+            {
+              "name": "position",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "estimated_time",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "eta_deviation_in_sec",
+              "number": 3,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "ServerStateChangeRequest",
+          "field": [
+            {
+              "name": "state",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "event_time",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "VersionInfo",
+          "field": [
+            {
+              "name": "number",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "patch",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "is_optional",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "kick_time",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "VersionInfoNotification",
+          "field": [
+            {
+              "name": "version_info",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.authentication.v1.VersionInfo"
+            }
+          ]
+        },
+        {
+          "name": "GenerateWebCredentialsRequest",
+          "field": [
+            {
+              "name": "program",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "GenerateWebCredentialsResponse",
+          "field": [
+            {
+              "name": "web_credentials",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            }
+          ]
+        },
+        {
+          "name": "VerifyWebCredentialsRequest",
+          "field": [
+            {
+              "name": "web_credentials",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            }
+          ]
+        }
+      ],
+      "service": [
+        {
+          "name": "AuthenticationListener",
+          "method": [
+            {
+              "name": "OnServerStateChange",
+              "input_type": ".bgs.protocol.authentication.v1.ServerStateChangeRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnLogonComplete",
+              "input_type": ".bgs.protocol.authentication.v1.LogonResult",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnLogonUpdate",
+              "input_type": ".bgs.protocol.authentication.v1.LogonUpdateRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnVersionInfoUpdated",
+              "input_type": ".bgs.protocol.authentication.v1.VersionInfoNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnLogonQueueUpdate",
+              "input_type": ".bgs.protocol.authentication.v1.LogonQueueUpdateRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnLogonQueueEnd",
+              "input_type": ".bgs.protocol.NoData",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            }
+          ]
+        },
+        {
+          "name": "AuthenticationService",
+          "method": [
+            {
+              "name": "Logon",
+              "input_type": ".bgs.protocol.authentication.v1.LogonRequest",
+              "output_type": ".bgs.protocol.NoData"
+            },
+            {
+              "name": "VerifyWebCredentials",
+              "input_type": ".bgs.protocol.authentication.v1.VerifyWebCredentialsRequest",
+              "output_type": ".bgs.protocol.NoData"
+            },
+            {
+              "name": "GenerateWebCredentials",
+              "input_type": ".bgs.protocol.authentication.v1.GenerateWebCredentialsRequest",
+              "output_type": ".bgs.protocol.authentication.v1.GenerateWebCredentialsResponse"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "challenge_service.proto",
+      "package": "bgs.protocol.challenge.v1",
+      "dependency": [
+        "rpc_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "ChallengeExternalRequest",
+          "field": [
+            {
+              "name": "request_token",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "payload_type",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "payload",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            }
+          ]
+        },
+        {
+          "name": "ChallengeExternalResult",
+          "field": [
+            {
+              "name": "request_token",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "passed",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "true"
+            }
+          ]
+        }
+      ],
+      "service": [
+        {
+          "name": "ChallengeListener",
+          "method": [
+            {
+              "name": "OnExternalChallenge",
+              "input_type": ".bgs.protocol.challenge.v1.ChallengeExternalRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnExternalChallengeResult",
+              "input_type": ".bgs.protocol.challenge.v1.ChallengeExternalResult",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "connection_service.proto",
+      "package": "bgs.protocol.connection.v1",
+      "dependency": [
+        "content_handle_types.proto",
+        "rpc_types.proto",
+        "semantic_version.proto"
+      ],
+      "message_type": [
+        {
+          "name": "ClientSdkVersionInfo",
+          "field": [
+            {
+              "name": "sdk_name",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "sdk_version",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.SemanticVersion"
+            },
+            {
+              "name": "protocol_version",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.SemanticVersion"
+            }
+          ]
+        },
+        {
+          "name": "ConnectRequest",
+          "field": [
+            {
+              "name": "client_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "bind_request",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.BindRequest"
+            },
+            {
+              "name": "use_bindless_rpc",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "true"
+            },
+            {
+              "name": "metering_level",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_ENUM",
+              "type_name": ".bgs.protocol.connection.v1.MeteringLevel"
+            },
+            {
+              "name": "client_sdk_info",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.ClientSdkVersionInfo"
+            }
+          ]
+        },
+        {
+          "name": "ConnectionMeteringContentHandles",
+          "field": [
+            {
+              "name": "content_handle",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ContentHandle"
+            }
+          ]
+        },
+        {
+          "name": "ConnectResponse",
+          "field": [
+            {
+              "name": "server_id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "client_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "bind_result",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "bind_response",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.BindResponse"
+            },
+            {
+              "name": "content_handle_array",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.ConnectionMeteringContentHandles"
+            },
+            {
+              "name": "server_time",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "use_bindless_rpc",
+              "number": 7,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "false"
+            },
+            {
+              "name": "binary_content_handle_array",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.ConnectionMeteringContentHandles"
+            },
+            {
+              "name": "ciid",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "connected_region",
+              "number": 10,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "BoundService",
+          "field": [
+            {
+              "name": "hash",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "id",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "BindRequest",
+          "field": [
+            {
+              "name": "deprecated_imported_service_hash",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "deprecated_exported_service",
+              "number": 2,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.BoundService"
+            },
+            {
+              "name": "exported_service",
+              "number": 3,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.BoundService"
+            },
+            {
+              "name": "imported_service",
+              "number": 4,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.connection.v1.BoundService"
+            }
+          ]
+        },
+        {
+          "name": "BindResponse",
+          "field": [
+            {
+              "name": "imported_service_id",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "EchoRequest",
+          "field": [
+            {
+              "name": "time",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED64"
+            },
+            {
+              "name": "network_only",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL",
+              "default_value": "false"
+            },
+            {
+              "name": "payload",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "forward",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "forward_client_id",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "EchoResponse",
+          "field": [
+            {
+              "name": "time",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED64"
+            },
+            {
+              "name": "payload",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            }
+          ]
+        },
+        {
+          "name": "DisconnectRequest",
+          "field": [
+            {
+              "name": "error_code",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "DisconnectNotification",
+          "field": [
+            {
+              "name": "error_code",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "reason",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "EncryptRequest"
+        }
+      ],
+      "enum_type": [
+        {
+          "name": "MeteringLevel",
+          "value": [
+            {
+              "name": "METERING_LEVEL_LEGACY",
+              "number": 0
+            },
+            {
+              "name": "METERING_LEVEL_CATEGORIZED",
+              "number": 1
+            }
+          ]
+        }
+      ],
+      "service": [
+        {
+          "name": "ConnectionService",
+          "method": [
+            {
+              "name": "Connect",
+              "input_type": ".bgs.protocol.connection.v1.ConnectRequest",
+              "output_type": ".bgs.protocol.connection.v1.ConnectResponse"
+            },
+            {
+              "name": "Bind",
+              "input_type": ".bgs.protocol.connection.v1.BindRequest",
+              "output_type": ".bgs.protocol.connection.v1.BindResponse"
+            },
+            {
+              "name": "Echo",
+              "input_type": ".bgs.protocol.connection.v1.EchoRequest",
+              "output_type": ".bgs.protocol.connection.v1.EchoResponse"
+            },
+            {
+              "name": "ForceDisconnect",
+              "input_type": ".bgs.protocol.connection.v1.DisconnectNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "KeepAlive",
+              "input_type": ".bgs.protocol.NoData",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "Encrypt",
+              "input_type": ".bgs.protocol.connection.v1.EncryptRequest",
+              "output_type": ".bgs.protocol.NoData"
+            },
+            {
+              "name": "RequestDisconnect",
+              "input_type": ".bgs.protocol.connection.v1.DisconnectRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "content_handle_types.proto",
+      "package": "bgs.protocol",
+      "message_type": [
+        {
+          "name": "ContentHandle",
+          "field": [
+            {
+              "name": "region",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "usage",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "hash",
+              "number": 3,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "proto_url",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "TitleIconContentHandle",
+          "field": [
+            {
+              "name": "title_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "content_handle",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ContentHandle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "entity_types.proto",
+      "package": "bgs.protocol",
+      "message_type": [
+        {
+          "name": "EntityId",
+          "field": [
+            {
+              "name": "high",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED64"
+            },
+            {
+              "name": "low",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED64"
+            }
+          ]
+        },
+        {
+          "name": "Identity",
+          "field": [
+            {
+              "name": "account_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "game_account_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "game_utilities_service.proto",
+      "package": "bgs.protocol.game_utilities.v1",
+      "dependency": [
+        "attribute_types.proto",
+        "entity_types.proto",
+        "game_utilities_types.proto",
+        "rpc_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "ClientRequest",
+          "field": [
+            {
+              "name": "attribute",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            },
+            {
+              "name": "account_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "game_account_id",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "program",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "client_info",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.game_utilities.v1.ClientInfo"
+            }
+          ]
+        },
+        {
+          "name": "ClientResponse",
+          "field": [
+            {
+              "name": "attribute",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            }
+          ]
+        },
+        {
+          "name": "ServerRequest",
+          "field": [
+            {
+              "name": "attribute",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            },
+            {
+              "name": "program",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "ServerResponse",
+          "field": [
+            {
+              "name": "attribute",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            }
+          ]
+        },
+        {
+          "name": "PresenceChannelCreatedRequest",
+          "field": [
+            {
+              "name": "id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "game_account_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "account_id",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountOnlineNotification",
+          "field": [
+            {
+              "name": "game_account_id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "session_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "GameAccountOfflineNotification",
+          "field": [
+            {
+              "name": "game_account_id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "session_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "GetAllValuesForAttributeRequest",
+          "field": [
+            {
+              "name": "attribute_key",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "agent_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.EntityId"
+            },
+            {
+              "name": "program",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "GetAllValuesForAttributeResponse",
+          "field": [
+            {
+              "name": "attribute_value",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Variant"
+            }
+          ]
+        },
+        {
+          "name": "RegisterUtilitiesRequest",
+          "field": [
+            {
+              "name": "attribute",
+              "number": 1,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            },
+            {
+              "name": "program",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            }
+          ]
+        },
+        {
+          "name": "RegisterUtilitiesResponse",
+          "field": [
+            {
+              "name": "ciid",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        },
+        {
+          "name": "UnregisterUtilitiesRequest"
+        }
+      ],
+      "service": [
+        {
+          "name": "GameUtilitiesService",
+          "method": [
+            {
+              "name": "ProcessClientRequest",
+              "input_type": ".bgs.protocol.game_utilities.v1.ClientRequest",
+              "output_type": ".bgs.protocol.game_utilities.v1.ClientResponse"
+            },
+            {
+              "name": "PresenceChannelCreated",
+              "input_type": ".bgs.protocol.game_utilities.v1.PresenceChannelCreatedRequest",
+              "output_type": ".bgs.protocol.NoData"
+            },
+            {
+              "name": "ProcessServerRequest",
+              "input_type": ".bgs.protocol.game_utilities.v1.ServerRequest",
+              "output_type": ".bgs.protocol.game_utilities.v1.ServerResponse"
+            },
+            {
+              "name": "OnGameAccountOnline",
+              "input_type": ".bgs.protocol.game_utilities.v1.GameAccountOnlineNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "OnGameAccountOffline",
+              "input_type": ".bgs.protocol.game_utilities.v1.GameAccountOfflineNotification",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            },
+            {
+              "name": "GetAllValuesForAttribute",
+              "input_type": ".bgs.protocol.game_utilities.v1.GetAllValuesForAttributeRequest",
+              "output_type": ".bgs.protocol.game_utilities.v1.GetAllValuesForAttributeResponse"
+            },
+            {
+              "name": "RegisterUtilities",
+              "input_type": ".bgs.protocol.game_utilities.v1.RegisterUtilitiesRequest",
+              "output_type": ".bgs.protocol.game_utilities.v1.RegisterUtilitiesResponse"
+            },
+            {
+              "name": "UnregisterUtilities",
+              "input_type": ".bgs.protocol.game_utilities.v1.UnregisterUtilitiesRequest",
+              "output_type": ".bgs.protocol.NO_RESPONSE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "game_utilities_types.proto",
+      "package": "bgs.protocol.game_utilities.v1",
+      "dependency": [
+        "attribute_types.proto",
+        "entity_types.proto",
+        "rpc_types.proto"
+      ],
+      "message_type": [
+        {
+          "name": "PlayerVariables",
+          "field": [
+            {
+              "name": "identity",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Identity"
+            },
+            {
+              "name": "rating",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_DOUBLE"
+            },
+            {
+              "name": "attribute",
+              "number": 3,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.Attribute"
+            }
+          ]
+        },
+        {
+          "name": "ClientInfo",
+          "field": [
+            {
+              "name": "client_address",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "privileged_network",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rpc_types.proto",
+      "package": "bgs.protocol",
+      "message_type": [
+        {
+          "name": "NO_RESPONSE"
+        },
+        {
+          "name": "Address",
+          "field": [
+            {
+              "name": "address",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "port",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "ProcessId",
+          "field": [
+            {
+              "name": "label",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "epoch",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "ObjectAddress",
+          "field": [
+            {
+              "name": "host",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "object_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64",
+              "default_value": "0"
+            }
+          ]
+        },
+        {
+          "name": "NoData"
+        },
+        {
+          "name": "ErrorInfo",
+          "field": [
+            {
+              "name": "object_address",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ObjectAddress"
+            },
+            {
+              "name": "status",
+              "number": 2,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "service_hash",
+              "number": 3,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "method_id",
+              "number": 4,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            }
+          ]
+        },
+        {
+          "name": "FanoutTarget",
+          "field": [
+            {
+              "name": "client_id",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "key",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "object_id",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            }
+          ]
+        },
+        {
+          "name": "Header",
+          "field": [
+            {
+              "name": "service_id",
+              "number": 1,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "method_id",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "token",
+              "number": 3,
+              "label": "LABEL_REQUIRED",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "object_id",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64",
+              "default_value": "0"
+            },
+            {
+              "name": "size",
+              "number": 5,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32",
+              "default_value": "0"
+            },
+            {
+              "name": "status",
+              "number": 6,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32",
+              "default_value": "0"
+            },
+            {
+              "name": "error",
+              "number": 7,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ErrorInfo"
+            },
+            {
+              "name": "timeout",
+              "number": 8,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT64"
+            },
+            {
+              "name": "is_response",
+              "number": 9,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BOOL"
+            },
+            {
+              "name": "forward_targets",
+              "number": 10,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.ProcessId"
+            },
+            {
+              "name": "service_hash",
+              "number": 11,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_FIXED32"
+            },
+            {
+              "name": "client_id",
+              "number": 13,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "fanout_target",
+              "number": 14,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_MESSAGE",
+              "type_name": ".bgs.protocol.FanoutTarget"
+            },
+            {
+              "name": "client_id_fanout_target",
+              "number": 15,
+              "label": "LABEL_REPEATED",
+              "type": "TYPE_STRING"
+            },
+            {
+              "name": "client_record",
+              "number": 16,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "original_sender",
+              "number": 17,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_BYTES"
+            },
+            {
+              "name": "sender_token",
+              "number": 18,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "router_label",
+              "number": 19,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "error_reason",
+              "number": 20,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "semantic_version.proto",
+      "package": "bgs.protocol",
+      "message_type": [
+        {
+          "name": "SemanticVersion",
+          "field": [
+            {
+              "name": "major_version",
+              "number": 1,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "minor_version",
+              "number": 2,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "patch_version",
+              "number": 3,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_UINT32"
+            },
+            {
+              "name": "version_string",
+              "number": 4,
+              "label": "LABEL_OPTIONAL",
+              "type": "TYPE_STRING"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+[workspace]
+name = "client442-auth"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.13.*"
+protobuf = ">=6,<7"
+pymysql = ">=1.1,<2"
+pytest = ">=9,<10"
+
+[tasks]
+serve = {cmd = "python -m tools.client_compatibility.auth.service", cwd = "../../.."}
+test = {cmd = "python -m pytest tools/client_compatibility/auth/tests -q", cwd = "../../.."}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client 442 Lab</title>
+<style>
+  :root {color-scheme:dark; font-family:system-ui,sans-serif; background:#11151c; color:#e7edf6}
+  body {margin:0; min-height:100vh; display:grid; place-items:center}
+  main {width:min(440px,calc(100vw - 64px)); padding:32px; background:#1b2330; border:1px solid #344158; border-radius:16px}
+  h1 {margin:0 0 8px; font-size:28px} p {color:#b9c6db; line-height:1.5}
+  label {display:block; margin:18px 0 6px} input,button {box-sizing:border-box; width:100%; font:inherit; border-radius:8px; padding:12px}
+  input {background:#111923; color:#fff; border:1px solid #536278}
+  button {cursor:pointer; color:#081220; background:#88b7ff; border:0; margin-top:24px; font-weight:600}
+  button.secondary {color:#dce7f8; background:transparent; border:1px solid #536278; margin-top:12px}
+  button:disabled {opacity:.6; cursor:wait} small {display:block; color:#a8b7cd; line-height:1.5; margin-top:20px}
+  #message {min-height:24px; color:#d1e1f7} .badge {font-size:13px; color:#aac7f4; margin:0 0 24px}
+</style>
+<main>
+  <h1>Client 442 Lab</h1>
+  <p class="badge">Whitemane 4.4.2 · Separate local server</p>
+  <p>Sign in here to launch the game, or enter your credentials inside the game.</p>
+  <form id="login">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required maxlength="128" value="CLIENTLAB">
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+    <button type="submit">Sign in and launch</button>
+  </form>
+  <button class="secondary" id="direct">Open game login</button>
+  <p id="message" role="status" aria-live="polite"></p>
+  <small>The game opens on your second monitor. Login is ready. Entering the world is the next compatibility step.</small>
+</main>
+<script>
+  const message = document.querySelector('#message');
+  async function send(path, data) {
+    document.querySelectorAll('button').forEach(button => button.disabled = true);
+    message.textContent = 'Starting…';
+    try {
+      const session = await (await fetch('/lab/session')).json();
+      const response = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json', 'X-Lab-CSRF':session.csrf}, body:JSON.stringify(data)});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Launch failed.');
+      message.textContent = result.message;
+      for (let tries=0; tries<50; tries++) {
+        await new Promise(resolve => setTimeout(resolve,1000));
+        const status = await (await fetch('/lab/status')).json();
+        if (status.launch.state === 'failed') throw new Error('Game launch failed. Check the local launch log.');
+        if (status.launch.state === 'running') {message.textContent='Game running on your second monitor.'; break;}
+      }
+    } catch(error) {message.textContent = error.message;}
+    finally {document.querySelectorAll('button').forEach(button => button.disabled = false);}
+  }
+  document.querySelector('#login').addEventListener('submit', event => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    document.querySelector('#password').value = '';
+    send('/lab/login-launch', data);
+  });
+  document.querySelector('#direct').addEventListener('click', () => send('/lab/launch-direct', {}));
+</script>
+</html>

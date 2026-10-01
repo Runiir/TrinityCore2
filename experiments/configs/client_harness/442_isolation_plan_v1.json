@@ -1,6 +1,6 @@
 {
   "schema": "client_harness_isolation_plan_v1",
-  "phase": "legacy_servers_running_60895_login_blocked",
+  "phase": "60895_direct_and_launcher_auth_verified_world_entry_pending",
   "live_launch_allowed": true,
   "database_created": true,
   "client": {
@@ -18,7 +18,13 @@
     "observed_first_record": "TLS_ClientHello",
     "launch_monitor_ordinal": 2,
     "launch_monitor_name": "HDMI-1",
-    "second_monitor_verified": true
+    "second_monitor_verified": true,
+    "authentication_verified": true,
+    "login_modes_verified": [
+      "direct_username_password",
+      "launcher_sso"
+    ],
+    "realm_list_verified": true
   },
   "reference": {
     "repository": "https://github.com/TrinityCore/TrinityCore",
@@ -74,9 +80,11 @@
       "legacy_auth": "127.0.0.1:13724",
       "world": "127.0.0.1:18085",
       "instance": "127.0.0.1:18086",
-      "database": "127.0.0.1:13306"
+      "database": "127.0.0.1:13306",
+      "classic_bnet": "127.0.0.1:1119",
+      "classic_login_rest": "127.0.0.1:18081"
     },
-    "classic_bnet_running": false
+    "classic_bnet_running": true
   },
   "runtime": {
     "owned_root": "/home/runiir/.local/share/trinity-client442-lab",
@@ -90,7 +98,7 @@
     "client_data_private_write_overlay": "/home/runiir/.local/share/trinity-client442-lab/client/casc-upper",
     "configs_root": "/home/runiir/.local/share/trinity-client442-lab/config"
   },
-  "launch_scope": "isolated_legacy_servers_and_60895_client_diagnostics",
+  "launch_scope": "isolated_60895_authentication_and_realm_discovery",
   "movement_acceptance_requirements": [
     "choose_and_implement_a_60895_compatible_login_and_world_protocol",
     "verify_target_executable_launcher_and_client_data_identity",
@@ -103,9 +111,23 @@
     "verify_server_processes_and_cleanup_are_scoped_to_the_lab"
   ],
   "open_requirements": [
-    "modern_TLS_Battle_net_and_login_REST_compatible_service",
-    "modern_linked_lab_account_and_realm_ticket_flow",
+    "60895_world_authentication_and_realm_join",
     "60895_world_transport_character_and_object_serialization",
     "character_world_entry_before_movement_trial"
-  ]
+  ],
+  "authentication": {
+    "implementation": "tools/client_compatibility/auth",
+    "launcher_url": "http://127.0.0.1:18081/launcher",
+    "native_account_linked": true,
+    "realm_list_ticket_verified": true,
+    "realm_join_compatible": false,
+    "password_protocol": "bnet_srp_v2_sha256",
+    "launcher_protocol": "cached_web_credentials_ticket",
+    "ticket_duration_seconds": 600,
+    "new_auth_tables": [
+      "lab_login_accounts",
+      "lab_login_tickets"
+    ],
+    "evidence_pointer": "artifacts/client_harness/442_modern_auth_20261001.tar.gz.dvc"
+  }
 }

@@ -1,6 +1,6 @@
 # Isolated server and Whitemane client startup trial
 
-The lab authserver, worldserver and Whitemane **4.4.2 build 60895** client are running. The client reaches its login screen, but a playable session is **not established**. No character was created, and movement was not tested.
+This initial startup trial brought up the lab authserver, worldserver and Whitemane **4.4.2 build 60895** client. Its login was blocked at that checkpoint. The subsequent [modern authentication implementation](modern_auth_20261001.md) now supports both direct login and launcher SSO through realm discovery. World entry and movement remain unverified. The evidence below describes the original startup checkpoint.
 
 | Component | Local endpoint or location | Verified outcome |
 | --- | --- | --- |
