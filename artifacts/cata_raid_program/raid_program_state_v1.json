@@ -12,8 +12,8 @@
       "name": "Blackwing Descent",
       "objective": "Carry Blackwing Descent 10N bots to completion: every boss shard passes its scoreboard verdict (WCL parity, native clears, no boss-window deaths) in parallel seeded lockouts with one build per round, then the end-to-end clear of the composed full route with trash and interactions.",
       "created_utc": "2026-09-27T03:32:10Z",
-      "revision": 85,
-      "stage": "plan",
+      "revision": 86,
+      "stage": "implement",
       "round": 5,
       "bootstrap_sources": {
         "experiments/configs/raid_prerequisites/blackwing_descent.json": "465c78aa17fbd5d592346b82a4203df38fa7dcbecfa1ebe0d1bd2ac2b5c0d4c5",
@@ -10679,6 +10679,175 @@
             }
           ],
           "shard_evidence": []
+        },
+        {
+          "round": 5,
+          "planned_utc": "2026-10-01T02:50:12Z",
+          "plan_commit": "c3ebcceff22a3c7a57fbf01e2c6b62775f57c915",
+          "packets": {
+            "boss:magmaw": {
+              "packet_id": "boss:magmaw",
+              "units": [
+                "raid:blackwing_descent:10N:magmaw"
+              ],
+              "owner_skill": "raid-performance-loop",
+              "task": "Route the typed stall of the last shard run (semantic_progress_plateau_watchdog) to its owning mechanism and repair it.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+                "sql/custom/staged/world/*magmaw*",
+                "tests/test_magmaw_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_magmaw_*.py"
+              ],
+              "inputs": [],
+              "handoff": null
+            },
+            "boss:omnotron": {
+              "packet_id": "boss:omnotron",
+              "units": [
+                "raid:blackwing_descent:10N:omnotron"
+              ],
+              "owner_skill": "raid-tuning-playbook",
+              "task": "Take the largest actor gap of the last verdict (scoreboard show) and make one mechanism change per actor, bundling below 0.85 of target.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json",
+                "sql/custom/staged/world/*omnotron_defense_system*",
+                "tests/test_omnotron_defense_system_*.py",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_omnotron.json",
+                "sql/custom/staged/world/*omnotron*",
+                "tests/test_omnotron_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_omnotron_*.py"
+              ],
+              "inputs": [],
+              "handoff": null
+            },
+            "boss:chimaeron": {
+              "packet_id": "boss:chimaeron",
+              "units": [
+                "raid:blackwing_descent:10N:chimaeron"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_chimaeron.json",
+                "sql/custom/staged/world/*chimaeron*",
+                "tests/test_chimaeron_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_chimaeron_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked (contract fidelity_state_by_mode[10N] is not accepted); follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json"
+                }
+              ],
+              "handoff": null
+            },
+            "boss:atramedes": {
+              "packet_id": "boss:atramedes",
+              "units": [
+                "raid:blackwing_descent:10N:atramedes"
+              ],
+              "owner_skill": "raid-performance-loop",
+              "task": "Investigate before tuning: the last round's run-sanity findings make its measurement untrustworthy (acceptance_observation: the server's status counters record 1 chase sample(s) with the tracked kiter above 10 Sound (loudest 20) in 2 air-phase chase(s): the round 3 acceptance allows none, the unmeas). Find and fix the cause (stuck or idle bots, enrage, death signals, fight length) before any DPS tuning.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json",
+                "sql/custom/staged/world/*atramedes*",
+                "tests/test_atramedes_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_atramedes_*.py"
+              ],
+              "inputs": [],
+              "handoff": null
+            },
+            "boss:maloriak": {
+              "packet_id": "boss:maloriak",
+              "units": [
+                "raid:blackwing_descent:10N:maloriak"
+              ],
+              "owner_skill": "raid-tuning-playbook",
+              "task": "Take the largest actor gap of the last verdict (scoreboard show) and make one mechanism change per actor, bundling below 0.85 of target.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json",
+                "sql/custom/staged/world/*maloriak*",
+                "tests/test_maloriak_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_maloriak_*.py"
+              ],
+              "inputs": [],
+              "handoff": null
+            },
+            "boss:nefarian": {
+              "packet_id": "boss:nefarian",
+              "units": [
+                "raid:blackwing_descent:10N:nefarian"
+              ],
+              "owner_skill": "raid-encounter-research",
+              "task": "Research the encounter (WCL references by browser extraction), audit the native script against it, calibrate damage fidelity (staged SQL plus a registry patch request), write the raid target, then replace any stub strategy.",
+              "owned_files": [
+                "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/**",
+                "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_*",
+                "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json",
+                "sql/custom/staged/world/*nefarian*",
+                "tests/test_nefarian_*.py",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp",
+                "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end_*",
+                "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md"
+              ],
+              "focused_tests": [
+                "pixi run python -m pytest -q tests/test_nefarian_*.py"
+              ],
+              "inputs": [
+                {
+                  "input": "encounter_research",
+                  "detail": "research contract fidelity_state=fidelity_blocked; follow raid-encounter-research (WCL references, unresolved claims)",
+                  "owner_skill": "raid-encounter-research",
+                  "blocks": "acceptance",
+                  "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json"
+                }
+              ],
+              "handoff": null
+            }
+          },
+          "build": null,
+          "run_plans": [],
+          "runs": [],
+          "assessment": null
         }
       ],
       "history": [
@@ -11451,6 +11620,20 @@
           "round": 4,
           "label": "blackwing_descent_10n-r04-56e0a03c00",
           "accepted": []
+        },
+        {
+          "revision": 86,
+          "utc": "2026-10-01T02:50:12Z",
+          "action": "plan",
+          "round": 5,
+          "packets": [
+            "boss:atramedes",
+            "boss:chimaeron",
+            "boss:magmaw",
+            "boss:maloriak",
+            "boss:nefarian",
+            "boss:omnotron"
+          ]
         }
       ]
     }
