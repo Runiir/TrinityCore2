@@ -57,6 +57,8 @@ def main():
                         'digsite_ids':extra['digsite_ids'],'mouse_localization':'ordinary_game_tooltip_hover'})
             lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
             print(json.dumps({'step':index,'action':action,'finds':len(finds),'policy_match':step['policy_match']}),flush=True)
+            if executed.get('ground_route') and not executed['ground_route']['boundary_guard']['observed_after_inside']:
+                raise RuntimeError('observed walk crossed the digsite boundary')
             if len(finds)>=args.finds:break
         if len(finds)<args.finds:raise RuntimeError('action budget ended before the requested find count')
     except (Exception,KeyboardInterrupt) as error:

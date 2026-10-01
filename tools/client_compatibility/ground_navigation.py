@@ -73,6 +73,6 @@ def walk(inputs,tcp,distance,digsite_ids):
     executed.append({'key':'w','hold':hold})
     planned.update(physical_inputs=executed,after=observer.poll(0)['player']['position'],
                    steering_source='public_static_ground_navigation_mesh')
-    if not site_boundaries.contains(site_boundaries.sites()[planned['boundary_guard']['site_id']]['polygon'],planned['after']):
-        raise RuntimeError('observed walk crossed the digsite boundary')
+    planned['boundary_guard']['observed_after_inside']=site_boundaries.contains(
+        site_boundaries.sites()[planned['boundary_guard']['site_id']]['polygon'],planned['after'])
     return hold,planned
