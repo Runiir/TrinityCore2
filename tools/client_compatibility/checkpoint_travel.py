@@ -59,9 +59,19 @@ def main():
         if not receipt.get('finished_at'):raise ValueError('episode still open')
         paths.append(path);episodes.append(receipt)
         children=[json.loads(p.read_text()) for p in path.rglob('episode.json')]
+        site_finds={}
+        for step in receipt['steps']:
+            if step.get('kind')!='dig':continue
+            child=json.loads((path/step['episode']/'episode.json').read_text())
+            sid=step['site'];site_finds[sid]=site_finds.get(sid,0)+len(child.get('finds',[]))
+        water=[json.loads(p.read_text()) for p in path.rglob('water_transit_*.json')]
         totals.append({'model_actions':sum(sum('action' in s for s in r['steps']) for r in children),
             'travel_legs':sum(len(r.get('legs_completed',[])) for r in children),
-            'safety_recoveries':sum(len(r.get('safety_recoveries',[])) for r in children)})
+            'safety_recoveries':sum(len(r.get('safety_recoveries',[])) for r in children),
+            'model_rejected_decisions':sum(len(r.get('rejected_decisions',[])) for r in children),
+            'fresh_sites_fully_completed':sum(site_finds.get(s['site'],0)>=3 for s in receipt.get('sites_completed',[])),
+            'water_transits_completed':sum(r['completed'] for r in water),
+            'swimming_observations':sum(o['travel']['swimming'] for r in water for o in r['observations'])})
     with tempfile.TemporaryDirectory(dir=lab.ROOT/'run/tmp') as scratch:
         scratch=Path(scratch)
         training_metrics(lab.ROOT/'models/travel-head-v3',scratch/'training')
@@ -74,6 +84,11 @@ def main():
                 live.log_metric('collected_finds',len(r.get('finds',[])))
                 live.log_metric('travel_legs',total['travel_legs'])
                 live.log_metric('safety_recoveries',total['safety_recoveries'])
+                live.log_metric('model_rejected_decisions',total['model_rejected_decisions'])
+                live.log_metric('fresh_sites_fully_completed',total['fresh_sites_fully_completed'])
+                live.log_metric('water_transits_completed',total['water_transits_completed'])
+                live.log_metric('swimming_observations',total['swimming_observations'])
+                live.log_metric('fragments_awarded',sum(f['quantity'] for f in r.get('finds',[])))
                 live.log_metric('sites_completed',len(r.get('sites_completed',[])))
                 live.log_metric('duration_seconds',r['finished_at']-r['started_at']);live.next_step()
         metadata={'schema':'client442_travel_checkpoint_v1','code_commit':subprocess.check_output(
