@@ -222,10 +222,21 @@ can finish a dry corridor of at most sixteen yards with short keyboard advances,
 checking actual floor height, combat, health and the assigned polygon. This
 correction is recorded as code-controlled navigation rather than a model decision.
 
+Episode 56 collected Hellfire Citadel's remaining find for five fragments,
+observed site 345 replaced by 359, and automatically used Honor Hold's normal
+gossip and taxi menus to reach Area 52 (node 122), then flew to Arklon Ruins
+(site 355). The first Arklon find spawned within the assigned polygon and at
+the character's elevation. Its tooltip was obscured by an Artifact Seeker's
+body; a separate mouse-hover-only diagnostic identified the observed NPC name
+checksum, with no collection click or teacher annotation. Collection now zooms
+through real mouse-wheel inputs and uses at most three distinct dry stances,
+each within normal artifact reach. Each view gets a twelve-second tooltip search.
+Every view, route and outcome is retained even when localization fails.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 111 tests. The new tooltip test initially failed because its test
+passes 114 tests. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -235,7 +246,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 55 preserve unsuccessful steps, including missing portal
+Episodes 07 through 56 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -245,7 +256,8 @@ prerequisite that incorrectly blocked mounted movement, replanned bank detours,
 low bridge steps, unnecessarily requested melee approaches, excluded water,
 and interrupted gathering followed by a missed tooltip, raised-floor proximity
 errors, a missed flight-master tooltip, an out-of-range vendor click and landing
-slides outside the local arrival radius. Successful outcomes do not
+slides outside the local arrival radius and artifact tooltip occlusion by a
+creature's body. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
