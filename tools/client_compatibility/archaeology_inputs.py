@@ -95,22 +95,24 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
         start=tcp['player']['position'];find=min(tcp['finds'],key=lambda f:math.dist(f['position'][:2],start[:2]))
-        if math.dist(find['position'][:2],start[:2])<1.25:
+        if math.dist(find['position'][:2],start[:2])<3:
             from . import site_boundaries
             _,extra=screenshot(path)
             site=site_boundaries.active_site(find['map'],start,extra['digsite_ids'])
-            goal=[start[0]-math.cos(start[3])*2.5,start[1]-math.sin(start[3])*2.5,start[2]]
+            distance=3.5-math.dist(find['position'][:2],start[:2])
+            goal=[start[0]-math.cos(start[3])*distance,start[1]-math.sin(start[3])*distance,start[2]]
             if not site_boundaries.inside_segment(site['polygon'],start,goal):
                 raise RuntimeError('overlapping artifact has no in-site backward approach')
             # Ordinary player feet and the already visible artifact, not a
             # private target. Moving off the model makes its mouse hit visible.
             ground_navigation.route(find['map'],start,goal)
-            inputs.key('s',hold=2.5/7);time.sleep(.4)
+            # Backpedalling is 4.5 yards/second, slower than forward walking.
+            inputs.key('s',hold=distance/4.5);time.sleep(.4)
             from .observation.archaeology import Observer
             after=Observer().poll(start[3])['player']['position']
             if not site_boundaries.contains(site['polygon'],after):raise RuntimeError('loot approach left the digsite')
             loot_approach={'source':'visible owned artifact overlaps player feet','before':start,'after':after,
-                'physical_keys':[{'key':'s','hold':2.5/7}],'observed_after_inside':True}
+                'physical_keys':[{'key':'s','hold':distance/4.5}],'observed_after_inside':True}
         pixel=locate_find(inputs,path)
         inputs.click(*pixel,button=3)
     elif action!='observe':raise ValueError('unknown physical action')

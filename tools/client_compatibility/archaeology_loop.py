@@ -29,6 +29,7 @@ def main():
             active=[site_boundaries.sites()[sid] for sid in extra['digsite_ids'] if
                     sid in site_boundaries.sites() and site_boundaries.sites()[sid]['map'] in [0,530]]
             if not active:raise RuntimeError('no assigned digsite in the supported travel maps')
+            planned_initial=bool(initial)
             if initial:
                 stop=next(i for i,leg in enumerate(initial) if leg.get('site_id'))
                 legs,initial=initial[:stop+1],initial[stop+1:]
@@ -38,11 +39,16 @@ def main():
                 site=next((s for s in active if count==0 and s['id']==a.first_site),None)
                 if not site:site=min(active,key=lambda s:(s['map']!=facts['map'],math.dist(s['center'],facts['position'][:2])))
                 plan=travel_routes.to_site(facts['map'],facts['position'],site)
-            travel_name=f'travel_{count:03d}_site_{site["id"]}'
-            plan=travel_routes.prepare_clearance(plan,facts['map'],facts['position'])
-            result=travel_trial.run(plan,out/travel_name)
-            receipt['steps'].append({'kind':'travel','episode':travel_name,'site':site['id'],'completed':result['completed']})
-            if not result['completed']:raise RuntimeError(result['failure'])
+            already_there=not planned_initial and site['map']==facts['map'] and site_boundaries.contains(site['polygon'],facts['position']) and not any(extra[k] for k in ['mounted','flying','falling'])
+            if already_there:
+                receipt['steps'].append({'kind':'already_at_site','site':site['id'],'facts':facts,
+                    'travel':extra,'source':'observed grounded player inside assigned public polygon'})
+            else:
+                travel_name=f'travel_{count:03d}_site_{site["id"]}'
+                plan=travel_routes.prepare_clearance(plan,facts['map'],facts['position'])
+                result=travel_trial.run(plan,out/travel_name)
+                receipt['steps'].append({'kind':'travel','episode':travel_name,'site':site['id'],'completed':result['completed']})
+                if not result['completed']:raise RuntimeError(result['failure'])
             for dig in range(4):
                 _,extra=archaeology_inputs.screenshot(latest)
                 if site['id'] not in extra['digsite_ids']:break
