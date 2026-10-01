@@ -15,6 +15,7 @@
     "position_source": "public Twilight Grove digsite polygon center; ground corrected by native movement"
   },
   "controller_endpoint": "http://127.0.0.1:8002/v1/systemone",
+  "ordinary_client_settings": {"autoLootDefault": 1},
   "first_acceptance": "one physically collected find, inside the assigned public polygon and visible above ground",
   "private_next_find_coordinates_used": false,
   "manual_setup_counts_as_navigation": false,

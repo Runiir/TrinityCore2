@@ -6,6 +6,7 @@ import time
 from PIL import Image
 from tools.second_client import ctl
 from . import lab_runtime as lab
+from . import owned_input
 from .observation import telemetry,travel
 
 FIND_NAMES=['Night Elf Archaeology Find','Nerubian Archaeology Find','Dwarf Archaeology Find',
@@ -56,6 +57,7 @@ def execute(action,tcp,path):
         hold=short if action=='forward_short' else long;inputs.key('w',hold=hold)
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
+        owned_input.focus()
         pixel=locate_find(inputs,path)
         inputs._send(inputs.X.ButtonPress,3);time.sleep(.2);inputs._send(inputs.X.ButtonRelease,3)
     elif action!='observe':raise ValueError('unknown physical action')

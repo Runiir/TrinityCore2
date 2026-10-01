@@ -6,7 +6,7 @@ import subprocess
 import time
 import urllib.request
 from PIL import Image
-from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs as inputs
+from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs as inputs,owned_input
 from .archaeology_model_service import ENDPOINT,PORT
 from .observation.archaeology import Observer,collected
 
@@ -18,6 +18,7 @@ def main():
     monitor=json.loads((lab.ROOT/'evidence/client_monitor.json').read_text())
     client=lab.owned_process('client')
     if not client or not monitor['second_monitor_verified'] or monitor['pid']!=client['pid']:raise RuntimeError('owned client monitor unverified')
+    owned_input.focus()
     with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/health',timeout=5) as r:identity=json.load(r)
     observer=Observer();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None
     receipt={'schema':'client442_laya_live_archaeology_v2','model':identity,
