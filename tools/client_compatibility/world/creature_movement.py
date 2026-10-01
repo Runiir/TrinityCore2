@@ -47,3 +47,17 @@ def response(owner,name,body):
     for point in spline['points']:w.pack('3f',*point)
     w.raw(spline['deltas'])
     return 'SMSG_ON_MONSTER_MOVE',w.finish()
+
+
+def position_update(owner, body):
+    """Keep the client's unit position synchronized before launching its spline.
+
+    A native create can arrive with an already active spline. Our initial
+    create starts without that spline, so an authoritative start-position
+    update is required before subsequent monster paths.
+    """
+    s=parse(body)
+    if not s or s['guid'] not in getattr(owner,'visible_units',{}):return None
+    unit=owner.visible_units[s['guid']];move=unit['movement']
+    return Writer().guid(*modern_guid(s['guid'],unit['map'])).pack('IIII6fII',
+        0,0,0,move['time'],*s['position'],move['position'][3],0,0,0,s['sequence']).bits(0,8).finish()

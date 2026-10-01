@@ -18,6 +18,7 @@ async def receive(owner, name, body):
     guid = owner.character["guid"]
     creature_move = creature_movement.response(owner, name, body)
     if creature_move is not None:
+        send('SMSG_MOVE_UPDATE', creature_movement.position_update(owner,body))
         send(*creature_move)
         return
     combat_reply = combat.response(owner, name, body)

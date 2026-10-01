@@ -11,7 +11,7 @@ from tools.client_compatibility.world.gameobjects import modern_guid
 @pytest.mark.parametrize('captured',json.loads((Path(__file__).parent/'fixtures/creature_splines.json').read_text()))
 def test_captured_spline_retains_path_duration_stop_and_facing(captured):
     native=bytes.fromhex(captured['body']);s=movement.parse(native)
-    owner=SimpleNamespace(visible_units={s['guid']:{'map':530,'movement':{'position':[0,0,0,0]}}})
+    owner=SimpleNamespace(visible_units={s['guid']:{'map':530,'movement':{'position':[0,0,0,0],'time':1234}}})
     name,body=movement.response(owner,'SMSG_ON_MONSTER_MOVE',native);r=Reader(body)
     assert name=='SMSG_ON_MONSTER_MOVE' and r.guid()==modern_guid(s['guid'],530)
     assert list(r.unpack('3f'))==s['position'] and r.unpack('I')==(s['sequence'],)
@@ -28,3 +28,8 @@ def test_captured_spline_retains_path_duration_stop_and_facing(captured):
     assert r.raw(len(s['deltas']))==s['deltas'];r.end()
     if s['face']==1:assert s['flags']&0x20 and not s['points']
     assert movement.response(SimpleNamespace(visible_units={}),name,native) is None
+    r=Reader(movement.position_update(owner,native))
+    assert r.guid()==modern_guid(s['guid'],530)
+    assert r.unpack('IIII')==(0,0,0,1234)
+    assert list(r.unpack('3f'))==s['position']
+    assert r.unpack('3fII')==(0,0,0,0,s['sequence']) and r.bits(8)==0;r.end()
