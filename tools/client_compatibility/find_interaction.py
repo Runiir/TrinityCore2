@@ -4,6 +4,10 @@ import time
 from . import lab_runtime as lab,loot_pose,site_boundaries
 
 
+class FindExpired(RuntimeError):
+    """The ordinary visible artifact disappeared before a collection click."""
+
+
 def zoom(inputs,path):
     from .archaeology_inputs import screenshot
     _,extra=screenshot(path);before=extra['camera_zoom'];keys=[]
@@ -21,7 +25,7 @@ def zoom(inputs,path):
     return {'before':before,'after':extra['camera_zoom'],'physical_mouse_wheel':keys}
 
 
-def locate(inputs,observer,find,path):
+def locate(inputs,observer,find,path,require_visible=None):
     from PIL import Image
     from .archaeology_inputs import screenshot,locate_find
     trace={'schema':'client442_find_localization_v1','started_at':time.time(),
@@ -29,6 +33,7 @@ def locate(inputs,observer,find,path):
         'teacher_mouse_annotations':0,'views':[],'completed':False,'failure':None}
     token=time.time_ns();trace_path=path.parent/f'find_localization_{token}.json';stances=[]
     try:
+        if require_visible:require_visible()
         trace['camera']=zoom(inputs,path)
         for attempt in range(3):
             _,extra=screenshot(path);position=observer.poll()['position'];stances.append(position[:3])
@@ -36,9 +41,11 @@ def locate(inputs,observer,find,path):
             with Image.open(path) as image:image.save(frame,lossless=True)
             view={'position':position,'frame':frame.name,'sha256':lab.sha256(frame)}
             trace['views'].append(view);lab.private_write(trace_path,json.dumps(trace,indent=2)+'\n')
-            try:pixel=locate_find(inputs,path,timeout=12)
+            try:pixel=locate_find(inputs,path,timeout=12,**({'require_visible':require_visible} if require_visible else {}))
+            except FindExpired:raise
             except RuntimeError as error:
                 view['failure']=str(error)
+                if require_visible:require_visible()
                 if attempt==2:raise
                 site=site_boundaries.active_site(find['map'],position,extra['digsite_ids'])
                 view['next_stance']=loot_pose.approach(inputs,observer,find,site,path,excluded_stances=stances)

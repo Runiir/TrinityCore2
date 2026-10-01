@@ -267,10 +267,20 @@ boundary violations and other navigation failures still stop the run. An aborted
 approach is recorded separately from a completed collection click; initial and
 alternate loot stances retain their partial inputs and observed positions.
 
+Episode 62 collected Arklon's last find, completed all three Farahlon finds for
+20 Draenei fragments, and automatically used Area 52 to Stormspire (139) and
+Stormspire to Altar of Sha'tar (140) taxis. Its first Baa'ri collection spell
+failed during combat; the 60-second visible artifact expired during recovery
+and the next cursor search. The adapter now checks the same ordinary owned
+object-removal packets during localization and returns to Survey when the find
+expires. It permits at most two such retries per find. A physical click followed
+by combat without a fragment award is recorded as interrupted. The central
+cursor scan also uses eight-pixel steps for small interaction shapes.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 121 tests. The combat-interruption change initially failed one older test
+passes 122 tests. The combat-interruption change initially failed one older test
 that expected the previous error wording; its failed XML is retained alongside
 the corrected full-suite result. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
@@ -282,7 +292,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 61 preserve unsuccessful steps, including missing portal
+Episodes 07 through 62 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -296,7 +306,8 @@ slides outside the local arrival radius and artifact tooltip occlusion by a
 creature's body, dry ledges incorrectly treated as submerged, an unavailable
 forward route at a mesh corner, a premature stop during a small step down and
 an artifact above the bounded cursor search's covered region and combat starting
-inside a collection approach. Successful outcomes do not
+inside a collection approach and artifact expiry during combat recovery.
+Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 

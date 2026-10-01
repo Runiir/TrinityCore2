@@ -28,17 +28,18 @@ def find_hover_points():
     # Sloping ground puts a nearby, faced artifact well above the character's
     # feet. Cover the full central vertical strip before the wider radial scan.
     preferred=[(640,275),(640,285)]
-    vertical=[(640+dx,y) for dx in [0,-16,16,-32,32] for y in range(160,513,16)]
+    vertical=[(640+dx,y) for dx in [0,-8,8,-16,16] for y in range(160,513,8)]
     grid=[(x,y) for x in range(320,961,24) for y in range(160,575,24)]
     grid.sort(key=lambda p:(p[0]-640)**2+(p[1]-340)**2)
     return list(dict.fromkeys([*preferred,*vertical,*grid]))
 
 
-def locate_find(inputs,path,timeout=40):
+def locate_find(inputs,path,timeout=40,require_visible=None):
     # Search the ordinary 3D view with cursor hover, then verify the game's
     # tooltip against known find names. No teacher pixel or private coordinates.
     deadline=time.monotonic()+timeout
     for x,y in find_hover_points():
+        if require_visible:require_visible()
         if time.monotonic()>deadline:break
         inputs.move(x,y);time.sleep(.2)
         _,extra=screenshot(path)
@@ -58,7 +59,7 @@ def locate_find(inputs,path,timeout=40):
     raise RuntimeError('no archaeology find tooltip in the bounded screen search')
 
 
-def execute(action,tcp,path,recovery=None,mounted_moves=False):
+def execute(action,tcp,path,recovery=None,mounted_moves=False,object_observer=None):
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None;ground_route=None;loot_approach=None
     if action=='survey':
         _,extra=screenshot(path)
@@ -134,8 +135,11 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             from . import loot_pose
             loot_approach=loot_pose.approach(inputs,observer,find,site,path)
             loot_approach['physical_keys']=[*facing_keys,*loot_approach['physical_keys']]
-        from .find_interaction import locate
-        pixel,localization=locate(inputs,observer,find,path)
+        from .find_interaction import locate,FindExpired
+        def require_visible():
+            if object_observer is not None and not any(f['guid']==find['guid'] for f in object_observer.poll(0)['finds']):
+                raise FindExpired('artifact disappeared in ordinary owned object packets')
+        pixel,localization=locate(inputs,observer,find,path,require_visible=require_visible)
         loot_approach['localization']=localization
         # The owned Classic client can render at 15 FPS. Keep the button down
         # for multiple frames so the physical use action is observed reliably.

@@ -11,6 +11,7 @@ from .archaeology_model_service import ENDPOINT,PORT
 from .observation.archaeology import Observer,collected
 from .collision_recovery import Recovery
 from .swim_navigation import CombatInterrupted
+from .find_interaction import FindExpired
 
 
 def repeated_completed(history,action,count):
@@ -25,7 +26,7 @@ def run(args):
     if not client or not monitor['second_monitor_verified'] or monitor['pid']!=client['pid']:raise RuntimeError('owned client monitor unverified')
     owned_input.focus()
     with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/health',timeout=5) as r:identity=json.load(r)
-    observer=Observer();recovery=Recovery();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None
+    observer=Observer();recovery=Recovery();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None;expired_retries=0
     receipt={'schema':'client442_laya_live_archaeology_v2','model':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'started_at':started,'teacher_mouse_annotations':0,'manual_gameplay_interventions':0,
@@ -80,7 +81,17 @@ def run(args):
                 'action':action,'policy_match':action==policy.label(state),'input':None,'execution_status':'started'}
             history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
             try:
-                executed=inputs.execute(action,tcp,latest,recovery.for_action(action),mounted_moves=getattr(args,'mounted_moves',False))
+                executed=inputs.execute(action,tcp,latest,recovery.for_action(action),mounted_moves=getattr(args,'mounted_moves',False),object_observer=observer)
+            except FindExpired as error:
+                expired_retries+=1
+                if expired_retries>2:raise RuntimeError('two expired artifact retries failed to collect a find') from error
+                observed_movement,observed=inputs.screenshot(latest)
+                if not observed_movement['in_world'] or observed_movement['health_percent']<50 or any(observed_movement[k] for k in ['dead','on_taxi']):raise
+                step.update(time=time.time(),execution_status='visible_find_expired',input={
+                    'reason':str(error),'retry':expired_retries,'movement':observed_movement,'travel':observed})
+                lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
+                print(json.dumps({'step':index,'action':action,'visible_find_expired':True,'retry':expired_retries}),flush=True)
+                continue
             except CombatInterrupted as error:
                 interrupted,observed=inputs.screenshot(latest)
                 if not interrupted['in_world'] or interrupted['health_percent']<50 or any(interrupted[k] for k in ['dead','on_taxi']):raise
@@ -93,6 +104,11 @@ def run(args):
             step.update(input=executed,time=time.time(),execution_status='completed')
             if action=='loot':
                 confirmation=collected(tcp['session'],begin)
+                if not confirmation:
+                    after_movement,after=inputs.screenshot(latest)
+                    if after_movement['in_combat']:
+                        step['execution_status']='interrupted_by_combat'
+                        executed.update(interrupted_by_combat=True,movement=after_movement,travel=after)
                 if confirmation:
                     if lifecycle:
                         _,after=inputs.screenshot(latest)
