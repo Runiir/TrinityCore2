@@ -32,7 +32,8 @@ def state(leg,movement,extra,facts,ui):
         'casting':extra['casting'],'on_taxi':movement['on_taxi'],
         'mounted':extra['mounted'],'flying':extra['flying'],'falling':extra['falling'],
         'at_route_height':facts['position'][2]>=leg.get('ceiling',float('inf'))-3,
-        'near_destination':bool(reached) if transfer_goal and leg['mode']=='flight' else distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
+        'near_destination':bool(reached) if transfer_goal and leg['mode']=='flight' else
+            bool(reached) or distance is not None and distance<leg.get('arrival_radius',5),'destination_reached':reached,
         'taxi_map_open':bool(ui['nodes'])}
 
 

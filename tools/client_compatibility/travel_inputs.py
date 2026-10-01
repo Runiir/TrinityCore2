@@ -28,7 +28,7 @@ def execute(action,leg,facts,extra,observer,path):
         hold=min(3,max(.15,(leg['ceiling']-position[2])/28.7))
         inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold})
         time.sleep(.3);after=observer.poll()
-        if hold>=.5 and after['position'][2]-position[2]<max(.4,hold*2.87):
+        if after['map']==facts['map'] and not after['transferring'] and hold>=.5 and after['position'][2]-position[2]<max(.4,hold*2.87):
             from .flight_recovery import nudge
             if leg.get('blocked_climb_escapes',0)>=8:raise RuntimeError('blocked climb exceeded eight bounded escapes')
             _,fresh=archaeology_inputs.screenshot(path)
