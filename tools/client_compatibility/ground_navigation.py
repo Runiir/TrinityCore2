@@ -78,16 +78,36 @@ def survey_detour(tcp,distance,digsite_ids,obstructions=()):
     return result
 
 
+def walk_plan(tcp,distance,digsite_ids,recovery=None):
+    start=tcp['player']['position'];pending=(recovery or {}).get('pending_ground_route')
+    if pending:
+        site=site_boundaries.active_site(tcp['tool'].get('map',0),start,digsite_ids)
+        remaining=[p[:] for p in pending['remaining_ground_points']]
+        while remaining and math.dist(start[:2],remaining[0][:2])<=.75:remaining.pop(0)
+        if remaining and site['id']==pending['boundary_guard']['site_id']:
+            corridor=[start,*remaining]
+            if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in zip(corridor,corridor[1:])):
+                raise RuntimeError('retained ground detour leaves the observed active digsite')
+            return {**pending,'start':start[:3],'points':remaining,
+                'remaining_ground_points':remaining,'detour_committed':True,
+                'retained_survey_detour':True,'boundary_guard':{**pending['boundary_guard']}}
+    obstructions=(recovery or {}).get('ground_obstructions',[])
+    planned=survey_detour(tcp,distance,digsite_ids,obstructions)
+    corridor=[start,*planned['points']]
+    length=sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))
+    planned['detour_committed']=length>max(distance*1.5,distance+2)
+    return planned
+
+
 def walk(inputs,tcp,distance,digsite_ids,recovery=None):
     import time
     from .observation.archaeology import Observer,angle_error
-    obstructions=(recovery or {}).get('ground_obstructions',[])
-    planned=survey_detour(tcp,distance,digsite_ids,obstructions);observer=Observer();executed=[]
+    planned=walk_plan(tcp,distance,digsite_ids,recovery);observer=Observer();executed=[]
     # Walk a bounded section of the ground corridor, then survey again. The
     # mesh defines walkable slopes and holes around static solid obstacles.
     target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:
-        planned=survey_detour(tcp,max(10,distance*2),digsite_ids,obstructions)
+        planned=walk_plan(tcp,max(10,distance*2),digsite_ids,recovery)
         target=next((p for p in planned['points'] if math.dist(p[:2],planned['start'][:2])>.15),None)
     if not target:raise RuntimeError('navigation mesh provides no useful ground displacement')
     for _ in range(8):
@@ -106,6 +126,10 @@ def walk(inputs,tcp,distance,digsite_ids,recovery=None):
     executed.append({'key':'w','hold':hold})
     planned.update(physical_inputs=executed,after=observer.poll(0)['player']['position'],
                    steering_source='public_static_ground_navigation_mesh')
+    remaining=[p[:] for p in planned['points']]
+    while remaining and math.dist(remaining[0][:2],planned['start'][:2])<=.15:remaining.pop(0)
+    while remaining and math.dist(remaining[0][:2],planned['after'][:2])<=.75:remaining.pop(0)
+    planned['remaining_ground_points']=remaining if planned['detour_committed'] else []
     planned['boundary_guard']['observed_after_inside']=site_boundaries.contains(
         site_boundaries.sites()[planned['boundary_guard']['site_id']]['polygon'],planned['after'])
     return hold,planned
