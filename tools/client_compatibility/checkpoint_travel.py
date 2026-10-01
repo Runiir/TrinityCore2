@@ -12,17 +12,23 @@ from .checkpoint_archaeology import training_metrics
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--name',required=True)
-    p.add_argument('--episode',action='append',default=[]);a=p.parse_args()
+    p.add_argument('--episode',action='append',default=[])
+    p.add_argument('--incremental',action='store_true',help='models are already in the preceding checkpoint')
+    p.add_argument('--preceding-checkpoint',default='442_archaeology_boundaries_20261001.tar.gz.dvc');a=p.parse_args()
+    if Path(a.preceding_checkpoint).name!=a.preceding_checkpoint:raise ValueError('invalid preceding checkpoint')
     if not a.name.replace('_','').isalnum():raise ValueError('invalid checkpoint name')
     target=lab.REPO/'artifacts/client_harness'/(a.name+'.tar.gz')
     if target.exists() or Path(str(target)+'.dvc').exists():raise ValueError('checkpoint exists')
-    paths=[lab.ROOT/'models/travel-head-v1',lab.ROOT/'models/travel-head-v2',lab.ROOT/'models/travel-head-v3',lab.ROOT/'models/travel-head-startup-failure']
+    paths=[] if a.incremental else [lab.ROOT/'models/travel-head-v1',lab.ROOT/'models/travel-head-v2',lab.ROOT/'models/travel-head-v3',lab.ROOT/'models/travel-head-startup-failure']
     paths.extend(lab.ROOT/'evidence'/name for name in ['world_packets.jsonl','client_monitor.json',
         'pretravel_world_packets.jsonl.gz','pretravel_modern_world.jsonl.gz','travel_ready.png','travel_start.png',
         'travel_protocol_tests.xml','travel_live_validation.json','travel_serving_preflight.json',
         'taxi_stall.png','taxi_relogin.png','taxi_retry_ready.png','taxi_query_login.png',
         'taxi_hotfix_login.png','taxi_hotfix_ready.png','travel_live_ready.png','travel_combat_stop.png',
-        'steep_ground_repair.json'])
+        'steep_ground_repair.json','travel_repair_cleanup.json','client442_portal_tables',
+        'portal_hotfix_login.png','portal_hotfix_character.png','portal_hotfix_character_ready.png',
+        'portal_connect_login.png','portal_connect_character.png','portal_connect_ready.png',
+        'travel_portal_validation.json'])
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
     paths.append(lab.ROOT/'bin/navmesh_probe')
     episodes=[]
@@ -53,7 +59,7 @@ def main():
                 live.log_metric('duration_seconds',r['finished_at']-r['started_at']);live.next_step()
         metadata={'schema':'client442_travel_checkpoint_v1','code_commit':subprocess.check_output(
             ['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),'closed_episodes':a.episode,
-            'preceding_archaeology_checkpoint':'442_archaeology_boundaries_20261001.tar.gz.dvc',
+            'preceding_checkpoint':a.preceding_checkpoint,'models_included':not a.incremental,
             'authentication_and_credentials_excluded':True}
         (scratch/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with tarfile.open(target,'w:gz',compresslevel=6) as archive:
