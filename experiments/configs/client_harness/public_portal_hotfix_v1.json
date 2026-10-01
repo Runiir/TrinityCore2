@@ -1,0 +1,16 @@
+{
+  "schema": "client442_public_hotfix_records_v1",
+  "client_build": 60895,
+  "source": "Installed 60895 client cache; only public AreaTrigger 4354 was extracted",
+  "source_cache_sha256": "780801068d5d3ee8f7e622220eefadedc9770fd6517163a1919cb14e30685561",
+  "wire_layout_source": "https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/HotfixHandler.cs",
+  "records": [
+    {
+      "push_id": 60895001,
+      "unique_id": 60895001,
+      "table_hash": 441483745,
+      "record_id": 4354,
+      "data": "009a133ac69a9148c5e3a56cc1021100000000000000000000000000000000df4f75408fc2a341e17a5342e7fb51400100000000000000"
+    }
+  ]
+}

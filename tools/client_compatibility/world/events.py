@@ -25,7 +25,7 @@ def event(kind, **fields):
 
 
 def capture_packet(name):
-    if name in {'CMSG_DB_QUERY_BULK', 'SMSG_DB_REPLY'}:return True
+    if name in {'CMSG_DB_QUERY_BULK', 'SMSG_DB_REPLY', 'SMSG_AVAILABLE_HOTFIXES', 'CMSG_HOTFIX_REQUEST', 'SMSG_HOTFIX_MESSAGE'}:return True
     if 'NPC_TEXT' in name:return True
     if any(token in name for token in ['TAXI','GOSSIP','TELEPORT','TRANSFER','NEW_WORLD','TOKEN','WORLD_PORT','WORLDPORT','AREA_TRIGGER']):return True
     return name.startswith(("CMSG_MOVE_", "MSG_MOVE_", "SMSG_MOVE_")) or name in {

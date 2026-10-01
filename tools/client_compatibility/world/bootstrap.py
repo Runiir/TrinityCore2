@@ -1,13 +1,13 @@
 """Classic glue-screen initialization for the lab's disabled optional services."""
 import time
 from .buffer import Reader, Writer
-from . import broadcast_text
+from . import broadcast_text,hotfixes
 from tools.client_compatibility.auth.realms import ADDRESS
 
 
 def initialize(session):
     session.send("SMSG_CACHE_VERSION", Writer().pack("I", 60895).finish())
-    session.send("SMSG_AVAILABLE_HOTFIXES", Writer().pack("II", ADDRESS, 0).finish())
+    session.send("SMSG_AVAILABLE_HOTFIXES", hotfixes.available())
     zone = Writer().bits(3, 7).bits(3, 7).bits(3, 7).raw(b"UTCUTCUTC")
     session.send("SMSG_SET_TIME_ZONE_INFORMATION", zone.finish())
     features = Writer().bits(0, 32).bits(1, 11).bits(0, 3)
@@ -27,6 +27,7 @@ def query(session, body):
     r.end()
     for record in records:
         data = broadcast_text.record(record) if table == broadcast_text.TABLE_HASH else None
+        if data is None:data=hotfixes.lookup(table,record)
         # Unsupported public tables retain an explicit missing-record response.
         reply = (Writer().pack("III", table, record, int(time.time()))
                  .bits(1 if data is not None else 3, 3).pack("I",len(data or b'')).raw(data or b''))

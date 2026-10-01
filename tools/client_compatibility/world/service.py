@@ -109,6 +109,9 @@ class Session:
             self.native.send("CMSG_ENUM_CHARACTERS")
         elif name == "CMSG_DB_QUERY_BULK":
             bootstrap.query(self, body)
+        elif name == 'CMSG_HOTFIX_REQUEST':
+            from . import hotfixes
+            hotfixes.request(self,body)
         elif name == "CMSG_SERVER_TIME_OFFSET_REQUEST":
             self.send("SMSG_SERVER_TIME_OFFSET", struct.pack("<q", 0))
         elif name == "CMSG_GET_UNDELETE_CHARACTER_COOLDOWN_STATUS":
