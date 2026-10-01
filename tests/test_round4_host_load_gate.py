@@ -110,3 +110,14 @@ def test_every_status_heartbeat_appends_a_host_snapshot(tmp_path):
     rows = [json.loads(line) for line in (tmp_path / "host_load.jsonl").read_text().splitlines()]
     assert [row['load_1m'] for row in rows] == [3.0, 4.0]
     assert rows[0]['cohort_id'] == spec.cohort_id and seen[0] is None and seen[1]['load_1m'] == 3.0
+
+
+def test_full_but_idle_swap_with_ample_memory_is_not_busy():
+    """Round 4: swap 97 % used, 0 pages/s, 21 GB available is parked swap; active swapping still blocks."""
+    from tools.raid_program import host_load
+    row = {'memory_total_bytes': 31 << 30, 'memory_available_bytes': 21 << 30, 'swap_used_fraction': 0.9728,
+           'swap_io_pages_per_second': 0.0, 'load_1m_per_cpu': 0.1,
+           'tmpfs': {'ram_backed': True, 'used_bytes': 4 << 30}}
+    assert host_load.busy_reasons(row) == []
+    assert 'swap_used' in host_load.busy_reasons({**row, 'swap_io_pages_per_second': 80.0})
+    assert 'swap_used' in host_load.busy_reasons({**row, 'memory_available_bytes': 9 << 30})

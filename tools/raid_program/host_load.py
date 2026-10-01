@@ -164,7 +164,8 @@ def busy_reasons(row: Mapping[str, Any], thresholds: Mapping[str, float] = THRES
         reasons.append('memory_available')
     if row.get('swap_used_fraction') is None:
         reasons.append('swap_unreadable')
-    elif row['swap_used_fraction'] > thresholds['max_swap_used_fraction']:
+    elif (row['swap_used_fraction'] > thresholds['max_swap_used_fraction']
+          and not _idle_parked_swap(row, thresholds)):
         reasons.append('swap_used')
     if row.get('swap_io_pages_per_second') is None:
         reasons.append('swap_activity_unmeasured')
@@ -175,6 +176,19 @@ def busy_reasons(row: Mapping[str, Any], thresholds: Mapping[str, float] = THRES
     elif row['load_1m_per_cpu'] > thresholds['max_load_1m_per_cpu']:
         reasons.append('load_average')
     return reasons
+
+
+def _idle_parked_swap(row: dict, thresholds: dict) -> bool:
+    """Full swap that is idle (no swap-in/out now) with ample available memory is parked pages, not contention.
+
+    Round 4 (2026-10-01): swap stayed 97 % used for hours with 0 pages/s of swap activity and ~21 GB available;
+    the round-3 contention was swap-out at ~106 pages/s with ~5 GB available. Only active swapping or low memory
+    makes full swap a busy host.
+    """
+    io = row.get('swap_io_pages_per_second')
+    available = row.get('memory_available_bytes')
+    return (io is not None and io <= thresholds['max_swap_io_pages_per_second']
+            and available is not None and available >= 2 * thresholds['min_memory_available_bytes'])
 
 
 def sample(run_root: Path = Path('/tmp'), *, sample_seconds: float = SAMPLE_SECONDS,
