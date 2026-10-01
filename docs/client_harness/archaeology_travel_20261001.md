@@ -175,10 +175,29 @@ passes. Survey also checks public water geometry because touching a shallow pond
 floor can clear `IsSwimming()` while the feet remain submerged. A bounded shore
 move completes before the selected cast, including when there is no telescope.
 
+Episode 52 completed the previously partial Grangol'var site for five Orc
+fragments, including a real swim and dry Survey recovery, then flew to Bleeding
+Hollow. It collected that fresh site's three finds for 7, 6 and 4 Orc fragments,
+observed 375 replaced by 391, and automatically flew to Laughing Skull in Nagrand.
+The first Nagrand approach landed on an unmapped stone structure at Z58.388,
+above the intended ground at Z46.946. The input wrapper had described this as
+destination ground using horizontal proximity and not-flying state, allowing a
+dismount before the final height check stopped the trial. This was an observation
+mapping error, not evidence that the model independently recognized the wrong floor.
+
+Grounded flight proximity now requires the actual landing-height condition.
+Local survey flights use a two-yard height tolerance. A mounted character stopped
+above its intended floor gets at most three physical lift-and-sideways probes
+toward a connected flat landing inside the public site. The input, original floor
+and observed elevation remain in the recovery receipt. Restarted loops also
+check elevation before treating an already-in-site character as ready to Survey.
+The raised-stone fixture now rejects both false destination-ground facts and
+premature arrival. It verifies a connected alternative landing below Z50.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 103 tests. The first observation-refactor check failed collection because
+passes 105 tests. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
 and the final XML are retained. Earlier missing-Pillow collection and mock-route
 fixture failures are retained with their corrected results.
@@ -186,7 +205,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 51 preserve unsuccessful steps, including missing portal
+Episodes 07 through 52 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
