@@ -1,0 +1,18 @@
+{
+  "schema": "client442_laya_archaeology_eval_v1",
+  "source_episode": "laya_archaeology_episode.json",
+  "navigation_steps": [3, 26],
+  "alignment_threshold_radians": 0.1,
+  "variants": ["guided_replay", "raw_observations", "fact_summary"],
+  "decision_options": ["survey", "turn_left", "turn_right", "forward_short", "forward_long", "observe"],
+  "instructions": "Choose the next action to find an archaeology artifact. Wait if casting or unavailable. Survey if the instrument is missing or stale after walking. With a current instrument, align before walking: a positive error greater than 0.1 radians means left; a negative error below -0.1 means right; within 0.1 is aligned. Prefer a longer walk for red or yellow and a shorter walk for green. Then survey again.",
+  "fact_instructions": "Choose the next action to find an archaeology artifact. Wait if casting or unavailable. Survey if the instrument is missing or stale after walking. With a current instrument, face its heading before walking. When aligned, prefer a longer walk for red or yellow and a shorter walk for green. Then survey again.",
+  "counterfactual_errors": [-1.0, 0.0, 1.0],
+  "counterfactual_colors": ["red", "yellow", "green"],
+  "acceptance": {
+    "preferred_action_accuracy_min": 0.9,
+    "progress_action_accuracy_min": 0.95,
+    "unsafe_wait_accuracy_min": 1.0,
+    "live_promotion_requires": "Passing shadow checks and repeated independent live finds; mouse localization is separately evaluated."
+  }
+}
