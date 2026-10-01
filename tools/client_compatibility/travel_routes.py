@@ -8,8 +8,8 @@ from .world.taxi import route as taxi_path
 MASTERS=lab.REPO/'experiments/configs/client_harness/public_flightmasters_v1.json'
 PORTALS={0:{'destination_map':530,'approach':[-11890,-3209,-14.56],
     'crossing':[-11924,-3209,-14.79],'trigger':4354,'arrival':[-248.113,922.9,84.3497]},
-    530:{'destination_map':0,'approach':[-247.677,920,84.35],
-    'crossing':[-247.677,885,84.35],'trigger':4352,'arrival':[-11896.8,-3206.77,-14.6724]}}
+    530:{'destination_map':0,'approach':[-247.677,835,41.25],
+    'crossing':[-247.677,910,84.35],'trigger':4352,'arrival':[-11896.8,-3206.77,-14.6724]}}
 
 
 def flight(map_id,position,id):

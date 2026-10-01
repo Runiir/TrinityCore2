@@ -4,8 +4,8 @@
   "setup_teleports": 0,
   "sources": ["AreaTrigger.dbc", "installed 60895 public AreaTrigger records", "ResearchSite/QuestPOIPoint.dbc"],
   "legs": [
-    {"id":"outland_portal_approach","mode":"flight","map":530,"position":[-247.677,920,84.35],"ceiling":240},
-    {"id":"dark_portal_to_azeroth","mode":"portal","map":530,"position":[-247.677,885,84.35],"destination_map":0,"trigger":4352},
+    {"id":"outland_portal_approach","mode":"flight","map":530,"position":[-247.677,835,41.25],"ceiling":240},
+    {"id":"dark_portal_to_azeroth","mode":"portal","map":530,"position":[-247.677,910,84.35],"destination_map":0,"trigger":4352},
     {"id":"dark_portal_approach","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
     {"id":"dark_portal_to_outland","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
     {"id":"hellfire_basin_digsite","mode":"flight","map":530,"position":[-300.5,3196.833,100.57],"ceiling":240,"site_id":343}
