@@ -17,7 +17,7 @@ def score(directory):
         'travel_legs':[],'recoveries':[],'manual_gameplay_interventions':root.get('manual_gameplay_interventions',0),
         'frames':0,'frame_hash_failures':[],'model_revisions':[],'source_commits':[],
         'site_find_counts':{},'fresh_sites_fully_completed':[],'model_rejected_decisions':0,
-        'water_transits':[],'mounted_corridor_checks':0,'localization_views':0}
+        'water_transits':[],'mounted_corridor_checks':0,'localization_views':0,'ground_escapes':[]}
     for step in root.get('steps',[]):
         if step.get('kind')!='dig':continue
         child=json.loads((directory/step['episode']/'episode.json').read_text())
@@ -91,6 +91,17 @@ def score(directory):
             if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
                 not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
                 summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'find_localization'})
+    for path in sorted(directory.rglob('ground_escape_*.json')):
+        receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
+        summary['ground_escapes'].append({'file':str(path.relative_to(directory)),
+            'completed':receipt['completed'],'failure':receipt['failure'],'probes':len(receipt['probes'])})
+        positions=[receipt['before']]
+        for probe in receipt['probes']:
+            positions.extend(o['position'] for o in probe.get('observations',[]))
+            positions.append(probe['after'])
+        if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
+            not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
+            summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'ground_escape'})
     summary['source_commits']=sorted(set(c for c in summary['source_commits'] if c))
     summary['model_revisions']=sorted(set(summary['model_revisions']))
     summary['model_policy_agreement']=summary['model_policy_matches']/summary['model_actions'] if summary['model_actions'] else None

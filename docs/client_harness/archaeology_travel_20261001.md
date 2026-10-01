@@ -241,10 +241,20 @@ requires observed swimming or a public `NAV_WATER` surface above the actual feet
 The helper tests both dry Arklon positions and the genuine submerged pond-floor
 fixture. A ground-height discrepancy alone no longer classifies a dry ruin as wet.
 
+The unnecessary shore move left episode 58 at a mesh corner with no connected
+forward-bearing route. Nearby dry side/back corridors exist, so the walking
+adapter now tries at most four short, unmounted probes toward those corridors.
+Each advance is at most 0.2 seconds, with observed displacement, floor change,
+health and whole-segment polygon checks. Episode 59's first probe moved 1.68
+yards and stepped down 0.94 yards, then stopped on a transient falling flag.
+A subsequent read-only screenshot confirmed that it settled, unmounted and dry.
+The guard now waits at most 2.5 seconds for that short step to settle before
+accepting it. It retains every probe and failure. It does not mount at green.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 115 tests. The new tooltip test initially failed because its test
+passes 117 tests. The new tooltip test initially failed because its test
 environment lacked Pillow; the dependency was added and the full suite passed.
 That failed XML is retained. The first observation-refactor check failed collection because
 of an indentation error; the repaired full suite passed. Both its failed XML
@@ -254,7 +264,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 57 preserve unsuccessful steps, including missing portal
+Episodes 07 through 59 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -265,7 +275,8 @@ low bridge steps, unnecessarily requested melee approaches, excluded water,
 and interrupted gathering followed by a missed tooltip, raised-floor proximity
 errors, a missed flight-master tooltip, an out-of-range vendor click and landing
 slides outside the local arrival radius and artifact tooltip occlusion by a
-creature's body and dry ledges incorrectly treated as submerged. Successful outcomes do not
+creature's body, dry ledges incorrectly treated as submerged, an unavailable
+forward route at a mesh corner and a premature stop during a small step down. Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
 
