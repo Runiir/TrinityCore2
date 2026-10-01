@@ -227,6 +227,14 @@ All 1,910 closed PNG/WebP files matched the archive bytes and hashes before
 1,483,211,654 bytes of local frames were removed. Receipts and the cleanup manifest
 remain local. Live observation journal segments were preserved for the client.
 
+Trials 50 through 52 follow in
+`artifacts/client_harness/442_water_navigation_repairs_20261001.tar.gz.dvc`.
+The archive is 489,666,922 bytes with SHA-256
+`2900bc9643e24fc1986eb1bbf79f530d427a9f97c6ffe7e6c648bac512999249`.
+Scoped status, push and cloud status passed. All 408 closed frames were verified
+against archived bytes and hashes before removing 415,195,898 local bytes.
+The next checkpoint retains `water_repairs_cleanup.json` with those hashes.
+
 ## Running the loop
 
 Start the owned lab services and client using the existing auth/world controls,
