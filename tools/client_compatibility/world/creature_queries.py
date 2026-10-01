@@ -6,7 +6,9 @@ from .gossip import text
 def request(owner,body):
     r=Reader(body);entry,=r.unpack('I');r.end()
     record=next((v for k,v in getattr(owner,'visible_units',{}).items() if k>>32&0xFFFFF==entry),None)
-    if not record:raise ValueError('creature template is not visible to the native session')
+    # The client can request a previously cached template after the creature
+    # leaves visibility. Refuse that lookup without closing the game session.
+    if not record:return None
     if not hasattr(owner,'creature_queries'):owner.creature_queries=set()
     owner.creature_queries.add(entry)
     return Writer().pack('IQ',entry,record['guid']).finish()

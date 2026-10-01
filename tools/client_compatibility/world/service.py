@@ -141,7 +141,10 @@ class Session:
             self.owner.native.send(name)
         elif name=='CMSG_QUERY_CREATURE':
             if not self.owner.created or self is not self.owner.world:raise ValueError('creature query before world entry')
-            self.owner.native.send('CMSG_CREATURE_QUERY',creature_queries.request(self.owner,body))
+            query=creature_queries.request(self.owner,body)
+            if query is None:
+                self.send('SMSG_QUERY_CREATURE_RESPONSE',Writer().raw(body).bits(0,1).finish())
+            else:self.owner.native.send('CMSG_CREATURE_QUERY',query)
         elif name in gossip.CLIENT_NAMES:
             if not self.owner.created or self is not self.owner.world:raise ValueError('gossip before world entry')
             self.owner.native.send(*gossip.request(self.owner,name,body))

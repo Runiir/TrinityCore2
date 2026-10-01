@@ -39,4 +39,4 @@ def test_creature_query_uses_visible_entry_and_returns_no_data_for_native_reject
     assert creature_queries.request(o,Writer().pack('I',2409).finish())==Writer().pack('IQ',2409,guid).finish()
     r=Reader(creature_queries.response(o,Writer().pack('I',2409|0x80000000).finish()))
     assert r.unpack('I')==(2409,) and r.bits(1)==0;r.end()
-    with pytest.raises(ValueError):creature_queries.request(o,Writer().pack('I',999).finish())
+    assert creature_queries.request(o,Writer().pack('I',999).finish()) is None
