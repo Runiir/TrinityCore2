@@ -29,3 +29,15 @@ def test_grangolvar_detour_survives_a_new_survey_bearing():
     next_plan=ground.walk_plan(observed,3.5,[371],r.for_action('forward_short'))
     assert len(next_plan['points'])==1 and next_plan['points'][0][1]>4962
     assert math.dist(next_plan['points'][0][:2],plan['points'][-1][:2])<.001
+
+
+def test_hop_requires_a_measured_low_step_and_real_collision():
+    current=[-2459.0127,4949.3237,33.8293762,0]
+    low=[-2458.1333,4949.33301,34.8990479]
+    blocked={'attempt':1,'blocked_forward_attempts':2}
+    hop=ground.low_step_hop(current,low,blocked)
+    assert 1<hop['predicted_rise']<1.1
+    assert ground.low_step_hop(current,low,None) is None
+    assert ground.low_step_hop(current,low,blocked,grounded=False) is None
+    assert ground.low_step_hop(current,[*low[:2],current[2]+2],blocked) is None
+    assert ground.low_step_hop(current,[current[0]+5,current[1],current[2]+1],blocked) is None

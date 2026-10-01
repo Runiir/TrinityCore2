@@ -99,7 +99,15 @@ def walk_plan(tcp,distance,digsite_ids,recovery=None):
     return planned
 
 
-def walk(inputs,tcp,distance,digsite_ids,recovery=None):
+def low_step_hop(current,target,recovery,grounded=True):
+    rise=target[2]-current[2]
+    if grounded and (recovery or {}).get('attempt') and .5<rise<=1.25 and math.dist(current[:2],target[:2])<=4:
+        return {'observed_feet':current[:3],'public_ground_waypoint':target,
+            'predicted_rise':rise,'maximum_rise':1.25,'source':'public navmesh height and failed physical displacement'}
+    return None
+
+
+def walk(inputs,tcp,distance,digsite_ids,recovery=None,grounded=True):
     import time
     from .observation.archaeology import Observer,angle_error
     planned=walk_plan(tcp,distance,digsite_ids,recovery);observer=Observer();executed=[]
@@ -122,9 +130,13 @@ def walk(inputs,tcp,distance,digsite_ids,recovery=None):
     hold=min(distance/7,math.dist(current[:2],target[:2])/7,2.)
     planned['walking_goal']=target
     if hold<.02:raise RuntimeError('ground waypoint is too close for a useful walk')
+    hop=low_step_hop(current,target,recovery,grounded)
+    if hop:
+        inputs.key('space',hold=.15);executed.append({'key':'space','hold':.15})
     inputs.key('w',hold=hold);time.sleep(.3)
+    if hop:time.sleep(.7)
     executed.append({'key':'w','hold':hold})
-    planned.update(physical_inputs=executed,after=observer.poll(0)['player']['position'],
+    planned.update(physical_inputs=executed,low_step_hop=hop,after=observer.poll(0)['player']['position'],
                    steering_source='public_static_ground_navigation_mesh')
     remaining=[p[:] for p in planned['points']]
     while remaining and math.dist(remaining[0][:2],planned['start'][:2])<=.15:remaining.pop(0)

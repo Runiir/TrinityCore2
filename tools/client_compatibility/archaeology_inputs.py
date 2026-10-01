@@ -55,7 +55,8 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
         if not tcp['tool']:raise ValueError('walk without a survey observation')
         short,long={'red':(2,6),'yellow':(1,3),'green':(.5,1)}[tcp['tool']['color']]
         hold=short if action=='forward_short' else long
-        with Image.open(path) as image:digsite_ids=travel.decode_image(image)['digsite_ids']
+        with Image.open(path) as image:extra=travel.decode_image(image)
+        digsite_ids=extra['digsite_ids']
         if mounted_moves and tcp['tool']['color']!='green':
             from . import travel_trial,travel_routes,site_boundaries
             planned=ground_navigation.survey_ray(tcp,hold*7,digsite_ids)
@@ -91,7 +92,8 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             inside=site_boundaries.contains(site['polygon'],after['world_position'])
             ground_route={**planned,'mounted_travel_episode':directory.name,
                 'boundary_guard':{**planned['boundary_guard'],'observed_after_inside':inside}}
-        else:hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids,recovery)
+        else:hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids,recovery,
+            grounded=not any(extra[k] for k in ['mounted','flying','falling','swimming']))
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()
