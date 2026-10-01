@@ -21,26 +21,33 @@ def main():
         'pretravel_world_packets.jsonl.gz','pretravel_modern_world.jsonl.gz','travel_ready.png','travel_start.png',
         'travel_protocol_tests.xml','travel_live_validation.json','travel_serving_preflight.json',
         'taxi_stall.png','taxi_relogin.png','taxi_retry_ready.png','taxi_query_login.png',
-        'taxi_hotfix_login.png','taxi_hotfix_ready.png','travel_live_ready.png'])
+        'taxi_hotfix_login.png','taxi_hotfix_ready.png','travel_live_ready.png','travel_combat_stop.png'])
     paths.append(lab.ROOT/'logs/modern_world.jsonl')
     paths.append(lab.ROOT/'bin/navmesh_probe')
     episodes=[]
+    totals=[]
     for name in a.episode:
         if Path(name).name!=name:raise ValueError('invalid episode name')
         path=lab.ROOT/'evidence'/name
         receipt=json.loads((path/'episode.json').read_text())
         if not receipt.get('finished_at'):raise ValueError('episode still open')
         paths.append(path);episodes.append(receipt)
+        children=[json.loads(p.read_text()) for p in path.rglob('episode.json')]
+        totals.append({'model_actions':sum(sum('action' in s for s in r['steps']) for r in children),
+            'travel_legs':sum(len(r.get('legs_completed',[])) for r in children),
+            'safety_recoveries':sum(len(r.get('safety_recoveries',[])) for r in children)})
     with tempfile.TemporaryDirectory(dir=lab.ROOT/'run/tmp') as scratch:
         scratch=Path(scratch)
         training_metrics(lab.ROOT/'models/travel-head-v3',scratch/'training')
         with Live(dir=str(scratch/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
-            for name,r in zip(a.episode,episodes):
+            for name,r,total in zip(a.episode,episodes,totals):
                 live.log_param('episode',name)
                 live.log_metric('completed',int(r.get('completed',False)))
-                live.log_metric('actions',len(r['steps']))
+                live.log_metric('steps',len(r['steps']))
+                live.log_metric('model_actions',total['model_actions'])
                 live.log_metric('collected_finds',len(r.get('finds',[])))
-                live.log_metric('travel_legs',len(r.get('legs_completed',[])))
+                live.log_metric('travel_legs',total['travel_legs'])
+                live.log_metric('safety_recoveries',total['safety_recoveries'])
                 live.log_metric('sites_completed',len(r.get('sites_completed',[])))
                 live.log_metric('duration_seconds',r['finished_at']-r['started_at']);live.next_step()
         metadata={'schema':'client442_travel_checkpoint_v1','code_commit':subprocess.check_output(
