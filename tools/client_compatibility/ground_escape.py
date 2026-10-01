@@ -25,6 +25,16 @@ def candidates(tcp,site,obstructions=()):
         try:route['walking_surface']=ground.safe_walk_segment(site['map'],start,probe)
         except RuntimeError:continue
         result.append(route)
+    if not result:
+        # The old mesh can omit a grounded client patch. A recently observed
+        # telescope base is an ordinary ground sample, not the hidden find.
+        tool=tcp['tool'];point=tool.get('position');age=time.time()-tool.get('seen_at',0)
+        if point and 0<=age<=20 and 1<=math.dist(start[:2],point[:2])<=3 and abs(point[2]-start[2])<=.75:
+            if site_boundaries.inside_segment(site['polygon'],start,point) and not ground.water_at(site['map'],point)['water_above_feet']:
+                result.append({'schema':'observed_telescope_ground_sample_v1','points':[start[:3],point[:3]],
+                    'ground_only':True,'water_polygons':0,'observed_ground_sample':True,
+                    'sample_seen_at':tool['seen_at'],'sample_maximum_age_seconds':20,
+                    'source':'ordinary owned telescope base and grounded player; no private find coordinates'})
     return result[:4]
 
 
@@ -67,7 +77,9 @@ def execute(inputs,tcp,observed_ids,path,obstructions=()):
             if abs(after[2]-current[2])>1.5:raise RuntimeError('ground escape changed floor unexpectedly')
             if math.dist(current[:2],after[:2])>=.5:
                 trace['completed']=True
-                return hold,{**route,'start':before,'after':after,'remaining_ground_points':[],
+                return hold,{**route,'start':before,'after':after,
+                    'remaining_ground_points':[] if route.get('observed_ground_sample') else route['points'][1:],
+                    'detour_committed':not route.get('observed_ground_sample'),
                     'goal_source':'public survey bearing and nearby dry recovery corridors',
                     'ground_escape_receipt':receipt.name,'physical_navigation_recovery':True,
                     'boundary_guard':{'site_id':site['id'],'observed_after_inside':True,'whole_corridor_inside':True,'source':site['source']}}

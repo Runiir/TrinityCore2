@@ -34,6 +34,20 @@ def test_trial64_slide_face_is_rejected_before_the_short_probe():
         ground.safe_walk_segment(530,start,[-3269.2394,900.511,33.6])
 
 
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper is absent')
+def test_recent_telescope_base_can_bridge_a_missing_ground_column(monkeypatch):
+    tcp={'player':{'position':[-3269.39013671875,894.5518798828125,23.10196304321289,4.184597]},
+         'tool':{'map':530,'position':[-3267.837158203125,893.2916259765625,22.612598419189453],
+                 'heading_radians':4.223408222198486,'seen_at':100}}
+    monkeypatch.setattr(escape.time,'time',lambda:105)
+    with pytest.raises(RuntimeError):ground.probe_surface(530,tcp['player']['position'])
+    routes=escape.candidates(tcp,site_boundaries.sites()[391])
+    assert len(routes)==1 and routes[0]['observed_ground_sample']
+    assert routes[0]['points'][-1]==tcp['tool']['position']
+    monkeypatch.setattr(escape.time,'time',lambda:121)
+    assert not escape.candidates(tcp,site_boundaries.sites()[391])
+
+
 def test_small_step_down_can_settle_before_accepting_the_probe(monkeypatch,tmp_path):
     from tools.client_compatibility import archaeology_inputs,travel_inputs
     from tools.client_compatibility.observation import transport

@@ -292,10 +292,20 @@ above 35 degrees before pressing forward. Nearby edge projections may be within
 two yards; detail triangles within 0.05 yards of a projected edge resolve float
 rounding. Landing's existing 20-degree limit remains separate.
 
+Episode 65 stopped at a navigation-mesh gap after several short on-foot recoveries.
+The grounded player and the last ordinary telescope base were 2 yards apart and
+only 0.49 yards different in height, while the old mesh had no matching column.
+When no mapped recovery is accepted, the adapter may probe toward that observed
+ground sample if it is at most 20 seconds old, 1 to 3 yards away, within 0.75
+yards of the feet, dry and inside the assigned polygon. All actual movement,
+falling, health and boundary guards remain. This uses the telescope's base,
+not the unknown find. Ordinary mapped side detours are retained to their endpoint
+instead of discarding them after one short probe.
+
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 124 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 125 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -312,7 +322,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 64 preserve unsuccessful steps, including missing portal
+Episodes 07 through 65 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -329,6 +339,7 @@ an artifact above the bounded cursor search's covered region and combat starting
 inside a collection approach, artifact expiry during combat recovery and a
 gentle side corridor rejected by inconsistent height limits.
 Episode 64 also records the subsequent sideways slide despite a small endpoint rise.
+Episode 65 records the grounded patch missing from the old mesh's column.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
@@ -365,6 +376,9 @@ Trials 60 through 63 follow in
 The archive is 500,346,665 bytes with SHA-256
 `2b74518b19e1b16cafa67cd477e7c00e68e630002150bb40ed21e789ca1efc3e`.
 Scoped status, push and cloud status confirmed remote synchronization.
+All 472 closed PNG/WebP files matched the archive bytes and hashes before removing
+415,664,660 local bytes. The next checkpoint includes
+`collection_recovery_repairs_cleanup.json` with the verification manifest.
 
 ## Running the loop
 
