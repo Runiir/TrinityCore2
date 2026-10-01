@@ -5,7 +5,7 @@ from . import ground_navigation,site_boundaries
 from .travel_inputs import face
 
 
-def plan(map_id,start,find,polygon):
+def plan(map_id,start,find,polygon,excluded_stances=()):
     candidates=[]
     for index in range(16):
         heading=start[3]+math.pi+index*math.tau/16
@@ -13,6 +13,7 @@ def plan(map_id,start,find,polygon):
         try:route=ground_navigation.route(map_id,start,goal,allow_swimming=True)
         except RuntimeError:continue
         endpoint=route['points'][-1];corridor=[start,*route['points']]
+        if any(math.dist(endpoint[:2],p[:2])<4 for p in excluded_stances):continue
         length=sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))
         if route['water_polygons'] or not 2.5<math.dist(endpoint[:2],find[:2])<4.2:continue
         if math.dist(endpoint[:3],find[:3])>4.75 or abs(endpoint[2]-find[2])>1.25 or length>8:continue
@@ -22,10 +23,10 @@ def plan(map_id,start,find,polygon):
     return min(candidates,key=lambda c:c[0])[1]
 
 
-def approach(inputs,observer,find,site,path):
+def approach(inputs,observer,find,site,path,excluded_stances=()):
     from .archaeology_inputs import screenshot
     from .swim_navigation import available
-    start=observer.poll()['position'];route=plan(site['map'],start,find['position'],site['polygon']);keys=[]
+    start=observer.poll()['position'];route=plan(site['map'],start,find['position'],site['polygon'],excluded_stances);keys=[]
     for target in route['points']:
         for _ in range(3):
             current=observer.poll()['position'];distance=math.dist(current[:2],target[:2])

@@ -24,13 +24,13 @@ def screenshot(path):
     return movement,extra
 
 
-def locate_find(inputs,path):
+def locate_find(inputs,path,timeout=40):
     # Search the ordinary 3D view with cursor hover, then verify the game's
     # tooltip against known find names. No teacher pixel or private coordinates.
-    preferred=[(640,275),(640,285),(655,275),(655,331),(640,360),(655,400),(620,400)]
+    preferred=[(640,275),(640,285),(655,275),(655,315),(655,331),(640,340),(640,360),(655,385),(655,400),(620,400)]
     grid=[(x,y) for x in range(320,961,24) for y in range(190,575,24)]
     grid.sort(key=lambda p:(p[0]-655)**2+(p[1]-370)**2)
-    deadline=time.monotonic()+40
+    deadline=time.monotonic()+timeout
     for x,y in [*preferred,*grid]:
         if time.monotonic()>deadline:break
         inputs.move(x,y);time.sleep(.2)
@@ -127,7 +127,9 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             from . import loot_pose
             loot_approach=loot_pose.approach(inputs,observer,find,site,path)
             loot_approach['physical_keys']=[*facing_keys,*loot_approach['physical_keys']]
-        pixel=locate_find(inputs,path)
+        from .find_interaction import locate
+        pixel,localization=locate(inputs,observer,find,path)
+        loot_approach['localization']=localization
         # The owned Classic client can render at 15 FPS. Keep the button down
         # for multiple frames so the physical use action is observed reliably.
         inputs.click(*pixel,button=3,hold=.2)
