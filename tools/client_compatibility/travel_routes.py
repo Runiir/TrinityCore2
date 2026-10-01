@@ -41,8 +41,10 @@ def prepare_clearance(plan,map_id,position):
                 original=leg['position']
                 leg['position']=ground_navigation.ground_point(map_id,original,maximum_height=original[2]+8)
                 if leg.get('site_id'):
-                    leg['position']=ground_navigation.landing_point(map_id,leg['position'],start=leg['position'])
                     site=site_boundaries.sites()[leg['site_id']]
+                    from .site_landing import select
+                    leg['position'],leg['public_site_landing']=select(site,leg['position'])
+                    leg.update(arrival_radius=1.5,landing_height_tolerance=2)
                     if not site_boundaries.contains(site['polygon'],leg['position']):
                         raise RuntimeError('flat landing is outside the destination digsite')
                 leg['landing_height_source']={'source':'public static NAV_GROUND column',

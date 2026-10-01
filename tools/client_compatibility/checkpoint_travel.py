@@ -39,7 +39,7 @@ def main():
         'combat_login.png','combat_character_login.png','combat_world_login.png',
         'observation_refactor_collection_failure.xml','landing_recovery_collection_failure.xml',
         'landing_slope_regression_failure.xml','ground_wall_repair.json',
-        'water_repair_before.png','water_repair_after.png','water_repair.json','water_loop_completion.json',
+        'water_repair_before.png','water_repair_after.png','water_repair.json','water_arrival_reaudit.json','water_loop_completion.json',
         'loot_tooltip_occlusion_56.png','loot_tooltip_hover_56.png','loot_tooltip_hover_56.json',
         'ground_corner_after_59.png','navigation_collection_repairs_cleanup.json',
         'collection_interrupt_61.png','collection_interrupt_guard_failure.xml','artifact_expiry_62.json',

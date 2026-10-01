@@ -19,8 +19,13 @@ def available(movement,extra,position,polygon):
     if movement['in_combat']:raise CombatInterrupted('physical approach interrupted by combat')
 
 
-def dry_arrival(position,goal,extra):
-    return math.dist(position[:2],goal[:2])<=1.25 and not any(extra[k] for k in ['swimming','falling','mounted','flying'])
+def dry_arrival(position,goal,extra,*,map_id=None):
+    if math.dist(position[:2],goal[:2])>1.25 or abs(position[2]-goal[2])>2 or any(
+        extra[k] for k in ['swimming','falling','mounted','flying']):return False
+    if map_id is not None:
+        from .ground_navigation import water_at
+        if water_at(map_id,position)['water_above_feet']:return False
+    return True
 
 
 def cross(inputs,observer,planned,path):
@@ -41,7 +46,8 @@ def cross(inputs,observer,planned,path):
             transit['observations'].append({'time':time.time(),'position':position,
                 'movement':movement,'travel':extra})
             lab.private_write(receipt_path,json.dumps(transit,indent=2)+'\n')
-            if dry_arrival(position,goal,extra):transit['completed']=True;break
+            if dry_arrival(position,goal,extra,map_id=site_boundaries.sites()[planned['boundary_guard']['site_id']]['map']):
+                transit['completed']=True;break
             while len(points)>1 and math.dist(position[:2],points[0][:2])<=1.25:points.pop(0)
             target=points[0]
             # Once the shoreline waypoint is reached, move toward the dry

@@ -181,7 +181,7 @@ floor can clear `IsSwimming()` while the feet remain submerged. A bounded shore
 move completes before the selected cast, including when there is no telescope.
 
 Episode 52 completed the previously partial Grangol'var site for five Orc
-fragments, including a real swim and dry Survey recovery, then flew to Bleeding
+fragments, including real swimming and subsequent collection, then flew to Bleeding
 Hollow. It collected that fresh site's three finds for 7, 6 and 4 Orc fragments,
 observed 375 replaced by 391, and automatically flew to Laughing Skull in Nagrand.
 The first Nagrand approach landed on an unmapped stone structure at Z58.388,
@@ -198,6 +198,15 @@ and observed elevation remain in the recovery receipt. Restarted loops also
 check elevation before treating an already-in-site character as ready to Survey.
 The raised-stone fixture now rejects both false destination-ground facts and
 premature arrival. It verifies a connected alternative landing below Z50.
+
+A later geometric re-audit found that episode 52's first shore check accepted
+feet 0.54 yards below the mapped water surface after `IsSwimming()` cleared.
+Its native fragment collection is still confirmed, but the old addon-only
+"dry arrival" label was incorrect. Episode 51's arrival is above the water.
+The archive remains unchanged; `water_arrival_reaudit.json` retains both exact
+end positions and corrected derived labels. Arrival now checks actual elevation
+within two yards of its dry goal and rejects a water surface above the feet,
+so movement continues toward shore before Survey resumes.
 
 Episode 53 collected all three fresh Laughing Skull finds for 9, 5 and 8 Orc
 fragments, observing site 365 replaced by 355. Its second find landed on the
@@ -221,7 +230,7 @@ Telaar-to-Honor Hold taxi (node 100), and landed at the next assigned site.
 Episode 55 collected two Hellfire Citadel finds for five and eight Orc
 fragments. Its third approach first stopped on a tall pillar, recovered toward
 the pit floor, then slid just outside the three-yard local arrival radius. It
-stopped after three returns to ascent. Nearby raised-floor recovery now covers
+stopped after three returns to ascent. Nearby floor-mismatch recovery now covers
 twelve yards after descent begins. A grounded mount already on the correct floor
 can finish a dry corridor of at most sixteen yards with short keyboard advances,
 checking actual floor height, combat, health and the assigned polygon. This
@@ -310,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 128 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 132 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -327,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 66 preserve unsuccessful steps, including missing portal
+Episodes 07 through 68 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -346,6 +355,19 @@ a side corridor rejected by inconsistent height limits.
 Episode 64 also records the subsequent sideways slide despite a small endpoint rise.
 Episode 65 records the grounded patch missing from the old mesh's column.
 Episode 66 records the longer flight probes missing a shorter safe landing.
+Episode 67 collected seven Draenei fragments from that formerly blocked approach.
+Its next flight stopped roughly 1.8 yards short of the selected flat point,
+on a 36.9-degree side surface about four yards lower. The previous recovery
+handled only ground above the target, so it returned to ascent three times.
+Recovery now handles either direction of floor mismatch and local survey
+flights use a 1.5-yard arrival radius. The two-yard height tolerance remains.
+Episode 68 collected Baa'ri's last find for nine fragments and observed its
+replacement by Bonechewer (377). Its next journey stopped during planning
+because Dragonmaw Fortress's arithmetic center had no accepted flat landing.
+Site arrival now searches nearby public points within the polygon on the same
+ground component, rejecting submerged surfaces. The exact Dragonmaw fixture
+finds dry flat ground roughly eleven yards from its center. Site and survey
+arrivals both use a 1.5-yard horizontal radius and two-yard height tolerance.
 Recent telescope ground samples cannot override a known detail slope above
 35 degrees, even if the sample's elevation is close to the player's feet.
 Successful outcomes do not

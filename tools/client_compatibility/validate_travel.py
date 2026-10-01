@@ -70,10 +70,15 @@ def score(directory):
     for path in sorted(directory.rglob('water_transit_*.json')):
         receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['route']['boundary_guard']['site_id']]['polygon']
         observations=receipt['observations']
+        from .swim_navigation import dry_arrival
+        site=site_boundaries.sites()[receipt['route']['boundary_guard']['site_id']]
+        actual_dry=bool(receipt['completed'] and observations and dry_arrival(observations[-1]['position'],
+            receipt['route']['points'][-1],observations[-1]['travel'],map_id=site['map']))
         summary['water_transits'].append({'file':str(path.relative_to(directory)),
             'completed':receipt['completed'],'failure':receipt['failure'],
             'swimming_observations':sum(o['travel']['swimming'] for o in observations),
-            'dry_arrival':bool(receipt['completed'] and observations and not observations[-1]['travel']['swimming'])})
+            'addon_reported_not_swimming':bool(observations and not observations[-1]['travel']['swimming']),
+            'dry_arrival':actual_dry})
         positions=[o['position'] for o in observations]
         if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
             not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):

@@ -58,6 +58,17 @@ def test_arrival_requires_actual_dry_addon_state():
     assert not dry_arrival([.5,0,4],goal,{**extra,'swimming':True})
     assert not dry_arrival([.5,0,4],goal,{**extra,'falling':True})
     assert not dry_arrival([2,0,4],goal,extra)
+    assert not dry_arrival([.5,0,0],goal,extra)
+
+
+@provisioned
+def test_trial52_not_swimming_on_pond_floor_is_not_dry_arrival():
+    extra=dict(swimming=False,falling=False,mounted=False,flying=False)
+    goal=[-2460.63892,4961.79639,29.2714806]
+    assert not dry_arrival([-2459.850341796875,4961.87646484375,27.959047317504883],goal,extra,map_id=530)
+    assert dry_arrival(goal,goal,extra,map_id=530)
+    end=[-2443.22509765625,4955.91943359375,32.44786834716797]
+    assert dry_arrival(end,[-2443.19995,4955.99951,33.0323792],extra,map_id=530)
 
 
 def test_water_transit_stops_on_boundary_combat_or_health_loss():
