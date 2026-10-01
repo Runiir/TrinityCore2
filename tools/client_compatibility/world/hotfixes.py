@@ -37,4 +37,6 @@ def request(session,body):
     for row in rows:
         payload=bytes.fromhex(row['data']);data+=payload
         w.pack('IIIiI',row['push_id'],row['unique_id'],row['table_hash'],row['record_id'],len(payload)).bits(1,3)
-    session.send('SMSG_HOTFIX_MESSAGE',w.pack('I',len(data)).raw(data).finish())
+    # CONNECT completes the login-time hotfix exchange. MESSAGE has the same
+    # record layout but is a later update and leaves character loading pending.
+    session.send('SMSG_HOTFIX_CONNECT',w.pack('I',len(data)).raw(data).finish())
