@@ -163,7 +163,11 @@ class Session:
             if not self.owner.created or self is not self.owner.world:raise ValueError('taxi request before world entry')
             self.owner.native.send(*taxi.request(self.owner,name,body))
         elif name in transfers.CLIENT_NAMES:
-            if self is not self.owner.world or not self.owner.character:
+            # 60895 sends WORLD_PORT_RESPONSE on the realm connection after
+            # loading Outland. All acknowledgements still need the same owned
+            # character and the exact pending native transfer stage/counter.
+            realm_world_port=name=='CMSG_WORLD_PORT_RESPONSE' and self is self.owner
+            if (self is not self.owner.world and not realm_world_port) or not self.owner.character or not self.owner.world:
                 raise ValueError('transfer acknowledgement outside owned world')
             self.owner.native.send(*transfers.request(self.owner,name,body))
         elif name in movement_controls.ACKS:

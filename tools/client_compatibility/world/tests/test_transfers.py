@@ -1,6 +1,7 @@
 """Transfer order and GUID/counter guards against pinned native wire fixtures."""
 from types import SimpleNamespace
 import struct
+import asyncio
 import pytest
 from tools.client_compatibility.world import transfers
 from tools.client_compatibility.world.buffer import Reader,Writer,player_high
@@ -39,3 +40,14 @@ def test_far_transfer_requires_acknowledgements_in_order_and_60895_world_size():
     assert len(data)==40 and struct.unpack('<i4fI3fi',data)==(530,100,200,300,2,16,0,0,0,1)
     assert not o.created and o.character['map']==530
     assert transfers.request(o,'CMSG_WORLD_PORT_RESPONSE',b'')==('MSG_MOVE_WORLDPORT_ACK',b'')
+
+
+def test_captured_world_port_on_owned_realm_connection_and_duplicate_rejection():
+    from tools.client_compatibility.world.service import Session
+    sent=[];o=owner();o.owner=o;o.world=object();o.crypt=SimpleNamespace(key=b'test')
+    o.native=SimpleNamespace(send=lambda *v:sent.append(v))
+    o.pending_far={'map':530,'sequence':1,'reason':1,'stage':'new_world'};o.created=False
+    asyncio.run(Session.handle(o,'CMSG_WORLD_PORT_RESPONSE',b''))
+    assert sent==[('MSG_MOVE_WORLDPORT_ACK',b'')] and o.pending_far['stage']=='entering'
+    with pytest.raises(ValueError):asyncio.run(Session.handle(o,'CMSG_WORLD_PORT_RESPONSE',b''))
+    with pytest.raises(ValueError):asyncio.run(Session.handle(o,'CMSG_SUSPEND_TOKEN_RESPONSE',struct.pack('<I',1)))
