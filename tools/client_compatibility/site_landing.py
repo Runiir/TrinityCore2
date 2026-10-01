@@ -24,7 +24,7 @@ def select(site,origin):
                   not ground.water_at(site['map'],point)['water_above_feet'])
         patch=None
         if accepted:
-            try:patch=ground.safe_landing_patch(site['map'],point)
+            try:patch=ground.site_ground_patch(site['map'],point)
             except RuntimeError as error:
                 accepted=False;attempts.append({'requested':requested,'selected':point,'failure':str(error)})
         attempts.append({'requested':requested,'selected':point,'accepted':accepted})

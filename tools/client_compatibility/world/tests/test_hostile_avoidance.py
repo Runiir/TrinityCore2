@@ -27,10 +27,15 @@ def test_aggro_avoidance_requires_connected_flat_ground(monkeypatch):
     def flat(m,point,radius,start):
         origins.append(start);return point
     monkeypatch.setattr(h.ground_navigation,'landing_point',flat)
+    monkeypatch.setattr(h.ground_navigation,'site_ground_patch',lambda *a:None)
     goal=[0,0,0];hostiles=[{'position':[0,0,0],'clearance_radius':9.5}]
     point,record=h.landing(530,goal,hostiles,[377],[0,0,100])
     assert math.dist(point[:2],goal[:2])>9.5 and origins and all(p==goal for p in origins)
     assert record['position']==point
+    def covered(*a):raise RuntimeError('buried navigation floor')
+    monkeypatch.setattr(h.ground_navigation,'site_ground_patch',covered)
+    with pytest.raises(RuntimeError):h.landing(530,goal,hostiles,[377],[0,0,100])
+    monkeypatch.setattr(h.ground_navigation,'site_ground_patch',lambda *a:None)
     def disconnected(*a,**kw):raise RuntimeError('disconnected roof')
     monkeypatch.setattr(h.ground_navigation,'landing_point',disconnected)
     with pytest.raises(RuntimeError):h.landing(530,goal,hostiles,[377],[0,0,100])

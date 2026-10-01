@@ -11,6 +11,15 @@ def test_trial68_dragonmaw_center_has_a_nearby_dry_flat_arrival():
     assert not ground.water_at(530,point)['water_above_feet']
     assert record['attempts'][-1]['accepted'] and record['dry_arrival_required']
     assert record['safe_patch']['radius_yards']==1.5
+    assert all(abs(s['physical_surface']['terrain_height']-s['position'][2])<=1.5
+        for s in record['safe_patch']['samples'])
+
+
+@pytest.mark.skipif(not (lab.BASE/'data/maps/5303931.map').exists(),reason='public terrain absent')
+def test_dragonmaw_flat_roof_is_not_an_initial_survey_ground():
+    point=[-4198,385.416656,118.10009]
+    assert ground.safe_landing_patch(530,point)
+    with pytest.raises(RuntimeError,match='raised|detached'):ground.site_ground_patch(530,point)
 
 
 @pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private navmesh helper absent')

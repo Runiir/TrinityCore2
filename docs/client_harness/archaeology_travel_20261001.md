@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 133 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 140 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 69 preserve unsuccessful steps, including missing portal
+Episodes 07 through 72 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -364,9 +364,9 @@ flights use a 1.5-yard arrival radius. The two-yard height tolerance remains.
 Episode 68 collected Baa'ri's last find for nine fragments and observed its
 replacement by Bonechewer (377). Its next journey stopped during planning
 because Dragonmaw Fortress's arithmetic center had no accepted flat landing.
-Site arrival now searches nearby public points within the polygon on the same
-ground component, rejecting submerged surfaces. The exact Dragonmaw fixture
-finds dry flat ground roughly eleven yards from its center. Site and survey
+The initial site-arrival repair searched nearby public points within the polygon
+on the same ground component, rejecting submerged surfaces. That first Dragonmaw
+candidate was later rejected by the supporting-surface checks below. Site and survey
 arrivals both use a 1.5-yard horizontal radius and two-yard height tolerance.
 Episode 69 reached Dragonmaw but produced no instrument after Survey. Ordinary
 packets confirm two completed Survey spells and one cooldown rejection. The
@@ -374,8 +374,9 @@ arrival's nominal flat detail face overlapped a 53.1-degree supporting surface
 at the actual feet. Landing now rejects overlapping steep faces and requires a
 dry 1.5-yard surrounding patch: center slope at most 20 degrees, perimeter at
 most 35 degrees, and height difference at most 1.25 yards. Initial site arrivals
-do not require connection to an unverified arithmetic-center surface; Dragonmaw
-has broad flat ground fifteen yards away and roughly 38 yards below that center.
+do not require connection to an unverified arithmetic-center surface. A broad
+mesh floor fifteen yards away and roughly 38 yards below that center was the
+next candidate; later raw-terrain validation rejected it as buried.
 Local survey flights retain their known-floor connection requirement.
 The first patch-search suite and the first overlap-filter suite each failed two
 tests. One old fixture accepted a Baa'ri point whose supporting column contains a
@@ -384,6 +385,26 @@ repaired by removing the unverified-center connection requirement. Both failed
 XMLs remain alongside the corrected full-suite result.
 Recent telescope ground samples cannot override a known detail slope above
 35 degrees, even if the sample's elevation is close to the player's feet.
+Episode 70 exposed a restart-readiness check that accepted the old steep ledge
+because its elevation matched the mesh. Readiness now checks actual detail slope
+and horizontal projection before resuming Survey, while preserving swimming.
+Episodes 71 and 72 attempted the lower mesh floor but slid on the hillside and
+remained flying. A normal Survey ground-contact probe was implemented in 72;
+it never activated because the client correctly continued reporting flight.
+
+Public raw MAPS terrain explains this contact: the proposed floor at
+(-4183, 400.416656, 49.1118813) is underneath terrain at Z74.45959. After sliding
+to approximately (-4177.74, 401.22, 60.72), raw terrain is Z60.19745, matching
+the observed client feet. This is evidence of an unsuitable navigation-mesh
+candidate, not proof that the client and server terrain versions disagree.
+The adapter now interpolates the native MAPS height triangles and probes VMAP
+model collision. Both are public static, read-only data. Every landing patch
+must match their highest supporting surface within 1.5 yards. Initial site
+arrivals and their hostile-avoidance alternatives also match raw terrain, which
+excludes detached roofs. Local survey flights retain their known-floor connection.
+The new regression checks both the buried floor and the raised Dragonmaw roof.
+The first raw-terrain regression failed due to an invalid pytest approximation
+argument; its failed XML is retained with the corrected full-suite result.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

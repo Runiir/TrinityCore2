@@ -43,6 +43,7 @@ def landing(map_id,goal,hostiles,observed_ids,start=None):
             try:
                 point=ground_navigation.ground_point(map_id,xy)
                 point=ground_navigation.landing_point(map_id,point,radius=3,start=goal)
+                if sites:ground_navigation.site_ground_patch(map_id,point)
             except RuntimeError:continue
             if sites and (not site_boundaries.contains(sites[0]['polygon'],point) or
                 start and site_boundaries.contains(sites[0]['polygon'],start) and
