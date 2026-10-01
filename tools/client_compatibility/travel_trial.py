@@ -25,7 +25,7 @@ def state(leg,movement,extra,facts,ui):
     distance=math.dist(facts['position'][:2],leg['position'][:2]) if leg.get('position') else None
     transfer_goal='destination_map' in leg
     reached=facts['map']==leg['destination_map'] if transfer_goal else (
-        facts['map']==leg['map'] and distance is not None and distance<12 and
+        facts['map']==leg['map'] and distance is not None and distance<leg.get('arrival_radius',12) and
         abs(facts['position'][2]-leg['position'][2])<leg.get('landing_height_tolerance',8))
     return {'mode':leg['mode'],'available':movement['in_world'] and not facts['transferring'] and
             not any(movement[k] for k in ['dead','in_combat']),
@@ -48,7 +48,7 @@ def run(plan,out,maximum_steps=180):
         'plan':plan,'steps':history,'legs_completed':finished,'frames':[],'safety_recoveries':[],
         'rejected_decisions':[],
         'manual_gameplay_interventions':0,'teacher_mouse_annotations':0,'private_next_find_coordinates_used':False}
-    leg_index=0;stalled=0;last_metric=None
+    leg_index=0;stalled=0;last_metric=None;landing_cycles=0;landing_started=False
     try:
         for index in range(maximum_steps):
             leg=plan['legs'][leg_index]
@@ -87,6 +87,10 @@ def run(plan,out,maximum_steps=180):
                     'state':s,'movement':movement,'travel':extra,'facts':facts,'request':request,
                     'response':response,'expected':policy.label(s)})
                 raise RuntimeError(f'model selected {action} against the observed travel preconditions')
+            if action=='land':landing_started=True
+            elif action=='takeoff' and landing_started:
+                landing_cycles+=1;landing_started=False
+                if landing_cycles>=3:raise RuntimeError('three failed landings returned to ascent without arrival')
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as image:image.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
@@ -100,7 +104,7 @@ def run(plan,out,maximum_steps=180):
             print(json.dumps({'step':index,'leg':leg_index,'action':action,'position':facts['position'][:3]}),flush=True)
             if action=='arrived':
                 finished.append({'leg':leg_index,'name':leg['id'],'time':time.time(),'facts':facts})
-                leg_index+=1;stalled=0;last_metric=None
+                leg_index+=1;stalled=0;last_metric=None;landing_cycles=0;landing_started=False
                 if leg_index==len(plan['legs']):break
             else:
                 metric=progress_metric(action,leg,facts,extra,s)

@@ -63,7 +63,15 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False):
             targets=[p for p in planned['points'][1:] if math.dist(p[:2],start[:2])>1.5 and
                      site_boundaries.inside_segment(site['polygon'],start,p)]
             if not targets:raise RuntimeError('no in-site mounted waypoint from public survey heading')
-            target=targets[-1]
+            target=None
+            for waypoint in reversed(targets):
+                try:candidate=ground_navigation.landing_point(site['map'],waypoint)
+                except RuntimeError:continue
+                if math.dist(candidate[:2],start[:2])>=3 and site_boundaries.inside_segment(site['polygon'],start,candidate):
+                    target=candidate;break
+            if target is None:raise RuntimeError('no flatter in-site landing near the public survey waypoint')
+            planned['mounted_landing']={'requested':targets[-1],'selected':target,'maximum_detail_slope_degrees':40,
+                'source':'public static ground detail triangles; no private find coordinates'}
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
                 'map':site['map'],'position':target,'ceiling':max(start[2],target[2])+70,'arrival_radius':1.5}]}
             directory=path.parent/f'mounted_move_{time.time_ns()}'

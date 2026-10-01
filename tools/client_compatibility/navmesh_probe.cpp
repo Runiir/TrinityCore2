@@ -2,6 +2,7 @@
 #include "DetourAlloc.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
+#include "DetourCommon.h"
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -15,17 +16,45 @@
 struct TileHeader { uint32_t magic, detourVersion, version, size; uint8_t liquids, padding[3]; };
 static_assert(sizeof(TileHeader) == 20);
 
+// Use the actual detail triangle at a landing point. A coarse navigation
+// polygon can average a gentle plane across a steep hillside.
+float groundSlope(dtNavMesh const& mesh, dtPolyRef ref, float const* point)
+{
+    dtMeshTile const* tile; dtPoly const* poly;
+    if (dtStatusFailed(mesh.getTileAndPolyByRef(ref,&tile,&poly))) return INFINITY;
+    auto const& detail=tile->detailMeshes[poly-tile->polys];
+    for (int i=0;i<detail.triCount;++i)
+    {
+        auto triangle=tile->detailTris+(detail.triBase+i)*4;
+        float const* vertices[3];
+        for (int j=0;j<3;++j)
+            vertices[j]=triangle[j]<poly->vertCount ? tile->verts+poly->verts[triangle[j]]*3
+                : tile->detailVerts+(detail.vertBase+triangle[j]-poly->vertCount)*3;
+        float height;
+        if (!dtClosestHeightPointTriangle(point,vertices[0],vertices[1],vertices[2],height)) continue;
+        float u[3],v[3];
+        for (int j=0;j<3;++j) { u[j]=vertices[1][j]-vertices[0][j];v[j]=vertices[2][j]-vertices[0][j]; }
+        float nx=u[1]*v[2]-u[2]*v[1],ny=u[2]*v[0]-u[0]*v[2],nz=u[0]*v[1]-u[1]*v[0];
+        return std::atan2(std::hypot(nx,nz),std::abs(ny))*180/3.14159265f;
+    }
+    return INFINITY;
+}
+
 int main(int argc, char** argv)
 {
     try
     {
         bool below = argc == 7 && std::string(argv[3]) == "--ground-below";
-        bool column = below || (argc == 6 && std::string(argv[3]) == "--ground");
+        bool landing = argc == 8 && std::string(argv[3]) == "--landing";
+        bool column = below || landing || (argc == 6 && std::string(argv[3]) == "--ground");
+        float radius = landing ? std::stof(argv[7]) : 4.f;
+        if (!std::isfinite(radius) || radius<=0 || radius>30) throw std::runtime_error("invalid landing radius");
         float maximumHeight = below ? std::stof(argv[6]) : INFINITY;
         if (argc != 9 && !column) throw std::runtime_error("expected data directory, map, start XYZ, goal XYZ; or --ground X Y");
         std::filesystem::path directory(argv[1]);
         int map = std::stoi(argv[2]);
         float start[3] = {std::stof(argv[column ? 5 : 4]), column ? 0.f : std::stof(argv[5]), std::stof(argv[column ? 4 : 3])};
+        if (landing) start[1]=std::stof(argv[6]);
         float goal[3];
         if (column) std::copy(start,start+3,goal);
         else { goal[0]=std::stof(argv[7]); goal[1]=std::stof(argv[8]); goal[2]=std::stof(argv[6]); }
@@ -66,23 +95,33 @@ int main(int argc, char** argv)
         dtQueryFilter filter; filter.setIncludeFlags(1); filter.setExcludeFlags(0); // NAV_GROUND only
         if (column)
         {
-            float extents[3]={4,2000,4}, chosen[3]; dtPolyRef refs[256]; int count=0;
-            auto status=query.queryPolygons(goal,extents,&filter,refs,&count,256);
+            float extents[3]={radius,landing ? 80.f : 2000.f,radius}, chosen[3]; dtPolyRef refs[4096]; int count=0;
+            auto status=query.queryPolygons(goal,extents,&filter,refs,&count,4096);
             if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL)) throw std::runtime_error("ground column query exceeds budget");
-            float best=INFINITY;
+            float best=INFINITY, chosenSlope=0;
             for (int i=0;i<count;++i)
             {
                 float point[3];
                 if (dtStatusFailed(query.closestPointOnPoly(refs[i],goal,point,nullptr))) continue;
                 if (point[1]>maximumHeight) continue;
                 float horizontal=std::hypot(point[0]-goal[0],point[2]-goal[2]);
-                if (horizontal>4) continue;
-                float score=horizontal*100000-point[1];
-                if (score<best) { best=score; std::copy(point,point+3,chosen); }
+                if (horizontal>radius || (landing && groundSlope(mesh,refs[i],point)>40.f)) continue;
+                bool covered=false;
+                if (landing) for (int j=0;j<count;++j)
+                {
+                    float above[3];
+                    if (dtStatusFailed(query.closestPointOnPoly(refs[j],point,above,nullptr))) continue;
+                    if (std::hypot(above[0]-point[0],above[2]-point[2])<.1f && above[1]>point[1]+.5f)
+                    { covered=true;break; }
+                }
+                if (covered) continue; // Flat polygons under hills/roofs cannot be landed on.
+                float score=horizontal*100000+(landing ? std::abs(point[1]-goal[1]) : -point[1]);
+                if (score<best) { best=score; std::copy(point,point+3,chosen);chosenSlope=groundSlope(mesh,refs[i],point); }
             }
             if (!std::isfinite(best)) throw std::runtime_error("no public walkable ground in destination column");
             std::cout << std::setprecision(9) << "{\"source\":\"public_static_ground_navmesh\",\"position\":["
-                << chosen[2] << ',' << chosen[0] << ',' << chosen[1] << "]}\n";
+                << chosen[2] << ',' << chosen[0] << ',' << chosen[1] << "],\"detail_slope_degrees\":"
+                << (std::isfinite(chosenSlope) ? chosenSlope : -1) << "}\n";
             return 0;
         }
         // Legacy MMAP ground admits 55-degree slopes. The owned client slid

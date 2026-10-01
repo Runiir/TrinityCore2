@@ -30,6 +30,13 @@ def ground_point(map_id,xy,maximum_height=None):
     return json.loads(result.stdout)['position']
 
 
+def landing_point(map_id,position,radius=20):
+    result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--landing',
+        *map(str,position[:3]),str(radius)],capture_output=True,text=True,timeout=10)
+    if result.returncode:raise RuntimeError('public flat landing: '+result.stderr.strip())
+    return json.loads(result.stdout)['position']
+
+
 def survey_detour(tcp,distance,digsite_ids):
     start=tcp['player']['position'];heading=tcp['tool']['heading_radians']
     site=site_boundaries.active_site(tcp['tool'].get('map',0),start,digsite_ids)
