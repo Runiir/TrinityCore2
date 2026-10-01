@@ -43,6 +43,7 @@ def main():
             'boundary_world_ready.png','boundary_live_validation.json','boundary_map.png',
             'public_boundary_return.json','reachability_deployment.json','ground_navigation_setup.json',
             'ground_navigation_ready.png','client_monitor.json','world_packets.jsonl']
+    recent.append('collection_scoring_corrections.json')
     names=recent if args.incremental else names+recent
     paths.extend(lab.ROOT/'evidence'/name for name in names)
     for name in args.episode:

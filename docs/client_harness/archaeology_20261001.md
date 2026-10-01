@@ -1,5 +1,60 @@
 # Whitemane 60895 archaeology compatibility trial
 
+## Current repair and adapted-model trials
+
+The later trials use a fine-tuned Laya decision head at
+`http://127.0.0.1:8002/v1/systemone`, with the original encoder frozen.
+The v2 adapter SHA-256 is
+`c9d97c846d8ff7c7b4c072c5bb8a61e95ea89c6755f368d9341c32f71c4d05b9`.
+Its synthetic held-out test score is 418/420. This measures agreement with the
+explicit survey control policy, not independent travel or quest competence.
+All seven actions remain available to the model. The controller converts a
+chosen action into bounded keyboard or mouse input.
+
+`laya_archaeology_fixed_01` collected one find in 19 actions and 57.7 seconds
+without supplied mouse coordinates. `fixed_02` collected another find during a
+two-find trial, then stopped after repeated turns caused by stale rendered
+facing. The ordinary owned movement packets now supply fresh facing.
+Automatic mouse localization uses normal archaeology-find tooltips.
+The awards were **5 and 6 Night Elf fragments**, with balances 13 and 19.
+The old immutable episodes recorded those balances as quantities;
+`collection_scoring_corrections.json` preserves the corrected interpretation
+from native loot amounts, removed currency slots and currency updates.
+
+The native sampler previously returned 12,568 outside points in 184,000
+samples against legacy perimeters. Ordered polygon containment and rejection
+sampling repaired that failure. Comparing public DB2 records extracted from the
+installed 4.4.2.60895 CASC storage found another difference: 36 vertices across
+14 sites shift by one yard. All 180 isolated database site mappings match.
+Twilight Grove (163) has identical client/backend perimeters, and all five
+recorded artifact creates are inside both versions of its polygon.
+
+Only the lab now uses a private legacy-layout QuestPOIPoint DBC with the modern
+coordinates. Shared native map data is linked read-only. All 183 usable client
+polygons match this corrected DBC. The corrected native sampler returned zero
+outside points in 184,000 samples, including the concave fixture.
+Local survey walks also check the entire MMAP corridor against the active site
+observed through the addon. They clip outward telescope bearings and reject
+paths leaving a concave boundary. A telescope bearing has normal uncertainty;
+following it indefinitely can leave a site even when the hidden target is valid.
+
+Ground routing reads public static native MMAP geometry, including elevations,
+without blind jumping or exposing hidden next-find coordinates. The native
+server also rejects hidden targets without a connected ground path. These
+changes do not establish that every modern-client tree or rock has identical
+collision geometry. Earlier ground trials stopped for no Survey object outside
+the site and for no useful connected ground displacement. Multi-site autonomous
+flight, taxi travel and portal travel remain unproven.
+
+Character selection now visibly renders the equipped gear. The client window
+is owned and verified on HDMI-1. The 54 authentication, world and boundary tests
+pass. The first direct `pytest` invocation failed to import `tools`; invoking
+`python -m pytest` in the same Pixi environment repaired test discovery.
+
+The following sections retain the earlier assisted baseline and its evaluation.
+
+## Earlier assisted baseline
+
 The isolated 4.4.2 client now renders its native equipment, opens its 16-slot
 backpack, displays a Survey cast bar, mounts, flies, follows survey instruments and collects
 archaeology currency through the native 4.3.4 worldserver. The trial collected
