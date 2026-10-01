@@ -6,7 +6,7 @@ import subprocess
 import time
 import urllib.request
 from PIL import Image
-from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs as inputs,owned_input
+from . import lab_runtime as lab,archaeology_policy as policy,archaeology_inputs as inputs,owned_input,site_boundaries
 from .archaeology_model_service import ENDPOINT,PORT
 from .observation.archaeology import Observer,collected
 from .collision_recovery import Recovery
@@ -15,6 +15,7 @@ from .collision_recovery import Recovery
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--finds',type=int,default=1);parser.add_argument('--maximum-steps',type=int,default=120)
+    parser.add_argument('--final-find-site',type=int,help='verify this seeded site remains visible until its final find is looted')
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
     monitor=json.loads((lab.ROOT/'evidence/client_monitor.json').read_text())
     client=lab.owned_process('client')
@@ -42,6 +43,14 @@ def main():
             if response['revision']!=identity['revision'] or response['model']!=identity['model']:raise ValueError('decision model identity changed')
             action=response['answers']['action']['choice']
             if action not in policy.ACTIONS or any(b['truncated_fields'] for b in response['token_budget'].values()):raise ValueError('invalid model decision')
+            lifecycle=None
+            if action=='loot' and args.final_find_site:
+                site=site_boundaries.sites()[args.final_find_site]
+                if args.final_find_site not in extra['digsite_ids']:raise RuntimeError('final-find site disappeared before collection')
+                if not any(f['map']==site['map'] and site_boundaries.contains(site['polygon'],f['position']) for f in tcp['finds']):
+                    raise RuntimeError('final artifact is outside its still-visible site')
+                lifecycle={'site_id':args.final_find_site,'before_sites':extra['digsite_ids'],
+                           'artifact_inside_still_visible_site':True}
             frame=out/f'step_{index:03d}.webp'
             with Image.open(latest) as img:img.save(frame,lossless=True)
             receipt['frames'].append({'file':frame.name,'sha256':lab.sha256(frame)})
@@ -53,8 +62,13 @@ def main():
             if action=='loot':
                 confirmation=collected(tcp['session'],begin)
                 if confirmation:
+                    if lifecycle:
+                        _,after=inputs.screenshot(latest)
+                        lifecycle.update(after_sites=after['digsite_ids'],replaced_after_collection=args.final_find_site not in after['digsite_ids'])
+                        if not lifecycle['replaced_after_collection']:raise RuntimeError('completed site did not refresh after looting')
                     finds.append({**confirmation,'step':index,'world_position':extra['world_position'],
-                        'digsite_ids':extra['digsite_ids'],'mouse_localization':'ordinary_game_tooltip_hover'})
+                        'digsite_ids':extra['digsite_ids'],'mouse_localization':'ordinary_game_tooltip_hover',
+                        'site_lifecycle':lifecycle})
             lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
             print(json.dumps({'step':index,'action':action,'finds':len(finds),'policy_match':step['policy_match']}),flush=True)
             if executed.get('ground_route') and not executed['ground_route']['boundary_guard']['observed_after_inside']:

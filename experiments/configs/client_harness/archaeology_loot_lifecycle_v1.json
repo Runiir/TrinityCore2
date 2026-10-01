@@ -1,0 +1,15 @@
+{
+  "schema": "client442_archaeology_loot_lifecycle_trial_v1",
+  "character_guid": 1,
+  "owned_database": "client442_characters",
+  "setup": {"slot": 0, "site_id": 163, "collected_finds": 2, "preserve_player_position": true},
+  "private_next_find_coordinates_used": false,
+  "model": "convaiinnovations/laya-typed-decisions with archaeology-head-v2",
+  "inputs": "physical keyboard and mouse on the owned HDMI-1 client",
+  "required_behavior": [
+    "The final visible artifact is inside the still-active addon-visible site polygon",
+    "Site 163 remains assigned before the physical loot click",
+    "Native loot currency confirms an actual fragment award",
+    "The completed site is replaced after collection"
+  ]
+}
