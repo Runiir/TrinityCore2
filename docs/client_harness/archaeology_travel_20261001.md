@@ -62,10 +62,15 @@ the disconnected Bonechewer building roof that previously allowed Survey casts
 but produced no reachable instrument or find. Entire local walk corridors and
 mounted survey segments must stay inside the assigned public polygon.
 
-For red or yellow instruments the controller mounts and flies to a farther
+For red or yellow instruments the controller mounts and flies to a progressive
 public bearing waypoint. A clipped in-site survey ray supplies the flight goal;
 it does not require the shallow ground-walking corridor to cross a hillside.
-Flat landing and ground-component checks still apply. Episode 40 had stopped
+Flat landing and ground-component checks still apply. The search includes shorter
+steps and nearby 45-degree offsets, and rejects landings without at least 1.5
+yards of progress along the observed bearing. Episode 66's yellow approach
+had stopped because its longer probes missed a safe shorter landing. The
+revised planner passes that exact public-geometry regression.
+Episode 40 had stopped
 on a Coilskar slope where a connected flat destination exists 16 yards below
 the character but the filtered walking path is unavailable. That exact terrain
 fixture now passes the mounted-planning regression. Green instruments use unmounted walk/swim paths. Find collection
@@ -281,7 +286,7 @@ Episode 63 collected Baa'ri's first find. Its next green approach stopped with
 zero accepted recovery candidates. The public dry side corridor rises only
 1.37 yards across four yards, but the candidate filter's 1.25-yard limit was
 stricter than the existing 1.5-yard observed probe guard. They now match.
-The recovery uses a short walking probe on that continuous slope, with no jump.
+The next trial tested short walking probes with the matching height limit.
 
 Episode 64's first probe resumed movement, but another contour-side probe slid
 roughly nine yards down. The run stopped; a read-only observation confirmed it
@@ -305,7 +310,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 125 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 128 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -322,7 +327,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 65 preserve unsuccessful steps, including missing portal
+Episodes 07 through 66 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -337,9 +342,12 @@ creature's body, dry ledges incorrectly treated as submerged, an unavailable
 forward route at a mesh corner, a premature stop during a small step down and
 an artifact above the bounded cursor search's covered region and combat starting
 inside a collection approach, artifact expiry during combat recovery and a
-gentle side corridor rejected by inconsistent height limits.
+a side corridor rejected by inconsistent height limits.
 Episode 64 also records the subsequent sideways slide despite a small endpoint rise.
 Episode 65 records the grounded patch missing from the old mesh's column.
+Episode 66 records the longer flight probes missing a shorter safe landing.
+Recent telescope ground samples cannot override a known detail slope above
+35 degrees, even if the sample's elevation is close to the player's feet.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
