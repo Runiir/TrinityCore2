@@ -43,6 +43,15 @@ def test_shallow_submerged_feet_are_not_accepted_as_a_dry_survey_stance():
     assert ground.dry_cast_plan(dry,{'world_map':530,'swimming':False,'digsite_ids':[371]}) is None
 
 
+@provisioned
+def test_trial57_dry_ruin_height_mismatch_does_not_trigger_a_shore_move():
+    for start in [[2727.27392578125,3131.229248046875,150.65481567382812,3.506],
+                  [2716.355224609375,3132.70458984375,138.6723175048828,3.779]]:
+        assert not ground.water_at(530,start)['water_above_feet']
+        assert ground.dry_cast_plan({'player':{'position':start}},
+            {'world_map':530,'swimming':False,'digsite_ids':[355]}) is None
+
+
 def test_arrival_requires_actual_dry_addon_state():
     goal=[0,0,4];extra=dict(swimming=False,falling=False,mounted=False,flying=False)
     assert dry_arrival([.5,0,4],goal,extra)

@@ -33,6 +33,13 @@ def ground_point(map_id,xy,maximum_height=None):
     return json.loads(result.stdout)['position']
 
 
+def water_at(map_id,position):
+    result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--water',*map(str,position[:3])],
+        capture_output=True,text=True,timeout=10)
+    if result.returncode:raise RuntimeError('public water surface: '+result.stderr.strip())
+    return json.loads(result.stdout)
+
+
 def landing_point(map_id,position,radius=30,start=None):
     result=subprocess.run([str(binary()),str(lab.BASE/'data/mmaps'),str(map_id),'--landing',
         *map(str,position[:3]),str(radius),*map(str,start[:3] if start is not None else [])],capture_output=True,text=True,timeout=10)
@@ -135,10 +142,7 @@ def low_step_hop(current,target,recovery,grounded=True):
 def dry_cast_plan(tcp,extra):
     """Shallow water may report not-swimming while the feet remain submerged."""
     start=tcp['player']['position'];map_id=extra['world_map']
-    try:near=route(map_id,start,start,allow_swimming=True)
-    except RuntimeError:near=None
-    if not extra['swimming'] and near and math.dist(start[:3],near['points'][-1])<=1.25:
-        return None
+    if not extra['swimming'] and not water_at(map_id,start)['water_above_feet']:return None
     site=site_boundaries.active_site(map_id,start,extra['digsite_ids']);choices=[]
     for index in range(16):
         heading=start[3]+index*math.tau/16

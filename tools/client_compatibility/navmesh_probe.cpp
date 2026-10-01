@@ -46,11 +46,12 @@ int main(int argc, char** argv)
     try
     {
         bool below = argc == 7 && std::string(argv[3]) == "--ground-below";
+        bool waterColumn = argc == 7 && std::string(argv[3]) == "--water";
         bool swimming = argc>3 && std::string(argv[3])=="--walk-swim";
         if (swimming) { for (int i=3;i<argc-1;++i) argv[i]=argv[i+1];--argc; }
         bool connectedLanding = argc == 11 && std::string(argv[3]) == "--landing";
         bool landing = connectedLanding || (argc == 8 && std::string(argv[3]) == "--landing");
-        bool column = below || landing || (argc == 6 && std::string(argv[3]) == "--ground");
+        bool column = below || landing || waterColumn || (argc == 6 && std::string(argv[3]) == "--ground");
         float radius = landing ? std::stof(argv[7]) : 4.f;
         if (!std::isfinite(radius) || radius<=0 || radius>30) throw std::runtime_error("invalid landing radius");
         float maximumHeight = below ? std::stof(argv[6]) : INFINITY;
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
         std::filesystem::path directory(argv[1]);
         int map = std::stoi(argv[2]);
         float start[3] = {std::stof(argv[column ? 5 : 4]), column ? 0.f : std::stof(argv[5]), std::stof(argv[column ? 4 : 3])};
-        if (landing) start[1]=std::stof(argv[6]);
+        if (landing || waterColumn) start[1]=std::stof(argv[6]);
         float goal[3];
         if (column) std::copy(start,start+3,goal);
         else { goal[0]=std::stof(argv[7]); goal[1]=std::stof(argv[8]); goal[2]=std::stof(argv[6]); }
@@ -98,6 +99,26 @@ int main(int argc, char** argv)
         dtNavMeshQuery query;
         if (dtStatusFailed(query.init(&mesh,8192))) throw std::runtime_error("query initialization failed");
         dtQueryFilter filter; filter.setIncludeFlags(1); filter.setExcludeFlags(0); // NAV_GROUND only
+        if (waterColumn)
+        {
+            dtQueryFilter waterFilter;waterFilter.setIncludeFlags(4);waterFilter.setExcludeFlags(0);
+            dtPolyRef refs[256];int count=0;float extents[3]={.5f,80.f,.5f}, highest=-INFINITY;
+            auto status=query.queryPolygons(start,extents,&waterFilter,refs,&count,256);
+            if (dtStatusFailed(status) || (status & DT_BUFFER_TOO_SMALL))
+                throw std::runtime_error("water surface query exceeds budget");
+            for (int i=0;i<count;++i)
+            {
+                float point[3];
+                if (dtStatusFailed(query.closestPointOnPoly(refs[i],start,point,nullptr))) continue;
+                if (std::hypot(point[0]-start[0],point[2]-start[2])<.5f && point[1]>start[1]+.2f)
+                    highest=std::max(highest,point[1]);
+            }
+            std::cout << std::setprecision(9) << "{\"water_above_feet\":" << (std::isfinite(highest) ? "true" : "false")
+                << ",\"surface_height\":";
+            if (std::isfinite(highest)) std::cout << highest;else std::cout << "null";
+            std::cout << ",\"source\":\"public NAV_WATER surface column\"}\n";
+            return 0;
+        }
         if (column)
         {
             dtPolyRef origin=0;float originPoint[3];
