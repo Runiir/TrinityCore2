@@ -51,6 +51,7 @@ def response(owner,name,body):
         pending.update(position=(x,y,z,o),stage='new_world')
         owner.character['map']=target;owner.created=False
         owner.visible_gameobjects={};owner.visible_units={}
+        owner.taxi_menu=None;owner.gossip_menu=None;owner.pending_near=None
         owner.latest_movement=(x,y,z,o)
         return name,Writer().pack('i4fI3fi',target,x,y,z,o,16,0,0,0,pending['sequence']).finish()
     return None

@@ -1,0 +1,15 @@
+{
+  "schema": "laya_travel_head_training_v1",
+  "model_id": "laya-travel-adapter-v1",
+  "seed": 20261004,
+  "train_per_action": 160,
+  "validation_per_action": 60,
+  "test_per_action": 60,
+  "batch_size": 8,
+  "epochs": 40,
+  "learning_rate": 0.0001,
+  "minimum_validation_accuracy": 0.99,
+  "minimum_test_accuracy": 0.97,
+  "live_acceptance": {"physical_taxi_trips": 1, "physical_portal_trips": 1,
+    "manual_gameplay_interventions": 0, "second_monitor": "HDMI-1"}
+}

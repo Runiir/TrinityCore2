@@ -11,6 +11,7 @@ from . import archaeology_policy as policy, lab_runtime as lab
 
 PORT=8002
 KIND='laya_archaeology'
+POLICY_NAME='archaeology'
 ENDPOINT=f'http://127.0.0.1:{PORT}/v1/systemone'
 MANIFEST=Path.home()/'.local/share/trinity-laya/pixi.toml'
 
@@ -53,8 +54,8 @@ def serve(directory):
 def start(directory):
     if lab.owned_process(KIND):raise RuntimeError('owned archaeology model is already running')
     lab.free_port(PORT)
-    command=['pixi','run','--manifest-path',str(MANIFEST),'python','-m',__spec__.name,'serve','--adapter',str(directory)]
-    with (lab.ROOT/'logs/laya_archaeology.log').open('ab') as log:
+    command=['pixi','run','--manifest-path',str(MANIFEST),'python','-m',__spec__.name,'serve','--adapter',str(directory),'--policy',POLICY_NAME]
+    with (lab.ROOT/f'logs/{KIND}.log').open('ab') as log:
         os.chmod(log.name,0o600)
         process=subprocess.Popen(command,cwd=lab.REPO,stdin=subprocess.DEVNULL,stdout=log,stderr=log,start_new_session=True)
     lab.private_write(lab.ROOT/f'run/{KIND}.json',json.dumps({'pid':process.pid,'start_ticks':lab.proc_start(process.pid),'command':command})+'\n')
@@ -68,8 +69,14 @@ def start(directory):
 
 
 def main():
+    global policy,PORT,KIND,POLICY_NAME
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['start','serve','stop','status'])
+    p.add_argument('--policy',choices=['archaeology','travel'],default='archaeology')
     p.add_argument('--adapter',type=Path,default=lab.ROOT/'models/archaeology-head-v1');args=p.parse_args()
+    POLICY_NAME=args.policy
+    if args.policy=='travel':
+        from . import travel_policy as policy
+        PORT=8003;KIND='laya_travel'
     if args.action=='serve':serve(args.adapter)
     elif args.action=='start':start(args.adapter)
     elif args.action=='stop':lab.stop(KIND)

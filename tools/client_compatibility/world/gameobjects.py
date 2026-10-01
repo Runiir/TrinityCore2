@@ -54,7 +54,10 @@ def destroy(owner, body):
     r = Reader(body)
     native, dead = r.unpack("QB"); r.end()
     record = getattr(owner, "visible_gameobjects", {}).pop(native, None)
+    if not record: record = getattr(owner, 'visible_units', {}).pop(native, None)
     if not record: return None
+    if getattr(owner, 'taxi_menu', None) and owner.taxi_menu['vendor'] == native: owner.taxi_menu = None
+    if getattr(owner, 'gossip_menu', None) and owner.gossip_menu['guid'] == native: owner.gossip_menu = None
     return packet(record["map"], destroyed=[native])
 
 

@@ -45,6 +45,63 @@ local function position()
 end
 
 local sequence, elapsed = 0, 0
+-- Public taxi-node IDs and centers of the actual visible Blizzard buttons.
+-- The controller clicks these centers with a physical mouse. No protected API
+-- or interaction function is called by this observation addon.
+local taxiPanel = CreateFrame('Frame', 'ClientTaxiHarnessPanel', UIParent)
+taxiPanel:SetScale(1 / UIParent:GetEffectiveScale())
+taxiPanel:SetSize(256, 130)
+taxiPanel:SetPoint('TOPLEFT', UIParent, 'TOPLEFT', 16, -64)
+taxiPanel:SetFrameStrata('TOOLTIP')
+taxiPanel:EnableMouse(false)
+local taxiPixels = {}
+for i=1,8280 do
+    local pixel=taxiPanel:CreateTexture(nil,'OVERLAY')
+    pixel:SetSize(2,2)
+    pixel:SetPoint('TOPLEFT',taxiPanel,'TOPLEFT',((i-1)%128)*2,-math.floor((i-1)/128)*2)
+    taxiPixels[i]=pixel
+end
+local function taxiSample()
+    local nodes={}
+    if TaxiFrame and TaxiFrame:IsShown() and C_TaxiMap and C_TaxiMap.GetAllTaxiNodes then
+        local map=GetTaxiMapID and GetTaxiMapID()
+        local ok, data=pcall(C_TaxiMap.GetAllTaxiNodes,map or 0)
+        if ok and data then
+            for _,node in ipairs(data) do
+                local button=_G['TaxiButton'..node.slotIndex]
+                if button and button:IsShown() then
+                    local x,y=button:GetCenter()
+                    if x and y then
+                        local scale=button:GetEffectiveScale()
+                        local width=GetScreenWidth()*UIParent:GetEffectiveScale()
+                        local height=GetScreenHeight()*UIParent:GetEffectiveScale()
+                        nodes[#nodes+1]={node.nodeID,x*scale/width,y*scale/height,node.state,node.slotIndex}
+                    end
+                end
+            end
+        end
+    end
+    table.sort(nodes,function(a,b)return a[1]<b[1] end)
+    local bytes={84,67,84,49} -- TCT1
+    append(bytes,sequence,4)
+    append(bytes,math.min(#nodes,128),1)
+    for i=1,128 do
+        local node=nodes[i] or {0,0,0,0,0}
+        append(bytes,node[1],2)
+        append(bytes,integer(node[2]*65535,65535),2)
+        append(bytes,integer(node[3]*65535,65535),2)
+        append(bytes,node[4],1)
+        append(bytes,node[5],1)
+    end
+    local first,second=0,0
+    for _,byte in ipairs(bytes) do first=(first+byte)%255;second=(second+first)%255 end
+    append(bytes,second*256+first,2)
+    for i=1,#bytes*8 do
+        local byte=bytes[math.floor((i-1)/8)+1]
+        local white=math.floor(byte/(2^(7-((i-1)%8))))%2
+        taxiPixels[i]:SetColorTexture(white,white,white,1)
+    end
+end
 -- A second observation-only packet carries public map/travel state. Digsite IDs
 -- come from the same map API used by Blizzard's archaeology overlay.
 local travelPanel = CreateFrame("Frame", "ClientTravelHarnessPanel", UIParent)
@@ -155,6 +212,7 @@ local function sample()
         end
     end
     travelSample()
+    taxiSample()
 end
 
 panel:SetScript("OnUpdate", function(_, delta)

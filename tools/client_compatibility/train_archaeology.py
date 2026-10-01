@@ -39,10 +39,14 @@ def evaluate(agent,items,batch_size):
 
 
 def main():
+    global policy
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--config',type=Path,default=policy.CONFIG)
     parser.add_argument('--resume',type=Path)
+    parser.add_argument('--policy',choices=['archaeology','travel'],default='archaeology')
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    if args.policy=='travel':
+        from . import travel_policy as policy
     config=json.loads(args.config.read_text());random.seed(config['seed']);torch.manual_seed(config['seed'])
     (out/'config.json').write_text(json.dumps(config,indent=2)+'\n')
     splits=policy.dataset(config)
@@ -83,7 +87,7 @@ def main():
     from safetensors.torch import load_file
     agent.model.load_state_dict(load_file(str(out/'adapter.safetensors')),strict=False)
     test=evaluate(agent,encoded['test'],config['batch_size'])
-    receipt={'schema':'laya_archaeology_head_v1','model':config.get('model_id','laya-archaeology-adapter-v1'),'parent_model':policy.MODEL,
+    receipt={'schema':f'laya_{args.policy}_head_v1','model':config.get('model_id','laya-archaeology-adapter-v1'),'parent_model':policy.MODEL,
         'parent_revision':policy.REVISION,'adapter_sha256':lab.sha256(out/'adapter.safetensors'),
         'config_sha256':lab.sha256(args.config),'dataset_sha256':lab.sha256(out/'dataset.json'),
         'resume_adapter_sha256':resume_identity['adapter_sha256'] if resume_identity else None,
