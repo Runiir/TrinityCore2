@@ -1,25 +1,28 @@
 """Bounded keyboard flight and mouse taxi input driven by public observations."""
 import math
 import time
-from PIL import Image
 from tools.second_client import ctl
-from . import lab_runtime as lab,archaeology_inputs,owned_input
+from . import lab_runtime as lab,owned_input
 from .observation.archaeology import angle_error
 from .observation import taxi,telemetry,gossip
 
 
 def face(inputs,observer,goal):
     keys=[]
-    for _ in range(6):
+    for _ in range(8):
         current=observer.poll()['position'];heading=math.atan2(goal[1]-current[1],goal[0]-current[0])
         error=angle_error(heading,current[3])
-        if abs(error)<.06:return keys
-        key='a' if error>0 else 'd';hold=min(.6,max(.025,abs(error)/math.pi))
+        # Recorded 15 FPS clients turn in roughly 0.2-radian steps. A tighter
+        # threshold oscillates or misses sub-frame key taps indefinitely.
+        if abs(error)<.12:return keys
+        key='a' if error>0 else 'd';hold=min(.6,max(.04,abs(error)/math.pi))
         inputs.key(key,hold=hold);time.sleep(.15);keys.append({'key':key,'hold':hold})
     raise RuntimeError('unable to face public travel waypoint')
 
 
 def execute(action,leg,facts,extra,observer,path):
+    from PIL import Image
+    from . import archaeology_inputs
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None
     goal=leg.get('vendor_position') if action=='interact' else leg.get('position')
     position=facts['position']
