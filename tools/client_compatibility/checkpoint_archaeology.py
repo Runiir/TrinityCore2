@@ -41,7 +41,9 @@ def main():
         if Path(name).name!=name:raise ValueError('episode must be a directory name')
         directory=lab.ROOT/'evidence'/name
         episode=json.loads((directory/'episode.json').read_text())
-        if 'finished_at' not in episode:raise ValueError('episode is not closed: '+name)
+        if 'finished_at' not in episode:
+            closure=json.loads((directory/'episode_closure.json').read_text())
+            if not closure.get('closed') or closure.get('completed'):raise ValueError('episode is not closed: '+name)
         paths.append(directory)
     paths.extend([lab.ROOT/'logs/modern_world.jsonl',lab.ROOT/'logs/native_build.log',lab.ROOT/'bin/worldserver'])
     metadata={'schema':'client442_archaeology_checkpoint_v1',
