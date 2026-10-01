@@ -5,7 +5,7 @@ import secrets
 import struct
 
 from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers, taxi, gossip, creature_queries
-from .buffer import Reader, player_high
+from .buffer import Reader, Writer, player_high
 from .events import event, packet
 from .legacy import Native
 from .opcodes import MODERN, MODERN_NAMES
@@ -112,7 +112,6 @@ class Session:
         elif name == "CMSG_SERVER_TIME_OFFSET_REQUEST":
             self.send("SMSG_SERVER_TIME_OFFSET", struct.pack("<q", 0))
         elif name == "CMSG_GET_UNDELETE_CHARACTER_COOLDOWN_STATUS":
-            from .buffer import Writer
             self.send("SMSG_UNDELETE_COOLDOWN_STATUS_RESPONSE", Writer().bits(0, 1).pack("II", 0, 0).finish())
         elif name == "CMSG_PLAYER_LOGIN":
             r = Reader(body)
@@ -183,7 +182,6 @@ class Session:
             r = Reader(body)
             action, index = r.unpack("IB"); r.end()
             if index >= 144: raise ValueError("action bar slot has no native equivalent")
-            from .buffer import Writer
             self.owner.native.send(name, Writer().pack("BI", index, action).finish())
         elif name == "CMSG_QUERY_GAME_OBJECT":
             if not self.owner.created or self is not self.owner.world:

@@ -40,3 +40,13 @@ def test_creature_query_uses_visible_entry_and_returns_no_data_for_native_reject
     r=Reader(creature_queries.response(o,Writer().pack('I',2409|0x80000000).finish()))
     assert r.unpack('I')==(2409,) and r.bits(1)==0;r.end()
     assert creature_queries.request(o,Writer().pack('I',999).finish()) is None
+
+
+def test_stale_creature_query_dispatch_keeps_session_open():
+    import asyncio
+    from tools.client_compatibility.world.service import Session
+    session=Session.__new__(Session);session.owner=session;session.created=True
+    session.world=session;session.visible_units={};sent=[]
+    session.send=lambda name,body:sent.append((name,body))
+    asyncio.run(session.handle('CMSG_QUERY_CREATURE',Writer().pack('I',999).finish()))
+    assert sent==[('SMSG_QUERY_CREATURE_RESPONSE',Writer().pack('I',999).bits(0,1).finish())]
