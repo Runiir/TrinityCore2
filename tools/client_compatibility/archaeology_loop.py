@@ -13,6 +13,18 @@ from . import lab_runtime as lab,archaeology_inputs,archaeology_trial,travel_tri
 from .observation.transport import Observer
 
 
+def ready_at_site(facts,extra,site):
+    if site['map']!=facts['map'] or not site_boundaries.contains(site['polygon'],facts['position']) or any(
+        extra[k] for k in ['mounted','flying','falling']):return False
+    # Enter the normal walk/swim adapter when already in water. A dry restart
+    # instead needs a usable supporting surface, not merely matching elevation.
+    if extra['swimming'] or ground_navigation.water_at(facts['map'],facts['position'])['water_above_feet']:return True
+    try:surface=ground_navigation.probe_surface(facts['map'],facts['position'])
+    except RuntimeError:return False
+    return abs(surface['position'][2]-facts['position'][2])<=2 and math.dist(
+        surface['position'][:2],facts['position'][:2])<=2 and 0<=surface['detail_slope_degrees']<=35
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--maximum-sites',type=int,default=0,help='0 continues until interrupted or a semantic stall')
@@ -39,11 +51,7 @@ def main():
                 site=next((s for s in active if count==0 and s['id']==a.first_site),None)
                 if not site:site=min(active,key=lambda s:(s['map']!=facts['map'],math.dist(s['center'],facts['position'][:2])))
                 plan=travel_routes.to_site(facts['map'],facts['position'],site)
-            already_there=not planned_initial and site['map']==facts['map'] and site_boundaries.contains(site['polygon'],facts['position']) and not any(extra[k] for k in ['mounted','flying','falling'])
-            if already_there:
-                try:floor=ground_navigation.ground_point(facts['map'],facts['position'],maximum_height=facts['position'][2]+1)
-                except RuntimeError:already_there=False
-                else:already_there=abs(floor[2]-facts['position'][2])<=2
+            already_there=not planned_initial and ready_at_site(facts,extra,site)
             if already_there:
                 receipt['steps'].append({'kind':'already_at_site','site':site['id'],'facts':facts,
                     'travel':extra,'source':'observed grounded player inside assigned public polygon'})
