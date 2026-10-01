@@ -9,7 +9,7 @@ def wrong_floor(facts,extra,leg):
     if leg.get('landing_avoidance_frozen'):radius=max(radius,12)
     return not extra['flying'] and not extra['falling'] and facts['map']==leg['map'] and (
         math.dist(facts['position'][:2],leg['position'][:2])<radius) and (
-        facts['position'][2]>leg['position'][2]+leg.get('landing_height_tolerance',8))
+        abs(facts['position'][2]-leg['position'][2])>leg.get('landing_height_tolerance',8))
 
 
 def alternative(facts,extra,leg):
@@ -52,6 +52,6 @@ def nudge(inputs,leg,observer,path,extra):
     if any(not site_boundaries.contains(s['polygon'],after['position']) for s in sites):
         raise RuntimeError('landing collision escape left the assigned polygon')
     leg.update(position=point,landing_collision_escapes=count+1)
-    return {'decision_origin':'physical_collision_guard','reason':'grounded above intended floor' if raised else 'descent blocked above mapped walking floor',
+    return {'decision_origin':'physical_collision_guard','reason':'grounded at a different elevation from intended floor' if raised else 'descent blocked above mapped walking floor',
         'before':before,'after':after,'public_ground_goal':point,'physical_keys':keys,
         'horizontal_progress':math.dist(before['position'][:2],after['position'][:2]),'time':time.time()}

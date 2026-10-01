@@ -48,6 +48,15 @@ def test_trial55_pillar_slide_still_requires_wrong_floor_escape():
     assert not recovery.wrong_floor(facts,extra,leg)
 
 
+def test_trial67_grounded_below_target_also_needs_an_alternative_landing():
+    leg=dict(map=530,position=[-3265.8667,992.533203,50.327755],arrival_radius=1.5,
+        landing_height_tolerance=2,landing_avoidance_frozen=True)
+    facts=dict(map=530,position=[-3266.5732421875,990.7905883789062,46.334110260009766,1.8284])
+    extra=dict(mounted=True,flying=False,falling=False)
+    assert recovery.wrong_floor(facts,extra,leg)
+    assert not recovery.wrong_floor(facts,{**extra,'flying':True},leg)
+
+
 def test_trial55_correct_floor_slide_needs_short_ground_adjustment():
     from tools.client_compatibility import ground_landing
     leg=dict(map=530,position=[-230.654724,3051.86646,-62.0737801],
