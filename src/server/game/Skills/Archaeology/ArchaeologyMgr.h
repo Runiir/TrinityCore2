@@ -113,6 +113,7 @@ class TC_GAME_API ArchaeologyMgr
         // Site Functionality
         uint16 GetNewSite(Continent continent, std::array<SiteData, 16>& sites, bool extended, uint32 playerLevel);
         bool SetSiteCoords(SiteData &site);
+        bool IsWithinSite(uint16 entry, float x, float y) const;
         uint32 GetSiteType(uint16 entry);
 
         // Project Functionality

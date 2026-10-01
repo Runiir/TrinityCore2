@@ -217,6 +217,7 @@ public:
 
     void finalize_polygon();
     SitePolygonGraphNode randomize_poi();
+    bool contains(float x, float y) const;
 
 private:
     bool resize_nodes();

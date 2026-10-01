@@ -95,56 +95,32 @@ void ArchaeologyMgr::LoadData()
     oldMSTime = getMSTime();
     count = 0;
 
-    for (uint32 i = 0; i < sQuestPOIPointStore.GetNumRows(); i++)
+    std::map<uint32, std::vector<SitePolygonGraphNode>> perimeterPoints;
+    for (uint32 i = 0; i < sQuestPOIPointStore.GetNumRows(); ++i)
     {
-        const QuestPOIPointEntry* entry = sQuestPOIPointStore.LookupEntry(i);
-        if (!entry)
-            continue;
-
-        for (std::list<std::pair<uint16, uint32> >::iterator itr = sites.begin(); itr != sites.end();)
+        if (QuestPOIPointEntry const* point = sQuestPOIPointStore.LookupEntry(i))
         {
-            if (itr->second == entry->QuestPOIBlobID)
-            {
-                uint16 site = itr->first;
-                uint16 poiRel = itr->second;
-
-                if (_polygonMap[site])
-                {
-                    TC_LOG_ERROR("server.loading", "Archaeology: Tried to overwrite polygonData of site %u", site);
-                    break;
-                }
-
-                // Create Site Polygon
-                _polygonMap[site] = new SitePolygonGraph();
-                _polygonMap[site]->add_node(entry->X, entry->Y);
-
-                for (uint32 j = 1; j < 12; j++)
-                {
-                    entry = sQuestPOIPointStore.LookupEntry(++i);
-                    if (poiRel != entry->QuestPOIBlobID)
-                    {
-                        TC_LOG_ERROR("server.loading", "Archaeology: Tried to use POI %u not related to site %u", entry->ID, poiRel);
-                        break;
-                    }
-
-                    // Add new perimeter point
-                    _polygonMap[site]->add_node(entry->X, entry->Y);
-                }
-
-                // Generate ALL inscribed and boundary geometries for the polygon!
-                _polygonMap[site]->finalize_polygon();
-
-                // NEXT!
-                count++;
-                sites.erase(itr++);
-            }
-            else
-                itr++;
+            SitePolygonGraphNode node;
+            node.set(point->X, point->Y);
+            perimeterPoints[point->QuestPOIBlobID].push_back(node);
         }
     }
 
-    for (std::list<std::pair<uint16, uint32> >::iterator itr = sites.begin(); itr != sites.end(); itr++)
-        TC_LOG_ERROR("player.skills", "Archaeology: SiteEntry:%u links at POIBlob:%u which does not exist", itr->first, itr->second);
+    for (auto const& site : sites)
+    {
+        auto points = perimeterPoints.find(site.second);
+        if (points == perimeterPoints.end() || points->second.size() < 3)
+        {
+            TC_LOG_ERROR("player.skills", "Archaeology: SiteEntry:%u links at POIBlob:%u without a valid perimeter", site.first, site.second);
+            continue;
+        }
+        SitePolygonGraph* polygon = new SitePolygonGraph();
+        for (SitePolygonGraphNode const& node : points->second)
+            polygon->add_node(node);
+        polygon->finalize_polygon();
+        _polygonMap[site.first] = polygon;
+        ++count;
+    }
 
     TC_LOG_INFO("server.loading", ">> Loaded %u archaeology site polygons in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
 
@@ -267,6 +243,8 @@ bool ArchaeologyMgr::SetSiteCoords(SiteData &site)
     {
         // Calculate random point of interest
         SitePolygonGraphNode node = poly->randomize_poi();
+        if (!poly->contains(node.getX(), node.getY()))
+            return false;
 
         // Get random point into Polygon
         site.X = node.getX();
@@ -275,6 +253,12 @@ bool ArchaeologyMgr::SetSiteCoords(SiteData &site)
         return true;
     }
     return false;
+}
+
+bool ArchaeologyMgr::IsWithinSite(uint16 entry, float x, float y) const
+{
+    auto itr = _polygonMap.find(entry);
+    return itr != _polygonMap.end() && itr->second && itr->second->contains(x, y);
 }
 
 uint32 ArchaeologyMgr::GetSiteType(uint16 entry)

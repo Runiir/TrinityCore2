@@ -4,7 +4,7 @@ import json
 import secrets
 import struct
 
-from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers
+from . import bootstrap, characters, crypto, joins, instance, gameplay, movement, casting, looting, object_queries, movement_controls, transfers, taxi, gossip, creature_queries
 from .buffer import Reader, player_high
 from .events import event, packet
 from .legacy import Native
@@ -139,6 +139,15 @@ class Session:
         elif name == "CMSG_LOGOUT_CANCEL":
             if body: raise ValueError("invalid logout cancellation")
             self.owner.native.send(name)
+        elif name=='CMSG_QUERY_CREATURE':
+            if not self.owner.created or self is not self.owner.world:raise ValueError('creature query before world entry')
+            self.owner.native.send('CMSG_CREATURE_QUERY',creature_queries.request(self.owner,body))
+        elif name in gossip.CLIENT_NAMES:
+            if not self.owner.created or self is not self.owner.world:raise ValueError('gossip before world entry')
+            self.owner.native.send(*gossip.request(self.owner,name,body))
+        elif name in taxi.CLIENT_NAMES:
+            if not self.owner.created or self is not self.owner.world:raise ValueError('taxi request before world entry')
+            self.owner.native.send(*taxi.request(self.owner,name,body))
         elif name in transfers.CLIENT_NAMES:
             if self is not self.owner.world or not self.owner.character:
                 raise ValueError('transfer acknowledgement outside owned world')

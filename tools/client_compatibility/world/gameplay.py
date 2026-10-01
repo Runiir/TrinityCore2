@@ -3,7 +3,7 @@ import time
 
 from .buffer import Reader, Writer, player_high
 from .events import event
-from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units, transfers
+from . import native_objects, objects, initialization, casting, gameobjects, currency, looting, object_queries, player_updates, movement_controls, auras, research_updates, units, transfers, taxi, gossip, creature_queries
 
 
 async def receive(owner, name, body):
@@ -15,6 +15,18 @@ async def receive(owner, name, body):
         return
     send = owner.world.send
     guid = owner.character["guid"]
+    if name=='SMSG_CREATURE_QUERY_RESPONSE':
+        reply=creature_queries.response(owner,body)
+        if reply is not None:send('SMSG_QUERY_CREATURE_RESPONSE',reply)
+        return
+    gossip_reply=gossip.response(owner,name,body)
+    if gossip_reply is not None:
+        send(*gossip_reply)
+        return
+    taxi_reply=taxi.response(owner,name,body)
+    if taxi_reply is not None:
+        send(*taxi_reply)
+        return
     transfer=transfers.response(owner,name,body)
     if transfer is not None:
         send(*transfer)

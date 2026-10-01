@@ -107,7 +107,8 @@ local function travelSample()
     append(bytes, tipSecond*256+tipFirst, 2)
     append(bytes, math.min(GetNumLootItems() or 0, 255), 1)
     append(bytes, integer((GetCameraZoom() or 0)*100, 65535), 2)
-    append(bytes, 0, 3)
+    local cursorX, cursorY = GetCursorPosition()
+    append(bytes, integer(cursorX,4095)*4096+integer(cursorY,4095), 3)
     local first, second = 0, 0
     for _, byte in ipairs(bytes) do first=(first+byte)%255; second=(second+first)%255 end
     append(bytes, second*256+first, 2)

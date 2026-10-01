@@ -23,6 +23,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "Random.h"
+#include <limits>
 
 // use squared distances so we don't have to use the squareroot
 enum DigSiteDist
@@ -85,6 +86,8 @@ void Archaeology::VerifySites()
 
 void Archaeology::UseSite()
 {
+    if (_player->IsFlying() || _player->IsFalling())
+        return;
     float dist = 0.0f;
     uint32 position = GetNearestSite(dist);
     uint32 surveyGoID = 0;
@@ -98,7 +101,11 @@ void Archaeology::UseSite()
     float x = _player->GetPositionX() + cos(o) * 2.0f;
     float y = _player->GetPositionY() + sin(o) * 2.0f;
     float z = _player->GetPositionZ();
-    float ground = _player->GetMap()->GetHeight(_player->GetPhaseShift(), x, y, z + 5.0f);
+    // A ray starting five yards up may choose a tree, roof or another floor.
+    // Only accept a nearby surface at the player's grounded level. Otherwise
+    // use the known player foot position, which also tolerates client terrain
+    // differences without burying the find in the server's terrain mesh.
+    float ground = _player->GetMap()->GetHeight(_player->GetPhaseShift(), x, y, z + 1.0f, true, 3.0f);
     float angle = 0.0f;
 
     if (dist > float(DIST_CLOSE))
@@ -123,7 +130,9 @@ void Archaeology::UseSite()
         }
     }
 
-    if ((std::abs(z - ground) >= 5.0f) || !_player->IsWithinLOS(x, y, ground))
+    if (!sArchaeologyMgr->IsWithinSite(_site[position].Entry, x, y)
+        || !std::isfinite(ground) || std::abs(z - ground) > 0.75f
+        || !_player->IsWithinLOS(x, y, ground))
     {
         x = _player->GetPositionX();
         y = _player->GetPositionY();
@@ -143,7 +152,8 @@ void Archaeology::UseSite()
         angle = frand(0.0f, float(M_PI * 2));
 
         QuaternionData rot = QuaternionData::fromEulerAnglesZYX(angle, 0.f, 0.f);
-        _player->SummonGameObject(goId, Position(x, y, ground, o), rot, MINUTE);
+        if (!_player->SummonGameObject(goId, Position(x, y, ground + 0.1f, o), rot, MINUTE))
+            return;
         (_site[position].State)++;
 
         if (_site[position].State >= DIGS_PER_SITE)
@@ -179,25 +189,24 @@ uint32 Archaeology::GetNearestSite(float &distance)
     if (COUNT_CONT == cont)
         return 0;
     
-    uint32 position = cont * CONTINENT_SITES;
-
     float pX = _player->GetPositionX();
     float pY = _player->GetPositionY();
-
-    float distSq = (pX - _site[position].X) * (pX - _site[position].X) + (pY - _site[position].Y) * (pY - _site[position].Y);
-
-    for (uint32 i = cont * CONTINENT_SITES + 1; i < (cont + 1) * CONTINENT_SITES; ++i)
+    uint32 position = 0;
+    float distSq = std::numeric_limits<float>::max();
+    for (uint32 i = cont * CONTINENT_SITES; i < (cont + 1) * CONTINENT_SITES; ++i)
     {
+        if (!_site[i].Entry || !sArchaeologyMgr->IsWithinSite(_site[i].Entry, pX, pY))
+            continue;
         float distSq2 = (pX -_site[i].X) * (pX -_site[i].X) + (pY - _site[i].Y) * (pY - _site[i].Y);
         if (distSq2 < distSq)
         {
-            position = i;
+            position = i + 1;
             distSq = distSq2;
         }
     }
     distance = distSq;
 
-    return position + 1;
+    return position;
 }
 
 void Archaeology::SetSite(uint32 position, uint16 entry, uint32 state)

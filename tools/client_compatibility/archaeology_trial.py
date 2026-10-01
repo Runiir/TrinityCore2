@@ -30,6 +30,8 @@ def main():
             if not movement['in_world'] or any(movement[k] for k in ['dead','in_combat','on_taxi']):raise RuntimeError('character unavailable')
             if extra['mounted'] or extra['flying']:raise RuntimeError('archaeology trial requires landing and dismounting')
             state=policy.observed_state(movement,extra,tcp,history)
+            if len(history)>=3 and all(s['action']=='survey' for s in history[-3:]):raise RuntimeError('Survey produced no fresh instrument or find three times')
+            if len(history)>=2 and all(s['action']=='loot' for s in history[-2:]):raise RuntimeError('two physical loot attempts produced no collection')
             if history and len(history)>=4 and all(s['action']=='observe' for s in history[-4:]):raise RuntimeError('repeated waiting without progress')
             request={'model':identity['model'],'state':state}
             req=urllib.request.Request(ENDPOINT,data=json.dumps(request).encode(),headers={'Content-Type':'application/json'})

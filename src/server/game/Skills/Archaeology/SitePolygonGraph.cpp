@@ -17,6 +17,7 @@
 
 #include "SitePolygonGraph.h"
 #include "Random.h"
+#include <algorithm>
 
 //===========================================================================//
 //      CLASS BASE METHODS
@@ -106,8 +107,8 @@ bool SitePolygonGraph::add_arch(const SitePolygonGraphNode &nodeA, const SitePol
 
 void SitePolygonGraph::finalize_polygon()
 {
-    // Arches filtering
-    generate_geometry_inscribed();
+    // Sampling uses the actual ordered perimeter. Chords of a concave polygon
+    // can run outside it, so generated arches cannot define valid find points.
 }
 
 //===========================================================================//
@@ -116,23 +117,49 @@ void SitePolygonGraph::finalize_polygon()
 
 SitePolygonGraphNode SitePolygonGraph::randomize_poi()
 {
-    SitePolygonGraphNode poi_node;
-    index_type i_poi[SITE_POLYGON_GRAPH_MAX_VERTEX];
+    if (_size_nodes < 3)
+        return SitePolygonGraphNode();
 
-    if (_size_arches <= 0)
-        return poi_node;
+    float minX = _nodes[0].getX(), maxX = minX;
+    float minY = _nodes[0].getY(), maxY = minY;
+    for (index_type i = 1; i < _size_nodes; ++i)
+    {
+        minX = std::min(minX, _nodes[i].getX());
+        maxX = std::max(maxX, _nodes[i].getX());
+        minY = std::min(minY, _nodes[i].getY());
+        maxY = std::max(maxY, _nodes[i].getY());
+    }
 
-    for (index_type i = 0; i < SITE_POLYGON_GRAPH_MAX_VERTEX; i++)
-        i_poi[i] = urand(0, _size_arches - 2);
+    for (unsigned attempt = 0; attempt < 4096; ++attempt)
+    {
+        SitePolygonGraphNode point;
+        point.set(frand(minX, maxX), frand(minY, maxY));
+        // Node coordinates are rounded. Test the stored point, not its input.
+        if (contains(point.getX(), point.getY()))
+            return point;
+    }
+    // A perimeter vertex is valid even for extremely narrow polygons. Never
+    // return an unchecked chord or the default world origin after retrying.
+    return _nodes[0];
+}
 
-    index_type i_idx            = urand(0, SITE_POLYGON_GRAPH_MAX_VERTEX - 1);
-    float i_segment             = frand(0, 1.0f);
-    SitePolygonGraphArch arch   = _arches[i_poi[i_idx]];
-    float x_segment             = arch.getA().getX() + i_segment * (arch.getB().getX() - arch.getA().getX());
-    float y_segment             = arch.getA().getY() + i_segment * (arch.getB().getY() - arch.getA().getY());
+bool SitePolygonGraph::contains(float x, float y) const
+{
+    if (_size_nodes < 3 || !std::isfinite(x) || !std::isfinite(y))
+        return false;
 
-    poi_node.setX(x_segment);
-    poi_node.setY(y_segment);
-
-    return poi_node;
+    bool inside = false;
+    for (index_type i = 0, j = _size_nodes - 1; i < _size_nodes; j = i++)
+    {
+        double ax = _nodes[j].getX(), ay = _nodes[j].getY();
+        double bx = _nodes[i].getX(), by = _nodes[i].getY();
+        double dx = bx - ax, dy = by - ay;
+        double cross = dx * (y - ay) - dy * (x - ax);
+        if (cross == 0.0 && x >= std::min(ax, bx) && x <= std::max(ax, bx)
+            && y >= std::min(ay, by) && y <= std::max(ay, by))
+            return true;
+        if ((ay > y) != (by > y) && x < ax + (y - ay) * dx / dy)
+            inside = !inside;
+    }
+    return inside;
 }
