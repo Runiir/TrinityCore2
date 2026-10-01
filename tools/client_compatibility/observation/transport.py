@@ -14,7 +14,7 @@ class Observer:
         self.session=entry['session'];self.started=entry['time'];self.offset=0
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
-        self.gossip=None;self.selected=None;self.attackers=set()
+        self.gossip=None;self.selected=None;self.attackers=set();self.player_attack_target=None
         self.units={};self.names={};self.player_level=85;self.player_faction=1
         self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
 
@@ -45,10 +45,12 @@ class Observer:
                 if name=='SMSG_ATTACK_START':
                     attacker,victim=r.unpack('QQ')
                     if victim==1:self.attackers.add(attacker)
+                    if attacker==1:self.player_attack_target=victim
                 elif name=='SMSG_ATTACK_STOP':
                     from ..world.native_objects import guid as native_guid
                     attacker=native_guid(r);native_guid(r);r.unpack('I')
                     self.attackers.discard(attacker)
+                    if attacker==1:self.player_attack_target=None
                 elif name=='SMSG_ON_MONSTER_MOVE':
                     from ..world.native_objects import guid as native_guid
                     guid=native_guid(r);r.unpack('B');position=list(r.unpack('3f'))
@@ -90,6 +92,7 @@ class Observer:
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
             'gossip_menu':self.gossip,'selected_unit':selected,'attacking_units':sorted(self.attackers),
+            'player_attack_target':self.player_attack_target,
             'visible_unit_names':{g:self.names[g>>32&0xFFFFF] for g in self.units if g>>32&0xFFFFF in self.names},
             'visible_hostiles':visible_hostiles(self.units,self.map,self.player_faction,self.player_level),
             'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}

@@ -30,7 +30,8 @@ def run(movement, extra, facts, observer, path):
                 return receipt
             target = facts['selected_unit']
             hostiles = {h['guid'] for h in facts['visible_hostiles']}
-            if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:2],target['position'][:2])>12:
+            limit=45 if target and target['guid'] in facts['attacking_units'] else 12
+            if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:2],target['position'][:2])>limit:
                 failed_selections+=1
                 attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
                 keys=[]
@@ -61,20 +62,19 @@ def run(movement, extra, facts, observer, path):
                 continue
             failed_selections=0
             distance = math.dist(facts['position'][:2], target['position'][:2])
-            if distance > 12:
-                inputs.key('Tab'); record('select', physical_keys=[{'key': 'Tab'}], rejected_distance=distance); time.sleep(.4)
-                continue
             keys = face(inputs, observer, target['position'])
             if distance > 4:
                 route = ground_navigation.route(facts['map'], facts['position'], target['position'])
                 goal = next((p for p in route['points'] if math.dist(p[:2], facts['position'][:2])>1), None)
                 if goal and site_boundaries.inside_segment(site['polygon'], facts['position'], goal):
                     keys.extend(face(inputs, observer, goal))
-                    hold = min(.7, max(.05, (distance-3)/7))
+                    hold = min(.7, math.dist(goal[:2],facts['position'][:2])/7, max(.05, (distance-3)/7))
                     inputs.key('w', hold=hold); keys.append({'key':'w','hold':hold})
             # Slot 1 is the provisioned Attack spell; repeated presses start
             # melee rather than invoking a privileged backend combat action.
-            inputs.key('1'); keys.append({'key':'1'}); time.sleep(1.2)
+            if observer.poll()['player_attack_target']!=target['guid']:
+                inputs.key('1'); keys.append({'key':'1'})
+            time.sleep(1.2)
             after = observer.poll(); record('melee', target_before=target,
                 target_after=after['selected_unit'], physical_keys=keys)
             if not site_boundaries.contains(site['polygon'], after['position']):
