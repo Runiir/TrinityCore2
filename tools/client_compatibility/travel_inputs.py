@@ -30,8 +30,9 @@ def execute(action,leg,facts,extra,observer,path):
         time.sleep(.3);after=observer.poll()
         if hold>=.5 and after['position'][2]-position[2]<max(.4,hold*2.87):
             from .flight_recovery import nudge
-            if leg.get('blocked_climb_escapes',0)>=5:raise RuntimeError('blocked climb exceeded five bounded escapes')
-            collision=nudge(inputs,leg,observer,path,extra)
+            if leg.get('blocked_climb_escapes',0)>=8:raise RuntimeError('blocked climb exceeded eight bounded escapes')
+            _,fresh=archaeology_inputs.screenshot(path)
+            collision=nudge(inputs,leg,observer,path,fresh)
             leg['blocked_climb_escapes']=leg.get('blocked_climb_escapes',0)+1
     elif action=='cruise':
         if not extra['mounted'] or not extra['flying']:raise RuntimeError('model attempted unmounted flight')

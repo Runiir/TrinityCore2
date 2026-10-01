@@ -104,6 +104,9 @@ def run(plan,out,maximum_steps=180):
                 metric=progress_metric(action,leg,facts,extra,s)
                 improving=last_metric is None or metric[0]!=last_metric[0] or (
                     metric[1] is not None and metric[1]<last_metric[1]-.5)
+                # An explicitly bounded collision escape may move sideways
+                # before climbing. Its own limit prevents indefinite detours.
+                improving=improving or bool((step['input'].get('collision_recovery') or {}).get('horizontal_progress',0)>=1.5)
                 stalled=0 if improving else stalled+1
                 if improving:last_metric=metric
                 if stalled>=8:raise RuntimeError('travel made no observable progress for eight decisions')

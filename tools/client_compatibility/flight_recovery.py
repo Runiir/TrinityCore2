@@ -45,7 +45,9 @@ def nudge(inputs,leg,observer,path,extra):
         if current[2]<=goal[2]+2:break
         hold=min(3,(current[2]-goal[2])/28.7)
         inputs.key('x',hold=hold);keys.append({'key':'x','hold':hold});time.sleep(.3)
-    else:raise RuntimeError('blocked-climb escape could not descend below the overhang')
+    else:
+        _,fresh=archaeology_inputs.screenshot(path)
+        return grounded_escape(inputs,leg,observer,path,fresh)
     for point in corridor['points']:
         for _ in range(4):
             current=observer.poll()['position'];distance=math.dist(current[:2],point[:2])
@@ -77,7 +79,8 @@ def grounded_escape(inputs,leg,observer,path,extra):
     from .travel_inputs import face
     from . import archaeology_inputs
     attempts=[];before=observer.poll();heading=math.atan2(leg['position'][1]-before['position'][1],leg['position'][0]-before['position'][0])
-    for offset in [-math.pi/2,math.pi/2,math.pi]:
+    order=[-math.pi/2,math.pi/2,math.pi] if leg.get('blocked_climb_escapes',0)%2==0 else [math.pi,math.pi/2,-math.pi/2]
+    for offset in order:
         facts=observer.poll();start=facts['position'];angle=heading+offset
         sites=[s for sid,s in site_boundaries.sites().items() if sid in extra['digsite_ids'] and
             s['map']==facts['map'] and site_boundaries.contains(s['polygon'],start)]
