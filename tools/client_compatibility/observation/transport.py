@@ -1,0 +1,50 @@
+"""Fresh owned-session player, taxi and transfer facts from ordinary packets."""
+import json
+from .. import lab_runtime as lab
+from ..world import movement
+from ..world.buffer import Reader
+from ..world.native_objects import records
+
+
+class Observer:
+    def __init__(self):
+        events=[json.loads(s) for s in (lab.ROOT/'logs/modern_world.jsonl').read_text().splitlines()]
+        entry=next(r for r in reversed(events) if r['event']=='native_player_created' and r['guid']==1)
+        self.session=entry['session'];self.started=entry['time'];self.offset=0
+        self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
+        self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
+
+    def poll(self):
+        with (lab.ROOT/'evidence/world_packets.jsonl').open() as handle:
+            if handle.seek(0,2)<self.offset:raise RuntimeError('owned packet trace was rotated during travel')
+            handle.seek(self.offset)
+            while line:=handle.readline():
+                if not line.endswith('\n'):break
+                self.offset=handle.tell();p=json.loads(line)
+                if p.get('session')!=self.session or p['time']<self.started:continue
+                name=p['name'];body=bytes.fromhex(p['body']);r=Reader(body)
+                if p['direction']=='from_client' and (name in movement.SUPPORTED or name=='CMSG_MOVE_SET_FACING_HEARTBEAT'):
+                    self.position=list(movement.parse(body,1)['position']);self.seen_at=p['time']
+                if p['direction']=='to_client':
+                    if name=='SMSG_MOVE_TELEPORT':
+                        guid,_=r.guid();_,x,y,z,o,_=r.unpack('I4fB')
+                        if guid==1:self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
+                    elif name=='SMSG_TRANSFER_PENDING':self.transferring=True
+                    elif name=='SMSG_NEW_WORLD':
+                        self.map,x,y,z,o=r.unpack('i4f');self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
+                    elif name=='SMSG_RESUME_TOKEN':self.transferring=False
+                    if any(s in name for s in ['TRANSFER','NEW_WORLD','SUSPEND_TOKEN','RESUME_TOKEN']):
+                        self.transfer_events.append({'name':name,'time':p['time']})
+                if p['direction']=='from_native':
+                    if name=='SMSG_SHOWTAXINODES':
+                        _,vendor,source,count=r.unpack('IQII');mask=r.raw(count);r.end()
+                        self.taxi={'source':source,'vendor':vendor,'seen_at':p['time'],
+                            'known':[i*8+b+1 for i,v in enumerate(mask) for b in range(8) if v&(1<<b)]}
+                    elif name=='SMSG_ACTIVATETAXIREPLY':self.taxi_replies.append({'status':r.unpack('I')[0],'time':p['time']})
+                    elif name=='SMSG_UPDATE_OBJECT':
+                        for record in records(body):
+                            if record.get('guid')==1 and 'movement' in record:
+                                self.map=record['map'];self.position=list(record['movement']['position']);self.seen_at=p['time']
+        return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
+            'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
+            'transfer_events':self.transfer_events,'source':'owned_session_normal_travel_packets'}

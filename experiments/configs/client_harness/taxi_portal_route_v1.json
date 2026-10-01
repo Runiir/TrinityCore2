@@ -1,0 +1,15 @@
+{
+  "schema": "client442_public_travel_route_v1",
+  "id": "twilight_darkshire_nethergarde_outland",
+  "setup_teleports": 0,
+  "sources": ["TaxiNodes.dbc", "AreaTrigger.dbc", "ResearchSite/QuestPOIPoint.dbc", "static flight-master spawn/name records"],
+  "legs": [
+    {"id":"fly_to_darkshire","mode":"flight","map":0,"position":[-10510.8,-1258.79,41.5138],"ceiling":230},
+    {"id":"darkshire_to_nethergarde","mode":"taxi","map":0,"position":[-11112.3,-3435.74,79.09],"destination":45,
+      "vendor_position":[-10513.8,-1258.79,41.5138],"name":"Felicia Maline"},
+    {"id":"red_reaches_digsite","mode":"flight","map":0,"position":[-12521.5,-3515.08,8.46],"ceiling":230,"site_id":203},
+    {"id":"dark_portal_approach","mode":"flight","map":0,"position":[-11890,-3209,-14.56],"ceiling":230},
+    {"id":"dark_portal_to_outland","mode":"portal","map":0,"position":[-11924,-3209,-14.79],"destination_map":530,"trigger":4354},
+    {"id":"hellfire_basin_digsite","mode":"flight","map":530,"position":[-297.18,3198.88,64.22],"ceiling":240,"site_id":343}
+  ]
+}

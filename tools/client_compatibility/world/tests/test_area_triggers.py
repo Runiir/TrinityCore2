@@ -6,7 +6,8 @@ from types import SimpleNamespace
 
 def test_enter_only_and_strict_packet_length():
     assert area_triggers.request(Writer().pack('I',4354).bits(3,2).finish()) == ('CMSG_AREATRIGGER', b'\x02\x11\0\0')
-    for bits in [0,1,2]:
+    assert area_triggers.request(Writer().pack('I',4354).bits(2,2).finish())[0] == 'CMSG_AREATRIGGER'
+    for bits in [0,1]:
         assert area_triggers.request(Writer().pack('I',4354).bits(bits,2).finish()) is None
     with pytest.raises(ValueError): area_triggers.request(b'\x02\x11\0\0\xc0extra')
 

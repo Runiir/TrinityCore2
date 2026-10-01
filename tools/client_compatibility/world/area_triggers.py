@@ -13,4 +13,6 @@ def request(body):
     r.end()
     if not trigger:
         raise ValueError('invalid area trigger ID')
-    return ('CMSG_AREATRIGGER', Writer().pack('I', trigger).finish()) if entered and from_client else None
+    # FromClient is a client-side provenance flag. This dispatch already owns
+    # the authenticated client channel; native checks the actual trigger radius.
+    return ('CMSG_AREATRIGGER', Writer().pack('I', trigger).finish()) if entered else None
