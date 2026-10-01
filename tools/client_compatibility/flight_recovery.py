@@ -36,7 +36,10 @@ def nudge(inputs,leg,observer,path,extra):
     from . import archaeology_inputs
     before=observer.poll()
     if not extra['mounted'] or not extra['flyable_area']:raise RuntimeError('blocked-climb escape requires a mount in a flyable area')
-    if not extra['flying']:return grounded_escape(inputs,leg,observer,path,extra)
+    # The captured portal WMO also blocked descent along a legacy public
+    # corridor. Prefer measured lateral liftoff to assuming the two versions'
+    # overhang collision planes match.
+    return grounded_escape(inputs,leg,observer,path,extra)
     goal,corridor,sites=waypoint(before,extra,leg['position']);keys=[]
     # Descend into the free space above the public walking corridor, then
     # follow its corners rather than flying through the underside of the arch.
