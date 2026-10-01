@@ -1,6 +1,7 @@
 """Classic glue-screen initialization for the lab's disabled optional services."""
 import time
 from .buffer import Reader, Writer
+from . import broadcast_text
 from tools.client_compatibility.auth.realms import ADDRESS
 
 
@@ -25,7 +26,8 @@ def query(session, body):
     records = r.unpack("I" * count)
     r.end()
     for record in records:
-        # No Classic hotfix records are provisioned. Explicit Invalid allows
-        # client-side data to remain authoritative, unlike a fabricated record.
-        reply = Writer().pack("III", table, record, int(time.time())).bits(3, 3).pack("I", 0)
+        data = broadcast_text.record(record) if table == broadcast_text.TABLE_HASH else None
+        # Unsupported public tables retain an explicit missing-record response.
+        reply = (Writer().pack("III", table, record, int(time.time()))
+                 .bits(1 if data is not None else 3, 3).pack("I",len(data or b'')).raw(data or b''))
         session.send("SMSG_DB_REPLY", reply.finish())
