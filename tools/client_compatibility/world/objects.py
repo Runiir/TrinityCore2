@@ -78,6 +78,8 @@ def field_values(snapshot, character):
                           {"Threshold": 0, "StateID": 2}]
     from .inventory import inventory_slots
     active["InvSlots"] = inventory_slots(native)
+    active["BuybackPrice"] = array("PLAYER_FIELD_BUYBACK_PRICE_1",12)
+    active["BuybackTimestamp"] = array("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12)
     skill = {}
     for modern, old in {"SkillLineID": "PLAYER_SKILL_LINEID_0", "SkillStep": "PLAYER_SKILL_STEP_0",
                         "SkillRank": "PLAYER_SKILL_RANK_0", "SkillMaxRank": "PLAYER_SKILL_MAX_RANK_0",
