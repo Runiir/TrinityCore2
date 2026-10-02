@@ -46,7 +46,10 @@ class Inputs:
             focus()
             return getattr(self.raw,name)(*args,**kwargs)
 
-    def key(self,*args,**kwargs):return self.invoke('key',*args,**kwargs)
+    def key(self,*args,**kwargs):
+        # Non-text keys must span more than one 15-FPS background-client tick.
+        kwargs.setdefault('hold',.15)
+        return self.invoke('key',*args,**kwargs)
     def click(self,*args,**kwargs):return self.invoke('click',*args,**kwargs)
     def move(self,*args,**kwargs):return self.invoke('move',*args,**kwargs)
     def type(self,*args,**kwargs):return self.invoke('type',*args,**kwargs)

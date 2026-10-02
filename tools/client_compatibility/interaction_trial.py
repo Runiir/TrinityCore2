@@ -106,13 +106,15 @@ class Trial:
         return state,{'file':path.name,'sha256':lab.sha256(path),'monitor':monitor,'movement':movement}
 
     def execute(self,action):
-        if action['kind']=='key':self.io.key(action['value'])
-        elif action['kind']=='chat':
-            self.io.key('Return');self.io.type(action['value']);self.io.key('Return')
-        elif action['kind']=='click':self.io.click(*action['value'])
-        elif action['kind']=='edit':
-            self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
-        else:raise ValueError('unsupported physical action')
+        with owned_input.lease():
+            if action['kind']=='key':self.io.key(action['value'])
+            elif action['kind']=='chat':
+                self.io.key('Return');time.sleep(.2)
+                self.io.type(action['value']);time.sleep(.2);self.io.key('Return')
+            elif action['kind']=='click':self.io.click(*action['value'])
+            elif action['kind']=='edit':
+                self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
+            else:raise ValueError('unsupported physical action')
         time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
 
     def step(self,case_id,goal,actions,oracle):
@@ -124,6 +126,9 @@ class Trial:
             row.update(before=before,before_frame=bframe,request=request,response=response,selected=selected,
                 input=actions[selected]);self.persist()
             self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
+            row.update(after=after,after_frame=aframe)
+            if actions[selected]['kind']=='chat' and after.get('chat_edit_open'):
+                raise RuntimeError('selected chat command remained in the edit box')
             verdict=oracle(before,after,selected)
             row.update(after=after,after_frame=aframe,**verdict)
         except Exception as e:row.update(status='infrastructure_failure',error=f'{type(e).__name__}: {e}')
