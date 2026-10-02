@@ -26,6 +26,14 @@ def test_native_confirmation_excludes_foreign_and_duplicate_answers(codec):
     assert rows[5]['complete'] and not rows[6]['active']
 
 
+def test_whitemane_captured_ready_and_not_ready_button_requests(codec):
+    # Recorded after ordinary Yes/No button clicks, ui02/ready_checks_03.
+    # Both carry party category zero; only bit six changes with the answer.
+    assert call(codec,'party_request','CMSG_READY_CHECK_RESPONSE',bytes.fromhex('c000'))==['MSG_RAID_READY_CHECK','01']
+    assert call(codec,'party_request','CMSG_READY_CHECK_RESPONSE',bytes.fromhex('8000'))==['MSG_RAID_READY_CHECK','00']
+    assert 'error' in call(codec,'party_request','CMSG_READY_CHECK_RESPONSE',bytes.fromhex('c001'))
+
+
 def test_timeout_finish_and_restart_do_not_reuse_previous_answers(codec):
     rows=result(codec,op='ready_check',actions=[{'fn':'start','starter':1,'members':[1,2]},
         {'fn':'finish'},{'fn':'start','starter':2,'members':[1,2]}])

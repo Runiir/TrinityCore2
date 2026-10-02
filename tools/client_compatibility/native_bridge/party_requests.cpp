@@ -83,7 +83,9 @@ Reply Protocol::party_request(std::string const &name, View body)
     }
     if (name == "CMSG_READY_CHECK_RESPONSE")
     {
-        bool ready = r.bits(1), present = r.bits(1);party_index(r,present);r.end();
+        // Whitemane 60895 captures: Ready=c000, Not Ready=8000. Its optional
+        // party-index flag precedes IsReady, unlike the later pinned handler.
+        bool present = r.bits(1), ready = r.bits(1);party_index(r,present);r.end();
         return Packet{"MSG_RAID_READY_CHECK",Writer().put<std::uint8_t>(ready).finish()};
     }
     return {};

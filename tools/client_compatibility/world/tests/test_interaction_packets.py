@@ -75,7 +75,7 @@ def test_party_leave_raid_ready_and_leader(codec):
         assert call(codec,'party_request',name,b'\0')==[native,'']
         assert 'error' in call(codec,'party_request',name,Writer().bits(1,1).pack('B',1).finish())
     assert call(codec,'party_request','CMSG_CONVERT_RAID',b'\x80')==['CMSG_GROUP_RAID_CONVERT','01']
-    assert call(codec,'party_request','CMSG_READY_CHECK_RESPONSE',b'\x80')==['MSG_RAID_READY_CHECK','01']
+    assert call(codec,'party_request','CMSG_READY_CHECK_RESPONSE',b'\x40')==['MSG_RAID_READY_CHECK','01']
     leader=Writer().bits(0,1).guid(2,HIGH).finish()
     assert call(codec,'party_request','CMSG_SET_PARTY_LEADER',leader)==['CMSG_GROUP_SET_LEADER',struct.pack('<Q',2).hex()]
 
