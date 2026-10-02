@@ -408,9 +408,9 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
     with (root / "logs/client-monitor.log").open("ab") as log:
         placement = subprocess.Popen(["pixi", "exec", "--spec", "python-xlib", "python",
             str(REPO / "tools/second_client/place_window.py"), "--pid", str(proc.pid),
-            "--receipt", str(root / "evidence/client_monitor.json")], cwd=REPO,
+            "--timeout", "90", "--receipt", str(root / "evidence/client_monitor.json")], cwd=REPO,
             stdout=log, stderr=subprocess.STDOUT, env=env)
-    if placement.wait(timeout=35) != 0:
+    if placement.wait(timeout=95) != 0:
         stop("client")
         raise RuntimeError("second-monitor placement failed; stopped the owned client")
     print(f"Verified game window on second monitor {monitor['name']}")

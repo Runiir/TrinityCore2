@@ -22,7 +22,7 @@ def second_monitor() -> dict:
     return monitors[1]
 
 
-def place(pid: int) -> dict:
+def place(pid: int, timeout: float = 30) -> dict:
     from Xlib import X, display
     from Xlib.protocol import event
 
@@ -31,7 +31,8 @@ def place(pid: int) -> dict:
     root = screen.screen().root
     clients_atom = screen.intern_atom("_NET_CLIENT_LIST")
     pid_atom = screen.intern_atom("_NET_WM_PID")
-    deadline = time.monotonic() + 30
+    if not 0 < timeout <= 120:raise ValueError('invalid owned-window startup timeout')
+    deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         clients = root.get_full_property(clients_atom, X.AnyPropertyType)
         for xid in clients.value if clients is not None else []:
@@ -68,8 +69,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pid", type=int, required=True)
     parser.add_argument("--receipt", type=Path)
+    parser.add_argument('--timeout', type=float, default=30)
     args = parser.parse_args()
-    result = place(args.pid)
+    result = place(args.pid,args.timeout)
     if args.receipt:
         args.receipt.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
