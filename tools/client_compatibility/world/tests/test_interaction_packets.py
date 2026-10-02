@@ -80,6 +80,16 @@ def test_party_leave_raid_ready_and_leader(codec):
     assert call(codec,'party_request','CMSG_SET_PARTY_LEADER',leader)==['CMSG_GROUP_SET_LEADER',struct.pack('<Q',2).hex()]
 
 
+def test_everyone_assistant_and_individual_promotion(codec):
+    for apply in [False,True]:
+        packet=Writer().bits(0,1).bits(apply,1).finish()
+        assert call(codec,'party_request','CMSG_SET_EVERYONE_IS_ASSISTANT',packet)==['CMSG_SET_EVERYONE_IS_ASSISTANT','80' if apply else '00']
+        packet=Writer().bits(1,1).bits(apply,1).guid(2,HIGH).pack('B',0).finish()
+        assert call(codec,'party_request','CMSG_SET_ASSISTANT_LEADER',packet)==['CMSG_GROUP_ASSISTANT_LEADER',struct.pack('<QB',2,apply).hex()]
+    bad=Writer().bits(1,1).bits(1,1).pack('B',1).finish()
+    assert 'error' in call(codec,'party_request','CMSG_SET_EVERYONE_IS_ASSISTANT',bad)
+
+
 def test_party_roster_includes_self_and_native_difficulties(codec):
     native=struct.pack('<4BQII',2,0,0,4,0x1f50000000000009,3,1)+b'Harnesstwo\0'+struct.pack('<Q4B',2,1,0,0,4)
     native+=struct.pack('<QBQB2B',1,1,0,2,1,2)

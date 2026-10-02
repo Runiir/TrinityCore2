@@ -35,6 +35,7 @@ bool capture(std::string const &name)
                                                           "SMSG_PARTY_UPDATE", "SMSG_PARTY_INVITE", "SMSG_PARTY_COMMAND_RESULT", "SMSG_GROUP_DECLINE",
                                                           "CMSG_REQUEST_PARTY_MEMBER_STATS", "SMSG_PARTY_MEMBER_FULL_STATE", "SMSG_PARTY_MEMBER_STATE",
                                                           "CMSG_SAVE_CUF_PROFILES", "SMSG_LOAD_CUF_PROFILES",
+                                                          "CMSG_SET_EVERYONE_IS_ASSISTANT", "CMSG_SET_ASSISTANT_LEADER", "CMSG_GROUP_ASSISTANT_LEADER",
                                                           "CMSG_DO_READY_CHECK", "CMSG_READY_CHECK_RESPONSE", "MSG_RAID_READY_CHECK", "MSG_RAID_READY_CHECK_CONFIRM",
                                                           "SMSG_READY_CHECK_STARTED", "SMSG_READY_CHECK_RESPONSE", "SMSG_READY_CHECK_COMPLETED",
                                                           "SMSG_INITIALIZE_FACTIONS", "SMSG_SET_FACTION_STANDING",

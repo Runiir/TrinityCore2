@@ -60,6 +60,16 @@ Reply Protocol::party_request(std::string const &name, View body)
     {
         auto raid = r.bits(1);r.end();return Packet{"CMSG_GROUP_RAID_CONVERT",Writer().put<std::uint8_t>(raid).finish()};
     }
+    if (name == "CMSG_SET_EVERYONE_IS_ASSISTANT")
+    {
+        bool present=r.bits(1),apply=r.bits(1);party_index(r,present);r.end();
+        return Packet{name,Writer().bits(apply,1).finish()};
+    }
+    if (name == "CMSG_SET_ASSISTANT_LEADER")
+    {
+        bool present=r.bits(1),apply=r.bits(1);auto guid=player(r);party_index(r,present);r.end();
+        return Packet{"CMSG_GROUP_ASSISTANT_LEADER",Writer().put(guid).put<std::uint8_t>(apply).finish()};
+    }
     if (name == "CMSG_SET_PARTY_LEADER" || name == "CMSG_REQUEST_PARTY_MEMBER_STATS")
     {
         bool present = r.bits(1);auto guid = player(r);party_index(r,present);r.end();

@@ -72,6 +72,7 @@ local function groupUnits(page)
         local _,class=call(UnitClass,unit)
         rows[#rows+1]={unit=unit,guid=call(UnitGUID,unit),name=call(UnitName,unit),exists=not not call(UnitExists,unit),
             connected=not not call(UnitIsConnected,unit),visible=not not call(UnitIsVisible,unit),class=class,
+            assistant=not not call(UnitIsGroupAssistant,unit),leader=not not call(UnitIsGroupLeader,unit),
             level=call(UnitLevel,unit),health=call(UnitHealth,unit),max_health=call(UnitHealthMax,unit),
             power=call(UnitPower,unit),max_power=call(UnitPowerMax,unit),dead=not not call(UnitIsDeadOrGhost,unit)}
     end
@@ -102,7 +103,7 @@ local function snapshot(viewMode,viewPage)
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
-    if mode=='group' then data.page=page;data.group_count=GetNumGroupMembers()
+    if mode=='group' then data.page=page;data.group_count=GetNumGroupMembers();data.everyone_assistant=call(IsEveryoneAssistant)
         data.units=groupUnits(page);data.frames=groupFrames(data.units);return data end
     data.panels={};data.controls={};data.bags={}
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
@@ -159,7 +160,7 @@ local function snapshot(viewMode,viewPage)
     end
     for _,name in ipairs({'CharacterMicroButton','SpellbookMicroButton','TalentMicroButton','AchievementMicroButton',
         'QuestLogMicroButton','SocialsMicroButton','GuildMicroButton','EJMicroButton','CollectionsMicroButton',
-        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame','PlayerFrame'}) do
+        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame','PlayerFrame','CompactRaidFrameManager'}) do
         local f=_G[name];if f then scan(f,0) end
     end
     data.control_count=#data.controls
