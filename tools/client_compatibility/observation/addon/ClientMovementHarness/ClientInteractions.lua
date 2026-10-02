@@ -1,10 +1,10 @@
 -- Read-only public UI observations. This file never presses or invokes game controls.
-local capacity,columns,cell=4096,128,2
+local capacity,columns,cell=4096,128,3
 local frame=CreateFrame('Frame','ClientInteractionHarnessPanel',UIParent)
-frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,172)
+frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,36)
 frame:SetPoint('TOPLEFT',UIParent,'TOPLEFT',300,-16);frame:SetFrameStrata('TOOLTIP');frame:EnableMouse(false)
 local pixels,previous={},{}
-for i=1,math.ceil((capacity+12)*8/3) do
+for i=1,math.ceil((capacity+12)/3) do
     local texture=frame:CreateTexture(nil,'OVERLAY');texture:SetSize(cell,cell)
     texture:SetPoint('TOPLEFT',frame,'TOPLEFT',((i-1)%columns)*cell,-math.floor((i-1)/columns)*cell)
     pixels[i]=texture
@@ -127,15 +127,14 @@ local function update()
     if not ok then data={observer_error=trim(data,250),mode=mode} end
     local payload=json(data)
     if #payload>capacity then payload=json({observer_error='UI observation exceeds packet capacity',mode=mode,bytes=#payload}) end
-    local bytes={84,67,85,49};append(bytes,#payload,2);append(bytes,sequence,4)
+    local bytes={84,67,85,50};append(bytes,#payload,2);append(bytes,sequence,4)
     for i=1,#payload do bytes[#bytes+1]=payload:byte(i) end
     local first,second=0,0;for _,byte in ipairs(bytes) do first=(first+byte)%255;second=(second+first)%255 end
     append(bytes,second*256+first,2)
-    local bits={};for _,byte in ipairs(bytes) do for bit=7,0,-1 do bits[#bits+1]=math.floor(byte/2^bit)%2 end end
-    for i=1,math.ceil(#bits/3) do
-        local r,g,b=bits[(i-1)*3+1] or 0,bits[(i-1)*3+2] or 0,bits[(i-1)*3+3] or 0
-        local code=r*4+g*2+b
-        if previous[i]~=code then pixels[i]:SetColorTexture(r,g,b,1);previous[i]=code end
+    for i=1,math.ceil(#bytes/3) do
+        local r,g,b=bytes[(i-1)*3+1] or 0,bytes[(i-1)*3+2] or 0,bytes[(i-1)*3+3] or 0
+        local code=r*65536+g*256+b
+        if previous[i]~=code then pixels[i]:SetColorTexture(r/255,g/255,b/255,1);previous[i]=code end
     end
 end
 SLASH_CLIENTINTERACTIONHARNESS1='/tcui'
