@@ -18,6 +18,14 @@ def test_duplicate_drake_names_and_failed_exact_selection_use_enemy_cycling():
     assert named_target_command(facts,'Enslaved Netherwing Drake',3) is None
 
 
+def test_indoor_enemy_cycling_can_try_ambiguous_name_twice_without_an_unbounded_loop():
+    from tools.client_compatibility.combat_clear import named_target_command
+    facts={'visible_unit_names':{11:'Dragonmaw Shaman',12:'Dragonmaw Shaman'}}
+    assert named_target_command(facts,'Dragonmaw Shaman',1) is None
+    assert named_target_command(facts,'Dragonmaw Shaman',2,allow_ambiguous=True)=='/targetexact Dragonmaw Shaman'
+    assert named_target_command(facts,'Dragonmaw Shaman',3,allow_ambiguous=True) is None
+
+
 def owner():
     return SimpleNamespace(character={'map':530,'guid':1,'name':'Harnessone','gender':0},
         visible_units={GUID:{'map':530}})

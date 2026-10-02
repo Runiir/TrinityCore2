@@ -8,9 +8,9 @@ from .travel_inputs import face
 from tools.second_client import ctl
 
 
-def named_target_command(facts,name,failed_selections):
+def named_target_command(facts,name,failed_selections,*,allow_ambiguous=False):
     if not name or not re.fullmatch("[A-Za-z '-]{1,100}",name) or failed_selections>2:return None
-    if sum(value==name for value in facts['visible_unit_names'].values())!=1:return None
+    if sum(value==name for value in facts['visible_unit_names'].values())!=1 and not allow_ambiguous:return None
     return '/targetexact '+name
 
 
@@ -26,7 +26,7 @@ def run(movement, extra, facts, observer, path):
         lab.private_write(evidence, json.dumps(receipt, indent=2)+'\n')
     try:
         deadline = time.monotonic() + 90
-        failed_selections=0
+        failed_selections=0;exact_attempts=0
         while time.monotonic() < deadline:
             movement, extra = archaeology_inputs.screenshot(path); facts = observer.poll()
             if movement['dead'] or movement['health_percent'] < 50: raise RuntimeError('melee recovery lost safe health')
@@ -37,7 +37,7 @@ def run(movement, extra, facts, observer, path):
             target = facts['selected_unit']
             hostiles = {h['guid'] for h in facts['visible_hostiles']}
             limit=45 if target and target['guid'] in facts['attacking_units'] else 12
-            if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:2],target['position'][:2])>limit:
+            if not target or not target['health'] or target['guid'] not in hostiles or math.dist(facts['position'][:3],target['position'][:3])>limit:
                 failed_selections+=1
                 attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
                 keys=[]
@@ -47,7 +47,7 @@ def run(movement, extra, facts, observer, path):
                         keys.extend(face(inputs,observer,nearest['position']))
                     name=facts['visible_unit_names'].get(nearest['guid'])
                 else:name=None
-                if failed_selections in [3,6,9]:
+                if failed_selections in [3,6,9] and not extra.get('indoors'):
                     current=observer.poll()['position'];hold=.8
                     goal=[current[0]-math.cos(current[3])*hold*4.5,
                         current[1]-math.sin(current[3])*hold*4.5,current[2]]
@@ -58,8 +58,11 @@ def run(movement, extra, facts, observer, path):
                 # This is the normal local WoW targeting command, typed through
                 # the client. Its name comes from an ordinary creature query.
                 # It avoids Tab skipping an attacker behind terrain/camera.
-                command=named_target_command(facts,name,failed_selections)
+                ambiguous=bool(extra.get('indoors') and failed_selections>=4 and attackers and
+                    math.dist(facts['position'][:3],nearest['position'][:3])<=8)
+                command=named_target_command(facts,name,exact_attempts+1,allow_ambiguous=ambiguous)
                 if command:
+                    exact_attempts+=1
                     inputs.key('Return');inputs.type(command);inputs.key('Return')
                     keys.append({'local_client_command':command,'source':'ordinary visible creature query'})
                 else:

@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 148 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 149 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -456,7 +456,21 @@ doorway only when public VMAP/MAPS floor samples remain continuous, with at most
 be beneath an awning. The planned outdoor patch is 1.5 yards; actual arrival must
 be within 0.35 yards, have a supported one-yard patch and report outdoors.
 This is a coded geometry recovery; it does not add private find coordinates or
-green survey flights. Live recovery remains to be validated.
+green survey flights. Live recovery remains to be validated. Restarts 78 and 79
+stopped before model actions because health was below 50 percent. A respawned
+shaman attacked during the idle repair interval, and the character died before
+the first physical recovery selected a suitable target. Outside these closed
+trials, the isolated console revived Harnessone at the same position, with no
+account permission change. It restored half health. Two normal healing slash
+commands did not restore health; a later physical Tab/Attack recovery killed the
+nearby shaman, cleared combat and allowed ordinary regeneration above 50 percent.
+All recovery receipts are retained separately. Automatic death recovery is absent.
+Episode 80 stopped after bounded Tab selection failed to acquire an indoor
+attacker. Indoors, after four failed cycles, the guard may try the ordinary
+attacker's name twice even if duplicate names are visible. Actual selection must
+still be a living visible hostile within the applicable three-dimensional range.
+It then returns to cycling; no repeated exact-name loop is permitted. Indoor
+backward probes are disabled because they moved the character onto room furniture.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
