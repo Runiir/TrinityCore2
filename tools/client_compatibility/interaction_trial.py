@@ -120,9 +120,10 @@ class Trial:
         if action['kind']=='chat':
             state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check')
             if state.get('chat_edit_open'):
-                if state.get('chat_edit_text')!=action['value']:
+                if state.get('chat_edit_text','').rstrip(' ')!=action['value']:
                     raise RuntimeError('chat input differs from the selected command; refusing to submit it')
-                transport.append({'reason':'same selected command remained in the edit box','input':'Return',
+                transport.append({'reason':'selected command remained after name completion','input':'Return',
+                    'observed_text':state['chat_edit_text'],'normalization':'ignore trailing spaces only',
                     'hold':.4,'before_frame':frame})
                 self.io.key('Return',hold=.4);time.sleep(.8)
                 state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_retry')

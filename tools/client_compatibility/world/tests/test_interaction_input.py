@@ -4,7 +4,7 @@ import pytest
 from tools.client_compatibility import interaction_trial as module
 
 
-@pytest.mark.parametrize('text,settled',[('/invite Harnesstwo',True),('/invite Harnesstwo',False),('/quit',False)])
+@pytest.mark.parametrize('text,settled',[('/invite Harnesstwo',True),('/invite Harnesstwo ',True),('/invite Harnesstwo',False),('/quit',False)])
 def test_chat_recovery_does_not_submit_changed_text(monkeypatch,text,settled):
     trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};events=[]
     class Inputs:
