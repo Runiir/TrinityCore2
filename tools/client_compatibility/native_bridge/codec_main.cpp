@@ -321,6 +321,8 @@ int main(int argc, char **argv)
                                 reply = Protocol::taxi_response(state, name, body);
                             else if (fn == "taxi_request")
                                 reply = Protocol::taxi_request(state, name, body, get(request, "paths"));
+                            else if (fn == "public_player_movement")
+                                reply = protocol.public_player_movement(state, body);
                             else if (fn == "creature_movement")
                             {
                                 for (auto const &packet : Protocol::creature_movement(state, body))

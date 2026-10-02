@@ -162,6 +162,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {
         send(*reply);co_return;
     }
+    if (name == "SMSG_MOVE_UPDATE")
+    {
+        if ((reply = protocol.public_player_movement(state, body)))
+        { send(*reply); co_return; }
+    }
     if (name == "SMSG_ON_MONSTER_MOVE")
     {
         auto packets = Protocol::creature_movement(state, body);

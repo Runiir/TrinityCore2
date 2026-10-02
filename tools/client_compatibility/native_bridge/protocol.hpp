@@ -130,6 +130,7 @@ struct Protocol
     static Reply npc_reply(State &owner, View body, Array const *broadcasts);
     static Reply destroy_object(State &owner, View body);
     static std::vector<Packet> creature_movement(State &owner, View body);
+    Reply public_player_movement(State &owner, View body) const;
 };
 Bytes native_text(Reader &reader);
 Value movement_parse(View body, std::uint64_t wanted);
