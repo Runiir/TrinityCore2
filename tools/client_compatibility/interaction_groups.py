@@ -36,8 +36,11 @@ def suite(trial):
         'b':{'kind':'key','value':'m','description':'Press M to open the world map.'},
         'c':{'kind':'key','value':'c','description':'Press C to open equipment.'}},
         lambda b,a,s:{'status':'panel_open_pass' if 'FriendsFrame' in a['panels'] else 'controller_failure'}),'panel_open_pass')
-    require(click_case(trial,'raid.raid_panel','Open the Raid tab.',lambda c:c['name']=='FriendsFrameTab4',
-        lambda b,a,s:{'status':'panel_open_pass' if 'RaidFrame' in a['panels'] else ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
+    current,_=trial.observe('current_raid_tab')
+    if 'RaidFrame' not in current['panels']:
+        require(click_case(trial,'raid.raid_panel','Open the Raid tab.',lambda c:c['name']=='FriendsFrameTab4',
+            lambda b,a,s:{'status':'panel_open_pass' if 'RaidFrame' in a['panels'] else ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
+    else:trial.receipt['prerequisites']=[{'raid_tab_already_selected':True,'counts_as_model_action':False}]
     rows=controls(trial);lab.private_write(trial.out/'raid_controls.json',json.dumps(rows,indent=2)+'\n')
     for raid,label in [(True,'Raid'),(False,'Party')]:
         require(click_case(trial,'raid.convert_'+('from_party' if raid else 'to_party'),'Convert this group to a '+label+'.',
