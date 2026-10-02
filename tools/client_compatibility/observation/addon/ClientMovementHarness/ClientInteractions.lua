@@ -224,7 +224,17 @@ local function snapshot(viewMode,viewPage)
     if data.recipe_selection and data.recipe_selection>0 then
         local id=data.recipe_selection
         data.selected_recipe={name=call(GetTradeSkillInfo,id),link=call(GetTradeSkillItemLink,id),
-            reagents=call(GetTradeSkillNumReagents,id),cooldown=call(GetTradeSkillCooldown,id)}
+            reagents=call(GetTradeSkillNumReagents,id),cooldown=call(GetTradeSkillCooldown,id),
+            recipe_link=call(GetTradeSkillRecipeLink,id)}
+        data.recipe_reagents={}
+        for i=1,math.min(data.selected_recipe.reagents or 0,8) do
+            local name,_,need,have=call(GetTradeSkillReagentInfo,id,i)
+            data.recipe_reagents[#data.recipe_reagents+1]={name=name,need=need,have=have,link=call(GetTradeSkillReagentItemLink,id,i)}
+        end
+    end
+    data.crafting_probe={known=not not call(IsSpellKnown,2330),counts={}}
+    for _,id in ipairs({118,765,2447,3371}) do
+        data.crafting_probe.counts[tostring(id)]=call(C_Item and C_Item.GetItemCount or GetItemCount,id)
     end
     data.player_stats={health=call(UnitHealthMax,'player'),armor={call(UnitArmor,'player')},
         strength={call(UnitStat,'player',1)},damage={call(UnitDamage,'player')}}
