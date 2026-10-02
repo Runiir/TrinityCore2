@@ -2,7 +2,7 @@
 import pytest
 from tools.client_compatibility.world import objects
 from tools.client_compatibility.world.buffer import Reader,player_high
-from .test_native_bridge_codec import codec,result
+from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 
 
 @pytest.mark.parametrize('state,threshold',[(1,12345),(2,0),(6,789)])
@@ -30,7 +30,7 @@ def test_rest_update_uses_pinned_array_and_nested_masks(codec,fields):
     assert r.unpack('I')==(1<<9,)
     assert r.bits(14)==0
     assert r.bits(32)==(1<<22)|(1<<23)
-    r.flush()
+    r.align()
     threshold='PLAYER_REST_STATE_EXPERIENCE' in fields
     state='PLAYER_BYTES_2' in fields
     assert r.bits(3)==1|int(threshold)<<1|int(state)<<2

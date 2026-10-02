@@ -29,7 +29,7 @@ def edit_case(trial,case_id,goal,predicate,value):
         entered=any(c['text']==value for c in matches)
         return {'status':'ui_edit_pass' if entered else ('controller_failure' if selected!='field' else 'client_or_protocol_failure'),
             'oracle':{'field_value_matches':entered,'qualified_scope':'visible edit field'}}
-    return trial.step(case_id,goal,actions,oracle)
+    return trial.step(case_id,goal,actions,oracle,diagnostic_action='field')
 
 
 def require(row,status):
