@@ -55,7 +55,7 @@ def native_command(workers=4, maximum=64):
         '--workers', str(workers), '--maximum-connections', str(maximum)], receipt
 
 
-def start(engine='python', workers=4, maximum=64):
+def start(engine='cpp', workers=4, maximum=64):
     if lab.owned_process("modern_world"):
         raise RuntimeError("owned modern world endpoint already running")
     if not lab.owned_process("worldserver"):
@@ -96,7 +96,7 @@ def main():
     global BUILD, BINARY, RECEIPT, SANITIZERS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["build", "start", "stop", "status"])
-    parser.add_argument('--engine', choices=['cpp', 'python'], default='python')
+    parser.add_argument('--engine', choices=['cpp', 'python'], default='cpp')
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--maximum-connections', type=int, default=64)
     parser.add_argument('--sanitizers', action='store_true', help='use the independent ASan/UBSan debug target')

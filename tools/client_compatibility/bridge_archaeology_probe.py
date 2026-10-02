@@ -1,6 +1,7 @@
 """One real artifact regression through the native bridge, using code decisions."""
 import argparse
 import json
+import math
 from pathlib import Path
 import subprocess
 import time
@@ -9,6 +10,28 @@ from . import lab_runtime as lab,owned_input,archaeology_inputs as inputs,archae
 from . import site_boundaries
 from .collision_recovery import Recovery
 from .observation.archaeology import Observer,collected
+
+
+def confined_survey_stall(history,tcp,site):
+    """Stop circling a small patch without improving the public lantern colour."""
+    if tcp['finds'] or not tcp['tool'] or tcp['tool']['color']=='green':return None
+    moves=[]
+    for step in reversed(history):
+        if step['session']!=tcp['session'] or step['site']!=site:break
+        if step['action']=='loot' or step['tcp']['finds']:break
+        if step['action'].startswith('forward_'):
+            tool=step['tcp']['tool']
+            if not tool or tool['color']!=tcp['tool']['color']:break
+            moves.append(step)
+            if len(moves)==6:break
+    if len(moves)<6:return None
+    points=[tcp['player']['position'],*[s['tcp']['player']['position'] for s in moves]]
+    diameter=max(math.dist(a[:2],b[:2]) for a in points for b in points)
+    if diameter>=6:return None
+    return {'reason':'six non-green advances remained in a six-yard patch',
+        'colour':tcp['tool']['color'],'diameter_yards':diameter,
+        'forward_step_indices':[s['index'] for s in reversed(moves)],
+        'source':'owned displacement and ordinary telescope observations'}
 
 
 def run(out,maximum_steps):
@@ -36,6 +59,10 @@ def run(out,maximum_steps):
             site=site_boundaries.active_site(extra['world_map'],tcp['player']['position'],extra['digsite_ids'])
             if not all(site_boundaries.contains(site['polygon'],f['position']) for f in tcp['finds']):
                 raise RuntimeError('visible artifact is outside its assigned public boundary')
+            stall=confined_survey_stall(history,tcp,site['id'])
+            if stall:
+                receipt['semantic_stall']=stall
+                raise RuntimeError(stall['reason'])
             state=policy.observed_state(movement,extra,tcp,history);action=policy.label(state)
             if len(history)>=3 and action=='survey' and all(s['action']=='survey' for s in history[-3:]):
                 raise RuntimeError('three surveys without a fresh instrument or artifact')

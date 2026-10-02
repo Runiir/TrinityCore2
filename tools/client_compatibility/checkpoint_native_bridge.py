@@ -12,13 +12,16 @@ from . import lab_runtime as lab
 from .observation.journal import entries
 
 
-def checkpoint(name,since):
+def checkpoint(name,since,cohort_directory):
     if not re.fullmatch(r'[A-Za-z0-9_]+',name):raise ValueError('invalid checkpoint name')
     if subprocess.check_output(['git','status','--porcelain'],cwd=lab.REPO,text=True):
         raise RuntimeError('commit experiment code/configuration before checkpointing')
     target=lab.REPO/'artifacts/client_harness'/(name+'.tar.gz')
     if target.exists() or Path(str(target)+'.dvc').exists():raise ValueError('checkpoint already exists')
     paths=sorted((lab.ROOT/'evidence').glob('cpp_*'))
+    paths+=sorted((lab.ROOT/'actors/scout/evidence').glob('cpp_*'))
+    paths+=[lab.ROOT/'evidence/client_monitor.json',lab.ROOT/'actors/scout/evidence/client_monitor.json',
+        lab.ROOT/'actor.json',lab.ROOT/'actors/scout/actor.json']
     for path in paths:
         for receipt in [path/'episode.json',path/'cohort.json'] if path.is_dir() else []:
             if receipt.exists() and not json.loads(receipt.read_text()).get('finished_at'):
@@ -33,12 +36,15 @@ def checkpoint(name,since):
     tests=ET.parse(lab.ROOT/'evidence/native_bridge_final_full_tests.xml').getroot()
     suites=list(tests.iter('testsuite'))
     passed=sum(int(s.attrib['tests'])-int(s.attrib.get('failures',0))-int(s.attrib.get('errors',0)) for s in suites)
-    cohort=json.loads((lab.ROOT/'evidence/cpp_two_actor_probe_03/cohort.json').read_text())
+    cohort=json.loads((cohort_directory/'cohort.json').read_text())
+    if not cohort.get('finished_at') or not cohort['completed']:
+        raise RuntimeError('the qualifying cohort must be closed and successful')
     metadata={'schema':'client442_native_bridge_checkpoint_v1','since':since,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'native_worldserver_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
         'native_worldserver':lab.owned_process('worldserver'),'bridge':lab.owned_process('modern_world'),
         'credentials_and_authentication_bodies_excluded':True,'full_suite_passed':passed,
+        'qualifying_cohort':str(cohort_directory.relative_to(lab.ROOT)),
         'two_actor_probe_completed':cohort['completed'],
         'limits':['These are bounded compatibility diagnostics, not learned autonomy or whole-game coverage.',
             'Console fixture transfers do not prove autonomous portal/taxi navigation.',
@@ -77,7 +83,8 @@ def checkpoint(name,since):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--name',required=True);parser.add_argument('--since',type=float,required=True)
-    args=parser.parse_args();checkpoint(args.name,args.since)
+    parser.add_argument('--cohort',type=Path,required=True)
+    args=parser.parse_args();checkpoint(args.name,args.since,args.cohort.resolve())
 
 
 if __name__=='__main__':main()
