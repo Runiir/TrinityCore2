@@ -1,4 +1,5 @@
 import struct
+import json
 from tools.client_compatibility.world.buffer import Writer
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 from tools.client_compatibility.world.tests.test_interaction_packets import call
@@ -61,3 +62,12 @@ def test_world_marker_permissions_follow_native_group_leader_and_assistant_flags
     assert result(codec,**{**request,'guid':1,'member_flags':0}) is True
     assert result(codec,**{**request,'flags':0,'member_flags':0}) is True
     for change in [{'member_flags':0},{'created':False},{'group':0}]:assert 'error' in codec(**{**request,**change})
+
+
+def test_actual_marker_completion_diagnostic_cannot_reject_valid_placement(codec,tmp_path):
+    (tmp_path/'logs').mkdir()
+    location={'slot':7,'map':0,'position':[-6418.9,-3345.0,241.6]}
+    assert result(codec,op='marker_diagnostic',root=str(tmp_path),location=location) is True
+    event=json.loads((tmp_path/'logs/modern_world.jsonl').read_text())
+    assert event['event']=='compatibility_marker_placed' and event['status']==7
+    assert event['map']==location['map'] and event['position']==location['position']

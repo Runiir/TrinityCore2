@@ -143,6 +143,11 @@ void Events::event(std::string kind, Object fields)
     fields["event"] = kind;
     append(root_ / "logs/modern_world.jsonl", fields);
 }
+void Events::marker_placed(std::string const &session,Value const &location)
+{
+    event("compatibility_marker_placed",{{"session",session},{"map",get(location,"map")},
+        {"position",get(location,"position")},{"status",get(location,"slot")}});
+}
 void Events::packet(std::string const &direction, std::string const &name, View body,
                     std::string const &session)
 {
