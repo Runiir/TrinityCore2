@@ -8,7 +8,7 @@ from .observation.journal import Cursor
 
 
 def suite(out,seconds):
-    if not 125<=seconds<=180:raise ValueError('idle trial must cross 120 seconds within a bounded window')
+    if not 155<=seconds<=180:raise ValueError('idle trial must cross 120 seconds plus one 30-second ping interval')
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     fixture=actors.load();cursor=Cursor(lab.ROOT/'logs/modern_world.jsonl');history=list(cursor.poll())
     authenticated=next((x for x in reversed(history) if x.get('event')=='world_authenticated' and x['account_id']==fixture['account_id']),None)
@@ -55,5 +55,5 @@ def suite(out,seconds):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=int,default=135)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=int,default=165)
     args=p.parse_args();suite(args.output,args.seconds)
