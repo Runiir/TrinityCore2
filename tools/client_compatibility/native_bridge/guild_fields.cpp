@@ -18,7 +18,7 @@ void guild_fields(Protocol const &protocol,Value const &snapshot,Object &unit,Ob
         {"GuildLevel","PLAYER_GUILDLEVEL"},{"GuildTimeStamp","PLAYER_GUILD_TIMESTAMP"}})
         player[modern]=protocol.field(snapshot,native);
 }
-Bytes Protocol::guild_block(Value const &snapshot,Value const &character,Value const &changed) const
+Bytes Protocol::guild_block(Value const &snapshot,Value const &character,Value const &changed,unsigned visibility) const
 {
     auto has=[&](char const *name,unsigned offset=0)
     {return changed.as_object().contains(std::to_string(field_index(name)+offset));};
@@ -30,7 +30,7 @@ Bytes Protocol::guild_block(Value const &snapshot,Value const &character,Value c
     unsigned mask=0;for(auto const &field:scalars)if(has(field.native))mask|=1u<<field.index;
     if(!guild && !mask)return {};
     auto values=field_values(snapshot,character);
-    Writer data;data.pack("BBBI",{1,0,3,(guild ? 1u<<5 : 0)|(mask ? 1u<<6 : 0)});
+    Writer data;data.pack("BBBI",{visibility,0,3,(guild ? 1u<<5 : 0)|(mask ? 1u<<6 : 0)});
     if(guild)
     {
         // UnitData group 96 and GuildGUID 108, eight mask blocks.

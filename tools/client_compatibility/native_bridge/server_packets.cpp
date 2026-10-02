@@ -93,6 +93,27 @@ Task<> Session::gameplay(std::string name, Bytes body)
             });
         }
     }
+    Array visible_players;
+    if(name=="SMSG_UPDATE_OBJECT")
+    {
+        std::uint64_t own;
+        {std::lock_guard lock(state_mutex);if(state.character.is_null())co_return;own=state.guid();}
+        std::unordered_set<std::uint64_t> guids;
+        for(auto const &record:native_records(body))
+            if(integer(get(record,"kind"))==4 && integer(get(record,"guid"))!=own)
+            {
+                auto guid=integer(get(record,"guid"));
+                if(!guid || guid>0xffffffff)throw std::runtime_error("invalid visible player query identity");
+                guids.insert(guid);
+            }
+        if(!guids.empty())
+        {
+            std::string ids;for(auto guid:guids){if(!ids.empty())ids+=',';ids+=std::to_string(guid);}
+            auto root=service.root;
+            visible_players=co_await background(service.database_workers,[root,ids]
+            {Database db(root);return db.query("SELECT guid,name,gender FROM client442_characters.characters WHERE guid IN ("+ids+")");});
+        }
+    }
     std::lock_guard lock(state_mutex);
     auto instance = world.lock();
     if (!instance || state.character.is_null())
@@ -241,7 +262,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
         auto locations=protocol.marker_objects(state,body);
         if(!locations.empty())service.markers(*this,{},locations);
         bool was_created = state.created;
-        if (auto reply = protocol.object_updates(state, body))
+        if (auto reply = protocol.object_updates(state, body,visible_players))
             send(*reply);
         if (!was_created && state.created)
         {

@@ -44,7 +44,7 @@ Bytes research_block(std::uint64_t guid, Value const &sites, Value const &projec
         .finish();
 }
 } // namespace
-Reply Protocol::object_updates(State &owner, View body) const
+Reply Protocol::object_updates(State &owner, View body,Array const &players) const
 {
     auto records = native_records(body);
     std::vector<Bytes> blocks;
@@ -112,6 +112,18 @@ Reply Protocol::object_updates(State &owner, View body) const
             blocks.push_back(unit_block(record, owner.character));
             owner.visible_units[guid] = record;
         }
+        else if(kind==4 && guid!=owner.guid())
+        {
+            Value profile;
+            for(auto const &row:players)if(integer(get(row,"guid"))==guid)
+            {
+                if(!profile.is_null())throw std::runtime_error("ambiguous visible player profile");
+                profile=row;
+            }
+            blocks.push_back(public_player_block(record,profile));
+            auto snapshot=record;snapshot.as_object()["public_character"]=profile;
+            owner.visible_units[guid]=std::move(snapshot);
+        }
         else if (type == 0 && guid == owner.guid() && !owner.self_snapshot.is_null())
         {
             merge_fields(owner.self_snapshot, record);
@@ -158,9 +170,18 @@ Reply Protocol::object_updates(State &owner, View body) const
         {
             auto &snapshot = owner.visible_units.at(guid);
             merge_fields(snapshot, record);
-            auto scalar = scalar_block(snapshot, owner.character, get(record, "fields"));
+            bool player=integer(get(snapshot,"kind"))==4;
+            auto const &character=player ? get(snapshot,"public_character") : owner.character;
+            auto scalar = scalar_block(snapshot, character, get(record, "fields"));
             if (!scalar.empty())
                 blocks.push_back(scalar);
+            if(player)
+            {
+                auto guild=guild_block(snapshot,character,get(record,"fields"),0);
+                if(!guild.empty())blocks.push_back(guild);
+                auto equipment=inventory_block(snapshot,get(record,"fields"),0);
+                if(!equipment.empty())blocks.push_back(equipment);
+            }
         }
     }
     if (blocks.empty() && removed.empty())

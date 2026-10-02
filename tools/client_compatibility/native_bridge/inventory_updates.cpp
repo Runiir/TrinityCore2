@@ -24,7 +24,7 @@ Bytes block(Array const &guid,Writer &data)
         .put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
 }
 }
-Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed) const
+Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsigned visibility) const
 {
     auto has=[&](char const *name,unsigned offset=0)
     {return changed.as_object().contains(std::to_string(field_index(name)+offset));};
@@ -33,13 +33,13 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed) cons
         (static_cast<std::uint64_t>(field(snapshot,name,offset+1))<<32));};
     std::map<unsigned,Array> slots;std::map<unsigned,std::uint32_t> visible;
     for(unsigned old=0;old<86;++old)
-        if(has("PLAYER_FIELD_INV_SLOT_HEAD",old*2) || has("PLAYER_FIELD_INV_SLOT_HEAD",old*2+1))
+        if((visibility&1) && (has("PLAYER_FIELD_INV_SLOT_HEAD",old*2) || has("PLAYER_FIELD_INV_SLOT_HEAD",old*2+1)))
             slots.emplace(modern_slot(old),pair("PLAYER_FIELD_INV_SLOT_HEAD",old*2));
     for(unsigned i=0;i<19;++i)
         if(has("PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2))
             visible.emplace(i,field(snapshot,"PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2));
     if(slots.empty() && visible.empty())return {};
-    Writer data;data.pack("BBBI",{1,0,3,(slots.empty()?0u:1u<<7)|(visible.empty()?0u:1u<<6)});
+    Writer data;data.pack("BBBI",{visibility,0,3,(slots.empty()?0u:1u<<7)|(visible.empty()?0u:1u<<6)});
     if(!visible.empty())
     {
         std::array<std::uint32_t,5> mask{};set(mask,68);

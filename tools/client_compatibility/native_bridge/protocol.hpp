@@ -66,6 +66,7 @@ struct Protocol
     Packet movement_ack(State &owner, std::string const &name, View body) const;
     Value field_values(Value const &snapshot, Value const &character) const;
     Bytes player_block(Value const &snapshot, Value const &character, Array const *buttons = nullptr) const;
+    Bytes public_player_block(Value const &snapshot, Value const &character) const;
     Bytes item_block(Value const &snapshot) const;
     Bytes gameobject_block(Value const &snapshot) const;
     Bytes unit_block(Value const &snapshot, Value const &character) const;
@@ -74,12 +75,12 @@ struct Protocol
     Bytes scalar_block(Value const &snapshot, Value const &character, Value const &changed,
                        unsigned visibility = 0) const;
     Bytes rest_block(Value const &snapshot, Value const &changed) const;
-    Bytes guild_block(Value const &snapshot,Value const &character,Value const &changed) const;
+    Bytes guild_block(Value const &snapshot,Value const &character,Value const &changed,unsigned visibility=1) const;
     static Reply inventory_request(State const &owner,std::string const &name,View body);
     Reply inventory_response(std::string const &name,View body) const;
-    Bytes inventory_block(Value const &snapshot,Value const &changed) const;
+    Bytes inventory_block(Value const &snapshot,Value const &changed,unsigned visibility=1) const;
     Bytes item_update(Value const &snapshot,Value const &changed) const;
-    Reply object_updates(State &owner, View body) const;
+    Reply object_updates(State &owner, View body,Array const &players={}) const;
     Packet cast_request(State &owner, View body) const;
     Reply cast_response(State &owner, std::string const &name, View body) const;
     static Reply cast_prepare(State &owner, View body);

@@ -162,11 +162,13 @@ int main(int argc, char **argv)
                 else if (op == "rest_update")
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "guild_update")
-                    result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed")));
+                    result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed"),
+                        get(request,"visibility").is_null()?1:integer(get(request,"visibility"))));
                 else if (op == "unit_update")
                     result = hex(protocol.scalar_block(get(request, "snapshot"),get(request,"character"),get(request,"changed"),integer(get(request,"visibility"))));
                 else if(op=="inventory_update")
-                    result=hex(protocol.inventory_block(get(request,"snapshot"),get(request,"changed")));
+                    result=hex(protocol.inventory_block(get(request,"snapshot"),get(request,"changed"),
+                        get(request,"visibility").is_null()?1:integer(get(request,"visibility"))));
                 else if(op=="item_update")
                     result=hex(protocol.item_update(get(request,"snapshot"),get(request,"changed")));
                 else if (op == "object_block")
@@ -175,6 +177,7 @@ int main(int argc, char **argv)
                     auto const &snapshot = get(request, "snapshot");
                     auto const &character = get(request, "character");
                     result = hex(kind == "player" ? protocol.player_block(snapshot, character)
+                                 : kind == "public_player" ? protocol.public_player_block(snapshot,character)
                                  : kind == "item" ? protocol.item_block(snapshot)
                                  : kind == "unit" ? protocol.unit_block(snapshot, character)
                                                   : protocol.gameobject_block(snapshot));
@@ -298,7 +301,7 @@ int main(int argc, char **argv)
                             else if (fn == "movement_ack")
                                 reply = protocol.movement_ack(state, name, body);
                             else if (fn == "object_updates")
-                                reply = protocol.object_updates(state, body);
+                                reply = protocol.object_updates(state, body,get(request,"players").as_array());
                             else if (fn == "transfer_response")
                                 reply = Protocol::transfer_response(state, name, body);
                             else if (fn == "transfer_request")
