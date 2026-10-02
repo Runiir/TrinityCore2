@@ -116,6 +116,57 @@ Full client compatibility, indefinite bot operation and the remaining inventory
 contracts are still open. Public nearby-player object and movement translation,
 guild services, recipe mutations and the remaining interaction families are pending.
 
+## Equipment, chat and lifecycle continuation
+
+The `client_interactions_20261002_ui03` batch continues the parent workqueue.
+`equipment_01` proved ordinary unequip/reequip and native item identity, but exposed
+zero damage and stale strength/armor in the client. The C++ bridge now translates
+the native initial stat arrays and sparse owner stat/damage updates, including
+zero values and signed modifiers. `equipment_02` passes the Laya helmet removal
+and replacement and independently compares the visible and native strength,
+armor, damage range and maximum health before, during and after the change.
+The original equipment and inventory are restored. Crit, hit, mastery and the
+remaining character statistics still need live qualification.
+
+`chat_01` exposed an incorrect world-channel-only guard. Ordinary chat arrives on
+the authenticated realm connection, which must still have an active owned player
+and instance connection. `chat_02` then passed five sends but disconnected on
+whisper. The actual Whitemane 60895 whisper request uses a nine-bit target-name
+length and local realm ID 1; the pinned upstream packet reference used seven bits.
+The adapter now decodes the installed client's captured request. `chat_03` passes
+six Laya sends (say, yell, emote, raid, raid warning and whisper) and three peer
+delivery checks against native packets and normal `CHAT_MSG` addon events. Only
+bounded synthetic probe messages are admitted to packet diagnostics; arbitrary
+player chat and GM fixture command text are excluded.
+
+Reconnect attempts with old launcher credentials exposed a separate ten-minute
+ticket expiration problem. New cached credentials last 24 hours, and REST refresh
+extends a still-valid ticket. Expired, revoked and disallowed-account credentials
+are not renewed. `ticket_refresh_live.json` verifies renewal and expired-ticket
+rejection through the running REST service using a disposable owned credential,
+then deletes it. This is a code fixture check, not a model/UI reconnect pass.
+
+`crafting_03` prepared matching native/UI reagent counts but stopped when Laya
+selected Tab instead of typing the recipe search. It attempted no craft and
+restored zero reagent/product counts and the temporary permission. The clarified
+search goal is being replayed. Earlier `crafting_01` used an unsuitable general
+`IsSpellKnown` recipe oracle; learned recipes now come from the native spell
+catalog and normal visible recipe links. `crafting_02` stopped because its chat
+fixture commands were not translated. Neither counts as a successful craft.
+
+The native worldserver retained its original process identity. These repairs
+rebuilt only the C++ adapter and restarted the owned login/packet adapters.
+`whisper_regression.xml` reports 327 passes, `whisper_asan.xml` reports 25 selected
+ASan/UBSan passes, and `ticket_refresh.xml` reports 17 authentication passes after
+the renewal change. The failed pre-fix whisper replay is retained. Two earlier
+test invocations failed during collection because of the wrong runner import
+path and codec filename; they ran no qualifying tests. The initial stats fixture
+failure was corrected to match the existing server object-update flag.
+
+Additional repeatable runners cover crafting, logout cancellation/completion and
+reentry, and the installed Classic guild UI preference. Their existence does not
+qualify their pending live cases. The workqueue remains open beyond this batch.
+
 ## Continued UI qualification
 
 The saved [workqueue](../../experiments/configs/client_harness/442_interaction_workqueue.json)
