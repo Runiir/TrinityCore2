@@ -19,6 +19,23 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             throw std::runtime_error("gameplay request outside owned active world");
     };
     auto native_send = [&](Packet const &packet) { owner.native->send(packet.first, packet.second); };
+    if(name=="CMSG_QUERY_QUEST_INFO")
+    {
+        auto request=quest_request(protocol,state,name,body);
+        if(active_world.get()!=this || !state.guid())
+        {
+            service.events.event("late_quest_query_ignored",{{"session",owner.id},{"name",name}});return;
+        }
+        // The client can read its quest cache immediately after RESUME_COMMS.
+        // Native STATUS_LOGGEDIN reads wait for authoritative player creation.
+        if(!state.created)
+        {
+            owner.login_barrier.defer_quest_read(*request);
+            service.events.event("quest_query_deferred_until_player_create",{{"session",owner.id},{"name",name}});
+        }
+        else native_send(*request);
+        return;
+    }
     if(Protocol::bank_close(state,name,body))return;
     if(auto request=Protocol::bank_request(state,name,body))
     {require_world();native_send(*request);return;}

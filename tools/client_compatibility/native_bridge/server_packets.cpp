@@ -290,6 +290,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
             send(*reply);
         if (!was_created && state.created)
         {
+            for(auto const &request:login_barrier.release_quest_reads())native->send(request.first,request.second);
             instance->send("SMSG_MOVE_SET_ACTIVE_MOVER", Writer().guid(state.guid(), player_high()).finish());
             instance->send("SMSG_CONTROL_UPDATE",
                            Writer().guid(state.guid(), player_high()).bits(1, 1).finish());

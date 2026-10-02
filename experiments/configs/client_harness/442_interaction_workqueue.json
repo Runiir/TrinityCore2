@@ -56,7 +56,8 @@
     "ui10/merchant_purchase_04: four Laya choices, five-item water bundle, exact native/client price and quantities plus received-item chat event, full inventory/money/position restored",
     "ui11/trainer_open_03: three Laya choices, visible warrior catalog with available Parry and Plate Specialization, ordinary opening and closure; learning pending",
     "ui12/repair_all_03: four Laya choices, all ten items repaired, native/client quote and charge agree at 163335 copper, inventory/money/position restored; repaired gear retained",
-    "ui12/trainer_learn_02: four Laya choices, Parry learned in native/client state, exact 646-copper price, ordinary ability-learned notification, inventory/money/position restored; learned skill retained"
+    "ui12/trainer_learn_02: four Laya choices, Parry learned in native/client state, exact 646-copper price, ordinary ability-learned notification, inventory/money/position restored; learned skill retained",
+    "ui13/quest_log_02: five Laya choices, expand collapsed zone, read exact accepted quest, confirm abandonment, native quest baseline and inventory/money restored"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -69,6 +70,7 @@
     "Trade socket enchants, explicit gold changes, offer editing and unaccept are pending; one invalid unnamed TradeFrame child is skipped by the observer.",
     "Bank bag purchases, equipped bank bags, split/merge variants, persistence and negative gameplay paths are pending.",
     "Merchant individual/guild repair, partial-stack, stock, discount and negative purchase variants are pending; one plain-item purchase with acquisition chat is qualified. Item identity-dependent acquisition toasts and quest notification variants remain pending.",
-    "Profession-trainer catalog and learning, trainer failure UI, incremental unlearn and superseded-spell variants remain unqualified. Native trainer rows have two prerequisites and two profession flags; the warrior training path is qualified."
+    "Profession-trainer catalog and learning, trainer failure UI, incremental unlearn and superseded-spell variants remain unqualified. Native trainer rows have two prerequisites and two profession flags; the warrior training path is qualified.",
+    "Quest variants remain pending: manual acceptance, objective progress, completion/reward, sharing, maps/POIs, item/currency/timed/required-spell objectives and persistence. One kill-quest display and abandonment are qualified."
   ]
 }

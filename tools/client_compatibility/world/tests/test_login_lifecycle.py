@@ -1,6 +1,7 @@
 """Each new instance receives its world before legacy initialization updates."""
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec, result, action
 from tools.client_compatibility.world.tests.test_logout_account_cache import update
+import struct
 
 
 def packet(name, body=''):
@@ -42,3 +43,19 @@ def test_logout_clears_previous_world_but_preserves_final_owned_settings_route(c
         gameobjects=[], units=[], actions=[action('logout_complete', '', b''),
         action('account_request', 'CMSG_UPDATE_ACCOUNT_DATA', update())])
     assert out[0] is None and out[1] == ['CMSG_UPDATE_ACCOUNT_DATA', '030000007b00000000000000']
+
+
+def read(id):return {'fn':'read','name':'CMSG_QUERY_QUEST_INFO','body':struct.pack('<I',id).hex()}
+
+
+def test_early_static_quest_reads_are_deduplicated_and_released_once(codec):
+    rows=result(codec,op='login_quest_reads',actions=[{'fn':'begin'},read(28766),read(28766),read(28825),{'fn':'release'},{'fn':'release'}])
+    assert [r['queued'] for r in rows]==[0,1,1,2,0,0]
+    assert rows[4]['packets']==[['CMSG_QUERY_QUEST_INFO',read(id)['body']] for id in [28766,28825]]
+    assert rows[5]['packets']==[]
+
+
+def test_login_read_queue_rejects_mutations_bad_identity_and_unbounded_cache_queries(codec):
+    for a in [{**read(28766),'name':'CMSG_QUEST_GIVER_ACCEPT_QUEST'},read(0),read(0x80000001),{**read(1),'body':'01'}]:
+        assert 'error' in codec(op='login_quest_reads',actions=[{'fn':'begin'},a])
+    assert 'error' in codec(op='login_quest_reads',actions=[{'fn':'begin'},*[read(i) for i in range(1,66)]])

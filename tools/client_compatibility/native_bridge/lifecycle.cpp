@@ -4,7 +4,7 @@ namespace bridge
 {
 void LoginBarrier::begin()
 {
-    if(pending || !deferred.empty())throw std::runtime_error("repeated native login barrier");
+    if(pending || !deferred.empty() || !quest_reads.empty())throw std::runtime_error("repeated native login barrier");
     pending = true;
     bytes = 0;
 }
@@ -32,6 +32,20 @@ std::vector<Packet> LoginBarrier::accept(Packet packet)
     bytes += packet.second.size();
     deferred.push_back(std::move(packet));
     return {};
+}
+void LoginBarrier::defer_quest_read(Packet packet)
+{
+    if(packet.first!="CMSG_QUERY_QUEST_INFO" || packet.second.size()!=4)
+        throw std::runtime_error("only static quest reads may wait for player creation");
+    Reader r(packet.second);auto id=r.take<std::uint32_t>();r.end();
+    if(!id || id>0x7fffffff)throw std::runtime_error("invalid deferred quest identity");
+    for(auto const &existing:quest_reads)if(existing.second==packet.second)return;
+    if(quest_reads.size()>=64)throw std::runtime_error("deferred quest reads exceed bound");
+    quest_reads.push_back(std::move(packet));
+}
+std::vector<Packet> LoginBarrier::release_quest_reads()
+{
+    std::vector<Packet> ready;ready.swap(quest_reads);return ready;
 }
 void finish_logout(State &state)
 {

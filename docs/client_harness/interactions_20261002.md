@@ -845,6 +845,25 @@ expanding UI sections. The next trial uses normal clicks to expand the zone,
 read the accepted quest and abandon it, with native quest/inventory restoration
 as its completion condition. No combat or reward completion is implied.
 
+`quest_log_01` then exposes an observation-capacity failure while expanding the
+zone. v16 removes duplicate objective observations, limits the general control
+preview to two controls, and observes questgiver/selected-quest text only while
+their panels are visible. Full paginated control observations remain available.
+`quest_log_02` completes five Laya choices: open, expand Elwynn Forest, read quest
+28766, open its abandonment confirmation and confirm. The modern and native
+abandonment requests both carry owned slot byte `00`. Native quest 28825 remains
+unchanged, test quest 28766 is absent, and inventory/money match the baseline.
+Earlier failed episodes retain their original outcomes.
+
+A scout reconnect also exposes an early public quest-cache query immediately
+after instance authentication, before native player creation. The old in-world
+guard disconnects that session. Static quest reads are now validated and queued
+until authoritative player creation, with duplicate suppression and a 64-ID
+limit. Acceptance and abandonment retain active-world guards. The queue rejects
+mutation packets and invalid IDs; late cache reads outside a selected character
+are consumed without native gameplay. Updated tests and the live reconnect
+retry are retained in UI13.
+
 Seven additional older immutable journal rotations (58,766,706 raw bytes) are
 checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
 6,648,223-byte archive is synchronized before those rotations and both local

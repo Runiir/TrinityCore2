@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=15,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=16,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -284,7 +284,7 @@ local function snapshot(viewMode,viewPage)
     data.control_count=#data.controls
     local controls={};local first=mode=='controls' and (page-1)*12+1 or 1
     for _,control in ipairs(data.controls) do if control.name=='GameTimeFrame' then data.calendar_button=control end end
-    for i=first,math.min(#data.controls,first+(mode=='controls' and 11 or 5)) do controls[#controls+1]=data.controls[i] end
+    for i=first,math.min(#data.controls,first+(mode=='controls' and 11 or 1)) do controls[#controls+1]=data.controls[i] end
     data.controls=controls
     if mode=='controls' then
         return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
@@ -348,12 +348,6 @@ local function snapshot(viewMode,viewPage)
         if q and header then data.quest_headers[#data.quest_headers+1]={index=i,title=trim(title,80),collapsed=collapsed} end
         if q and not q.isHeader then
             local row={index=i,id=q.questID,title=trim(q.title,80),level=q.level,complete=q.isComplete,objectives={}}
-            local objectives=call(C_QuestLog and C_QuestLog.GetQuestObjectives,q.questID)
-            for _,objective in ipairs(type(objectives)=='table' and objectives or {}) do
-                row.objectives[#row.objectives+1]={text=trim(objective.text,120),type=objective.type,
-                    fulfilled=objective.numFulfilled,required=objective.numRequired,finished=objective.finished}
-                if #row.objectives>=4 then break end
-            end
             data.quests[#data.quests+1]=row
         end
     end
@@ -365,10 +359,12 @@ local function snapshot(viewMode,viewPage)
             fulfilled=objective.numFulfilled,required=objective.numRequired,finished=objective.finished}
         if #data.quest_probe.objectives>=4 then break end
     end
-    data.quest_giver={id=call(GetQuestID),title=trim(call(GetTitleText),80),
-        description=trim(call(GetQuestText),180),objectives=trim(call(GetObjectiveText),120)}
+    if QuestFrame and QuestFrame:IsVisible() then
+        data.quest_giver={id=call(GetQuestID),title=trim(call(GetTitleText),80),
+            description=trim(call(GetQuestText),180),objectives=trim(call(GetObjectiveText),120)}
+    end
     local selected=tonumber(call(GetQuestLogSelection)) or 0
-    if selected>0 then
+    if selected>0 and QuestLogFrame and QuestLogFrame:IsVisible() then
         local title,level,tag,header,collapsed,complete,frequency,id=call(GetQuestLogTitle,selected)
         local text,objectives=call(GetQuestLogQuestText)
         data.quest_log_selection={index=selected,id=id,title=trim(title,80),header=header,

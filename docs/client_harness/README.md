@@ -43,9 +43,9 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
-adapter and subsequent quest work pass 468 regression tests. The quest batch
+adapter and subsequent quest work pass 470 regression tests. The quest batch
 passes 101 selected ASan/UBSan tests; the later self-target correction passes
-26 selected sanitizer checks. This counts
+26 selected sanitizer checks and the login-read followup passes 32. This counts
 protocol checks. A live seven-choice trial sells an existing item, buys it back,
 restores its slot and closes the merchant with exact native inventory/money
 restoration. A four-choice purchase trial buys a five-item water bundle with exact
@@ -55,8 +55,10 @@ quote/charge agreement after the opt-in native rounding fix. A four-choice warri
 trainer trial learns Parry with native/client spell, price and notification
 agreement. Profession trainers and broader training variants remain open.
 Questgiver details and the native 0/6 kill objective display correctly in the
-latest trial. Its cleanup exposes a dropped self-selection request, which is
-fixed in code; complete quest-log/abandonment qualification is still pending.
+latest trial. Its initial cleanup exposes a dropped self-selection request,
+which is fixed. A five-choice quest-log trial expands the zone, reads the
+accepted quest and confirms abandonment with exact native quest/inventory/money
+restoration. Other quest mutations, completion/rewards and travel remain open.
 
 ## Endpoints and restart
 

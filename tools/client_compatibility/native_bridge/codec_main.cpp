@@ -52,6 +52,20 @@ int main(int argc, char **argv)
                 }
                 else if(op=="native_guild_roster")
                     result=native_guild_roster(data("body"));
+                else if(op=="login_quest_reads")
+                {
+                    LoginBarrier barrier;Array output;
+                    for(auto const &a:get(request,"actions").as_array())
+                    {
+                        auto fn=str(get(a,"fn"));Array packets;
+                        if(fn=="begin")barrier.begin();
+                        else if(fn=="read")barrier.defer_quest_read({str(get(a,"name")),unhex(str(get(a,"body")))});
+                        else if(fn=="release")for(auto const &p:barrier.release_quest_reads())packets.push_back(Array{p.first,hex(p.second)});
+                        else throw std::runtime_error("unknown login quest read action");
+                        output.push_back(Object{{"queued",barrier.quest_reads.size()},{"packets",packets}});
+                    }
+                    result=output;
+                }
                 else if(op=="login_barrier")
                 {
                     LoginBarrier barrier;Array output;
