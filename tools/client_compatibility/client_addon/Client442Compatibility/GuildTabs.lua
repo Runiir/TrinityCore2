@@ -1,7 +1,7 @@
 -- 60895 ships Classic guild permission XML with six tabs while its Lua loops
 -- over Cataclysm's eight. Supply the missing stock-template widgets. This addon
 -- does not issue gameplay commands or bypass server guild permissions.
-if tonumber(select(2,GetBuildInfo()))~=60895 then return end
+if tonumber((select(2,GetBuildInfo())))~=60895 then return end
 Client442CompatibilityStatus={version=1,guild_tabs_repaired=false}
 local function repairGuildTabs()
     local parent=GuildControlPopupFrameTabPermissions
