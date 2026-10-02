@@ -67,7 +67,7 @@ native character GUID and its authenticated bridge session.
 
 ```bash
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.actors register --guid 1
-CLIENT442_ACTOR=scout pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.actors provision --character Harnessscout
+CLIENT442_ACTOR=scout pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.actors provision --character Harnesstwo
 CLIENT442_ACTOR=scout pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.auth.control launch-sso
 ```
 
