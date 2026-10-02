@@ -17,7 +17,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
-    'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
+    'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','InspectFrame','LootFrame','DressUpFrame','ItemTextFrame',
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame','StackSplitFrame'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
@@ -26,6 +26,7 @@ local chatProbes={}
 local luaErrors={}
 local blockedActions={}
 local following={active=false}
+local inspectionReady,tradeEvents={},{}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
     luaErrors[#luaErrors+1]=tostring(message):sub(1,300)
@@ -114,7 +115,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=4}
+        blocked_actions=blockedActions,observer_version=5}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -253,6 +254,28 @@ local function snapshot(viewMode,viewPage)
         player=not not call(UnitIsPlayer,'target'),health=call(UnitHealth,'target'),
         max_health=call(UnitHealthMax,'target'),position={call(UnitPosition,'target')}}
     data.follow=following
+    data.inspect={ready=inspectionReady,visible=InspectFrame and InspectFrame:IsVisible() or false}
+    if data.inspect.visible then
+        local unit=InspectFrame.unit or 'target'
+        data.inspect.unit=unit;data.inspect.guid=call(UnitGUID,unit);data.inspect.name=call(UnitName,unit)
+        data.inspect.items={}
+        for _,slot in ipairs({1,16,17}) do
+            local link=call(GetInventoryItemLink,unit,slot)
+            if link then data.inspect.items[#data.inspect.items+1]={slot=slot,link=trim(link,240)} end
+        end
+    end
+    data.trade={events=tradeEvents,visible=TradeFrame and TradeFrame:IsVisible() or false}
+    if data.trade.visible then
+        data.trade.partner=TradeFrameRecipientNameText and call(TradeFrameRecipientNameText.GetText,TradeFrameRecipientNameText)
+        data.trade.money=call(GetPlayerTradeMoney);data.trade.target_money=call(GetTargetTradeMoney)
+        data.trade.items={};data.trade.target_items={}
+        for slot=1,7 do
+            local name,_,count=call(GetTradePlayerItemInfo,slot)
+            if name then data.trade.items[#data.trade.items+1]={slot=slot,name=trim(name),count=count} end
+            name,_,count=call(GetTradeTargetItemInfo,slot)
+            if name then data.trade.target_items[#data.trade.target_items+1]={slot=slot,name=trim(name),count=count} end
+        end
+    end
     data.world_position={call(UnitPosition,'player')}
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
@@ -353,12 +376,18 @@ end
 frame:RegisterEvent('UI_ERROR_MESSAGE')
 frame:RegisterEvent('ADDON_ACTION_BLOCKED');frame:RegisterEvent('ADDON_ACTION_FORBIDDEN')
 frame:RegisterEvent('AUTOFOLLOW_BEGIN');frame:RegisterEvent('AUTOFOLLOW_END')
+frame:RegisterEvent('INSPECT_READY')
+for _,event in ipairs({'TRADE_SHOW','TRADE_CLOSED','TRADE_REQUEST_CANCEL','TRADE_ACCEPT_UPDATE'}) do frame:RegisterEvent(event) end
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
     'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
     if event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
     elseif event=='AUTOFOLLOW_END' then following={active=false}
+    elseif event=='INSPECT_READY' then inspectionReady={guid=trim(code,64),time=GetTime()}
+    elseif event:match('^TRADE_') then
+        tradeEvents[#tradeEvents+1]={event=event,own=code,peer=text,time=GetTime()}
+        if #tradeEvents>3 then table.remove(tradeEvents,1) end
     elseif event=='UI_ERROR_MESSAGE' then
         errors[#errors+1]={code=code,text=trim(text,120)};if #errors>3 then table.remove(errors,1) end
     elseif event=='ADDON_ACTION_BLOCKED' or event=='ADDON_ACTION_FORBIDDEN' then
