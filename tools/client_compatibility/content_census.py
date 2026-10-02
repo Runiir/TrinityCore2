@@ -20,6 +20,15 @@ DBC_TABLES={'spells':'Spell','maps':'Map','areas':'AreaTable','classes':'ChrClas
     'digsites':'ResearchSite','encounters':'DungeonEncounter','dungeon_finder_entries':'LFGDungeons'}
 
 
+def dbc_ids(path):
+    """These reviewed native tables have uint32 ID first, including byte columns."""
+    data=path.read_bytes()
+    magic,count,fields,width,strings=struct.unpack_from('<4s4I',data)
+    if magic!=b'WDBC' or width<4 or not fields or len(data)!=20+count*width+strings:
+        raise ValueError('unexpected content inventory DBC layout: '+path.name)
+    return sorted({struct.unpack_from('<I',data,20+i*width)[0] for i in range(count)})
+
+
 def census():
     domains={};sources={};missing=[]
     # connection() independently verifies the dedicated DB instance and account.
@@ -41,7 +50,7 @@ def census():
     for name,table in DBC_TABLES.items():
         path=map_data.DBC/(table+'.dbc')
         if not path.exists():missing.append({'domain':name,'source':table+'.dbc'});continue
-        rows,_=map_data.table(table);domains[name]=sorted({r[0] for r in rows})
+        domains[name]=dbc_ids(path)
         sources[name]={'kind':'public_legacy_dbc','table':table,'sha256':lab.sha256(path)}
     path=map_data.DBC/'Item.db2'
     if not path.exists():missing.append({'domain':'items_dbc','source':'Item.db2'})
