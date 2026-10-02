@@ -1,5 +1,6 @@
 """Archive closed player-interaction evidence with DVCLive and push it to DVC."""
 import argparse
+import hashlib
 from collections import Counter
 import json
 from pathlib import Path
@@ -67,7 +68,7 @@ def checkpoint(directory,name):
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
             'The 891-operation plan and 275-binding catalog remain broader than the completed trials.'],
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
-    paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',
+    paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',lab.ROOT/'reference/ui-442',
         lab.ROOT/'build/native_bridge/build_receipt.json',lab.ROOT/'build/native_bridge_asan/build_receipt.json',
         lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec']
     manifest=[]
@@ -97,8 +98,15 @@ def checkpoint(directory,name):
                 if path.exists():archive.add(path,arcname=str(path.relative_to(lab.ROOT)))
             archive.add(folder,arcname='tracking')
     relative=str(target.relative_to(lab.REPO))
-    for command in [['dvc','add',relative],['dvc','status',pointer],['dvc','push',pointer],['dvc','status','--cloud',pointer]]:
+    with tarfile.open(target,'r:gz') as archive:
+        for record in manifest:
+            with archive.extractfile(record['path']) as file:
+                digest=hashlib.file_digest(file,'sha256').hexdigest()
+            if digest!=record['sha256']:raise RuntimeError('checkpoint archive hash mismatch: '+record['path'])
+    for command in [['dvc','add',relative],['dvc','status',pointer],['dvc','push',pointer]]:
         subprocess.run(command,cwd=lab.REPO,check=True)
+    cloud=json.loads(subprocess.check_output(['dvc','status','--cloud','--json',pointer],cwd=lab.REPO,text=True))
+    if cloud:raise RuntimeError('checkpoint is not synchronized with the DVC remote')
     lab.private_write(directory/'checkpoint_receipt.json',json.dumps({'file':relative,'sha256':lab.sha256(target),
         'bytes':target.stat().st_size,'cloud_verified':True,'file_manifest':manifest},indent=2)+'\n')
     print(json.dumps({'pointer':pointer,'bytes':target.stat().st_size,'sha256':lab.sha256(target)}))
