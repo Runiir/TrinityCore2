@@ -117,6 +117,23 @@ bool capture(std::string const &name)
                                                           "SMSG_LOGOUT_CANCEL_ACK"};
     return names.contains(name);
 }
+bool public_chat_probe(std::string const &name,View body)
+{
+    if(!(name.starts_with("CMSG_CHAT_MESSAGE_") || name.starts_with("CMSG_MESSAGECHAT_") ||
+        name=="SMSG_CHAT" || name=="SMSG_MESSAGECHAT"))return false;
+    // Retain only bounded synthetic UI probes. Never archive arbitrary player chat,
+    // GM command arguments or anything following the public probe token.
+    std::string value(body.begin(),body.end());auto p=value.find("TC442UI:");
+    if(p==std::string::npos)return false;
+    auto start=p+8,end=start;
+    while(end<value.size() && ((value[end]>='a' && value[end]<='z') || (value[end]>='A' && value[end]<='Z') ||
+        (value[end]>='0' && value[end]<='9') || value[end]=='_' || value[end]=='-'))++end;
+    if(end<=start || end-start>64)return false;
+    if(end==value.size())return true;
+    if(value[end]!='\0')return false;
+    if(name=="SMSG_MESSAGECHAT")return end+2==value.size(); // Terminator and native chat tag.
+    return end+1==value.size(); // Modern whisper terminator; no trailing arbitrary data.
+}
 } // namespace
 void Events::append(std::filesystem::path const &path, Object const &record)
 {
@@ -155,7 +172,7 @@ void Events::marker_placed(std::string const &session,Value const &location)
 void Events::packet(std::string const &direction, std::string const &name, View body,
                     std::string const &session)
 {
-    if (!capture(name))
+    if (!capture(name) && !public_chat_probe(name,body))
         return;
     append(root_ / "evidence/world_packets.jsonl", Object{{"time", now()},
                                                           {"session", session},

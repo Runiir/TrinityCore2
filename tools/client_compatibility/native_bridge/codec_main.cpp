@@ -4,6 +4,7 @@
 #include "protocol.hpp"
 #include "events.hpp"
 #include "ready_check.hpp"
+#include "chat.hpp"
 #include <iostream>
 #include <memory>
 
@@ -32,6 +33,11 @@ int main(int argc, char **argv)
                 {
                     Events events(str(get(request,"root")));
                     events.event(str(get(request,"kind")),get(request,"fields").as_object());result=true;
+                }
+                else if(op=="packet_diagnostic")
+                {
+                    Events events(str(get(request,"root")));
+                    events.packet("from_client",str(get(request,"name")),data("body"),"fixture");result=true;
                 }
                 else if(op=="marker_diagnostic")
                 {
@@ -200,6 +206,10 @@ int main(int argc, char **argv)
                                 reply = Protocol::reputation_response(name, body, get(request, "factions").as_array());
                             else if (fn == "social_request")
                                 reply = Protocol::social_request(name, body);
+                            else if (fn == "chat_request")
+                                reply = chat_request(state,name,body);
+                            else if (fn == "chat_response")
+                                reply = chat_response(state,name,body);
                             else if (fn == "social_response")
                                 reply = Protocol::social_response(name, body);
                             else if (fn == "party_request")

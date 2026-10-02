@@ -1,4 +1,5 @@
 #include "service.hpp"
+#include "chat.hpp"
 #include <ctime>
 
 namespace bridge
@@ -165,7 +166,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
         send(*reply);
         co_return;
     }
-    reply = Protocol::initialize_response(state, name, body);
+    reply = chat_response(state,name,body);
+    if(!reply)reply = Protocol::initialize_response(state, name, body);
     if (!reply)
         reply = protocol.movement_control(state, name, body);
     if (!reply)
