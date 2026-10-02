@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 140 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 143 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 72 preserve unsuccessful steps, including missing portal
+Episodes 07 through 73 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -405,6 +405,19 @@ excludes detached roofs. Local survey flights retain their known-floor connectio
 The new regression checks both the buried floor and the raised Dragonmaw roof.
 The first raw-terrain regression failed due to an invalid pytest approximation
 argument; its failed XML is retained with the corrected full-suite result.
+Episode 73 landed on the corrected ground, followed red/yellow instruments by
+flight, approached green instruments on foot, and collected eight Orc fragments
+through normal native loot/currency replies. It later stopped during the second
+dig: incidental-combat recovery had moved the character under a model at Z37.916,
+above feet at Z30.728. The old lateral-flight guard required ground ten yards
+below the character and had no suitable exit from this settled ground position.
+A grounded overhead-collision guard now selects a connected dry walking exit,
+checks VMAP rays at body heights 0.5 and 1.7 yards, dismounts, and uses short
+on-foot advances before the model mounts again. An already hovering mount first
+descends to the nearby verified dry floor, with clear body-height collision rays,
+and waits for settled ground before dismounting. It retains success and failure
+receipts, actual observations, health/combat/falling guards and site boundaries.
+This applies to a flight leg; green survey approaches still remain on foot.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

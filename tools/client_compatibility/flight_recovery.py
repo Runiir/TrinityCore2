@@ -19,6 +19,8 @@ def candidate(facts,extra,angle):
 def nudge(inputs,leg,observer,path,extra):
     if not extra['mounted'] or not extra['flyable_area']:
         raise RuntimeError('blocked-climb escape requires a mount in a flyable area')
+    from .takeoff_exit import needed,escape
+    if needed(observer.poll(),extra):return escape(inputs,observer,path,extra)
     return grounded_escape(inputs,leg,observer,path,extra)
 
 

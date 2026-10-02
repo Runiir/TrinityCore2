@@ -28,6 +28,10 @@ def execute(action,leg,facts,extra,observer,path):
     position=facts['position']
     if action=='mount':inputs.key('3');keys.append({'key':'3'});time.sleep(2)
     elif action=='takeoff':
+        from .takeoff_exit import needed,escape
+        if needed(facts,extra):
+            collision=escape(inputs,observer,path,extra)
+            return {'physical_keys':collision['physical_keys'],'collision':collision}
         hold=min(3,max(.15,(leg['ceiling']-position[2])/28.7))
         inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold})
         time.sleep(.3);after=observer.poll()

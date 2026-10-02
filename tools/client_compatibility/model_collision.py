@@ -39,3 +39,13 @@ def supporting_surface(map_id,position):
     return {'terrain_height':terrain,'model_collision_height':models['collision_height'],
         'highest_surface':max(heights) if heights else None,
         'source':'public raw MAPS terrain and static VMAP model collision'}
+
+
+def clear_body_segment(map_id,start,end):
+    for height in [.5,1.7]:
+        a=[start[0],start[1],start[2]+height];b=[end[0],end[1],end[2]+height]
+        result=subprocess.run([str(binary()),str(lab.BASE/'data/vmaps'),str(map_id),'--segment',
+            *map(str,a),*map(str,b)],capture_output=True,text=True,timeout=10)
+        if result.returncode:raise RuntimeError('public body collision: '+result.stderr.strip())
+        if not json.loads(result.stdout)['clear']:return False
+    return True

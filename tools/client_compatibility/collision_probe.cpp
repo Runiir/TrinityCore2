@@ -1,5 +1,6 @@
 // Public static model collision only. No server session or character database.
 #include "VMapManager2.h"
+#include "ModelIgnoreFlags.h"
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -10,11 +11,13 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc!=6) throw std::runtime_error("expected VMAP directory, map and XYZ");
+        bool segment=argc==10 && std::string(argv[3])=="--segment";
+        if (argc!=6 && !segment) throw std::runtime_error("expected VMAP directory, map and XYZ or --segment endpoints");
         std::string directory=argv[1];
         if (!directory.ends_with('/')) directory+='/';
         unsigned int map=std::stoul(argv[2]);
-        float x=std::stof(argv[3]),y=std::stof(argv[4]),z=std::stof(argv[5]);
+        int offset=segment?4:3;
+        float x=std::stof(argv[offset]),y=std::stof(argv[offset+1]),z=std::stof(argv[offset+2]);
         if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
             throw std::runtime_error("invalid public collision position");
         int gx=int(std::floor(32-x/533.33333333f)),gy=int(std::floor(32-y/533.33333333f));
@@ -27,6 +30,16 @@ int main(int argc, char** argv)
                 throw std::runtime_error("public collision tile failed to load");
         }
         if (!loaded) throw std::runtime_error("public collision tiles unavailable");
+        if (segment)
+        {
+            float ex=std::stof(argv[7]),ey=std::stof(argv[8]),ez=std::stof(argv[9]);
+            if (!std::isfinite(ex) || !std::isfinite(ey) || !std::isfinite(ez)
+                || std::hypot(ex-x,ey-y)>45) throw std::runtime_error("invalid bounded collision segment");
+            bool clear=manager.isInLineOfSight(map,x,y,z,ex,ey,ez,VMAP::ModelIgnoreFlags::Nothing);
+            std::cout << "{\"source\":\"public static VMAP model collision\",\"clear\":"
+                << (clear?"true":"false") << "}\n";
+            return 0;
+        }
         float height=manager.getHeight(map,x,y,z+300,600);
         std::cout << std::setprecision(9) << "{\"source\":\"public static VMAP model collision\",\"loaded_tiles\":"
             << loaded << ",\"collision_height\":";
