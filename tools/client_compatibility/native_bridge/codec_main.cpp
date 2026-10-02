@@ -7,6 +7,7 @@
 #include "chat.hpp"
 #include "lifecycle.hpp"
 #include "guild_packets.hpp"
+#include "merchants.hpp"
 #include <iostream>
 #include <memory>
 
@@ -278,6 +279,10 @@ int main(int argc, char **argv)
                                 reply=protocol.bank_response(state,name,body);
                             else if(fn=="bank_close")
                                 Protocol::bank_close(state,name,body);
+                            else if(fn=="merchant_request")
+                                reply=merchant_request(state,name,body);
+                            else if(fn=="merchant_response")
+                                reply=merchant_response(protocol,state,name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

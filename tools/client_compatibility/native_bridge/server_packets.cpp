@@ -1,6 +1,7 @@
 #include "service.hpp"
 #include "chat.hpp"
 #include "guild_packets.hpp"
+#include "merchants.hpp"
 #include <ctime>
 
 namespace bridge
@@ -203,6 +204,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
         co_return;
     }
     if ((reply = protocol.bank_response(state, name, body)))
+    {send(*reply);co_return;}
+    if ((reply = merchant_response(protocol,state,name,body)))
     {send(*reply);co_return;}
     if ((reply = Protocol::gossip_response(state, name, body)))
     {
