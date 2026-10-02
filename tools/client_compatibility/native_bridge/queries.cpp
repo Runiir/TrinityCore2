@@ -58,6 +58,14 @@ std::optional<Bytes> Protocol::creature_query(State &owner, View body)
     Reader r(body);
     auto entry = r.take<std::uint32_t>();
     r.end();
+    if(owner.mail_creatures.contains(entry))
+    {
+        if(owner.creature_queries.size()>=256)throw std::runtime_error("creature queries exceed bound");
+        owner.creature_queries.insert(entry);
+        // Mail names are public template data; the native query handler does
+        // not require a spawned creature GUID for an authoritative sender ID.
+        return Writer().pack("IQ",{entry,0}).finish();
+    }
     for (auto const &[guid, record] : owner.visible_units)
         if (((guid >> 32) & 0xfffff) == entry)
         {

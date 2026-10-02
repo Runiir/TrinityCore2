@@ -21,6 +21,7 @@ struct State
     std::unordered_map<unsigned, Value> casts, visible_auras, pending_movement;
     std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
     std::unordered_set<unsigned> creature_queries, npc_text_queries;
+    std::unordered_set<unsigned> mail_creatures; // Public sender entries from the owned native mail catalog.
     Value loot, taxi_menu, gossip_menu, pending_near, pending_far;
     Array party_guid{0,0};
     std::unordered_map<std::uint64_t, PartyState> party_states;

@@ -55,12 +55,12 @@ Bytes attachment(Reader &r,unsigned expected_position)
     for(auto const &enchant:enchants)w.pack("3IB",enchant);
     return w.finish();
 }
-Bytes list(View body)
+Bytes list(State &owner,View body)
 {
     if(body.size()>32767)throw std::runtime_error("native mailbox packet exceeds bound");
     Reader r(body);auto total=r.take<std::uint32_t>();auto count=r.take<std::uint8_t>();
     if(count>50 || total<count || total>0x7fffffff)throw std::runtime_error("invalid native mailbox count");
-    Writer w;w.pack("Ii",{count,total});std::unordered_set<unsigned> seen;
+    Writer w;w.pack("Ii",{count,total});std::unordered_set<unsigned> seen,senders;
     for(unsigned index=0;index<count;++index)
     {
         auto before=r.remaining();auto declared=r.take<std::uint16_t>();
@@ -68,6 +68,7 @@ Bytes list(View body)
         if(!id || !seen.insert(id).second || !sender_type(type))throw std::runtime_error("invalid native mail identity");
         std::uint64_t sender=type==0?r.take<std::uint64_t>():r.take<std::uint32_t>();
         if(type==0 && sender>>32)throw std::runtime_error("invalid native mail player sender");
+        if(type==3 && sender && sender<=0x7fffffff)senders.insert(sender);
         auto cod=r.take<std::uint64_t>();auto package=r.take<std::uint32_t>(),stationery=r.take<std::uint32_t>();
         auto money=r.take<std::uint64_t>();auto flags=r.take<std::uint32_t>();auto days=r.take<float>();
         auto template_id=r.take<std::uint32_t>();auto subject=text(r,255),message=text(r,8191);
@@ -86,7 +87,7 @@ Bytes list(View body)
         for(auto const &item:attachments)w.raw(item);
         w.raw(subject).raw(message);
     }
-    r.end();return w.finish();
+    r.end();owner.mail_creatures=std::move(senders);return w.finish();
 }
 }
 Reply mail_request(Protocol const &protocol,State const &owner,std::string const &name,View body)
@@ -97,9 +98,9 @@ Reply mail_request(Protocol const &protocol,State const &owner,std::string const
     Reader r(body);auto guid=mailbox(protocol,owner,r.guid());r.end();
     return Packet{"CMSG_GET_MAIL_LIST",Writer().put(guid).finish()};
 }
-Reply mail_response(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply mail_response(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
-    if(name=="SMSG_MAIL_LIST_RESULT")return Packet{name,list(body)};
+    if(name=="SMSG_MAIL_LIST_RESULT")return Packet{name,list(owner,body)};
     Reader r(body);
     if(name=="SMSG_SHOW_MAILBOX")
     {
