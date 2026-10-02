@@ -14,6 +14,46 @@ native worldserver configuration. Inputs are real keys and mouse actions sent
 only to the owned game window. Trials do not inject movement packets, area
 triggers, GM transfers, combat commands or private next-find coordinates.
 
+## Accepted bounded loop, 2026-10-02
+
+Episode `laya_archaeology_travel_loop_89` completed two fresh sites in one
+uninterrupted run using source commit
+`6b21011c9c799eb3c1b3df217ad584e30b11e28b`. Twin Spire Ruins (351) produced
+three finds and 25 Draenei fragments; Sunspring Post (363) produced three finds
+and 19 Orc fragments. Both assignments were replaced normally (351 by 355,
+then 363 by 371). The controller flew between Zangarmarsh and Nagrand using
+public route data. Total duration was 3,466.69 seconds, with 904 model actions,
+55 local mounted moves, 20 ground approaches and 57 completed flight legs.
+All 911 captured frames matched their hashes. All observed artifacts were
+inside assigned sites; recorded boundary failures, rejected model decisions,
+and manual gameplay interventions were all zero. Normal fragment balances
+rose from 113 to 138 Draenei and from 135 to 154 Orc, below the native cap.
+
+Twin Spire's third green approach traversed a public route containing two
+water polygons. Eleven actual observations include six with public water above
+the player's feet. All normal addon swimming flags were false: this was walking
+through shallow water. The final position
+`[96.69556427001953, 7033.01904296875, 18.974397659301758]` was verified dry by
+the current water-height, grounding and endpoint guards. Survey then resumed
+and awarded the third nine-fragment find. This is fresh shallow-water evidence;
+episode 51 separately preserves two actual deep-swimming observations and a
+true dry arrival. Episode 52's old wet endpoint remains corrected as wet.
+
+The Orebor roof departure recovered in nine ground-exit observations under
+the explicit intersite bound. This successful root required no combat recovery,
+taxi or portal; those components retain their separate real trial outcomes.
+The revised 120-yard combat escape has a passing regression but no successful
+live invocation in this accepted root. Normal relog setup occurred before the
+trial and remains separately attributed. Earlier failed roots remain failed.
+`archaeology_loop_completion.json` contains the acceptance checks and limits;
+`outland_loop_validation.json` preserves the complete scored history.
+
+This proves a bounded loop, not indefinite unattended operation. Fragment-solving
+maintenance at the native 200-fragment cap and automatic death recovery remain
+unimplemented. The model consumes structured text observations; route geometry,
+collision handling and recovery guards are code. Agreement with the declared
+policy is not an independent model competence benchmark.
+
 ## Decisions and observations
 
 The frozen Laya encoder has two adapted typed decision heads:
@@ -336,7 +376,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 88 preserve unsuccessful steps, including missing portal
+Episodes 07 through 89 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
