@@ -1,5 +1,5 @@
 """Probe inspect and trade through ordinary input on two nearby owned characters."""
-import argparse,json,time
+import argparse,json,re,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -20,15 +20,22 @@ def suite(out):
             with actor(name):
                 t.execute({'kind':'chat','value':'/targetexact '+other})
                 def inspected(b,a,s):
-                    inspect=a.get('inspect',{});passed=inspect.get('visible') and inspect.get('guid')==f'Player-1-{other_guid:08X}'
-                    return {'status':'inspect_panel_pass' if s=='inspect' and passed else
+                    inspect=a.get('inspect',{});expected=f'Player-1-{other_guid:08X}'
+                    with lab.connection() as con,con.cursor() as cur:
+                        cur.execute('SELECT ci.slot+1,ii.itemEntry FROM client442_characters.character_inventory ci '
+                            'JOIN client442_characters.item_instance ii ON ii.guid=ci.item AND ii.owner_guid=ci.guid '
+                            'WHERE ci.guid=%s AND ci.bag=0 AND ci.slot IN (0,15,16)',(other_guid,));native=dict(cur.fetchall())
+                    visible={x['slot']:int(re.search(r'item:(\d+):',x['link']).group(1)) for x in inspect.get('items',[])}
+                    passed=inspect.get('visible') and inspect.get('guid')==expected and inspect.get('ready',{}).get('guid')==expected and visible==native
+                    return {'status':'inspect_equipment_pass' if s=='inspect' and passed else
                         ('controller_failure' if s!='inspect' else 'client_or_protocol_failure'),
-                        'oracle':{'inspect':inspect,'target':a['target'],'qualified_scope':'inspect opening only; equipment/talents checked separately'}}
+                        'oracle':{'inspect':inspect,'target':a['target'],'native_equipment_sample':native,'visible_equipment_sample':visible,
+                            'qualified_scope':'inspect ready, identity and head/main-hand/off-hand; remaining slots and talent actions pending'}}
                 row=t.step('player.inspect_nearby','Inspect the nearby owned player '+other+'.',{
                     'inspect':{'kind':'chat','value':'/inspect','description':'Type /inspect to inspect the targeted player.'},
                     'character':{'kind':'key','value':'c','description':'Open your own character equipment window.'},
                     'map':{'kind':'key','value':'m','description':'Open the map.'}},inspected)
-                failed|=row['status']!='inspect_panel_pass';t.clean_panels()
+                failed|=row['status']!='inspect_equipment_pass';t.clean_panels()
         with actor('primary'):
             t=trials['primary'];t.execute({'kind':'chat','value':'/targetexact Harnesstwo'})
             row=t.step('trade.initiate','Start a trade with the nearby owned player Harnesstwo.',{
