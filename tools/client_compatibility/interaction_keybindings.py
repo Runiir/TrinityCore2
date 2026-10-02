@@ -16,7 +16,7 @@ def suite(trial):
         'c':{'kind':'key','value':'m','description':'Press M to open the world map.'}},
         lambda b,a,s:{'status':'panel_open_pass' if 'GameMenuFrame' in a['panels'] else 'controller_failure'}),'panel_open_pass')
     rows=controls(trial);(trial.out/'menu_controls.json').write_text(json.dumps(rows,indent=2)+'\n')
-    require(click_case(trial,'keybindings.open','Open the keybindings editor.',lambda c:c['text']=='Key Bindings',
+    require(click_case(trial,'settings.open','Open the game options.',lambda c:c['text']=='Options',
         lambda b,a,s:{'status':'panel_open_pass' if 'KeyBindingFrame' in a['panels'] or 'SettingsPanel' in a['panels'] else ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
     rows=controls(trial);(trial.out/'keybinding_controls.json').write_text(json.dumps(rows,indent=2)+'\n')
 
