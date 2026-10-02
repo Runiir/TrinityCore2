@@ -110,6 +110,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
         slots[slot] = inventory_guid(native);
     }
     active["InvSlots"] = slots;
+    active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);
+    // Both pinned cores use seconds relative to login plus thirty hours.
+    active["BuybackTimestamp"] = arr("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12);
     Object skill;
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"SkillLineID", "PLAYER_SKILL_LINEID_0"},

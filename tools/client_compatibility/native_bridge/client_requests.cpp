@@ -19,7 +19,7 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if(Protocol::bank_close(state,name,body))return;
     if(auto request=Protocol::bank_request(state,name,body))
     {require_world();native_send(*request);return;}
-    if(auto request=merchant_request(state,name,body))
+    if(auto request=merchant_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}
     if(auto packet=chat_request(state,name,body))
     {

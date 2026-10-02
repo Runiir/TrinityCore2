@@ -280,7 +280,7 @@ int main(int argc, char **argv)
                             else if(fn=="bank_close")
                                 Protocol::bank_close(state,name,body);
                             else if(fn=="merchant_request")
-                                reply=merchant_request(state,name,body);
+                                reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")
                                 reply=merchant_response(protocol,state,name,body);
                             else if(fn=="inspect_request")
