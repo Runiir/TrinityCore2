@@ -27,6 +27,7 @@ local luaErrors={}
 local blockedActions={}
 local following={active=false}
 local inspectionReady,tradeEvents={},{}
+local observerSkips,skipKeys={},{}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
     luaErrors[#luaErrors+1]=tostring(message):sub(1,300)
@@ -115,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=5}
+        blocked_actions=blockedActions,observer_version=6,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -127,7 +128,17 @@ local function snapshot(viewMode,viewPage)
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
     local height=GetScreenHeight()*UIParent:GetEffectiveScale()
     local function scan(f,depth)
-        if visited[f] or depth>12 or not f:IsVisible() then return end;visited[f]=true
+        if not f or visited[f] or depth>12 then return end;visited[f]=true
+        local ok,visible=pcall(f.IsVisible,f)
+        if not ok then
+            local name=call(f.GetName,f) or tostring(f)
+            local key=name..':'..tostring(visible)
+            if not skipKeys[key] and #observerSkips<6 then
+                skipKeys[key]=true;observerSkips[#observerSkips+1]={name=trim(name,72),method='IsVisible',error=trim(visible,160)}
+            end
+            return
+        end
+        if not visible then return end
         local kind=f:GetObjectType()
         if kind=='Frame' and f.GetElementDescription and f:IsMouseEnabled() then kind='MenuItem' end
         if kind=='Frame' and f:IsMouseEnabled() and (f:GetName()=='GuildMemberNoteBackground' or
