@@ -10,13 +10,13 @@ def call(codec,fn,name,body):return stateful(codec,{'guid':1,'map':0},[action(fn
 
 @pytest.mark.parametrize('suffix,secure',[('SAY',True),('YELL',False),('PARTY',True),('RAID',True),('RAID_WARNING',True),('GUILD',False),('OFFICER',False),('INSTANCE_CHAT',True)])
 def test_chat_messages_preserve_language_and_text_in_native_nine_bit_layout(codec,suffix,secure):
-    w=Writer().pack('i',7).bits(19,11)
+    message=b'TC442UI:chat_primary';w=Writer().pack('i',7).bits(len(message),11)
     if secure:w.bits(1,1)
-    body=w.raw(b'TC442UI:chat_primary').finish()
+    body=w.raw(message).finish()
     name,encoded=call(codec,'chat_request','CMSG_CHAT_MESSAGE_'+suffix,body)
     assert name=='CMSG_MESSAGECHAT_'+('BATTLEGROUND' if suffix=='INSTANCE_CHAT' else suffix)
-    r=Reader(bytes.fromhex(encoded));assert r.unpack('i')==(7,) and r.bits(9)==19
-    assert r.raw(19)==b'TC442UI:chat_primary';r.end()
+    r=Reader(bytes.fromhex(encoded));assert r.unpack('i')==(7,) and r.bits(9)==len(message)
+    assert r.raw(len(message))==message;r.end()
     assert 'error' in codec(op='stateful',character={'guid':1,'map':0},actions=[action('chat_request','CMSG_CHAT_MESSAGE_'+suffix,body+b'x')])
 
 
