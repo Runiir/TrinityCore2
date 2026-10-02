@@ -650,3 +650,36 @@ parser now matches the 32-bit slot and signed quantity and has a regression usin
 the actual closed request. The generic NPC cleanup restores verified positions
 even if UI observation disconnects. These failures remain separate from later
 gameplay qualification.
+
+The captured-layout correction passes 434 regression tests and 69 selected
+ASan/UBSan tests. `merchant_purchase_03` completes four Laya choices and acquires
+five Refreshing Spring Water (159) for exactly 23 copper. Native and visible money
+agree at 99,977,285. Its packet trace exposes a separate missing receipt: the
+bridge drops the native 45-byte `SMSG_ITEM_PUSH_RESULT`. The inventory and money
+pass therefore does not qualify acquisition notifications.
+
+The notification adapter preserves the native recipient, quantity, inventory
+total, storage position, stacking sentinel, creation and chat visibility flags.
+The native packet has no item GUID and may precede the item's creation update;
+the adapter explicitly leaves that modern field empty. Item identity-dependent
+toasts and quest notification variants remain unqualified. The pinned modern
+[ItemPushResult writer](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/ItemPackets.cpp)
+and native `Player::SendNewItem` define the two layouts. Four notification tests
+include the actual vendor packet; all 438 regression tests and 73 selected
+ASan/UBSan tests pass.
+
+`merchant_purchase_04` completes the same four choices with native/client item and
+money agreement plus a fresh `CHAT_MSG_LOOT` observation for item 159, count 5.
+The screenshot visibly shows the normal received-item chat message. Packet
+receipts include the 42-to-30-byte purchase request, 20-to-22-byte success reply
+and 45-to-56-byte item notification. Both purchase runs restore the complete
+inventory/money snapshot, original position and temporary teleports. Narrow,
+temporary item/money fixture permissions are separately attributed and revoked;
+fixture cleanup is excluded from Laya qualification. Only the bridge restarted.
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_npc --service merchant --point 639 100 --purchase --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/merchant_purchase_01
+```
+
+Repair and trainer probes now use existing Heinrich Stone, Wu Shen and Lilyssia
+Nightbreeze fixtures. Their windows, mutations and negative paths are pending.

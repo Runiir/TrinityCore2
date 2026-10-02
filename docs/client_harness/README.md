@@ -43,10 +43,12 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
-adapter passes 426 regression tests and 61 selected ASan/UBSan tests. This counts
+adapter passes 438 regression tests and 73 selected ASan/UBSan tests. This counts
 protocol checks. A live seven-choice trial sells an existing item, buys it back,
 restores its slot and closes the merchant with exact native inventory/money
-restoration. Purchase and repair variants remain open in the interaction report.
+restoration. A four-choice purchase trial buys a five-item water bundle with exact
+price/quantity and received-item chat agreement, then restores the fixture. Repair
+and broader purchase variants remain open in the interaction report.
 
 ## Endpoints and restart
 
