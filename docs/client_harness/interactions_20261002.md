@@ -170,8 +170,11 @@ entry packet. A bounded initialization queue now sends world entry first, and
 logout clears previous world, item, aura, cast and movement state. `lifecycle_05`
 still fails before world entry: the prior instance socket was never closed.
 The pinned native modern session explicitly retires that socket on logout. The
-adapter now closes it after detaching it from the realm. Live reentry is being
-repeated; these repairs do not yet qualify it.
+adapter now closes it after detaching it from the realm. `lifecycle_06` passes
+ordinary logout cancellation, completed logout and Laya reentry. The peer observes
+offline then online membership, and equipment, group and raid profile match the
+pre-logout baseline. Character-selection avatar rendering has separate retained
+frames. Persistent character-specific keybindings and macros still need trials.
 
 `guild_open_01` is an invalid membership fixture. The installed Classic guild
 window intentionally does nothing for an unguilded player. Native membership is
@@ -180,6 +183,10 @@ a separate disposable owned guild trial.
 
 The native worldserver retained its original process identity. These repairs
 rebuilt only the C++ adapter and restarted the owned login/packet adapters.
+`login_barrier_regression.xml` passes all 340 authentication/world tests. The final
+`logout_socket_asan.xml` passes nine selected lifecycle/cache tests under ASan/UBSan.
+The first sanitizer invocation named a nonexistent test file and collected no
+tests; its log is retained separately from the corrected passing run.
 `whisper_regression.xml` reports 327 passes, `whisper_asan.xml` reports 25 selected
 ASan/UBSan passes, and `ticket_refresh.xml` reports 17 authentication passes after
 the renewal change. The failed pre-fix whisper replay is retained. Two earlier
