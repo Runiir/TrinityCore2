@@ -2318,6 +2318,14 @@ Rate.Quest.Money.Max.Level.Reward = 1
 Rate.RepairCost = 1
 
 #
+#    Client442.RepairCostRounding
+#        Description: Round repair prices after discount and rate, matching the 4.4.2
+#                     client quote. Enable only on the isolated compatibility server.
+#        Default:     0 - retain legacy repair arithmetic
+
+Client442.RepairCostRounding = 0
+
+#
 #    Rate.Rest.InGame
 #    Rate.Rest.Offline.InTavernOrCity
 #    Rate.Rest.Offline.InWilderness
