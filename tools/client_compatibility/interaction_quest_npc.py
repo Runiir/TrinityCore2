@@ -3,12 +3,12 @@ import argparse,json,time
 from pathlib import Path
 from . import actors
 from .interaction_trial import Trial
-from .interaction_operations import controls
+from .interaction_operations import controls,click_case
 from .interaction_macros import require
 from .npc_fixture import NpcFixture
 
 
-def suite(t,point,stage_only):
+def suite(t,point,stage_only,details=False):
     actors.session_entry(t.fixture);t.clean_panels();fixture=NpcFixture(t.out,t.fixture,197,2)
     try:
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
@@ -24,6 +24,13 @@ def suite(t,point,stage_only):
                 ('controller_failure' if s!='interact' else 'client_or_protocol_failure'),
                 'oracle':{'panels':a['panels'],'errors':a['errors']}},diagnostic_action='interact'),'questgiver_open_pass')
         state,frame=t.observe('questgiver_open');t.receipt['questgiver_open']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
+        if details:
+            require(click_case(t,'quests.select_giver_quest','Read the offered Beating Them Back! quest.',
+                lambda c:'Beating Them Back!' in c['text'],
+                lambda b,a,s:{'status':'quest_details_open_pass' if s and 'QuestFrame' in a['panels'] else
+                    ('controller_failure' if not s else 'client_or_protocol_failure'),
+                    'oracle':{'panels':a['panels'],'errors':a['errors']}}),'quest_details_open_pass')
+            state,frame=t.observe('quest_details');t.receipt['quest_details']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
         require(t.step('quests.close_giver','Close the questgiver dialog.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the questgiver dialog.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
@@ -38,11 +45,12 @@ def suite(t,point,stage_only):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--stage-only',action='store_true');p.add_argument('--point',type=int,nargs=2);a=p.parse_args()
+    p.add_argument('--stage-only',action='store_true');p.add_argument('--details',action='store_true');p.add_argument('--point',type=int,nargs=2);a=p.parse_args()
+    if a.details and a.stage_only:p.error('details requires an input trial')
     if not a.stage_only and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):
         p.error('requires a bounded observed questgiver point')
     t=Trial(a.output,controller='code' if a.stage_only else 'laya')
-    try:suite(t,a.point,a.stage_only);t.receipt['completed']=True
+    try:suite(t,a.point,a.stage_only,a.details);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
 
