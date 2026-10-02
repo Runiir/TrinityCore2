@@ -16,14 +16,17 @@ SERVICES={
 }
 
 
-def suite(t,service,point,stage_only,sell_buyback=False,purchase=False,repair_all=False,learn=False,camera_zoom=None):
+def suite(t,service,point,stage_only,sell_buyback=False,purchase=False,repair_all=False,learn=False,camera_zoom=None,camera_drag_y=0):
     spec=SERVICES[service];actors.session_entry(t.fixture);t.clean_panels()
-    fixture=NpcFixture(t.out,t.fixture,spec['entry'],spec['flag']);camera_before=None
+    fixture=NpcFixture(t.out,t.fixture,spec['entry'],spec['flag']);camera_before=None;camera_dragged=False
     try:
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
         if camera_zoom is not None:
             from .interaction_camera_fixture import zoom,set_zoom
             camera_before,_=zoom(t,'camera_baseline');set_zoom(t,camera_zoom,'camera_setup')
+        if camera_drag_y:
+            t.io.drag((900,360),(900,360+camera_drag_y));camera_dragged=True
+            t.receipt['camera_drag_fixture']={'source':'code_fixture_left_mouse_drag','delta_y':camera_drag_y,'restored':False};t.persist()
         state,frame=t.observe('npc_staged');t.receipt['staging']={'target':state['target'],'frame':frame};t.persist()
         if state['target'].get('name')!=fixture.npc[2] or not state['target'].get('visible'):
             raise RuntimeError('service NPC is not visibly targeted')
@@ -73,6 +76,9 @@ def suite(t,service,point,stage_only,sell_buyback=False,purchase=False,repair_al
             raise RuntimeError('merchant inventory cleanup remains pending; preserving the open merchant and NPC restore rows')
         try:
             t.clean_panels()
+            if camera_dragged:
+                t.io.drag((900,360+camera_drag_y),(900,360))
+                t.receipt['camera_drag_fixture']['restored']=True;t.persist()
             if camera_before is not None:
                 from .interaction_camera_fixture import set_zoom
                 set_zoom(t,camera_before,'camera_restore')
@@ -86,14 +92,16 @@ if __name__=='__main__':
     p.add_argument('--service',choices=SERVICES,required=True);p.add_argument('--point',type=int,nargs=2)
     p.add_argument('--stage-only',action='store_true');commerce=p.add_mutually_exclusive_group()
     p.add_argument('--camera-zoom',type=float,help='temporary camera distance reachable by ordinary wheel steps')
+    p.add_argument('--camera-drag-y',type=int,default=0,help='temporary vertical left-mouse camera drag, reversed at cleanup')
     commerce.add_argument('--sell-buyback',action='store_true');commerce.add_argument('--purchase',action='store_true')
     commerce.add_argument('--repair-all',action='store_true');commerce.add_argument('--learn',action='store_true');a=p.parse_args()
     if (a.sell_buyback or a.purchase) and (a.stage_only or a.service!='merchant'):p.error('commerce requires the merchant service')
     if a.repair_all and (a.stage_only or a.service!='repair'):p.error('repair requires the repair service')
     if a.learn and (a.stage_only or a.service!='trainer'):p.error('learning requires the warrior trainer service')
     if a.camera_zoom is not None and not 0<=a.camera_zoom<=30:p.error('camera distance must be between zero and thirty')
+    if not -250<=a.camera_drag_y<=250:p.error('camera drag must be within 250 pixels')
     if not a.stage_only and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):p.error('requires a bounded observed NPC point')
     t=Trial(a.output,controller='code' if a.stage_only else 'laya')
-    try:suite(t,a.service,a.point,a.stage_only,a.sell_buyback,a.purchase,a.repair_all,a.learn,a.camera_zoom);t.receipt['completed']=True
+    try:suite(t,a.service,a.point,a.stage_only,a.sell_buyback,a.purchase,a.repair_all,a.learn,a.camera_zoom,a.camera_drag_y);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
