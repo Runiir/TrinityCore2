@@ -7,12 +7,19 @@ import threading
 from . import lab_runtime as lab
 
 INPUT_LOCK=threading.RLock()
+LEASE_STATE=threading.local()
 
 
 @contextmanager
 def lease(timeout=10):
     """Serialize focus and one bounded physical primitive across actor processes."""
     with INPUT_LOCK:
+        # Public focus also takes the lease. Reuse this thread's existing flock.
+        if getattr(LEASE_STATE,'owner_pid',None)==os.getpid() and getattr(LEASE_STATE,'depth',0):
+            LEASE_STATE.depth+=1
+            try:yield
+            finally:LEASE_STATE.depth-=1
+            return
         path=lab.ROOT/'run/client_input.lock';path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
         with path.open('a') as handle:
             os.chmod(path,0o600);deadline=time.monotonic()+timeout
@@ -21,8 +28,11 @@ def lease(timeout=10):
                 except BlockingIOError:
                     if time.monotonic()>deadline:raise RuntimeError('owned input lease timed out')
                     time.sleep(.025)
+            LEASE_STATE.owner_pid=os.getpid();LEASE_STATE.depth=1
             try:yield
-            finally:fcntl.flock(handle,fcntl.LOCK_UN)
+            finally:
+                LEASE_STATE.depth=0
+                fcntl.flock(handle,fcntl.LOCK_UN)
 
 
 class Inputs:
@@ -43,6 +53,10 @@ class Inputs:
 
 
 def focus():
+    with lease():return _focus()
+
+
+def _focus():
     from Xlib import X, display
     from Xlib.protocol import event
     from tools.second_client.place_window import place

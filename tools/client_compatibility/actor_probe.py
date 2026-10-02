@@ -11,14 +11,16 @@ from .observation.transport import Observer
 
 def run(out,mode):
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
-    fixture=actors.load();observer=Observer();monitor=owned_input.focus()
-    if observer.guid!=fixture['guid']:raise RuntimeError('probe observer and actor fixture disagree')
-    receipt={'schema':'client442_actor_probe_v1','started_at':time.time(),'actor':fixture,'monitor':monitor,
+    receipt={'schema':'client442_actor_probe_v1','started_at':time.time(),'actor':None,'monitor':None,
         'mode':mode,'controller':'bounded_code_fixture_diagnostic','laya_called':False,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'steps':[],'frames':[],'completed':False,'failure':None}
     latest=out/'latest.png';before=None
+    lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
     try:
+        fixture=actors.load();observer=Observer();monitor=owned_input.focus()
+        receipt.update(actor=fixture,monitor=monitor)
+        if observer.guid!=fixture['guid']:raise RuntimeError('probe observer and actor fixture disagree')
         for index in range(6):
             movement,extra=archaeology_inputs.screenshot(latest);facts=observer.poll()
             if not movement['in_world'] or movement['health_percent']<50 or any(

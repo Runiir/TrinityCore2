@@ -30,7 +30,8 @@ def test_actor_path_cannot_escape_its_private_root(monkeypatch,name):
 def lease_worker(root,name,queue):
     lab.ROOT=root
     with owned_input.lease():
-        queue.put((name,'enter'));time.sleep(.1);queue.put((name,'leave'))
+        with owned_input.lease():
+            queue.put((name,'enter'));time.sleep(.1);queue.put((name,'leave'))
 
 
 def test_focus_input_lease_serializes_two_processes(tmp_path):
