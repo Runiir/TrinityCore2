@@ -6,7 +6,7 @@ namespace bridge
 {
 namespace
 {
-void index(Reader &r, bool present)
+void party_index(Reader &r, bool present)
 {
     if (present && r.take<std::uint8_t>() != 0) throw std::runtime_error("unsupported party category");
 }
@@ -26,7 +26,7 @@ Reply Protocol::party_request(std::string const &name, View body)
         bool has_index = r.bits(1);r.align();
         auto name_length = r.bits(9), realm_length = r.bits(9);
         auto roles = r.take<std::uint32_t>();auto guid = player(r, true);
-        auto target = r.raw(name_length), realm = r.raw(realm_length);index(r, has_index);r.end();
+        auto target = r.raw(name_length), realm = r.raw(realm_length);party_index(r, has_index);r.end();
         if (target.empty() || name_length > 127 || realm_length > 511 || roles > 7)
             throw std::runtime_error("invalid party invitation");
         auto octets = Writer().put(guid).finish();w.pack("II", {0, roles});
@@ -42,7 +42,7 @@ Reply Protocol::party_request(std::string const &name, View body)
     }
     if (name == "CMSG_PARTY_INVITE_RESPONSE")
     {
-        bool has_index = r.bits(1), accept = r.bits(1), has_roles = r.bits(1);index(r,has_index);
+        bool has_index = r.bits(1), accept = r.bits(1), has_roles = r.bits(1);party_index(r,has_index);
         auto roles = has_roles ? r.take<std::uint32_t>() : 0;r.end();
         if (roles > 7) throw std::runtime_error("invalid party role mask");
         w.bits(has_roles,1).bits(accept,1);
@@ -51,7 +51,7 @@ Reply Protocol::party_request(std::string const &name, View body)
     }
     if (name == "CMSG_LEAVE_GROUP" || name == "CMSG_REQUEST_PARTY_JOIN_UPDATES" || name == "CMSG_DO_READY_CHECK")
     {
-        bool present = r.bits(1);index(r,present);r.end();
+        bool present = r.bits(1);party_index(r,present);r.end();
         native = name == "CMSG_LEAVE_GROUP" ? "CMSG_GROUP_DISBAND" :
             name == "CMSG_DO_READY_CHECK" ? "MSG_RAID_READY_CHECK" : "CMSG_GROUP_REQUEST_JOIN_UPDATES";
         return Packet{native,{}};
@@ -62,18 +62,18 @@ Reply Protocol::party_request(std::string const &name, View body)
     }
     if (name == "CMSG_SET_PARTY_LEADER" || name == "CMSG_REQUEST_PARTY_MEMBER_STATS")
     {
-        bool present = r.bits(1);auto guid = player(r);index(r,present);r.end();
+        bool present = r.bits(1);auto guid = player(r);party_index(r,present);r.end();
         return Packet{name == "CMSG_SET_PARTY_LEADER" ? "CMSG_GROUP_SET_LEADER" : name,Writer().put(guid).finish()};
     }
     if (name == "CMSG_PARTY_UNINVITE")
     {
-        bool present = r.bits(1);auto length = r.bits(8);auto guid = player(r);index(r,present);
+        bool present = r.bits(1);auto length = r.bits(8);auto guid = player(r);party_index(r,present);
         auto reason = r.raw(length);r.end();
         return Packet{"CMSG_GROUP_UNINVITE_GUID",Writer().put(guid).raw(reason).put<std::uint8_t>(0).finish()};
     }
     if (name == "CMSG_READY_CHECK_RESPONSE")
     {
-        bool ready = r.bits(1), present = r.bits(1);index(r,present);r.end();
+        bool ready = r.bits(1), present = r.bits(1);party_index(r,present);r.end();
         return Packet{"MSG_RAID_READY_CHECK",Writer().put<std::uint8_t>(ready).finish()};
     }
     return {};
