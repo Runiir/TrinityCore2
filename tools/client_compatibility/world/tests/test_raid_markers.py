@@ -30,7 +30,7 @@ def test_native_marker_casts_never_enter_the_modern_only_completion_path(codec):
                 {'fn':'extra_marker_go','name':'SMSG_SPELL_GO','body':''}])
         # Uses the same discriminator as live dispatch. A missing JSON field
         # returns numeric zero from get(), so is_null() is not a presence test.
-        assert len(output)==2 and output[-1][0]=='CMSG_CAST_SPELL'
+        assert len(output)==3 and output[-2][0]=='CMSG_CAST_SPELL' and output[-1] is None
 
 
 def test_marker_snapshots_wait_for_positions_and_clear_without_stale_locations(codec):
