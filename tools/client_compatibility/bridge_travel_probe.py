@@ -15,7 +15,7 @@ def run(plan,out,maximum_steps=30):
         raise ValueError('diagnostic flight requires one bounded green recovery leg')
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     observer=Observer();leg=plan['legs'][0];leg['site_id']=plan['green_terrain_recovery']['site_id']
-    latest=out/'latest.png';steps=[];frames=[];stalled=0;last_metric=None
+    latest=out/'latest.png';steps=[];frames=[];stalled=0;last_metric=None;landing_started=False
     receipt={'schema':'client442_code_flight_regression_v1','started_at':time.time(),
         'controller':'deterministic_code_regression','model_called':False,'plan':plan,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
@@ -36,14 +36,15 @@ def run(plan,out,maximum_steps=30):
                 ui=taxi.decode_image(image);frame=out/f'step_{index:03d}.webp';image.save(frame,lossless=True)
             frames.append({'file':frame.name,'sha256':lab.sha256(frame)})
             current=state(leg,movement,extra,facts,ui);action=travel_policy.label(current)
+            if action=='land':landing_started=True
             step={'index':index,'time':time.time(),'facts':facts,'state':current,'action':action,
                 'execution_status':'started'};steps.append(step)
             lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
-            if client_floor_probe.needed(facts,extra,leg):
+            if landing_started and client_floor_probe.needed(facts,extra,leg):
                 step['input']=client_floor_probe.verify(leg,observer,latest)
-            elif ground_landing.needed(facts,extra,leg):
+            elif landing_started and ground_landing.needed(facts,extra,leg):
                 step['input']=ground_landing.finish(owned_input.Inputs(),leg,observer,latest)
-            elif extra['mounted'] and landing_recovery.wrong_floor(facts,extra,leg):
+            elif landing_started and extra['mounted'] and landing_recovery.wrong_floor(facts,extra,leg):
                 step['input']=landing_recovery.nudge(owned_input.Inputs(),leg,observer,latest,extra)
             else:step['input']=travel_inputs.execute(action,leg,facts,extra,observer,latest)
             step['execution_status']='completed';after=observer.poll()
