@@ -124,6 +124,8 @@ Reply Protocol::object_updates(State &owner, View body) const
             auto rest = rest_block(s, get(record, "fields"));
             if (!rest.empty())
                 blocks.push_back(rest);
+            auto guild=guild_block(s,owner.character,get(record,"fields"));
+            if(!guild.empty())blocks.push_back(guild);
             auto inventory=inventory_block(s,get(record,"fields"));
             if(!inventory.empty())blocks.push_back(inventory);
             bool sites_changed = false, projects_changed = false;

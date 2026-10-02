@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "guild_fields.hpp"
 
 namespace bridge
 {
@@ -83,6 +84,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                   {"PlayerFlags", val("PLAYER_FLAGS")},
                   {"NativeSex", get(c, "gender")},
                   {"VirtualPlayerRealm", 0x01010001}};
+    guild_fields(*this,s,unit,player);
     Array visible;
     for (unsigned i = 0; i < 19; ++i)
         visible.push_back(Object{{"ItemID", val("PLAYER_VISIBLE_ITEM_1_ENTRYID", i * 2)}});

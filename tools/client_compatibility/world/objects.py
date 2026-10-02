@@ -58,6 +58,16 @@ def field_values(snapshot, character):
                 SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
     player = {"Name": character["name"], "PlayerFlags": value("PLAYER_FLAGS"),
               "NativeSex": character["gender"], "VirtualPlayerRealm": 0x01010001}
+    guild = value('OBJECT_FIELD_DATA') | value('OBJECT_FIELD_DATA', 1) << 32
+    if snapshot.get('kind') == 4 and guild:
+        if guild >> 48 != 0x1ff or guild >> 32 & 0xffff or not guild & 0xffffffff:
+            raise ValueError('invalid native guild identity')
+        unit['GuildGUID'] = [guild & 0xffffffff, (28 << 58) | (1 << 42)]
+    else:
+        unit['GuildGUID'] = [0, 0]
+    player.update({modern: value(old) for modern, old in {
+        'GuildRankID': 'PLAYER_GUILDRANK', 'GuildDeleteDate': 'PLAYER_GUILDDELETE_DATE',
+        'GuildLevel': 'PLAYER_GUILDLEVEL', 'GuildTimeStamp': 'PLAYER_GUILD_TIMESTAMP'}.items()})
     player["VisibleItems"] = [{"ItemID": value("PLAYER_VISIBLE_ITEM_1_ENTRYID", i * 2)} for i in range(19)]
     active = {"XP": value("PLAYER_XP"), "NextLevelXP": value("PLAYER_NEXT_LEVEL_XP"), "MaxLevel": 85,
               "NumBackpackSlots": 16,

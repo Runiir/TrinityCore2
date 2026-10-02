@@ -158,6 +158,8 @@ int main(int argc, char **argv)
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "rest_update")
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
+                else if (op == "guild_update")
+                    result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed")));
                 else if (op == "unit_update")
                     result = hex(protocol.scalar_block(get(request, "snapshot"),get(request,"character"),get(request,"changed"),integer(get(request,"visibility"))));
                 else if(op=="inventory_update")
