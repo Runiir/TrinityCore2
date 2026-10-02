@@ -1,5 +1,6 @@
 """Model-selected visible controls for reversible player UI operations."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import time
@@ -37,8 +38,15 @@ def controls(trial):
         total=state['control_count'];page=state['page']
         if page not in pages:
             pages[page]=state.get('controls') or []
-            target=trial.out/f'controls_{len(trial.receipt["cases"]):03}_{page:02}_{state["sequence"]}.png'
-            path.replace(target)
+            # Retain one screenshot for identical control pages within this
+            # episode. Sequence pixels change even when every control is equal.
+            observed={'guid':state['guid'],'panels':current,'page':page,'total':total,'controls':pages[page]}
+            digest=hashlib.sha256(json.dumps(observed,sort_keys=True).encode()).hexdigest()
+            target=trial.out/('controls_'+digest+'.png')
+            if target.exists():path.unlink()
+            else:path.replace(target)
+            trial.receipt.setdefault('control_frames',{})[digest]={'file':target.name,'observed':observed}
+            trial.persist()
         if total is not None and len(pages)==__import__('math').ceil(total/state.get('page_size',18)):
             return [c for p in sorted(pages) for c in pages[p]]
         time.sleep(.1)
