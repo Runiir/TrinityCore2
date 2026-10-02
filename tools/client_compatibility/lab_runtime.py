@@ -213,6 +213,14 @@ def stop(kind: str) -> None:
                 if fields[0]!='Z' and int(fields[2])==info['pid']:members.append(proc.name)
             if not members:
                 return
+            if kind == 'client' and attempt == 100:
+                current=owned_process(kind)
+                if not current or (current['pid'],current['start_ticks'])!=(info['pid'],info['start_ticks']):
+                    raise RuntimeError('owned client identity changed during shutdown')
+                # gamescope can remain alive with its reaper after Wine has exited.
+                # The receipt binds this isolated process group; never kill by name.
+                os.killpg(info['pid'],signal.SIGKILL)
+                print(f"Escalated shutdown of verified owned client process group {info['pid']}")
             if kind == 'client' and attempt >= 30:
                 # Gamescope can exit while its child reaper waits forever.
                 # Kill only that leftover helper, after the owned game group
