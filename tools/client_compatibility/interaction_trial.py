@@ -125,7 +125,10 @@ class Trial:
 
     def execute(self,action):
         with owned_input.lease():
-            if action['kind']=='key':self.io.key(action['value'])
+            if action['kind']=='key':
+                hold=action.get('hold',.15)
+                if not .05<=hold<=2:raise ValueError('interaction key hold exceeds its bounded duration')
+                self.io.key(action['value'],hold=hold)
             elif action['kind']=='chat':
                 self.io.key('Return',hold=.4);time.sleep(.2)
                 self.io.type(action['value']);time.sleep(.2);self.io.key('Return',hold=.4)

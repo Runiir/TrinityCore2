@@ -176,7 +176,9 @@ void Events::marker_placed(std::string const &session,Value const &location)
 void Events::packet(std::string const &direction, std::string const &name, View body,
                     std::string const &session)
 {
-    if (!capture(name) && !public_chat_probe(name,body))
+    bool movement_probe=name=="SMSG_MOVE_UPDATE" &&
+        std::filesystem::is_regular_file(root_/"run/capture_public_movement");
+    if (!capture(name) && !public_chat_probe(name,body) && !movement_probe)
         return;
     append(root_ / "evidence/world_packets.jsonl", Object{{"time", now()},
                                                           {"session", session},

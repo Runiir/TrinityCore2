@@ -25,6 +25,7 @@ local errors={}
 local chatProbes={}
 local luaErrors={}
 local blockedActions={}
+local following={active=false}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
     luaErrors[#luaErrors+1]=tostring(message):sub(1,300)
@@ -250,7 +251,8 @@ local function snapshot(viewMode,viewPage)
     data.target={guid=call(UnitGUID,'target'),name=call(UnitName,'target'),
         exists=not not call(UnitExists,'target'),visible=not not call(UnitIsVisible,'target'),
         player=not not call(UnitIsPlayer,'target'),health=call(UnitHealth,'target'),
-        max_health=call(UnitHealthMax,'target')}
+        max_health=call(UnitHealthMax,'target'),position={call(UnitPosition,'target')}}
+    data.follow=following
     data.world_position={call(UnitPosition,'player')}
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
@@ -350,11 +352,14 @@ SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
 end
 frame:RegisterEvent('UI_ERROR_MESSAGE')
 frame:RegisterEvent('ADDON_ACTION_BLOCKED');frame:RegisterEvent('ADDON_ACTION_FORBIDDEN')
+frame:RegisterEvent('AUTOFOLLOW_BEGIN');frame:RegisterEvent('AUTOFOLLOW_END')
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
     'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
-    if event=='UI_ERROR_MESSAGE' then
+    if event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
+    elseif event=='AUTOFOLLOW_END' then following={active=false}
+    elseif event=='UI_ERROR_MESSAGE' then
         errors[#errors+1]={code=code,text=trim(text,120)};if #errors>3 then table.remove(errors,1) end
     elseif event=='ADDON_ACTION_BLOCKED' or event=='ADDON_ACTION_FORBIDDEN' then
         blockedActions[#blockedActions+1]={event=event,addon=trim(code,64),action=trim(text,80)}
