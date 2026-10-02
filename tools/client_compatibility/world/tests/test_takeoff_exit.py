@@ -35,8 +35,10 @@ def test_ground_exit_does_not_accept_combat_or_airborne_state():
 
 
 @pytest.mark.skipif(not (lab.BASE/'data/maps/5303931.map').exists(),reason='public terrain absent')
-def test_trial77_indoor_floor_can_walk_to_connected_outdoor_floor():
-    foot=[-4231.4326171875,323.23193359375,134.4171905517578]
+@pytest.mark.parametrize('foot',[
+    [-4231.4326171875,323.23193359375,134.4171905517578],
+    [-4229.12841796875,326.3505859375,135.1295623779297]])
+def test_observed_indoor_floors_can_walk_to_supported_outdoor_floor(foot):
     facts={'map':530,'position':foot};extra={**EXTRA,'mounted':False,'indoors':True}
     assert exit.needed(facts,extra)
     plan=exit.select(facts,extra)

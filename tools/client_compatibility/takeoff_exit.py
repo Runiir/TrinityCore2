@@ -33,7 +33,7 @@ def direct_indoor_route(map_id,start,point):
         ratio=min(1,index*.7/max(.01,distance));requested=[start[i]+(point[i]-start[i])*ratio for i in range(3)]
         sample=physical_floor(map_id,requested);samples.append(sample)
     for a,b in zip([start,*[s['position'] for s in samples]], [s['position'] for s in samples]):
-        if abs(a[2]-b[2])>max(.25,math.dist(a[:2],b[:2])*math.tan(math.radians(35))):
+        if b[2]-a[2]>max(.25,math.dist(a[:2],b[:2])*math.tan(math.radians(35))) or a[2]-b[2]>1.25:
             raise RuntimeError('direct indoor exit has a steep step or floor discontinuity')
         if not model_collision.clear_body_segment(map_id,a,b):raise RuntimeError('direct indoor exit intersects body collision')
     return {'points':[start[:3],point],'complete':True,'physical_floor_samples':samples,
@@ -58,8 +58,8 @@ def needed(facts,extra):
 def select(facts,extra):
     start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])
     attempts=[]
-    indoor=extra.get('indoors',False);angles=16 if indoor else 8
-    for radius in [4,8,12,20,35]:
+    indoor=extra.get('indoors',False);angles=32 if indoor else 8
+    for radius in ([4,8,12,16,20,24] if indoor else [4,8,12,20,35]):
         for index in range(angles):
             angle=index*math.tau/angles;goal=[start[0]+radius*math.cos(angle),start[1]+radius*math.sin(angle),start[2]]
             if not site_boundaries.inside_segment(site['polygon'],start,goal):continue
@@ -145,7 +145,7 @@ def escape(inputs,observer,path,extra):
             if not model_collision.clear_body_segment(facts['map'],position,endpoint):raise RuntimeError('takeoff exit body corridor became blocked')
             if not site_boundaries.inside_segment(site['polygon'],position,endpoint):raise RuntimeError('takeoff exit segment crosses site boundary')
             receipt['physical_keys'].extend(face(inputs,observer,target));hold=min(.2,distance/7)
-            inputs.key('w',hold=hold);time.sleep(.35);receipt['physical_keys'].append({'key':'w','hold':hold})
+            inputs.key('w',hold=hold);time.sleep(.7 if planned['indoor_exit'] else .35);receipt['physical_keys'].append({'key':'w','hold':hold})
             after=observer.poll()['position'];blocked=blocked+1 if math.dist(position[:2],after[:2])<.1 else 0
             if blocked>=2:raise RuntimeError('two bounded takeoff ground advances were blocked')
         raise RuntimeError('takeoff exit exhausted its local walking budget')

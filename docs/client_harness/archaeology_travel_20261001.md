@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 149 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 150 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -471,6 +471,15 @@ attacker's name twice even if duplicate names are visible. Actual selection must
 still be a living visible hostile within the applicable three-dimensional range.
 It then returns to cycling; no repeated exact-name loop is permitted. Indoor
 backward probes are disabled because they moved the character onto room furniture.
+Episode 81 stopped below the health threshold. Outside the closed trials, the
+lab reset the original full-health level-85 baseline through temporary levels
+84 then 85, preserving position and account permissions. Episode 82 cleared
+the attacker in five bounded recovery steps, then stopped when the exit planner
+rejected the small drop from a furnishing to the floor. Indoor exit sampling now
+permits downward steps up to 1.25 yards, retains the 35-degree upward limit and
+body-height collision checks, and allows extra settling time after short advances.
+Both observed indoor start positions pass the regression with supported outdoor
+floor destinations. None of episodes 77 through 82 collected an artifact.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

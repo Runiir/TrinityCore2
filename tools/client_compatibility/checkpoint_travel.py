@@ -50,6 +50,7 @@ def main():
         'trial78_stop.png','idle_attacker_recovery.json','idle_attacker_recovery.png',
         'idle_attacker_recovery_2.json','idle_attacker_recovery_2.png','idle_attacker_recovery_3.json','idle_attacker_recovery_3.png',
         'idle_healing_recovery.json','idle_healing_recovery.png','idle_death_setup.json','idle_death_setup.png',
+        'idle_health_setup.json','idle_health_setup.png',
         'tooltip_hover_diagnostic.png','tooltip_hover_diagnostic.json','outland_repairs_cleanup.json','water_repairs_cleanup.json',
         'creature_movement_login.png','creature_movement_character.png','creature_movement_world.png',
         'creature_position_login.png','creature_position_character.png','creature_position_world.png',
