@@ -153,6 +153,11 @@ def panel_suite(out,catalog):
     try:
         for case_id,goal,binding,names in PANELS:
             trial.clean_panels();target=binding or ('macro_command' if case_id=='macros.open' else 'calendar_button')
+            if binding and binding.startswith('TOGGLEBAG'):
+                bag=int(binding[-1]);state,_=trial.observe('bag_fixture_'+str(bag))
+                if not state['bag_slots'][bag]:
+                    trial.receipt['cases'].append({'id':case_id,'status':'fixture_unavailable','error':'bag slot is empty',
+                        'bag_slots':state['bag_slots']});trial.persist();continue
             if target not in registry:
                 trial.receipt['cases'].append({'id':case_id,'status':'fixture_unavailable','error':'no owned binding'});continue
             distractors=trial.rng.sample([n for n in registry if n!=target],4)
