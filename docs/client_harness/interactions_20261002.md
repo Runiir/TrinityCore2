@@ -116,3 +116,41 @@ Full client compatibility, indefinite bot operation and the remaining inventory
 contracts are still open. The next group repair is public nearby-player object and
 movement translation; the next interaction cases are binding assignment, macro
 execution, complete panel/recipe trials and group leave/raid conversion.
+
+## Continued UI qualification
+
+The saved [workqueue](../../experiments/configs/client_harness/442_interaction_workqueue.json)
+keeps the parent interaction objective open between batches. The follow-up trials
+use `client_interactions_20261002_followup` in the private evidence directory.
+
+`panel_trial_01` records 22 successful opens, 10 successful closes, 13 incorrect
+Laya selections and one guild-window failure. `panel_diagnostic_01` then sends
+ordinary installed inputs directly and passes 23 opens and 23 closes. Guild opening
+still fails with the default UI on the unguilded account; clubs and Battle.net are
+disabled. These diagnostics do not count as model passes or qualify panel contents.
+
+`keybindings_trial_03` passes ten Laya actions through the installed editor:
+opening Settings, locating the action, assigning Ctrl-Shift-F12 as a secondary
+framerate binding, saving, reloading and toggling the framerate display twice.
+Ordinary-input cleanup restores the original Ctrl-R binding and the unused chord.
+The first two trials exposed measurement errors: the search-field placeholder
+changes after typing, and closing Settings returns to the Game Menu. Those failed
+receipts are retained. Conflict handling, character-specific bindings and full
+reconnect persistence still need their own cases.
+
+`macro_trial_01` creates and saves TC442Test, physically drags its icon onto an empty
+action button, verifies it after reload and clicks it. An attributable native
+spell completion confirms Battle Shout (6673). Cleanup deletes the temporary macro
+and restores the empty action slot. Editing, character-specific variants and full
+reconnect persistence remain open.
+
+Two further repairs preserve the native worldserver. Valid late party health reads
+after logout are parsed and ignored instead of disconnecting the realm session.
+Native rest state and rested XP now populate Classic RestInfo, including ongoing
+updates. `rest_live_01` observes `GetRestState()` returning Normal and no XP-bar Lua
+error. Live logout cancellation, completion and re-entry are still queued.
+
+`regression_02.xml` reports 284 passing auth/world tests. `packets_asan_02.xml`
+reports 54 passing selected packet tests under ASan/UBSan. The initial rest-test
+collection failed because of a relative import; its corrected run passes all six
+rest cases. No earlier failed receipt is discarded or counted as a pass.
