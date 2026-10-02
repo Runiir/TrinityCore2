@@ -4,6 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
+from .interaction_operations import click_case
 from .nearby_fixture import NearbyFixture
 
 
@@ -47,6 +48,18 @@ def suite(out):
             failed|=row['status']!='trade_panel_pass'
         with actor('scout'):
             s,f=trials['scout'].observe('trade_peer');trials['scout'].receipt['trade_peer']={'trade':s.get('trade'),'frame':f};trials['scout'].persist()
+            failed|=not s.get('trade',{}).get('visible')
+        with actor('primary'):
+            s,_=trials['primary'].observe('cancel_fixture')
+            if s.get('trade',{}).get('visible'):
+                row=click_case(trials['primary'],'trade.cancel','Cancel the open trade.',
+                    lambda c:c['name']=='TradeFrameCancelButton',
+                    lambda b,a,s:{'status':'trade_cancel_pass' if s and not a['trade']['visible'] else
+                        ('controller_failure' if not s else 'client_or_protocol_failure'),'oracle':{'trade':a.get('trade')}})
+                failed|=row['status']!='trade_cancel_pass'
+        with actor('scout'):
+            s,f=trials['scout'].observe('trade_peer_closed');trials['scout'].receipt['trade_peer_closed']={'trade':s.get('trade'),'frame':f};trials['scout'].persist()
+            failed|=s.get('trade',{}).get('visible',False)
         if failed:raise RuntimeError('nearby inspect/trade probes have unqualified outcomes')
         cohort['completed']=True
     except Exception as e:cohort['failure']=f'{type(e).__name__}: {e}'
