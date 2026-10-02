@@ -81,7 +81,9 @@ Packet Protocol::cast_request(State &owner, View body) const
                                              {"visual", visual},
                                              {"native_target", target}};
     Writer w;
-    w.pack("BiiBI", {owner.cast_counter, spell, misc0, flags, target_flags});
+    // 4.4.2 sets bit 3 for these ground clicks with zero weights. In 4.3.4
+    // the same bit requires a trailing weight count and would truncate parsing.
+    w.pack("BiiBI", {owner.cast_counter, spell, misc0, marker ? flags&~8u : flags, target_flags});
     if (target_flags & (2 | 2048))
         packed(w, target);
     if(marker)w.put<std::uint8_t>(0).pack("3f",destination);
