@@ -39,6 +39,10 @@ int main(int argc, char **argv)
                     Events events(str(get(request,"root")));
                     events.packet("from_client",str(get(request,"name")),data("body"),"fixture");result=true;
                 }
+                else if(op=="chat_context")
+                {
+                    require_chat_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
+                }
                 else if(op=="marker_diagnostic")
                 {
                     Events events(str(get(request,"root")));events.marker_placed("fixture",get(request,"location"));result=true;

@@ -80,3 +80,9 @@ def test_chat_diagnostics_capture_only_complete_public_probe_tokens(codec,tmp_pa
         result(codec,op='packet_diagnostic',root=str(tmp_path),name='CMSG_CHAT_MESSAGE_SAY',body=text.hex())
     rows=[json.loads(x) for x in (tmp_path/'evidence/world_packets.jsonl').read_text().splitlines()]
     assert len(rows)==1 and bytes.fromhex(rows[0]['body'])==b'TC442UI:public'
+
+
+def test_chat_requires_owned_character_and_active_instance_but_accepts_realm_channel(codec):
+    assert result(codec,op='chat_context',created=True,active_world=True) is True
+    for created,active_world in [(False,True),(True,False),(False,False)]:
+        assert 'error' in codec(op='chat_context',created=created,active_world=active_world)

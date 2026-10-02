@@ -16,7 +16,7 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     auto native_send = [&](Packet const &packet) { owner.native->send(packet.first, packet.second); };
     if(auto packet=chat_request(state,name,body))
     {
-        require_world();native_send(*packet);return;
+        require_chat_character(state.created,bool(active_world));native_send(*packet);return;
     }
     if (name == "CMSG_QUERY_REALM_NAME")
     {
