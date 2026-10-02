@@ -7,6 +7,11 @@ namespace bridge
 {
 Task<> Session::gameplay(std::string name, Bytes body)
 {
+    if(name=="SMSG_PONG")
+    {
+        Reader r(body);r.take<std::uint32_t>();r.end();
+        co_return; // Modern latency was already acknowledged on its own socket.
+    }
     if (name == "SMSG_ACCOUNT_DATA_TIMES" || name == "SMSG_UPDATE_ACCOUNT_DATA")
     {
         std::lock_guard lock(state_mutex);

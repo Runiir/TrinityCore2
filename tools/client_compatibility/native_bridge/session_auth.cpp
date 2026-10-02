@@ -78,6 +78,10 @@ Task<> Session::handle(std::string const &name, Bytes body)
     {
         if (body.size() != 8)
             throw std::runtime_error("malformed ping");
+        // A lobby can produce no native traffic for minutes. Keep its receive
+        // deadline alive with the realm's normal pings. Instance pings share
+        // this native session and must not double its ping frequency.
+        if (!realm_) native->send(name,body);
         send("SMSG_PONG", View(body).first(4));
         co_return;
     }
