@@ -710,7 +710,7 @@ rounding after the discount. The pricing change has not yet been live-qualified.
 
 `trainer_open_01` submits correct inputs but its native catalog is unmapped.
 `trainer_open_02` exposes a second layout problem: the running backend emits
-34-byte spell rows while the current source emits 38-byte rows. The initial
+34-byte spell rows while the initial parser assumed 38-byte rows. The initial
 38-byte parser rejects the captured 1,524-byte response and closes the connection.
 Native-console cleanup restores the original position and deletes both temporary
 teleports. The parser now validates both complete framed layouts and accepts

@@ -15,8 +15,8 @@ def call(codec,body,units=None,fn='trainer_response',name='SMSG_TRAINER_LIST'):
         actions=[{'fn':fn,'name':name,'body':body.hex()}])[0]
 
 
-def spell(id=100,usable=1,cost=950,level=20,skill=171,rank=50,abilities=(99,0,-1),dialog=0,button=0):
-    return struct.pack('<IBIBII3iII',id,usable,cost,level,skill,rank,*abilities,dialog,button)
+def spell(id=100,usable=1,cost=950,level=20,skill=171,rank=50,abilities=(99,0),dialog=0,button=0):
+    return struct.pack('<IBIBII2iII',id,usable,cost,level,skill,rank,*abilities,dialog,button)
 
 
 def catalog(spells=None,greeting=b'Hello, warrior!',type_=0,id=7,count=None):
@@ -50,6 +50,16 @@ def test_trainer_learning_request_preserves_native_identity_and_rejects_foreign_
         invalid=Writer().guid(*modern_guid(GUID,0)).pack('2i',id_,spell_).finish()
         assert 'error' in call(codec,invalid,fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
     assert 'error' in call(codec,body+b'x',fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
+
+
+def test_actual_whitemane_parry_purchase_uses_packed_npc_and_signed_ids(codec):
+    # Owned UI12 ordinary Train click, paired with the preceding catalog identity.
+    body=bytes.fromhex('03a7ec07c05905042010000000370c0000')
+    r=Reader(body);packed=r.guid();assert r.unpack('2i')==(16,3127);r.end()
+    npc=(0xf13<<52)|(5479<<32)|0x7ec
+    assert packed==modern_guid(npc,0)
+    units=[{**TRAINER,'guid':npc}]
+    assert call(codec,body,units,fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')==['CMSG_TRAINER_BUY_SPELL',struct.pack('<QII',npc,16,3127).hex()]
 
 
 def test_trainer_failure_maps_native_skill_rejection_to_modern_unavailable(codec):
@@ -90,17 +100,15 @@ def test_trainer_catalog_preserves_state_cost_requirements_and_order(codec):
     body=catalog(spells=[spell(usable=state,dialog=1,button=1) for state in [0,1,2]],greeting='Bienvenue, guerrier émérite!'.encode())
     header,rows,greeting=decode(call(codec,body))
     assert header==(0,7,3)
-    assert rows==[(100,950,171,50,99,0,-1,0,state,20) for state in [0,1,2]]
+    assert rows==[(100,950,171,50,99,0,0,0,state,20) for state in [0,1,2]]
     assert greeting=='Bienvenue, guerrier émérite!'.encode()
 
 
-def test_captured_row_variant_preserves_its_tail_without_truncating_greeting(codec):
-    row=struct.pack('<IBIBII3iI',100,1,950,20,171,50,99,0,-1,0xffffffff)
-    greeting=b'Hello, warrior!'
-    body=struct.pack('<QIII',GUID,0,7,1)+row+greeting+b'\0'
-    header,rows,text=decode(call(codec,body))
-    assert header==(0,7,1);assert rows==[(100,950,171,50,99,0,-1,0xffffffff,1,20)]
-    assert text==greeting
+def test_native_profession_flags_do_not_become_a_third_spell_prerequisite(codec):
+    for dialog,button in [(0,0),(1,0),(1,1)]:
+        header,rows,text=decode(call(codec,catalog([spell(dialog=dialog,button=button)])))
+        assert header==(0,7,1);assert rows==[(100,950,171,50,99,0,0,0,1,20)]
+        assert text==b'Hello, warrior!'
 
 
 def test_trainer_empty_catalog_types_and_greeting_limit(codec):
@@ -120,13 +128,7 @@ def test_trainer_catalog_rejects_bad_counts_states_and_incomplete_data(codec):
     for changes in [dict(id=0),dict(id=2**31),dict(usable=3),dict(dialog=2),dict(button=2)]:
         assert 'error' in call(codec,catalog([spell(**changes)]))
     body=catalog()
-    # Byte 55 is independently a complete 34-byte row plus empty CString.
-    # A correctly framed alternate packet cannot be distinguished from that
-    # prefix by its body alone. Every other cut here is incomplete in both forms.
-    for n in range(len(body)):
-        if n==55:
-            assert decode(call(codec,body[:n]))==((0,7,1),[(100,950,171,50,99,0,-1,0,1,20)],b'')
-        else:assert 'error' in call(codec,body[:n])
+    for n in range(len(body)):assert 'error' in call(codec,body[:n])
     assert 'error' in call(codec,body+b'x')
 
 
