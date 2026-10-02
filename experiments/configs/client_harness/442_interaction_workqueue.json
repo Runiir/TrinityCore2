@@ -57,7 +57,9 @@
     "ui11/trainer_open_03: three Laya choices, visible warrior catalog with available Parry and Plate Specialization, ordinary opening and closure; learning pending",
     "ui12/repair_all_03: four Laya choices, all ten items repaired, native/client quote and charge agree at 163335 copper, inventory/money/position restored; repaired gear retained",
     "ui12/trainer_learn_02: four Laya choices, Parry learned in native/client state, exact 646-copper price, ordinary ability-learned notification, inventory/money/position restored; learned skill retained",
-    "ui13/quest_log_02: five Laya choices, expand collapsed zone, read exact accepted quest, confirm abandonment, native quest baseline and inventory/money restored"
+    "ui13/quest_log_02: five Laya choices, expand collapsed zone, read exact accepted quest, confirm abandonment, native quest baseline and inventory/money restored",
+    "ui13/quest_details_04: three Laya choices, exact warrior quest details and objective display, native quest/inventory/money/position and temporary permission restored",
+    "ui13/quest_login_deployment: both actors reconnect on HDMI-1; scout early cache read deferred before authoritative creation, no worldserver restart"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

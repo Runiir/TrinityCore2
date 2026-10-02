@@ -864,6 +864,15 @@ mutation packets and invalid IDs; late cache reads outside a selected character
 are consumed without native gameplay. Updated tests and the live reconnect
 retry are retained in UI13.
 
+`quest_details_04` completes all three Laya choices and its full cleanup. Quest
+28766 is removed, quest 28825 is unchanged, and inventory/money, original pose
+and temporary permission 605 are restored. The login followup passes 470
+regression tests and 32 selected sanitizer checks. Both clients subsequently
+reconnect with v16 on HDMI-1. The scout trace captures a cache query deferred
+before player creation and released afterward, directly exercising the fixed
+race. The native worldserver remains PID 3123698 with start ticks 13177436
+throughout UI13.
+
 Seven additional older immutable journal rotations (58,766,706 raw bytes) are
 checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
 6,648,223-byte archive is synchronized before those rotations and both local
