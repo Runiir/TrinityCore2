@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=7,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=8,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -196,6 +196,18 @@ local function snapshot(viewMode,viewPage)
         end
     end
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
+    data.money=call(GetMoney)
+    data.merchant={visible=MerchantFrame and MerchantFrame:IsVisible() or false,items={}}
+    if data.merchant.visible then
+        data.merchant.count=call(GetMerchantNumItems);data.merchant.tab=MerchantFrame.selectedTab
+        for index=1,math.min(data.merchant.count or 0,12) do
+            local name,_,price,quantity,available,usable=call(GetMerchantItemInfo,index)
+            local link=call(GetMerchantItemLink,index)
+            data.merchant.items[#data.merchant.items+1]={index=index,name=trim(name,40),
+                id=link and tonumber(link:match('item:(%d+)')),price=price,quantity=quantity,available=available,usable=usable}
+        end
+        data.merchant.buyback_count=call(GetNumBuybackItems)
+    end
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
     data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false

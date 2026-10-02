@@ -1,7 +1,7 @@
 """Probe one existing NPC service through normal observed mouse inputs."""
 import argparse,json,time
 from pathlib import Path
-from . import actors
+from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_operations import click_case,controls
 from .interaction_macros import require
@@ -34,6 +34,14 @@ def suite(t,service,point,stage_only):
                     ('controller_failure' if not s else 'client_or_protocol_failure'),'oracle':{'panels':a['panels'],'errors':a['errors']}}),'service_open_pass')
         state,frame=t.observe('service_open');t.receipt['service_open']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
         if spec['panel'] not in state['panels']:raise RuntimeError('service window is absent')
+        if service=='merchant':
+            with lab.connection() as c,c.cursor() as q:
+                q.execute('SELECT item FROM client442_world.npc_vendor WHERE entry=%s AND type=1 AND PlayerConditionID=0 ORDER BY slot',(spec['entry'],))
+                expected=[r[0] for r in q.fetchall()]
+            visible=[r['id'] for r in state.get('merchant',{}).get('items',[])]
+            matches=expected==visible and state.get('merchant',{}).get('count')==len(expected)
+            t.receipt['merchant_catalog_oracle']={'native_vendor_item_ids':expected,'visible_item_ids':visible,'matches':matches};t.persist()
+            if not matches:raise RuntimeError('visible merchant catalog disagrees with the existing native vendor fixture')
         require(t.step(service+'.close','Close the '+service+' window.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the '+service+' window.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
