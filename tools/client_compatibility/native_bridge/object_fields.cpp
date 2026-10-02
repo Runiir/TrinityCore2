@@ -102,7 +102,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
         }
         skill[modern] = a;
     }
-    skill["SkillStartingRank"] = skill["SkillRank"];
+    // Inserting a key can reallocate this object's table. Copy before insertion.
+    Value starting_rank = skill.at("SkillRank");
+    skill["SkillStartingRank"] = std::move(starting_rank);
     active["Skill"] = skill;
     Array sites, projects;
     for (unsigned i = 0; i < 16; ++i)
