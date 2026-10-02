@@ -23,7 +23,7 @@ def open_editor(trial):
         lambda b,a,s:{'status':'panel_open_pass' if s and 'SettingsPanel' in a['panels'] else 'controller_failure'}),'panel_open_pass')
     rows=controls(trial);(trial.out/'keybinding_controls.json').write_text(json.dumps(rows,indent=2)+'\n')
     require(edit_case(trial,'keybindings.search','Search settings for Framerate.',
-        lambda c:c['text']=='Search','Framerate'),'ui_edit_pass')
+        lambda c:not c['name'],'Framerate'),'ui_edit_pass')
     rows=controls(trial);(trial.out/f'binding_controls_{len(trial.receipt["cases"]):03}.json').write_text(json.dumps(rows,indent=2)+'\n')
     return rows
 
