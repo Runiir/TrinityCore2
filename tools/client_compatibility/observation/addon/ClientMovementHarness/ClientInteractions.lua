@@ -247,6 +247,15 @@ local function snapshot(viewMode,viewPage)
     data.guild_ui={classic=call(GetCVarBool,'useClassicGuildUI'),in_guild=call(IsInGuild),
         trial=call(IsTrialAccount),veteran_trial=call(IsVeteranTrialAccount),
         clubs_enabled=call(C_Club and C_Club.IsEnabled),bn_connected=call(BNConnected)}
+    local guildName,guildRank,guildRankIndex=call(GetGuildInfo,'player')
+    data.guild_ui.name=guildName;data.guild_ui.rank=guildRank;data.guild_ui.rank_index=guildRankIndex
+    local guildCount=call(GetNumGuildMembers)
+    data.guild_ui.member_count=guildCount;data.guild_ui.members={}
+    for i=1,math.min(tonumber(guildCount) or 0,4) do
+        local name,rank,rankIndex,level,class,zone,note,officer,online=call(GetGuildRosterInfo,i)
+        if name then data.guild_ui.members[#data.guild_ui.members+1]={name=name,rank=rank,index=rankIndex,
+            level=level,class=class,zone=zone,note=trim(note),officer=trim(officer),online=online} end
+    end
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.fps_keys={call(GetBindingKey,'TOGGLEFPS')}
     data.keybind_listening=KeybindListener and KeybindListener.pending and
