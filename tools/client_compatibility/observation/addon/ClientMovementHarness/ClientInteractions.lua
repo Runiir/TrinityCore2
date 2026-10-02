@@ -126,7 +126,9 @@ local function snapshot(viewMode,viewPage)
         if visited[f] or depth>12 or not f:IsVisible() then return end;visited[f]=true
         local kind=f:GetObjectType()
         if kind=='Frame' and f.GetElementDescription and f:IsMouseEnabled() then kind='MenuItem' end
-        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider' or kind=='MenuItem') and #data.controls<512 then
+        if kind=='Frame' and f:IsMouseEnabled() and (f:GetName()=='GuildMemberNoteBackground' or
+            f:GetName()=='GuildMemberOfficerNoteBackground') then kind='ClickFrame' end
+        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider' or kind=='MenuItem' or kind=='ClickFrame') and #data.controls<512 then
             local x,y=f:GetCenter()
             if x and y then
                 local scale=f:GetEffectiveScale();local name=f:GetName() or ''

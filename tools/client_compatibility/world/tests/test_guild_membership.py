@@ -80,7 +80,7 @@ def test_public_and_officer_note_requests_preserve_guid_text_and_flag(codec):
         name,body=call(codec,'guild_request','CMSG_GUILD_SET_MEMBER_NOTE',packet)
         r=Reader(bytes.fromhex(body));octets=[0]*8
         for i in [1,4,5,3,0,7]:octets[i]=r.bits(1)
-        assert r.bits(1)==public;octets[6]=r.bits(1);size=r.bits(8);octets[2]=r.bits(1);r.align()
+        assert r.bits(1)==(not public);octets[6]=r.bits(1);size=r.bits(8);octets[2]=r.bits(1);r.align()
         for i in [4,5,0,3,1,6,7]:
             if octets[i]:octets[i]=r.unpack('B')[0]^1
         assert r.raw(size)==text
@@ -94,7 +94,7 @@ def test_note_updates_preserve_empty_clear_and_officer_visibility_flag(codec):
         for i in [7,2,3]:w.bits(bool(octets[i]),1)
         w.bits(len(text),8)
         for i in [5,0,6,4]:w.bits(bool(octets[i]),1)
-        w.bits(public,1).bits(bool(octets[1]),1).flush()
+        w.bits(not public,1).bits(bool(octets[1]),1).flush()
         def byte(i):
             if octets[i]:w.pack('B',octets[i]^1)
         for i in [3,0,2,5]:byte(i)

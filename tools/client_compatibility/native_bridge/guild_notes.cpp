@@ -10,7 +10,10 @@ Reply guild_note_request(std::string const &name,View body)
     auto size=r.bits(8),is_public=r.bits(1);auto note=r.raw(size);r.end();
     std::array<std::uint8_t,8> octets{};std::memcpy(octets.data(),&guid,8);Writer w;
     for(auto i:{1,4,5,3,0,7})w.bits(octets[i]!=0,1);
-    w.bits(is_public,1).bits(octets[6]!=0,1).bits(size,8).bits(octets[2]!=0,1).flush();
+    // This backend's handler calls HandleSetMemberNote's `officer` argument
+    // with the wire `ispublic` bit unchanged. Adapt to the implemented native
+    // semantics so public and officer notes land in the correct DB column.
+    w.bits(!is_public,1).bits(octets[6]!=0,1).bits(size,8).bits(octets[2]!=0,1).flush();
     auto byte=[&](unsigned i){if(octets[i])w.put<std::uint8_t>(octets[i]^1);};
     for(auto i:{4,5,0,3,1,6,7})byte(i);
     w.raw(note);byte(2);return Packet{"CMSG_GUILD_SET_NOTE",w.finish()};
@@ -28,6 +31,7 @@ Reply guild_note_response(std::string const &name,View body)
     auto note=r.raw(size);for(auto i:{7,6,1,4})byte(i);r.end();
     std::uint64_t guid=0;std::memcpy(&guid,octets.data(),8);
     if(!guid || guid>0xffffffff)throw std::runtime_error("invalid native guild note identity");
-    return Packet{name,Writer().guid(guid,player_high()).bits(size,8).bits(is_public,1).raw(note).finish()};
+    // The same native implementation broadcasts its officer flag in this bit.
+    return Packet{name,Writer().guid(guid,player_high()).bits(size,8).bits(!is_public,1).raw(note).finish()};
 }
 }
