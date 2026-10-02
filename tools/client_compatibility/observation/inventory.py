@@ -50,6 +50,14 @@ class Inventory:
             'damage':[floating('UNIT_FIELD_MINDAMAGE'),floating('UNIT_FIELD_MAXDAMAGE')],
             'health':fields.get(INDEX['UNIT_FIELD_MAXHEALTH'],0)}
 
+    def count(self,item_id):
+        seen={}
+        for bag in range(5):
+            for slot in range(1,17 if bag==0 else 37):
+                item=self.slot(bag,slot)
+                if item['guid'] and item['id']==item_id:seen[item['guid']]=item['count']
+        return sum(seen.values())
+
     def slot(self,bag,slot):
         if not 0<=bag<=4 or not 1<=slot<=36:raise ValueError('oracle bag position outside bound')
         if bag==0:
