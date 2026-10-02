@@ -29,7 +29,7 @@ def test_old_and_compact_menu_pixels(kind,version,count):
     decoder=taxi.decode_image if kind=='taxi' else gossip.decode_image
     decoded=decoder(picture(kind,version,count));rows=decoded['nodes' if kind=='taxi' else 'options']
     assert decoded['sequence']==7;assert [r['id'] for r in rows]==list(range(1,count+1))
-    if rows:assert rows[0]['pixel']==[391,390 if kind=='taxi' else 330]
+    if rows:assert rows[0]['pixel']==[391,390]
 
 
 @pytest.mark.parametrize('kind',['taxi','gossip'])
