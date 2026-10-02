@@ -13,7 +13,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'TradeSkillFrame','CraftFrame','ArchaeologyFrame','QuestLogFrame','WorldMapFrame','PlayerTalentFrame',
     'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','GuildFinderFrame','LookingForGuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
-    'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame',
+    'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3'}
