@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "NPC bank, merchant, trainer, quest, mail and auction interactions; retain guild resource/permission, public transport, inspect and trade gaps",
+  "current": "NPC merchant, trainer, quest, mail and auction interactions; retain guild resource/permission, public transport, inspect/trade and bank variants",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -48,7 +48,9 @@
     "ui06/nearby_players_02: native public creations, geared player rendering and normal name targeting on both clients",
     "ui06/public_follow_02: Laya strafe/follow/stop, peer position agreement, 11 native/modern movement pairs, both positions restored",
     "ui07/peer_services_03: both inspect gear samples, both trade windows, model-selected cancel and peer closure",
-    "ui07/trade_roundtrip_02: eight Laya choices, existing five-item stack traded out/back, complete native inventory/money and positions restored"
+    "ui07/trade_roundtrip_02: eight Laya choices, existing five-item stack traded out/back, complete native inventory/money and positions restored",
+    "ui08/bank_open_04: visible 28-slot base bank, ordinary opening and closure",
+    "ui08/bank_roundtrip_01: five Laya choices, existing stack banked/withdrawn, native identity/count and UI agree, full inventory/money and position restored"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -58,6 +60,7 @@
     "Guild rank/bank permission mutations and remaining guild operations are pending.",
     "Public transport/vehicle movement is not yet translated or qualified; normal public walking and follow are qualified.",
     "Inspect PvP/item level/customizations and unsampled gear slots are pending.",
-    "Trade socket enchants, explicit gold changes, offer editing and unaccept are pending; one invalid unnamed TradeFrame child is skipped by the observer."
+    "Trade socket enchants, explicit gold changes, offer editing and unaccept are pending; one invalid unnamed TradeFrame child is skipped by the observer.",
+    "Bank bag purchases, equipped bank bags, split/merge variants, persistence and negative gameplay paths are pending."
   ]
 }

@@ -523,3 +523,45 @@ UI06 is checkpointed as `442_interactions_20261002_07.tar.gz.dvc`. Its 96 PNGs
 (197,618,136 bytes) were verified against the remote checkpoint before removal.
 Its local archive and exact cache object were also evicted. UI07 follows the same
 checkpoint/prune/evict process as `442_interactions_20261002_08.tar.gz.dvc`.
+
+## Bank services
+
+The reversible banker fixture uses existing Olivia Burnside (entry 2455) and two
+temporary private teleports. `ui08/bank_open_01` submits no NPC interaction packet:
+the bank counter occludes the mouse hit. The revised staging is on the NPC's side
+of the counter. `_02` opens gossip, but its fixture searches for the wrong caption.
+`_03` selects the actual deposit-box option; the backend sends `SMSG_SHOW_BANK`,
+which the bridge drops. These failed receipts are retained separately from the fix.
+
+The bridge now emits `SMSG_NPC_INTERACTION_OPEN_RESULT` for a visible native banker,
+translates character-bank auto deposit/withdraw requests, and consumes the modern
+close notification. Bank moves require the native bank-open grant and retain the
+backend's inventory/range checks. Account and guild banking are rejected by this
+character-bank adapter. The serializer follows the pinned
+[bank handler](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Handlers/BankHandler.cpp)
+and [NPC packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/NPCPackets.cpp).
+
+`bank_open_04` passes ordinary opening and closure, with 28 visible base slots.
+`bank_roundtrip_01` passes five Laya choices, including depositing the existing
+five-item Draenei Tome stack into base bank slot 1 and withdrawing it into its
+original backpack slot 2. The independent native inventory oracle preserves item
+GUID 4611686018427387934, entry 64394 and count 5; addon-visible contents agree.
+The complete native inventory/money snapshot and saved position are restored, and
+both temporary teleports are removed. Screenshots were visually checked. Observer
+version 7 adds read-only base bank contents on both owned clients.
+
+All 411 regression tests and 46 selected bank/peer/inventory ASan/UBSan tests pass;
+the bridge was the only restarted service. Bank bag purchases, equipped bank bags,
+split/merge variants, persistence and negative gameplay paths remain open. This
+does not qualify the whole bank family. Reproduce the bounded round trip after
+verifying the NPC's screen point for the current camera:
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_bank --roundtrip --point 639 176 --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/bank_roundtrip_01
+```
+
+The runner preserves restore teleports if inventory cleanup fails. Its fallback
+withdrawal is a separately attributed code-controlled ordinary-input episode.
+UI07's remote-verified archive/cache copies (336,643,587 bytes each) and 156 raw
+PNG frames (341,920,281 bytes) were removed locally; about 1.3 MiB of metadata
+remains. UI08 uses checkpoint `442_interactions_20261002_09.tar.gz.dvc`.

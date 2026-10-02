@@ -31,13 +31,17 @@ The world packet bridge now runs as a separate C++20 service and is the default.
 Its optimized build passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
-HDMI-1. The latest suite passed 277 tests. Its 54 packet and codec tests also passed
+HDMI-1. The initial suite passed 277 tests. Its 54 packet and codec tests also passed
 ASan/UBSan. Python still handles modern
 authentication, supervision, observations and diagnostic decisions. The bridge
 does not embed Python or call the Python world translator.
 See [the native bridge notes](../../tools/client_compatibility/native_bridge/README.md).
 The [October 2 interaction report](interactions_20261002.md) records the later
 group-frame, role and marker repairs, individual qualifications and remaining gaps.
+The later bank batch passes 411 regression tests, including nine bank packet tests;
+46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,
+deposit, withdrawal and close have live evidence. Inspect gear samples and a real
+item trade round trip are also qualified; broader variants remain in the workqueue.
 
 ## Endpoints and restart
 
