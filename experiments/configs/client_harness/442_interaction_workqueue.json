@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Classic guild membership roster and commands, then nearby-player services",
+  "current": "Guild promotion demotion permissions removal and disband, then nearby-player services",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -40,7 +40,9 @@
     "ui03/chat_03: six sends and three peer deliveries through native packets and normal client chat events",
     "ui03/ticket_refresh_live: code fixture live REST renewal and expired-ticket rejection; disposable credential removed",
     "ui03/crafting_04: Laya recipe search/select and one/two crafts, native/UI reagent-product accounting and restored fixture",
-    "ui03/lifecycle_06: cancel, completed logout, reentry, peer offline/online and equipment/group/profile restoration"
+    "ui03/lifecycle_06: cancel, completed logout, reentry, peer offline/online and equipment/group/profile restoration",
+    "ui04/guild_membership_02: invite decline accept two rosters MOTD peer delivery leave and restored fixture",
+    "ui04/guild_notes_02: separate public/officer columns nonempty information save/refresh control open self guild/officer chat and restored fixture"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending."
 }

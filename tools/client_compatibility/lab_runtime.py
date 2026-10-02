@@ -276,6 +276,7 @@ SET graphicsQuality "1"
 SET maxFPS "30"
 SET maxFPSBk "15"
 SET Sound_EnableAllSound "0"
+SET useClassicGuildUI "1"
 '''
     if not (client / "WTF/Config.wtf").exists():
         private_write(client / "WTF/Config.wtf", config)
@@ -362,7 +363,7 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
     config_path = folder / "WTF/Config.wtf"
     import re
     config = config_path.read_text()
-    for name, value in {"portal": "127.0.0.1", "realmlist": "127.0.0.1:13724"}.items():
+    for name, value in {"portal": "127.0.0.1", "realmlist": "127.0.0.1:13724", "useClassicGuildUI": "1"}.items():
         line = f'SET {name} "{value}"'
         pattern = rf"(?m)^SET {name} .*$"
         config = re.sub(pattern, line, config) if re.search(pattern, config) else config + "\n" + line + "\n"

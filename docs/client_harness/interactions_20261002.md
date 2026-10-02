@@ -296,3 +296,86 @@ from its import path; run `pixi run ... python -m pytest` as shown in the runboo
 
 These receipts remain bounded Laya input selections. They do not qualify all 891
 contracts, an entire interaction family, screenshot planning, or long-duration autonomy.
+
+## Guild membership and disk retention
+
+`client_interactions_20261002_ui04` uses a disposable native guild, `Harness Ui Test`,
+and the same isolated native worldserver. No existing guild membership was present
+on either owned account before preparation. The initial guild trial exposed missing
+native guild GUID translation; the first reconnect fixture also exposed an incorrect
+legacy GUID high-part assumption and a warming friend-cache observer error. Corrected
+reconnects preserve the native guild identity and tolerate an unavailable friend count.
+
+`guild_open_02` opens the window but fails its roster oracle with blank member rows.
+The rank and permission queries are missing from that trace. After their translation,
+`guild_open_03` displays the native name, level and rank. Its Classic guild permission
+Lua error remains recorded; it is not a clean guild-control qualification.
+
+The shipped Classic guild XML contains six permission tabs while its script loops
+over Cataclysm's eight. `Client442Compatibility` supplies the missing two stock-template
+widgets for build 60895. It is separate from the read-only observation addon and does
+not send gameplay commands. `lab_runtime prepare-client` installs it in the private
+client. Restart the game when first installing a new addon; subsequent file updates
+can use ordinary `/reload`. A corrected build guard handles Lua's multiple return
+values. `guild_tabs_reload_fixture` verifies the active eight-tab repair and no Lua
+errors on both clients. Receipts record the compatibility addon's file hash.
+
+`guild_membership_01` is a controller failure: Laya opens Friends for the invitation
+goal. Clearer input descriptions and normal addon-visible guild state produce
+`guild_membership_02`, which passes invitation, decline, reinvitation, acceptance,
+both two-member rosters, message-of-the-day mutation and peer delivery, and leaving.
+Native membership and visible state agree. Cleanup restores the original message,
+client preferences and the unguilded peer. This does not qualify every guild operation.
+
+The full guild regression passes 355 auth/world tests. The selected guild wire
+regression passes 15 cases under ASan/UBSan. The first rank build failed compilation
+because of mixed integer types in one `auto` declaration; its corrected build and
+six rank/query tests pass. A later source review finds this backend passes the wire
+public-note flag to an officer-note implementation argument, then broadcasts the same
+flag. The bridge adapts both directions to the implemented native semantics. Its six
+membership/note tests pass in Release and under ASan/UBSan.
+
+`guild_notes_01` passes separate public/officer note mutations with the correct native
+columns, visible text and preservation of the other column. It also passes nonempty
+guild information save/refresh, opening Guild Control without Lua errors, and self
+guild/officer chat delivery. Its cleanup fails: clearing the information edit box
+sends no `CMSG_GUILD_UPDATE_INFO_TEXT`, so the backend retains the previous information.
+This is a client/API boundary, not a successful empty-text qualification. The rerun
+`guild_notes_02` uses a distinct information probe and a nonempty reversible baseline;
+it passes every listed case and restores notes, information and client preferences.
+The disposable guild remains an explicitly owned fixture until the remaining guild
+trials finish. Future private-client launches select `useClassicGuildUI 1`, because
+the local server provides Classic guild services without Battle.net clubs. Existing
+trial preference baselines remain recorded separately.
+
+This closed batch is synchronized in
+[`442_interactions_20261002_05.tar.gz.dvc`](../../artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc).
+
+The cleanup receipt `ui04/archive_cleanup.json` records targeted eviction of 21
+client442 archives after matching their DVC hashes and verifying the remote. The
+cache is shared at the main worktree's `.dvc/cache`; only the exact objects for these
+archives were removed. Other raid cache objects, active Wine/CASC overlays, game data,
+models and useful incremental build caches are preserved. Measured free disk space
+increased from about 41 GiB to 55 GiB. One abandoned temporary checkpoint directory
+was removed after identifying it as a copy of an already closed, uploaded batch.
+
+For future closed checkpoints, use the reusable eviction command after checkpointing:
+
+```bash
+pixi run python -m tools.client_compatibility.evict_checkpoints \
+  442_interactions_20261002_05.tar.gz \
+  --receipt ~/.local/share/trinity-client442-lab/evidence/<closed-batch>/checkpoint_eviction.json
+```
+
+The command verifies the remote before deleting an archive or its exact shared-cache
+object and checks references across worktrees. It runs `dvc status` and `dvc push`
+afterward. Local absence is expected after eviction; it is not a missing remote copy.
+Raw screenshots are removed only after matching a verified checkpoint manifest:
+
+```bash
+pixi run python -m tools.client_compatibility.prune_checkpoint_frames \
+  --directory ~/.local/share/trinity-client442-lab/evidence/<closed-batch>
+```
+
+Run frame pruning before archive eviction. It rechecks the archive hash and DVC
+remote, verifies every frame against the checkpoint manifest, and records removals.
