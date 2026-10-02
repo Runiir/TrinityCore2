@@ -110,6 +110,7 @@ bool capture(std::string const &name)
                                                           "CMSG_TIME_SYNC_RESPONSE",
                                                           "SMSG_TIME_SYNC_REQ",
                                                           "SMSG_TIME_SYNC_REQUEST",
+                                                          "CMSG_LOG_DISCONNECT",
                                                           "CMSG_LOGOUT_REQUEST",
                                                           "CMSG_LOGOUT_CANCEL",
                                                           "SMSG_LOGOUT_RESPONSE",

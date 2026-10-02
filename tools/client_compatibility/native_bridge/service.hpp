@@ -3,6 +3,7 @@
 #include "events.hpp"
 #include "native.hpp"
 #include "ready_check.hpp"
+#include "lifecycle.hpp"
 #include <atomic>
 
 namespace bridge
@@ -62,6 +63,7 @@ class Session : public std::enable_shared_from_this<Session>
     std::weak_ptr<Session> world;
     std::mutex state_mutex;
     State state;
+    LoginBarrier login_barrier; // Protected by state_mutex, owned by the Realm session.
     Login login;
     std::string id = hex(random_bytes(4));
     Session(Service &service, Tcp::socket socket);

@@ -164,6 +164,10 @@ def suite(out, actor_name, cancel_only):
         cohort['completed'] = True
     except Exception as e:
         cohort['failure'] = f'{type(e).__name__}: {e}'
+        for trial in trials.values():
+            for row in trial.receipt['cases']:
+                if row.get('status') == 'started':
+                    row.update(status='infrastructure_failure', error=cohort['failure'])
     finally:
         for name, trial in trials.items():
             with actor(name):

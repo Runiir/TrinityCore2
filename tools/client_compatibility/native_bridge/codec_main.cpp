@@ -5,6 +5,7 @@
 #include "events.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
+#include "lifecycle.hpp"
 #include <iostream>
 #include <memory>
 
@@ -42,6 +43,40 @@ int main(int argc, char **argv)
                 else if(op=="chat_context")
                 {
                     require_chat_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
+                }
+                else if(op=="login_barrier")
+                {
+                    LoginBarrier barrier;Array output;
+                    for(auto const &action:get(request,"actions").as_array())
+                    {
+                        if(str(get(action,"fn"))=="begin")barrier.begin();
+                        else
+                        {
+                            Array packets;
+                            for(auto const &packet:barrier.accept({str(get(action,"name")),unhex(str(get(action,"body")))}))
+                                packets.push_back(Array{packet.first,hex(packet.second)});
+                            output.push_back(Object{{"packets",packets},{"pending",barrier.pending},
+                                {"queued",barrier.deferred.size()},{"bytes",barrier.bytes}});
+                        }
+                    }
+                    result=output;
+                }
+                else if(op=="logout_reset")
+                {
+                    State state;state.character=Object{{"guid",2}};state.created=true;
+                    state.self_snapshot=Object{{"guid",2}};state.visible_units[3]=true;
+                    state.visible_gameobjects[4]=true;state.inventory_items[5]=true;
+                    state.casts[6]=true;state.visible_auras[7]=true;state.pending_movement[8]=true;
+                    state.party_members.insert(9);state.party_leader=2;state.latest_movement={1,2};
+                    state.account_times[3]=123;bool callback=false;
+                    state.native_send=[&](std::string const &,View){callback=true;};
+                    finish_logout(state);state.native_send("fixture",{});
+                    result=Object{{"last_guid",state.last_logout_guid},{"account_time",state.account_times[3]},
+                        {"callback",callback},{"created",state.created},{"character",state.character},
+                        {"snapshot",state.self_snapshot},{"world_entries",state.visible_units.size()+
+                            state.visible_gameobjects.size()+state.inventory_items.size()+state.casts.size()+
+                            state.visible_auras.size()+state.pending_movement.size()+state.party_members.size()+
+                            state.latest_movement.size()+state.party_leader}};
                 }
                 else if(op=="marker_diagnostic")
                 {
@@ -233,6 +268,8 @@ int main(int argc, char **argv)
                                 reply = Protocol::party_roles(name, body);
                             else if (fn == "account_request")
                                 reply = Protocol::account_request(state, name, body);
+                            else if(fn=="logout_complete")
+                                finish_logout(state);
                             else if (fn == "account_response")
                                 reply = Protocol::account_response(state, name, body);
                             else if (fn == "achievement")

@@ -159,7 +159,13 @@ Task<> Session::native_packets()
         while (channel->socket.is_open())
         {
             auto packet = co_await native->receive();
-            co_await gameplay(packet.first, std::move(packet.second));
+            std::vector<Packet> ready;
+            {
+                std::lock_guard lock(state_mutex);
+                ready = login_barrier.accept(std::move(packet));
+            }
+            for(auto &initial : ready)
+                co_await gameplay(std::move(initial.first), std::move(initial.second));
         }
     }
     catch (std::exception const &error)

@@ -52,6 +52,7 @@ Task<> Session::handle(std::string const &name, Bytes body)
             if (auto existing = realm_->world.lock(); existing && existing->channel->alive())
                 throw std::runtime_error("repeated instance connection");
             realm_->world = shared_from_this();
+            realm_->login_barrier.begin();
             send("SMSG_RESUME_COMMS");
             realm_->native->send("CMSG_PLAYER_LOGIN", native_login(realm_->state.guid()));
             service.events.event("instance_authenticated", {{"session", id}, {"account_id", login.account}});
