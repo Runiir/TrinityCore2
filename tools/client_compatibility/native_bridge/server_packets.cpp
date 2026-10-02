@@ -1,5 +1,6 @@
 #include "service.hpp"
 #include "chat.hpp"
+#include "guild_packets.hpp"
 #include <ctime>
 
 namespace bridge
@@ -54,6 +55,18 @@ Task<> Session::gameplay(std::string name, Bytes body)
             return db.query("SELECT guid,class,race FROM client442_characters.characters WHERE guid IN (" + ids + ")");
         });
     }
+    Array guild_identities;
+    if(name=="SMSG_GUILD_ROSTER")
+    {
+        auto members=guild_member_guids(body);std::string ids;
+        for(auto const &guid:members){if(!ids.empty())ids+=',';ids+=std::to_string(integer(guid));}
+        if(!ids.empty())
+        {
+            auto root=service.root;
+            guild_identities=co_await background(service.database_workers,[root,ids]
+            {Database db(root);return db.query("SELECT guid,race FROM client442_characters.characters WHERE guid IN ("+ids+")");});
+        }
+    }
     std::lock_guard lock(state_mutex);
     auto instance = world.lock();
     if (!instance || state.character.is_null())
@@ -96,6 +109,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {
         this->send(*reply);co_return;
     }
+    if((reply=guild_response(name,body,guild_identities)))
+    {this->send(*reply);co_return;}
     if ((reply = Protocol::reputation_response(name, body, service.data.factions)))
     {
         send(*reply);co_return;

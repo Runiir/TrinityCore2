@@ -1,5 +1,6 @@
 #include "service.hpp"
 #include "chat.hpp"
+#include "guild_packets.hpp"
 
 namespace bridge
 {
@@ -45,6 +46,11 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if (auto request = Protocol::social_request(name, body))
     {
         if (!state.created || !active_world) throw std::runtime_error("social request without owned character");
+        native_send(*request);return;
+    }
+    if(auto request=guild_request(state,name,body))
+    {
+        if(!state.created || !active_world)throw std::runtime_error("guild request without owned character");
         native_send(*request);return;
     }
     if(Protocol::late_party_query(state.created && bool(active_world),name,body))

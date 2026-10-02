@@ -6,6 +6,7 @@
 #include "ready_check.hpp"
 #include "chat.hpp"
 #include "lifecycle.hpp"
+#include "guild_packets.hpp"
 #include <iostream>
 #include <memory>
 
@@ -44,6 +45,8 @@ int main(int argc, char **argv)
                 {
                     require_chat_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
                 }
+                else if(op=="native_guild_roster")
+                    result=native_guild_roster(data("body"));
                 else if(op=="login_barrier")
                 {
                     LoginBarrier barrier;Array output;
@@ -248,6 +251,10 @@ int main(int argc, char **argv)
                                 reply = Protocol::reputation_response(name, body, get(request, "factions").as_array());
                             else if (fn == "social_request")
                                 reply = Protocol::social_request(name, body);
+                            else if(fn=="guild_request")
+                                reply=guild_request(state,name,body);
+                            else if(fn=="guild_response")
+                                reply=guild_response(name,body,get(request,"identities").as_array());
                             else if (fn == "chat_request")
                                 reply = chat_request(state,name,body);
                             else if (fn == "chat_response")
