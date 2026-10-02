@@ -76,7 +76,8 @@ local function snapshot(viewMode,viewPage)
     local function scan(f,depth)
         if visited[f] or depth>12 or not f:IsVisible() then return end;visited[f]=true
         local kind=f:GetObjectType()
-        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider') and #data.controls<512 then
+        if kind=='Frame' and f.GetElementDescription and f:IsMouseEnabled() then kind='MenuItem' end
+        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider' or kind=='MenuItem') and #data.controls<512 then
             local x,y=f:GetCenter()
             if x and y then
                 local scale=f:GetEffectiveScale();local name=f:GetName() or ''
@@ -92,6 +93,9 @@ local function snapshot(viewMode,viewPage)
         local f=_G[name]
         if f and f:IsVisible() then data.panels[#data.panels+1]=name;scan(f,0) end
     end
+    local manager=Menu and call(Menu.GetManager)
+    local menu=manager and call(manager.GetOpenMenu,manager)
+    if menu and menu.IsVisible and menu:IsVisible() then data.panels[#data.panels+1]='ContextMenu';scan(menu,0) end
     for i=1,13 do local f=_G['ContainerFrame'..i];if f and f:IsVisible() then
         data.bags[#data.bags+1]=f:GetID();scan(f,0)
     end end

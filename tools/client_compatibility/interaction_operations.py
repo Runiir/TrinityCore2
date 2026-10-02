@@ -45,7 +45,7 @@ def controls(trial):
 
 def click_case(trial,case_id,goal,target,oracle,additional=None):
     rows=controls(trial)
-    candidates=[c for c in rows if c['enabled'] and c['kind'] in ['Button','CheckButton'] and
+    candidates=[c for c in rows if c['enabled'] and c['kind'] in ['Button','CheckButton','MenuItem'] and
         (target(c) or c['text'] in ['Cancel','Okay','New','Save','General Macros','Character-Specific Macros','Spellbook','Professions','Alchemy','Tailoring','Cooking','First Aid','Archaeology'])]
     selected=next((c for c in candidates if target(c)),None)
     if not selected:raise RuntimeError(f'{case_id}: expected control is absent')

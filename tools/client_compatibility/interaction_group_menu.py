@@ -19,7 +19,8 @@ def suite(trial):
         'a':{'kind':'click','value':point(player),'button':3,'description':'Right-click your visible player portrait to open its context menu.'},
         'b':{'kind':'key','value':'o','description':'Press O to open friends and social.'},
         'c':{'kind':'key','value':'Escape','description':'Press Escape to open the game menu.'}},
-        lambda b,a,s:{'status':'panel_open_pass' if s=='a' else 'controller_failure','oracle':{'qualified_scope':'right click submitted; menu controls recorded separately'}}),'panel_open_pass')
+        lambda b,a,s:{'status':'panel_open_pass' if 'ContextMenu' in a['panels'] else ('controller_failure' if s!='a' else 'adapter_observation_missing'),
+            'oracle':{'qualified_scope':'visible player context menu'}}),'panel_open_pass')
     rows=controls(trial);lab.private_write(trial.out/'player_menu_controls.json',json.dumps(rows,indent=2)+'\n')
 
 
