@@ -20,16 +20,23 @@ def controls(trial):
     from PIL import Image
     from tools.second_client import ctl
     from .observation.interactions import decode_image
-    records=[];page=1;total=None
-    try:
-        while total is None or len(records)<total:
-            command(trial,'/tcui controls '+str(page));path=trial.out/f'controls_{len(trial.receipt["cases"]):03}_{page:02}.png'
-            ctl.shot(str(path));state=decode_image(Image.open(path));total=state['control_count']
-            if state['guid']!=trial.guid or state['page']!=page:raise RuntimeError('control page identity mismatch')
-            records.extend(state.get('controls') or []);page+=1
-            if page>30:raise RuntimeError('control page budget exhausted')
-        return records
-    finally:command(trial,'/tcui state')
+    pages={};total=None;deadline=time.monotonic()+25;panels=None
+    while time.monotonic()<deadline:
+        path=trial.out/'controls_latest.png';ctl.shot(str(path));state=decode_image(Image.open(path))
+        if state['guid']!=trial.guid:raise RuntimeError('control page identity mismatch')
+        if state['mode']!='controls':continue
+        current=state.get('panels') or []
+        if panels is None:panels=current
+        if current!=panels:raise RuntimeError('panels changed during control observation')
+        total=state['control_count'];page=state['page']
+        if page not in pages:
+            pages[page]=state.get('controls') or []
+            target=trial.out/f'controls_{len(trial.receipt["cases"]):03}_{page:02}_{state["sequence"]}.png'
+            path.replace(target)
+        if total is not None and len(pages)==__import__('math').ceil(total/18):
+            return [c for p in sorted(pages) for c in pages[p]]
+        time.sleep(.1)
+    raise RuntimeError('automatic control observation page deadline exceeded')
 
 
 def click_case(trial,case_id,goal,target,oracle,additional=None):

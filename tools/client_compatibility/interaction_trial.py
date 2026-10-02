@@ -89,9 +89,14 @@ class Trial:
         from PIL import Image
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
-        monitor=owned_input.focus();path=self.out/(label+'.png');ctl.shot(str(path))
-        with Image.open(path) as image:
-            state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
+        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+22
+        while True:
+            ctl.shot(str(path))
+            with Image.open(path) as image:
+                state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
+            if state['mode']=='state':break
+            if time.monotonic()>deadline:raise RuntimeError('UI state observation deadline exceeded')
+            time.sleep(.1)
         if state['guid']!=self.guid or state['build']!=60895 or not movement['in_world']:
             raise RuntimeError('observation is not the owned active character')
         if movement['dead'] or movement['in_combat'] or movement['on_taxi'] or movement['health_percent']<50:

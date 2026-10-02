@@ -18,6 +18,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3'}
 local sequence,elapsed,mode,page=0,0,'state',1
+local autoPage,autoPages=0,0
 local errors={}
 local function call(fn,...)
     if type(fn)~='function' then return nil end
@@ -60,7 +61,8 @@ local function bindings(first,count)
     end
     return rows
 end
-local function snapshot()
+local function snapshot(viewMode,viewPage)
+    local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
@@ -138,7 +140,13 @@ local function append(bytes,value,n)
 end
 local function update()
     sequence=(sequence+1)%4294967296
-    local ok,data=pcall(snapshot)
+    local viewMode,viewPage=mode,page
+    if mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
+    local ok,data=pcall(snapshot,viewMode,viewPage)
+    if mode=='state' and ok then
+        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/18);autoPage=autoPages>0 and 1 or 0
+        else autoPage=autoPage<autoPages and autoPage+1 or 0 end
+    end
     if not ok then data={observer_error=trim(data,250),mode=mode} end
     local payload=json(data)
     if #payload>capacity then payload=json({observer_error='UI observation exceeds packet capacity',mode=mode,bytes=#payload}) end
@@ -157,7 +165,7 @@ SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
     if command=='bindings' or command=='controls' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
-    else mode='state' end
+    else mode='state';autoPage=0 end
     frame:Show();update()
 end
 frame:RegisterEvent('UI_ERROR_MESSAGE');frame:SetScript('OnEvent',function(_,_,code,text)
