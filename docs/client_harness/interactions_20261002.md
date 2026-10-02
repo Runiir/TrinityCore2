@@ -379,3 +379,38 @@ pixi run python -m tools.client_compatibility.prune_checkpoint_frames \
 
 Run frame pruning before archive eviction. It rechecks the archive hash and DVC
 remote, verifies every frame against the checkpoint manifest, and records removals.
+
+
+## Guild ranks, lobby stability and retained data
+
+`ui05/guild_commands_01` selects the bare-name promotion slash command but submits
+no rank request. The visible Classic member button in `guild_commands_02` does
+submit `CMSG_GUILD_PROMOTE_MEMBER`: the backend changes rank 4 to 3, while the
+initiating client's roster stays at 4. Its legacy name-only promotion event has
+no translation. The bridge now resolves the event's two public character identities
+and its guild rank, then emits `SMSG_GUILD_SEND_RANK_CHANGE`. Removal events retain
+both the removed member and removing officer. The full regression passes 358 tests;
+19 selected guild tests pass under ASan/UBSan. Live qualification follows deployment.
+
+`ui05/guild_information_empty_01` repeats the empty-information save with a 150 ms
+mouse press. The dialog closes without an information update packet, the native
+text remains unchanged, and the fixture is restored. Empty information remains
+unqualified. Reproduce it with `interaction_guild_notes --empty-information`; the
+normal note/information trial continues to use a reversible nonempty baseline.
+
+The first event-adapter reconnect attempts expire at character selection before
+entering world. Modern pings were answered locally while the native socket waited
+120 seconds for traffic. Realm pings now reach the native session; instance pings
+are not duplicated onto that connection. Native pongs are consumed separately
+from the modern latency acknowledgement. `interaction_lobby_idle` checks owned
+character selection through a 165-second window and requires native pongs beyond
+the original idle deadline. `lobby_idle_01` passes with five native ping/pong pairs
+and an intact character-selection screen after the window. The latest full
+regression still passes 358 tests; 25 selected guild/logout/login-barrier tests
+pass under ASan/UBSan. Loading/timeout fixture failures remain in the batch.
+
+The remote-verified UI04 archive and its exact shared-cache object are evicted. Its
+373 raw PNG frames (767,831,220 bytes) are removed only after hash/manifest checks;
+local receipt metadata occupies about 1.8 MiB. New trials keep one frame per identical
+observed control page within each episode and retain the exact controls in receipts.
+Every distinct page and the case before/after screenshots remain attributable.
