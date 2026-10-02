@@ -61,7 +61,7 @@ local function bindings(first,count)
     return rows
 end
 local function snapshot()
-    local data={mode=mode,build=tonumber(select(2,GetBuildInfo())),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
+    local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     data.panels={};data.controls={};data.bags={}
