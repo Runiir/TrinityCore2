@@ -22,6 +22,9 @@ def suite(trial):
     require(click_case(trial,'keybindings.open','Open the Keybindings options category.',lambda c:c['text']=='Keybindings',
         lambda b,a,s:{'status':'panel_open_pass' if s and 'SettingsPanel' in a['panels'] else 'controller_failure'}),'panel_open_pass')
     rows=controls(trial);(trial.out/'keybinding_controls.json').write_text(json.dumps(rows,indent=2)+'\n')
+    require(click_case(trial,'keybindings.miscellaneous','Expand Miscellaneous keybindings.',lambda c:c['text']=='Miscellaneous',
+        lambda b,a,s:{'status':'panel_open_pass' if s and 'SettingsPanel' in a['panels'] else 'controller_failure'}),'panel_open_pass')
+    rows=controls(trial);(trial.out/'miscellaneous_controls.json').write_text(json.dumps(rows,indent=2)+'\n')
 
 
 def main():
