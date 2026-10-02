@@ -13,7 +13,7 @@ def test_local_realm_lookup_and_unknown_realm(codec):
     actual,normalized=r.bits(8),r.bits(8);r.align()
     assert r.raw(actual)==b'Client442 Lab';assert r.raw(normalized)==b'Client442Lab';r.end()
     assert result(codec,op='realm_name',body=struct.pack('<I',2).hex())=='0200000001'
-    assert 'error' in result(codec,op='realm_name',body='0100')
+    assert 'error' in codec(op='realm_name',body='0100')
 
 
 def call(codec,fn,name,body,**kwargs):
