@@ -54,6 +54,19 @@ class Inputs:
     def move(self,*args,**kwargs):return self.invoke('move',*args,**kwargs)
     def type(self,*args,**kwargs):return self.invoke('type',*args,**kwargs)
 
+    def drag(self,start,end,button=1,duration=.5):
+        if button not in [1,3] or not .2<=duration<=2 or any(
+            not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
+            raise ValueError('drag exceeds the owned client input bounds')
+        with lease():
+            focus();self.raw.move(*start);time.sleep(.1)
+            self.raw._send(self.raw.X.ButtonPress,button)
+            try:
+                for i in range(1,11):
+                    self.raw.move(round(start[0]+(end[0]-start[0])*i/10),round(start[1]+(end[1]-start[1])*i/10))
+                    time.sleep(duration/10)
+            finally:self.raw._send(self.raw.X.ButtonRelease,button)
+
 
 def focus():
     with lease():return _focus()

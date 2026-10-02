@@ -5,6 +5,10 @@ from pathlib import Path
 import time
 from .interaction_trial import Trial
 from .interaction_operations import controls,point,click_case
+from . import actors,lab_runtime as lab
+from .observation.journal import entries
+from .world.buffer import Reader
+from .world.native_objects import guid as native_guid
 
 NAME='TC442Test'
 BODY='/cast Battle Shout'
@@ -39,13 +43,14 @@ def require(row,status):
 def suite(trial):
     trial.clean_panels()
     initial,_=trial.observe('macro_fixture')
-    if initial.get('test_macro') or initial.get('macros')!=[0,0]:
+    if initial.get('test_macro') or initial.get('macros')!=[0,0] or initial.get('action_probe',{}).get('kind'):
         raise RuntimeError('macro trial requires its empty disposable account fixture')
+    trial.receipt['macro_fixture']=initial;trial.persist()
     row=trial.step('macros.open','Open the macro editor.',{
         'a':{'kind':'chat','value':'/macro','description':'Type /macro to open the macro editor.'},
         'b':{'kind':'key','value':'c','description':'Press C to open equipment.'},
         'c':{'kind':'key','value':'o','description':'Press O to open friends.'}},
-        lambda b,a,s:{'status':'panel_open_pass' if 'MacroFrame' in a['panels'] else 'controller_failure'})
+        lambda b,a,s:{'status':'panel_open_pass' if 'MacroFrame' in a['panels'] else 'controller_failure'},diagnostic_action='a')
     require(row,'panel_open_pass')
     row=click_case(trial,'macros.create_dialog','Create a new macro.',lambda c:c['name']=='MacroNewButton',
         lambda b,a,s:{'status':'panel_open_pass' if 'MacroPopupFrame' in a['panels'] else 'controller_failure'})
@@ -56,14 +61,41 @@ def suite(trial):
     require(edit_case(trial,'macros.body','Set the macro commands to '+BODY+'.',lambda c:c['name']=='MacroFrameText',BODY),'ui_edit_pass')
     require(click_case(trial,'macros.save','Save the edited macro commands.',lambda c:c['name']=='MacroSaveButton',
         lambda b,a,s:{'status':'macro_save_pass' if body_matches(a) else ('controller_failure' if not s else 'client_or_protocol_failure')}),'macro_save_pass')
+    rows=controls(trial);source=next(c for c in rows if c['name']=='MacroFrameSelectedMacroButton')
+    state,_=trial.observe('macro_bar_fixture');p=state['action_probe']['point'];destination=[round(p[0]/65535*1280),round(p[1]/65535*720)]
+    require(trial.step('macros.drag_to_bar','Drag the selected test macro onto the empty last action button.',{
+        'drag':{'kind':'drag','start':point(source),'end':destination,'description':'Drag the selected macro icon onto the empty last action-bar button.'},
+        'escape':{'kind':'key','value':'Escape','description':'Close the macro editor.'},
+        'click':{'kind':'click','value':point(source),'description':'Click the selected macro icon without dragging it.'}},
+        lambda b,a,s:{'status':'macro_bar_pass' if a['action_probe'].get('kind')=='macro' and a['action_probe'].get('macro')==NAME else
+            ('controller_failure' if s!='drag' else 'client_or_protocol_failure')},diagnostic_action='drag'),'macro_bar_pass')
     trial.clean_panels()
     require(trial.step('macros.reload','Reload the interface to check that the saved macro survives.',{
         'a':{'kind':'chat','value':'/reload','description':'Type /reload to reload the interface.'},
         'b':{'kind':'chat','value':'/macro','description':'Type /macro to open the macro editor.'},
         'c':{'kind':'key','value':'Escape','description':'Press Escape to open the game menu.'}},
         lambda b,a,s:{'status':'macro_reload_pass' if s=='a' and body_matches(a) else ('controller_failure' if s!='a' else 'client_or_protocol_failure'),
-            'oracle':{'macro_body_matches':body_matches(a),'normalization':'ignore trailing CR/LF only'}}),'macro_reload_pass')
+            'oracle':{'macro_body_matches':body_matches(a),'normalization':'ignore trailing CR/LF only'}},diagnostic_action='a'),'macro_reload_pass')
+    session=actors.session_entry(trial.fixture)['session'];since=time.time()
+    require(trial.step('macros.execute','Click the test macro action button to cast Battle Shout.',{
+        'cast':{'kind':'click','value':destination,'description':'Click the action-bar button containing TC442Test to cast Battle Shout.'},
+        'spellbook':{'kind':'key','value':'p','description':'Open the spellbook.'},
+        'character':{'kind':'key','value':'c','description':'Open equipment.'}},
+        lambda b,a,s:cast_oracle(trial,session,since,s),diagnostic_action='cast'),'macro_execute_pass')
     cleanup(trial)
+
+
+def cast_oracle(trial,session,since,selected):
+    completions=[];failures=[]
+    for row in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+        if row.get('session')!=session or row.get('time',0)<since or row.get('direction')!='from_native':continue
+        if row.get('name')=='SMSG_SPELL_GO':
+            r=Reader(bytes.fromhex(row['body']));caster=native_guid(r);native_guid(r);counter,spell=r.unpack('Bi')
+            if caster==trial.fixture['guid'] and spell==6673:completions.append({'time':row['time'],'caster':caster,'spell':spell,'counter':counter})
+        elif row.get('name')=='SMSG_CAST_FAILED':failures.append(row)
+    return {'status':'macro_execute_pass' if selected=='cast' and completions and not failures else
+        ('controller_failure' if selected!='cast' else 'client_or_protocol_failure'),
+        'oracle':{'session':session,'native_cast_completions':completions,'native_failures':failures}}
 
 
 def cleanup(trial):
@@ -74,17 +106,23 @@ def cleanup(trial):
     rows=controls(trial);button=next(c for c in rows if c['name']=='StaticPopup1Button1' and c['text']=='Okay')
     trial.execute({'kind':'click','value':point(button)})
     state,_=trial.observe('deleted_macro')
-    if state.get('macros')!=[0,0]:raise RuntimeError('macro cleanup failed')
+    if state.get('macros')!=[0,0] or state['action_probe'].get('kind'):raise RuntimeError('macro cleanup failed')
     trial.receipt['cleanup'].append({'time':time.time(),'source':'code_fixture_cleanup','deleted_macro':NAME,'macros_after':state['macros']})
     trial.clean_panels()
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    trial=Trial(a.output)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--controller',choices=['laya','code'],default='laya');a=p.parse_args()
+    trial=Trial(a.output,a.controller)
     try:suite(trial);trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
+        if trial.receipt.get('macro_fixture'):
+            try:
+                state,_=trial.observe('final_macro_check')
+                if state.get('test_macro'):cleanup(trial)
+            except Exception as e:trial.receipt['cleanup_failure']=str(e);trial.receipt['completed']=False
         trial.receipt['finished_at']=time.time();trial.persist()
         print(json.dumps({'completed':trial.receipt['completed'],'failure':trial.receipt['failure']}))
 

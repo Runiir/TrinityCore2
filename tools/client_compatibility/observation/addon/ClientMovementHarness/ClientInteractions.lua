@@ -207,6 +207,9 @@ local function snapshot(viewMode,viewPage)
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
+    data.guild_ui={classic=call(GetCVarBool,'useClassicGuildUI'),in_guild=call(IsInGuild),
+        trial=call(IsTrialAccount),veteran_trial=call(IsVeteranTrialAccount),
+        clubs_enabled=call(C_Club and C_Club.IsEnabled),bn_connected=call(BNConnected)}
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.fps_keys={call(GetBindingKey,'TOGGLEFPS')}
     data.keybind_listening=KeybindListener and KeybindListener.pending and
@@ -229,6 +232,15 @@ local function snapshot(viewMode,viewPage)
     local slot=actionButton and actionButton.action or 12
     local kind,id=call(GetActionInfo,slot)
     data.action_probe={slot=slot,kind=kind,id=id,macro=kind=='macro' and call(GetMacroInfo,id) or nil}
+    if actionButton then local x,y=actionButton:GetCenter()
+        data.action_probe.point={math.floor(x*actionButton:GetEffectiveScale()/width*65535),
+            math.floor((1-y*actionButton:GetEffectiveScale()/height)*65535)}
+    end
+    data.buffs={}
+    for i=1,20 do local aura=call(C_UnitAuras and C_UnitAuras.GetBuffDataByIndex,'player',i)
+        if not aura then break end
+        data.buffs[#data.buffs+1]=aura.spellId
+    end
     return data
 end
 local function append(bytes,value,n)

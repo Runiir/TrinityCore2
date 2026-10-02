@@ -119,6 +119,7 @@ class Trial:
             elif action['kind']=='click':self.io.click(*action['value'],button=action.get('button',1))
             elif action['kind']=='edit':
                 self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
+            elif action['kind']=='drag':self.io.drag(action['start'],action['end'])
             else:raise ValueError('unsupported physical action')
         time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
         transport=[]
