@@ -316,7 +316,8 @@ over Cataclysm's eight. `Client442Compatibility` supplies the missing two stock-
 widgets for build 60895. It is separate from the read-only observation addon and does
 not send gameplay commands. `lab_runtime prepare-client` installs it in the private
 client. Restart the game when first installing a new addon; subsequent file updates
-can use ordinary `/reload`. A corrected build guard handles Lua's multiple return
+can use ordinary `/reload`. **This version 1 repair was later removed because it
+taints protected guild controls; see the live rank qualification below.** A corrected build guard handles Lua's multiple return
 values. `guild_tabs_reload_fixture` verifies the active eight-tab repair and no Lua
 errors on both clients. Receipts record the compatibility addon's file hash.
 
@@ -391,6 +392,28 @@ no translation. The bridge now resolves the event's two public character identit
 and its guild rank, then emits `SMSG_GUILD_SEND_RANK_CHANGE`. Removal events retain
 both the removed member and removing officer. The full regression passes 358 tests;
 19 selected guild tests pass under ASan/UBSan. Live qualification follows deployment.
+
+`ui05/guild_commands_03` and `_04` verify promotion on both clients but fail the
+next demotion attempt behind an addon-blocked popup. The flushed client taint log
+attributes the failure to the compatibility addon's named bank tabs: stock
+`GuildControlPopupFrame_Initialize` reads those globals and blocks
+`GuildControlSetRank`. Version 2 removes widget creation and observes the mismatch
+without modifying stock globals. The read-only UI observer now retains
+`ADDON_ACTION_BLOCKED` and `ADDON_ACTION_FORBIDDEN` events.
+
+`guild_commands_05` then passes promotion, demotion and peer guild chat, but the
+runner expects the wrong removal confirmation caption. Its captured dialog says
+"Yes". The corrected `guild_commands_06` passes promotion and demotion with native
+ranks, the initiating roster and the peer's own rank; guild chat reaches both
+clients; confirmed removal removes native membership and both client rosters.
+Cleanup restores the unguilded scout and both UI preferences. No addon action is
+blocked. `ui_clean=false` remains explicit: the stock missing-bank-tab Lua error
+still occurs. Guild rank/bank controls are open requirements, and the earlier
+control-window visibility pass does not qualify their protected actions.
+
+The built-in Communities path was also checked with `useClassicGuildUI 0`; it
+opens no panel while this lab's Battle.net club services are disabled. It does not
+replace the local Classic guild window. No protected-action check was bypassed.
 
 `ui05/guild_information_empty_01` repeats the empty-information save with a 150 ms
 mouse press. The dialog closes without an information update packet, the native

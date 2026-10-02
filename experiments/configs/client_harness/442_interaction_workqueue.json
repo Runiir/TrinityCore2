@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Guild promotion demotion permissions removal and disband, then nearby-player services",
+  "current": "Nearby-player visibility movement inspect trade and follow; retain guild client-resource mismatch and rank/bank permissions as open requirements",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -42,7 +42,14 @@
     "ui03/crafting_04: Laya recipe search/select and one/two crafts, native/UI reagent-product accounting and restored fixture",
     "ui03/lifecycle_06: cancel, completed logout, reentry, peer offline/online and equipment/group/profile restoration",
     "ui04/guild_membership_02: invite decline accept two rosters MOTD peer delivery leave and restored fixture",
-    "ui04/guild_notes_02: separate public/officer columns nonempty information save/refresh control open self guild/officer chat and restored fixture"
+    "ui04/guild_notes_02: separate public/officer columns nonempty information save/refresh control open self guild/officer chat and restored fixture",
+    "ui05/guild_commands_06: native/client promotion and demotion, peer guild chat and removal; stock missing-tab Lua errors remain, ui_clean=false"
   ],
-  "unqualified": "Everything without an evidence-linked case and oracle remains pending."
+  "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
+  "open_failures": [
+    "Guild Control: 60895 Classic XML defines six bank tabs while Lua loops over eight; addon-created globals taint GuildControlSetRank, so that repair was removed.",
+    "Empty guild information save submits no client packet.",
+    "Bare-name promotion slash command submits no client packet; visible promotion button is qualified.",
+    "Guild rank/bank permission mutations and remaining guild operations are pending."
+  ]
 }
