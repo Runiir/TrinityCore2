@@ -21,6 +21,13 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
 local errors={}
+local luaErrors={}
+local priorErrorHandler=geterrorhandler()
+seterrorhandler(function(message)
+    luaErrors[#luaErrors+1]=tostring(message):sub(1,300)
+    if #luaErrors>3 then table.remove(luaErrors,1) end
+    if priorErrorHandler then return priorErrorHandler(message) end
+end)
 local function call(fn,...)
     if type(fn)~='function' then return nil end
     local ok,a,b,c,d,e,f,g=pcall(fn,...)
@@ -102,7 +109,7 @@ end
 local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
-        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
+        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,observer_version=2}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),

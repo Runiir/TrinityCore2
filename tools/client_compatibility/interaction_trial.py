@@ -79,6 +79,7 @@ class Trial:
         self.fixture=actors.load();self.guid=f"Player-1-{self.fixture['guid']:08X}"
         self.io=owned_input.Inputs();self.rng=random.Random(44260895)
         self.receipt={'schema':'client442_laya_interactions_v1','started_at':time.time(),'actor':self.fixture,
+            'observer_file_sha256':lab.sha256(lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness/ClientInteractions.lua'),
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
             'controller':'laya_candidate_selection','model':MODEL,'revision':REVISION,'fine_tuned':False,
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
