@@ -1,5 +1,5 @@
 """Ordinary guild note, information, chat and control UI with native oracles."""
-import argparse,json,time
+import argparse,hashlib,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -68,19 +68,21 @@ def suite(trial):
         lambda b,a,s:{'status':'guild_roster_pass' if s=='guild' and 'GuildFrame' in a['panels'] and not a['lua_errors'] else
             ('controller_failure' if s!='guild' else 'client_or_protocol_failure')},diagnostic_action='guild'),'guild_roster_pass')
     for key in ['public','officer']:note(trial,key,'TC442UI:'+key)
+    info='TC442UI:info_'+hashlib.sha256(str(trial.out).encode()).hexdigest()[:8]
+    if info==baseline[3]:raise RuntimeError('information probe must differ from its baseline')
     trial.clean_panels();trial.execute({'kind':'key','value':'j'})
     require(click_case(trial,'guild.information','Open guild information.',lambda c:c['name']=='GuildFrameGuildInformationButton',
         lambda b,a,s:{'status':'panel_open_pass' if s and 'GuildInfoFrame' in a['panels'] else
             ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
-    require(edit_case(trial,'guild.information_text','Set guild information to TC442UI:info.',
-        lambda c:c['name']=='GuildInfoEditBox','TC442UI:info'),'ui_edit_pass')
+    require(edit_case(trial,'guild.information_text','Set guild information to '+info+'.',
+        lambda c:c['name']=='GuildInfoEditBox',info),'ui_edit_pass')
     require(click_case(trial,'guild.information_save','Save guild information.',lambda c:c['name']=='GuildInfoSaveButton',
-        lambda b,a,s:{'status':'guild_info_native_pass' if s and native(trial)[3]=='TC442UI:info' else
+        lambda b,a,s:{'status':'guild_info_native_pass' if s and native(trial)[3]==info else
             ('controller_failure' if not s else 'client_or_protocol_failure'),
             'oracle':{'native_info':native(trial)[3],'qualified_scope':'saved information; refreshed visible value checked next'}}),'guild_info_native_pass')
     trial.clean_panels();trial.execute({'kind':'key','value':'j'});state,frame=trial.observe('information_refreshed')
     row={'id':'guild.information_refresh','time':time.time(),'selection_source':'read_only_native_oracle',
-         'status':'guild_info_visible_pass' if state['guild_ui']['info']=='TC442UI:info' else 'client_or_protocol_failure',
+         'status':'guild_info_visible_pass' if state['guild_ui']['info']==info else 'client_or_protocol_failure',
          'oracle':{'native_info':native(trial)[3],'visible_info':state['guild_ui']['info']},'frame':frame}
     trial.receipt['cases'].append(row);trial.persist();require(row,'guild_info_visible_pass')
     require(click_case(trial,'guild.control','Open guild control.',lambda c:c['name']=='GuildFrameControlButton',
@@ -114,8 +116,10 @@ def cleanup(trial):
         trial.execute({'kind':'click','value':point(next(c for c in controls(trial) if c['name']=='GuildInfoSaveButton'))})
     trial.clean_panels();trial.execute({'kind':'chat','value':'/console useClassicGuildUI '+str(int(trial.receipt['classic_baseline']))})
     state,frame=trial.observe('restored');matches=native(trial)==tuple(baseline) and state['guild_ui']['classic']==trial.receipt['classic_baseline']
-    trial.receipt['restoration']={'matches':matches,'guild':state['guild_ui'],'frame':frame};trial.persist()
-    if not matches:raise RuntimeError('guild baseline restoration failed')
+    trial.receipt['restoration']={'matches':matches,'native':native(trial),'guild':state['guild_ui'],'frame':frame};trial.persist()
+    if not matches:
+        if baseline[3]=='':raise RuntimeError('empty guild information was not submitted by the client; disposable guild teardown remains required')
+        raise RuntimeError('guild baseline restoration failed')
 
 
 if __name__=='__main__':
