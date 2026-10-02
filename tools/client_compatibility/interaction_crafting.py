@@ -9,6 +9,7 @@ from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
+from .interaction_fixture_permissions import item_fixture_permission
 
 NAME='Potion of Deepholm';SPELL=80725;PRODUCT=58487;REAGENTS={52986:5,3371:1}
 
@@ -71,7 +72,8 @@ def suite(trial):
     try:
         fixture_command(trial,'/cleartarget','GM fixture commands must target the owned actor')
         for item,need in REAGENTS.items():fixture_command(trial,f'.additem {item} {need*3}','reagents for one craft and a two-craft batch')
-        state,_=trial.observe('reagents_prepared');native=counts(oracle)
+        state,frame=trial.observe('reagents_prepared');native=counts(oracle)
+        trial.receipt['reagent_fixture']={'native':native,'visible':state.get('crafting_probe'),'frame':frame};trial.persist()
         if any(native[str(i)]!=need*3 or state.get('crafting_probe',{}).get('counts',{}).get(str(i))!=need*3 for i,need in REAGENTS.items()):raise RuntimeError('native and visible reagent fixture disagree')
         require(trial.step('professions.open','Open professions and skills.',{
             'skills':{'kind':'key','value':'k','description':'Press K to open professions and skills.'},
@@ -98,7 +100,9 @@ def suite(trial):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args();trial=Trial(a.output)
-    try:suite(trial);trial.receipt['completed']=True
+    try:
+        with item_fixture_permission(trial):suite(trial)
+        trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:trial.receipt['finished_at']=time.time();trial.persist();print(json.dumps({'completed':trial.receipt['completed'],'failure':trial.receipt['failure']}))
 
