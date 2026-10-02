@@ -163,12 +163,12 @@ int main(int argc, char **argv)
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "guild_update")
                     result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed"),
-                        get(request,"visibility").is_null()?1:integer(get(request,"visibility"))));
+                        request.as_object().contains("visibility")?integer(get(request,"visibility")):1));
                 else if (op == "unit_update")
                     result = hex(protocol.scalar_block(get(request, "snapshot"),get(request,"character"),get(request,"changed"),integer(get(request,"visibility"))));
                 else if(op=="inventory_update")
                     result=hex(protocol.inventory_block(get(request,"snapshot"),get(request,"changed"),
-                        get(request,"visibility").is_null()?1:integer(get(request,"visibility"))));
+                        request.as_object().contains("visibility")?integer(get(request,"visibility")):1));
                 else if(op=="item_update")
                     result=hex(protocol.item_update(get(request,"snapshot"),get(request,"changed")));
                 else if (op == "object_block")
@@ -301,7 +301,8 @@ int main(int argc, char **argv)
                             else if (fn == "movement_ack")
                                 reply = protocol.movement_ack(state, name, body);
                             else if (fn == "object_updates")
-                                reply = protocol.object_updates(state, body,get(request,"players").as_array());
+                                reply = protocol.object_updates(state, body,get(request,"players").is_array()?
+                                    get(request,"players").as_array():Array{});
                             else if (fn == "transfer_response")
                                 reply = Protocol::transfer_response(state, name, body);
                             else if (fn == "transfer_request")

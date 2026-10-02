@@ -8,7 +8,7 @@ Bytes Protocol::public_player_block(Value const &snapshot,Value const &character
     if(!guid || guid>0xffffffff || integer(get(snapshot,"kind"))!=4 ||
         truth(get(get(snapshot,"flags"),"self")) || integer(get(character,"guid"))!=guid ||
         name.empty() || name.size()>63 || name.find('\0')!=std::string::npos ||
-        get(character,"gender").is_null() || integer(get(character,"gender"))>1)
+        !character.as_object().contains("gender") || integer(get(character,"gender"))>1)
         throw std::runtime_error("invalid visible player profile");
     auto const &move=get(snapshot,"movement");Writer w;
     // Player, not ActivePlayer: no owner movement extras or private field root.

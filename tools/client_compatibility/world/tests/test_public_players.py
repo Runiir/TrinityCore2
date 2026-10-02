@@ -82,7 +82,7 @@ def test_native_visibility_create_update_remove_bounds_selection(codec):
         ('object_updates','SMSG_UPDATE_OBJECT',change),('object_updates','SMSG_UPDATE_OBJECT',removed),
         ('combat_request','CMSG_SET_SELECTION',selected)]
     args={'op':'stateful','character':{'guid':1,'name':'Harnessone','gender':0,'map':0},
-        'snapshot':{'guid':1,'kind':4,'map':0,'fields':{}},'players':[PROFILE],
+        'snapshot':{'guid':1,'kind':4,'map':0,'fields':{}},'players':[PROFILE],'units':[],'gameobjects':[],
         'actions':[{'fn':fn,'name':name,'body':body.hex()} for fn,name,body in actions]}
     replies=result(codec,**args)
     assert replies[0][0]=='SMSG_UPDATE_OBJECT'
