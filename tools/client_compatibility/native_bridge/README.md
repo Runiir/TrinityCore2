@@ -36,11 +36,24 @@ sessions and verified HDMI-1 windows. Both launcher SSO and username/password wo
 entry passed. Gear preview, bags, professions, Survey cast bars, mount/flight and
 console fixture transfers were also observed through the native service.
 
-The latest authentication/world suite passed 230 tests. All 23 codec differential
-tests passed ASan/UBSan after repairing a profession-JSON lifetime error found by
-the sanitizer. Real clients exposed a dense update that expanded beyond 64 KiB;
+The latest authentication/world suite passed 277 tests. All 54 selected packet and
+codec tests passed ASan/UBSan. The initial migration's 23 differential tests found
+and repaired a profession-JSON lifetime error. Real clients exposed a dense update that expanded beyond 64 KiB;
 the outbound limit now accommodates it while retaining the stricter incoming limit.
 The earlier failed receipts are retained alongside the passing runs.
+
+Party member snapshots, compact raid-frame profiles, assistant permissions and
+role polls now translate both ways. Native partial member updates accumulate into
+bounded, complete modern snapshots without invented health values. In-range other
+player object creation and movement still need implementation and qualification.
+
+The native five ground markers use the existing worldserver spell handlers.
+Their destinations and native dynamic-object positions feed the modern eight-slot
+marker packet. Markers 6–8 are group annotations owned by this C++ endpoint; no
+native spell outcome is claimed for them. Placement requires normal group
+permissions and a valid ground destination. The extra annotations use a 100-yard
+range check. Transport-relative placement and reconnect persistence are unqualified.
+See the [interaction report](../../../docs/client_harness/interactions_20261002.md).
 
 ## Independent build and parity checks
 

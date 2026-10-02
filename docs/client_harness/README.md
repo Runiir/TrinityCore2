@@ -17,7 +17,10 @@ The harness also records screenshots and decodes normal addon-visible state. The
 heads do not perform general screenshot reasoning or supply a questing policy.
 The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
 historical receipts remain on disk. New cohort runs use diagnostic tasks until a
-current controller adapter is attached.
+current controller adapter is attached. The user's explicit October 2 interaction
+test request uses the retained base Laya endpoint at `127.0.0.1:8000` for bounded
+normal-input choices. That exception is recorded in each run; it does not change
+the standing controller policy for other experiments.
 Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A code-driven native-bridge
 trial completed one such flight and then recovered a Dwarf artifact for eight
@@ -28,11 +31,13 @@ The world packet bridge now runs as a separate C++20 service and is the default.
 Its optimized build passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
-HDMI-1. The latest suite passed 230 tests, including 23 native codec differential
-tests; those codec tests also passed ASan/UBSan. Python still handles modern
+HDMI-1. The latest suite passed 277 tests. Its 54 packet and codec tests also passed
+ASan/UBSan. Python still handles modern
 authentication, supervision, observations and diagnostic decisions. The bridge
 does not embed Python or call the Python world translator.
 See [the native bridge notes](../../tools/client_compatibility/native_bridge/README.md).
+The [October 2 interaction report](interactions_20261002.md) records the later
+group-frame, role and marker repairs, individual qualifications and remaining gaps.
 
 ## Endpoints and restart
 
@@ -44,6 +49,7 @@ See [the native bridge notes](../../tools/client_compatibility/native_bridge/REA
 | Modern authentication TLS / REST | `127.0.0.1:1119` / `18081` |
 | Modern world bridge | `127.0.0.1:18087` |
 | Historical archaeology / travel heads; unused in new runs | `127.0.0.1:8002` / `8003` |
+| Explicit October 2 interaction trial, base Laya | `127.0.0.1:8000` |
 
 Inspect ownership before starting services. Start only missing owned components.
 Run Python commands with Pixi from this checkout:
