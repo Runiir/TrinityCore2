@@ -444,3 +444,43 @@ The remote-verified UI04 archive and its exact shared-cache object are evicted. 
 local receipt metadata occupies about 1.8 MiB. New trials keep one frame per identical
 observed control page within each episode and retain the exact controls in receipts.
 Every distinct page and the case before/after screenshots remain attributable.
+
+## Nearby players, movement and follow
+
+`ui06/nearby_players_01` receives native nonself player creations on both sessions,
+but neither modern client can target its peer. The bridge discarded native kind-4
+creations for other players. Public players now use Object, Unit and Player roots,
+with visible gear and no private inventory, skills, currency, XP or owner-only stats.
+Sparse equipment changes retain that public visibility, and removal revokes target
+authority. `nearby_players_02` passes normal name targeting on both clients; retained
+screenshots show the level-1 scout and the geared level-85 primary correctly.
+
+Native `SMSG_MOVE_UPDATE` was also ignored, leaving peers at their original positions.
+Its pinned native bit sequence now translates positions, orientation, timestamp,
+pitch and fall data for currently visible players. It never updates the owner's
+movement state. Public transport motion remains unqualified. The modern layout is
+checked against TrinityCore revision `6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2`'s
+[movement serializer](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/MovementPackets.cpp).
+
+`ui06/public_follow_02` passes Laya's bounded strafe, follow and stop-follow choices.
+The primary moves 8.4 yards, the scout observes the matching new target position,
+and 11 native movement updates have 11 modern outgoing counterparts. Both original
+positions and the temporary private teleport rows are restored. The earlier
+`public_follow_01` passes those physical outcomes but its final check uses the wrong
+outgoing journal direction; that failed receipt remains. Both clients stay on HDMI-1,
+and the native worldserver PID/start identity is unchanged throughout the batch.
+
+The accepted regression passes 372 tests, with 29 selected public-player, guild,
+inventory and stat tests passing under ASan/UBSan. Earlier public-player test failures
+remain in UI06: a fixture omitted required arrays, and the diagnostic codec lacked
+the production selection adapter. Both were corrected before live deployment.
+Two journal tests qualify lookup of the latest owned session across rotations and
+an incomplete trailing record. Inspect, trade and broader movement cases remain open.
+
+UI05 is checkpointed as `442_interactions_20261002_06.tar.gz.dvc`. Its 251 raw PNGs
+(520,651,133 bytes) were verified and removed after remote synchronization; the
+workspace archive and its exact shared-cache object were also evicted. The journal
+cleanup checkpoints 75 immutable rotations, preserving 634,367,981 raw bytes remotely
+before removing them locally. Active journals, recent rotations, current-batch
+evidence, game data and useful build caches remain available. Session lookup now
+starts with the newest rotation instead of decoding the whole historical journal.
