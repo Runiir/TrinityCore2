@@ -21,7 +21,7 @@ def native_catalog(t):
                 row.get('name') != 'SMSG_TRAINER_LIST' or not row.get('body')):
             continue
         data = bytes.fromhex(row['body']); guid, kind, trainer, count = struct.unpack_from('<QIII', data)
-        if (guid >> 32) & 0xffffff != 5499:
+        if (guid >> 32) & 0xfffff != 5499:
             continue
         states = Counter(data[20 + index * 34 + 4] for index in range(count))
         found = {'guid': guid, 'type': kind, 'trainer': trainer, 'count': count,
