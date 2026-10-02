@@ -32,7 +32,8 @@ Packet Protocol::cast_request(State &owner, View body) const
     auto target_flags = r.bits(28);
     auto source = r.bits(1), dest = r.bits(1), orientation = r.bits(1), map = r.bits(1), name_len = r.bits(7);
     auto unit = r.guid(), item = r.guid();
-    bool marker=spell>=84996 && spell<=85000 && target_flags==64;
+    bool extra_marker=spell>=171555 && spell<=171557 && target_flags==64;
+    bool marker=((spell>=84996 && spell<=85000) || extra_marker) && target_flags==64;
     Array destination;
     if(marker)
     {
@@ -68,6 +69,7 @@ Packet Protocol::cast_request(State &owner, View body) const
         auto state = movement_parse(r.raw(r.remaining()), owner.guid());
         auto [name, encoded] = movement_encode("CMSG_MOVE_HEARTBEAT", owner.guid(), state);
         owner.native_send(name, encoded);
+        owner.latest_movement=get(state,"position").as_array();
     }
     r.end();
     if (spell <= 0 || integer(cast[1]) >> 58 != 47 || (flags & (marker ? 2 : 10)))
@@ -80,6 +82,8 @@ Packet Protocol::cast_request(State &owner, View body) const
                                              {"spell", spell},
                                              {"visual", visual},
                                              {"native_target", target}};
+    if(extra_marker)owner.casts[owner.cast_counter].as_object()["extra_marker"]=Object{
+        {"slot",spell-171550},{"map",owner.map()},{"position",destination}};
     Writer w;
     // 4.4.2 sets bit 3 for these ground clicks with zero weights. In 4.3.4
     // the same bit requires a trailing weight count and would truncate parsing.

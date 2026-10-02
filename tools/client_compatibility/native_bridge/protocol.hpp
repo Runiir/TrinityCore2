@@ -25,6 +25,8 @@ struct State
     Array party_guid{0,0};
     std::unordered_map<std::uint64_t, PartyState> party_states;
     std::unordered_set<std::uint64_t> party_members;
+    std::uint64_t party_leader=0;
+    unsigned party_flags=0, party_member_flags=0;
     std::array<std::uint32_t,17> account_times{};
     Array action_buttons;
     unsigned cast_counter = 0;
@@ -93,6 +95,8 @@ struct Protocol
     static Reply party_roles(std::string const &name, View body);
     static std::vector<Packet> marker_clear(View body);
     Array marker_objects(State const &owner, View body) const;
+    static void marker_permission(State const &owner);
+    Reply extra_marker_go(State &owner) const;
     static Reply account_request(State const &owner, std::string const &name, View body);
     static Reply account_response(State &owner, std::string const &name, View body);
     static Reply achievement_response(State const &owner, std::string const &name, View body);

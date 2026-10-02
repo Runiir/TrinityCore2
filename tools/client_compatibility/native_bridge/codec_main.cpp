@@ -69,6 +69,13 @@ int main(int argc, char **argv)
                     Array output;for(auto const &p:Protocol::marker_clear(data("body")))output.push_back(Array{p.first,hex(p.second)});
                     result=output;
                 }
+                else if(op=="marker_permission")
+                {
+                    State owner;owner.character=Object{{"guid",get(request,"guid")}};owner.created=truth(get(request,"created"));
+                    owner.party_guid=Array{get(request,"group"),0};owner.party_leader=integer(get(request,"leader"));
+                    owner.party_flags=integer(get(request,"flags"));owner.party_member_flags=integer(get(request,"member_flags"));
+                    Protocol::marker_permission(owner);result=true;
+                }
                 else if (op == "object_values")
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "object_block")
@@ -132,6 +139,8 @@ int main(int argc, char **argv)
                         {
                             if (fn == "cast_request")
                                 reply = protocol.cast_request(state, body);
+                            else if(fn=="extra_marker_go")
+                                reply = protocol.extra_marker_go(state);
                             else if (fn == "cast_response")
                                 reply = protocol.cast_response(state, name, body);
                             else if (fn == "cast_prepare")

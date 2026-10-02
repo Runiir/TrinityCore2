@@ -6,13 +6,13 @@ namespace bridge
 {
 void RaidMarkers::mask(unsigned value)
 {
-    if(value&~31u)throw std::runtime_error("unsupported native raid marker mask");
+    if(value&~255u)throw std::runtime_error("unsupported raid marker mask");
     active=value;
-    for(unsigned i=0;i<5;++i)if(!(active&(1u<<i)))locations[i]=nullptr;
+    for(unsigned i=0;i<8;++i)if(!(active&(1u<<i)))locations[i]=nullptr;
 }
 void RaidMarkers::location(unsigned slot,Value const &value)
 {
-    if(slot>=5)throw std::runtime_error("unsupported native raid marker slot");
+    if(slot>=8)throw std::runtime_error("unsupported raid marker slot");
     auto const &position=get(value,"position").as_array();
     if(position.size()!=3 || integer(get(value,"map"))>65535)throw std::runtime_error("invalid raid marker location");
     for(auto const &v:position)if(!std::isfinite(number(v)) || std::abs(number(v))>17066.667)
@@ -22,9 +22,9 @@ void RaidMarkers::location(unsigned slot,Value const &value)
 }
 std::optional<Bytes> RaidMarkers::packet() const
 {
-    for(unsigned i=0;i<5;++i)if((active&(1u<<i)) && locations[i].is_null())return {};
+    for(unsigned i=0;i<8;++i)if((active&(1u<<i)) && locations[i].is_null())return {};
     Writer w;w.put<std::uint8_t>(0).put<std::uint32_t>(active).bits(std::popcount(active),4).flush();
-    for(unsigned i=0;i<5;++i)if(active&(1u<<i))
+    for(unsigned i=0;i<8;++i)if(active&(1u<<i))
         w.guid().put<std::uint32_t>(integer(get(locations[i],"map"))).pack("3f",get(locations[i],"position").as_array());
     return w.finish();
 }
@@ -34,7 +34,7 @@ std::vector<Packet> Protocol::marker_clear(View body)
     std::vector<Packet> packets;
     if(id==8)for(unsigned i=0;i<5;++i)packets.emplace_back("CMSG_CLEAR_RAID_MARKER",Bytes{static_cast<std::uint8_t>(i)});
     else if(id<5)packets.emplace_back("CMSG_CLEAR_RAID_MARKER",Bytes{id});
-    else throw std::runtime_error("raid marker slot has no native equivalent");
+    else if(id>8)throw std::runtime_error("invalid raid marker slot");
     return packets;
 }
 Array Protocol::marker_objects(State const &owner,View body) const

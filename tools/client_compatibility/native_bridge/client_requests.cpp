@@ -22,7 +22,9 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if(name=="CMSG_CLEAR_RAID_MARKER")
     {
         if(!state.created || !active_world)throw std::runtime_error("raid marker request without owned character");
-        for(auto const &packet:Protocol::marker_clear(body))native_send(packet);
+        auto requests=Protocol::marker_clear(body);Protocol::marker_permission(state);
+        if(body[0]>=5)service.markers(owner,{},{},body[0]);
+        for(auto const &packet:requests)native_send(packet);
         return;
     }
     if (auto request = Protocol::account_request(state,name,body))
@@ -233,7 +235,23 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         require_world();
         try
         {
-            native_send(protocol.cast_request(state, body));
+            auto request=protocol.cast_request(state, body);
+            auto const &cast=state.casts.at(state.cast_counter);
+            if(!get(cast,"extra_marker").is_null())
+            {
+                Protocol::marker_permission(state);
+                auto const &location=get(cast,"extra_marker");
+                auto const &position=get(location,"position").as_array();
+                auto const &origin=state.latest_movement.empty() ? get(get(state.self_snapshot,"movement"),"position").as_array() : state.latest_movement;
+                double distance=0;for(unsigned i=0;i<3;++i){auto d=number(position[i])-number(origin.at(i));distance+=d*d;}
+                if(distance>10000)throw std::runtime_error("raid marker is outside the 100-yard placement range");
+                service.markers(owner,{},Array{location});
+                active_world->send("SMSG_SPELL_PREPARE",Writer().guid(get(cast,"guid")).guid(get(cast,"server_guid")).finish());
+                if(auto result=protocol.extra_marker_go(state))active_world->send(*result);
+                service.events.event("compatibility_marker_placed",{{"session",owner.id},{"location",location}});
+                return;
+            }
+            else native_send(request);
             service.events.event("cast_forwarded", {{"session", id}});
         }
         catch (std::exception const &e)

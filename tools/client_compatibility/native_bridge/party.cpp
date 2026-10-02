@@ -60,6 +60,8 @@ Reply Protocol::party_response(State &owner, std::string const &name, View body,
         std::unordered_set<std::uint64_t> roster;
         for (auto const &m : members) roster.insert(integer(get(m,"guid")));
         owner.party_members=roster;
+        owner.party_leader=integer(get(data,"leader"));owner.party_flags=flags;
+        owner.party_member_flags=integer(get(data,"member_flags"));
         std::erase_if(owner.party_states,[&](auto const &item){return !roster.contains(item.first);});
         owner.party_guid = Array{group & 0xffffffff, group ? 27ull<<58 : 0};
         w.pack("HBBi",{flags,0,destroyed ? 0 : 1,destroyed ? -1 : 0}).guid(owner.party_guid)

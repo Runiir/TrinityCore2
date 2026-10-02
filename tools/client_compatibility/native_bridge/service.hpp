@@ -21,7 +21,7 @@ struct Service
     };
     std::mutex markers_mutex;
     std::unordered_map<std::uint64_t,MarkerGroup> marker_groups;
-    void markers(Session &session, std::optional<unsigned> mask={}, Array const &locations={});
+    void markers(Session &session, std::optional<unsigned> mask={}, Array const &locations={},std::optional<unsigned> clear={});
     std::filesystem::path root, repo;
     Protocol protocol;
     PublicData data;
