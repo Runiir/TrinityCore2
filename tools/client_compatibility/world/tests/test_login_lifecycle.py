@@ -8,7 +8,9 @@ def packet(name, body=''):
 
 
 def test_login_world_precedes_early_aura_and_bind_then_preserves_wire_order(codec):
-    early = [packet('SMSG_AURA_UPDATE', '010200'), packet('SMSG_BIND_POINT_UPDATE', '00'*20)]
+    # Captured native initialization for the owned Northshire fixture.
+    early = [packet('SMSG_AURA_UPDATE', '01020000000000'),
+             packet('SMSG_BIND_POINT_UPDATE', '484a0bc6b4e805c35b13a1420000000009000000')]
     world = packet('SMSG_LOGIN_VERIFY_WORLD', '00'*20)
     out = result(codec, op='login_barrier', actions=[dict(fn='begin'), *early, world,
                  packet('SMSG_UPDATE_OBJECT', '010203')])

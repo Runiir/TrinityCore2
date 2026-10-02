@@ -238,6 +238,9 @@ Task<> Session::gameplay(std::string name, Bytes body)
         this->send(name, Bytes{0});
         finish_logout(state);
         world.reset();
+        // A logout retires the instance socket; the realm socket stays open.
+        // Leaving it alive makes the client reject the next RESUME_COMMS.
+        instance->channel->close();
     }
     else if (name == "SMSG_LOGOUT_RESPONSE")
     {

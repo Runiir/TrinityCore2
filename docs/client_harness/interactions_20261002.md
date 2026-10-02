@@ -149,10 +149,34 @@ then deletes it. This is a code fixture check, not a model/UI reconnect pass.
 `crafting_03` prepared matching native/UI reagent counts but stopped when Laya
 selected Tab instead of typing the recipe search. It attempted no craft and
 restored zero reagent/product counts and the temporary permission. The clarified
-search goal is being replayed. Earlier `crafting_01` used an unsuitable general
+search goal passes in `crafting_04`: recipe search and selection, one craft, then
+a two-craft batch. Native spell completions and native/UI reagent and product
+counts agree. Cleanup restores the original zero counts and temporary permission.
+Craft cancellation, filters, recipe learning and skill gains remain open.
+Earlier `crafting_01` used an unsuitable general
 `IsSpellKnown` recipe oracle; learned recipes now come from the native spell
 catalog and normal visible recipe links. `crafting_02` stopped because its chat
 fixture commands were not translated. Neither counts as a successful craft.
+
+The logout trials retain their failures. `lifecycle_01` used the wrong installed
+button caption. `lifecycle_02` cancelled correctly but final character-cache writes
+after native logout disconnected the realm. The bridge now retains the last owned
+cache identity while refusing gameplay and unrelated character cache requests.
+`lifecycle_03` used an invalid measurement of omitted native zero fields; the
+fixture now interprets omitted flags as zero only after a full player create.
+`lifecycle_04` completes logout and shows the member offline on the peer, but fails
+reentry. Legacy aura and bind packets reached the new instance before its world
+entry packet. A bounded initialization queue now sends world entry first, and
+logout clears previous world, item, aura, cast and movement state. `lifecycle_05`
+still fails before world entry: the prior instance socket was never closed.
+The pinned native modern session explicitly retires that socket on logout. The
+adapter now closes it after detaching it from the realm. Live reentry is being
+repeated; these repairs do not yet qualify it.
+
+`guild_open_01` is an invalid membership fixture. The installed Classic guild
+window intentionally does nothing for an unguilded player. Native membership is
+also absent. Guild membership, roster packets and normal guild mutations require
+a separate disposable owned guild trial.
 
 The native worldserver retained its original process identity. These repairs
 rebuilt only the C++ adapter and restarted the owned login/packet adapters.
