@@ -102,7 +102,7 @@ Reply Protocol::party_response(State &owner, std::string const &name, View body,
         auto lfg=r.unpack(std::string(slots,'I'));byte(5);auto realm=r.raw(realm_length);byte(7);
         auto inviter=r.raw(name_length);auto realm_id=r.take<std::uint32_t>();r.end();
         std::uint64_t low=0;for(unsigned i=0;i<8;++i)low|=static_cast<std::uint64_t>(guid[i])<<(8*i);
-        if (!low || low>0xffffffff || realm_id!=1 || cross || roles>7) throw std::runtime_error("unsupported invitation identity");
+        if (!low || low>0xffffffff || realm_id!=1 || cross || roles>15) throw std::runtime_error("unsupported invitation identity");
         std::string actual(realm.begin(),realm.end()), normalized;
         for(char c:actual) if(c!=' ') normalized+=c;
         w.bits(accept,1).bits(0,1).bits(cross,1).bits(must_bnet,1).bits(0,1).bits(0,1).bits(name_length,6).bits(0,1)

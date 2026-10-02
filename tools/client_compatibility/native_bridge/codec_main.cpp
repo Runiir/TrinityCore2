@@ -144,6 +144,8 @@ int main(int argc, char **argv)
                                 reply = Protocol::party_state(state, name, body);
                             else if (fn == "party_profiles")
                                 reply = Protocol::party_profiles(name, body);
+                            else if (fn == "party_roles")
+                                reply = Protocol::party_roles(name, body);
                             else if (fn == "account_request")
                                 reply = Protocol::account_request(state, name, body);
                             else if (fn == "account_response")

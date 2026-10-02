@@ -31,7 +31,9 @@ def controls(trial):
         if state['mode']!='controls':continue
         current=state.get('panels') or []
         if panels is None:panels=current
-        if current!=panels:raise RuntimeError('panels changed during control observation')
+        if current!=panels:
+            trial.receipt.setdefault('control_observation_transitions',[]).append({'time':time.time(),'before':panels,'after':current})
+            trial.persist();pages={};panels=current
         total=state['control_count'];page=state['page']
         if page not in pages:
             pages[page]=state.get('controls') or []

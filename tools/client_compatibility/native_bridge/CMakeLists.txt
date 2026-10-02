@@ -8,7 +8,7 @@ find_package(ZLIB REQUIRED)
 find_library(MYSQLCLIENT_LIBRARY mysqlclient REQUIRED)
 add_library(bridge_protocol buffer.cpp json.cpp crypto.cpp fields.cpp protocol.cpp movement.cpp native_objects.cpp
     object_fields.cpp object_updates.cpp casting.cpp auras.cpp initialization.cpp looting.cpp transfers.cpp gossip.cpp taxi.cpp
-    queries.cpp creature_movement.cpp database.cpp data.cpp characters.cpp reputation.cpp social.cpp party.cpp party_requests.cpp party_state.cpp party_profiles.cpp player_names_codec.cpp account_settings.cpp achievements.cpp realm_metadata.cpp)
+    queries.cpp creature_movement.cpp database.cpp data.cpp characters.cpp reputation.cpp social.cpp party.cpp party_requests.cpp party_state.cpp party_profiles.cpp party_roles.cpp player_names_codec.cpp account_settings.cpp achievements.cpp realm_metadata.cpp)
 target_include_directories(bridge_protocol PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(bridge_protocol PUBLIC OpenSSL::Crypto Threads::Threads ZLIB::ZLIB ${MYSQLCLIENT_LIBRARY})
 target_compile_options(bridge_protocol PRIVATE -Wall -Wextra -Wpedantic)

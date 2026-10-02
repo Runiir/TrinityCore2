@@ -44,6 +44,11 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         if (!state.created || !active_world) throw std::runtime_error("CUF settings without owned character");
         native_send(*request);return;
     }
+    if (auto request = Protocol::party_roles(name, body))
+    {
+        if (!state.created || !active_world) throw std::runtime_error("role request without owned character");
+        native_send(*request);return;
+    }
     if (auto request = Protocol::reputation_request(name, body))
     {
         if (!state.created || !active_world) throw std::runtime_error("reputation request without owned character");

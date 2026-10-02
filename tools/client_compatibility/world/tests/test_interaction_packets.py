@@ -67,7 +67,7 @@ def test_party_invite_name_and_accept_bit_order(codec):
     assert call(codec,'party_request','CMSG_PARTY_INVITE',modern)==['CMSG_PARTY_INVITE',expected.finish().hex()]
     accept=Writer().bits(0,1).bits(1,1).bits(1,1).pack('I',4).finish()
     assert call(codec,'party_request','CMSG_PARTY_INVITE_RESPONSE',accept)==['CMSG_PARTY_INVITE_RESPONSE',Writer().bits(1,1).bits(1,1).pack('I',4).finish().hex()]
-    assert 'error' in call(codec,'party_request','CMSG_PARTY_INVITE_RESPONSE',Writer().bits(0,1).bits(1,1).bits(1,1).pack('I',8).finish())
+    assert 'error' in call(codec,'party_request','CMSG_PARTY_INVITE_RESPONSE',Writer().bits(0,1).bits(1,1).bits(1,1).pack('I',16).finish())
 
 
 def test_party_leave_raid_ready_and_leader(codec):

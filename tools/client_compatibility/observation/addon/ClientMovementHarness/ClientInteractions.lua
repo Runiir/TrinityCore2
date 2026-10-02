@@ -73,6 +73,7 @@ local function groupUnits(page)
         rows[#rows+1]={unit=unit,guid=call(UnitGUID,unit),name=call(UnitName,unit),exists=not not call(UnitExists,unit),
             connected=not not call(UnitIsConnected,unit),visible=not not call(UnitIsVisible,unit),class=class,
             assistant=not not call(UnitIsGroupAssistant,unit),leader=not not call(UnitIsGroupLeader,unit),
+            role=call(UnitGroupRolesAssigned,unit),
             level=call(UnitLevel,unit),health=call(UnitHealth,unit),max_health=call(UnitHealthMax,unit),
             power=call(UnitPower,unit),max_power=call(UnitPowerMax,unit),dead=not not call(UnitIsDeadOrGhost,unit)}
     end

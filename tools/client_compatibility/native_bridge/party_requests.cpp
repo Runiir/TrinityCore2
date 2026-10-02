@@ -27,7 +27,7 @@ Reply Protocol::party_request(std::string const &name, View body)
         auto name_length = r.bits(9), realm_length = r.bits(9);
         auto roles = r.take<std::uint32_t>();auto guid = player(r, true);
         auto target = r.raw(name_length), realm = r.raw(realm_length);party_index(r, has_index);r.end();
-        if (target.empty() || name_length > 127 || realm_length > 511 || roles > 7)
+        if (target.empty() || name_length > 127 || realm_length > 511 || roles > 15)
             throw std::runtime_error("invalid party invitation");
         auto octets = Writer().put(guid).finish();w.pack("II", {0, roles});
         w.bits(octets[2] != 0,1).bits(octets[7] != 0,1).bits(realm_length,9).bits(octets[3] != 0,1)
@@ -44,7 +44,7 @@ Reply Protocol::party_request(std::string const &name, View body)
     {
         bool has_index = r.bits(1), accept = r.bits(1), has_roles = r.bits(1);party_index(r,has_index);
         auto roles = has_roles ? r.take<std::uint32_t>() : 0;r.end();
-        if (roles > 7) throw std::runtime_error("invalid party role mask");
+        if (roles > 15) throw std::runtime_error("invalid party role mask");
         w.bits(has_roles,1).bits(accept,1);
         if (has_roles) w.put(roles);
         return Packet{name,w.finish()};
