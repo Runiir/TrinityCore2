@@ -690,3 +690,38 @@ After remote verification, 147 raw PNG frames (230,319,590 bytes) and the local
 archive/cache copies (229,199,169 bytes each) are removed; 1.4 MiB of receipts
 remain. Post-experiment `dvc status` reports the deliberately absent local output,
 and `dvc push` confirms that the remote is up to date. UI11 is the new active batch.
+
+### Repair and trainer trials
+
+UI11 uses the unchanged isolated native worldserver. `repair_open_01` opens and
+closes Heinrich Stone's merchant with three Laya choices. Its repair quote is
+163,335 copper for ten pre-existing worn items. `repair_all_01` selects the right
+button, but the bridge drops `CMSG_REPAIR_ITEM`; no native mutation occurs.
+The repair adapter preserves visible NPC and owned item identity and the guild
+bank choice. Its three tests cover repair-all, an individual item and ownership
+rejection. Guild repair rights and individual repair remain live qualifications.
+
+`repair_all_02` repairs all ten items and clears the visible quote, but charges
+163,332 copper. This run remains failed because the charge differs from the quote.
+Inventory, money, position and temporary permissions are restored; the repaired
+gear is deliberately retained. Selected native item and durability table records
+reproduce 163,332 with the existing round-then-truncate formula and 163,335 with
+rounding after the discount. The pricing change has not yet been live-qualified.
+
+`trainer_open_01` submits correct inputs but its native catalog is unmapped.
+`trainer_open_02` exposes a second layout problem: the running backend emits
+34-byte spell rows while the current source emits 38-byte rows. The initial
+38-byte parser rejects the captured 1,524-byte response and closes the connection.
+Native-console cleanup restores the original position and deletes both temporary
+teleports. The parser now validates both complete framed layouts and accepts
+exactly one. The 38-byte legacy profession flags are validated and omitted from
+modern rows; the captured 34-byte tail is preserved. Seven trainer tests include
+the actual 43-row response. A prefix test initially rejected a byte sequence that
+is independently valid as an alternate 34-byte row and empty greeting; the
+corrected regression explicitly covers that valid packet. Both test receipts remain.
+
+`trainer_open_03` completes three Laya choices. The stock warrior trainer displays
+available Parry and Plate Specialization, and closes normally. The service
+screenshot is visually checked on HDMI-1. Learning and incremental learned-spell
+notifications remain separate pending cases. All 448 regression tests and 83
+selected ASan/UBSan tests pass. Only the bridge has restarted during UI11.

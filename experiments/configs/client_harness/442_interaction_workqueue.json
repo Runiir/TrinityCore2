@@ -53,7 +53,8 @@
     "ui08/bank_roundtrip_01: five Laya choices, existing stack banked/withdrawn, native identity/count and UI agree, full inventory/money and position restored",
     "ui09/merchant_open_03: three Laya choices, all nine native vendor item IDs displayed, ordinary opening and closure",
     "ui09/merchant_sale_02: seven Laya choices, existing pants sold/bought back, native GUID/count and visible/native money agree, full inventory/money/slot/position restored",
-    "ui10/merchant_purchase_04: four Laya choices, five-item water bundle, exact native/client price and quantities plus received-item chat event, full inventory/money/position restored"
+    "ui10/merchant_purchase_04: four Laya choices, five-item water bundle, exact native/client price and quantities plus received-item chat event, full inventory/money/position restored",
+    "ui11/trainer_open_03: three Laya choices, visible warrior catalog with available Parry and Plate Specialization, ordinary opening and closure; learning pending"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -65,6 +66,8 @@
     "Inspect PvP/item level/customizations and unsampled gear slots are pending.",
     "Trade socket enchants, explicit gold changes, offer editing and unaccept are pending; one invalid unnamed TradeFrame child is skipped by the observer.",
     "Bank bag purchases, equipped bank bags, split/merge variants, persistence and negative gameplay paths are pending.",
-    "Merchant repair, partial-stack, stock, discount and negative purchase variants are pending; one plain-item purchase with acquisition chat is qualified. Item identity-dependent acquisition toasts and quest notification variants remain pending."
+    "Merchant repair, partial-stack, stock, discount and negative purchase variants are pending; one plain-item purchase with acquisition chat is qualified. Item identity-dependent acquisition toasts and quest notification variants remain pending.",
+    "UI11 repair_all_02 repairs all ten worn items, but native charge 163332 differs from visible quote 163335. Existing table calculation reproduces the gap; repair pricing pending.",
+    "Trainer learning and incremental learned-spell notifications are not yet translated or qualified; the catalog supports both captured 34-byte and current-source 38-byte native rows."
   ]
 }
