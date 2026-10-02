@@ -794,3 +794,9 @@ SHA-256 `98608515b1652b56bc9b0a0a327f752653b82fdb6201663b33d128d84fb0e890`.
 Its raw frames and local archive/cache copies are removed only after remote
 verification. `dvc status` records the intended local eviction and `dvc push`
 confirms synchronization. UI13 starts the questgiver probes.
+
+Seven additional older immutable journal rotations (58,766,706 raw bytes) are
+checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
+6,648,223-byte archive is synchronized before those rotations and both local
+archive/cache copies are removed. Active journals, recent records and the two
+newest rotations per journal remain available.
