@@ -415,6 +415,13 @@ The built-in Communities path was also checked with `useClassicGuildUI 0`; it
 opens no panel while this lab's Battle.net club services are disabled. It does not
 replace the local Classic guild window. No protected-action check was bypassed.
 
+`ui05/guild_disband_01` passes the ordinary `/gdisband` confirmation with Laya,
+native guild absence and the leader's visible unguilded state. The disposable
+guild is removed, restoring its original pre-experiment absence. The nearby-player
+fixture uses temporary private `game_tele` rows and console reloads, records both
+owned accounts and positions, and restores the primary before removing those
+exact rows. It does not rebuild or restart the native worldserver.
+
 `ui05/guild_information_empty_01` repeats the empty-information save with a 150 ms
 mouse press. The dialog closes without an information update packet, the native
 text remains unchanged, and the fixture is restored. Empty information remains

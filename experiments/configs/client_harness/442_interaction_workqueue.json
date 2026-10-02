@@ -43,7 +43,8 @@
     "ui03/lifecycle_06: cancel, completed logout, reentry, peer offline/online and equipment/group/profile restoration",
     "ui04/guild_membership_02: invite decline accept two rosters MOTD peer delivery leave and restored fixture",
     "ui04/guild_notes_02: separate public/officer columns nonempty information save/refresh control open self guild/officer chat and restored fixture",
-    "ui05/guild_commands_06: native/client promotion and demotion, peer guild chat and removal; stock missing-tab Lua errors remain, ui_clean=false"
+    "ui05/guild_commands_06: native/client promotion and demotion, peer guild chat and removal; stock missing-tab Lua errors remain, ui_clean=false",
+    "ui05/guild_disband_01: normal confirmation, native guild absence and visible unguilded leader; disposable guild removed"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
