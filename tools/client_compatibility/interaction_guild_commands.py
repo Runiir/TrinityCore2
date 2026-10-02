@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
-from .interaction_operations import controls,point
+from .interaction_operations import controls,point,click_case
 from .interaction_macros import require
 from .interaction_guild_membership import membership
 from .interaction_chat import packets
@@ -44,17 +44,22 @@ def suite(out):
             with actor(name):
                 t=trials[name];t.execute({'kind':'chat','value':'/console useClassicGuildUI 1'});t.execute({'kind':'key','value':'j'})
                 t.receipt.setdefault('fixture_inputs',[]).append({'source':'code_fixture','purpose':'show Classic guild roster'});t.persist()
+        with actor('primary'):
+            require(click_case(primary,'guild.peer_details','Open Harnesstwo\'s guild member details.',
+                lambda c:c['name'].startswith('GuildFrameButton') and c['text'].startswith('Harnesstwo'),
+                lambda b,a,s:{'status':'guild_details_pass' if s and 'GuildMemberDetailFrame' in a['panels'] else
+                    ('controller_failure' if not s else 'client_or_protocol_failure')}),'guild_details_pass')
         for label,delta in [('promote',-1),('demote',1)]:
             before_rank=membership(scout.fixture['guid'])[1];expected=before_rank+delta
             with actor('primary'):
                 def outcome(b,a,s):
                     rank=membership(scout.fixture['guid'])[1]
                     visible=next((m['index'] for m in a['guild_ui'].get('members',[]) if m['name'].split('-',1)[0]=='Harnesstwo'),None)
-                    return {'status':'guild_rank_pass' if s=='command' and rank==expected and visible==expected else
-                        ('controller_failure' if s!='command' else 'client_or_protocol_failure'),
+                    return {'status':'guild_rank_pass' if s and rank==expected and visible==expected else
+                        ('controller_failure' if not s else 'client_or_protocol_failure'),
                         'oracle':{'before_rank':before_rank,'expected_rank':expected,'native_rank':rank,'visible_rank':visible}}
-                require(command(primary,'guild.rank_'+label,label.title()+' Harnesstwo by one guild rank.',
-                    '/g'+label+' Harnesstwo',label+' the owned peer by one guild rank',outcome),'guild_rank_pass')
+                require(click_case(primary,'guild.rank_'+label,label.title()+' Harnesstwo by one guild rank.',
+                    lambda c:c['name']=='GuildFrame'+label.title()+'Button',outcome),'guild_rank_pass')
             with actor('scout'):
                 state,frame=scout.observe(label+'_received')
                 row={'id':'guild.rank_'+label+'_peer','time':time.time(),'selection_source':'read_only_owned_peer_oracle',
@@ -76,10 +81,14 @@ def suite(out):
                 'oracle':{'visible':visible,'native':delivered},'frame':frame}
             scout.receipt['cases'].append(row);scout.persist();require(row,'guild_chat_peer_pass')
         with actor('primary'):
-            require(command(primary,'guild.remove_member','Remove Harnesstwo from the test guild.','/gremove Harnesstwo','remove the owned peer from the guild',
-                lambda b,a,s:{'status':'guild_remove_pass' if s=='command' and not membership(scout.fixture['guid']) and
+            require(click_case(primary,'guild.remove_member_open','Remove Harnesstwo from the test guild.',lambda c:c['name']=='GuildMemberRemoveButton',
+                lambda b,a,s:{'status':'panel_open_pass' if s and 'StaticPopup1' in a['panels'] else
+                    ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
+            require(click_case(primary,'guild.remove_member','Confirm removing Harnesstwo from the test guild.',
+                lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Accept','Okay','Remove'],
+                lambda b,a,s:{'status':'guild_remove_pass' if s and not membership(scout.fixture['guid']) and
                     all(m['name'].split('-',1)[0]!='Harnesstwo' for m in a['guild_ui'].get('members',[])) else
-                    ('controller_failure' if s!='command' else 'client_or_protocol_failure'),
+                    ('controller_failure' if not s else 'client_or_protocol_failure'),
                     'oracle':{'native_membership':membership(scout.fixture['guid']),'visible_members':a['guild_ui'].get('members')}}),'guild_remove_pass')
         with actor('scout'):
             state,frame=scout.observe('removed');row={'id':'guild.remove_member_peer','time':time.time(),
