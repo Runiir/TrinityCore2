@@ -49,6 +49,9 @@ end
 local function trim(s,n)return tostring(s or ''):sub(1,n or 60) end
 local function caption(f)
     if f.GetText then local s=call(f.GetText,f);if s and s~='' then return trim(s) end end
+    for _,field in ipairs({'Label','Text'}) do local r=f[field]
+        if r and r.GetText then local s=call(r.GetText,r);if s and s~='' then return trim(s) end end
+    end
     for _,r in ipairs({f:GetRegions()}) do
         if r.GetText then local s=call(r.GetText,r);if s and s~='' then return trim(s) end end
     end
@@ -71,7 +74,7 @@ local function snapshot(viewMode,viewPage)
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
     local height=GetScreenHeight()*UIParent:GetEffectiveScale()
     local function scan(f,depth)
-        if visited[f] or depth>6 or not f:IsVisible() then return end;visited[f]=true
+        if visited[f] or depth>12 or not f:IsVisible() then return end;visited[f]=true
         local kind=f:GetObjectType()
         if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider') and #data.controls<512 then
             local x,y=f:GetCenter()
