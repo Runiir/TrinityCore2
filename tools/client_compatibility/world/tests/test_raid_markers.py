@@ -27,7 +27,7 @@ def test_marker_snapshots_wait_for_positions_and_clear_without_stale_locations(c
     expected=Writer().pack('BI',0,1).bits(1,4).flush().guid().pack('I3f',0,*point['position']).finish().hex()
     actions=[{'fn':'mask','value':1},{'fn':'location','slot':0,'value':point},
         {'fn':'mask','value':0},{'fn':'mask','value':1}]
-    assert result(codec,op='raid_markers',actions=actions)==[None,expected,empty,None]
+    assert result(codec,op='raid_markers',actions=actions)==[empty,expected,empty,empty]
     assert result(codec,op='raid_markers',actions=[{'fn':'location','slot':0,'value':point},{'fn':'mask','value':1}])==[empty,expected]
     assert 'error' in codec(op='raid_markers',actions=[{'fn':'mask','value':256}])
     assert 'error' in codec(op='raid_markers',actions=[{'fn':'location','slot':0,'value':{'map':0,'position':[18000,0,0]}}])
@@ -49,8 +49,10 @@ def test_three_modern_marker_casts_complete_and_use_their_own_eight_slot_ids(cod
         assert output[-1][0]=='SMSG_SPELL_GO'
         data={'map':530,'position':[1,2,3]}
         packets=result(codec,op='raid_markers',actions=[{'fn':'mask','value':1<<slot},{'fn':'location','slot':slot,'value':data}])
-        assert packets[0] is None
+        assert packets[0]=='000000000000'
         assert packets[1]==Writer().pack('BI',0,1<<slot).bits(1,4).flush().guid().pack('I3f',530,1,2,3).finish().hex()
+        partial=result(codec,op='raid_markers',actions=[{'fn':'mask','value':(1<<slot)|1},{'fn':'location','slot':slot,'value':data}])
+        assert partial[-1]==packets[-1]
 
 
 def test_world_marker_permissions_follow_native_group_leader_and_assistant_flags(codec):

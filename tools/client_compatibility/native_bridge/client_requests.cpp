@@ -248,7 +248,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
                 service.markers(owner,{},Array{location});
                 active_world->send("SMSG_SPELL_PREPARE",Writer().guid(get(cast,"guid")).guid(get(cast,"server_guid")).finish());
                 if(auto result=protocol.extra_marker_go(state))active_world->send(*result);
-                service.events.event("compatibility_marker_placed",{{"session",owner.id},{"location",location}});
+                service.events.event("compatibility_marker_placed",{{"session",owner.id},{"map",get(location,"map")},
+                    {"position",get(location,"position")},{"status",get(location,"slot")}});
                 return;
             }
             else native_send(request);

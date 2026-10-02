@@ -22,9 +22,12 @@ void RaidMarkers::location(unsigned slot,Value const &value)
 }
 std::optional<Bytes> RaidMarkers::packet() const
 {
-    for(unsigned i=0;i<8;++i)if((active&(1u<<i)) && locations[i].is_null())return {};
-    Writer w;w.put<std::uint8_t>(0).put<std::uint32_t>(active).bits(std::popcount(active),4).flush();
-    for(unsigned i=0;i<8;++i)if(active&(1u<<i))
+    unsigned visible=0;
+    for(unsigned i=0;i<8;++i)if((active&(1u<<i)) && !locations[i].is_null())visible|=1u<<i;
+    // Native group masks can outlive their caster-owned dynamic objects.
+    // Unknown locations remain pending and cannot block other known markers.
+    Writer w;w.put<std::uint8_t>(0).put<std::uint32_t>(visible).bits(std::popcount(visible),4).flush();
+    for(unsigned i=0;i<8;++i)if(visible&(1u<<i))
         w.guid().put<std::uint32_t>(integer(get(locations[i],"map"))).pack("3f",get(locations[i],"position").as_array());
     return w.finish();
 }
