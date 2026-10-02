@@ -18,7 +18,7 @@ def score(directory):
         'frames':0,'frame_hash_failures':[],'model_revisions':[],'source_commits':[],
         'site_find_counts':{},'fresh_sites_fully_completed':[],'model_rejected_decisions':0,
         'water_transits':[],'mounted_corridor_checks':0,'localization_views':0,'ground_escapes':[],'client_floor_probes':[],
-        'takeoff_ground_exits':[]}
+        'takeoff_ground_exits':[],'combat_landings':[]}
     for step in root.get('steps',[]):
         if step.get('kind')!='dig':continue
         child=json.loads((directory/step['episode']/'episode.json').read_text())
@@ -68,6 +68,15 @@ def score(directory):
                         and s['map']==find['map'] and site_boundaries.contains(s['polygon'],find['position'])]
                     summary['artifact_boundary_checks'].append({'guid':find['guid'],'position':find['position'],
                         'inside_assigned_sites':containing,'step':step['index']})
+    for path in sorted(directory.rglob('combat_landing_*.json')):
+        receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
+        summary['combat_landings'].append({'file':str(path.relative_to(directory)),
+            'completed':receipt['completed'],'failure':receipt['failure']})
+        positions=[receipt['before']['position'],*[o['facts']['position'] for o in receipt['observations']]]
+        if receipt.get('after'):positions.append(receipt['after']['position'])
+        if any(not site_boundaries.contains(polygon,p) for p in positions) or any(
+            not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
+            summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'combat_landing'})
     for path in sorted(directory.rglob('takeoff_exit_*.json')):
         receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
         positions=[receipt['before']['position'],*[o['facts']['position'] for o in receipt['observations']]]

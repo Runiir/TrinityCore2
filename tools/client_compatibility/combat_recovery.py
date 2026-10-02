@@ -11,6 +11,9 @@ def withdraw(movement,extra,facts,observer,path):
     if not extra['mounted']:
         from .combat_clear import run
         return run(movement, extra, facts, observer, path)
+    from . import combat_landing
+    if combat_landing.permitted(movement,extra,facts,observer.player_level):
+        return combat_landing.run(movement,extra,facts,observer,path)
     from .travel_inputs import face
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[]
     start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])

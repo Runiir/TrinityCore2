@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 153 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 155 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 85 preserve unsuccessful steps, including missing portal
+Episodes 07 through 86 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -511,6 +511,19 @@ attacker is within 16 yards in XYZ. It retains at most two exact-name attempts
 and validates the actual selected living hostile and distance before attacking.
 The failing ordinary positions have a regression. This does not infer spawned
 tree geometry or claim a learned combat policy.
+Episode 86 cleared that obscured attacker in six bounded recovery steps and
+collected Bonechewer's first find (nine Orc fragments) using green ground
+detours. Its second yellow approach stopped when a mounted retreat failed to
+clear another attacker. This remains a failed root with no completed site,
+60 model actions and no manual gameplay interventions. For ordinary observed
+attackers meeting the existing low-threat gate (at most three, ten levels
+below the player and known maximum health at most 15,000), a new physical
+guard requires at least 80 percent starting health, chooses a dry public soil
+patch inside the assigned site, checks a short collision-aware flight corridor,
+and waits for normal addon grounding before dismounting. It then invokes
+bounded normal melee recovery. Descent, health, falling, swimming, collision,
+boundary and input/time budgets can stop it. Airborne dismounts remain rejected.
+The receipt records actual observations; no private artifact position is used.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
