@@ -143,6 +143,11 @@ local function snapshot(viewMode,viewPage)
         for i=1,5 do local alias=_G['SLASH_'..name..i];if alias then aliases[#aliases+1]=alias end end
         data.input_aliases[name]=aliases
     end
+    data.group_aliases={}
+    for name,value in pairs(_G) do
+        if type(name)=='string' and name:match('^SLASH_') and type(value)=='string' and
+            (name:find('PARTY') or name:find('GROUP') or name:find('LEAVE')) then data.group_aliases[name]=value end
+    end
     local actionButton=_G.ActionButton12
     local slot=actionButton and actionButton.action or 12
     local kind,id=call(GetActionInfo,slot)
