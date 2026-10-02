@@ -86,3 +86,10 @@ def test_chat_requires_owned_character_and_active_instance_but_accepts_realm_cha
     assert result(codec,op='chat_context',created=True,active_world=True) is True
     for created,active_world in [(False,True),(True,False),(False,False)]:
         assert 'error' in codec(op='chat_context',created=created,active_world=active_world)
+
+
+def test_captured_whitemane_60895_say_request(codec):
+    body=bytes.fromhex('070000000280544334343255493a7361795f6530326639343633')
+    name,encoded=call(codec,'chat_request','CMSG_CHAT_MESSAGE_SAY',body)
+    assert name=='CMSG_MESSAGECHAT_SAY';r=Reader(bytes.fromhex(encoded))
+    assert r.unpack('i')==(7,) and r.bits(9)==20 and r.raw(20)==b'TC442UI:say_e02f9463';r.end()
