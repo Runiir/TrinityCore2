@@ -8,7 +8,12 @@ from .interaction_macros import require
 from .npc_fixture import NpcFixture
 
 
-SERVICES={'merchant':{'entry':1285,'flag':128,'panel':'MerchantFrame','caption':'goods'}}
+SERVICES={
+    'merchant':{'entry':1285,'flag':128,'panel':'MerchantFrame','caption':'goods'},
+    'repair':{'entry':1324,'flag':4096,'panel':'MerchantFrame','caption':'goods'},
+    'trainer':{'entry':5479,'flag':16,'panel':'ClassTrainerFrame','caption':'train'},
+    'profession-trainer':{'entry':5499,'flag':16,'panel':'ClassTrainerFrame','caption':'train'},
+}
 
 
 def suite(t,service,point,stage_only,sell_buyback=False,purchase=False):

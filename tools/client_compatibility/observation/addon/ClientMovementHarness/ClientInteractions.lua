@@ -17,7 +17,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
-    'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','InspectFrame','LootFrame','DressUpFrame','ItemTextFrame',
+    'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','InspectFrame','LootFrame','DressUpFrame','ItemTextFrame','ClassTrainerFrame',
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame','StackSplitFrame'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=10,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=11,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -202,6 +202,15 @@ local function snapshot(viewMode,viewPage)
     if data.merchant.visible then
         data.merchant.count=call(GetMerchantNumItems);data.merchant.tab=MerchantFrame.selectedTab
         data.merchant.buyback_count=call(GetNumBuybackItems)
+        data.merchant.repairable=call(CanMerchantRepair)
+        if data.merchant.repairable then
+            data.merchant.repair_cost,data.merchant.repair_needed=call(GetRepairAllCost)
+            data.durability={}
+            for slot=1,19 do
+                local current,maximum=call(GetInventoryItemDurability,slot)
+                data.durability[slot]={current or 0,maximum or 0}
+            end
+        end
         if data.merchant.tab==2 then
             data.merchant.buyback={}
             for index=1,math.min(data.merchant.buyback_count or 0,12) do
@@ -218,6 +227,10 @@ local function snapshot(viewMode,viewPage)
                     id=link and tonumber(link:match('item:(%d+)')),price=price,quantity=quantity,available=available,usable=usable}
             end
         end
+    end
+    if ClassTrainerFrame and ClassTrainerFrame:IsVisible() then
+        data.trainer={count=call(GetNumTrainerServices),selected=call(GetTrainerSelectionIndex),
+            profession=call(IsTradeskillTrainer)}
     end
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
