@@ -36,7 +36,7 @@ sessions and verified HDMI-1 windows. Both launcher SSO and username/password wo
 entry passed. Gear preview, bags, professions, Survey cast bars, mount/flight and
 console fixture transfers were also observed through the native service.
 
-The latest authentication/world suite passed 277 tests. All 54 selected packet and
+The latest authentication/world suite passed 298 tests. All 58 selected packet and
 codec tests passed ASan/UBSan. The initial migration's 23 differential tests found
 and repaired a profession-JSON lifetime error. Real clients exposed a dense update that expanded beyond 64 KiB;
 the outbound limit now accommodates it while retaining the stricter incoming limit.

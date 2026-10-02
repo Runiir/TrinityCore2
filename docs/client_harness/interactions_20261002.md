@@ -203,6 +203,9 @@ zero client response packets, separating timeout from an answered check.
 
 Equipment stats and crafting outcomes remain pending.
 
+This closed batch is synchronized in
+[`442_interactions_20261002_03.tar.gz.dvc`](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc).
+
 The latest full auth/world regression passes 298 tests. The selected ASan/UBSan
 packet regression passes 58. The first ready-check test fixtures omitted required
 empty metadata and failed two tests; their corrected runs pass. An initial invocation
