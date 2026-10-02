@@ -48,6 +48,9 @@ def field_values(snapshot, character):
               "NumBackpackSlots": 16,
               "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
               "ProfessionSkillLine": array("PLAYER_PROFESSION_SKILL_LINE_1", 2)}
+    active["RestInfo"] = [{"Threshold": value("PLAYER_REST_STATE_EXPERIENCE"),
+                           "StateID": value("PLAYER_BYTES_2") >> 24},
+                          {"Threshold": 0, "StateID": 2}]
     from .inventory import inventory_slots
     active["InvSlots"] = inventory_slots(native)
     skill = {}

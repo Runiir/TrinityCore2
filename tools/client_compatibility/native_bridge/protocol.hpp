@@ -72,6 +72,7 @@ struct Protocol
                  Array const *buttons) const;
     Bytes scalar_block(Value const &snapshot, Value const &character, Value const &changed,
                        unsigned visibility = 0) const;
+    Bytes rest_block(Value const &snapshot, Value const &changed) const;
     Reply object_updates(State &owner, View body) const;
     Packet cast_request(State &owner, View body) const;
     Reply cast_response(State &owner, std::string const &name, View body) const;

@@ -85,6 +85,8 @@ int main(int argc, char **argv)
                     result=Protocol::late_party_query(truth(get(request,"active")),str(get(request,"name")),data("body"));
                 else if (op == "object_values")
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
+                else if (op == "rest_update")
+                    result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "object_block")
                 {
                     auto kind = str(get(request, "kind"));

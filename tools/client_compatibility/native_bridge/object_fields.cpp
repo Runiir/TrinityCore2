@@ -72,6 +72,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                   {"Coinage", static_cast<std::uint64_t>(val("PLAYER_FIELD_COINAGE")) |
                                   (static_cast<std::uint64_t>(val("PLAYER_FIELD_COINAGE", 1)) << 32)},
                   {"ProfessionSkillLine", arr("PLAYER_PROFESSION_SKILL_LINE_1", 2)}};
+    active["RestInfo"] = Array{Object{{"Threshold", val("PLAYER_REST_STATE_EXPERIENCE")},
+                                     {"StateID", val("PLAYER_BYTES_2") >> 24}},
+                               Object{{"Threshold", 0}, {"StateID", 2}}};
     Array slots;
     for (unsigned i = 0; i < 146; ++i)
         slots.push_back(Array{0, 0});

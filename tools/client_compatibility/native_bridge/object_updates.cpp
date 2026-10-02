@@ -107,6 +107,9 @@ Reply Protocol::object_updates(State &owner, View body) const
             auto scalar = scalar_block(s, owner.character, get(record, "fields"), 1);
             if (!scalar.empty())
                 blocks.push_back(scalar);
+            auto rest = rest_block(s, get(record, "fields"));
+            if (!rest.empty())
+                blocks.push_back(rest);
             bool sites_changed = false, projects_changed = false;
             for (unsigned i = 0; i < 8; ++i)
             {

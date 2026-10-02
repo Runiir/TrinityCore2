@@ -109,7 +109,7 @@ end
 local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
-        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,observer_version=2}
+        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,observer_version=3}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -205,6 +205,8 @@ local function snapshot(viewMode,viewPage)
             panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
+    data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
+    data.xp_exhaustion=call(GetXPExhaustion)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.fps_keys={call(GetBindingKey,'TOGGLEFPS')}
     data.keybind_listening=KeybindListener and KeybindListener.pending and
