@@ -5,6 +5,18 @@ namespace bridge
 {
 Task<> Session::gameplay(std::string name, Bytes body)
 {
+    if (name == "SMSG_ACCOUNT_DATA_TIMES" || name == "SMSG_UPDATE_ACCOUNT_DATA")
+    {
+        std::lock_guard lock(state_mutex);
+        if (auto reply = Protocol::account_response(state,name,body)) this->send(*reply);
+        co_return;
+    }
+    if (name == "SMSG_UPDATE_ACCOUNT_DATA_COMPLETE")
+    {
+        Reader r(body);auto type=r.take<std::uint32_t>(), status=r.take<std::uint32_t>();r.end();
+        if(type>=8 || status)throw std::runtime_error("native account cache update failed");
+        co_return; // Modern clients use no equivalent acknowledgement packet.
+    }
     if (name == "SMSG_ENUM_CHARACTERS_RESULT")
     {
         auto root = service.root;
@@ -48,6 +60,10 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if ((reply = Protocol::achievement_response(state,name,body)))
+    {
+        this->send(*reply);co_return;
+    }
     if ((reply = Protocol::party_response(state, name, body, party_identities)))
     {
         this->send(*reply);co_return;
@@ -148,9 +164,9 @@ Task<> Session::gameplay(std::string name, Bytes body)
         if (body.size() != 20)
             throw std::runtime_error("invalid native login world");
         instance->send(name, Writer().raw(body).zeros(4).finish());
-        instance->send(
-            "SMSG_ACCOUNT_DATA_TIMES",
-            Writer().guid(state.guid(), player_high()).pack("q", {std::time(nullptr)}).zeros(64).finish());
+        Writer caches;caches.guid(state.guid(),player_high()).put<std::int64_t>(std::time(nullptr));
+        for(auto time:state.account_times)caches.put<std::int64_t>(time);
+        instance->send("SMSG_ACCOUNT_DATA_TIMES",caches.finish());
         instance->send("SMSG_INITIAL_SETUP", Bytes{3, 0});
         instance->send("SMSG_WORLD_SERVER_INFO", Writer().pack("I", {0}).bits(0, 5).finish());
     }

@@ -24,7 +24,18 @@ bool capture(std::string const &name)
             return true;
     if (name.starts_with("CMSG_MOVE_") || name.starts_with("MSG_MOVE_") || name.starts_with("SMSG_MOVE_"))
         return true;
-    static std::unordered_set<std::string> const names = {"CMSG_DB_QUERY_BULK",
+    static std::unordered_set<std::string> const names = {"CMSG_SEND_CONTACT_LIST", "CMSG_CONTACT_LIST",
+                                                          "CMSG_ADD_FRIEND", "CMSG_DEL_FRIEND", "CMSG_SET_CONTACT_NOTES",
+                                                          "CMSG_ADD_IGNORE", "CMSG_DEL_IGNORE", "SMSG_CONTACT_LIST", "SMSG_FRIEND_STATUS",
+                                                          "CMSG_QUERY_PLAYER_NAMES", "SMSG_QUERY_PLAYER_NAMES_RESPONSE",
+                                                          "CMSG_PARTY_INVITE", "CMSG_PARTY_INVITE_RESPONSE", "CMSG_PARTY_UNINVITE",
+                                                          "CMSG_LEAVE_GROUP", "CMSG_GROUP_DISBAND", "CMSG_CONVERT_RAID", "CMSG_GROUP_RAID_CONVERT",
+                                                          "CMSG_SET_PARTY_LEADER", "CMSG_GROUP_SET_LEADER", "CMSG_GROUP_UNINVITE_GUID",
+                                                          "SMSG_PARTY_UPDATE", "SMSG_PARTY_INVITE", "SMSG_PARTY_COMMAND_RESULT", "SMSG_GROUP_DECLINE",
+                                                          "CMSG_DO_READY_CHECK", "CMSG_READY_CHECK_RESPONSE", "MSG_RAID_READY_CHECK", "MSG_RAID_READY_CHECK_CONFIRM",
+                                                          "SMSG_READY_CHECK_STARTED", "SMSG_READY_CHECK_RESPONSE", "SMSG_READY_CHECK_COMPLETED",
+                                                          "SMSG_INITIALIZE_FACTIONS", "SMSG_SET_FACTION_STANDING",
+                                                          "CMSG_DB_QUERY_BULK",
                                                           "SMSG_DB_REPLY",
                                                           "SMSG_AVAILABLE_HOTFIXES",
                                                           "CMSG_HOTFIX_REQUEST",

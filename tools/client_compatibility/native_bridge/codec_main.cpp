@@ -138,6 +138,14 @@ int main(int argc, char **argv)
                                 reply = Protocol::party_request(name, body);
                             else if (fn == "party_response")
                                 reply = Protocol::party_response(state, name, body, get(request, "identities").as_array());
+                            else if (fn == "account_request")
+                                reply = Protocol::account_request(state, name, body);
+                            else if (fn == "account_response")
+                                reply = Protocol::account_response(state, name, body);
+                            else if (fn == "achievement")
+                                reply = Protocol::achievement_response(state, name, body);
+                            else if (fn == "reputation_request")
+                                reply = Protocol::reputation_request(name, body);
                             else if (fn == "loot_response")
                                 reply = Protocol::loot_response(state, name, body);
                             else if (fn == "loot_request")

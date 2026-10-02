@@ -79,19 +79,20 @@ def test_party_roster_includes_self_and_native_difficulties(codec):
     assert r.guid()==(9,27<<58);assert r.unpack('I')==(3,);assert r.guid()==(1,HIGH)
     assert r.unpack('BiI')==(1,0,2)
     assert [r.bits(1) for _ in range(3)]==[0,1,1]
+    r.align()
     for guid,name,cls in [(1,b'Harnessone',1),(2,b'Harnesstwo',11)]:
         assert r.bits(6)==len(name);assert r.bits(6)==1
         assert [r.bits(1) for _ in range(3)]==[1,0,0]
         assert r.guid()==(guid,HIGH);assert r.unpack('5B')[3:]==(cls,1);assert r.raw(len(name))==name
     assert r.unpack('B')==(1,);assert r.guid()==(0,0);assert r.unpack('BIII')==(2,2,5,5)
-    assert r.remaining()==0
+    r.end()
     assert 'error' in call(codec,'party_response','SMSG_PARTY_UPDATE',native,identities=[])
 
 
 def test_player_names_present_and_missing(codec):
     body=result(codec,op='player_names',requested=[[2,HIGH],[3,HIGH]],rows=[{'guid':2,'name':'Harnesstwo','race':1,'gender':0,'class':1,'level':1}])
     r=Reader(bytes.fromhex(body));assert r.unpack('I')==(2,);assert r.unpack('B')==(0,);assert r.guid()==(2,HIGH)
-    assert [r.bits(1) for _ in range(2)]==[1,0];assert r.bits(1)==0;assert r.bits(6)==10
+    assert [r.bits(1) for _ in range(2)]==[1,0];r.align();assert r.bits(1)==0;assert r.bits(6)==10
     assert [r.bits(7) for _ in range(5)]==[0]*5
     assert r.guid()==(0,0);assert r.guid()==(0,0);assert r.guid()==(2,HIGH)
     assert r.unpack('QI5Bi')==(0,1,1,0,1,1,0,0);assert r.raw(10)==b'Harnesstwo'
