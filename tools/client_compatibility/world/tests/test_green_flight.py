@@ -3,7 +3,7 @@ import json
 import time
 import pytest
 from tools.client_compatibility import green_flight as flight,survey_landing,model_collision
-from tools.client_compatibility import site_boundaries,validate_travel
+from tools.client_compatibility import site_boundaries,validate_travel,ground_navigation,lab_runtime as lab
 from tools.client_compatibility.collision_recovery import Recovery
 
 
@@ -15,6 +15,7 @@ def scene(monkeypatch):
     monkeypatch.setattr(survey_landing,'select',lambda *a,**kw:([7,0,0],{'selected':[7,0,0]}))
     monkeypatch.setattr(model_collision,'supporting_surface',lambda *a:{'highest_surface':4})
     monkeypatch.setattr(model_collision,'clear_body_segment',lambda *a:True)
+    monkeypatch.setattr(ground_navigation,'water_at',lambda *a:{'water_above_feet':False})
     tcp={'player':{'position':[0,0,0,0]},'tool':{'map':530,'color':'green',
         'heading_radians':0,'seen_at':time.time(),'visible':True}}
     movement={'in_world':True,'health_percent':100,'dead':False,'in_combat':False,'on_taxi':False}
@@ -29,6 +30,8 @@ def test_short_public_recovery_and_envelope(scene):
     flight.check_position(route['green_terrain_recovery'],[7,0,12])
     with pytest.raises(RuntimeError,match='envelope'):
         flight.check_position(route['green_terrain_recovery'],[24,0,12])
+    with pytest.raises(RuntimeError,match='envelope'):
+        flight.check_position(route['green_terrain_recovery'],[7,0,12],0)
 
 
 @pytest.mark.parametrize('condition',['combat','water','indoors','stale_tool','spent_budget','red'])
@@ -48,6 +51,23 @@ def test_tall_or_occluded_obstacle_cannot_trigger_blind_flight(scene,monkeypatch
     monkeypatch.setattr(model_collision,'supporting_surface',lambda *a:{'highest_surface':4})
     monkeypatch.setattr(model_collision,'clear_body_segment',lambda *a:False)
     with pytest.raises(RuntimeError,match='intersects'):flight.plan(*scene,None,'ground_routes_exhausted')
+
+
+def test_shallow_water_without_swimming_cannot_trigger_flight(scene,monkeypatch):
+    monkeypatch.setattr(ground_navigation,'water_at',lambda *a:{'water_above_feet':True})
+    with pytest.raises(RuntimeError,match='submerged'):flight.plan(*scene,None,'ground_routes_exhausted')
+
+
+@pytest.mark.skipif(not (lab.ROOT/'build/dep/recastnavigation/Detour/libDetour.a').exists(),reason='private geometry helpers absent')
+def test_trial43_blocked_green_has_a_short_public_flight_route():
+    tcp={'player':{'position':[-2927.460693359375,1637.20263671875,55.334590911865234,4.762652397155762]},
+        'tool':{'map':530,'color':'green','visible':True,'seen_at':time.time(),'heading_radians':4.737443923950195}}
+    movement={'in_world':True,'health_percent':100,'dead':False,'in_combat':False,'on_taxi':False}
+    extra={k:False for k in ['mounted','flying','falling','swimming','indoors','casting']};extra['digsite_ids']=[387]
+    route=flight.plan(tcp,movement,extra,None,'ground_routes_exhausted')
+    goal=route['legs'][0]['position']
+    assert goal==pytest.approx([-2937.5874,1627.55139,52.4613037],abs=.01)
+    flight.check_position(route['green_terrain_recovery'],[*goal[:2],route['legs'][0]['ceiling']],530)
 
 
 def test_receipt_requires_completed_matching_flight(scene,tmp_path):

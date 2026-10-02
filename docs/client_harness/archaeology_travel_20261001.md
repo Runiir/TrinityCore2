@@ -32,6 +32,12 @@ when it matches an explicitly recorded, completed terrain recovery flight.
 
 The accepted episode 89 below predates this authorization and used ground-only
 green approaches. It does not establish live success for the new fallback.
+The current full suite passes 172 tests, including a public-geometry replay of
+episode 43's blocked green approach: a progressive landing about 14 yards away
+and a ceiling about 11 yards above the starting feet pass the bounded collision
+checks. This is an offline planning regression, not a physical-flight receipt.
+Normal login restored the owned client to the world on HDMI-1 after a stale
+session disconnected; health was 100 and combat/death flags were clear.
 
 ## Accepted bounded loop, 2026-10-02
 
@@ -378,7 +384,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 157 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 172 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;

@@ -1,7 +1,7 @@
 """User-authorized, short terrain recovery; ordinary green movement stays on foot."""
 import math
 import time
-from . import model_collision,site_boundaries,survey_landing
+from . import model_collision,site_boundaries,survey_landing,ground_navigation
 
 MAX_DISTANCE=21
 MAX_HEIGHT=40
@@ -21,6 +21,8 @@ def plan(tcp,movement,extra,recovery,reason):
         raise RuntimeError('two green terrain flights exhausted this find trial')
     start=tcp['player']['position'][:3]
     site=site_boundaries.active_site(tool['map'],start,extra['digsite_ids'])
+    if ground_navigation.water_at(site['map'],start)['water_above_feet']:
+        raise RuntimeError('green terrain flight cannot start with submerged feet')
     heading=tool['heading_radians']
     goal,landing=survey_landing.select(site,start,heading,7,maximum_distance=MAX_DISTANCE)
     heights=[]
@@ -47,9 +49,10 @@ def plan(tcp,movement,extra,recovery,reason):
          'survey_progress':{'start':start,'heading_radians':heading,'minimum_bearing_progress':1.5}}]}
 
 
-def check_position(guard,position):
+def check_position(guard,position,map_id=None):
     start=guard['start'];site=site_boundaries.sites()[guard['site_id']]
-    if (math.dist(start[:2],position[:2])>MAX_DISTANCE+2 or
+    if (map_id is not None and map_id!=site['map'] or
+        math.dist(start[:2],position[:2])>MAX_DISTANCE+2 or
         abs(position[2]-start[2])>MAX_HEIGHT+2 or
         not site_boundaries.inside_segment(site['polygon'],start,position)):
         raise RuntimeError('green recovery exceeded its short in-site flight envelope')
