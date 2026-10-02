@@ -113,6 +113,10 @@ int main(int argc, char **argv)
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "rest_update")
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
+                else if(op=="inventory_update")
+                    result=hex(protocol.inventory_block(get(request,"snapshot"),get(request,"changed")));
+                else if(op=="item_update")
+                    result=hex(protocol.item_update(get(request,"snapshot"),get(request,"changed")));
                 else if (op == "object_block")
                 {
                     auto kind = str(get(request, "kind"));
@@ -198,6 +202,10 @@ int main(int argc, char **argv)
                                 reply = Protocol::social_response(name, body);
                             else if (fn == "party_request")
                                 reply = Protocol::party_request(name, body);
+                            else if(fn=="inventory_request")
+                                reply=Protocol::inventory_request(state,name,body);
+                            else if(fn=="inventory_response")
+                                reply=protocol.inventory_response(name,body);
                             else if (fn == "party_response")
                                 reply = Protocol::party_response(state, name, body, get(request, "identities").as_array());
                             else if (fn == "party_state")

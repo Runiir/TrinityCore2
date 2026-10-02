@@ -60,6 +60,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if((reply=protocol.inventory_response(name,body)))
+    {send(*reply);co_return;}
     if ((reply = Protocol::party_roles(name,body)))
     {
         this->send(*reply);co_return;
@@ -234,6 +236,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
         this->send(name, Bytes{0});
         state.character = nullptr;
         state.created = false;
+        state.inventory_items.clear();
         world.reset();
     }
     else if (name == "SMSG_LOGOUT_RESPONSE")

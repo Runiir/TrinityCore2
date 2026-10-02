@@ -63,7 +63,10 @@ Reply Protocol::object_updates(State &owner, View body) const
             {
                 owner.self_snapshot = record;
                 for (auto const &item : items)
+                {
                     blocks.push_back(item_block(item));
+                    owner.inventory_items[integer(get(item,"guid"))]=item;
+                }
                 blocks.push_back(player_block(
                     record, owner.character, owner.action_buttons.empty() ? nullptr : &owner.action_buttons));
                 owner.created = true;
@@ -82,13 +85,24 @@ Reply Protocol::object_updates(State &owner, View body) const
             for (auto const &id : get(record, "removed").as_array())
             {
                 auto removed_guid = integer(id);
-                if (owner.visible_gameobjects.erase(removed_guid) || owner.visible_units.erase(removed_guid))
+                if (owner.visible_gameobjects.erase(removed_guid) || owner.visible_units.erase(removed_guid) || owner.inventory_items.erase(removed_guid))
                     removed.push_back(removed_guid);
             }
             continue;
         }
         auto kind = integer(get(record, "kind"));
-        if (kind == 5 && guid >> 52 == 0xf11)
+        if((kind==1 || kind==2) && guid>>48==0x4000)
+        {
+            if(!owner.inventory_items.contains(guid))blocks.push_back(item_block(record));
+            owner.inventory_items[guid]=record;
+        }
+        else if(type==0 && owner.inventory_items.contains(guid))
+        {
+            auto &snapshot=owner.inventory_items.at(guid);merge_fields(snapshot,record);
+            auto item=item_update(snapshot,get(record,"fields"));
+            if(!item.empty())blocks.push_back(item);
+        }
+        else if (kind == 5 && guid >> 52 == 0xf11)
         {
             blocks.push_back(gameobject_block(record));
             owner.visible_gameobjects[guid] = record;
@@ -110,6 +124,8 @@ Reply Protocol::object_updates(State &owner, View body) const
             auto rest = rest_block(s, get(record, "fields"));
             if (!rest.empty())
                 blocks.push_back(rest);
+            auto inventory=inventory_block(s,get(record,"fields"));
+            if(!inventory.empty())blocks.push_back(inventory);
             bool sites_changed = false, projects_changed = false;
             for (unsigned i = 0; i < 8; ++i)
             {

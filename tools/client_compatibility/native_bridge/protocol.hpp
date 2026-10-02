@@ -17,7 +17,7 @@ struct State
 {
     Value character;
     Value self_snapshot;
-    std::unordered_map<std::uint64_t, Value> visible_gameobjects, visible_units;
+    std::unordered_map<std::uint64_t, Value> visible_gameobjects, visible_units, inventory_items;
     std::unordered_map<unsigned, Value> casts, visible_auras, pending_movement;
     std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
     std::unordered_set<unsigned> creature_queries, npc_text_queries;
@@ -46,7 +46,7 @@ struct State
 struct Protocol
 {
     std::filesystem::path directory;
-    Value index, sequences, opcodes;
+    Value index, sequences, opcodes, inventory_results;
     std::unordered_map<unsigned, std::string> modern_names, legacy_names;
     Fields fields;
     explicit Protocol(std::filesystem::path const &directory);
@@ -73,6 +73,10 @@ struct Protocol
     Bytes scalar_block(Value const &snapshot, Value const &character, Value const &changed,
                        unsigned visibility = 0) const;
     Bytes rest_block(Value const &snapshot, Value const &changed) const;
+    static Reply inventory_request(State const &owner,std::string const &name,View body);
+    Reply inventory_response(std::string const &name,View body) const;
+    Bytes inventory_block(Value const &snapshot,Value const &changed) const;
+    Bytes item_update(Value const &snapshot,Value const &changed) const;
     Reply object_updates(State &owner, View body) const;
     Packet cast_request(State &owner, View body) const;
     Reply cast_response(State &owner, std::string const &name, View body) const;

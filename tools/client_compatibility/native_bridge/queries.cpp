@@ -179,6 +179,8 @@ Reply Protocol::destroy_object(State &owner, View body)
         record = pos->second;
         owner.visible_units.erase(pos);
     }
+    else if(auto pos=owner.inventory_items.find(native);pos!=owner.inventory_items.end())
+    {record=pos->second;owner.inventory_items.erase(pos);}
     if (record.is_null())
         return {};
     if (!owner.taxi_menu.is_null() && integer(get(owner.taxi_menu, "vendor")) == native)

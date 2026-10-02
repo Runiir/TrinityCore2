@@ -6,7 +6,8 @@ namespace bridge
 Protocol::Protocol(std::filesystem::path const &path)
     : directory(path), index(load_json(path / "native_fields.json")),
       sequences(get(load_json(path / "native_movement.json"), "sequences")),
-      opcodes(load_json(path / "opcodes.json")), fields(path / "fields.json")
+      opcodes(load_json(path / "opcodes.json")),
+      inventory_results(get(load_json(path / "inventory_results.json"),"results")), fields(path / "fields.json")
 {
     for (auto const &[name, number] : get(opcodes, "modern").as_object())
         modern_names[integer(number)] = std::string(name);
@@ -28,6 +29,7 @@ Array Protocol::modern_guid(std::uint64_t native, unsigned map)
     if (!native)
         return {0, 0};
     auto high = native >> 52;
+    if(native >> 48 == 0x4000)return inventory_guid(native);
     if (!high)
         return {native, player_high()};
     auto type = high == 0xf11   ? 11ull
