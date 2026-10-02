@@ -29,7 +29,9 @@ class NpcFixture:
             if q.fetchone():raise RuntimeError('an earlier NPC fixture needs cleanup')
             q.execute('SELECT MAX(id) FROM client442_world.game_tele');start=q.fetchone()[0]+1
             x,y,z=self.npc[4:7]
-            sources=[self.before[3:],(x+1.5,y-2.6,z,math.atan2(2.6,-1.5),0)]
+            # Stand on the NPC's side of the bank counter. The public-facing
+            # window can occlude the mouse hit even within interaction range.
+            sources=[self.before[3:],(x-1.5,y+2.6,z,math.atan2(-2.6,1.5)%(2*math.pi),0)]
             for i,(name,source) in enumerate(zip(names,sources)):
                 row=(start+i,*source,name);self.rows.append(row)
                 q.execute('INSERT INTO client442_world.game_tele '
