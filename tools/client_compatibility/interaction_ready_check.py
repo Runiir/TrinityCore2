@@ -6,7 +6,7 @@ from .interaction_trial import Trial
 from .interaction_social import actor
 from .interaction_operations import click_case
 from .interaction_macros import require
-from .observation.journal import entries
+from .observation.journal import entries,Cursor
 from .world.buffer import Reader
 
 
@@ -64,9 +64,51 @@ def round_check(output,ready):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--timeout-only',action='store_true');a=p.parse_args()
+    if a.timeout_only:timeout_check(a.output);return
     for label,ready in [('ready',True),('not_ready',False)]:
         if not round_check(a.output/label,ready)['completed']:break
+
+
+def timeout_check(output):
+    output.mkdir(parents=True,exist_ok=False,mode=0o700)
+    summary={'started_at':time.time(),'completed':False,'failure':None};trials={};sessions={}
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl');completion=set();answers=[]
+    try:
+        for name in ['primary','scout']:
+            with actor(name):
+                trials[name]=Trial(output/name);sessions[name]=actors.session_entry(trials[name].fixture)['session']
+                trials[name].clean_panels()
+        with actor('primary'):
+            t=trials['primary'];s,_=t.observe('fixture')
+            if not s['raid_profile']['expanded']:
+                require(click_case(t,'raid.timeout.expand','Expand raid controls.',lambda c:c['name']=='CompactRaidFrameManagerToggleButton',
+                    lambda b,a,s:{'status':'panel_open_pass' if a['raid_profile']['expanded'] else 'controller_failure'}),'panel_open_pass')
+            require(click_case(t,'raid.timeout.start','Start a ready check and wait for unanswered members.',
+                lambda c:c['name']=='CompactRaidFrameManagerDisplayFrameLeaderOptionsInitiateReadyCheck',
+                lambda b,a,s:{'status':'ready_check_start_pass' if a.get('ready_check') else ('controller_failure' if not s else 'client_or_protocol_failure')}),'ready_check_start_pass')
+        with actor('scout'):
+            s,_=trials['scout'].observe('unanswered_dialog')
+            if not s.get('ready_check'):raise RuntimeError('peer dialog is absent before timeout')
+        deadline=time.monotonic()+40
+        while time.monotonic()<deadline and completion!=set(sessions.values()):
+            for r in cursor.poll():
+                if r.get('time',0)<summary['started_at'] or r.get('session') not in sessions.values():continue
+                if r['name']=='CMSG_READY_CHECK_RESPONSE' and r['direction']=='from_client':answers.append(r['session'])
+                if r['name']=='SMSG_READY_CHECK_COMPLETED' and r['direction']=='to_client':completion.add(r['session'])
+            if completion!=set(sessions.values()):time.sleep(.5)
+        if completion!=set(sessions.values()) or answers:raise RuntimeError('unanswered check did not complete cleanly on both owned sessions')
+        for name,t in trials.items():
+            with actor(name):
+                s,_=t.observe('timeout_finished')
+                if s.get('ready_check'):raise RuntimeError(name+' ready-check dialog remained after timeout')
+                t.receipt['completed']=True
+        summary.update(completed=True,client_responses=answers,completed_sessions=sorted(completion))
+    except Exception as e:summary['failure']=str(e)
+    finally:
+        for t in trials.values():t.receipt['finished_at']=time.time();t.persist()
+        summary['finished_at']=time.time();lab.private_write(output/'cohort.json',json.dumps(summary,indent=2)+'\n');print(json.dumps(summary))
 
 
 if __name__=='__main__':main()
