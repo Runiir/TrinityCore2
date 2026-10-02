@@ -9,6 +9,15 @@ from tools.client_compatibility.world.objects import INDEX
 GUID = (0xF13<<52)|(17401<<32)|123
 
 
+def test_duplicate_drake_names_and_failed_exact_selection_use_enemy_cycling():
+    from tools.client_compatibility.combat_clear import named_target_command
+    facts={'visible_unit_names':{11:'Enslaved Netherwing Drake',12:'Enslaved Netherwing Drake'}}
+    assert named_target_command(facts,'Enslaved Netherwing Drake',1) is None
+    facts['visible_unit_names'].pop(12)
+    assert named_target_command(facts,'Enslaved Netherwing Drake',1)=='/targetexact Enslaved Netherwing Drake'
+    assert named_target_command(facts,'Enslaved Netherwing Drake',3) is None
+
+
 def owner():
     return SimpleNamespace(character={'map':530,'guid':1,'name':'Harnessone','gender':0},
         visible_units={GUID:{'map':530}})

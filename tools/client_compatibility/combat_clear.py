@@ -8,6 +8,12 @@ from .travel_inputs import face
 from tools.second_client import ctl
 
 
+def named_target_command(facts,name,failed_selections):
+    if not name or not re.fullmatch("[A-Za-z '-]{1,100}",name) or failed_selections>2:return None
+    if sum(value==name for value in facts['visible_unit_names'].values())!=1:return None
+    return '/targetexact '+name
+
+
 def run(movement, extra, facts, observer, path):
     if extra['mounted']: raise RuntimeError('melee recovery requires a grounded unmounted character')
     ctl._launcher_env = lab.client_environment; inputs = ctl.Input()
@@ -52,11 +58,14 @@ def run(movement, extra, facts, observer, path):
                 # This is the normal local WoW targeting command, typed through
                 # the client. Its name comes from an ordinary creature query.
                 # It avoids Tab skipping an attacker behind terrain/camera.
-                if name and re.fullmatch("[A-Za-z '-]{1,100}",name):
-                    command='/targetexact '+name
+                command=named_target_command(facts,name,failed_selections)
+                if command:
                     inputs.key('Return');inputs.type(command);inputs.key('Return')
                     keys.append({'local_client_command':command,'source':'ordinary visible creature query'})
                 else:
+                    if facts['selected_unit']:
+                        inputs.key('Return');inputs.type('/cleartarget');inputs.key('Return')
+                        keys.append({'local_client_command':'/cleartarget','reason':'reset an unsuitable or ambiguous selection'})
                     inputs.key('Tab');keys.append({'key':'Tab'})
                 record('select', physical_keys=keys); time.sleep(.4)
                 continue

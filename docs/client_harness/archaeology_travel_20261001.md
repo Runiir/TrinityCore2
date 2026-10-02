@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 143 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 144 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 74 preserve unsuccessful steps, including missing portal
+Episodes 07 through 75 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -423,6 +423,14 @@ exit, then stopped with no collection when the actual arrival's surrounding patc
 still touched overhead collision. Exit selection now requires a 2.5-yard clear
 patch, covering the one-yard steering tolerance plus the 1.5-yard takeoff patch.
 An early failed patch check continues the bounded walk toward its validated goal.
+Episode 75 resumed ordinary flight from the partial ground exit, then stopped in
+incidental combat after 31 failed name selections. `/targetexact Enslaved Netherwing
+Drake` selected a different living drake roughly 31 yards away and 28 yards higher,
+while the actual attacker was only 2.56 yards away. Names are now used only when
+unique among observed units and no more than two exact-selection attempts fail.
+Otherwise the physical guard clears an unsuitable target and presses Tab after
+facing the ordinary observed attacker. This remains a coded combat recovery,
+separate from Laya's archaeology and travel decisions.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
