@@ -3,3 +3,4 @@
 ## Notes: Read-only movement observations rendered into screenshot pixels.
 ## Version: 1.0.0
 ClientMovementHarness.lua
+ClientInteractions.lua
