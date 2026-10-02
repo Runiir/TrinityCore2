@@ -53,6 +53,22 @@ int main(int argc, char **argv)
                         records.push_back(record);
                     result = records;
                 }
+                else if(op=="raid_markers")
+                {
+                    RaidMarkers markers;Array output;
+                    for(auto const &action:get(request,"actions").as_array())
+                    {
+                        if(str(get(action,"fn"))=="mask")markers.mask(integer(get(action,"value")));
+                        else markers.location(integer(get(action,"slot")),get(action,"value"));
+                        auto packet=markers.packet();output.push_back(packet ? Value(hex(*packet)) : Value(nullptr));
+                    }
+                    result=output;
+                }
+                else if(op=="marker_clear")
+                {
+                    Array output;for(auto const &p:Protocol::marker_clear(data("body")))output.push_back(Array{p.first,hex(p.second)});
+                    result=output;
+                }
                 else if (op == "object_values")
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "object_block")

@@ -19,6 +19,12 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         // This public metadata does not require an active player/world instance.
         owner.send("SMSG_REALM_QUERY_RESPONSE", Protocol::realm_name(body));return;
     }
+    if(name=="CMSG_CLEAR_RAID_MARKER")
+    {
+        if(!state.created || !active_world)throw std::runtime_error("raid marker request without owned character");
+        for(auto const &packet:Protocol::marker_clear(body))native_send(packet);
+        return;
+    }
     if (auto request = Protocol::account_request(state,name,body))
     {
         native_send(*request);return;

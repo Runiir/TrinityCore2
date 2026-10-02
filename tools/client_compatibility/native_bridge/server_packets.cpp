@@ -79,7 +79,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     }
     if ((reply = Protocol::party_response(state, name, body, party_identities)))
     {
-        this->send(*reply);co_return;
+        this->send(*reply);if(name=="SMSG_PARTY_UPDATE")service.markers(*this);co_return;
+    }
+    if(name=="SMSG_RAID_MARKERS_CHANGED")
+    {
+        Reader r(body);auto mask=r.take<std::uint32_t>();r.end();service.markers(*this,mask);co_return;
     }
     if ((reply = Protocol::social_response(name, body)))
     {
@@ -185,6 +189,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     }
     else if (name == "SMSG_UPDATE_OBJECT")
     {
+        auto locations=protocol.marker_objects(state,body);
+        if(!locations.empty())service.markers(*this,{},locations);
         bool was_created = state.created;
         if (auto reply = protocol.object_updates(state, body))
             send(*reply);

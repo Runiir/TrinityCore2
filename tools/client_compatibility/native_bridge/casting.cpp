@@ -1,6 +1,7 @@
 #include "protocol.hpp"
 #include "spell_failures.hpp"
 #include <unordered_set>
+#include <cmath>
 
 namespace bridge
 {
@@ -31,7 +32,25 @@ Packet Protocol::cast_request(State &owner, View body) const
     auto target_flags = r.bits(28);
     auto source = r.bits(1), dest = r.bits(1), orientation = r.bits(1), map = r.bits(1), name_len = r.bits(7);
     auto unit = r.guid(), item = r.guid();
-    if (source || dest || orientation || map || name_len || weights || order || item != Array{0, 0})
+    bool marker=spell>=84996 && spell<=85000 && target_flags==64;
+    Array destination;
+    if(marker)
+    {
+        if(source || !dest || unit!=Array{0,0})throw std::runtime_error("invalid raid marker ground target");
+        if(r.guid()!=Array{0,0})throw std::runtime_error("transport raid marker is unsupported");
+        destination=r.unpack("3f");
+        for(auto const &coordinate:destination)
+            if(!std::isfinite(number(coordinate)) || std::abs(number(coordinate))>17066.667)
+                throw std::runtime_error("invalid raid marker destination");
+        if(orientation && !std::isfinite(r.take<float>()))throw std::runtime_error("invalid ground orientation");
+        if(map)
+        {
+            auto target_map=r.take<std::int32_t>();
+            if(target_map!=-1 && target_map!=static_cast<std::int32_t>(owner.map()))
+                throw std::runtime_error("raid marker targets another map");
+        }
+    }
+    if (source || (!marker && (dest || orientation || map)) || name_len || weights || order || item != Array{0, 0})
         throw std::runtime_error("unsupported cast target");
     auto target = (target_flags & 2) ? owner.guid() : 0;
     if (target_flags == 2048 && spell == 73979)
@@ -42,7 +61,7 @@ Packet Protocol::cast_request(State &owner, View body) const
         if (!finds.contains((target >> 32) & 0xfffff))
             throw std::runtime_error("gather target is not an archaeology find");
     }
-    else if ((unit != Array{0, 0} && unit != Array{owner.guid(), player_high()}) || (target_flags & ~2u))
+    else if (!marker && ((unit != Array{0, 0} && unit != Array{owner.guid(), player_high()}) || (target_flags & ~2u)))
         throw std::runtime_error("unsupported or foreign cast target");
     if (moving)
     {
@@ -51,7 +70,7 @@ Packet Protocol::cast_request(State &owner, View body) const
         owner.native_send(name, encoded);
     }
     r.end();
-    if (spell <= 0 || integer(cast[1]) >> 58 != 47 || (flags & 10))
+    if (spell <= 0 || integer(cast[1]) >> 58 != 47 || (flags & (marker ? 2 : 10)))
         throw std::runtime_error("invalid cast identity/flags");
     owner.cast_counter = owner.cast_counter % 255 + 1;
     auto high = (47ull << 58) | (1ull << 42) | (static_cast<std::uint64_t>(owner.map()) << 29) |
@@ -65,6 +84,7 @@ Packet Protocol::cast_request(State &owner, View body) const
     w.pack("BiiBI", {owner.cast_counter, spell, misc0, flags, target_flags});
     if (target_flags & (2 | 2048))
         packed(w, target);
+    if(marker)w.put<std::uint8_t>(0).pack("3f",destination);
     return {"CMSG_CAST_SPELL", w.finish()};
 }
 Reply Protocol::cast_prepare(State &owner, View body)

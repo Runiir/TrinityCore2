@@ -17,7 +17,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
-    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2'}
+    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
 local errors={}
@@ -145,6 +145,8 @@ local function snapshot(viewMode,viewPage)
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
+    data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false
+    data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
     data.equipment={};for i=1,19 do data.equipment[i]=GetInventoryItemID('player',i) or 0 end
     data.professions={};if GetProfessions then
         for _,id in pairs({GetProfessions()}) do local name,_,rank,max=GetProfessionInfo(id)

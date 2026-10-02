@@ -14,6 +14,14 @@ struct Pending
 };
 struct Service
 {
+    struct MarkerGroup
+    {
+        RaidMarkers markers;
+        std::unordered_map<std::string,std::weak_ptr<Session>> listeners;
+    };
+    std::mutex markers_mutex;
+    std::unordered_map<std::uint64_t,MarkerGroup> marker_groups;
+    void markers(Session &session, std::optional<unsigned> mask={}, Array const &locations={});
     std::filesystem::path root, repo;
     Protocol protocol;
     PublicData data;
