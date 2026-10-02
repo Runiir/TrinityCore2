@@ -76,7 +76,9 @@ def start(engine='python', workers=4, maximum=64):
     lab.private_write(lab.ROOT / "run/modern_world.json", json.dumps({"pid": process.pid,
         "start_ticks": lab.proc_start(process.pid), "command": command,
         'engine': engine, 'build': receipt}, indent=2) + "\n")
-    for _ in range(100):
+    # ASan instruments the public-table preload; allow its measured startup cost.
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
         if not lab.owned_process("modern_world"):
             raise RuntimeError("modern world endpoint exited during startup")
         try:
