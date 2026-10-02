@@ -91,7 +91,7 @@ class Trial:
         from PIL import Image
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
-        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+22
+        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+28
         while True:
             with redirect_stdout(StringIO()):ctl.shot(str(path))
             with Image.open(path) as image:
@@ -172,7 +172,7 @@ def panel_suite(out,catalog):
     registry['TOGGLECHARACTER1']['description']='Press K: open or close the professions and skills spellbook.'
     registry['macro_command']={'kind':'chat','value':'/macro','description':'Type /macro in chat to open the macro editor.'}
     initial,_=trial.observe('initial_registry')
-    calendar=next((c for c in initial['controls'] if c['name']=='GameTimeFrame'),None)
+    calendar=initial.get('calendar_button') or next((c for c in initial['controls'] if c['name']=='GameTimeFrame'),None)
     if calendar:registry['calendar_button']={'kind':'click','value':[round(calendar['x']/65535*1280),round(calendar['y']/65535*720)],
         'description':'Click the minimap calendar button.'}
     def visible(state,names):return bool(state.get('bags')) if names==['bags'] else any(n in (state.get('panels') or []) for n in names)

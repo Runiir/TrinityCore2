@@ -22,7 +22,7 @@ def controls(trial):
     from PIL import Image
     from tools.second_client import ctl
     from .observation.interactions import decode_image
-    pages={};total=None;deadline=time.monotonic()+25;panels=None
+    pages={};total=None;deadline=time.monotonic()+40;panels=None
     while time.monotonic()<deadline:
         path=trial.out/'controls_latest.png'
         with redirect_stdout(StringIO()):ctl.shot(str(path))
@@ -37,7 +37,7 @@ def controls(trial):
             pages[page]=state.get('controls') or []
             target=trial.out/f'controls_{len(trial.receipt["cases"]):03}_{page:02}_{state["sequence"]}.png'
             path.replace(target)
-        if total is not None and len(pages)==__import__('math').ceil(total/18):
+        if total is not None and len(pages)==__import__('math').ceil(total/state.get('page_size',18)):
             return [c for p in sorted(pages) for c in pages[p]]
         time.sleep(.1)
     raise RuntimeError('automatic control observation page deadline exceeded')

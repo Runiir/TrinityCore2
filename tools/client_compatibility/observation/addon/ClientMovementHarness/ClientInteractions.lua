@@ -125,12 +125,13 @@ local function snapshot(viewMode,viewPage)
         local f=_G[name];if f then scan(f,0) end
     end
     data.control_count=#data.controls
-    local controls={};local first=mode=='controls' and (page-1)*18+1 or 1
-    for i=first,math.min(#data.controls,first+17) do controls[#controls+1]=data.controls[i] end
+    local controls={};local first=mode=='controls' and (page-1)*12+1 or 1
+    for _,control in ipairs(data.controls) do if control.name=='GameTimeFrame' then data.calendar_button=control end end
+    for i=first,math.min(#data.controls,first+(mode=='controls' and 11 or 5)) do controls[#controls+1]=data.controls[i] end
     data.controls=controls
     if mode=='controls' then
         return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
-            panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count}
+            panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
@@ -145,7 +146,7 @@ local function snapshot(viewMode,viewPage)
     end
     data.group_aliases={}
     for name,value in pairs(_G) do
-        if type(name)=='string' and name:match('^SLASH_') and type(value)=='string' and
+        if type(name)=='string' and name:match('^SLASH_.*%d$') and type(value)=='string' and
             (name:find('PARTY') or name:find('GROUP') or name:find('LEAVE')) then data.group_aliases[name]=value end
     end
     local actionButton=_G.ActionButton12
@@ -163,7 +164,7 @@ local function update()
     if mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
-        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/18);autoPage=autoPages>0 and 1 or 0
+        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/12);autoPage=autoPages>0 and 1 or 0
         else autoPage=autoPage<autoPages and autoPage+1 or 0 end
     end
     if not ok then data={observer_error=trim(data,250),mode=mode} end
