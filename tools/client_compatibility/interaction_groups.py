@@ -32,6 +32,7 @@ def suite(trial):
     if state['group']['members']!=2 or set(state['group']['names'])!={'Harnessone','Harnesstwo'} or not state['group']['leader']:
         raise RuntimeError('group fixture is not the two owned characters with the owned leader')
     trial.receipt['group_baseline']=state['group'];trial.persist()
+    trial.receipt['control_baseline']=state;trial.persist()
     from .interaction_group_menu import open_menu
     for raid in [not state['group']['raid'],state['group']['raid']]:
         label='Raid' if raid else 'Party';trial.clean_panels()
@@ -56,7 +57,28 @@ def main():
     try:suite(trial);trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
+        if trial.receipt.get('control_baseline'):
+            try:
+                restore(trial)
+            except Exception as e:
+                trial.receipt['cleanup_failure']=str(e);trial.receipt['completed']=False
         trial.receipt['finished_at']=time.time();trial.persist();print(json.dumps({'completed':trial.receipt['completed'],'failure':trial.receipt['failure']}))
+
+
+def restore(trial):
+    from .interaction_group_menu import open_menu
+    from .interaction_raid_controls import restore as restore_controls
+    original=trial.controller;trial.controller='code'
+    try:
+        baseline=trial.receipt['control_baseline'];state,_=trial.observe('conversion_cleanup_check')
+        if state['group']['raid']!=baseline['group']['raid']:
+            trial.clean_panels();player=next(c for c in controls(trial) if c['name']=='PlayerFrame')
+            open_menu(trial,player,'restore');label='Raid' if baseline['group']['raid'] else 'Party'
+            require(click_case(trial,'cleanup.raid.group_type','Restore this group to a '+label+'.',
+                lambda c:c['text']=='Convert To '+label,
+                lambda b,a,s:conversion_oracle(a,s,baseline['group']['raid'])),'group_conversion_pass')
+        restore_controls(trial,baseline);trial.clean_panels()
+    finally:trial.controller=original
 
 
 if __name__=='__main__':main()
