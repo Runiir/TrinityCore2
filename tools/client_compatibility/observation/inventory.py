@@ -59,8 +59,11 @@ class Inventory:
         return sum(seen.values())
 
     def slot(self,bag,slot):
-        if not 0<=bag<=4 or not 1<=slot<=36:raise ValueError('oracle bag position outside bound')
-        if bag==0:
+        if not -1<=bag<=4 or not 1<=slot<=36:raise ValueError('oracle bag position outside bound')
+        if bag==-1:
+            if slot>28:raise ValueError('native bank contains twenty-eight base slots')
+            guid=self.pair(self.guid,'PLAYER_FIELD_BANK_SLOT_1',(slot-1)*2)
+        elif bag==0:
             if slot>16:raise ValueError('native backpack contains sixteen slots')
             guid=self.pair(self.guid,'PLAYER_FIELD_INV_SLOT_HEAD',(23+slot-1)*2)
         else:
