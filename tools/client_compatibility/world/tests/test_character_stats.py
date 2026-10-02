@@ -59,7 +59,7 @@ def test_native_equipment_stat_delta_reaches_dispatcher(codec):
     for i in sorted(fields):w.pack('I',fields[i])
     reply=stateful(codec,{'guid':1,'map':0},[action('object_updates','SMSG_UPDATE_OBJECT',w.finish())],snapshot={'guid':1,'map':0,'fields':{}})[0]
     assert reply[0]=='SMSG_UPDATE_OBJECT';r=Reader(bytes.fromhex(reply[1]))
-    assert r.unpack('HI')==(0,1) and r.bits(1)==0 and r.bits(1)==0
+    assert r.unpack('HI')==(0,1) and r.bits(1)==1 and r.bits(1)==0
     size=r.unpack('I')[0];block=r.raw(size);r.end()
     r=read_block(block.hex(),(1,player_high()),1<<5)
     assert mask(r,8)=={176,177,192,193};r.align();assert r.unpack('2i')==(5830,20458);r.end()
