@@ -4,7 +4,6 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
-from .interaction_macros import require
 from .nearby_fixture import NearbyFixture
 from .observation.journal import entries
 from .world.native_objects import records
@@ -57,7 +56,9 @@ def suite(out):
         for name,t in trials.items():
             with actor(name):
                 try:
-                    t.clean_panels();t.execute({'kind':'key','value':'Escape'});s,f=t.observe('restored')
+                    t.clean_panels();s,_=t.observe('cleanup_target')
+                    if s.get('target',{}).get('exists'):t.execute({'kind':'key','value':'Escape'})
+                    s,f=t.observe('restored')
                     t.receipt['restoration']={'frame':f,'world_position':s.get('world_position')}
                 except Exception as e:cohort['completed']=False;cohort.setdefault('cleanup_failures',{})[name]=str(e)
             t.receipt.update(completed=cohort['completed'],failure=cohort['failure'],finished_at=time.time());t.persist()
