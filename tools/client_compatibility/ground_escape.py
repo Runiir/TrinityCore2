@@ -5,6 +5,10 @@ import time
 from . import ground_navigation as ground,site_boundaries,lab_runtime as lab
 
 
+class TerrainBlocked(RuntimeError):
+    """Public ground routes and bounded physical probes were exhausted."""
+
+
 def candidates(tcp,site,obstructions=()):
     start=tcp['player']['position'];heading=tcp['tool']['heading_radians'];result=[]
     for offset in [-math.pi/2,math.pi/2,math.pi,-3*math.pi/4,3*math.pi/4]:
@@ -88,7 +92,7 @@ def execute(inputs,tcp,observed_ids,path,obstructions=()):
                     'goal_source':'public survey bearing and nearby dry recovery corridors',
                     'ground_escape_receipt':receipt.name,'physical_navigation_recovery':True,
                     'boundary_guard':{'site_id':site['id'],'observed_after_inside':True,'whole_corridor_inside':True,'source':site['source']}}
-        raise RuntimeError('no accepted dry recovery corridor' if not routes else
+        raise TerrainBlocked('no accepted dry recovery corridor' if not routes else
             'four bounded on-foot probes could not leave the navigation corner')
     except BaseException as error:trace['failure']=f'{type(error).__name__}: {error}';raise
     finally:

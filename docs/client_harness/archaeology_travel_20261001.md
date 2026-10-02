@@ -14,6 +14,25 @@ native worldserver configuration. Inputs are real keys and mouse actions sent
 only to the owned game window. Trials do not inject movement packets, area
 triggers, GM transfers, combat commands or private next-find coordinates.
 
+## Authorized green terrain flights, 2026-10-02
+
+The user authorized short recovery flights when rocks or cliffs leave no safe
+walking route. Normal green approaches still walk or swim. The adapter tries
+ground routing and bounded ground probes first; exhausted routes or repeated
+blocked advances can request a flight using only the observed telescope bearing
+and public geometry. Other errors do not trigger flight.
+
+Recovery destinations are within 21 yards, with at most 40 yards of height
+change and two recovery flights per find trial. Public terrain/model columns and
+body rays must clear ascent, cruise and descent. Actual movement is checked
+against that envelope and the assigned site. A fresh visible green telescope,
+healthy grounded outdoor character, completed landing, dry feet and dismount
+are required. The closed-receipt validator permits mounted green movement only
+when it matches an explicitly recorded, completed terrain recovery flight.
+
+The accepted episode 89 below predates this authorization and used ground-only
+green approaches. It does not establish live success for the new fallback.
+
 ## Accepted bounded loop, 2026-10-02
 
 Episode `laya_archaeology_travel_loop_89` completed two fresh sites in one
@@ -166,8 +185,8 @@ small, ineffective moves. Ground routing now compares that surface with observed
 feet, excludes nearby raised polygons in its local query, and retains up to eight
 such observations for the current find. The route approaches the lower floor
 and goes around the obstruction. Episode 44 followed this detour on foot and
-collected Coilskar's final find, replacing site 387 with 345. This recovery never
-mounts at green and never changes shared MMAP tiles.
+collected Coilskar's final find, replacing site 387 with 345. That historical
+ground recovery stayed unmounted and did not change shared MMAP tiles.
 
 Episode 44 then collected all three Eclipse Point finds, awarding 6, 6 and 9
 Draenei fragments, and observed site 393 replaced by 371. It automatically used

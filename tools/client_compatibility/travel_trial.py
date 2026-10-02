@@ -67,6 +67,11 @@ def run(plan,out,maximum_steps=180):
                     if not (facts['transferring'] or recent_transfer) or time.monotonic()>deadline:raise
                     time.sleep(.25)
             with Image.open(latest) as image:ui=taxi.decode_image(image)
+            if plan.get('green_terrain_recovery'):
+                from .green_flight import check_position
+                check_position(plan['green_terrain_recovery'],facts['position'])
+                if movement['health_percent']<50 or movement['in_combat']:
+                    raise RuntimeError('short green terrain flight interrupted by health or combat')
             if movement['in_combat']:
                 from .combat_recovery import withdraw
                 receipt['safety_recoveries'].append(withdraw(movement,extra,facts,observer,latest))
@@ -129,6 +134,8 @@ def run(plan,out,maximum_steps=180):
             if action in ['land','dismount']:leg['landing_avoidance_frozen']=True
             step.update(input=travel_inputs.execute(action,leg,facts,extra,observer,latest,
                 intersite=plan.get('schema')=='client442_public_site_route_v1'),execution_status='completed')
+            if plan.get('green_terrain_recovery'):
+                check_position(plan['green_terrain_recovery'],observer.poll()['position'])
             print(json.dumps({'step':index,'leg':leg_index,'action':action,'position':facts['position'][:3]}),flush=True)
             if action=='arrived':
                 finished.append({'leg':leg_index,'name':leg['id'],'time':time.time(),'facts':facts})

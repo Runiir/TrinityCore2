@@ -3,11 +3,13 @@ import math
 from . import ground_navigation as ground,site_boundaries
 
 
-def select(site,start,heading,distance):
+def select(site,start,heading,distance,*,maximum_distance=None):
     attempts=[]
     # Flat terrain beside a cliff can be closer than the selected walking
     # distance. Do not repeatedly land behind the noisy telescope bearing.
     distances=list(dict.fromkeys([distance,max(3,distance/2),7,min(84,distance*2),min(84,distance*3)]))
+    if maximum_distance is not None:
+        distances=[d for d in distances if 3<=d<=maximum_distance]
     for offset in [0,-math.pi/4,math.pi/4]:
         for requested in distances:
             angle=heading+offset
@@ -19,6 +21,7 @@ def select(site,start,heading,distance):
                 attempts.append({'waypoint':waypoint,'failure':str(error)});continue
             progress=(point[0]-start[0])*math.cos(heading)+(point[1]-start[1])*math.sin(heading)
             accepted=(progress>=1.5 and math.dist(point[:2],start[:2])>=3 and
+                      (maximum_distance is None or math.dist(point[:2],start[:2])<=maximum_distance) and
                       site_boundaries.inside_segment(site['polygon'],start,point) and
                       not ground.water_at(site['map'],point)['water_above_feet'])
             patch=None

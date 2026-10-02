@@ -106,8 +106,19 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False,object_observer=No
             inside=site_boundaries.contains(site['polygon'],after['world_position'])
             ground_route={**planned,'mounted_travel_episode':directory.name,
                 'boundary_guard':{**planned['boundary_guard'],'observed_after_inside':inside}}
-        else:hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids,recovery,
-            grounded=not any(extra[k] for k in ['mounted','flying','falling','swimming']),path=path)
+        else:
+            from .ground_escape import TerrainBlocked
+            from . import green_flight
+            repeated=mounted_moves and tcp['tool']['color']=='green' and (recovery or {}).get('attempt',0)>=2
+            if repeated:
+                hold,ground_route=green_flight.execute(tcp,path,recovery,'repeated_blocked_ground_advances')
+            else:
+                try:
+                    hold,ground_route=ground_navigation.walk(inputs,tcp,hold*7,digsite_ids,recovery,
+                        grounded=not any(extra[k] for k in ['mounted','flying','falling','swimming']),path=path)
+                except TerrainBlocked:
+                    if not mounted_moves or tcp['tool']['color']!='green':raise
+                    hold,ground_route=green_flight.execute(tcp,path,recovery,'ground_routes_exhausted')
     elif action=='loot':
         if not tcp['finds']:raise ValueError('loot without a visible owned find')
         owned_input.focus()

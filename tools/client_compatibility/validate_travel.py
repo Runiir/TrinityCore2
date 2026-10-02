@@ -5,6 +5,23 @@ import re
 from . import lab_runtime as lab, site_boundaries
 
 
+def validate_green_recovery(route,directory):
+    from .green_flight import check_position,MAX_DISTANCE,MAX_HEIGHT,MAX_RECOVERIES
+    guard=route.get('green_terrain_recovery') or {}
+    if (guard.get('schema')!='green_terrain_recovery_v1' or
+        guard.get('reason') not in ['ground_routes_exhausted','repeated_blocked_ground_advances'] or
+        guard.get('maximum_distance')!=MAX_DISTANCE or guard.get('maximum_height')!=MAX_HEIGHT or
+        not 0<=guard.get('green_flights_used',MAX_RECOVERIES)<MAX_RECOVERIES or
+        not route.get('dry_unmounted_arrival')):
+        raise ValueError('invalid authorized green terrain recovery')
+    child=json.loads((directory/route['mounted_travel_episode']/'episode.json').read_text())
+    if not child.get('completed') or child['plan'].get('green_terrain_recovery')!=guard:
+        raise ValueError('green recovery is not backed by a completed matching flight')
+    for step in child['steps']:
+        check_position(guard,step['facts']['position'])
+    check_position(guard,route['after'])
+
+
 def score(directory):
     root=json.loads((directory/'episode.json').read_text())
     if not root.get('finished_at'):raise ValueError('cannot validate an open loop')
@@ -18,7 +35,7 @@ def score(directory):
         'frames':0,'frame_hash_failures':[],'model_revisions':[],'source_commits':[],
         'site_find_counts':{},'fresh_sites_fully_completed':[],'model_rejected_decisions':0,
         'water_transits':[],'mounted_corridor_checks':0,'localization_views':0,'ground_escapes':[],'client_floor_probes':[],
-        'takeoff_ground_exits':[],'combat_landings':[]}
+        'takeoff_ground_exits':[],'combat_landings':[],'green_terrain_recoveries':0}
     for step in root.get('steps',[]):
         if step.get('kind')!='dig':continue
         child=json.loads((directory/step['episode']/'episode.json').read_text())
@@ -59,8 +76,11 @@ def score(directory):
                 if not route['boundary_guard']['observed_after_inside']:
                     summary['boundary_failures'].append({'episode':str(path.parent.relative_to(directory)),'step':step['index']})
                 colour=(step.get('tcp',{}).get('tool') or {}).get('color')
-                if step['action'].startswith('forward_') and ((kind=='walks' and colour!='green') or (kind=='mounted_moves' and colour=='green')):
-                    raise ValueError('mounted movement policy mismatch')
+                if step['action'].startswith('forward_'):
+                    if kind=='walks' and colour!='green':raise ValueError('mounted movement policy mismatch')
+                    if kind=='mounted_moves' and colour=='green':
+                        validate_green_recovery(route,path.parent)
+                        summary['green_terrain_recoveries']+=1
             if step['action']=='loot':
                 observed=step['travel']['digsite_ids']
                 for find in step['tcp']['finds']:

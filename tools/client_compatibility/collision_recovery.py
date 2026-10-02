@@ -5,12 +5,14 @@ import math
 class Recovery:
     def __init__(self):
         self.checked=None;self.blocked=0;self.attempts=0;self.obstructions=[];self.pending=None
+        self.green_flights=0
 
     def update(self,history,tcp):
         previous=next((s for s in reversed(history) if s['action'].startswith('forward_')),None)
         if not previous or previous['index']==self.checked or not tcp.get('player'):return
         self.checked=previous['index']
         route=(previous.get('input') or {}).get('ground_route') or {}
+        if route.get('green_terrain_recovery'):self.green_flights+=1
         self.pending={k:v for k,v in route.items() if k not in ['physical_inputs','after','walking_goal']}
         if not self.pending.get('remaining_ground_points'):self.pending=None
         for point in ((previous.get('input') or {}).get('ground_route') or {}).get('obstruction_origins',[]):
@@ -27,8 +29,10 @@ class Recovery:
 
     def for_action(self,action):
         if not action.startswith('forward_'):return None
-        remembered={'ground_obstructions':self.obstructions.copy(),'source':'observed feet below mapped solid surface',
-            'decision_origin':'physical_movement_guard'} if self.obstructions else None
+        remembered={'green_flights_used':self.green_flights} if self.green_flights else None
+        if self.obstructions:
+            remembered={**(remembered or {}),'ground_obstructions':self.obstructions.copy(),
+                'source':'observed feet below mapped solid surface','decision_origin':'physical_movement_guard'}
         if self.pending:
             remembered={**(remembered or {}),'pending_ground_route':self.pending,
                 'source':'retained bounded route to a previously observed public survey ray',
