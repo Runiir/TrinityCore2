@@ -122,10 +122,28 @@ def cleanup(trial):
         raise RuntimeError('guild baseline restoration failed')
 
 
+def empty_information(trial):
+    """Diagnostic for the client's empty-string submission boundary."""
+    trial.clean_panels();state,_=trial.observe('fixture');baseline=native(trial)
+    if not baseline or baseline[1:3]!=('Harness Ui Test',trial.fixture['guid']) or not baseline[3]:
+        raise RuntimeError('requires the owned disposable leader and a nonempty information baseline')
+    trial.receipt.update(guild_baseline=baseline,classic_baseline=state['guild_ui']['classic']);trial.persist()
+    trial.execute({'kind':'chat','value':'/console useClassicGuildUI 1'});trial.execute({'kind':'key','value':'j'})
+    require(click_case(trial,'guild.information_open','Open guild information.',lambda c:c['name']=='GuildFrameGuildInformationButton',
+        lambda b,a,s:{'status':'panel_open_pass' if s and 'GuildInfoFrame' in a['panels'] else 'client_or_protocol_failure'}),'panel_open_pass')
+    require(edit_case(trial,'guild.information_clear','Clear all guild information.',lambda c:c['name']=='GuildInfoEditBox',''),'ui_edit_pass')
+    require(click_case(trial,'guild.information_empty_save','Save empty guild information.',lambda c:c['name']=='GuildInfoSaveButton',
+        lambda b,a,s:{'status':'guild_information_empty_pass' if s and native(trial)[3]=='' and 'GuildInfoFrame' not in a['panels']
+            else 'client_or_protocol_failure','oracle':{'native_info':native(trial)[3],'save_closed_dialog':'GuildInfoFrame' not in a['panels'],
+            'click_hold_seconds':.15}}),'guild_information_empty_pass')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    t=Trial(p.parse_args().output)
-    try:suite(t);t.receipt['completed']=True
+    p.add_argument('--empty-information',action='store_true');args=p.parse_args()
+    t=Trial(args.output,controller='code' if args.empty_information else 'laya')
+    try:
+        (empty_information if args.empty_information else suite)(t);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
         try:cleanup(t)
