@@ -193,7 +193,15 @@ updates replace stale client state; newly created items and removals are tracked
 `stack_split_01` uses Shift-click and the normal split dialog, places one Dwarf Keystone
 from a stack of five, then merges it back. Native item creation, stack counts and removal
 agree with the UI, and the original five-item stack is restored. Cross-bag, equipment
-and crafting trials still need their own live receipts.
+and crafting trials have separate receipts and acceptance checks.
+
+`cross_bag_01` transfers the hearthstone from the backpack into an equipped bag and
+back. Native item identity/count and both visible slots agree throughout, with the
+original inventory restored. `ready_timeout_01` starts a check without a peer answer;
+the bridge's timer completes it on both sessions and closes both dialogs. It records
+zero client response packets, separating timeout from an answered check.
+
+Equipment stats and crafting outcomes remain pending.
 
 The latest full auth/world regression passes 298 tests. The selected ASan/UBSan
 packet regression passes 58. The first ready-check test fixtures omitted required

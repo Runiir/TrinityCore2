@@ -1,4 +1,5 @@
 """Native inventory oracle independent of the bridge's modern slot mapping."""
+import struct
 from .journal import Cursor
 from ..world.native_objects import records
 from ..world.objects import INDEX
@@ -32,6 +33,23 @@ class Inventory:
         start=INDEX[name]+offset
         return fields.get(start,0)|fields.get(start+1,0)<<32
 
+    def equipment(self,slot):
+        if not 1<=slot<=19:raise ValueError('equipment slot outside bound')
+        return self.item(self.pair(self.guid,'PLAYER_FIELD_INV_SLOT_HEAD',(slot-1)*2))
+
+    def item(self,guid):
+        fields=self.objects.get(guid,{})
+        return {'guid':guid,'id':fields.get(INDEX['OBJECT_FIELD_ENTRY'],0),
+            'count':fields.get(INDEX['ITEM_FIELD_STACK_COUNT'],0)}
+
+    def character_stats(self):
+        fields=self.objects.get(self.guid,{})
+        def floating(name):return struct.unpack('<f',struct.pack('<I',fields.get(INDEX[name],0)))[0]
+        return {'strength':fields.get(INDEX['UNIT_FIELD_STAT0'],0),
+            'armor':fields.get(INDEX['UNIT_FIELD_RESISTANCES'],0),
+            'damage':[floating('UNIT_FIELD_MINDAMAGE'),floating('UNIT_FIELD_MAXDAMAGE')],
+            'health':fields.get(INDEX['UNIT_FIELD_MAXHEALTH'],0)}
+
     def slot(self,bag,slot):
         if not 0<=bag<=4 or not 1<=slot<=36:raise ValueError('oracle bag position outside bound')
         if bag==0:
@@ -40,6 +58,4 @@ class Inventory:
         else:
             container=self.pair(self.guid,'PLAYER_FIELD_INV_SLOT_HEAD',(19+bag-1)*2)
             guid=self.pair(container,'CONTAINER_FIELD_SLOT_1',(slot-1)*2)
-        fields=self.objects.get(guid,{})
-        return {'guid':guid,'id':fields.get(INDEX['OBJECT_FIELD_ENTRY'],0),
-            'count':fields.get(INDEX['ITEM_FIELD_STACK_COUNT'],0)}
+        return self.item(guid)
