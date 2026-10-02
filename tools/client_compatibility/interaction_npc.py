@@ -23,10 +23,11 @@ def suite(t,service,point,stage_only,sell_buyback=False,purchase=False,repair_al
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
         if camera_zoom is not None:
             from .interaction_camera_fixture import zoom,set_zoom
-            camera_before,_=zoom(t,'camera_baseline');set_zoom(t,camera_zoom,'camera_setup')
+            camera_before,_=zoom(t,'camera_baseline');set_zoom(t,camera_zoom,'camera_setup',tolerance=.51)
         if camera_drag_y:
             t.io.drag((900,360),(900,360+camera_drag_y));camera_dragged=True
-            t.receipt['camera_drag_fixture']={'source':'code_fixture_left_mouse_drag','delta_y':camera_drag_y,'restored':False};t.persist()
+            t.receipt['camera_drag_fixture']={'source':'code_fixture_left_mouse_drag','delta_y':camera_drag_y,'reversed':False,
+                'limit':'Opposite physical drag verified; camera pitch has no observation oracle.'};t.persist()
         state,frame=t.observe('npc_staged');t.receipt['staging']={'target':state['target'],'frame':frame};t.persist()
         if state['target'].get('name')!=fixture.npc[2] or not state['target'].get('visible'):
             raise RuntimeError('service NPC is not visibly targeted')
@@ -78,7 +79,7 @@ def suite(t,service,point,stage_only,sell_buyback=False,purchase=False,repair_al
             t.clean_panels()
             if camera_dragged:
                 t.io.drag((900,360+camera_drag_y),(900,360))
-                t.receipt['camera_drag_fixture']['restored']=True;t.persist()
+                t.receipt['camera_drag_fixture']['reversed']=True;t.persist()
             if camera_before is not None:
                 from .interaction_camera_fixture import set_zoom
                 set_zoom(t,camera_before,'camera_restore')

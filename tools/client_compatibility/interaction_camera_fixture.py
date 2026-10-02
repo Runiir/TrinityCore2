@@ -11,13 +11,13 @@ def zoom(t, label):
     return value, frame
 
 
-def set_zoom(t, target, label):
+def set_zoom(t, target, label, tolerance=.1):
     value, frame = zoom(t, label + '_before')
-    row = {'source': 'code_fixture_mouse_wheel', 'target': target,
+    row = {'source': 'code_fixture_mouse_wheel', 'target': target, 'tolerance': tolerance,
            'before': value, 'before_frame': frame, 'inputs': []}
     t.receipt.setdefault('camera_fixture', []).append(row); t.persist()
     for index in range(40):
-        if abs(value - target) <= .1:
+        if abs(value - target) <= tolerance:
             row.update(after=value, restored_or_set=True); t.persist(); return
         button = 4 if value > target else 5
         t.io.click(1000, 360, button=button); time.sleep(.5)
@@ -26,7 +26,7 @@ def set_zoom(t, target, label):
         t.persist()
         if abs(after - value) < .01:
             raise RuntimeError('camera fixture wheel made no progress')
-        if (value - target) * (after - target) < 0 and abs(after - target) > .1:
+        if (value - target) * (after - target) < 0 and abs(after - target) > tolerance:
             raise RuntimeError('camera target is not reachable by whole mouse-wheel steps')
         value = after
     raise RuntimeError('camera fixture exceeded its bounded wheel count')
