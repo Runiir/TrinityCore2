@@ -59,7 +59,7 @@ local gossipPixels={}
 for i=1,1112 do
     local pixel=gossipPanel:CreateTexture(nil,'OVERLAY');pixel:SetSize(2,2)
     pixel:SetPoint('TOPLEFT',gossipPanel,'TOPLEFT',((i-1)%64)*2,-math.floor((i-1)/64)*2)
-    gossipPixels[i]=pixel
+    gossipPixels[i]=pixel;pixel:Hide()
 end
 local function gossipSample()
     local choices,rows={},{}
@@ -90,9 +90,9 @@ local function gossipSample()
         end
         scan(GossipFrame,0)
     end
-    local bytes={84,67,71,49} -- TCG1
+    local bytes={84,67,71,50} -- TCG2: no unused-row bitmap padding
     append(bytes,sequence,4);append(bytes,math.min(#rows,16),1)
-    for i=1,16 do
+    for i=1,math.min(#rows,16) do
         local row=rows[i] or {0,0,0,0}
         append(bytes,row[1],2);append(bytes,row[2],2)
         append(bytes,integer(row[3]*65535,65535),2);append(bytes,integer(row[4]*65535,65535),2)
@@ -100,8 +100,9 @@ local function gossipSample()
     append(bytes,captionChecksum(string.char(unpack(bytes))),2)
     for i=1,#bytes*8 do
         local white=math.floor(bytes[math.floor((i-1)/8)+1]/(2^(7-((i-1)%8))))%2
-        gossipPixels[i]:SetColorTexture(white,white,white,1)
+        gossipPixels[i]:SetColorTexture(white,white,white,1);gossipPixels[i]:Show()
     end
+    for i=#bytes*8+1,#gossipPixels do gossipPixels[i]:Hide() end
 end
 -- Public taxi-node IDs and centers of the actual visible Blizzard buttons.
 -- The controller clicks these centers with a physical mouse. No protected API
@@ -117,7 +118,7 @@ for i=1,8280 do
     local pixel=taxiPanel:CreateTexture(nil,'OVERLAY')
     pixel:SetSize(2,2)
     pixel:SetPoint('TOPLEFT',taxiPanel,'TOPLEFT',((i-1)%128)*2,-math.floor((i-1)/128)*2)
-    taxiPixels[i]=pixel
+    taxiPixels[i]=pixel;pixel:Hide()
 end
 local function taxiSample()
     local nodes={}
@@ -140,10 +141,10 @@ local function taxiSample()
         end
     end
     table.sort(nodes,function(a,b)return a[1]<b[1] end)
-    local bytes={84,67,84,49} -- TCT1
+    local bytes={84,67,84,50} -- TCT2: render only actual nodes
     append(bytes,sequence,4)
     append(bytes,math.min(#nodes,128),1)
-    for i=1,128 do
+    for i=1,math.min(#nodes,128) do
         local node=nodes[i] or {0,0,0,0,0}
         append(bytes,node[1],2)
         append(bytes,integer(node[2]*65535,65535),2)
@@ -157,8 +158,9 @@ local function taxiSample()
     for i=1,#bytes*8 do
         local byte=bytes[math.floor((i-1)/8)+1]
         local white=math.floor(byte/(2^(7-((i-1)%8))))%2
-        taxiPixels[i]:SetColorTexture(white,white,white,1)
+        taxiPixels[i]:SetColorTexture(white,white,white,1);taxiPixels[i]:Show()
     end
+    for i=#bytes*8+1,#taxiPixels do taxiPixels[i]:Hide() end
 end
 -- A second observation-only packet carries public map/travel state. Digsite IDs
 -- come from the same map API used by Blizzard's archaeology overlay.

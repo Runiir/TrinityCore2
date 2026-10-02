@@ -1,23 +1,14 @@
 """Read actual Blizzard taxi button centers from observation-only pixels."""
 import struct
-from .telemetry import checksum
+from .menu_pixels import read_menu
 
 SIZE=1035
 
 
 def decode_image(image):
-    image=image.convert('RGB');bits=[]
-    for index in range(SIZE*8):
-        x=int(15+(index%128+.5)*1.875);y=int(60+(index//128+.5)*1.875)
-        r,g,b=image.getpixel((x,y))
-        if max(r,g,b)-min(r,g,b)>30 or 40<r<215:raise ValueError('invalid taxi observation pixel')
-        bits.append(int(r>=215))
-    data=bytes(sum(bits[start+b]<<(7-b) for b in range(8)) for start in range(0,len(bits),8))
-    magic,seq,count=struct.unpack_from('>4sIB',data)
-    if magic!=b'TCT1' or count>128 or checksum(data[:-2])!=struct.unpack_from('>H',data,SIZE-2)[0]:
-        raise ValueError('invalid taxi observation packet')
+    image,data,seq,count=read_menu(image,b'TCT',128,15,60,128,1.875)
     nodes=[]
-    for i in range(128):
+    for i in range(128 if data[:4]==b'TCT1' else count):
         node,x,y,state,slot=struct.unpack_from('>3H2B',data,9+i*8)
         if i>=count:
             if any([node,x,y,state,slot]):raise ValueError('nonempty unused taxi node')
