@@ -13,6 +13,11 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             throw std::runtime_error("gameplay request outside owned active world");
     };
     auto native_send = [&](Packet const &packet) { owner.native->send(packet.first, packet.second); };
+    if (name == "CMSG_QUERY_REALM_NAME")
+    {
+        if (!state.created || !active_world) throw std::runtime_error("realm query without owned character");
+        owner.send("SMSG_REALM_QUERY_RESPONSE", Protocol::realm_name(body));return;
+    }
     if (auto request = Protocol::account_request(state,name,body))
     {
         native_send(*request);return;

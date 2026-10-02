@@ -6,6 +6,16 @@ from tools.client_compatibility.world.tests.test_native_bridge_codec import code
 HIGH=(2<<58)|(1<<42)
 
 
+def test_local_realm_lookup_and_unknown_realm(codec):
+    body=result(codec,op='realm_name',body=struct.pack('<I',1).hex())
+    r=Reader(bytes.fromhex(body));assert r.unpack('IB')==(1,0)
+    assert r.bits(1)==1;assert r.bits(1)==0
+    actual,normalized=r.bits(8),r.bits(8);r.align()
+    assert r.raw(actual)==b'Client442 Lab';assert r.raw(normalized)==b'Client442Lab';r.end()
+    assert result(codec,op='realm_name',body=struct.pack('<I',2).hex())=='0200000001'
+    assert 'error' in result(codec,op='realm_name',body='0100')
+
+
 def call(codec,fn,name,body,**kwargs):
     return result(codec,op='stateful',character={'guid':1,'name':'Harnessone'},snapshot=None,
         gameobjects=[],units=[],actions=[{'fn':fn,'name':name,'body':body.hex()}],**kwargs)[0]

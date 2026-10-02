@@ -37,6 +37,8 @@ int main(int argc, char **argv)
                 }
                 else if (op == "player_names")
                     result = hex(Protocol::player_names_response(get(request,"requested").as_array(),get(request,"rows").as_array()));
+                else if (op == "realm_name")
+                    result = hex(Protocol::realm_name(data("body")));
                 else if (op == "movement")
                 {
                     auto state = movement_parse(data("body"), integer(get(request, "guid")));

@@ -80,6 +80,7 @@ struct Protocol
     static Reply social_request(std::string const &name, View body);
     static Reply social_response(std::string const &name, View body);
     static Bytes player_names_response(Array const &requested, Array const &rows);
+    static Bytes realm_name(View body);
     static Reply party_request(std::string const &name, View body);
     static Reply party_response(State &owner, std::string const &name, View body, Array const &identities);
     static Array party_members(View body);

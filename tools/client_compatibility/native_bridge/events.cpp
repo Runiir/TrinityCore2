@@ -28,6 +28,7 @@ bool capture(std::string const &name)
                                                           "CMSG_ADD_FRIEND", "CMSG_DEL_FRIEND", "CMSG_SET_CONTACT_NOTES",
                                                           "CMSG_ADD_IGNORE", "CMSG_DEL_IGNORE", "SMSG_CONTACT_LIST", "SMSG_FRIEND_STATUS",
                                                           "CMSG_QUERY_PLAYER_NAMES", "SMSG_QUERY_PLAYER_NAMES_RESPONSE",
+                                                          "CMSG_QUERY_REALM_NAME", "SMSG_REALM_QUERY_RESPONSE",
                                                           "CMSG_PARTY_INVITE", "CMSG_PARTY_INVITE_RESPONSE", "CMSG_PARTY_UNINVITE",
                                                           "CMSG_LEAVE_GROUP", "CMSG_GROUP_DISBAND", "CMSG_CONVERT_RAID", "CMSG_GROUP_RAID_CONVERT",
                                                           "CMSG_SET_PARTY_LEADER", "CMSG_GROUP_SET_LEADER", "CMSG_GROUP_UNINVITE_GUID",
