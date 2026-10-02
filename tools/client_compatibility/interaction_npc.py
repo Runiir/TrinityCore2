@@ -57,7 +57,9 @@ def suite(t,service,point,stage_only,sell_buyback=False,purchase=False):
     finally:
         if getattr(t,'merchant_restore_required',False):
             raise RuntimeError('merchant inventory cleanup remains pending; preserving the open merchant and NPC restore rows')
-        t.clean_panels();fixture.restore();state,frame=t.observe('restored')
+        try:t.clean_panels()
+        finally:fixture.restore()
+        state,frame=t.observe('restored')
         t.receipt['restoration']={'frame':frame,'world_position':state['world_position']};t.persist()
 
 
