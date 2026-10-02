@@ -26,10 +26,11 @@ def suite(out):
                 t=trials[name]=Trial(out/name);actors.session_entry(t.fixture);t.clean_panels()
                 state,_=t.observe('fixture');baselines[name]=state['guild_ui']['classic']
         primary,scout=trials['primary'],trials['scout'];own=membership(primary.fixture['guid'])
+        if not own or own[1]!=0:raise RuntimeError('requires an owned guild leader')
         with lab.connection() as con,con.cursor() as cur:
             cur.execute('SELECT name,leaderguid FROM client442_characters.guild WHERE guildid=%s',(own[0],));guild=cur.fetchone()
             cur.execute('SELECT guid FROM client442_characters.guild_member WHERE guildid=%s',(own[0],));members=cur.fetchall()
-        if guild!=('Harness Ui Test',primary.fixture['guid']) or own[1]!=0 or membership(scout.fixture['guid']) or members!=((primary.fixture['guid'],),):
+        if guild!=('Harness Ui Test',primary.fixture['guid']) or membership(scout.fixture['guid']) or {m[0] for m in members}!={primary.fixture['guid']}:
             raise RuntimeError('requires disposable owned guild leader and unguilded peer')
         cohort['guild_id']=own[0]
         # Invitation was qualified separately; this is explicit fixture input.
