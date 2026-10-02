@@ -27,7 +27,9 @@ def suite(trial):
     if len(observed)!=2 or not all(c['text'] in ['Unlock','Lock','Hide','Show'] for c in observed):
         raise RuntimeError('raid control captions are missing before their first click')
     trial.receipt['initial_control_captions']=observed;trial.persist()
-    for enabled in [True,False]:
+    baseline=before['state'];trial.receipt['control_baseline']=baseline;trial.persist()
+    assistant=baseline['group']['everyone_assistant']
+    for enabled in [not assistant,assistant]:
         def oracle(b,a,correct):
             visible=a['group'].get('everyone_assistant')==enabled
             return {'status':'assistant_change_pass' if visible else ('controller_failure' if not correct else 'client_or_protocol_failure'),
@@ -43,7 +45,8 @@ def suite(trial):
                     raise RuntimeError('second client assistant flags disagree')
                 peer.receipt.update(completed=True,group_display=facts)
             finally:peer.receipt['finished_at']=time.time();peer.persist()
-    for option,caption,values in [('locked','Unlock',[False,True]),('shown','Hide',[False,True])]:
+    for option in ['locked','shown']:
+        original=baseline['raid_profile'][option];values=[not original,original]
         control='CompactRaidFrameManagerDisplayFrame'+('Locked' if option=='locked' else 'Hidden')+'ModeToggle'
         for value in values:
             goal=('Unlock' if not value else 'Lock')+' raid-frame positioning.' if option=='locked' else ('Hide' if not value else 'Show')+' the raid health bars.'
@@ -51,7 +54,8 @@ def suite(trial):
                 lambda b,a,s:{'status':'raid_profile_change_pass' if a['raid_profile'].get(option)==value else
                     ('controller_failure' if not s else 'client_or_protocol_failure'),'oracle':a['raid_profile']}),'raid_profile_change_pass')
     final=capture(trial,'restored')
-    if not final['visible_health_bars_valid']:raise RuntimeError('restored raid health bars are invalid')
+    if baseline['raid_profile']['shown'] and not final['visible_health_bars_valid']:
+        raise RuntimeError('restored raid health bars are invalid')
     trial.receipt['restored_display']=final
 
 
