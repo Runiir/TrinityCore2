@@ -60,6 +60,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if (name == "SMSG_PARTY_MEMBER_FULL_STATE" || name == "SMSG_PARTY_MEMBER_STATE")
+    {
+        if ((reply = Protocol::party_state(state,name,body))) this->send(*reply);
+        co_return;
+    }
     if ((reply = Protocol::achievement_response(state,name,body)))
     {
         this->send(*reply);co_return;

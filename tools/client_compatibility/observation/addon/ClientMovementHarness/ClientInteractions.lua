@@ -19,7 +19,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2'}
 local sequence,elapsed,mode,page=0,0,'state',1
-local autoPage,autoPages=0,0
+local autoPage,autoPages,groupPage=0,0,1
 local errors={}
 local function call(fn,...)
     if type(fn)~='function' then return nil end
@@ -65,11 +65,45 @@ local function bindings(first,count)
     end
     return rows
 end
+local function groupUnits(page)
+    local rows={}
+    for i=(page-1)*6+1,math.min(GetNumGroupMembers(),page*6) do
+        local unit=IsInRaid() and 'raid'..i or (i==1 and 'player' or 'party'..(i-1))
+        local _,class=call(UnitClass,unit)
+        rows[#rows+1]={unit=unit,guid=call(UnitGUID,unit),name=call(UnitName,unit),exists=not not call(UnitExists,unit),
+            connected=not not call(UnitIsConnected,unit),visible=not not call(UnitIsVisible,unit),class=class,
+            level=call(UnitLevel,unit),health=call(UnitHealth,unit),max_health=call(UnitHealthMax,unit),
+            power=call(UnitPower,unit),max_power=call(UnitPowerMax,unit),dead=not not call(UnitIsDeadOrGhost,unit)}
+    end
+    return rows
+end
+local function groupFrames(units)
+    local rows,visited,wanted={},{},{}
+    for _,row in ipairs(units) do wanted[row.unit]=true end
+    local function scan(f,depth)
+        if not f or visited[f] or depth>5 or not f:IsVisible() then return end;visited[f]=true
+        local unit=f.unit or f.displayedUnit or call(f.GetAttribute,f,'unit')
+        if type(unit)=='string' and wanted[unit] and #rows<6 then
+            local bar=f.healthBar or f.HealthBar or _G[(f:GetName() or '')..'HealthBar']
+            if bar then
+                local low,high=call(bar.GetMinMaxValues,bar)
+                rows[#rows+1]={name=f:GetName() or '',unit=unit,visible=true,
+                    health_bar=bar:IsVisible(),low=low,high=high,value=call(bar.GetValue,bar)}
+            end
+        end
+        if f.GetChildren then for _,child in ipairs({f:GetChildren()}) do scan(child,depth+1) end end
+    end
+    for _,name in ipairs({'PartyFrame','CompactPartyFrame','CompactRaidFrameContainer','PartyMemberFrame1',
+        'PartyMemberFrame2','PartyMemberFrame3','PartyMemberFrame4'}) do scan(_G[name],0) end
+    return rows
+end
 local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
+    if mode=='group' then data.page=page;data.group_count=GetNumGroupMembers()
+        data.units=groupUnits(page);data.frames=groupFrames(data.units);return data end
     data.panels={};data.controls={};data.bags={}
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
     local height=GetScreenHeight()*UIParent:GetEffectiveScale()
@@ -165,10 +199,14 @@ end
 local function update()
     sequence=(sequence+1)%4294967296
     local viewMode,viewPage=mode,page
-    if mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
+    if mode=='state' and autoPage==-1 then viewMode,viewPage='group',groupPage
+    elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
-        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/12);autoPage=autoPages>0 and 1 or 0
+        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/12);autoPage=-1;groupPage=1
+        elseif viewMode=='group' then
+            if groupPage<math.ceil((data.group_count or 0)/6) then groupPage=groupPage+1
+            else autoPage=autoPages>0 and 1 or 0 end
         else autoPage=autoPage<autoPages and autoPage+1 or 0 end
     end
     if not ok then data={observer_error=trim(data,250),mode=mode} end

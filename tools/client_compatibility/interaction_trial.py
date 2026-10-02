@@ -146,6 +146,10 @@ class Trial:
             verdict=oracle(before,after,selected)
             row.update(after=after,after_frame=aframe,**verdict)
         except Exception as e:row.update(status='infrastructure_failure',error=f'{type(e).__name__}: {e}')
+        except KeyboardInterrupt:
+            row.update(status='interrupted',error='Trial interrupted before qualification')
+            self.receipt['failure']='KeyboardInterrupt: trial interrupted'
+            self.persist();raise
         self.persist();print(json.dumps({k:row.get(k) for k in ['id','selected','status','error']}),flush=True)
         if row['status']=='infrastructure_failure':raise RuntimeError(row.get('error'))
         return row

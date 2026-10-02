@@ -33,6 +33,7 @@ bool capture(std::string const &name)
                                                           "CMSG_LEAVE_GROUP", "CMSG_GROUP_DISBAND", "CMSG_CONVERT_RAID", "CMSG_GROUP_RAID_CONVERT",
                                                           "CMSG_SET_PARTY_LEADER", "CMSG_GROUP_SET_LEADER", "CMSG_GROUP_UNINVITE_GUID",
                                                           "SMSG_PARTY_UPDATE", "SMSG_PARTY_INVITE", "SMSG_PARTY_COMMAND_RESULT", "SMSG_GROUP_DECLINE",
+                                                          "CMSG_REQUEST_PARTY_MEMBER_STATS", "SMSG_PARTY_MEMBER_FULL_STATE", "SMSG_PARTY_MEMBER_STATE",
                                                           "CMSG_DO_READY_CHECK", "CMSG_READY_CHECK_RESPONSE", "MSG_RAID_READY_CHECK", "MSG_RAID_READY_CHECK_CONFIRM",
                                                           "SMSG_READY_CHECK_STARTED", "SMSG_READY_CHECK_RESPONSE", "SMSG_READY_CHECK_COMPLETED",
                                                           "SMSG_INITIALIZE_FACTIONS", "SMSG_SET_FACTION_STANDING",

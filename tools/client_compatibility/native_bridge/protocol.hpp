@@ -1,5 +1,6 @@
 #pragma once
 #include "fields.hpp"
+#include "party_state.hpp"
 #include <deque>
 #include <array>
 #include <functional>
@@ -21,6 +22,7 @@ struct State
     std::unordered_set<unsigned> creature_queries, npc_text_queries;
     Value loot, taxi_menu, gossip_menu, pending_near, pending_far;
     Array party_guid{0,0};
+    std::unordered_map<std::uint64_t, PartyState> party_states;
     std::array<std::uint32_t,17> account_times{};
     Array action_buttons;
     unsigned cast_counter = 0;
@@ -84,6 +86,7 @@ struct Protocol
     static Reply party_request(std::string const &name, View body);
     static Reply party_response(State &owner, std::string const &name, View body, Array const &identities);
     static Array party_members(View body);
+    static Reply party_state(State &owner, std::string const &name, View body);
     static Reply account_request(State const &owner, std::string const &name, View body);
     static Reply account_response(State &owner, std::string const &name, View body);
     static Reply achievement_response(State const &owner, std::string const &name, View body);
