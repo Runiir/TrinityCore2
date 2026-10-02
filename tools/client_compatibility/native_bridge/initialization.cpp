@@ -25,6 +25,15 @@ Reply Protocol::initialize_response(State &owner, std::string const &name, View 
             throw std::runtime_error("native initial cooldown translation is not implemented");
         w.bits(initial, 1).pack("II", {count, 0}).pack(std::string(count, 'I'), spells);
     }
+    else if (name == "SMSG_LEARNED_SPELL")
+    {
+        auto spell=r.take<std::uint32_t>(),unused=r.take<std::uint32_t>();r.end();
+        if(!spell || spell>0x7fffffff || unused)throw std::runtime_error("invalid native learned spell");
+        // Pinned LearnedSpells: count, specialization, suppress-messaging bit,
+        // followed by SpellID and four absent favorite/optional flags.
+        w.pack("2I",{1,0}).bits(0,1).flush().pack("i",{spell}).bits(0,4).flush();
+        return Packet{"SMSG_LEARNED_SPELLS",w.finish()};
+    }
     else if (name == "SMSG_UPDATE_ACTION_BUTTONS")
     {
         if (body.size() != 577 || body.back() > 2)

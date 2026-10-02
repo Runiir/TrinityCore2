@@ -213,6 +213,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {send(*reply);co_return;}
     if ((reply = trainer_response(protocol,state,name,body)))
     {send(*reply);co_return;}
+    if (trainer_completion(name,body))co_return;
     if ((reply = Protocol::gossip_response(state, name, body)))
     {
         send(*reply);

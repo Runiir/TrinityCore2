@@ -30,6 +30,7 @@ bool capture(std::string const &name)
                                                           "CMSG_LIST_INVENTORY", "SMSG_VENDOR_INVENTORY",
                                                           "CMSG_REPAIR_ITEM", "CMSG_TRAINER_LIST", "CMSG_TRAINER_BUY_SPELL",
                                                           "SMSG_TRAINER_LIST", "SMSG_TRAINER_BUY_FAILED", "SMSG_TRAINER_BUY_SUCCEEDED",
+                                                          "SMSG_LEARNED_SPELL", "SMSG_LEARNED_SPELLS",
                                                           "CMSG_BUY_ITEM", "SMSG_BUY_ITEM", "SMSG_BUY_SUCCEEDED", "SMSG_BUY_FAILED", "SMSG_ITEM_PUSH_RESULT",
                                                           "CMSG_SELL_ITEM", "SMSG_SELL_ITEM", "SMSG_SELL_RESPONSE", "CMSG_BUY_BACK_ITEM", "CMSG_BUYBACK_ITEM",
                                                           "CMSG_AUTOBANK_ITEM", "CMSG_AUTOSTORE_BANK_ITEM", "CMSG_CLOSE_INTERACTION",

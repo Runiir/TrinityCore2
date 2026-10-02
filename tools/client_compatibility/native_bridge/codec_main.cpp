@@ -294,6 +294,8 @@ int main(int argc, char **argv)
                                 reply=trainer_request(protocol,state,name,body);
                             else if(fn=="trainer_response")
                                 reply=trainer_response(protocol,state,name,body);
+                            else if(fn=="trainer_completion")
+                                trainer_completion(name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

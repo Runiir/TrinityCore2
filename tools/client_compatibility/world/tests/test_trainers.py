@@ -40,6 +40,52 @@ def test_trainer_hello_uses_visible_service_and_native_guid(codec):
     assert 'error' in call(codec,body+b'x',fn='trainer_request',name='CMSG_TRAINER_LIST')
 
 
+def test_trainer_learning_request_preserves_native_identity_and_rejects_foreign_npc(codec):
+    body=Writer().guid(*modern_guid(GUID,0)).pack('2i',16,3127).finish()
+    assert call(codec,body,fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')==['CMSG_TRAINER_BUY_SPELL',struct.pack('<QII',GUID,16,3127).hex()]
+    for units in [[],[UNIT],[{**TRAINER,'kind':4}]]:
+        assert 'error' in call(codec,body,units,fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
+    for n in range(len(body)):assert 'error' in call(codec,body[:n],fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
+    for id_,spell_ in [(0,3127),(-1,3127),(16,0),(16,-1)]:
+        invalid=Writer().guid(*modern_guid(GUID,0)).pack('2i',id_,spell_).finish()
+        assert 'error' in call(codec,invalid,fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
+    assert 'error' in call(codec,body+b'x',fn='trainer_request',name='CMSG_TRAINER_BUY_SPELL')
+
+
+def test_trainer_failure_maps_native_skill_rejection_to_modern_unavailable(codec):
+    for reason,expected in [(0,0),(1,1),(2,0)]:
+        body=struct.pack('<QII',GUID,3127,reason)
+        reply=call(codec,body,name='SMSG_TRAINER_BUY_FAILED');r=Reader(bytes.fromhex(reply[1]))
+        assert reply[0]=='SMSG_TRAINER_BUY_FAILED';assert r.guid()==modern_guid(GUID,0)
+        assert r.unpack('2i')==(3127,expected);r.end()
+        assert call(codec,body,[],name='SMSG_TRAINER_BUY_FAILED') is None
+    for changes in [(0,0),(2**31,0),(3127,3)]:
+        assert 'error' in call(codec,struct.pack('<QII',GUID,*changes),name='SMSG_TRAINER_BUY_FAILED')
+    for n in range(16):assert 'error' in call(codec,body[:n],name='SMSG_TRAINER_BUY_FAILED')
+    assert 'error' in call(codec,body+b'x',name='SMSG_TRAINER_BUY_FAILED')
+
+
+def test_legacy_trainer_completion_is_validated_without_inventing_modern_ack(codec):
+    body=struct.pack('<QI',GUID,3127)
+    assert call(codec,body,fn='trainer_completion',name='SMSG_TRAINER_BUY_SUCCEEDED') is None
+    for n in range(len(body)):
+        assert 'error' in call(codec,body[:n],fn='trainer_completion',name='SMSG_TRAINER_BUY_SUCCEEDED')
+    for bad in [body+b'x',struct.pack('<QI',0,3127),struct.pack('<QI',GUID,0)]:
+        assert 'error' in call(codec,bad,fn='trainer_completion',name='SMSG_TRAINER_BUY_SUCCEEDED')
+
+
+def test_learned_spell_updates_modern_spellbook_with_normal_notifications(codec):
+    body=struct.pack('<II',3127,0)
+    reply=call(codec,body,fn='initialize',name='SMSG_LEARNED_SPELL')
+    assert reply==['SMSG_LEARNED_SPELLS','010000000000000000370c000000']
+    r=Reader(bytes.fromhex(reply[1]));assert r.unpack('2I')==(1,0)
+    assert r.bits(1)==0;r.align();assert r.unpack('i')==(3127,)
+    assert r.bits(4)==0;r.align();r.end()
+    for n in range(len(body)):assert 'error' in call(codec,body[:n],fn='initialize',name='SMSG_LEARNED_SPELL')
+    for bad in [body+b'x',struct.pack('<II',0,0),struct.pack('<II',3127,1),struct.pack('<II',2**31,0)]:
+        assert 'error' in call(codec,bad,fn='initialize',name='SMSG_LEARNED_SPELL')
+
+
 def test_trainer_catalog_preserves_state_cost_requirements_and_order(codec):
     body=catalog(spells=[spell(usable=state,dialog=1,button=1) for state in [0,1,2]],greeting='Bienvenue, guerrier émérite!'.encode())
     header,rows,greeting=decode(call(codec,body))
