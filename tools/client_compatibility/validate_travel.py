@@ -78,7 +78,14 @@ def score(directory):
             not site_boundaries.inside_segment(polygon,a,b) for a,b in zip(positions,positions[1:])):
             summary['boundary_failures'].append({'episode':str(path.relative_to(directory)),'kind':'combat_landing'})
     for path in sorted(directory.rglob('takeoff_exit_*.json')):
-        receipt=json.loads(path.read_text());polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
+        receipt=json.loads(path.read_text())
+        if receipt['site_id'] is None:
+            scope=receipt['boundary_scope'];origin=scope['origin'];x,y=origin[:2]
+            expected=[[x-45,y-45],[x+45,y-45],[x+45,y+45],[x-45,y+45]]
+            if scope.get('kind')!='bounded_public_intersite_departure' or scope['polygon']!=expected:
+                raise ValueError('unreviewed intersite ground exit bounds')
+            polygon=scope['polygon']
+        else:polygon=site_boundaries.sites()[receipt['site_id']]['polygon']
         positions=[receipt['before']['position'],*[o['facts']['position'] for o in receipt['observations']]]
         summary['takeoff_ground_exits'].append({'file':str(path.relative_to(directory)),
             'completed':receipt['completed'],'failure':receipt['failure']})

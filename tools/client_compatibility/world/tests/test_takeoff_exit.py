@@ -62,3 +62,17 @@ def test_trial84_spawned_furniture_can_have_a_short_mapped_side_detour():
     assert 3<=math.dist(start[:2],plan['point'][:2])<=8.01
     assert model_collision.clear_body_segment(530,start,plan['point'])
     assert site_boundaries.inside_segment(site['polygon'],plan['point'],goal)
+
+
+@pytest.mark.skipif(not (lab.BASE/'data/vmaps/530.vmtree').exists(),reason='public collision absent')
+def test_orebor_taxi_roof_departure_needs_explicit_intersite_scope():
+    facts={'map':530,'position':[966.6699829101562,7399.16015625,29.135892868041992]}
+    extra={**EXTRA,'digsite_ids':[351,359,363,377]}
+    assert exit.needed(facts,extra)
+    with pytest.raises(RuntimeError,match='active digsite'):exit.select(facts,extra)
+    plan=exit.select(facts,extra,allow_intersite=True)
+    assert plan['site_id'] is None and plan['safe_patch']['radius_yards']==2.5
+    assert not exit.needed({'map':530,'position':plan['point']},extra)
+    scope=exit.scope(facts,extra,True)
+    assert scope['kind']=='bounded_public_intersite_departure'
+    assert scope['maximum_corridor_yards']==60

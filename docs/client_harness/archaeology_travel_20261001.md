@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 156 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 157 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 87 preserve unsuccessful steps, including missing portal
+Episodes 07 through 88 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -538,6 +538,19 @@ then retains the existing in-site horizontal retreat and normal combat-clear
 wait. Lost height progress, collision, health, falling and boundaries still stop it.
 The owned client is relogged outside closed trials to reset the stranded combat
 state; this setup intervention is retained separately and counts as no trial find.
+That normal relog returned the same position, alive at 87 percent health and
+out of combat, with no privileged gameplay command. Episode 88 flew to Allerian
+Stronghold and completed the instant taxi to Orebor Harborage (node 164), then
+stopped under its roof because the takeoff exit incorrectly required an active
+digsite around the flight master. It collected no find, made 19 model actions,
+and had no manual gameplay intervention. Only public intersite-route departures
+may now use an explicit local exit scope outside assigned sites: a fixed box
+45 yards in each axis from the original departure, a maximum 60-yard planned
+ground corridor, and all existing floor/body, water, health and input/time guards.
+The scope is recorded as an intersite bound, never as an assigned digsite.
+Survey flights and ground exits within sites retain their real assigned polygons.
+The exact Orebor roof position has a public-geometry regression; default local
+Survey context still rejects that unassigned location.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

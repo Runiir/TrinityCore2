@@ -76,8 +76,18 @@ def needed(facts,extra):
     return collision is not None and collision>facts['position'][2]+1
 
 
-def select(facts,extra):
-    start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])
+def scope(facts,extra,allow_intersite=False):
+    try:return site_boundaries.active_site(facts['map'],facts['position'],extra['digsite_ids'])
+    except RuntimeError:
+        if not allow_intersite:raise
+    x,y=facts['position'][:2]
+    return {'id':None,'map':facts['map'],'kind':'bounded_public_intersite_departure',
+        'origin':facts['position'][:3],'polygon':[[x-45,y-45],[x+45,y-45],[x+45,y+45],[x-45,y+45]],
+        'maximum_corridor_yards':60}
+
+
+def select(facts,extra,*,boundary_scope=None,allow_intersite=False):
+    start=facts['position'];site=boundary_scope or scope(facts,extra,allow_intersite)
     attempts=[]
     indoor=extra.get('indoors',False);angles=32 if indoor else 8
     for radius in ([4,8,12,16,20,24] if indoor else [4,8,12,20,35]):
@@ -115,14 +125,14 @@ def available(movement,extra,facts,map_id,site,*,allow_descent=False):
     if not site_boundaries.contains(site['polygon'],facts['position']):raise RuntimeError('takeoff exit left the assigned digsite')
 
 
-def escape(inputs,observer,path,extra):
+def escape(inputs,observer,path,extra,*,allow_intersite=False):
     from .archaeology_inputs import screenshot
     from .travel_inputs import face
-    before=observer.poll();site=site_boundaries.active_site(before['map'],before['position'],extra['digsite_ids'])
+    before=observer.poll();site=scope(before,extra,allow_intersite)
     receipt={'schema':'public_takeoff_ground_exit_v1','started_at':time.time(),'site_id':site['id'],
         'decision_origin':'physical_collision_guard','reason':'indoors' if extra.get('indoors') else 'near ground under static overhead collision',
         'before':before,'public_plan':None,'physical_keys':[],'observations':[],
-        'completed':False,'failure':None,'blocked_detours':[]}
+        'completed':False,'failure':None,'blocked_detours':[],'boundary_scope':site if site['id'] is None else None}
     file=path.parent/f'takeoff_exit_{time.time_ns()}.json'
     try:
         movement,fresh=screenshot(path);available(movement,fresh,observer.poll(),before['map'],site,allow_descent=True)
@@ -141,7 +151,7 @@ def escape(inputs,observer,path,extra):
                 receipt['observations'].append({'facts':facts,'movement':movement,'travel':fresh})
                 if not fresh['flying'] and abs(facts['position'][2]-floor[2])<2:break
             else:raise RuntimeError('overhang descent did not settle on the mapped floor')
-        planned=select(observer.poll(),fresh);receipt['public_plan']=planned
+        planned=select(observer.poll(),fresh,boundary_scope=site);receipt['public_plan']=planned
         points=[p[:] for p in planned['route']['points']]
         if fresh['mounted']:
             inputs.key('3');receipt['physical_keys'].append({'key':'3'});time.sleep(1)

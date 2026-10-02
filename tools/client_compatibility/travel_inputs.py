@@ -20,7 +20,7 @@ def face(inputs,observer,goal):
     raise RuntimeError('unable to face public travel waypoint')
 
 
-def execute(action,leg,facts,extra,observer,path):
+def execute(action,leg,facts,extra,observer,path,*,intersite=False):
     from PIL import Image
     from . import archaeology_inputs
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None;interaction_approach=None
@@ -29,13 +29,13 @@ def execute(action,leg,facts,extra,observer,path):
     if action=='mount':
         if extra.get('indoors'):
             from .takeoff_exit import escape
-            collision=escape(inputs,observer,path,extra)
+            collision=escape(inputs,observer,path,extra,allow_intersite=intersite)
             return {'physical_keys':collision['physical_keys'],'collision_recovery':collision}
         inputs.key('3');keys.append({'key':'3'});time.sleep(2)
     elif action=='takeoff':
         from .takeoff_exit import needed,escape
         if needed(facts,extra):
-            collision=escape(inputs,observer,path,extra)
+            collision=escape(inputs,observer,path,extra,allow_intersite=intersite)
             return {'physical_keys':collision['physical_keys'],'collision_recovery':collision}
         hold=min(3,max(.15,(leg['ceiling']-position[2])/28.7))
         inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold})

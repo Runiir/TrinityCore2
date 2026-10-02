@@ -127,7 +127,8 @@ def run(plan,out,maximum_steps=180):
                 'policy_match':action==policy.label(s),'input':None,'execution_status':'started'}
             history.append(step);lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
             if action in ['land','dismount']:leg['landing_avoidance_frozen']=True
-            step.update(input=travel_inputs.execute(action,leg,facts,extra,observer,latest),execution_status='completed')
+            step.update(input=travel_inputs.execute(action,leg,facts,extra,observer,latest,
+                intersite=plan.get('schema')=='client442_public_site_route_v1'),execution_status='completed')
             print(json.dumps({'step':index,'leg':leg_index,'action':action,'position':facts['position'][:3]}),flush=True)
             if action=='arrived':
                 finished.append({'leg':leg_index,'name':leg['id'],'time':time.time(),'facts':facts})
