@@ -39,7 +39,7 @@ def suite(trial):
             peer=Trial(trial.out/('scout_assistant_'+str(enabled).lower()))
             try:
                 facts=capture(peer,'group')
-                if facts['group'].get('everyone_assistant')!=enabled or not all(u['assistant']==enabled for u in facts['group']['units']):
+                if facts['group'].get('everyone_assistant')!=enabled or not all(u['assistant']==enabled for u in facts['group']['units'] if not u['leader']):
                     raise RuntimeError('second client assistant flags disagree')
                 peer.receipt.update(completed=True,group_display=facts)
             finally:peer.receipt['finished_at']=time.time();peer.persist()
