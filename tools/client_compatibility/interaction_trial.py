@@ -116,6 +116,19 @@ class Trial:
                 self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
             else:raise ValueError('unsupported physical action')
         time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
+        transport=[]
+        if action['kind']=='chat':
+            state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check')
+            if state.get('chat_edit_open'):
+                if state.get('chat_edit_text')!=action['value']:
+                    raise RuntimeError('chat input differs from the selected command; refusing to submit it')
+                transport.append({'reason':'same selected command remained in the edit box','input':'Return',
+                    'hold':.4,'before_frame':frame})
+                self.io.key('Return',hold=.4);time.sleep(.8)
+                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_retry')
+                transport[-1]['after_frame']=frame
+                if state.get('chat_edit_open'):raise RuntimeError('bounded chat submission retry did not settle')
+        return transport
 
     def step(self,case_id,goal,actions,oracle):
         index=len(self.receipt['cases']);row={'id':case_id,'goal':goal,'time':time.time(),'status':'started'}
@@ -125,7 +138,7 @@ class Trial:
             request,response,selected=choose(goal,before,actions,index+442)
             row.update(before=before,before_frame=bframe,request=request,response=response,selected=selected,
                 input=actions[selected]);self.persist()
-            self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
+            row['input_transport']=self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
             row.update(after=after,after_frame=aframe)
             if actions[selected]['kind']=='chat' and after.get('chat_edit_open'):
                 raise RuntimeError('selected chat command remained in the edit box')
@@ -140,7 +153,7 @@ class Trial:
         # Fixture cleanup uses code, never counts as a model action or pass.
         for i in range(6):
             state,frame=self.observe('cleanup_latest')
-            if not state.get('panels') and not state.get('bags'):return
+            if not state.get('panels') and not state.get('bags') and not state.get('chat_edit_open'):return
             self.io.key('Escape');time.sleep(.3)
             self.receipt['cleanup'].append({'time':time.time(),'input':'Escape','source':'code_fixture_cleanup',
                 'before_panels':state.get('panels'),'before_bags':state.get('bags')})

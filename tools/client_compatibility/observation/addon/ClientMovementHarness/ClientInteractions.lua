@@ -135,6 +135,7 @@ local function snapshot(viewMode,viewPage)
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
+    data.chat_edit_text=data.chat_edit_open and trim(ChatFrame1EditBox:GetText(),255) or ''
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
     data.input_aliases={}
     for _,name in ipairs({'LEAVEPARTY','PARTYLEAVE','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
