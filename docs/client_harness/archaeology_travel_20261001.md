@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 144 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 147 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 75 preserve unsuccessful steps, including missing portal
+Episodes 07 through 76 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -431,6 +431,18 @@ unique among observed units and no more than two exact-selection attempts fail.
 Otherwise the physical guard clears an unsuitable target and presses Tab after
 facing the ordinary observed attacker. This remains a coded combat recovery,
 separate from Laya's archaeology and travel decisions.
+Episode 76 cleared the duplicate-name attackers and resumed flight to the upper
+terrace. It was interrupted after ordinary movement traces showed hostile
+avoidance reversing one survey approach by 2.47 yards and then returning to the
+previous landing area. Later approaches did make progress; this was a trace-led
+interruption for repair, not a completed or accepted loop. Local flight legs now
+carry their public survey origin and bearing. Avoidance must retain at least half
+the selected bearing progress, with a 1.5-yard minimum and three-yard displacement.
+If no clear progressive alternative exists, a healthy level-85 character may
+retain the original terrain-validated goal for at most three blockers, each at
+least ten levels lower and with known health at most 15,000. Existing bounded
+combat recovery handles contact. Unknown health, stronger enemies and player
+health below 80 percent still reject that fallback. No green flights were added.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

@@ -91,9 +91,13 @@ def execute(action,tcp,path,recovery=None,mounted_moves=False,object_observer=No
             target,planned['mounted_landing']=select(site,start,planned['heading_radians'],hold*7)
             planned['mounted_landing']['requested']=targets[-1]
             profile=travel_routes.clearance(site['map'],start,target)
+            heading=planned['heading_radians']
+            bearing_progress=(target[0]-start[0])*math.cos(heading)+(target[1]-start[1])*math.sin(heading)
             route={'schema':'public_survey_mounted_move_v1','legs':[{'id':'mounted_survey_step','mode':'flight',
                 'map':site['map'],'position':target,'ceiling':profile['ceiling'],'height_profile':profile,'arrival_radius':1.5,
                 'landing_height_tolerance':2,
+                'survey_progress':{'start':start[:3],'heading_radians':heading,
+                    'minimum_bearing_progress':max(1.5,bearing_progress*.5)},
                 'ground_connection_origin':start[:3]}]}
             directory=path.parent/f'mounted_move_{time.time_ns()}'
             result=travel_trial.run(route,directory,maximum_steps=45)

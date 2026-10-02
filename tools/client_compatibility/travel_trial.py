@@ -95,7 +95,9 @@ def run(plan,out,maximum_steps=180):
                 and not leg.get('landing_avoidance_frozen') and facts['position'][2]>leg['position'][2]+15
                 and math.dist(facts['position'][:2],leg['position'][:2])<60):
                 from .hostile_avoidance import landing
-                goal,avoidance=landing(facts['map'],leg['position'],facts['visible_hostiles'],extra['digsite_ids'],facts['position'])
+                goal,avoidance=landing(facts['map'],leg['position'],facts['visible_hostiles'],extra['digsite_ids'],facts['position'],
+                    progress=leg.get('survey_progress'),player_level=observer.player_level,
+                    healthy=movement['health_percent']>=80)
                 if avoidance:
                     leg.setdefault('landing_avoidance',[]).append(avoidance);leg['position']=goal
             s=state(leg,movement,extra,facts,ui)
