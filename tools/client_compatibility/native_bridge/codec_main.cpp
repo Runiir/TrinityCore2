@@ -8,6 +8,7 @@
 #include "lifecycle.hpp"
 #include "guild_packets.hpp"
 #include "merchants.hpp"
+#include "item_notifications.hpp"
 #include <iostream>
 #include <memory>
 
@@ -283,6 +284,8 @@ int main(int argc, char **argv)
                                 reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")
                                 reply=merchant_response(protocol,state,name,body);
+                            else if(fn=="item_notification")
+                                reply=item_notification(name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

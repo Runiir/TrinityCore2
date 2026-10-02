@@ -26,7 +26,7 @@ local chatProbes={}
 local luaErrors={}
 local blockedActions={}
 local following={active=false}
-local inspectionReady,tradeEvents={},{}
+local inspectionReady,tradeEvents,lastLoot={},{},nil
 local observerSkips,skipKeys={},{}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=9,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=10,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -197,6 +197,7 @@ local function snapshot(viewMode,viewPage)
     end
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.money=call(GetMoney)
+    data.last_loot=lastLoot
     data.merchant={visible=MerchantFrame and MerchantFrame:IsVisible() or false,items={}}
     if data.merchant.visible then
         data.merchant.count=call(GetMerchantNumItems);data.merchant.tab=MerchantFrame.selectedTab
@@ -418,6 +419,7 @@ frame:RegisterEvent('UI_ERROR_MESSAGE')
 frame:RegisterEvent('ADDON_ACTION_BLOCKED');frame:RegisterEvent('ADDON_ACTION_FORBIDDEN')
 frame:RegisterEvent('AUTOFOLLOW_BEGIN');frame:RegisterEvent('AUTOFOLLOW_END')
 frame:RegisterEvent('INSPECT_READY')
+frame:RegisterEvent('CHAT_MSG_LOOT')
 for _,event in ipairs({'TRADE_SHOW','TRADE_CLOSED','TRADE_REQUEST_CANCEL','TRADE_ACCEPT_UPDATE'}) do frame:RegisterEvent(event) end
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
@@ -426,6 +428,8 @@ frame:SetScript('OnEvent',function(_,event,code,text)
     if event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
     elseif event=='AUTOFOLLOW_END' then following={active=false}
     elseif event=='INSPECT_READY' then inspectionReady={guid=trim(code,64),time=GetTime()}
+    elseif event=='CHAT_MSG_LOOT' and type(code)=='string' then
+        lastLoot={id=tonumber(code:match('item:(%d+)')),count=tonumber(code:match('x(%d+)')) or 1,time=GetTime()}
     elseif event:match('^TRADE_') then
         tradeEvents[#tradeEvents+1]={event=event,own=code,peer=text,time=GetTime()}
         if #tradeEvents>3 then table.remove(tradeEvents,1) end

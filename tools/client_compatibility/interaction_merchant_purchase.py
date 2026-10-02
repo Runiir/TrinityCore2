@@ -26,10 +26,13 @@ def buy(t):
     def outcome(b,a,selected):
         oracle.poll();native=oracle.count(159)==quantity and oracle.money()==money-price
         visible=sum(r['count'] for r in a.get('bag_items',[]) if r['id']==159)==quantity and a.get('money')==money-price
-        return {'status':'purchase_pass' if selected=='buy' and native and visible else
+        loot=a.get('last_loot') or {};prior=b.get('last_loot') or {}
+        notified=loot.get('id')==159 and loot.get('count')==quantity and loot.get('time',0)>prior.get('time',0)
+        return {'status':'purchase_pass' if selected=='buy' and native and visible and notified else
             ('controller_failure' if selected!='buy' else 'client_or_protocol_failure'),
             'oracle':{'native_count':oracle.count(159),'visible_money':a.get('money'),'native_money':oracle.money(),
-                'expected_quantity':quantity,'expected_money':money-price,'native_matches':native,'visible_matches':visible}}
+                'expected_quantity':quantity,'expected_money':money-price,'native_matches':native,'visible_matches':visible,
+                'notification_matches':notified,'last_loot':loot}}
     try:
         require(t.step('merchant.buy_bundle','Buy one five-item bundle of Refreshing Spring Water.',{
             'buy':{'kind':'click','value':point(control),'button':3,'description':'Right-click the displayed Refreshing Spring Water bundle to buy it.'},
