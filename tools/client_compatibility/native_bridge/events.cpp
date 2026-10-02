@@ -18,6 +18,7 @@ bool capture(std::string const &name)
     if (name.find("AUTH") != std::string::npos || name.find("ENCRYPT") != std::string::npos ||
         name == "SMSG_CONNECT_TO")
         return false;
+    if (name == "SMSG_MOVE_UPDATE") return false; // Opt-in public movement probe below.
     for (auto token : {"TAXI", "GOSSIP", "TELEPORT", "TRANSFER", "NEW_WORLD", "TOKEN", "WORLD_PORT",
                        "WORLDPORT", "AREA_TRIGGER", "NPC_TEXT"})
         if (name.find(token) != std::string::npos)
