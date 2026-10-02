@@ -1,9 +1,8 @@
 """Pinned native inspection and trade fixtures, public authority and modern decoding."""
-from copy import deepcopy
+import json
 import struct
 import pytest
 from tools.client_compatibility.world.buffer import Reader,Writer,player_high
-from tools.client_compatibility.world.inventory_results import RESULTS
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 from tools.client_compatibility.world.tests.test_public_players import snapshot,PROFILE
 
@@ -74,7 +73,7 @@ def test_trade_statuses_use_modern_semantics_and_payloads(codec,native,modern):
     assert r.bits(1)==0 and r.bits(5)==modern
     if native==12:assert r.guid()==(2,player_high());assert r.guid()==(0,0)
     elif native==0:assert r.unpack('I')==(123,)
-    elif native==31:assert r.bits(1)==1;assert r.unpack('ii')==(RESULTS[1],39)
+    elif native==31:assert r.bits(1)==1;assert r.unpack('ii')==(1,39)
     elif native in [2,26]:assert r.unpack('B')==(6,)
     elif native in [19,24]:assert r.unpack('ii')==(384,5)
     r.end()
@@ -96,7 +95,7 @@ def trade_item(socket=0):
     w=Writer().pack('IiQiIiBI',123,0,10,0,4,0,1,5).bits(1,22)
     # Gift/author GUIDs absent, with native unwrapped item.
     w.bits(0,2).bits(1,1).bits(0,1).bits(0,9).bits(0,5)
-    w.pack('i3iIiIiii ii',234,socket,0,0,0,0,0,-3,0,-1,99,0)
+    w.pack('i3iIiI4i',234,socket,0,0,0,0,0,-3,0,-1,99)
     return w.pack('iiB',64394,2,0).finish()
 
 
