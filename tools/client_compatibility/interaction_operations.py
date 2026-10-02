@@ -40,15 +40,17 @@ def click_case(trial,case_id,goal,target,oracle,additional=None):
     if not selected:raise RuntimeError(f'{case_id}: expected control is absent')
     other=[c for c in candidates if c is not selected]
     # Add normal panel bindings as alternatives if a dialog exposes few buttons.
-    actions={'control_target':{'kind':'click','value':point(selected),
-        'description':f"Click visible {selected['kind']} {selected['text'] or selected['name']}."}}
-    for i,c in enumerate(trial.rng.sample(other,min(3,len(other)))):
-        actions['control_'+str(i)]={'kind':'click','value':point(c),
+    offered=[selected]+trial.rng.sample(other,min(3,len(other)))
+    trial.rng.shuffle(offered);actions={};target_key=None
+    for i,c in enumerate(offered):
+        key='button_'+str(i)
+        if c is selected:target_key=key
+        actions[key]={'kind':'click','value':point(c),
             'description':f"Click visible {c['kind']} {c['text'] or c['name']}."}
     actions['escape']={'kind':'key','value':'Escape','description':'Press Escape to close the current dialog.'}
     if len(actions)<3:actions['spellbook']={'kind':'key','value':'p','description':'Press P to toggle the spellbook.'}
     if additional:actions.update(additional)
-    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s=='control_target'))
+    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s==target_key))
 
 
 def profession_suite(trial):
