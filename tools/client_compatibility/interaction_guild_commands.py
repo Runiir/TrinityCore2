@@ -55,9 +55,11 @@ def suite(out):
                 def outcome(b,a,s):
                     rank=membership(scout.fixture['guid'])[1]
                     visible=next((m['index'] for m in a['guild_ui'].get('members',[]) if m['name'].split('-',1)[0]=='Harnesstwo'),None)
-                    return {'status':'guild_rank_pass' if s and rank==expected and visible==expected else
+                    blocked=a.get('blocked_actions') or []
+                    return {'status':'guild_rank_pass' if s and rank==expected and visible==expected and not blocked else
                         ('controller_failure' if not s else 'client_or_protocol_failure'),
-                        'oracle':{'before_rank':before_rank,'expected_rank':expected,'native_rank':rank,'visible_rank':visible}}
+                        'oracle':{'before_rank':before_rank,'expected_rank':expected,'native_rank':rank,'visible_rank':visible,
+                            'blocked_actions':blocked,'lua_errors':a.get('lua_errors')}}
                 require(click_case(primary,'guild.rank_'+label,label.title()+' Harnesstwo by one guild rank.',
                     lambda c:c['name']=='GuildFrame'+label.title()+'Button',outcome),'guild_rank_pass')
             with actor('scout'):
@@ -108,8 +110,11 @@ def suite(out):
                         if membership(t.fixture['guid']):raise RuntimeError('peer membership cleanup failed')
                     if name in baselines:t.execute({'kind':'chat','value':'/console useClassicGuildUI '+str(int(baselines[name]))})
                     state,frame=t.observe('restored');t.receipt['restoration']={'frame':frame,'guild':state['guild_ui']}
+                    cohort.setdefault('client_diagnostics',{})[name]={
+                        'blocked_actions':state.get('blocked_actions'),'lua_errors':state.get('lua_errors')}
                     if state['guild_ui']['classic']!=baselines[name]:raise RuntimeError('guild preference restoration failed')
                 except Exception as e:cohort['completed']=False;cohort.setdefault('cleanup_failures',{})[name]=str(e)
+        cohort['ui_clean']=all(not d['blocked_actions'] and not d['lua_errors'] for d in cohort.get('client_diagnostics',{}).values())
         for t in trials.values():t.receipt.update(completed=cohort['completed'],failure=cohort['failure'],finished_at=time.time());t.persist()
         cohort['finished_at']=time.time();lab.private_write(out/'cohort.json',json.dumps(cohort,indent=2)+'\n');print(json.dumps(cohort),flush=True)
 
