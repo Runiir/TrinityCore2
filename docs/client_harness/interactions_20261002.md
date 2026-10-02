@@ -873,6 +873,14 @@ before player creation and released afterward, directly exercising the fixed
 race. The native worldserver remains PID 3123698 with start ticks 13177436
 throughout UI13.
 
+UI13 is closed in `442_interactions_20261003_14.tar.gz.dvc`. The 281,335,916-byte
+archive is remotely verified with SHA-256
+`d64351eddd1e4bc095e2ba7792e524a6f7f0758985cd3d52e881879f51346154`.
+After verification, 134 raw frames (284,187,942 bytes) and the archive's local
+workspace/cache copies are removed. Small receipts remain locally; the complete
+evidence is recoverable with DVC. `dvc status` reports the intentional missing
+local cache, while `dvc push` confirms the remote is up to date.
+
 Seven additional older immutable journal rotations (58,766,706 raw bytes) are
 checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
 6,648,223-byte archive is synchronized before those rotations and both local
