@@ -658,6 +658,18 @@ closed PNG/WebP files matched archived bytes and hashes before removing
 130,506,775 local bytes. The next checkpoint includes
 `indoor_and_combat_repairs_cleanup.json` with the verification manifest.
 
+Trials 83 through 89, including their failed roots and the accepted two-site
+loop, follow in
+`artifacts/client_harness/442_archaeology_loop_proof_20261002.tar.gz.dvc`.
+The archive is 1,616,916,286 bytes with SHA-256
+`998f09986e210aee76a09e84d93b6ee8d5765f5beeefb7afa6fd2d869a46a8c2`.
+Scoped status and push passed, and cloud status confirmed remote synchronization.
+All 1,601 closed PNG/WebP files matched streamed archive bytes, sizes and hashes
+before removing 1,493,917,617 local bytes. Receipts, live journal segments and
+the latest owned-client screenshot remain local. The verification manifest is
+separately checkpointed as
+`artifacts/client_harness/442_archaeology_loop_proof_cleanup_20261002.json.dvc`.
+
 ## Running the loop
 
 Start the owned lab services and client using the existing auth/world controls,
