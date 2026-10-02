@@ -138,4 +138,4 @@ def test_early_mail_read_deduplicates_and_releases_once_without_mutation(codec):
     assert [r['queued'] for r in rows]==[1,1,0,0]
     assert rows[2]['packets']==[['MSG_QUERY_NEXT_MAIL_TIME','']] and rows[3]['packets']==[]
     for invalid in [{**mail,'name':'CMSG_SEND_MAIL'},{**mail,'body':'00'}]:
-        assert 'error' in result(codec,op='login_quest_reads',actions=[invalid])
+        assert 'error' in codec(op='login_quest_reads',actions=[invalid])
