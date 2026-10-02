@@ -5,7 +5,7 @@ from tools.client_compatibility.world.tests.test_interaction_packets import call
 
 
 def test_ready_started_uses_pinned_signed_64_bit_milliseconds(codec):
-    name,body=call(codec,'party_response','MSG_RAID_READY_CHECK',struct.pack('<Q',1))
+    name,body=call(codec,'party_response','MSG_RAID_READY_CHECK',struct.pack('<Q',1),identities=[])
     assert name=='SMSG_READY_CHECK_STARTED'
     r=Reader(bytes.fromhex(body));assert r.unpack('B')==(0,);assert r.guid()==(0,0)
     assert r.guid()==(1,HIGH)
@@ -35,8 +35,8 @@ def test_timeout_finish_and_restart_do_not_reuse_previous_answers(codec):
 
 
 def test_confirmation_and_completion_packet_identity(codec):
-    name,body=call(codec,'party_response','MSG_RAID_READY_CHECK_CONFIRM',struct.pack('<QB',2,0))
+    name,body=call(codec,'party_response','MSG_RAID_READY_CHECK_CONFIRM',struct.pack('<QB',2,0),identities=[])
     assert name=='SMSG_READY_CHECK_RESPONSE'
     r=Reader(bytes.fromhex(body));assert r.guid()==(0,0);assert r.guid()==(2,HIGH)
     assert r.bits(1)==0;r.end()
-    assert call(codec,'party_response','MSG_RAID_READY_CHECK_FINISHED',b'')==['SMSG_READY_CHECK_COMPLETED','000000']
+    assert call(codec,'party_response','MSG_RAID_READY_CHECK_FINISHED',b'',identities=[])==['SMSG_READY_CHECK_COMPLETED','000000']
