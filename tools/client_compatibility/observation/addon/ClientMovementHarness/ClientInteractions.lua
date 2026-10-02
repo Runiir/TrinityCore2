@@ -61,14 +61,14 @@ local function bindings(first,count)
     return rows
 end
 local function snapshot()
-    local data={mode=mode,build=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
+    local data={mode=mode,build=tonumber(select(2,GetBuildInfo())),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     data.panels={};data.controls={};data.bags={}
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
     local height=GetScreenHeight()*UIParent:GetEffectiveScale()
     local function scan(f,depth)
-        if visited[f] or depth>6 or not f:IsShown() then return end;visited[f]=true
+        if visited[f] or depth>6 or not f:IsVisible() then return end;visited[f]=true
         local kind=f:GetObjectType()
         if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider') and #data.controls<18 then
             local x,y=f:GetCenter()
@@ -83,12 +83,12 @@ local function snapshot()
     end
     for _,name in ipairs(panels) do
         local f=_G[name]
-        if f and f:IsShown() then data.panels[#data.panels+1]=name;scan(f,0) end
+        if f and f:IsVisible() then data.panels[#data.panels+1]=name;scan(f,0) end
     end
-    for i=1,13 do local f=_G['ContainerFrame'..i];if f and f:IsShown() then
+    for i=1,13 do local f=_G['ContainerFrame'..i];if f and f:IsVisible() then
         data.bags[#data.bags+1]=f:GetID();scan(f,0)
     end end
-    if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then data.bags[#data.bags+1]=-1 end
+    if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsVisible() then data.bags[#data.bags+1]=-1 end
     data.reputations=call(GetNumFactions) or call(C_Reputation and C_Reputation.GetNumFactions)
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
