@@ -63,7 +63,7 @@ def click_case(trial,case_id,goal,target,oracle,additional=None):
     actions['escape']={'kind':'key','value':'Escape','description':'Press Escape to close the current dialog.'}
     if len(actions)<3:actions['spellbook']={'kind':'key','value':'p','description':'Press P to toggle the spellbook.'}
     if additional:actions.update(additional)
-    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s==target_key))
+    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s==target_key),diagnostic_action=target_key)
 
 
 def profession_suite(trial):

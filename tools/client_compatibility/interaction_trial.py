@@ -74,14 +74,17 @@ def choose(goal,state,actions,seed):
 
 
 class Trial:
-    def __init__(self,out):
+    def __init__(self,out,controller='laya'):
+        if controller not in ['laya','code']:raise ValueError('unknown interaction controller')
+        self.controller=controller
         self.out=out;out.mkdir(parents=True,exist_ok=False,mode=0o700)
         self.fixture=actors.load();self.guid=f"Player-1-{self.fixture['guid']:08X}"
         self.io=owned_input.Inputs();self.rng=random.Random(44260895)
         self.receipt={'schema':'client442_laya_interactions_v1','started_at':time.time(),'actor':self.fixture,
             'observer_file_sha256':lab.sha256(lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness/ClientInteractions.lua'),
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
-            'controller':'laya_candidate_selection','model':MODEL,'revision':REVISION,'fine_tuned':False,
+            'controller':'laya_candidate_selection' if controller=='laya' else 'code_diagnostic_ordinary_inputs',
+            'model':MODEL if controller=='laya' else None,'revision':REVISION if controller=='laya' else None,'fine_tuned':False,
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
             'cases':[],'cleanup':[],'completed':False,'failure':None}
         self.persist()
@@ -133,14 +136,17 @@ class Trial:
                 if state.get('chat_edit_open'):raise RuntimeError('bounded chat submission retry did not settle')
         return transport
 
-    def step(self,case_id,goal,actions,oracle):
+    def step(self,case_id,goal,actions,oracle,diagnostic_action=None):
         index=len(self.receipt['cases']);row={'id':case_id,'goal':goal,'time':time.time(),'status':'started'}
         self.receipt['cases'].append(row);self.persist()
         try:
             before,bframe=self.observe(f'{index:03}_before')
-            request,response,selected=choose(goal,before,actions,index+442)
+            if self.controller=='laya':request,response,selected=choose(goal,before,actions,index+442)
+            else:
+                if diagnostic_action not in actions:raise RuntimeError('diagnostic input is not specified for '+case_id)
+                request,response,selected=None,None,diagnostic_action
             row.update(before=before,before_frame=bframe,request=request,response=response,selected=selected,
-                input=actions[selected]);self.persist()
+                selection_source=self.controller,input=actions[selected]);self.persist()
             row['input_transport']=self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
             row.update(after=after,after_frame=aframe)
             if actions[selected]['kind']=='chat' and after.get('chat_edit_open'):
@@ -167,8 +173,8 @@ class Trial:
         raise RuntimeError('panel cleanup did not settle')
 
 
-def panel_suite(out,catalog):
-    trial=Trial(out);rows={r['name']:r for r in json.loads(catalog.read_text())['rows']};registry={}
+def panel_suite(out,catalog,controller='laya'):
+    trial=Trial(out,controller);rows={r['name']:r for r in json.loads(catalog.read_text())['rows']};registry={}
     for name,row in rows.items():
         keys=row.get('keys') or []
         if keys and name.startswith(('TOGGLECHARACTER','TOGGLESPELLBOOK','TOGGLETALENTS','TOGGLEQUESTLOG',
@@ -197,13 +203,13 @@ def panel_suite(out,catalog):
             result=trial.step(case_id,goal,actions,lambda b,a,s:{
                 'status':'panel_open_pass' if visible(a,names) else ('controller_failure' if s!=target else 'client_or_protocol_failure'),
                 'oracle':{'panel_visible':visible(a,names),'expected_panels':names,'qualified_scope':'panel visibility only',
-                    'data':{k:a.get(k) for k in ['reputations','currency_types','equipment','professions']}}})
+                    'data':{k:a.get(k) for k in ['reputations','currency_types','equipment','professions']}}},diagnostic_action=target)
             if result['status']=='panel_open_pass':
                 close_actions={'escape':{'kind':'key','value':'Escape','description':'Press Escape to close open windows and return to the world.'},
                     **{n:registry[n] for n in trial.rng.sample([n for n in registry if n!=target and n!='TOGGLEGAMEMENU'],4)}}
                 trial.step(case_id+'.close', 'Close every open panel and bag. Leave the world view visible with no new windows.',close_actions,
                     lambda b,a,s:{'status':'panel_close_pass' if not a.get('panels') and not a.get('bags') else ('controller_failure' if s!='escape' else 'client_or_protocol_failure'),
-                        'oracle':{'all_panels_closed':not a.get('panels') and not a.get('bags'),'qualified_scope':'panel visibility only'}})
+                        'oracle':{'all_panels_closed':not a.get('panels') and not a.get('bags'),'qualified_scope':'panel visibility only'}},diagnostic_action='escape')
         trial.clean_panels();trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
@@ -214,7 +220,8 @@ def panel_suite(out,catalog):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--bindings',type=Path,required=True);args=p.parse_args();panel_suite(args.output,args.bindings)
+    p.add_argument('--bindings',type=Path,required=True);p.add_argument('--controller',choices=['laya','code'],default='laya')
+    args=p.parse_args();panel_suite(args.output,args.bindings,args.controller)
 
 
 if __name__=='__main__':main()

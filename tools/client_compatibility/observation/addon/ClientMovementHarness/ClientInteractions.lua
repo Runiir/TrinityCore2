@@ -1,7 +1,7 @@
 -- Read-only public UI observations. This file never presses or invokes game controls.
-local capacity,columns,cell=4096,128,3
+local capacity,columns,cell=6144,128,3
 local frame=CreateFrame('Frame','ClientInteractionHarnessPanel',UIParent)
-frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,36)
+frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,51)
 frame:SetPoint('TOPLEFT',UIParent,'TOPLEFT',300,-16);frame:SetFrameStrata('TOOLTIP');frame:EnableMouse(false)
 frame:SetFrameLevel(10000)
 local pixels,previous={},{}
@@ -132,6 +132,12 @@ local function snapshot(viewMode,viewPage)
                     context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
+                local parent=f:GetParent()
+                local index=parent and parent.initializer and parent.initializer.data and parent.initializer.data.bindingIndex
+                if index and (f==parent.Button1 or f==parent.Button2) then
+                    data.controls[#data.controls].binding_action=call(GetBinding,index)
+                    data.controls[#data.controls].binding_slot=f==parent.Button1 and 1 or 2
+                end
             end
         end
         if f.GetChildren then for _,child in ipairs({f:GetChildren()}) do scan(child,depth+1) end end
@@ -200,6 +206,9 @@ local function snapshot(viewMode,viewPage)
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
+    data.fps_keys={call(GetBindingKey,'TOGGLEFPS')}
+    data.keybind_listening=KeybindListener and KeybindListener.pending and
+        {action=KeybindListener.pending.action,slot=KeybindListener.pending.slotIndex} or false
     data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
     data.chat_edit_text=data.chat_edit_open and trim(ChatFrame1EditBox:GetText(),255) or ''
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false

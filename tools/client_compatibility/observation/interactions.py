@@ -3,7 +3,7 @@ import json
 import struct
 from .telemetry import checksum
 
-CAPACITY=4096
+CAPACITY=6144
 
 
 def decode_packet(data):

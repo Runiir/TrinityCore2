@@ -90,7 +90,7 @@ def checkpoint(directory,name):
         (folder/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with Live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
             live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','attributed_interaction_trials')
-            live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum('selected' in c for c in cases))
+            live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum(bool(c.get('response')) and 'selected' in c for c in cases))
             for status,count in counts.items():live.log_metric('case_status/'+status,count)
             live.log_metric('native_worldserver_restarts',0);live.log_metric('whole_game_qualified',0);live.next_step()
         with tarfile.open(target,'w:gz',compresslevel=3) as archive:
