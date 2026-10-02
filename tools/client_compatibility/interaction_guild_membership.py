@@ -18,8 +18,11 @@ def membership(guid):
 
 
 def text_command(trial,case,goal,value,oracle):
+    command=value.split(' ',1)[0]
+    purpose={'/ginvite':'send Harnesstwo a guild invitation','/gmotd':'set the guild message of the day',
+             '/gquit':'leave the current guild'}[command]
     return trial.step(case,goal,{
-        'target':{'kind':'chat','value':value,'description':'Type '+value+' in normal chat.'},
+        'target':{'kind':'chat','value':value,'description':'Type '+value+' to '+purpose+'.'},
         'friends':{'kind':'key','value':'o','description':'Open friends.'},
         'map':{'kind':'key','value':'m','description':'Open the map.'}},oracle,diagnostic_action='target')
 

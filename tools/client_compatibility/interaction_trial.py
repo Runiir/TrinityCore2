@@ -61,6 +61,9 @@ def choose(goal,state,actions,seed):
         'ground_targeting_cursor_active':state.get('spell_targeting',False)},
         'questions':{'action':{'type':'choice','instructions':'Choose the ordinary input that advances the player goal.',
             'criteria':{key:actions[key]['description'] for key in order}}}}
+    if state.get('guild_ui'):
+        guild=state['guild_ui']
+        payload['state']['guild']={key:guild[key] for key in ['in_guild','name','rank','permissions'] if key in guild}
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self,*args,**kwargs):return None
     req=urllib.request.Request(ENDPOINT,data=json.dumps(payload).encode(),headers={'Content-Type':'application/json'})
