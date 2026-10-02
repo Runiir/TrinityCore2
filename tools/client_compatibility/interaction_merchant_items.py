@@ -3,10 +3,17 @@ import time
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_trade import inventory
-from .interaction_inventory_moves import slot_control
+from .interaction_inventory_moves import slot_control,move
 from .interaction_operations import click_case,point
 from .interaction_macros import require
 from .observation.inventory import Inventory
+
+
+def item_position(oracle,item):
+    matches=[(bag,slot) for bag in range(5) for slot in range(1,17 if bag==0 else 37)
+        if oracle.slot(bag,slot)==item]
+    if len(matches)>1:raise RuntimeError('owned item appears in multiple native slots')
+    return matches[0] if matches else None
 
 
 def buyback(t,oracle,item,source,money,case_prefix):
@@ -22,15 +29,18 @@ def buyback(t,oracle,item,source,money,case_prefix):
     if len(rows)!=1:raise RuntimeError('sold pants are absent or ambiguous in the observed buyback list')
     index=rows[0]['index']
     def outcome(b,a,selected):
-        oracle.poll();native=oracle.slot(*source)==item and oracle.money()==money
-        visible=a.get('money')==money and any(r['bag']==source[0] and r['slot']==source[1] and
+        oracle.poll();destination=item_position(oracle,item);native=destination is not None and oracle.money()==money
+        visible=a.get('money')==money and destination is not None and any(r['bag']==destination[0] and r['slot']==destination[1] and
             r['id']==item['id'] and r['count']==item['count'] for r in a.get('bag_items',[]))
         return {'status':'buyback_pass' if selected and native and visible else
             ('controller_failure' if not selected else 'client_or_protocol_failure'),
-            'oracle':{'native_item':oracle.slot(*source),'native_money':oracle.money(),'visible_money':a.get('money'),
+            'oracle':{'native_destination':destination,'native_money':oracle.money(),'visible_money':a.get('money'),
                 'native_matches':native,'visible_matches':visible,'merchant':a.get('merchant')}}
     require(click_case(t,case_prefix+'.item','Buy back your sold spare pants.',
         lambda c:c['name']=='MerchantItem'+str(index)+'ItemButton',outcome),'buyback_pass')
+    destination=item_position(oracle.poll(),item)
+    if destination!=source:
+        require(move(t,oracle,destination,source,item,case_prefix+'.restore_slot'),'inventory_move_pass')
 
 
 def roundtrip(t):
@@ -68,7 +78,10 @@ def roundtrip(t):
         if oracle.slot(*source)!=item:
             cleanup=Trial(t.out/'merchant_restore',controller='code')
             try:
-                buyback(cleanup,oracle,item,source,money,'restore.buyback');cleanup.receipt['completed']=True
+                location=item_position(oracle,item)
+                if location is None:buyback(cleanup,oracle,item,source,money,'restore.buyback')
+                else:require(move(cleanup,oracle,location,source,item,'restore.original_slot'),'inventory_move_pass')
+                cleanup.receipt['completed']=True
             except Exception as e:cleanup.receipt['failure']=str(e);raise
             finally:cleanup.receipt['finished_at']=time.time();cleanup.persist()
         lab.server_command('saveall');time.sleep(1);after=inventory()
