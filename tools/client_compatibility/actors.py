@@ -32,10 +32,10 @@ def load():
 
 
 def session_entry(fixture):
-    from .observation.journal import player_entry,entries
+    from .observation.journal import player_entry,latest
     entry=player_entry(lab.ROOT,fixture['guid'])
-    authenticated=next((row for row in entries(lab.ROOT/'logs/modern_world.jsonl')
-        if row.get('event')=='world_authenticated' and row.get('session')==entry['session']),None)
+    authenticated=latest(lab.ROOT/'logs/modern_world.jsonl',lambda row:
+        row.get('event')=='world_authenticated' and row.get('session')==entry['session'])
     if not authenticated or authenticated['account_id']!=fixture['account_id']:
         raise RuntimeError('native actor entry is not bound to its authenticated account')
     return entry

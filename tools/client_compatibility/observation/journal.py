@@ -31,6 +31,19 @@ def entries(path):
     return Cursor(path).poll()
 
 
+def latest(path,predicate):
+    """Find a current fact without decoding every historical rotation."""
+    for source in reversed(paths(path)):
+        try:
+            with source.open('rb') as handle:lines=handle.readlines()
+        except FileNotFoundError:continue
+        for line in reversed(lines):
+            if not line.endswith(b'\n'):continue
+            record=json.loads(line)
+            if predicate(record):return record
+    return None
+
+
 def character_guid(value=None):
     """Explicit actor identity; legacy single-client commands keep GUID 1."""
     raw=value if value is not None else os.environ.get('CLIENT442_CHARACTER_GUID','1')
@@ -45,9 +58,7 @@ def character_guid(value=None):
 def player_entry(root,guid=None,session=None):
     guid=character_guid(guid)
     session=session if session is not None else os.environ.get('CLIENT442_SESSION')
-    latest = None
-    for record in entries(root / 'logs/modern_world.jsonl'):
-        if (record['event'] == 'native_player_created' and record['guid'] == guid and
-            (session is None or record['session']==session)):latest = record
-    if not latest: raise RuntimeError('owned character has not entered the native world')
-    return latest
+    found=latest(root/'logs/modern_world.jsonl',lambda r:r.get('event')=='native_player_created' and
+        r.get('guid')==guid and (session is None or r.get('session')==session))
+    if not found:raise RuntimeError('owned character has not entered the native world')
+    return found
