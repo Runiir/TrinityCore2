@@ -26,6 +26,22 @@ def test_indoor_enemy_cycling_can_try_ambiguous_name_twice_without_an_unbounded_
     assert named_target_command(facts,'Dragonmaw Shaman',3,allow_ambiguous=True) is None
 
 
+def test_obscured_bonechewer_attacker_can_be_selected_after_failed_tabs():
+    from tools.client_compatibility.combat_clear import named_attacker_command
+    guid=17379463160423069545
+    facts={'position':[-2870.468994140625,3502.752685546875,-33.125606536865234],
+        'attacking_units':[guid], 'visible_unit_names':{guid:'Bonechewer Backbreaker',guid-1:'Bonechewer Backbreaker'},
+        'visible_hostiles':[{'guid':guid,'position':[-2879.1103515625,3491.60302734375,-31.61676597595215]}]}
+    assert named_attacker_command(facts,3,0) is None
+    assert named_attacker_command(facts,4,0)=='/targetexact Bonechewer Backbreaker'
+    assert named_attacker_command(facts,5,1)=='/targetexact Bonechewer Backbreaker'
+    assert named_attacker_command(facts,6,2) is None
+    facts['position'][0]+=20
+    assert named_attacker_command(facts,4,0) is None
+    facts['attacking_units']=[]
+    assert named_attacker_command(facts,4,0) is None
+
+
 def owner():
     return SimpleNamespace(character={'map':530,'guid':1,'name':'Harnessone','gender':0},
         visible_units={GUID:{'map':530}})

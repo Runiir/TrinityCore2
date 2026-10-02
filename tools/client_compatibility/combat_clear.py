@@ -14,6 +14,18 @@ def named_target_command(facts,name,failed_selections,*,allow_ambiguous=False):
     return '/targetexact '+name
 
 
+def named_attacker_command(facts,failed_selections,exact_attempts):
+    attackers=[h for h in facts['visible_hostiles'] if h['guid'] in facts['attacking_units']]
+    if not attackers:return None
+    nearest=min(attackers,key=lambda h:math.dist(facts['position'][:3],h['position'][:3]))
+    # Trial 85's outdoor tree obscured the camera just as indoor furniture did.
+    # A name may be shared, so validate the resulting normal selection before
+    # attacking and retain the two-command bound.
+    ambiguous=failed_selections>=4 and math.dist(facts['position'][:3],nearest['position'][:3])<=16
+    return named_target_command(facts,facts['visible_unit_names'].get(nearest['guid']),
+        exact_attempts+1,allow_ambiguous=ambiguous)
+
+
 def run(movement, extra, facts, observer, path):
     if extra['mounted']: raise RuntimeError('melee recovery requires a grounded unmounted character')
     ctl._launcher_env = lab.client_environment; inputs = ctl.Input()
@@ -45,8 +57,6 @@ def run(movement, extra, facts, observer, path):
                     nearest=min(attackers,key=lambda h:math.dist(facts['position'][:2],h['position'][:2]))
                     if math.dist(facts['position'][:2],nearest['position'][:2])>.5:
                         keys.extend(face(inputs,observer,nearest['position']))
-                    name=facts['visible_unit_names'].get(nearest['guid'])
-                else:name=None
                 if failed_selections in [3,6,9] and not extra.get('indoors'):
                     current=observer.poll()['position'];hold=.8
                     goal=[current[0]-math.cos(current[3])*hold*4.5,
@@ -58,9 +68,7 @@ def run(movement, extra, facts, observer, path):
                 # This is the normal local WoW targeting command, typed through
                 # the client. Its name comes from an ordinary creature query.
                 # It avoids Tab skipping an attacker behind terrain/camera.
-                ambiguous=bool(extra.get('indoors') and failed_selections>=4 and attackers and
-                    math.dist(facts['position'][:3],nearest['position'][:3])<=8)
-                command=named_target_command(facts,name,exact_attempts+1,allow_ambiguous=ambiguous)
+                command=named_attacker_command(facts,failed_selections,exact_attempts)
                 if command:
                     exact_attempts+=1
                     inputs.key('Return');inputs.type(command);inputs.key('Return')
@@ -70,7 +78,8 @@ def run(movement, extra, facts, observer, path):
                         inputs.key('Return');inputs.type('/cleartarget');inputs.key('Return')
                         keys.append({'local_client_command':'/cleartarget','reason':'reset an unsuitable or ambiguous selection'})
                     inputs.key('Tab');keys.append({'key':'Tab'})
-                record('select', physical_keys=keys); time.sleep(.4)
+                record('select', physical_keys=keys, target_before=target,
+                    observed_attackers=attackers, position=facts['position']); time.sleep(.4)
                 continue
             failed_selections=0
             # Unit::IsWithinMeleeRange measures XYZ with a minimum five-yard

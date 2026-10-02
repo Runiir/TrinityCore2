@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 152 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 153 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 77 preserve unsuccessful steps, including missing portal
+Episodes 07 through 85 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -496,6 +496,21 @@ floor, with body-height rays and both site-boundary checks. The returning leg
 must avoid the recorded obstruction by at least 1.5 yards. Actual blocked motion,
 health, combat, falling and the total exit budget remain stop conditions. Obstacle
 size is unknown; this does not claim an exact geometry model for spawned objects.
+Episode 85 completed that indoor exit in 19 observations with one sideways
+detour and confirmed `IsIndoors()` cleared. It collected Dragonmaw's remaining
+two finds (10 Orc fragments), flew to Coilskar Point, collected all three finds
+(18 Orc fragments), observed its replacement, and used Maddix's instant taxi
+to Allerian Stronghold before flying to Bonechewer Ruins. The run stopped there
+when 106 Tab attempts failed to select a nearby Bonechewer Backbreaker behind
+a tree. It is a failed root with one fresh full site, five finds, 28 fragments,
+490 model actions, no manual gameplay interventions, no model rejections,
+and no frame-hash or site-boundary failures. All observed artifacts were inside
+assigned sites. The bounded normal `/targetexact` fallback now also permits
+shared outdoor attacker names after four failed selections when the ordinary
+attacker is within 16 yards in XYZ. It retains at most two exact-name attempts
+and validates the actual selected living hostile and distance before attacking.
+The failing ordinary positions have a regression. This does not infer spawned
+tree geometry or claim a learned combat policy.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
