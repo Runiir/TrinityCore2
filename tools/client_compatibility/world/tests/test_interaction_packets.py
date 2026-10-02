@@ -132,7 +132,7 @@ def test_achievement_bulk_preserves_counter_date_and_owner(codec):
     for bit in [0,0,0,1,0,0,1,0,0,0,0]:native.bits(bit,1)
     native.bits(0,2)
     for bit in [0,0,0,1,0]:native.bits(bit,1)
-    native.bits(1,23).raw(bytes([1])).pack('II',0,123).raw(bytes([2,0])).pack('II',0,0x1a900000)
+    native.bits(1,23).raw(bytes([3])).pack('II',0,123).raw(bytes([2,0])).pack('II',0,0x1a900000)
     native.pack('II',456,0x1a800000)
     response=call(codec,'achievement','SMSG_ALL_ACHIEVEMENT_DATA',native.finish())
     assert response[0]=='SMSG_ALL_ACHIEVEMENT_DATA'
