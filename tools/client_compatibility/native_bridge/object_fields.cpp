@@ -85,6 +85,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                   {"NativeSex", get(c, "gender")},
                   {"VirtualPlayerRealm", 0x01010001}};
     guild_fields(*this,s,unit,player);
+    player["QuestLog"]=quest_fields(s);
     Array visible;
     for (unsigned i = 0; i < 19; ++i)
         visible.push_back(Object{{"ItemID", val("PLAYER_VISIBLE_ITEM_1_ENTRYID", i * 2)}});
@@ -174,10 +175,10 @@ Bytes Protocol::player_block(Value const &snapshot, Value const &character, Arra
     if (buttons)
         w.pack("180I", *buttons);
     Writer data;
-    data.pack("B", {1}).raw(Bytes{0, 5, 6, 255, 1});
+    data.pack("B", {3}).raw(Bytes{0, 5, 6, 255, 1});
     auto values = field_values(snapshot, character);
     for (auto kind : {"ObjectData", "UnitData", "PlayerData", "ActivePlayerData"})
-        fields.serialize(data, kind, get(values, kind), 1);
+        fields.serialize(data, kind, get(values, kind), 3);
     return w.put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
 }
 Bytes Protocol::create(Value const &snapshot, Value const &character, std::vector<Value> const &items,

@@ -13,10 +13,10 @@ def permission_rows(account,permission):
 @contextmanager
 def fixture_permission(trial,permission):
     # Exact native RBAC command permissions only; no administrative role.
-    if permission not in [488,554]:raise ValueError('unsupported disposable inventory/money fixture permission')
+    if permission not in [488,554,605]:raise ValueError('unsupported disposable inventory/money/quest fixture permission')
     account=trial.fixture['account_id']
     baseline=permission_rows(account,permission)
-    if baseline:raise RuntimeError('item fixture requires no pre-existing direct add-item permission')
+    if baseline:raise RuntimeError('fixture requires no pre-existing direct command permission')
     with lab.connection() as c,c.cursor() as q:
         q.execute('SELECT username FROM client442_auth.account WHERE id=%s',(account,));row=q.fetchone()
     if not row or not re.fullmatch('[A-Z0-9_]+',row[0]):raise RuntimeError('invalid owned fixture account name')
@@ -47,3 +47,7 @@ def item_fixture_permission(trial):
 
 def money_fixture_permission(trial):
     return fixture_permission(trial,554)
+
+
+def quest_fixture_permission(trial):
+    return fixture_permission(trial,605)

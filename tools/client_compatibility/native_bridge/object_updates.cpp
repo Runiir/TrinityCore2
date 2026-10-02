@@ -138,6 +138,8 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
                 blocks.push_back(rest);
             auto guild=guild_block(s,owner.character,get(record,"fields"));
             if(!guild.empty())blocks.push_back(guild);
+            auto quests=quest_block(s,get(record,"fields"));
+            if(!quests.empty())blocks.push_back(quests);
             auto inventory=inventory_block(s,get(record,"fields"));
             if(!inventory.empty())blocks.push_back(inventory);
             bool sites_changed = false, projects_changed = false;

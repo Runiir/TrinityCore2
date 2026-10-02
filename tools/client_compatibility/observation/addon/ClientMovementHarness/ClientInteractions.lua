@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=12,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=13,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -338,6 +338,29 @@ local function snapshot(viewMode,viewPage)
         end
     end
     data.world_position={call(UnitPosition,'player')}
+    data.quests={}
+    local questCount=call(C_QuestLog and C_QuestLog.GetNumQuestLogEntries or GetNumQuestLogEntries)
+    data.quest_entry_count=questCount
+    data.quest_log_keys={call(GetBindingKey,'TOGGLEQUESTLOG')}
+    for i=1,math.min(tonumber(questCount) or 0,8) do
+        local q=call(C_QuestLog and C_QuestLog.GetInfo,i)
+        if type(q)~='table' then
+            local title,level,group,header,collapsed,complete,frequency,id=call(GetQuestLogTitle,i)
+            if title then q={title=title,level=level,isHeader=header,isComplete=complete,questID=id} end
+        end
+        if q and not q.isHeader then
+            local row={index=i,id=q.questID,title=trim(q.title,80),level=q.level,complete=q.isComplete,objectives={}}
+            local objectives=call(C_QuestLog and C_QuestLog.GetQuestObjectives,q.questID)
+            for _,objective in ipairs(type(objectives)=='table' and objectives or {}) do
+                row.objectives[#row.objectives+1]={text=trim(objective.text,120),type=objective.type,
+                    fulfilled=objective.numFulfilled,required=objective.numRequired,finished=objective.finished}
+                if #row.objectives>=4 then break end
+            end
+            data.quests[#data.quests+1]=row
+        end
+    end
+    data.quest_giver={id=call(GetQuestID),title=trim(call(GetTitleText),80),
+        description=trim(call(GetQuestText),180),objectives=trim(call(GetObjectiveText),120)}
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
     data.guild_ui={classic=call(GetCVarBool,'useClassicGuildUI'),in_guild=call(IsInGuild),

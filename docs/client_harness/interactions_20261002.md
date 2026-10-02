@@ -795,6 +795,38 @@ Its raw frames and local archive/cache copies are removed only after remote
 verification. `dvc status` records the intended local eviction and `dvc push`
 confirms synchronization. UI13 starts the questgiver probes.
 
+UI13 opens Marshal McBride's quest catalog through Laya's ordinary right-click
+input. The first details trial exposes an unmapped query. After translating that
+request, the second receives a native 962-byte reply but cannot display it.
+Native quest 28766 is the warrior's `Beating Them Back!` variant and has the
+auto-accept flag. The native query already accepts it, even when the modern
+details reply is missing. That failed trial remains failed. A separate code
+cleanup removes only the new, incomplete quest, verifies that quest 28825 and
+all inventory/money remain unchanged, and revokes temporary permission 605.
+
+The bridge now translates native quest-details/rewards and static quest-query
+replies, including native kill objective storage. It also sends the owned
+25-slot quest log on creation and sparse updates. Previously the creation
+visibility lacked the party-member flag required for the owner's quest log,
+and there was no quest-log update serializer. Modern-only quest systems remain
+empty; native quest eligibility and rewards remain authoritative. Native
+objective IDs are implicit quest/slot identities; the bridge assigns stable
+IDs derived from those identities. Item/currency, timed, required-spell and
+other objective variants are not qualified by the initial kill-quest checks.
+
+The v13 observer reads normal quest-log and questgiver UI data. The NPC trial
+records its native quest baseline and restores the disposable auto-accepted
+quest on failure or completion. Ordinary acceptance and abandonment adapters
+retain native giver and owned slot validation. These code changes require a
+separate bridge build, not a worldserver rebuild. Live quest details and
+abandonment qualification is still pending at this point.
+
+Initial validation history is retained: the first build catches a byte/string
+type mismatch, the first focused run catches a serializer format count, and
+the first full run has 466 passes and one failure caused by an incomplete
+synthetic native header. After correcting the fixture, all 13 focused quest
+checks pass. The updated full and sanitizer results are recorded in UI13.
+
 Seven additional older immutable journal rotations (58,766,706 raw bytes) are
 checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
 6,648,223-byte archive is synchronized before those rotations and both local

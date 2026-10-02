@@ -166,6 +166,8 @@ int main(int argc, char **argv)
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "rest_update")
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
+                else if (op == "quest_update")
+                    result = hex(protocol.quest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "guild_update")
                     result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed"),
                         request.as_object().contains("visibility")?integer(get(request,"visibility")):1));
@@ -299,6 +301,8 @@ int main(int argc, char **argv)
                                 trainer_completion(name,body);
                             else if(fn=="quest_request")
                                 reply=quest_request(protocol,state,name,body);
+                            else if(fn=="quest_response")
+                                reply=quest_response(protocol,state,name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

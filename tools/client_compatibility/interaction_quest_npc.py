@@ -6,10 +6,13 @@ from .interaction_trial import Trial
 from .interaction_operations import controls,click_case
 from .interaction_macros import require
 from .npc_fixture import NpcFixture
+from .interaction_quest_fixture import quest_state,restore_autoaccepted,QUEST
 
 
 def suite(t,point,stage_only,details=False):
     actors.session_entry(t.fixture);t.clean_panels();fixture=NpcFixture(t.out,t.fixture,197,2)
+    baseline=quest_state(t.fixture['guid']);t.receipt['quest_baseline']=baseline;t.persist()
+    if any(row['quest']==QUEST for row in baseline['active']):raise RuntimeError('disposable quest is already active')
     try:
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
         state,frame=t.observe('npc_staged');t.receipt['staging']={'target':state['target'],'frame':frame};t.persist()
@@ -27,9 +30,13 @@ def suite(t,point,stage_only,details=False):
         if details:
             require(click_case(t,'quests.select_giver_quest','Read the offered Beating Them Back! quest.',
                 lambda c:'Beating Them Back!' in c['text'],
-                lambda b,a,s:{'status':'quest_details_open_pass' if s and 'QuestFrame' in a['panels'] else
+                lambda b,a,s:{'status':'quest_details_open_pass' if s and (
+                    ('QuestFrame' in a['panels'] and a.get('quest_giver',{}).get('id')==QUEST) or
+                    (any(q.get('id')==QUEST and q.get('title')=='Beating Them Back!' for q in a.get('quests',[])) and
+                     any(q['quest']==QUEST and q['status']==3 for q in quest_state(t.fixture['guid'])['active']))) else
                     ('controller_failure' if not s else 'client_or_protocol_failure'),
-                    'oracle':{'panels':a['panels'],'errors':a['errors']}}),'quest_details_open_pass')
+                    'oracle':{'panels':a['panels'],'errors':a['errors'],'quests':a.get('quests'),
+                        'quest_giver':a.get('quest_giver'),'native':quest_state(t.fixture['guid'])}}),'quest_details_open_pass')
             state,frame=t.observe('quest_details');t.receipt['quest_details']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
         require(t.step('quests.close_giver','Close the questgiver dialog.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the questgiver dialog.'},
@@ -38,7 +45,7 @@ def suite(t,point,stage_only,details=False):
             lambda b,a,s:{'status':'questgiver_close_pass' if s=='close' and not any(p in a['panels'] for p in ['QuestFrame','GossipFrame']) else
                 ('controller_failure' if s!='close' else 'client_or_protocol_failure')},diagnostic_action='close'),'questgiver_close_pass')
     finally:
-        try:t.clean_panels()
+        try:t.clean_panels();restore_autoaccepted(t,baseline)
         finally:fixture.restore()
         state,frame=t.observe('restored');t.receipt['restoration']={'frame':frame,'world_position':state['world_position']};t.persist()
 

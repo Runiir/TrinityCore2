@@ -69,6 +69,10 @@ def field_values(snapshot, character):
         'GuildRankID': 'PLAYER_GUILDRANK', 'GuildDeleteDate': 'PLAYER_GUILDDELETE_DATE',
         'GuildLevel': 'PLAYER_GUILDLEVEL', 'GuildTimeStamp': 'PLAYER_GUILD_TIMESTAMP'}.items()})
     player["VisibleItems"] = [{"ItemID": value("PLAYER_VISIBLE_ITEM_1_ENTRYID", i * 2)} for i in range(19)]
+    player['QuestLog']=[{'EndTime':value('PLAYER_QUEST_LOG_1_1',slot*5+4),
+        'QuestID':value('PLAYER_QUEST_LOG_1_1',slot*5),'StateFlags':value('PLAYER_QUEST_LOG_1_1',slot*5+1),
+        'ObjectiveProgress':[(value('PLAYER_QUEST_LOG_1_1',slot*5+2+i//2)>>(i%2*16))&65535
+            if i<4 else 0 for i in range(24)]} for slot in range(25)]
     active = {"XP": value("PLAYER_XP"), "NextLevelXP": value("PLAYER_NEXT_LEVEL_XP"), "MaxLevel": 85,
               "NumBackpackSlots": 16,
               "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
@@ -108,9 +112,9 @@ def player_block(snapshot, character, buttons=None):
     w.bits(0, 1).bits(0, 1).bits(buttons is not None, 1).flush()
     if buttons is not None:
         w.pack("I" * 180, *buttons)
-    fields = Writer().pack("B", 1).raw(bytes([0, 5, 6, 255, 1]))
+    fields = Writer().pack("B", 3).raw(bytes([0, 5, 6, 255, 1]))
     for kind, values in field_values(snapshot, character).items():
-        serialize(fields, kind, values, visibility=1)
+        serialize(fields, kind, values, visibility=3)
     w.pack("I", len(fields.finish())).raw(fields.finish())
     return w.finish()
 

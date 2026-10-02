@@ -9,8 +9,8 @@ from tools.client_compatibility.world.tests.test_merchant_packets import GUID,UN
 GIVER={**UNIT,'fields':{str(INDEX['UNIT_NPC_FLAGS']):3}}
 
 
-def call(codec,name,body,units=None):
-    return result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'fields':{}},
+def call(codec,name,body,units=None,fields=None):
+    return result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'fields':fields or {}},
         gameobjects=[],units=[GIVER] if units is None else units,
         actions=[{'fn':'quest_request','name':name,'body':body.hex()}])[0]
 
@@ -41,3 +41,15 @@ def test_public_quest_info_query_retains_id_and_drops_modern_only_giver(codec):
         for n in range(len(body)):assert 'error' in call(codec,'CMSG_QUERY_QUEST_INFO',body[:n])
         assert 'error' in call(codec,'CMSG_QUERY_QUEST_INFO',body+b'x')
     for id in [0,-1]:assert 'error' in call(codec,'CMSG_QUERY_QUEST_INFO',Writer().pack('i',id).guid(0,0).finish())
+
+
+def test_accept_preserves_native_identity_and_cheat_bool(codec):
+    body=Writer().guid(*modern_guid(GUID,0)).pack('i',26389).bits(0,1).finish()
+    assert call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body)==['CMSG_QUEST_GIVER_ACCEPT_QUEST',struct.pack('<QIB',GUID,26389,0).hex()]
+
+
+def test_abandon_requires_an_active_owned_native_slot_and_exact_byte(codec):
+    fields={INDEX['PLAYER_QUEST_LOG_1_1']+24*5:28766}
+    assert call(codec,'CMSG_QUEST_LOG_REMOVE_QUEST',b'\x18',fields=fields)==['CMSG_QUEST_LOG_REMOVE_QUEST','18']
+    for body in [b'',b'\x18x',b'\x00',b'\x19',b'\xff']:
+        assert 'error' in call(codec,'CMSG_QUEST_LOG_REMOVE_QUEST',body,fields=fields)
