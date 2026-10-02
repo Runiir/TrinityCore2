@@ -17,7 +17,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
-    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3'}
+    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages=0,0
 local errors={}
@@ -130,6 +130,12 @@ local function snapshot(viewMode,viewPage)
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
+    data.input_aliases={}
+    for _,name in ipairs({'LEAVEPARTY','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
+        local aliases={}
+        for i=1,5 do local alias=_G['SLASH_'..name..i];if alias then aliases[#aliases+1]=alias end end
+        data.input_aliases[name]=aliases
+    end
     local actionButton=_G.ActionButton12
     local slot=actionButton and actionButton.action or 12
     local kind,id=call(GetActionInfo,slot)
