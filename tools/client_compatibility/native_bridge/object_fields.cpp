@@ -5,11 +5,12 @@ namespace bridge
 Value Protocol::field_values(Value const &s, Value const &c) const
 {
     auto val = [&](auto name, unsigned offset = 0) { return field(s, name, offset); };
-    auto arr = [&](auto name, unsigned count, bool floating = false)
+    auto arr = [&](auto name, unsigned count, bool floating = false, bool signed_value = false)
     {
         Array a;
         for (unsigned i = 0; i < count; ++i)
-            a.push_back(floating ? Value(float_field(s, name, i)) : Value(val(name, i)));
+            a.push_back(floating ? Value(float_field(s, name, i)) :
+                signed_value ? Value(static_cast<std::int32_t>(val(name, i))) : Value(val(name, i)));
         return a;
     };
     auto identity = val("UNIT_FIELD_BYTES_0");
@@ -39,17 +40,38 @@ Value Protocol::field_values(Value const &s, Value const &c) const
              {"NpcFlags", "UNIT_NPC_FLAGS"}})
         unit[modern] = val(old);
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
+             {"AttackPower", "UNIT_FIELD_ATTACK_POWER"},
+             {"AttackPowerModPos", "UNIT_FIELD_ATTACK_POWER_MOD_POS"},
+             {"AttackPowerModNeg", "UNIT_FIELD_ATTACK_POWER_MOD_NEG"},
+             {"RangedAttackPower", "UNIT_FIELD_RANGED_ATTACK_POWER"},
+             {"RangedAttackPowerModPos", "UNIT_FIELD_RANGED_ATTACK_POWER_MOD_POS"},
+             {"RangedAttackPowerModNeg", "UNIT_FIELD_RANGED_ATTACK_POWER_MOD_NEG"}})
+        unit[modern] = static_cast<std::int32_t>(val(old));
+    for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"BoundingRadius", "UNIT_FIELD_BOUNDINGRADIUS"},
              {"CombatReach", "UNIT_FIELD_COMBATREACH"},
              {"HoverHeight", "UNIT_FIELD_HOVERHEIGHT"},
              {"ModCastingSpeed", "UNIT_MOD_CAST_SPEED"},
-             {"ModSpellHaste", "UNIT_MOD_CAST_HASTE"}})
+             {"ModSpellHaste", "UNIT_MOD_CAST_HASTE"},
+             {"MinDamage", "UNIT_FIELD_MINDAMAGE"}, {"MaxDamage", "UNIT_FIELD_MAXDAMAGE"},
+             {"MinOffHandDamage", "UNIT_FIELD_MINOFFHANDDAMAGE"}, {"MaxOffHandDamage", "UNIT_FIELD_MAXOFFHANDDAMAGE"},
+             {"MinRangedDamage", "UNIT_FIELD_MINRANGEDDAMAGE"}, {"MaxRangedDamage", "UNIT_FIELD_MAXRANGEDDAMAGE"},
+             {"AttackPowerMultiplier", "UNIT_FIELD_ATTACK_POWER_MULTIPLIER"},
+             {"RangedAttackPowerMultiplier", "UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER"}})
         unit[modern] = float_field(s, old);
     unit["Power"] = arr("UNIT_FIELD_POWER1", 5);
     unit["MaxPower"] = arr("UNIT_FIELD_MAXPOWER1", 5);
-    unit["Stats"] = arr("UNIT_FIELD_STAT0", 5);
-    unit["Resistances"] = arr("UNIT_FIELD_RESISTANCES", 7);
-    unit["AttackRoundBaseTime"] = arr("UNIT_FIELD_BASEATTACKTIME", 2);
+    unit["Stats"] = arr("UNIT_FIELD_STAT0", 5, false, true);
+    unit["StatPosBuff"] = arr("UNIT_FIELD_POSSTAT0", 5, false, true);
+    unit["StatNegBuff"] = arr("UNIT_FIELD_NEGSTAT0", 5, false, true);
+    unit["Resistances"] = arr("UNIT_FIELD_RESISTANCES", 7, false, true);
+    unit["ResistanceBuffModsPositive"] = arr("UNIT_FIELD_RESISTANCEBUFFMODSPOSITIVE", 7, false, true);
+    unit["ResistanceBuffModsNegative"] = arr("UNIT_FIELD_RESISTANCEBUFFMODSNEGATIVE", 7, false, true);
+    unit["PowerCostModifier"] = arr("UNIT_FIELD_POWER_COST_MODIFIER", 7, false, true);
+    unit["PowerCostMultiplier"] = arr("UNIT_FIELD_POWER_COST_MULTIPLIER", 7, true);
+    auto attack_times = arr("UNIT_FIELD_BASEATTACKTIME", 2);
+    attack_times.push_back(val("UNIT_FIELD_RANGEDATTACKTIME"));
+    unit["AttackRoundBaseTime"] = attack_times;
     auto bytes1 = val("UNIT_FIELD_BYTES_1"), bytes2 = val("UNIT_FIELD_BYTES_2");
     unit["StandState"] = bytes1 & 255;
     unit["VisFlags"] = (bytes1 >> 16) & 255;
@@ -285,59 +307,5 @@ Bytes Protocol::unit_block(Value const &s, Value const &character) const
     for (auto kind : {"ObjectData", "UnitData"})
         fields.serialize(data, kind, get(values, kind), 0);
     return w.put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
-}
-Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const &changed,
-                             unsigned visibility) const
-{
-    struct Scalar
-    {
-        char const *name;
-        unsigned index;
-        char fmt;
-        char const *native;
-    };
-    static Scalar const specs[] = {{"Health", 5, 'q', "UNIT_FIELD_HEALTH"},
-                                   {"MaxHealth", 6, 'q', "UNIT_FIELD_MAXHEALTH"},
-                                   {"DisplayID", 7, 'i', "UNIT_FIELD_DISPLAYID"},
-                                   {"Flags", 41, 'I', "UNIT_FIELD_FLAGS"},
-                                   {"Flags2", 42, 'I', "UNIT_FIELD_FLAGS_2"},
-                                   {"MountDisplayID", 52, 'i', "UNIT_FIELD_MOUNTDISPLAYID"},
-                                   {"StandState", 57, 'B', "UNIT_FIELD_BYTES_1"},
-                                   {"VisFlags", 59, 'B', "UNIT_FIELD_BYTES_1"},
-                                   {"AnimTier", 60, 'B', "UNIT_FIELD_BYTES_1"},
-                                   {"SheatheState", 78, 'B', "UNIT_FIELD_BYTES_2"},
-                                   {"PvpFlags", 79, 'B', "UNIT_FIELD_BYTES_2"},
-                                   {"ShapeshiftForm", 81, 'B', "UNIT_FIELD_BYTES_2"}};
-    std::array<std::uint32_t, 8> masks{};
-    std::vector<Scalar> selected;
-    for (auto const &spec : specs)
-        if (changed.as_object().contains(std::to_string(field_index(spec.native))))
-        {
-            selected.push_back(spec);
-            masks[spec.index / 32] |= (1u << (spec.index % 32)) | 1;
-        }
-    if (selected.empty())
-        return {};
-    Writer data;
-    data.pack("BBBI", {visibility, 0, 3, 1u << 5});
-    unsigned presence = 0;
-    for (unsigned i = 0; i < 8; ++i)
-        if (masks[i])
-            presence |= 1u << i;
-    data.bits(presence, 8);
-    for (auto mask : masks)
-        if (mask)
-            data.bits(mask, 32);
-    data.flush();
-    auto values = field_values(s, character);
-    auto const &unit = get(values, "UnitData");
-    for (auto const &spec : selected)
-        data.pack(std::string(1, spec.fmt), {get(unit, spec.name)});
-    return Writer()
-        .pack("B", {0})
-        .guid(modern_guid(integer(get(s, "guid")), integer(get(s, "map"))))
-        .put<std::uint32_t>(data.data().size())
-        .raw(data.data())
-        .finish();
 }
 } // namespace bridge

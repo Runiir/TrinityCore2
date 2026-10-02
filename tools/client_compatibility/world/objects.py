@@ -15,8 +15,9 @@ def field_values(snapshot, character):
         return native.get(INDEX[name] + offset, 0)
     def float_value(name, offset=0):
         return struct.unpack("<f", struct.pack("<I", value(name, offset)))[0]
-    def array(name, count, floating=False):
-        return [(float_value if floating else value)(name, i) for i in range(count)]
+    def array(name, count, floating=False, signed=False):
+        values=[(float_value if floating else value)(name, i) for i in range(count)]
+        return [n-2**32 if n>=2**31 else n for n in values] if signed else values
     identity = value("UNIT_FIELD_BYTES_0")
     unit = {"Race": identity & 255, "ClassId": identity >> 8 & 255,
             "PlayerClassId": identity >> 8 & 255, "Sex": identity >> 16 & 255,
@@ -31,13 +32,27 @@ def field_values(snapshot, character):
              "BaseMana": "UNIT_FIELD_BASE_MANA", "BaseHealth": "UNIT_FIELD_BASE_HEALTH",
              "EmoteState": "UNIT_NPC_EMOTESTATE", "NpcFlags": "UNIT_NPC_FLAGS"}
     unit.update({modern: value(old) for modern, old in names.items()})
+    for modern,old in {'AttackPower':'UNIT_FIELD_ATTACK_POWER','AttackPowerModPos':'UNIT_FIELD_ATTACK_POWER_MOD_POS',
+        'AttackPowerModNeg':'UNIT_FIELD_ATTACK_POWER_MOD_NEG','RangedAttackPower':'UNIT_FIELD_RANGED_ATTACK_POWER',
+        'RangedAttackPowerModPos':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_POS','RangedAttackPowerModNeg':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_NEG'}.items():
+        n=value(old);unit[modern]=n-2**32 if n>=2**31 else n
     for modern, old in {"BoundingRadius": "UNIT_FIELD_BOUNDINGRADIUS", "CombatReach": "UNIT_FIELD_COMBATREACH",
                         "HoverHeight": "UNIT_FIELD_HOVERHEIGHT", "ModCastingSpeed": "UNIT_MOD_CAST_SPEED",
-                        "ModSpellHaste": "UNIT_MOD_CAST_HASTE"}.items():
+                        "ModSpellHaste": "UNIT_MOD_CAST_HASTE",
+                        "MinDamage":"UNIT_FIELD_MINDAMAGE","MaxDamage":"UNIT_FIELD_MAXDAMAGE",
+                        "MinOffHandDamage":"UNIT_FIELD_MINOFFHANDDAMAGE","MaxOffHandDamage":"UNIT_FIELD_MAXOFFHANDDAMAGE",
+                        "MinRangedDamage":"UNIT_FIELD_MINRANGEDDAMAGE","MaxRangedDamage":"UNIT_FIELD_MAXRANGEDDAMAGE",
+                        "AttackPowerMultiplier":"UNIT_FIELD_ATTACK_POWER_MULTIPLIER",
+                        "RangedAttackPowerMultiplier":"UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER"}.items():
         unit[modern] = float_value(old)
     unit.update(Power=array("UNIT_FIELD_POWER1", 5), MaxPower=array("UNIT_FIELD_MAXPOWER1", 5),
-                Stats=array("UNIT_FIELD_STAT0", 5), Resistances=array("UNIT_FIELD_RESISTANCES", 7),
-                AttackRoundBaseTime=array("UNIT_FIELD_BASEATTACKTIME", 2))
+                Stats=array("UNIT_FIELD_STAT0", 5,signed=True), StatPosBuff=array('UNIT_FIELD_POSSTAT0',5,signed=True),
+                StatNegBuff=array('UNIT_FIELD_NEGSTAT0',5,signed=True),Resistances=array("UNIT_FIELD_RESISTANCES", 7,signed=True),
+                ResistanceBuffModsPositive=array('UNIT_FIELD_RESISTANCEBUFFMODSPOSITIVE',7,signed=True),
+                ResistanceBuffModsNegative=array('UNIT_FIELD_RESISTANCEBUFFMODSNEGATIVE',7,signed=True),
+                PowerCostModifier=array('UNIT_FIELD_POWER_COST_MODIFIER',7,signed=True),
+                PowerCostMultiplier=array('UNIT_FIELD_POWER_COST_MULTIPLIER',7,floating=True),
+                AttackRoundBaseTime=array("UNIT_FIELD_BASEATTACKTIME", 2)+[value('UNIT_FIELD_RANGEDATTACKTIME')])
     bytes1, bytes2 = value("UNIT_FIELD_BYTES_1"), value("UNIT_FIELD_BYTES_2")
     unit.update(StandState=bytes1 & 255, VisFlags=bytes1 >> 16 & 255, AnimTier=bytes1 >> 24 & 255,
                 SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
