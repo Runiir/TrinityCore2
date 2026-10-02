@@ -17,7 +17,8 @@ void RaidMarkers::location(unsigned slot,Value const &value)
     if(position.size()!=3 || integer(get(value,"map"))>65535)throw std::runtime_error("invalid raid marker location");
     for(auto const &v:position)if(!std::isfinite(number(v)) || std::abs(number(v))>17066.667)
         throw std::runtime_error("invalid raid marker location");
-    if(active&(1u<<slot))locations[slot]=value;
+    // The native core can publish the dynamic create before its marker mask.
+    locations[slot]=value;
 }
 std::optional<Bytes> RaidMarkers::packet() const
 {

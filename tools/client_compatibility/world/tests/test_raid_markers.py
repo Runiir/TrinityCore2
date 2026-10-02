@@ -28,6 +28,7 @@ def test_marker_snapshots_wait_for_positions_and_clear_without_stale_locations(c
     actions=[{'fn':'mask','value':1},{'fn':'location','slot':0,'value':point},
         {'fn':'mask','value':0},{'fn':'mask','value':1}]
     assert result(codec,op='raid_markers',actions=actions)==[None,expected,empty,None]
+    assert result(codec,op='raid_markers',actions=[{'fn':'location','slot':0,'value':point},{'fn':'mask','value':1}])==[empty,expected]
     assert 'error' in codec(op='raid_markers',actions=[{'fn':'mask','value':32}])
     assert 'error' in codec(op='raid_markers',actions=[{'fn':'location','slot':0,'value':{'map':0,'position':[18000,0,0]}}])
 
