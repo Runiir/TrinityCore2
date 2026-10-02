@@ -50,7 +50,19 @@ class Inputs:
         # Non-text keys must span more than one 15-FPS background-client tick.
         kwargs.setdefault('hold',.15)
         return self.invoke('key',*args,**kwargs)
-    def click(self,*args,**kwargs):return self.invoke('click',*args,**kwargs)
+    def click(self,*args,modifiers=(),**kwargs):
+        if not modifiers:return self.invoke('click',*args,**kwargs)
+        if len(modifiers)>3 or len(set(modifiers))!=len(modifiers) or any(m not in ['shift','ctrl','alt'] for m in modifiers):
+            raise ValueError('unsupported mouse modifier')
+        with lease():
+            focus();pressed=[]
+            try:
+                for name in modifiers:
+                    code=self.raw._keycode(self.raw.XK.string_to_keysym(self.raw.MODIFIERS[name]))[0]
+                    self.raw._send(self.raw.X.KeyPress,code);pressed.append(code)
+                time.sleep(.15);kwargs.setdefault('hold',.15);self.raw.click(*args,**kwargs)
+            finally:
+                for code in reversed(pressed):self.raw._send(self.raw.X.KeyRelease,code)
     def move(self,*args,**kwargs):return self.invoke('move',*args,**kwargs)
     def type(self,*args,**kwargs):return self.invoke('type',*args,**kwargs)
 
