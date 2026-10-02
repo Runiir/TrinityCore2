@@ -133,7 +133,7 @@ local function snapshot(viewMode,viewPage)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
     data.input_aliases={}
-    for _,name in ipairs({'LEAVEPARTY','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
+    for _,name in ipairs({'LEAVEPARTY','PARTYLEAVE','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
         local aliases={}
         for i=1,5 do local alias=_G['SLASH_'..name..i];if alias then aliases[#aliases+1]=alias end end
         data.input_aliases[name]=aliases

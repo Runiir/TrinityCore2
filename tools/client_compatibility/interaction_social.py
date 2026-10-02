@@ -40,8 +40,16 @@ def suite(out):
             with actor(name):
                 trials[name]=Trial(out/name);actors.session_entry(trials[name].fixture)
                 trials[name].clean_panels();state,_=trials[name].observe('fixture')
-                if state['group']['members'] or state.get('friends'):
-                    raise RuntimeError('social trial requires empty owned group and friend fixtures')
+                if state['group']['members']:raise RuntimeError('social trial requires an empty owned group fixture')
+                friends=state.get('friends') or []
+                if friends:
+                    if name!='primary' or any(f['name']!='Harnesstwo' for f in friends):
+                        raise RuntimeError('social fixture contains an unrelated friend')
+                    trials[name].execute({'kind':'chat','value':'/removefriend Harnesstwo'})
+                    after,_=trials[name].observe('fixture_friend_removed')
+                    if after.get('friends'):raise RuntimeError('owned friend fixture cleanup failed')
+                    trials[name].receipt['cleanup'].append({'time':time.time(),'source':'code_fixture_cleanup',
+                        'input':'/removefriend Harnesstwo','reason':'restore empty fixture left by the previous failed probe'})
         primary=trials['primary'];scout=trials['scout']
         with actor('primary'):
             def oracle(b,a,s):
