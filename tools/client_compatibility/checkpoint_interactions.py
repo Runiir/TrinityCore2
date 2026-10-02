@@ -62,7 +62,7 @@ def checkpoint(directory,name):
         'native_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
         'bridge_build':json.loads((lab.ROOT/'build/native_bridge/build_receipt.json').read_text()),
         'runs':[{'path':str(p.relative_to(lab.ROOT)),'completed':r['completed'],'failure':r['failure'],
-            'model':r['model'],'revision':r['revision']} for p,r in episodes],
+            'controller':r['controller'],'model':r['model'],'revision':r['revision']} for p,r in episodes],
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
             'The base text-only Laya selects bounded input candidates; this is not open-ended screenshot autonomy.',
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
@@ -89,7 +89,7 @@ def checkpoint(directory,name):
                     output.write(json.dumps(row,separators=(',',':'))+'\n')
         (folder/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with Live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
-            live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','laya_candidate_selection')
+            live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','attributed_interaction_trials')
             live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum('selected' in c for c in cases))
             for status,count in counts.items():live.log_metric('case_status/'+status,count)
             live.log_metric('native_worldserver_restarts',0);live.log_metric('whole_game_qualified',0);live.next_step()
