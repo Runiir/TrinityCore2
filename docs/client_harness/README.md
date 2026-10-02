@@ -22,10 +22,15 @@ Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A live obstacle-triggered green
 recovery flight still needs qualification.
 
-The new actor/cohort foundation has unit coverage. Its two-client probe has not yet
-been live-qualified. The C++ world bridge is being migrated and tested; until the
-cutover receipt is recorded, `world.control start` still launches the Python world
-translator. See [the native bridge notes](../../tools/client_compatibility/native_bridge/README.md).
+The world packet bridge now runs as a separate C++20 service and is the default.
+Its optimized build passed both login routes and the two-client probe: the primary
+remained still while the scout moved through ordinary keyboard input, with native
+saved positions confirming both outcomes. Both owned windows were verified on
+HDMI-1. The latest suite passed 227 tests, including 23 native codec differential
+tests; those codec tests also passed ASan/UBSan. Python still handles modern
+authentication, supervision, observations and diagnostic decisions. The bridge
+does not embed Python or call the Python world translator.
+See [the native bridge notes](../../tools/client_compatibility/native_bridge/README.md).
 
 ## Endpoints and restart
 
@@ -36,7 +41,7 @@ translator. See [the native bridge notes](../../tools/client_compatibility/nativ
 | Native gameplay | `127.0.0.1:18085`, instance `18086` |
 | Modern authentication TLS / REST | `127.0.0.1:1119` / `18081` |
 | Modern world bridge | `127.0.0.1:18087` |
-| Archaeology / travel model | `127.0.0.1:8002` / `8003` |
+| Historical archaeology / travel heads; unused in new runs | `127.0.0.1:8002` / `8003` |
 
 Inspect ownership before starting services. Start only missing owned components.
 Run Python commands with Pixi from this checkout:
@@ -47,11 +52,25 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.world.control status
 ```
 
-The startup order is database, native auth/world, modern auth/world, required model
-heads, then clients. The supervisors' `start-auth`, `start-world`, `start`,
+The startup order is database, native auth/world, modern auth/world, then clients.
+The supervisors' `start-auth`, `start-world`, `start`,
 `launch-sso` and `launch-direct` actions operate on the private lab. Keep both SSO
 and username/password login paths qualified. Do not run `prepare-servers` to rebuild
 a binary; it copies an existing binary and does not compile this worktree.
+
+Build and start the world bridge independently, after stopping an existing owned
+bridge if needed. Reconnect affected clients after a bridge restart:
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.world.control build
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.world.control start
+```
+
+The build receipt pins source/schema and executable hashes. A stale executable is
+rejected. The default uses four I/O workers and a separate database pool, with a
+64-connection bound (realm and instance sockets both count). This is a safety bound,
+not evidence that 32 clients have been load-tested. The current real-client budget
+is two. `--engine python` explicitly selects the retained reference implementation.
 
 Every game client must launch on the physical second monitor, currently `HDMI-1`.
 The owned window must be verified there before input. A missing or misplaced window
@@ -120,6 +139,14 @@ records source fingerprints. This covers individual content inventory, not just
 feature families. It still needs reconciliation with the installed modern client
 tables, applicability review and per-content/variant evidence. Unknown, skipped and
 failed cases remain visible. An inventory does not establish 100% coverage.
+
+The initial native census found 14,991 quests, 46,627 creature templates, 29,501
+gameobject templates, 73,253 spells and 64,775 item IDs, with no missing inventory
+sources. The 72 feature cases and content IDs still need individual acceptance
+receipts. Continue with ordinary quest interactions/progression, normal taxi and
+portal transfers on the native bridge, then expand task adapters and content
+variants. The diagnostic cohort supplies actor isolation and input ownership;
+general learned roaming and automated whole-game qualification remain open.
 
 ## Evidence and publication
 

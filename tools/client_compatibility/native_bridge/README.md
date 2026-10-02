@@ -29,28 +29,53 @@ The standalone service now also implements asynchronous networking, authenticate
 realm/instance ownership, menus, taxi, portals and public client data. Database
 operations use a separate worker pool. Public tables and serializers are cached at
 startup. Each connection has its own strand, encryption counters and bounded queues.
-Live cutover qualification is pending. The Python service remains the default until
-the complete native candidate passes validation with the real client.
+The optimized native service is now the default. The cutover preserved the running
+native auth/world services and private DBs. Two real clients passed simultaneous
+observation and bounded keyboard movement, with separate accounts, GUIDs, prefixes,
+sessions and verified HDMI-1 windows. Both launcher SSO and username/password world
+entry passed. Gear preview, bags, professions, Survey cast bars, mount/flight and
+console fixture transfers were also observed through the native service.
+
+The latest authentication/world suite passed 227 tests. All 23 codec differential
+tests passed ASan/UBSan after repairing a profession-JSON lifetime error found by
+the sanitizer. Real clients exposed a dense update that expanded beyond 64 KiB;
+the outbound limit now accommodates it while retaining the stricter incoming limit.
+The earlier failed receipts are retained alongside the passing runs.
 
 ## Independent build and parity checks
 
 ```bash
-cmake -S tools/client_compatibility/native_bridge -B /home/runiir/.local/share/trinity-client442-lab/build/native_bridge -DCMAKE_BUILD_TYPE=Release
-cmake --build /home/runiir/.local/share/trinity-client442-lab/build/native_bridge -j 4
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.world.control build
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.world.control start
 CLIENT442_CODEC=/home/runiir/.local/share/trinity-client442-lab/build/native_bridge/bridge_codec pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m pytest -q tools/client_compatibility/world/tests/test_native_bridge_codec.py
 ```
 
 The supervisor also provides `world.control build` and `world.control start
 --engine cpp`. `build` records source/schema and binary hashes. Starting a stale
-binary is rejected. The default is still `--engine python` during migration.
+binary is rejected. The default is `--engine cpp`; `--engine python` remains an
+explicit reference/fallback option. `--sanitizers` selects a separate ASan/UBSan
+build directory; it does not replace the optimized executable.
 `client442_bridge --root <lab> --repo <worktree> --self-check` verifies private DB
 identity and public table loading without opening a listener. No credentials belong
 on the command line. The target requires OpenSSL 3.5 for Ed25519ctx support.
 
-Python supervises the native candidate and supplies its test oracle. `bridge_codec` has no Python runtime
-dependency and never opens a live game socket. Future service validation must prove
-both launcher/direct login, owned realm/instance continuation, world entry,
-movement, bags/gear/professions, cast bars, mounts, archaeology loot, taxi and
-cross-map portal transfer. Track latency/CPU under concurrent sessions separately
-from semantic parity. Keep per-session queues and frame sizes bounded and exclude
-authentication material from diagnostics.
+Python supervises the service and supplies its test oracle. `client442_bridge` and
+`bridge_codec` have no Python runtime dependency. The codec never opens a live game
+socket. A deterministic Survey-to-loot regression tests ordinary telescope packets,
+public terrain/boundaries, keyboard movement and mouse interaction without a model
+or private next-find coordinates. Its initial Grimsilt trial showed the cast bar
+but stalled near terrain and stopped on combat; the diagnostic now detects confined
+non-green backtracking earlier. This is distinct from the historical Laya proof.
+
+Normal taxi and portal travel still need fresh native-service live qualification;
+a console fixture transfer proves packet handling rather than autonomous travel.
+General gameplay/content coverage and long-duration fleet recovery remain open.
+Track latency/CPU under concurrent sessions separately from semantic parity. The
+two-client trial is not a throughput benchmark. Keep per-session queues and frame
+sizes bounded and exclude authentication material from diagnostics.
+
+Generated traces, screenshots, test results, build receipts, inventories and
+DVCLive metrics are checkpointed with `checkpoint_native_bridge.py`. The archive
+excludes credentials, authentication bodies, client prefixes and CASC caches. Use
+the [lab runbook](../../../docs/client_harness/README.md) for actor ownership and
+the DB-first repair workflow.
