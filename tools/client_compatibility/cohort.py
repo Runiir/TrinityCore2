@@ -7,12 +7,13 @@ import signal
 import subprocess
 import time
 from . import lab_runtime as lab,actors,owned_input
+from . import archaeology_inputs
 
 MANIFEST=lab.REPO/'tools/client_compatibility/auth/pixi.toml'
 
 
 def command(job,out):
-    common=['pixi','exec','--spec','pillow','--spec','python-xlib','--spec','pymysql','python','-m']
+    common=['pixi','run','--manifest-path',str(MANIFEST),'python','-m']
     if job['task']=='archaeology':
         raise ValueError('historical Laya controller retired by AGENTS.md; connect a current controller adapter')
     if job['task']=='travel':
@@ -34,6 +35,10 @@ def start(path,out):
     if subprocess.check_output(['git','status','--porcelain'],cwd=lab.REPO,text=True):
         raise RuntimeError('commit experiment code/configs before starting a client cohort')
     if out.exists():raise ValueError('cohort output exists; use a fresh directory')
+    if not path.is_relative_to(lab.REPO/'experiments/configs/client_harness') or subprocess.run(
+        ['git','ls-files','--error-unmatch',str(path.relative_to(lab.REPO))],cwd=lab.REPO,
+        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
+        raise ValueError('cohort config must be committed in experiments/configs/client_harness')
     config=json.loads(path.read_text());jobs=config['jobs']
     if config.get('schema')!='client442_cohort_v1' or not jobs:raise ValueError('invalid client cohort config')
     names=[j['actor'] for j in jobs]
@@ -48,6 +53,13 @@ def start(path,out):
             if lab.owned_process('cohort_'+job['actor']):raise RuntimeError('actor already has an owned task')
             monitor=owned_input.focus()
             entry=actors.session_entry(fixture)
+            temporary=lab.client_root()/'run/cohort_preflight.png'
+            try:
+                movement,extra=archaeology_inputs.screenshot(temporary)
+                if not movement['in_world'] or movement['health_percent']<50 or any(
+                    movement[k] for k in ['dead','in_combat','on_taxi']):
+                    raise RuntimeError('actor client is unavailable during cohort preflight')
+            finally:temporary.unlink(missing_ok=True)
             environment=os.environ.copy();environment['CLIENT442_CHARACTER_GUID']=str(fixture['guid'])
             environment['CLIENT442_SESSION']=entry['session']
             environment.pop('WM_WEB_TOKEN',None)
@@ -59,7 +71,9 @@ def start(path,out):
         out.mkdir(parents=True,mode=0o700)
         receipt={'schema':'client442_cohort_run_v1','started_at':time.time(),
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
-            'config':config,'jobs':[],'native_worldserver_rebuilt':False,'native_worldserver_restarted':False}
+            'config':config,'config_sha256':lab.sha256(path),'bridge':lab.owned_process('modern_world'),
+            'native_worldserver':lab.owned_process('worldserver'),
+            'jobs':[],'native_worldserver_rebuilt':False,'native_worldserver_restarted':False}
         try:
             for job,fixture,monitor,environment,args in prepared:
                 log=out/(job['actor']+'.console.log')
@@ -90,6 +104,8 @@ def status(out,stop=False):
         if stop and running:os.killpg(info['pid'],signal.SIGINT)
         episode=Path(info['output'])/'episode.json'
         closed=json.loads(episode.read_text()) if episode.exists() else {}
+        if not running and not closed.get('finished_at'):
+            closed.update(completed=False,failure='worker stopped without a closed episode')
         result.append({'actor':info['actor']['actor'],'running':running,
             'completed':closed.get('completed',False),'finished_at':closed.get('finished_at'),
             'failure':closed.get('failure'),'steps':len(closed.get('steps',[]))})
