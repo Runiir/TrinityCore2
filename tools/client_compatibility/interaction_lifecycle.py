@@ -97,7 +97,10 @@ def suite(out, actor_name, cancel_only):
             trial.clean_panels()
             session = actors.session_entry(trial.fixture)['session']
             inventory = Inventory(lab.ROOT, session, trial.fixture['guid']).poll()
-            flags = inventory.objects.get(trial.fixture['guid'], {}).get(INDEX['PLAYER_FLAGS'])
+            fields = inventory.objects.get(trial.fixture['guid'])
+            # Native create masks omit zero fields; an observed full player with
+            # no PLAYER_FLAGS entry has zero flags, not unknown resting state.
+            flags = fields.get(INDEX['PLAYER_FLAGS'], 0) if fields else None
             if flags is None or flags & 0x20:
                 raise RuntimeError('logout cancellation requires an observed non-resting character')
             trial.receipt['native_logout_fixture'] = {'player_flags': flags, 'session': session}
