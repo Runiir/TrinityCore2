@@ -10,6 +10,11 @@ NAME='TC442Test'
 BODY='/cast Battle Shout'
 
 
+def body_matches(state):
+    macro=state.get('test_macro') or []
+    return len(macro)>=3 and macro[0]==NAME and macro[2].rstrip('\r\n')==BODY
+
+
 def edit_case(trial,case_id,goal,predicate,value):
     rows=controls(trial)
     field=next((c for c in rows if c['kind']=='EditBox' and c['enabled'] and predicate(c)),None)
@@ -50,13 +55,18 @@ def suite(trial):
         lambda b,a,s:{'status':'macro_create_pass' if (a.get('test_macro') or [None])[0]==NAME else ('controller_failure' if not s else 'client_or_protocol_failure')}),'macro_create_pass')
     require(edit_case(trial,'macros.body','Set the macro commands to '+BODY+'.',lambda c:c['name']=='MacroFrameText',BODY),'ui_edit_pass')
     require(click_case(trial,'macros.save','Save the edited macro commands.',lambda c:c['name']=='MacroSaveButton',
-        lambda b,a,s:{'status':'macro_save_pass' if (a.get('test_macro') or [None,None,None])[2]==BODY else ('controller_failure' if not s else 'client_or_protocol_failure')}),'macro_save_pass')
+        lambda b,a,s:{'status':'macro_save_pass' if body_matches(a) else ('controller_failure' if not s else 'client_or_protocol_failure')}),'macro_save_pass')
     trial.clean_panels()
     require(trial.step('macros.reload','Reload the interface to check that the saved macro survives.',{
         'a':{'kind':'chat','value':'/reload','description':'Type /reload to reload the interface.'},
         'b':{'kind':'chat','value':'/macro','description':'Type /macro to open the macro editor.'},
         'c':{'kind':'key','value':'Escape','description':'Press Escape to open the game menu.'}},
-        lambda b,a,s:{'status':'macro_reload_pass' if s=='a' and (a.get('test_macro') or [None,None,None])[2]==BODY else 'controller_failure'}),'macro_reload_pass')
+        lambda b,a,s:{'status':'macro_reload_pass' if s=='a' and body_matches(a) else ('controller_failure' if s!='a' else 'client_or_protocol_failure'),
+            'oracle':{'macro_body_matches':body_matches(a),'normalization':'ignore trailing CR/LF only'}}),'macro_reload_pass')
+    cleanup(trial)
+
+
+def cleanup(trial):
     # Delete the disposable fixture via ordinary controls. This is cleanup, not model qualification.
     trial.execute({'kind':'chat','value':'/macro'})
     rows=controls(trial);button=next(c for c in rows if c['name']=='MacroDeleteButton')
