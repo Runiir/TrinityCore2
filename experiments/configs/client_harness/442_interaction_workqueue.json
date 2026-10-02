@@ -1,0 +1,31 @@
+{
+  "schema": "client442_ui_workqueue_v1",
+  "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
+  "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
+  "branch": "feature/442-compat",
+  "current": "binding assignment save reload execute restore",
+  "queued": [
+    "guild classic UI and offline account service boundary",
+    "profession recipe selection search craft cancel and fishing/archaeology panels",
+    "macro action-bar drag cast edit and character-specific persistence",
+    "logout cancel confirm reconnect and late group-read lifecycle",
+    "raid show hide lock assistant ready-check and leave/convert with both owned clients",
+    "character equipment stats tooltips inventory move equip split and restore",
+    "nearby player creation movement for trade inspect follow and group avatars",
+    "reputation currency achievement journal map and collection mutations",
+    "NPC fixtures for bank merchant trainer quest mail auction and guild",
+    "remaining inventory and installed-binding reconciliation"
+  ],
+  "accepted_boundaries": {
+    "second_monitor": "HDMI-1",
+    "isolated_databases": true,
+    "native_worldserver_restart_only_when_required": true,
+    "laya": "bounded ordinary-input choice only; explicit user exception for interactions"
+  },
+  "last_closed_batches": [
+    "followup/panel_trial_01: 22 opens, 10 closes, 13 controller failures, 1 guild failure",
+    "followup/panel_diagnostic_01: 23 opens/closes, guild fails",
+    "followup/rest_live_01: normal rest state and no Lua errors"
+  ],
+  "unqualified": "Everything without an evidence-linked case and oracle remains pending."
+}

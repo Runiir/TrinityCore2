@@ -55,8 +55,9 @@ def suite(trial):
         lambda b,a,s:{'status':'binding_assign_pass' if a.get('binding_probe')=='TOGGLEFPS' and not a.get('keybind_listening') else
             ('controller_failure' if s!='chord' else 'client_or_protocol_failure')},diagnostic_action='chord'),'binding_assign_pass')
     require(click_case(trial,'keybindings.save','Close settings and save the binding.',lambda c:c['text']=='Close',
-        lambda b,a,s:{'status':'binding_save_pass' if not a.get('panels') and a.get('binding_probe')=='TOGGLEFPS' else
+        lambda b,a,s:{'status':'binding_save_pass' if 'SettingsPanel' not in a.get('panels',[]) and a.get('binding_probe')=='TOGGLEFPS' else
             ('controller_failure' if not s else 'client_or_protocol_failure')}),'binding_save_pass')
+    trial.clean_panels()
     require(trial.step('keybindings.reload','Reload the interface to verify the saved binding.',{
         'reload':{'kind':'chat','value':'/reload','description':'Type /reload to reload the interface.'},
         'character':{'kind':'key','value':'c','description':'Press C to open equipment.'}},
@@ -64,14 +65,21 @@ def suite(trial):
             ('controller_failure' if s!='reload' else 'client_or_protocol_failure')},diagnostic_action='reload'),'binding_reload_pass')
     toggle(trial,'keybindings.execute',not initial.get('framerate_visible',False))
     toggle(trial,'keybindings.toggle_back',initial.get('framerate_visible',False))
+    restore(trial,initial)
+
+
+def restore(trial,initial):
     # Restore through the same ordinary editor; cleanup does not count as Laya qualification.
     saved_controller=trial.controller;trial.controller='code'
     try:
+        state,_=trial.observe('binding_cleanup_check')
+        if state.get('framerate_visible')!=initial.get('framerate_visible',False):
+            trial.execute({'kind':'key','value':'ctrl+shift+F12'})
         open_editor(trial);rows=controls(trial)
         button=next(c for c in rows if c.get('binding_action')=='TOGGLEFPS' and c.get('binding_slot')==2)
         trial.execute({'kind':'click','value':point(button),'button':3})
         rows=controls(trial);trial.execute({'kind':'click','value':point(next(c for c in rows if c['text']=='Close'))})
-        trial.execute({'kind':'chat','value':'/reload'})
+        trial.clean_panels();trial.execute({'kind':'chat','value':'/reload'})
         state,frame=trial.observe('binding_restored')
         if state.get('binding_probe') or state.get('fps_keys')!=initial['fps_keys'] or state.get('binding_set')!=initial['binding_set']:
             raise RuntimeError('keybinding fixture restoration failed')
@@ -86,6 +94,13 @@ def main():
     try:suite(trial);trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
+        baseline=trial.receipt.get('binding_baseline')
+        if baseline:
+            try:
+                state,_=trial.observe('final_binding_check')
+                if state.get('binding_probe')=='TOGGLEFPS':restore(trial,baseline)
+            except Exception as e:
+                trial.receipt['cleanup_failure']=f'{type(e).__name__}: {e}';trial.receipt['completed']=False
         trial.receipt['finished_at']=time.time();trial.persist()
         print(json.dumps({'completed':trial.receipt['completed'],'failure':trial.receipt['failure']}))
 
