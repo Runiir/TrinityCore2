@@ -7,7 +7,9 @@ import time
 from tools.client_compatibility.lab_runtime import connection
 from . import srp
 
-TICKET_DURATION = 600
+# Cached credentials must outlive a normal play session and permit reconnect.
+# Refresh extends a still-valid ticket; expired/revoked credentials never revive.
+TICKET_DURATION = 24 * 60 * 60
 
 
 def migrate():
@@ -102,4 +104,23 @@ def from_ticket(ticket):
     account = get(row[0])
     if account:
         account.update(mode=row[1], expires=row[2])
+    return account
+
+
+def refresh(ticket):
+    account = from_ticket(ticket)
+    if not account:
+        return None
+    now = int(time.time())
+    digest = hashlib.sha256(ticket.encode()).digest()
+    with connection() as conn, conn.cursor() as cursor:
+        cursor.execute("""UPDATE client442_auth.lab_login_tickets
+            SET expires=GREATEST(expires,%s) WHERE ticket_hash=%s AND native_id=%s AND expires>%s""",
+            (now + TICKET_DURATION, digest, account['id'], now))
+        cursor.execute("""SELECT expires FROM client442_auth.lab_login_tickets
+            WHERE ticket_hash=%s AND native_id=%s AND expires>%s""", (digest, account['id'], now))
+        row = cursor.fetchone()
+    if not row:
+        return None
+    account['expires'] = row[0]
     return account

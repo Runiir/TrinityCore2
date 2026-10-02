@@ -175,9 +175,10 @@ class Handler(BaseHTTPRequestHandler):
             event("rest_ticket_issued", mode="direct", account_id=account["id"])
             return self.reply(result)
         if self.path == "/bnetserver/refreshLoginTicket/":
-            account = accounts.from_ticket(self.ticket())
+            account = accounts.refresh(self.ticket())
             if not account:
                 return self.reply({"login_ticket_expiry": 0, "is_expired": True})
+            event("login_ticket_refreshed", mode=account['mode'], account_id=account['id'])
             return self.reply({"login_ticket_expiry": account["expires"], "is_expired": False})
         self.reply({}, 404)
 

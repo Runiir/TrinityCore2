@@ -86,6 +86,10 @@ class Session:
                 request = wire.message("authentication.v1.VerifyWebCredentialsRequest", body)
                 return self.logon(request.web_credentials), b""
             if method == 8 and self.account:
+                self.account = accounts.refresh(self.ticket)
+                if not self.account:
+                    self.ticket = ''
+                    return 3, None
                 return 0, wire.message("authentication.v1.GenerateWebCredentialsResponse", web_credentials=self.ticket.encode())
         if not self.account or self.account["expires"] <= time.time():
             return 3, None
