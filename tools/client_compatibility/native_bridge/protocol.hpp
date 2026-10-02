@@ -33,6 +33,7 @@ struct State
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;
     std::uint64_t last_logout_guid = 0; // Final character-cache writes, never gameplay authority.
+    std::uint64_t inspect_target = 0;
     Array latest_movement;
     std::function<void(std::string const &, View)> native_send;
     std::uint64_t guid() const
@@ -131,6 +132,11 @@ struct Protocol
     static Reply destroy_object(State &owner, View body);
     static std::vector<Packet> creature_movement(State &owner, View body);
     Reply public_player_movement(State &owner, View body) const;
+    static Reply inspect_request(State &owner,std::string const &name,View body);
+    Reply inspect_response(State &owner,std::string const &name,View body) const;
+    static Reply trade_request(State const &owner,std::string const &name,View body);
+    Reply trade_response(std::string const &name,View body) const;
+    static std::pair<std::uint8_t,std::uint8_t> inventory_position(std::uint8_t bag,std::uint8_t slot);
 };
 Bytes native_text(Reader &reader);
 Value movement_parse(View body, std::uint64_t wanted);

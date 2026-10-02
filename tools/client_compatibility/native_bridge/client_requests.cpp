@@ -61,6 +61,12 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     {
         require_world();native_send(*request);return;
     }
+    if(name=="CMSG_INSPECT")
+    {
+        require_world();if(auto request=Protocol::inspect_request(state,name,body))native_send(*request);return;
+    }
+    if(auto request=Protocol::trade_request(state,name,body))
+    {require_world();native_send(*request);return;}
     if (auto request = Protocol::party_request(name, body))
     {
         if (!state.created || !active_world) throw std::runtime_error("party request without owned character");

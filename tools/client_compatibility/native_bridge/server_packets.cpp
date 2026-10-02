@@ -123,6 +123,10 @@ Task<> Session::gameplay(std::string name, Bytes body)
     Reply reply;
     if((reply=protocol.inventory_response(name,body)))
     {send(*reply);co_return;}
+    if((reply=protocol.inspect_response(state,name,body)))
+    {send(*reply);co_return;}
+    if((reply=protocol.trade_response(name,body)))
+    {send(*reply);co_return;}
     if ((reply = Protocol::party_roles(name,body)))
     {
         this->send(*reply);co_return;

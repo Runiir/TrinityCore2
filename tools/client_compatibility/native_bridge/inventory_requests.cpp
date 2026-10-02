@@ -34,6 +34,10 @@ void inv(Reader &r)
     for(unsigned i=0;i<count;++i){auto pack=r.take<std::uint8_t>(),index=r.take<std::uint8_t>();position(pack,index);}
 }
 }
+std::pair<std::uint8_t,std::uint8_t> Protocol::inventory_position(std::uint8_t bag,std::uint8_t slot)
+{
+    return position(bag,slot);
+}
 Reply Protocol::inventory_request(State const &owner,std::string const &name,View body)
 {
     Reader r(body);Writer w;

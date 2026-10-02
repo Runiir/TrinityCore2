@@ -272,6 +272,14 @@ int main(int argc, char **argv)
                                 reply = Protocol::party_request(name, body);
                             else if(fn=="inventory_request")
                                 reply=Protocol::inventory_request(state,name,body);
+                            else if(fn=="inspect_request")
+                                reply=Protocol::inspect_request(state,name,body);
+                            else if(fn=="inspect_response")
+                                reply=protocol.inspect_response(state,name,body);
+                            else if(fn=="trade_request")
+                                reply=Protocol::trade_request(state,name,body);
+                            else if(fn=="trade_response")
+                                reply=protocol.trade_response(name,body);
                             else if(fn=="inventory_response")
                                 reply=protocol.inventory_response(name,body);
                             else if (fn == "party_response")
