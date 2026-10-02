@@ -26,6 +26,8 @@ bool capture(std::string const &name)
         return true;
     static std::unordered_set<std::string> const names = {"CMSG_SEND_CONTACT_LIST", "CMSG_CONTACT_LIST",
                                                           "CMSG_QUERY_GUILD_INFO", "CMSG_GUILD_QUERY", "CMSG_GUILD_GET_ROSTER",
+                                                          "CMSG_GUILD_INVITE_BY_NAME", "CMSG_GUILD_INVITE", "SMSG_GUILD_INVITE",
+                                                          "CMSG_ACCEPT_GUILD_INVITE", "CMSG_GUILD_ACCEPT", "CMSG_GUILD_DECLINE_INVITATION", "CMSG_GUILD_DECLINE",
                                                           "CMSG_SWAP_INV_ITEM", "CMSG_SWAP_ITEM", "CMSG_SPLIT_ITEM",
                                                           "CMSG_AUTO_EQUIP_ITEM", "CMSG_AUTOEQUIP_ITEM", "CMSG_AUTO_EQUIP_ITEM_SLOT", "CMSG_AUTOEQUIP_ITEM_SLOT",
                                                           "CMSG_AUTO_STORE_BAG_ITEM", "CMSG_AUTOSTORE_BAG_ITEM", "SMSG_INVENTORY_CHANGE_FAILURE",

@@ -246,6 +246,8 @@ def prepare_client() -> None:
     # CASC reads use the original data; its writes go to a private overlay.
     for name in ["WTF", "Cache", "Logs", "Errors", "Interface"]:
         (client / name).mkdir(exist_ok=True)
+    compatibility = REPO / 'tools/client_compatibility/client_addon/Client442Compatibility'
+    shutil.copytree(compatibility, client / 'Interface/AddOns/Client442Compatibility', dirs_exist_ok=True)
     for entry in SOURCE.iterdir():
         if entry.name in {"WTF", "Cache", "Logs", "Errors", "2fa", "Interface"} or entry.name.startswith("launcher-"):
             continue

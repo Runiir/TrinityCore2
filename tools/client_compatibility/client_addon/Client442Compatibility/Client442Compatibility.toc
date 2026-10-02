@@ -1,0 +1,5 @@
+## Interface: 40402
+## Title: Client442 Compatibility
+## Notes: UI repairs for the private 60895 compatibility lab.
+## Version: 1.0.0
+GuildTabs.lua

@@ -5,6 +5,8 @@ namespace bridge
 Reply guild_roster_response(View body,Array const &identities);
 Reply guild_request(State const &owner,std::string const &name,View body)
 {
+    if(auto request=guild_membership_request(name,body))return request;
+    if(auto request=guild_note_request(name,body))return request;
     Reader r(body);
     if(name=="CMSG_GUILD_GET_ROSTER")
     {r.end();return Packet{name,{}};}
@@ -35,6 +37,9 @@ Reply guild_request(State const &owner,std::string const &name,View body)
 }
 Reply guild_response(std::string const &name,View body,Array const &identities)
 {
+    if(auto response=guild_membership_response(name,body))return response;
+    if(auto response=guild_event_response(name,body))return response;
+    if(auto response=guild_note_response(name,body))return response;
     if(name=="SMSG_GUILD_ROSTER")return guild_roster_response(body,identities);
     Reader r(body);Writer w;
     if(name=="SMSG_GUILD_RANKS")

@@ -88,6 +88,9 @@ class Trial:
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
             'cases':[],'cleanup':[],'completed':False,'failure':None}
         self.persist()
+        compatibility=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/Client442Compatibility/GuildTabs.lua'
+        self.receipt['compatibility_addon_sha256']=lab.sha256(compatibility) if compatibility.is_file() else None
+        self.persist()
 
     def persist(self):
         lab.private_write(self.out/'episode.json',json.dumps(self.receipt,indent=2)+'\n')

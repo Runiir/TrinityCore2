@@ -12,7 +12,8 @@ for i=1,math.ceil((capacity+12)/3) do
 end
 local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','SkillFrame','SpellBookFrame',
     'TradeSkillFrame','CraftFrame','ArchaeologyFrame','QuestLogFrame','WorldMapFrame','PlayerTalentFrame',
-    'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','GuildFinderFrame','LookingForGuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
+    'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','GuildInfoFrame','GuildMemberDetailFrame','GuildControlPopupFrame',
+    'GuildFinderFrame','LookingForGuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
@@ -31,8 +32,8 @@ seterrorhandler(function(message)
 end)
 local function call(fn,...)
     if type(fn)~='function' then return nil end
-    local ok,a,b,c,d,e,f,g=pcall(fn,...)
-    if ok then return a,b,c,d,e,f,g end
+    local ok,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r=pcall(fn,...)
+    if ok then return a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r end
 end
 local function quoted(s)
     s=tostring(s or '')
@@ -249,6 +250,10 @@ local function snapshot(viewMode,viewPage)
         clubs_enabled=call(C_Club and C_Club.IsEnabled),bn_connected=call(BNConnected)}
     local guildName,guildRank,guildRankIndex=call(GetGuildInfo,'player')
     data.guild_ui.name=guildName;data.guild_ui.rank=guildRank;data.guild_ui.rank_index=guildRankIndex
+    data.guild_ui.motd=trim(call(GetGuildRosterMOTD));data.guild_ui.info=trim(call(GetGuildInfoText))
+    data.guild_ui.permissions={invite=call(CanGuildInvite),motd=call(CanEditMOTD),
+        public_note=call(CanEditPublicNote),officer_note=call(CanEditOfficerNote),promote=call(CanGuildPromote)}
+    data.guild_ui.compatibility=Client442CompatibilityStatus
     local guildCount=call(GetNumGuildMembers)
     data.guild_ui.member_count=guildCount;data.guild_ui.members={}
     for i=1,math.min(tonumber(guildCount) or 0,4) do
