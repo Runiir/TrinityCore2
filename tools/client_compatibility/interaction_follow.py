@@ -71,7 +71,7 @@ def suite(out):
         packets=[r for r in entries(lab.ROOT/'evidence/world_packets.jsonl') if r.get('time',0)>=started and
             r.get('name')=='SMSG_MOVE_UPDATE' and r.get('session')==sessions['scout']]
         native=[r for r in packets if r.get('direction')=='from_native']
-        modern=[r for r in packets if r.get('direction')=='to_modern' and Reader(bytes.fromhex(r['body'])).guid()[0]==1]
+        modern=[r for r in packets if r.get('direction')=='to_client' and Reader(bytes.fromhex(r['body'])).guid()[0]==1]
         lab.private_write(out/'public_movement_packets.json',json.dumps(packets,indent=2)+'\n')
         cohort['public_movement_packets']={'native':len(native),'modern':len(modern)}
         if not native or not modern:raise RuntimeError('public movement has no attributable native/modern packet pair')
