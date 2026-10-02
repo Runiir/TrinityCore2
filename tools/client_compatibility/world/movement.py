@@ -34,14 +34,18 @@ def parse(body, wanted):
     # Whitemane's observed 0x8000 falling hint is accepted only with actual fall
     # data; it cannot grant flight or bypass the server's movement authority.
     allowed_extra = 0x3f | 0x100 | 0x200 | 0x400 | 0x8000
-    if any(presence[i] for i in (0, 1, 3, 6, 7)) or flags3 or flags >= 1 << 30 or flags2 & ~allowed_extra:
+    if any(presence[i] for i in (1, 3, 6, 7)) or flags3 or flags >= 1 << 30 or flags2 & ~allowed_extra:
         raise ValueError("unsupported movement transport/spline/advanced flags")
     if flags2 & 0x8000 and not (flags & 0x800 and presence[2]):
         raise ValueError("falling movement hint without fall state")
     flags2 = (flags2 & 0x3f) | (0x400 if flags2 & 0x100 else 0)
     m = {"flags": flags, "flags2": flags2, "time": timestamp, "position": (x, y, z, o),
          "pitch": pitch, "fall": bool(presence[2]), "fall_direction": False,
-         "fall_time": 0, "zspeed": 0, "sin": 0, "cos": 0, "xyspeed": 0}
+         "fall_time": 0, "zspeed": 0, "sin": 0, "cos": 0, "xyspeed": 0,'standing_gameobject':None}
+    if presence[0]:
+        identity=r.guid()
+        if not identity[0] or identity[1]>>58!=11:raise ValueError('standing movement identity is not a game object')
+        m['standing_gameobject']=identity
     if presence[2]:
         m["fall_time"], m["zspeed"] = r.unpack("If")
         m["fall_direction"] = bool(r.bits(1))
@@ -50,6 +54,20 @@ def parse(body, wanted):
     if not all(math.isfinite(v) for v in (x, y, z, o, pitch, elevation, m["zspeed"], m["xyspeed"])) or max(abs(x), abs(y), abs(z)) > 17067:
         raise ValueError("invalid movement coordinates")
     return m
+
+
+def validate_standing(owner,state):
+    """Consume static-object contact metadata without granting transport motion."""
+    identity=state.get('standing_gameobject')
+    if identity is None:return
+    from .gameobjects import modern_guid
+    from .objects import INDEX
+    for guid,record in getattr(owner,'visible_gameobjects',{}).items():
+        if modern_guid(guid,record['map'])!=identity:continue
+        kind=record['fields'][INDEX['GAMEOBJECT_BYTES_1']]>>8&255
+        if kind in [11,15]:raise ValueError('standing movement on transports is unsupported')
+        return
+    raise ValueError('standing game object is not visible to the owned character')
 
 
 def encode(name, guid, m, *, acknowledgement=False):

@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 150 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 151 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -480,6 +480,14 @@ permits downward steps up to 1.25 yards, retains the 35-degree upward limit and
 body-height collision checks, and allows extra settling time after short advances.
 Both observed indoor start positions pass the regression with supported outdoor
 floor destinations. None of episodes 77 through 82 collected an artifact.
+Episode 83 stepped from the furnishing to the floor and advanced toward the
+exit, then disconnected because ordinary movement included a packed
+`StandingOnGameObjectGUID`. The bridge now parses that modern contact field and
+accepts only static game objects already made visible to the owned native
+character. Transport objects remain unsupported. The field grants no movement:
+native position/flags are unchanged and the informational GUID is omitted from
+the legacy packet. The exact failing packet passes a regression; unknown objects
+and transport contacts still reject. Only the modern bridge needs a restart.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
@@ -537,6 +545,15 @@ Scoped status, push and cloud status confirmed remote synchronization. All 265
 closed PNG/WebP files matched archived bytes and hashes before removing
 233,992,066 local bytes. The next checkpoint includes
 `terrain_and_takeoff_cleanup.json` with the verification manifest.
+
+Trials 74 through 82 follow in
+`artifacts/client_harness/442_indoor_and_combat_repairs_20261002.tar.gz.dvc`.
+The archive is 234,594,613 bytes with SHA-256
+`056e73c6afd507a821efb418a55d2c996c4c7a7dd3ba4ed41fe854ad2b7b9fc2`.
+Scoped status, push and cloud status confirmed remote synchronization. All 145
+closed PNG/WebP files matched archived bytes and hashes before removing
+130,506,775 local bytes. The next checkpoint includes
+`indoor_and_combat_repairs_cleanup.json` with the verification manifest.
 
 ## Running the loop
 

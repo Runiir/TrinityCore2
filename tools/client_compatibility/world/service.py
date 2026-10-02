@@ -194,6 +194,7 @@ class Session:
             if not owner.created or self is not owner.world:
                 raise ValueError("movement before active world entry")
             state = movement.parse(body, owner.character["guid"])
+            movement.validate_standing(owner,state)
             owner.latest_movement=state['position']
             native_name, native_body = movement.encode("CMSG_MOVE_SET_FACING" if name == "CMSG_MOVE_SET_FACING_HEARTBEAT" else name, owner.character["guid"], state)
             owner.native.send(native_name, native_body)

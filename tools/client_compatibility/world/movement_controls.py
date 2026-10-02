@@ -52,6 +52,8 @@ def acknowledgement(owner, name, body):
     if not pending or pending["ack"] != name or (speed is not None and (not math.isfinite(speed) or abs(speed-pending["speed"]) > .001)):
         raise ValueError("foreign or mismatched movement acknowledgement")
     state = parse(body[:-suffix], owner.character["guid"])
+    from .movement import validate_standing
+    validate_standing(owner,state)
     state.update(ack_index=counter, ack_speed=speed)
     result = encode(ACK_NATIVE.get(name, name), owner.character["guid"], state, acknowledgement=True)
     del owner.pending_movement[counter]

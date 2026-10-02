@@ -12,6 +12,7 @@ import pytest
 from tools.client_compatibility.world import crypto, instance, movement
 from tools.client_compatibility.world.buffer import Reader, Writer, player_high
 from tools.client_compatibility.world.service import Session
+from types import SimpleNamespace
 
 
 def client_frame(key, counter, opcode, body=b""):
@@ -81,6 +82,22 @@ def test_movement_ownership_and_invalid_coordinates():
     for name in movement.SUPPORTED:
         native, encoded = movement.encode(name, 1, state)
         assert native == ("CMSG_MOVE_SET_CAN_FLY" if name == "CMSG_MOVE_SET_FLY" else "MSG_" + name.removeprefix("CMSG_")) and encoded
+
+
+def test_trial83_static_gameobject_contact_preserves_ordinary_owned_movement():
+    from tools.client_compatibility.world.objects import INDEX
+    body=bytes.fromhex('01a0010408000000000002000000000000b6e64503b60e84c52417a143aa6a06432f88b040000000000000000000000000000000008003bef45d15b34042042c')
+    state=movement.parse(body,1)
+    guid=(0xF11<<52)|(183380<<32)|24052
+    record={'map':530,'fields':{INDEX['GAMEOBJECT_BYTES_1']:5<<8}}
+    owner=SimpleNamespace(visible_gameobjects={guid:record})
+    movement.validate_standing(owner,state)
+    assert state['standing_gameobject'][0]==24052 and state['flags']==state['flags2']==0
+    assert state['position'][:3]==pytest.approx([-4225.838867,322.180786,134.416656])
+    assert movement.encode('CMSG_MOVE_STOP',1,state)==movement.encode('CMSG_MOVE_STOP',1,{**state,'standing_gameobject':None})
+    with pytest.raises(ValueError,match='not visible'):movement.validate_standing(SimpleNamespace(),state)
+    record['fields'][INDEX['GAMEOBJECT_BYTES_1']]=15<<8
+    with pytest.raises(ValueError,match='transports'):movement.validate_standing(owner,state)
 
 
 def test_no_movement_before_world_or_from_realm(monkeypatch):
