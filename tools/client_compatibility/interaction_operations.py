@@ -3,6 +3,8 @@ import argparse
 import json
 from pathlib import Path
 import time
+from contextlib import redirect_stdout
+from io import StringIO
 from . import lab_runtime as lab
 from .interaction_trial import Trial
 
@@ -22,7 +24,9 @@ def controls(trial):
     from .observation.interactions import decode_image
     pages={};total=None;deadline=time.monotonic()+25;panels=None
     while time.monotonic()<deadline:
-        path=trial.out/'controls_latest.png';ctl.shot(str(path));state=decode_image(Image.open(path))
+        path=trial.out/'controls_latest.png'
+        with redirect_stdout(StringIO()):ctl.shot(str(path))
+        state=decode_image(Image.open(path))
         if state['guid']!=trial.guid:raise RuntimeError('control page identity mismatch')
         if state['mode']!='controls':continue
         current=state.get('panels') or []

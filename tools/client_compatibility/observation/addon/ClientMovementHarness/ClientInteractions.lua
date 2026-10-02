@@ -3,6 +3,7 @@ local capacity,columns,cell=4096,128,3
 local frame=CreateFrame('Frame','ClientInteractionHarnessPanel',UIParent)
 frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,36)
 frame:SetPoint('TOPLEFT',UIParent,'TOPLEFT',300,-16);frame:SetFrameStrata('TOOLTIP');frame:EnableMouse(false)
+frame:SetFrameLevel(10000)
 local pixels,previous={},{}
 for i=1,math.ceil((capacity+12)/3) do
     local texture=frame:CreateTexture(nil,'OVERLAY');texture:SetSize(cell,cell)

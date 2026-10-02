@@ -11,6 +11,8 @@ import random
 import subprocess
 import time
 import urllib.request
+from contextlib import redirect_stdout
+from io import StringIO
 from . import actors,lab_runtime as lab,owned_input
 from .archaeology_controller import MODEL,REVISION,ENDPOINT
 from .observation.interactions import decode_image
@@ -91,7 +93,7 @@ class Trial:
         ctl._launcher_env=lab.client_environment
         monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+22
         while True:
-            ctl.shot(str(path))
+            with redirect_stdout(StringIO()):ctl.shot(str(path))
             with Image.open(path) as image:
                 state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
             if state['mode']=='state':break
