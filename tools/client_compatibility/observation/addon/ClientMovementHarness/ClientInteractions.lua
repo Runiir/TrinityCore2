@@ -103,6 +103,10 @@ local function snapshot(viewMode,viewPage)
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
+    local profile=call(GetActiveRaidProfile)
+    data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
+        shown=profile and call(GetRaidProfileOption,profile,'shown'),expanded=CompactRaidFrameManager and not CompactRaidFrameManager.collapsed,
+        bars_visible=CompactRaidFrameContainer and CompactRaidFrameContainer:IsVisible() or false}
     if mode=='group' then data.page=page;data.group_count=GetNumGroupMembers();data.everyone_assistant=call(IsEveryoneAssistant)
         data.units=groupUnits(page);data.frames=groupFrames(data.units);return data end
     data.panels={};data.controls={};data.bags={}
@@ -146,7 +150,7 @@ local function snapshot(viewMode,viewPage)
             data.professions[#data.professions+1]={name=name,rank=rank,max=max}
         end
     end
-    data.group={raid=IsInRaid(),members=GetNumGroupMembers(),leader=UnitIsGroupLeader('player'),names={}}
+    data.group={raid=IsInRaid(),members=GetNumGroupMembers(),leader=UnitIsGroupLeader('player'),everyone_assistant=call(IsEveryoneAssistant),names={}}
     for i=1,math.max(GetNumGroupMembers(),1) do
         local unit=IsInRaid() and 'raid'..i or (i==1 and 'player' or 'party'..(i-1))
         local name=UnitName(unit);if name then data.group.names[#data.group.names+1]=name end
@@ -224,6 +228,13 @@ local function update()
     end
 end
 SLASH_CLIENTINTERACTIONHARNESS1='/tcui'
+SLASH_CLIENTOBSERVERPANELS1='/tcoverlays'
+SlashCmdList.CLIENTOBSERVERPANELS=function(text)
+    local show=text~='off'
+    for _,name in ipairs({'ClientMovementHarnessPanel','ClientTaxiHarnessPanel','ClientGossipHarnessPanel','ClientInteractionHarnessPanel'}) do
+        local panel=_G[name];if panel then panel:SetShown(show) end
+    end
+end
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
     if command=='bindings' or command=='controls' then mode=command;page=math.max(1,tonumber(arg) or 1)
