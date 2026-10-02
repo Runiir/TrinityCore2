@@ -48,9 +48,11 @@ Reply chat_request(State const &,std::string const &name,View body)
     if(name=="CMSG_CHAT_MESSAGE_WHISPER")
     {
         auto guid=r.guid();auto realm=r.take<std::uint32_t>();
-        if((realm && realm!=0x01010001) || (integer(guid[1]) && integer(guid[1])!=player_high()))
+        if((realm && realm!=1 && realm!=0x01010001) || (integer(guid[1]) && integer(guid[1])!=player_high()))
             throw std::runtime_error("whisper outside the local realm");
-        auto target_size=r.bits(7),message_size=r.bits(11);
+        // Installed Whitemane 60895 uses nine bits here; the pinned upstream
+        // snapshot used seven. This layout is backed by the captured UI request.
+        auto target_size=r.bits(9),message_size=r.bits(11);
         if(target_size<2 || message_size<2)throw std::runtime_error("whisper requires a name and text");
         target=text(r,target_size-1,126);if(r.take<std::uint8_t>())throw std::runtime_error("invalid whisper target terminator");
         message=text(r,message_size-1,511);if(r.take<std::uint8_t>())throw std::runtime_error("invalid whisper message terminator");

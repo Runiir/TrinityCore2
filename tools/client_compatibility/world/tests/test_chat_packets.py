@@ -28,11 +28,11 @@ def test_language_free_status_and_emote_messages(codec,suffix):
 
 def test_whisper_preserves_target_and_message_and_strips_same_realm_suffix(codec):
     target=b'Harnesstwo-Client442Lab';text=b'TC442UI:whisper_primary'
-    body=Writer().pack('i',7).guid(2,player_high()).pack('I',0x01010001).bits(len(target)+1,7).bits(len(text)+1,11).raw(target+b'\0'+text+b'\0').finish()
+    body=Writer().pack('i',7).guid(2,player_high()).pack('I',0x01010001).bits(len(target)+1,9).bits(len(text)+1,11).raw(target+b'\0'+text+b'\0').finish()
     name,encoded=call(codec,'chat_request','CMSG_CHAT_MESSAGE_WHISPER',body)
     r=Reader(bytes.fromhex(encoded));assert name=='CMSG_MESSAGECHAT_WHISPER' and r.unpack('i')==(7,)
     assert r.bits(10)==10 and r.bits(9)==len(text) and r.raw(10)==b'Harnesstwo' and r.raw(len(text))==text;r.end()
-    bad=Writer().pack('i',7).guid().pack('I',42).bits(2,7).bits(2,11).raw(b'a\0b\0').finish()
+    bad=Writer().pack('i',7).guid().pack('I',42).bits(2,9).bits(2,11).raw(b'a\0b\0').finish()
     assert 'error' in codec(op='stateful',character={'guid':1},actions=[action('chat_request','CMSG_CHAT_MESSAGE_WHISPER',bad)])
 
 
@@ -93,3 +93,11 @@ def test_captured_whitemane_60895_say_request(codec):
     name,encoded=call(codec,'chat_request','CMSG_CHAT_MESSAGE_SAY',body)
     assert name=='CMSG_MESSAGECHAT_SAY';r=Reader(bytes.fromhex(encoded))
     assert r.unpack('i')==(7,) and r.bits(9)==20 and r.raw(20)==b'TC442UI:say_e02f9463';r.end()
+
+
+def test_captured_whitemane_60895_whisper_name_width_and_local_realm(codec):
+    body=bytes.fromhex('0700000001a0020408010000000581904861726e65737374776f00544334343255493a776869737065725f313931613464636500')
+    name,encoded=call(codec,'chat_request','CMSG_CHAT_MESSAGE_WHISPER',body)
+    assert name=='CMSG_MESSAGECHAT_WHISPER';r=Reader(bytes.fromhex(encoded))
+    assert r.unpack('i')==(7,) and r.bits(10)==10 and r.bits(9)==24
+    assert r.raw(10)==b'Harnesstwo' and r.raw(24)==b'TC442UI:whisper_191a4dce';r.end()
