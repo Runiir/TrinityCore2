@@ -232,7 +232,7 @@ def stop(kind: str) -> None:
 
 def prepare_client() -> None:
     root=client_root()
-    for name in ['logs','evidence','run','bin','secrets']:(root/name).mkdir(parents=True,exist_ok=True,mode=0o700)
+    for name in ['logs','evidence','run','bin','secrets','wineprefix']:(root/name).mkdir(parents=True,exist_ok=True,mode=0o700)
     client = root / "client/_whitemane-60895_"
     client.mkdir(parents=True, exist_ok=True, mode=0o700)
     # CASC reads use the original data; its writes go to a private overlay.
@@ -341,6 +341,7 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
     root=client_root()
     if owned_process("client"):
         raise RuntimeError("lab client already running")
+    (root/'wineprefix').mkdir(parents=True,exist_ok=True,mode=0o700)
     folder = root / "client/_whitemane-60895_"
     if sha256(folder / "WowClassic.exe") != CLIENT_SHA256:
         raise RuntimeError("client differs from the audited executable")
