@@ -133,6 +133,11 @@ local function snapshot(viewMode,viewPage)
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
                 local parent=f:GetParent()
+                local bag=call(f.GetBagID,f)
+                if bag~=nil and f.GetID then
+                    data.controls[#data.controls].bag_id=bag
+                    data.controls[#data.controls].bag_slot=call(f.GetID,f)
+                end
                 local index=parent and parent.initializer and parent.initializer.data and parent.initializer.data.bindingIndex
                 if index and (f==parent.Button1 or f==parent.Button2) then
                     data.controls[#data.controls].binding_action=call(GetBinding,index)
@@ -154,6 +159,13 @@ local function snapshot(viewMode,viewPage)
     end end
     if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsVisible() then data.bags[#data.bags+1]=-1 end
     data.bag_slots={};for i=0,4 do data.bag_slots[i+1]=call(C_Container and C_Container.GetContainerNumSlots,i) or call(GetContainerNumSlots,i) or 0 end
+    data.bag_items={}
+    for bag=0,4 do for slot=1,data.bag_slots[bag+1] do
+        local info=call(C_Container and C_Container.GetContainerItemInfo,bag,slot)
+        if info and #data.bag_items<20 then
+            data.bag_items[#data.bag_items+1]={bag=bag,slot=slot,id=info.itemID,count=info.stackCount,locked=info.isLocked}
+        end
+    end end
     data.reputations=call(GetNumFactions) or call(C_Reputation and C_Reputation.GetNumFactions)
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
@@ -207,6 +219,14 @@ local function snapshot(viewMode,viewPage)
             panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
+    data.recipe_selection=call(GetTradeSkillSelectionIndex)
+    if data.recipe_selection and data.recipe_selection>0 then
+        local id=data.recipe_selection
+        data.selected_recipe={name=call(GetTradeSkillInfo,id),link=call(GetTradeSkillItemLink,id),
+            reagents=call(GetTradeSkillNumReagents,id),cooldown=call(GetTradeSkillCooldown,id)}
+    end
+    data.player_stats={health=call(UnitHealthMax,'player'),armor={call(UnitArmor,'player')},
+        strength={call(UnitStat,'player',1)},damage={call(UnitDamage,'player')}}
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
     data.guild_ui={classic=call(GetCVarBool,'useClassicGuildUI'),in_guild=call(IsInGuild),
