@@ -827,6 +827,24 @@ the first full run has 466 passes and one failure caused by an incomplete
 synthetic native header. After correcting the fixture, all 13 focused quest
 checks pass. The updated full and sanitizer results are recorded in UI13.
 
+The updated quest suite passes 467 regression tests and 101 selected ASan/UBSan
+checks. `quest_details_03` has three successful Laya choices and displays the
+correct quest ID, narrative, objective and a 0/6 tracker. The overall episode
+still fails cleanup: self-selection was visible in the client but dropped by
+the bridge because the owned player is not in the visible-peer map. The native
+command consequently reports no selected character. The self-selection fix
+passes 468 regression tests and 26 selected sanitizer checks. It only permits
+selecting the authenticated owned player; it does not permit attacking self or
+selecting fabricated player GUIDs.
+
+The empty observed quest list is explained by two collapsed stock quest-log
+headers, confirmed by v14's read-only observations. The pinned Cata UI uses
+`GetQuestLogTitle`, not the retail table-based API. The observer also reads the
+normal `C_QuestLog` active-quest/objective APIs for the disposable quest without
+expanding UI sections. The next trial uses normal clicks to expand the zone,
+read the accepted quest and abandon it, with native quest/inventory restoration
+as its completion condition. No combat or reward completion is implied.
+
 Seven additional older immutable journal rotations (58,766,706 raw bytes) are
 checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verified
 6,648,223-byte archive is synchronized before those rotations and both local

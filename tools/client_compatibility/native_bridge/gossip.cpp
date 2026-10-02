@@ -132,6 +132,8 @@ Reply Protocol::combat_request(State const &owner, std::string const &name, View
     r.end();
     if (name == "CMSG_SET_SELECTION" && identity == Array{0, 0})
         return Packet{name, Writer().pack("Q", {0}).finish()};
+    if(name=="CMSG_SET_SELECTION" && owner.guid() && identity==Array{owner.guid(),player_high()})
+        return Packet{name,Writer().pack("Q",{owner.guid()}).finish()};
     for (auto const &[guid, record] : owner.visible_units)
         if (modern_guid(guid, integer(get(record, "map"))) == identity)
             return Packet{name, Writer().put(guid).finish()};

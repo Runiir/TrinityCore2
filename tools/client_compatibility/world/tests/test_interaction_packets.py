@@ -21,6 +21,14 @@ def call(codec,fn,name,body,**kwargs):
         gameobjects=[],units=[],actions=[{'fn':fn,'name':name,'body':body.hex()}],**kwargs)[0]
 
 
+def test_self_target_reaches_native_selection_without_requiring_a_visible_peer(codec):
+    body=Writer().guid(1,HIGH).finish()
+    assert call(codec,'combat_request','CMSG_SET_SELECTION',body)==['CMSG_SET_SELECTION',struct.pack('<Q',1).hex()]
+    assert call(codec,'combat_request','CMSG_ATTACK_SWING',body) is None
+    assert call(codec,'combat_request','CMSG_SET_SELECTION',Writer().guid(2,HIGH).finish()) is None
+    assert call(codec,'combat_request','CMSG_SET_SELECTION',Writer().guid(1,11<<58).finish()) is None
+
+
 def test_social_request_name_note_and_owned_guid(codec):
     name=b'Harnesstwo';note=b'Owned fixture'
     modern=Writer().bits(len(name),9).bits(len(note),9).raw(name).raw(note).finish()
