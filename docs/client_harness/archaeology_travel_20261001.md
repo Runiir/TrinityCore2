@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 147 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 148 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 76 preserve unsuccessful steps, including missing portal
+Episodes 07 through 77 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -443,6 +443,20 @@ retain the original terrain-validated goal for at most three blockers, each at
 least ten levels lower and with known health at most 15,000. Existing bounded
 combat recovery handles contact. Unknown health, stronger enemies and player
 health below 80 percent still reject that fallback. No green flights were added.
+Episode 77 landed inside a raised WMO room at height 134.42, above raw terrain
+at 120.77. The addon reported indoors and the client refused the next mount.
+Local survey flights now require soil-supported landing patches. Restarting
+indoors routes the character outside before mounting, using normal addon
+`IsIndoors()` confirmation. Initial regression attempts failed because bare
+terrain had no connected walking route, and then because a narrow doorway could
+not provide a 2.5-yard outdoor patch. Both failed test XML files are retained.
+The repair permits a 24-yard indoor walking corridor across a missing MMAP
+doorway only when public VMAP/MAPS floor samples remain continuous, with at most
+35-degree steps and clear body-height collision rays. Outdoor walking floors may
+be beneath an awning. The planned outdoor patch is 1.5 yards; actual arrival must
+be within 0.35 yards, have a supported one-yard patch and report outdoors.
+This is a coded geometry recovery; it does not add private find coordinates or
+green survey flights. Live recovery remains to be validated.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
@@ -491,6 +505,15 @@ Scoped status, push and cloud status confirmed remote synchronization. All 317
 closed PNG/WebP files matched archived bytes and hashes before removing
 246,023,366 local bytes. The next checkpoint includes
 `dry_shore_site_arrival_cleanup.json` with the verification manifest.
+
+Trials 69 through 73 follow in
+`artifacts/client_harness/442_terrain_and_takeoff_repairs_20261002.tar.gz.dvc`.
+The archive is 326,611,856 bytes with SHA-256
+`7e090ebb51f80aa3470380ee8058474327e7bf3a2c96ca399cf8ee792e336b02`.
+Scoped status, push and cloud status confirmed remote synchronization. All 265
+closed PNG/WebP files matched archived bytes and hashes before removing
+233,992,066 local bytes. The next checkpoint includes
+`terrain_and_takeoff_cleanup.json` with the verification manifest.
 
 ## Running the loop
 

@@ -19,6 +19,7 @@ def ready_at_site(facts,extra,site):
     # Enter the normal walk/swim adapter when already in water. A dry restart
     # instead needs a usable supporting surface, not merely matching elevation.
     if extra['swimming'] or ground_navigation.water_at(facts['map'],facts['position'])['water_above_feet']:return True
+    if extra.get('indoors'):return False
     try:surface=ground_navigation.probe_surface(facts['map'],facts['position'])
     except RuntimeError:return False
     return abs(surface['position'][2]-facts['position'][2])<=2 and math.dist(

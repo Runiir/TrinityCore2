@@ -32,3 +32,16 @@ def test_ground_exit_does_not_accept_combat_or_airborne_state():
     with pytest.raises(RuntimeError,match='unavailable'):exit.available(movement,EXTRA,facts,530,site)
     movement['in_combat']=False
     with pytest.raises(RuntimeError,match='settled'):exit.available(movement,{**EXTRA,'falling':True},facts,530,site)
+
+
+@pytest.mark.skipif(not (lab.BASE/'data/maps/5303931.map').exists(),reason='public terrain absent')
+def test_trial77_indoor_floor_can_walk_to_connected_outdoor_floor():
+    foot=[-4231.4326171875,323.23193359375,134.4171905517578]
+    facts={'map':530,'position':foot};extra={**EXTRA,'mounted':False,'indoors':True}
+    assert exit.needed(facts,extra)
+    plan=exit.select(facts,extra)
+    assert plan['indoor_exit']
+    assert not model_collision.mapped_outdoors(530,foot)
+    assert all(model_collision.mapped_outdoors(530,s['position']) for s in plan['safe_patch']['samples'])
+    assert all(model_collision.clear_body_segment(530,a,b) for a,b in
+        zip([foot,*plan['route']['points']],plan['route']['points']))

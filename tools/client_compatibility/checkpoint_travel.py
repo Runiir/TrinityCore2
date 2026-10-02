@@ -46,6 +46,7 @@ def main():
         'walking_slope_overrestriction_failure.xml','walking_surface_snap_failure.xml',
         'ground_slope_after_64.png','landing_height_after_67.png','collection_recovery_repairs_cleanup.json',
         'dry_shore_site_arrival_cleanup.json','terrain_and_takeoff_cleanup.json','survey_no_tool_69.json','landing_patch_search_failure.xml','landing_overlap_search_failure.xml','terrain_cover_72.json','terrain_test_argument_failure.xml','takeoff_overhang_73.json','takeoff_overhang_73.png','combat_selection_75.png','survey_avoidance_76.json',
+        'indoor_exit_search_failure.xml','indoor_exit_outdoor_floor_tests.xml','indoor_landing_77.json','indoor_landing_77.png',
         'tooltip_hover_diagnostic.png','tooltip_hover_diagnostic.json','outland_repairs_cleanup.json','water_repairs_cleanup.json',
         'creature_movement_login.png','creature_movement_character.png','creature_movement_world.png',
         'creature_position_login.png','creature_position_character.png','creature_position_world.png',

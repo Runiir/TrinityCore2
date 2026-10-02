@@ -44,6 +44,15 @@ int main(int argc, char** argv)
         std::cout << std::setprecision(9) << "{\"source\":\"public static VMAP model collision\",\"loaded_tiles\":"
             << loaded << ",\"collision_height\":";
         if (height>VMAP_INVALID_HEIGHT && std::isfinite(height)) std::cout << height;else std::cout << "null";
+        float support=manager.getHeight(map,x,y,z+2,6);
+        std::cout << ",\"support_height\":";
+        if (support>VMAP_INVALID_HEIGHT && std::isfinite(support)) std::cout << support;else std::cout << "null";
+        uint32 flags=0;int32 adt=0,root=0,group=0;float areaZ=z+2;
+        bool hasArea=manager.getAreaInfo(map,x,y,areaZ,flags,adt,root,group);
+        std::cout << ",\"area\":";
+        if (hasArea) std::cout << "{\"floor_z\":" << areaZ << ",\"mogp_flags\":" << flags
+            << ",\"adt_id\":" << adt << ",\"root_id\":" << root << ",\"group_id\":" << group << "}";
+        else std::cout << "null";
         std::cout << "}\n";
     }
     catch (std::exception const& error) { std::cerr << error.what() << '\n';return 1; }

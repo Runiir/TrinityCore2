@@ -41,6 +41,14 @@ def supporting_surface(map_id,position):
         'source':'public raw MAPS terrain and static VMAP model collision'}
 
 
+def mapped_outdoors(map_id,position):
+    """Predict an outdoor WMO floor; the live addon must still confirm it."""
+    from .terrain_geometry import height
+    area=column(map_id,position).get('area');terrain=height(map_id,position)
+    if not area or terrain is not None and terrain>area['floor_z'] and position[2]+2>terrain:return True
+    return bool(area['mogp_flags'] & 0x8)
+
+
 def clear_body_segment(map_id,start,end):
     for height in [.5,1.7]:
         a=[start[0],start[1],start[2]+height];b=[end[0],end[1],end[2]+height]
