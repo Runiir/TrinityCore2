@@ -201,7 +201,9 @@ local function snapshot(viewMode,viewPage)
     end
     data.friends={}
     if C_FriendList and C_FriendList.GetNumFriends then
-        for i=1,math.min(C_FriendList.GetNumFriends(),10) do
+        local friendCount=call(C_FriendList.GetNumFriends)
+        data.friends_ready=type(friendCount)=='number'
+        for i=1,math.min(tonumber(friendCount) or 0,10) do
             local f=C_FriendList.GetFriendInfoByIndex(i)
             if f then data.friends[#data.friends+1]={name=f.name,connected=f.connected,level=f.level,notes=trim(f.notes)} end
         end

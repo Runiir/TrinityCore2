@@ -60,7 +60,7 @@ def field_values(snapshot, character):
               "NativeSex": character["gender"], "VirtualPlayerRealm": 0x01010001}
     guild = value('OBJECT_FIELD_DATA') | value('OBJECT_FIELD_DATA', 1) << 32
     if snapshot.get('kind') == 4 and guild:
-        if guild >> 48 != 0x1ff or guild >> 32 & 0xffff or not guild & 0xffffffff:
+        if guild >> 52 != 0x1ff or guild >> 32 & 0xfffff or not guild & 0xffffffff:
             raise ValueError('invalid native guild identity')
         unit['GuildGUID'] = [guild & 0xffffffff, (28 << 58) | (1 << 42)]
     else:

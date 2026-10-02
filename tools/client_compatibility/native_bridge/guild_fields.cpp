@@ -5,7 +5,7 @@ namespace bridge
 Array guild_identity(std::uint64_t native)
 {
     if(!native)return {0,0};
-    if(native>>48!=0x1ff || !(native&0xffffffff) || (native>>32&0xffff))
+    if(native>>52!=0x1ff || !(native&0xffffffff) || (native>>32&0xfffff))
         throw std::runtime_error("invalid native guild identity");
     return {native&0xffffffff,guild_high()};
 }

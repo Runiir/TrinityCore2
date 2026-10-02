@@ -8,7 +8,8 @@ GUILD_HIGH = (28 << 58) | (1 << 42)
 
 
 def fields(guild=1):
-    return {INDEX['OBJECT_FIELD_DATA']: guild, INDEX['OBJECT_FIELD_DATA']+1: 0x1ff0000 if guild else 0,
+    # Native OBJECT_FIELD_DATA observed on the live guild fixture: [1,535822336].
+    return {INDEX['OBJECT_FIELD_DATA']: guild, INDEX['OBJECT_FIELD_DATA']+1: 0x1ff00000 if guild else 0,
         INDEX['PLAYER_GUILDRANK']: 0, INDEX['PLAYER_GUILDLEVEL']: 1 if guild else 0,
         INDEX['PLAYER_GUILD_TIMESTAMP']: 123 if guild else 0, INDEX['PLAYER_FLAGS']: 1 << 28 if guild else 0}
 
