@@ -1,0 +1,9 @@
+{
+  "schema": "client442_cohort_v1",
+  "maximum_clients": 2,
+  "purpose": "Validate simultaneous actor ownership, observation and bounded physical input before broad learned roaming",
+  "jobs": [
+    {"actor":"primary","task":"probe","mode":"observe"},
+    {"actor":"scout","task":"probe","mode":"movement"}
+  ]
+}

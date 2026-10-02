@@ -19,11 +19,13 @@ def angle_error(heading, facing):
 
 
 class Observer:
-    def __init__(self):
-        entry = player_entry(lab.ROOT)
+    def __init__(self,*,guid=None,session=None,root=None):
+        root=root or lab.ROOT
+        entry = player_entry(root,guid,session)
+        self.guid=entry['guid']
         self.session, self.started = entry["session"], entry["time"]
         self.offset, self.tool, self.finds, self.player = 0, None, {}, None
-        self.cursor = Cursor(lab.ROOT / "evidence/world_packets.jsonl")
+        self.cursor = Cursor(root / "evidence/world_packets.jsonl")
 
     def poll(self, facing):
         for packet in self.cursor.poll():
@@ -32,7 +34,7 @@ class Observer:
             if packet['direction']=='from_client':
                 from ..world import movement
                 if packet['name'] in movement.SUPPORTED or packet['name']=='CMSG_MOVE_SET_FACING_HEARTBEAT':
-                    state=movement.parse(bytes.fromhex(packet['body']),1)
+                    state=movement.parse(bytes.fromhex(packet['body']),self.guid)
                     self.player={'position':list(state['position']),'seen_at':packet['time'],
                                  'source':'owned_session_client_movement_packets'}
             if packet["direction"] != "from_native":
@@ -46,7 +48,7 @@ class Observer:
                 continue
             if packet["name"] != "SMSG_UPDATE_OBJECT": continue
             for record in records(bytes.fromhex(packet["body"])):
-                if record.get('guid')==1 and 'movement' in record:
+                if record.get('guid')==self.guid and 'movement' in record:
                     self.player={'position':list(record['movement']['position']),'seen_at':packet['time'],
                                  'source':'owned_session_native_visible_player_create'}
                 if record["update_type"] == 3:
@@ -56,7 +58,7 @@ class Observer:
                 elif record.get("kind") == 5:
                     from ..world.objects import INDEX
                     creator = record["fields"].get(INDEX["OBJECT_FIELD_CREATED_BY"], 0) | record["fields"].get(INDEX["OBJECT_FIELD_CREATED_BY"] + 1, 0) << 32
-                    if creator != 1: continue
+                    if creator != self.guid: continue
                     entry = record["guid"] >> 32 & 0xFFFFF
                     if entry not in TOOLS and entry not in FINDS: continue
                     x, y, z, heading = record["movement"]["position"]

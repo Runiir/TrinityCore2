@@ -3,7 +3,7 @@ import json
 import math
 import re
 import time
-from . import lab_runtime as lab, archaeology_inputs, ground_navigation, site_boundaries
+from . import lab_runtime as lab, archaeology_inputs, ground_navigation, site_boundaries, owned_input
 from .travel_inputs import face
 from tools.second_client import ctl
 
@@ -28,7 +28,7 @@ def named_attacker_command(facts,failed_selections,exact_attempts):
 
 def run(movement, extra, facts, observer, path):
     if extra['mounted']: raise RuntimeError('melee recovery requires a grounded unmounted character')
-    ctl._launcher_env = lab.client_environment; inputs = ctl.Input()
+    ctl._launcher_env = lab.client_environment; inputs = owned_input.Inputs()
     site = site_boundaries.active_site(facts['map'], facts['position'], extra['digsite_ids'])
     receipt = {'decision_origin': 'physical_safety_guard', 'reason': 'incidental combat blocks Survey',
         'before': facts, 'steps': [], 'started_at': time.time(), 'learned_combat_policy': False}

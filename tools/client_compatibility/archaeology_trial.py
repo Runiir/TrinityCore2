@@ -21,13 +21,14 @@ def repeated_completed(history,action,count):
 
 def run(args):
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    monitor=json.loads((lab.ROOT/'evidence/client_monitor.json').read_text())
+    monitor=json.loads((lab.client_root()/'evidence/client_monitor.json').read_text())
     client=lab.owned_process('client')
     if not client or not monitor['second_monitor_verified'] or monitor['pid']!=client['pid']:raise RuntimeError('owned client monitor unverified')
     owned_input.focus()
     with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/health',timeout=5) as r:identity=json.load(r)
     observer=Observer();recovery=Recovery();history=[];finds=[];started=time.time();latest=out/'latest.png';failure=None;expired_retries=0
     receipt={'schema':'client442_laya_live_archaeology_v2','model':identity,
+        'actor':{'name':lab.actor_name(),'guid':observer.guid,'session':observer.session},
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'started_at':started,'teacher_mouse_annotations':0,'manual_gameplay_interventions':0,
         'private_next_find_coordinates_used':False,'mounted_red_yellow_moves':getattr(args,'mounted_moves',False),

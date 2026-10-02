@@ -1,7 +1,7 @@
 """Recorded physical safety withdrawal; this is not a learned combat policy."""
 import math
 import time
-from . import lab_runtime as lab,archaeology_inputs,site_boundaries,ground_navigation,model_collision
+from . import lab_runtime as lab,archaeology_inputs,site_boundaries,ground_navigation,model_collision,owned_input
 from tools.second_client import ctl
 
 
@@ -37,7 +37,7 @@ def withdraw(movement,extra,facts,observer,path):
     if not extra['flying'] and combat_landing.permitted(movement,extra,facts,observer.player_level):
         return combat_landing.run(movement,extra,facts,observer,path)
     from .travel_inputs import face
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[]
+    ctl._launcher_env=lab.client_environment;inputs=owned_input.Inputs();keys=[]
     start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])
     ascent_observations=[]
     if extra['mounted']:

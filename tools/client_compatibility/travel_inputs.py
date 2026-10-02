@@ -23,7 +23,7 @@ def face(inputs,observer,goal):
 def execute(action,leg,facts,extra,observer,path,*,intersite=False):
     from PIL import Image
     from . import archaeology_inputs
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[];pixel=None;collision=None;interaction_approach=None
+    ctl._launcher_env=lab.client_environment;inputs=owned_input.Inputs();keys=[];pixel=None;collision=None;interaction_approach=None
     goal=leg.get('vendor_position') if action=='interact' else leg.get('position')
     position=facts['position']
     if action=='mount':

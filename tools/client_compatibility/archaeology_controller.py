@@ -9,7 +9,7 @@ import math
 import time
 import urllib.request
 
-from . import lab_runtime as lab
+from . import lab_runtime as lab,owned_input
 from .observation.telemetry import decode_image
 
 MODEL = "convaiinnovations/laya-typed-decisions"
@@ -110,7 +110,7 @@ def step(visual=None, observer=None):
         "screenshot_observation": visual, "telescope": {k: tcp["tool"][k] for k in ["color", "heading_radians", "turn_error_radians"]} if tcp["tool"] else None,
         "last_actions": [r["executed"] for r in previous[-3:]]}
     payload, response, action = choose(state, options)
-    inputs = ctl.Input()
+    inputs = owned_input.Inputs()
     started_at = time.time()
     hold = None
     if action == "survey": inputs.key("2")

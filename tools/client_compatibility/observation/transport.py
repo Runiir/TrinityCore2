@@ -9,31 +9,33 @@ from .journal import Cursor, player_entry
 
 
 class Observer:
-    def __init__(self):
-        entry=player_entry(lab.ROOT)
+    def __init__(self,*,guid=None,session=None,root=None):
+        root=root or lab.ROOT
+        entry=player_entry(root,guid,session)
+        self.guid=entry['guid']
         self.session=entry['session'];self.started=entry['time'];self.offset=0
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
         self.gossip=None;self.selected=None;self.attackers=set();self.player_attack_target=None
         self.units={};self.names={};self.player_level=85;self.player_faction=1
-        self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+        self.cursor=Cursor(root/'evidence/world_packets.jsonl')
 
     def poll(self):
         for p in self.cursor.poll():
+            if p.get('session')!=self.session or p['time']<self.started:continue
             if p['direction']=='from_native' and p['name']=='SMSG_CREATURE_QUERY_RESPONSE':
                 from ..world.gossip import text
                 template=Reader(bytes.fromhex(p['body']));entry,=template.unpack('I')
                 if not entry&0x80000000:self.names[entry]=text(template).decode()
-            if p.get('session')!=self.session or p['time']<self.started:continue
             name=p['name'];body=bytes.fromhex(p['body']);r=Reader(body)
             if p['direction']=='from_client' and (name in movement.SUPPORTED or name=='CMSG_MOVE_SET_FACING_HEARTBEAT'):
-                self.position=list(movement.parse(body,1)['position']);self.seen_at=p['time']
+                self.position=list(movement.parse(body,self.guid)['position']);self.seen_at=p['time']
             if p['direction']=='from_client' and name=='CMSG_SET_SELECTION':
                 self.selected=r.guid()
             if p['direction']=='to_client':
                 if name=='SMSG_MOVE_TELEPORT':
                     guid,_=r.guid();_,x,y,z,o,_=r.unpack('I4fB')
-                    if guid==1:self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
+                    if guid==self.guid:self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
                 elif name=='SMSG_TRANSFER_PENDING':self.transferring=True
                 elif name=='SMSG_NEW_WORLD':
                     self.map,x,y,z,o=r.unpack('i4f');self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
@@ -44,13 +46,13 @@ class Observer:
             if p['direction']=='from_native':
                 if name=='SMSG_ATTACK_START':
                     attacker,victim=r.unpack('QQ')
-                    if victim==1:self.attackers.add(attacker)
-                    if attacker==1:self.player_attack_target=victim
+                    if victim==self.guid:self.attackers.add(attacker)
+                    if attacker==self.guid:self.player_attack_target=victim
                 elif name=='SMSG_ATTACK_STOP':
                     from ..world.native_objects import guid as native_guid
                     attacker=native_guid(r);native_guid(r);r.unpack('I')
                     self.attackers.discard(attacker)
-                    if attacker==1:self.player_attack_target=None
+                    if attacker==self.guid:self.player_attack_target=None
                 elif name=='SMSG_ON_MONSTER_MOVE':
                     from ..world.native_objects import guid as native_guid
                     guid=native_guid(r);r.unpack('B');position=list(r.unpack('3f'))
@@ -78,7 +80,7 @@ class Observer:
                             self.units[record['guid']]=record
                         elif record['update_type']==0 and record['guid'] in self.units:
                             self.units[record['guid']]['fields'].update(record['fields'])
-                        if record.get('guid')==1 and 'movement' in record:
+                        if record.get('guid')==self.guid and 'movement' in record:
                             self.map=record['map'];self.position=list(record['movement']['position']);self.seen_at=p['time']
                             self.player_level=record['fields'].get(INDEX['UNIT_FIELD_LEVEL'],85)
                             self.player_faction=record['fields'].get(INDEX['UNIT_FIELD_FACTIONTEMPLATE'],1)

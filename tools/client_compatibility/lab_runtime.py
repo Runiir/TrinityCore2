@@ -23,6 +23,17 @@ CLIENT_SHA256 = "9d963af8c7ce67aa9828b834a91f59e41221767801e78a9b91d9ea81971ee79
 HELPER_SHA256 = "b84b94a646210d3494f06f36b62fb5a845a8f3f1e470820304938a1d496d17fb"
 
 
+def actor_name():
+    name=os.environ.get('CLIENT442_ACTOR','primary')
+    if not re.fullmatch(r'[a-z][a-z0-9_]{0,23}',name):raise ValueError('invalid client442 actor name')
+    return name
+
+
+def client_root():
+    name=actor_name()
+    return ROOT if name=='primary' else ROOT/'actors'/name
+
+
 def private_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with path.open("w") as handle:
@@ -125,7 +136,7 @@ def proc_start(pid: int) -> str:
 
 
 def owned_process(kind: str):
-    file = ROOT / f"run/{kind}.json"
+    file = (client_root() if kind=='client' else ROOT) / f"run/{kind}.json"
     if not file.exists():
         return None
     info = json.loads(file.read_text())
@@ -220,7 +231,9 @@ def stop(kind: str) -> None:
 
 
 def prepare_client() -> None:
-    client = ROOT / "client/_whitemane-60895_"
+    root=client_root()
+    for name in ['logs','evidence','run','bin','secrets']:(root/name).mkdir(parents=True,exist_ok=True,mode=0o700)
+    client = root / "client/_whitemane-60895_"
     client.mkdir(parents=True, exist_ok=True, mode=0o700)
     # CASC reads use the original data; its writes go to a private overlay.
     for name in ["WTF", "Cache", "Logs", "Errors", "Interface"]:
@@ -256,26 +269,28 @@ SET Sound_EnableAllSound "0"
 '''
     if not (client / "WTF/Config.wtf").exists():
         private_write(client / "WTF/Config.wtf", config)
-    helper = ROOT / "bin/launcher-game.exe"
+    helper = root / "bin/launcher-game.exe"
     if not helper.exists():
-        candidates = list(Path("/tmp").glob(".mount_Whitem*/usr/lib/Whitemane/binaries/launcher-game.exe"))
-        matching = [path for path in candidates if sha256(path) == HELPER_SHA256]
+        candidates = [ROOT/'bin/launcher-game.exe',*Path("/tmp").glob(".mount_Whitem*/usr/lib/Whitemane/binaries/launcher-game.exe")]
+        matching = [path for path in candidates if path.exists() and sha256(path) == HELPER_SHA256]
         if not matching:
             raise RuntimeError("pinned Whitemane launch helper is unavailable; open the installed launcher to mount its resources")
         helper.parent.mkdir(exist_ok=True, mode=0o700)
         shutil.copy2(matching[0], helper)
-    print(f"Prepared private client at {client}; separate prefix at {ROOT / 'wineprefix'}")
+    print(f"Prepared private client at {client}; separate prefix at {root / 'wineprefix'}")
 
 
 def client_environment() -> dict[str, str]:
-    if not owned_process("client"):
+    owned=owned_process('client')
+    if not owned:
         raise RuntimeError("owned client is not running")
     for process in Path("/proc").iterdir():
         if not process.name.isdigit():
             continue
         try:
             command = (process / "cmdline").read_bytes()
-            if str(ROOT).encode() not in command or b"proton\x00run\x00" not in command:
+            group=int((process/'stat').read_text().rsplit(')',1)[1].split()[2])
+            if group!=owned['pid'] or str(client_root()).encode() not in command or b"proton\x00run\x00" not in command:
                 continue
             env = dict(item.decode().split("=", 1) for item in
                        (process / "environ").read_bytes().split(b"\0") if b"=" in item)
@@ -288,7 +303,7 @@ def client_environment() -> dict[str, str]:
 
 def screenshot() -> None:
     env = client_environment()
-    path = ROOT / "evidence/client.png"
+    path = client_root() / "evidence/client.png"
     path.unlink(missing_ok=True)
     subprocess.run(["gamescopectl", "screenshot", str(path)], env=env, check=True)
     for _ in range(50):
@@ -300,10 +315,10 @@ def screenshot() -> None:
 
 
 def create_account() -> None:
-    path = ROOT / "secrets/game_account.json"
+    path = client_root() / "secrets/game_account.json"
     if path.exists():
         raise RuntimeError("lab account already provisioned")
-    username, password = "CLIENTLAB", secrets.token_hex(6).upper()
+    username, password = ('CLIENTLAB' if actor_name()=='primary' else 'CL442_'+actor_name().upper()), secrets.token_hex(6).upper()
     salt = secrets.token_bytes(32)
     identity = hashlib.sha1(f"{username}:{password}".encode()).digest()
     exponent = int.from_bytes(hashlib.sha1(salt + identity).digest(), "little")
@@ -323,12 +338,13 @@ def create_account() -> None:
 
 def start_client(launcher: bool = False, sso_ticket: str | None = None, game_account: str | None = None) -> None:
     from tools.second_client.place_window import second_monitor
+    root=client_root()
     if owned_process("client"):
         raise RuntimeError("lab client already running")
-    folder = ROOT / "client/_whitemane-60895_"
+    folder = root / "client/_whitemane-60895_"
     if sha256(folder / "WowClassic.exe") != CLIENT_SHA256:
         raise RuntimeError("client differs from the audited executable")
-    if launcher and sha256(ROOT / "bin/launcher-game.exe") != HELPER_SHA256:
+    if launcher and sha256(root / "bin/launcher-game.exe") != HELPER_SHA256:
         raise RuntimeError("launcher helper differs from the tested version")
     # The client persists the region default (US) after an SSO session. Restore
     # the private lab endpoints before every launch, including direct login.
@@ -341,7 +357,7 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
         config = re.sub(pattern, line, config) if re.search(pattern, config) else config + "\n" + line + "\n"
     private_write(config_path, config)
     for directory in ["casc-upper", "casc-work"]:
-        (ROOT / "client" / directory).mkdir(exist_ok=True, mode=0o700)
+        (root / "client" / directory).mkdir(exist_ok=True, mode=0o700)
     env = os.environ.copy()
     # The desktop application's bundled libraries hide the host NVIDIA driver.
     env.pop("LD_LIBRARY_PATH", None)
@@ -360,7 +376,7 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
         env.update(WM_PORTAL="127.0.0.1:1119", WM_WEB_TOKEN=sso_ticket, WM_GAME_ACCOUNT=game_account)
     executable = [str(folder / "WowClassic.exe")]
     if launcher:
-        executable = [str(ROOT / "bin/launcher-game.exe"), "--exe",
+        executable = [str(root / "bin/launcher-game.exe"), "--exe",
             "Z:" + str(folder / "WowClassic.exe").replace("/", "\\"), "--working-dir",
             "Z:" + str(folder).replace("/", "\\"), "--scenario", "cata-windows-60895",
             "--version-url", "http://m.gamefreedom.org/w/60895/versions",
@@ -375,23 +391,23 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
         "--ro-bind", str(SOURCE), str(SOURCE),
         "--ro-bind", str(Path.home() / "Games/Data"), str(Path.home() / "Games/Data"),
         "--overlay-src", str(Path.home() / "Games/Data"), "--overlay",
-        str(ROOT / "client/casc-upper"), str(ROOT / "client/casc-work"), str(folder.parent / "Data"),
+        str(root / "client/casc-upper"), str(root / "client/casc-work"), str(folder.parent / "Data"),
         "--", "env",
-        f"WINEPREFIX={ROOT / 'wineprefix'}", "WINEARCH=win64", "GAMEID=umu-default",
-        f"STEAM_COMPAT_DATA_PATH={ROOT / 'wineprefix'}",
+        f"WINEPREFIX={root / 'wineprefix'}", "WINEARCH=win64", "GAMEID=umu-default",
+        f"STEAM_COMPAT_DATA_PATH={root / 'wineprefix'}",
         f"STEAM_COMPAT_CLIENT_INSTALL_PATH={Path.home() / '.local/share/Steam'}",
         f"PROTONPATH={PROTON}", "WINEDEBUG=-all", "DXVK_LOG_LEVEL=error", "LC_ALL=",
         "WINEDLLOVERRIDES=winemenubuilder=", str(PROTON / "proton"), "run", *executable]
-    with (ROOT / "logs/client.console.log").open("ab") as log:
+    with (root / "logs/client.console.log").open("ab") as log:
         os.chmod(log.name, 0o600)
         proc = subprocess.Popen(command, cwd=folder, stdin=subprocess.DEVNULL, stdout=log,
                                 stderr=subprocess.STDOUT, start_new_session=True, env=env)
-    private_write(ROOT / "run/client.json", json.dumps({"pid": proc.pid,
+    private_write(root / "run/client.json", json.dumps({"pid": proc.pid,
         "start_ticks": proc_start(proc.pid), "command": command}, indent=2) + "\n")
-    with (ROOT / "logs/client-monitor.log").open("ab") as log:
+    with (root / "logs/client-monitor.log").open("ab") as log:
         placement = subprocess.Popen(["pixi", "exec", "--spec", "python-xlib", "python",
             str(REPO / "tools/second_client/place_window.py"), "--pid", str(proc.pid),
-            "--receipt", str(ROOT / "evidence/client_monitor.json")], cwd=REPO,
+            "--receipt", str(root / "evidence/client_monitor.json")], cwd=REPO,
             stdout=log, stderr=subprocess.STDOUT, env=env)
     if placement.wait(timeout=35) != 0:
         stop("client")

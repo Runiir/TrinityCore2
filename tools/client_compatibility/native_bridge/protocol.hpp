@@ -1,0 +1,108 @@
+#pragma once
+#include "fields.hpp"
+#include <deque>
+#include <functional>
+#include <optional>
+#include <unordered_map>
+#include <unordered_set>
+
+namespace bridge
+{
+using Packet = std::pair<std::string, Bytes>;
+using Reply = std::optional<Packet>;
+struct State
+{
+    Value character;
+    Value self_snapshot;
+    std::unordered_map<std::uint64_t, Value> visible_gameobjects, visible_units;
+    std::unordered_map<unsigned, Value> casts, visible_auras, pending_movement;
+    std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
+    std::unordered_set<unsigned> creature_queries, npc_text_queries;
+    Value loot, taxi_menu, gossip_menu, pending_near, pending_far;
+    Array action_buttons;
+    unsigned cast_counter = 0;
+    std::uint64_t cast_serial = 0, aura_serial = 0;
+    bool created = false;
+    Array latest_movement;
+    std::function<void(std::string const &, View)> native_send;
+    std::uint64_t guid() const
+    {
+        return integer(get(character, "guid"));
+    }
+    std::uint32_t map() const
+    {
+        return integer(get(character, "map"));
+    }
+};
+struct Protocol
+{
+    std::filesystem::path directory;
+    Value index, sequences, opcodes;
+    std::unordered_map<unsigned, std::string> modern_names, legacy_names;
+    Fields fields;
+    explicit Protocol(std::filesystem::path const &directory);
+    std::uint32_t field(Value const &snapshot, std::string_view name, unsigned offset = 0) const;
+    float float_field(Value const &snapshot, std::string_view name, unsigned offset = 0) const;
+    unsigned field_index(std::string_view name) const
+    {
+        return integer(get(index, name));
+    }
+    static Array modern_guid(std::uint64_t native, unsigned map);
+    static Array inventory_guid(std::uint64_t native);
+    void validate_standing(State const &owner, Value const &movement) const;
+    Packet movement_encode(std::string name, std::uint64_t guid, Value const &movement,
+                           bool ack = false) const;
+    Reply movement_control(State &owner, std::string const &name, View body) const;
+    Packet movement_ack(State &owner, std::string const &name, View body) const;
+    Value field_values(Value const &snapshot, Value const &character) const;
+    Bytes player_block(Value const &snapshot, Value const &character, Array const *buttons = nullptr) const;
+    Bytes item_block(Value const &snapshot) const;
+    Bytes gameobject_block(Value const &snapshot) const;
+    Bytes unit_block(Value const &snapshot, Value const &character) const;
+    Bytes create(Value const &snapshot, Value const &character, std::vector<Value> const &items,
+                 Array const *buttons) const;
+    Bytes scalar_block(Value const &snapshot, Value const &character, Value const &changed,
+                       unsigned visibility = 0) const;
+    Reply object_updates(State &owner, View body) const;
+    Packet cast_request(State &owner, View body) const;
+    Reply cast_response(State &owner, std::string const &name, View body) const;
+    static Reply cast_prepare(State &owner, View body);
+    static Bytes cast_rejected(View body);
+    static Bytes cast_cancel(State const &owner, View body);
+    static Reply aura_response(State &owner, std::string const &name, View body);
+    static Bytes aura_cancel(State const &owner, View body);
+    static Reply initialize_response(State &owner, std::string const &name, View body);
+    static Reply currency_response(std::string const &name, View body);
+    static Reply loot_response(State &owner, std::string const &name, View body);
+    static std::vector<Packet> loot_request(State const &owner, std::string const &name, View body);
+    static Reply transfer_response(State &owner, std::string const &name, View body);
+    static Packet transfer_request(State &owner, std::string const &name, View body);
+    static Reply transfer_resume(State &owner);
+    static Reply gossip_response(State &owner, std::string const &name, View body);
+    static Packet gossip_request(State &owner, std::string const &name, View body);
+    static Reply taxi_response(State &owner, std::string const &name, View body);
+    static Packet taxi_request(State &owner, std::string const &name, View body, Value const &paths);
+    static Reply combat_response(State const &owner, std::string const &name, View body);
+    static Reply combat_request(State const &owner, std::string const &name, View body);
+    static Bytes gameobject_query(State &owner, View body);
+    static Reply gameobject_reply(State &owner, View body);
+    static std::optional<Bytes> creature_query(State &owner, View body);
+    static Reply creature_reply(State &owner, View body);
+    static Bytes npc_query(State &owner, View body);
+    static Reply npc_reply(State &owner, View body, Array const *broadcasts);
+    static Reply destroy_object(State &owner, View body);
+    static std::vector<Packet> creature_movement(State &owner, View body);
+};
+Bytes native_text(Reader &reader);
+Value movement_parse(View body, std::uint64_t wanted);
+bool movement_supported(std::string const &name);
+std::uint32_t modern_flags2(std::uint32_t native);
+std::uint64_t native_guid(Reader &reader);
+Writer &packed(Writer &writer, std::uint64_t guid);
+std::vector<Value> native_records(View body);
+Bytes object_packet(unsigned map, std::vector<Bytes> const &blocks = {},
+                    std::vector<std::uint64_t> const &removed = {},
+                    std::vector<std::uint64_t> const &destroyed = {});
+std::uint64_t owned_gameobject(State const &owner, Array const &identity);
+std::uint64_t owned_unit(State const &owner, Array const &identity);
+} // namespace bridge

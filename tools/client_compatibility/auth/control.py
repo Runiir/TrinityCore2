@@ -21,7 +21,7 @@ LAUNCH_STATE = {"state": "idle"}
 
 def setup(reference):
     accounts.migrate()
-    credentials = json.loads((lab.ROOT / "secrets/game_account.json").read_text())
+    credentials = json.loads((lab.client_root() / "secrets/game_account.json").read_text())
     account_id = accounts.provision(credentials["username"], credentials["password"])
     sources = {}
     for name, target in [("bnetserver.cert.pem", lab.ROOT / "config/bnetserver.cert.pem"),
@@ -69,7 +69,8 @@ def clear_sso():
     # Only edit registry files belonging to the stopped, private prefix.
     if lab.owned_process("client"):
         raise RuntimeError("cannot clear SSO while the owned client is running")
-    for path in [lab.ROOT / "wineprefix/pfx/user.reg", lab.ROOT / "wineprefix/user.reg"]:
+    root=lab.client_root()
+    for path in [root / "wineprefix/pfx/user.reg", root / "wineprefix/user.reg"]:
         if not path.exists():
             continue
         text = path.read_text()
@@ -121,7 +122,7 @@ def main():
     elif args.action == "launch-direct":
         launch("direct")
     elif args.action == "launch-sso":
-        credentials = json.loads((lab.ROOT / "secrets/game_account.json").read_text())
+        credentials = json.loads((lab.client_root() / "secrets/game_account.json").read_text())
         account = accounts.check_password(credentials["username"], credentials["password"])
         if not account:
             raise RuntimeError("local saved credentials are invalid")

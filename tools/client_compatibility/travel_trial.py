@@ -46,6 +46,7 @@ def run(plan,out,maximum_steps=180):
     with urllib.request.urlopen('http://127.0.0.1:8003/health') as r:identity=json.load(r)
     observer=Observer();history=[];finished=[];latest=out/'latest.png';failure=None
     receipt={'schema':'client442_laya_travel_v1','started_at':time.time(),'model':identity,
+        'actor':{'name':lab.actor_name(),'guid':observer.guid,'session':observer.session},
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'plan':plan,'steps':history,'legs_completed':finished,'frames':[],'safety_recoveries':[],
         'rejected_decisions':[],
@@ -86,14 +87,14 @@ def run(plan,out,maximum_steps=180):
                 if needed(facts,extra,leg):
                     from tools.second_client import ctl
                     ctl._launcher_env=lab.client_environment
-                    receipt['safety_recoveries'].append(finish(ctl.Input(),leg,observer,latest))
+                    receipt['safety_recoveries'].append(finish(owned_input.Inputs(),leg,observer,latest))
                     landing_started=False
                     continue
                 from .landing_recovery import wrong_floor,nudge
                 if wrong_floor(facts,extra,leg) and extra['mounted']:
                     from tools.second_client import ctl
                     ctl._launcher_env=lab.client_environment
-                    receipt['safety_recoveries'].append(nudge(ctl.Input(),leg,observer,latest,extra))
+                    receipt['safety_recoveries'].append(nudge(owned_input.Inputs(),leg,observer,latest,extra))
                     landing_started=False
                     continue
             if (leg['mode']=='flight' and not leg.get('trigger') and extra['flying']

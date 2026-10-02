@@ -60,7 +60,7 @@ def locate_find(inputs,path,timeout=40,require_visible=None):
 
 
 def execute(action,tcp,path,recovery=None,mounted_moves=False,object_observer=None):
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();hold=None;pixel=None;ground_route=None;loot_approach=None
+    ctl._launcher_env=lab.client_environment;inputs=owned_input.Inputs();hold=None;pixel=None;ground_route=None;loot_approach=None
     if action=='survey':
         _,extra=screenshot(path)
         planned=ground_navigation.dry_cast_plan(tcp,extra)

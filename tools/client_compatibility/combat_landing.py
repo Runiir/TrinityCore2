@@ -3,7 +3,7 @@ import json
 import math
 import time
 from . import archaeology_inputs, ground_navigation, hostile_avoidance, lab_runtime as lab
-from . import model_collision, site_boundaries, site_landing
+from . import model_collision, site_boundaries, site_landing, owned_input
 
 
 def permitted(movement,extra,facts,player_level):
@@ -39,7 +39,7 @@ def run(movement,extra,facts,observer,path):
     from .combat_clear import run as clear
     from tools.second_client import ctl
     if not permitted(movement,extra,facts,observer.player_level):raise RuntimeError('combat landing requires verified low-threat attackers')
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input()
+    ctl._launcher_env=lab.client_environment;inputs=owned_input.Inputs()
     site=site_boundaries.active_site(facts['map'],facts['position'],extra['digsite_ids'])
     trace={'schema':'public_combat_landing_v1','site_id':site['id'],'started_at':time.time(),
         'before':facts,'observations':[],'physical_keys':[],'completed':False,'failure':None}

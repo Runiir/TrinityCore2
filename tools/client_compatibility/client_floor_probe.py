@@ -3,7 +3,7 @@ import math
 import json
 import time
 from tools.second_client import ctl
-from . import lab_runtime as lab,site_boundaries,ground_navigation
+from . import lab_runtime as lab,site_boundaries,ground_navigation,owned_input
 
 
 def needed(facts,extra,leg):
@@ -29,7 +29,7 @@ def verify(leg,observer,path):
 def _verify(leg,observer,path,trace):
     from .archaeology_inputs import screenshot
     from .observation.archaeology import Observer as ArchaeologyObserver
-    ctl._launcher_env=lab.client_environment;inputs=ctl.Input();objects=ArchaeologyObserver()
+    ctl._launcher_env=lab.client_environment;inputs=owned_input.Inputs();objects=ArchaeologyObserver()
     site=site_boundaries.sites()[leg['site_id']];before=observer.poll();anchor=before['position']
     trace['before']=before
     def observe(allow_settling=False):

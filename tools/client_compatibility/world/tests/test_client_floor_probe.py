@@ -26,7 +26,7 @@ def test_stale_survey_marker_cannot_validate_client_floor(monkeypatch,tmp_path):
         def poll(self):return {'map':530,'position':position.copy()}
     class Objects:
         def poll(self,_):return {'tool':{'map':530,'seen_at':0},'finds':[]}
-    monkeypatch.setattr(probe.ctl,'Input',Inputs)
+    monkeypatch.setattr(probe.owned_input,'Inputs',Inputs)
     monkeypatch.setattr(probe.time,'sleep',lambda _:None)
     monkeypatch.setattr(archaeology,'Observer',Objects)
     monkeypatch.setattr(probe.ground_navigation,'water_at',lambda *_:{'water_above_feet':False})
