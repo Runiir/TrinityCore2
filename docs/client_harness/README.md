@@ -15,6 +15,9 @@ qualify every game feature or indefinite unattended operation.
 The existing Laya archaeology and travel heads consume structured observations.
 The harness also records screenshots and decodes normal addon-visible state. These
 heads do not perform general screenshot reasoning or supply a questing policy.
+The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
+historical receipts remain on disk. New cohort runs use diagnostic tasks until a
+current controller adapter is attached.
 Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A live obstacle-triggered green
 recovery flight still needs qualification.

@@ -14,14 +14,12 @@ MANIFEST=lab.REPO/'tools/client_compatibility/auth/pixi.toml'
 def command(job,out):
     common=['pixi','exec','--spec','pillow','--spec','python-xlib','--spec','pymysql','python','-m']
     if job['task']=='archaeology':
-        return [*common,'tools.client_compatibility.archaeology_loop','--output',str(out),
-            '--maximum-sites',str(job.get('maximum_sites',1))]
+        raise ValueError('historical Laya controller retired by AGENTS.md; connect a current controller adapter')
     if job['task']=='travel':
         plan=Path(job['plan']).resolve()
         if not plan.is_relative_to(lab.REPO/'experiments/configs/client_harness') or not plan.is_file():
             raise ValueError('travel plan must be a committed client-harness config')
-        return [*common,'tools.client_compatibility.travel_trial','--plan',str(plan),'--output',str(out),
-            '--maximum-steps',str(job.get('maximum_steps',90))]
+        raise ValueError('historical Laya controller retired by AGENTS.md; connect a current controller adapter')
     if job['task']=='probe' and job.get('mode') in ['observe','movement']:
         return [*common,'tools.client_compatibility.actor_probe','--output',str(out),'--mode',job['mode']]
     raise ValueError('unsupported client cohort task; implement its adapter and oracle first')

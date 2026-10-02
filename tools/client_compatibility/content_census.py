@@ -5,14 +5,15 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import struct
 import time
 from . import lab_runtime as lab
 from .observation import map_data
 
-SQL_TABLES={'quests':('quest_template','Id'),'items':('item_template','entry'),
-    'creature_templates':('creature_template','entry'),'gameobject_templates':('gameobject_template','entry'),
-    'creature_spawns':('creature','guid'),'gameobject_spawns':('gameobject','guid'),
-    'instance_templates':('instance_template','map')}
+SQL_TABLES={'quests':('world','quest_template','Id'),'items_hotfix':('hotfixes','item','ID'),
+    'creature_templates':('world','creature_template','entry'),'gameobject_templates':('world','gameobject_template','entry'),
+    'creature_spawns':('world','creature','guid'),'gameobject_spawns':('world','gameobject','guid'),
+    'instance_templates':('world','instance_template','map')}
 DBC_TABLES={'spells':'Spell','maps':'Map','areas':'AreaTable','classes':'ChrClasses','races':'ChrRaces',
     'skills':'SkillLine','skill_abilities':'SkillLineAbility','achievements':'Achievement',
     'achievement_criteria':'Achievement_Criteria','taxi_nodes':'TaxiNodes','taxi_paths':'TaxiPath',
@@ -27,16 +28,31 @@ def census():
         cursor.execute('SET TRANSACTION READ ONLY')
         cursor.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT')
         try:
-            for name,(table,column) in SQL_TABLES.items():
-                cursor.execute(f'SELECT DISTINCT `{column}` FROM `client442_world`.`{table}` ORDER BY `{column}`')
+            for name,(role,table,column) in SQL_TABLES.items():
+                try:
+                    cursor.execute(f'SELECT DISTINCT `{column}` FROM `client442_{role}`.`{table}` ORDER BY `{column}`')
+                except Exception as error:
+                    if not error.args or error.args[0] not in [1054,1146]:raise
+                    missing.append({'domain':name,'source':f'client442_{role}.{table}.{column}','database_error_code':error.args[0]})
+                    continue
                 domains[name]=[int(row[0]) for row in cursor.fetchall()]
-                sources[name]={'kind':'legacy_world_database','table':table,'key':column,'schema':'client442_world'}
+                sources[name]={'kind':'legacy_database','table':table,'key':column,'schema':f'client442_{role}'}
         finally:connection.rollback()
     for name,table in DBC_TABLES.items():
         path=map_data.DBC/(table+'.dbc')
         if not path.exists():missing.append({'domain':name,'source':table+'.dbc'});continue
         rows,_=map_data.table(table);domains[name]=sorted({r[0] for r in rows})
         sources[name]={'kind':'public_legacy_dbc','table':table,'sha256':lab.sha256(path)}
+    path=map_data.DBC/'Item.db2'
+    if not path.exists():missing.append({'domain':'items_dbc','source':'Item.db2'})
+    else:
+        data=path.read_bytes()
+        magic,count,fields,width,strings,_,build,_,minimum,maximum,_,_=struct.unpack_from('<4s11I',data)
+        offset=48+(maximum-minimum+1)*6 if maximum else 48
+        if magic!=b'WDB2' or fields!=8 or width!=32 or build!=15595 or offset+count*width+strings>len(data):
+            raise ValueError('unexpected native item inventory layout')
+        domains['items_dbc']=sorted({struct.unpack_from('<I',data,offset+i*width)[0] for i in range(count)})
+        sources['items_dbc']={'kind':'public_legacy_db2','table':'Item','sha256':lab.sha256(path)}
     fingerprint=hashlib.sha256(json.dumps({'domains':domains,'sources':sources},sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'schema':'client442_native_content_census_v1','time':time.time(),
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),

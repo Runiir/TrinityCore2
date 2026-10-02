@@ -62,3 +62,7 @@ def test_unknown_task_and_uncommitted_travel_plan_are_not_launched(tmp_path):
     with pytest.raises(ValueError,match='committed'):cohort.command({'task':'travel','plan':str(plan)},tmp_path)
     command=cohort.command({'task':'probe','mode':'movement'},tmp_path)
     assert 'tools.client_compatibility.actor_probe' in command
+
+
+def test_retired_model_is_not_called_by_new_cohorts(tmp_path):
+    with pytest.raises(ValueError,match='retired'):cohort.command({'task':'archaeology'},tmp_path)
