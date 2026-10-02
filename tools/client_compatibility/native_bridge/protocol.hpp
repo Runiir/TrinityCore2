@@ -32,6 +32,7 @@ struct State
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;
+    std::uint64_t last_logout_guid = 0; // Final character-cache writes, never gameplay authority.
     Array latest_movement;
     std::function<void(std::string const &, View)> native_send;
     std::uint64_t guid() const

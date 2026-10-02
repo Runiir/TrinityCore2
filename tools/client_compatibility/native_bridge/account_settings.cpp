@@ -7,12 +7,17 @@ namespace bridge
 {
 namespace
 {
+std::uint64_t cache_character(State const &owner)
+{
+    if(owner.created)return owner.guid();
+    return owner.character.is_null() ? owner.last_logout_guid : 0;
+}
 void identity(State const &owner, Array const &guid, std::int32_t type)
 {
     bool global = type >= 0 && type < 8 && (0x15 & (1u << type));
     auto low = integer(guid[0]), high = integer(guid[1]);
     if (global && !low && !high) return;
-    if (!owner.created || !low || low != owner.guid() || high != player_high())
+    if (!low || low != cache_character(owner) || high != player_high())
         throw std::runtime_error("account cache character ownership mismatch");
 }
 }
@@ -53,7 +58,7 @@ Reply Protocol::account_response(State &owner, std::string const &name, View bod
     {
         auto guid = r.take<std::uint64_t>();auto type = r.take<std::uint32_t>();
         auto time = r.take<std::uint32_t>(), size = r.take<std::uint32_t>();auto data=r.raw(r.remaining());r.end();
-        if(type>=8 || size>65535 || (guid && guid!=owner.guid()))throw std::runtime_error("invalid native cache response");
+        if(type>=8 || size>65535 || (guid && guid!=cache_character(owner)))throw std::runtime_error("invalid native cache response");
         if(!size)data={};
         w.pack("qI",{time,size}).guid(guid,guid ? player_high() : 0).pack("iI",{type,data.size()}).raw(data);
         return Packet{name,w.finish()};

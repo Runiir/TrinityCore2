@@ -236,6 +236,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
     else if (name == "SMSG_LOGOUT_COMPLETE")
     {
         this->send(name, Bytes{0});
+        state.last_logout_guid = state.guid();
         state.character = nullptr;
         state.created = false;
         state.inventory_items.clear();

@@ -171,6 +171,7 @@ int main(int argc, char **argv)
                     state.character = get(request, "character");
                     state.self_snapshot = get(request, "snapshot");
                     state.created = !state.self_snapshot.is_null();
+                    state.last_logout_guid = integer(get(request,"last_logout_guid"));
                     state.gossip_menu = get(request, "gossip_menu");
                     for (auto const &record : get(request, "gameobjects").as_array())
                         state.visible_gameobjects[integer(get(record, "guid"))] = record;
