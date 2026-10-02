@@ -88,4 +88,13 @@ Reply Protocol::party_request(std::string const &name, View body)
     }
     return {};
 }
+bool Protocol::late_party_query(bool active,std::string const &name,View body)
+{
+    if(active || (name!="CMSG_REQUEST_PARTY_MEMBER_STATS" && name!="CMSG_REQUEST_PARTY_JOIN_UPDATES"))return false;
+    // Modern raid frames can request a final refresh after LOGOUT_COMPLETE.
+    // Native STATUS_LOGGEDIN handlers ignore these reads without a player.
+    // Validate the wire shape before consuming it; never relax mutations.
+    party_request(name,body);
+    return true;
+}
 } // namespace bridge

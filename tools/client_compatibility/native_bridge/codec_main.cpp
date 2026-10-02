@@ -81,6 +81,8 @@ int main(int argc, char **argv)
                     owner.party_flags=integer(get(request,"flags"));owner.party_member_flags=integer(get(request,"member_flags"));
                     Protocol::marker_permission(owner);result=true;
                 }
+                else if(op=="late_party_query")
+                    result=Protocol::late_party_query(truth(get(request,"active")),str(get(request,"name")),data("body"));
                 else if (op == "object_values")
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "object_block")

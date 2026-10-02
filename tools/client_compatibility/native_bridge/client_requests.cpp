@@ -42,6 +42,10 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         if (!state.created || !active_world) throw std::runtime_error("social request without owned character");
         native_send(*request);return;
     }
+    if(Protocol::late_party_query(state.created && bool(active_world),name,body))
+    {
+        service.events.event("late_party_query_ignored",{{"session",owner.id},{"name",name}});return;
+    }
     if (auto request = Protocol::party_request(name, body))
     {
         if (!state.created || !active_world) throw std::runtime_error("party request without owned character");
