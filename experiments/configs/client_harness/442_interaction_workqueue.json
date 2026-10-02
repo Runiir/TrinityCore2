@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Nearby-player inspect and trade; retain guild client-resource mismatch, rank/bank permissions and public transport motion as open requirements",
+  "current": "NPC bank, merchant, trainer, quest, mail and auction interactions; retain guild resource/permission, public transport, inspect and trade gaps",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -46,7 +46,9 @@
     "ui05/guild_commands_06: native/client promotion and demotion, peer guild chat and removal; stock missing-tab Lua errors remain, ui_clean=false",
     "ui05/guild_disband_01: normal confirmation, native guild absence and visible unguilded leader; disposable guild removed",
     "ui06/nearby_players_02: native public creations, geared player rendering and normal name targeting on both clients",
-    "ui06/public_follow_02: Laya strafe/follow/stop, peer position agreement, 11 native/modern movement pairs, both positions restored"
+    "ui06/public_follow_02: Laya strafe/follow/stop, peer position agreement, 11 native/modern movement pairs, both positions restored",
+    "ui07/peer_services_03: both inspect gear samples, both trade windows, model-selected cancel and peer closure",
+    "ui07/trade_roundtrip_02: eight Laya choices, existing five-item stack traded out/back, complete native inventory/money and positions restored"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -54,6 +56,8 @@
     "Empty guild information save submits no client packet.",
     "Bare-name promotion slash command submits no client packet; visible promotion button is qualified.",
     "Guild rank/bank permission mutations and remaining guild operations are pending.",
-    "Public transport/vehicle movement is not yet translated or qualified; normal public walking and follow are qualified."
+    "Public transport/vehicle movement is not yet translated or qualified; normal public walking and follow are qualified.",
+    "Inspect PvP/item level/customizations and unsampled gear slots are pending.",
+    "Trade socket enchants, explicit gold changes, offer editing and unaccept are pending; one invalid unnamed TradeFrame child is skipped by the observer."
   ]
 }

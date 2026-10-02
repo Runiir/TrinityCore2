@@ -484,3 +484,42 @@ cleanup checkpoints 75 immutable rotations, preserving 634,367,981 raw bytes rem
 before removing them locally. Active journals, recent rotations, current-batch
 evidence, game data and useful build caches remain available. Session lookup now
 starts with the newest rotation instead of decoding the whole historical journal.
+
+## Inspect and trade
+
+`ui07/peer_services_01` submits normal inspect and trade requests, but both are
+unmapped. The bridge now translates visible-player inspection and native trade
+requests, statuses and item offers. Inspection requires an outstanding request
+for a currently visible player. Trade preserves the backend's ownership, range,
+eligibility and money checks. Native and modern trade status values differ and
+are mapped explicitly; nonzero socket enchants remain unsupported.
+
+`peer_services_02` passes inspection on both clients: INSPECT_READY identifies
+the requested peer, and displayed head/main-hand samples agree with native gear.
+Trade opens correctly, but an invalid child frame handle interrupts the read-only
+observer. Observer version 6 records and skips that child; it does not alter stock
+widgets. `peer_services_03` then passes both inspection samples, trade visibility
+on both clients, Laya's Cancel-button choice, and peer closure. The unidentified
+child remains an observation limitation, not a qualified control.
+
+`trade_roundtrip_02` passes eight bounded Laya choices: open, offer and both accept
+buttons for an outbound and return trade. The existing five-item Draenei Tome
+stack (entry 64394, native item GUID 30) changes owner from Harnessone to Harnesstwo
+and back. Both clients display the offers and received stacks. The complete native
+inventory and money snapshots, both saved positions, and temporary teleport rows
+are restored. `trade_roundtrip_01` failed because its fixture expected the wrong
+item name; it was cancelled before either acceptance and retained its baseline.
+All failed protocol, observer and fixture receipts remain in the checkpoint.
+
+The regression passes 402 tests. The selected peer/public-player/guild/inventory
+and stat set passes 58 tests under ASan/UBSan, and the final 29 peer tests pass again
+after the late-cancel guard. Only the compatibility bridge was rebuilt/restarted;
+the native worldserver identity stayed unchanged. Inspect PvP, item level,
+customizations and unsampled slots, socketed trade items, explicit gold changes,
+offer editing and unaccept remain open. Automatic zero-gold and cleanup packets
+do not qualify those interactions.
+
+UI06 is checkpointed as `442_interactions_20261002_07.tar.gz.dvc`. Its 96 PNGs
+(197,618,136 bytes) were verified against the remote checkpoint before removal.
+Its local archive and exact cache object were also evicted. UI07 follows the same
+checkpoint/prune/evict process as `442_interactions_20261002_08.tar.gz.dvc`.
