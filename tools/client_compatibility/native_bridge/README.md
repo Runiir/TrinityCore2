@@ -36,7 +36,7 @@ sessions and verified HDMI-1 windows. Both launcher SSO and username/password wo
 entry passed. Gear preview, bags, professions, Survey cast bars, mount/flight and
 console fixture transfers were also observed through the native service.
 
-The latest authentication/world suite passed 227 tests. All 23 codec differential
+The latest authentication/world suite passed 230 tests. All 23 codec differential
 tests passed ASan/UBSan after repairing a profession-JSON lifetime error found by
 the sanitizer. Real clients exposed a dense update that expanded beyond 64 KiB;
 the outbound limit now accommodates it while retaining the stricter incoming limit.
@@ -65,7 +65,12 @@ socket. A deterministic Survey-to-loot regression tests ordinary telescope packe
 public terrain/boundaries, keyboard movement and mouse interaction without a model
 or private next-find coordinates. Its initial Grimsilt trial showed the cast bar
 but stalled near terrain and stopped on combat; the diagnostic now detects confined
-non-green backtracking earlier. This is distinct from the historical Laya proof.
+non-green backtracking earlier. A later Hammertoe trial completed a bounded green
+recovery flight, then clicked and gathered an artifact. Native loot/currency packets
+reported eight Dwarf fragments and a saved DB check confirmed them; the gather
+animation ended. The first recovery-controller test exposed a landing correction
+being considered before takeoff for short routes; phase gating fixed it. These
+diagnostic receipts are distinct from the historical Laya proof.
 
 Normal taxi and portal travel still need fresh native-service live qualification;
 a console fixture transfer proves packet handling rather than autonomous travel.

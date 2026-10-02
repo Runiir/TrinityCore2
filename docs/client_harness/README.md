@@ -19,14 +19,16 @@ The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
 historical receipts remain on disk. New cohort runs use diagnostic tasks until a
 current controller adapter is attached.
 Green lantern approaches stay on foot; short recovery flights require exhausted
-terrain recovery and the bounded clearance checks. A live obstacle-triggered green
-recovery flight still needs qualification.
+terrain recovery and the bounded clearance checks. A code-driven native-bridge
+trial completed one such flight and then recovered a Dwarf artifact for eight
+fragments. This qualifies that physical recovery case. Learned selection and wider
+terrain variants still need fresh evidence.
 
 The world packet bridge now runs as a separate C++20 service and is the default.
 Its optimized build passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
-HDMI-1. The latest suite passed 227 tests, including 23 native codec differential
+HDMI-1. The latest suite passed 230 tests, including 23 native codec differential
 tests; those codec tests also passed ASan/UBSan. Python still handles modern
 authentication, supervision, observations and diagnostic decisions. The bridge
 does not embed Python or call the Python world translator.
@@ -102,8 +104,8 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort status --output /home/runiir/.local/share/trinity-client442-lab/evidence/two_actor_probe_01
 ```
 
-One task owns each actor. Separate task processes can observe and call their models
-concurrently. Physical keyboard/mouse actions take a shared process lock, focus the
+One task owns each actor. Task processes observe concurrently; future model adapters
+must preserve this ownership contract. Physical keyboard/mouse actions take a shared process lock, focus the
 verified owned window, execute and release it. `cohort stop` interrupts its owned
 workers, leaving clients and servers running. This first probe observes the primary
 and briefly moves the scout; it is explicitly a code-driven diagnostic, not a
@@ -162,3 +164,16 @@ CASC caches from evidence. Authentication bodies are excluded from packet journa
 Verify archive contents and hashes before removing raw frames. Historical episode
 89 frames have already been archived and removed locally; use its retained score
 and DVC checkpoint rather than rescoring a local directory with missing frames.
+
+The native migration checkpoint is
+[`442_native_bridge_and_cohort_20261002.tar.gz.dvc`](../../artifacts/client_harness/442_native_bridge_and_cohort_20261002.tar.gz.dvc).
+It includes earlier failed runs and test results, the successful two-client probe,
+Survey/recovery-flight/artifact receipts, safe packet journals and inventory
+fingerprints. Restore only this checkpoint when reviewing it:
+
+```bash
+pixi run dvc pull artifacts/client_harness/442_native_bridge_and_cohort_20261002.tar.gz.dvc
+```
+
+The inherited checkout has unrelated historical DVC outputs absent locally. Scoped
+status/push checks verify this lab's checkpoints without downloading those datasets.
