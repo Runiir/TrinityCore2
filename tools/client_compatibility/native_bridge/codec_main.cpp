@@ -232,7 +232,11 @@ int main(int argc, char **argv)
                         Reply reply;
                         try
                         {
-                            if (fn == "cast_request")
+                            if(fn=="combat_request")
+                                reply=Protocol::combat_request(state,name,body);
+                            else if(fn=="combat_response")
+                                reply=Protocol::combat_response(state,name,body);
+                            else if (fn == "cast_request")
                                 reply = protocol.cast_request(state, body);
                             else if(fn=="extra_marker_go")
                                 reply = protocol.extra_marker_go(state);
