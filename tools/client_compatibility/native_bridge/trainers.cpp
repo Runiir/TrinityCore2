@@ -20,23 +20,40 @@ Reply trainer_response(Protocol const &protocol,State const &owner,std::string c
     auto found=owner.visible_units.find(npc);
     if(found==owner.visible_units.end() || integer(get(found->second,"kind"))!=3 ||
         !(protocol.field(found->second,"UNIT_NPC_FLAGS")&16))return {};
-    Writer w;w.guid(Protocol::modern_guid(npc,integer(get(found->second,"map")))).pack("3I",{type,id,count});
-    for(unsigned i=0;i<count;++i)
+    auto encode=[&](unsigned width)
     {
-        auto spell=r.take<std::uint32_t>();auto usable=r.take<std::uint8_t>();auto cost=r.take<std::uint32_t>();
-        auto level=r.take<std::uint8_t>();auto skill=r.take<std::uint32_t>(),rank=r.take<std::uint32_t>();
-        auto abilities=r.unpack("3i");auto dialog=r.take<std::uint32_t>(),button=r.take<std::uint32_t>();
-        if(!spell || spell>0x7fffffff || usable>2 || dialog>1 || button>1)
-            throw std::runtime_error("invalid native trainer spell");
-        // Modern Trainer::SendSpells has no legacy profession dialog/button fields;
-        // it derives their UI from spell data and leaves Unk440 at its zero default.
-        w.pack("i3I3iIBB",{spell,cost,skill,rank,abilities[0],abilities[1],abilities[2],0,usable,level});
+        Reader fields=r;Writer w;
+        w.guid(Protocol::modern_guid(npc,integer(get(found->second,"map")))).pack("3I",{type,id,count});
+        for(unsigned i=0;i<count;++i)
+        {
+            auto spell=fields.take<std::uint32_t>();auto usable=fields.take<std::uint8_t>();auto cost=fields.take<std::uint32_t>();
+            auto level=fields.take<std::uint8_t>();auto skill=fields.take<std::uint32_t>(),rank=fields.take<std::uint32_t>();
+            auto abilities=fields.unpack("3i");auto extra=fields.take<std::uint32_t>();
+            if(!spell || spell>0x7fffffff || usable>2)throw std::runtime_error("invalid native trainer spell");
+            if(width==38)
+            {
+                auto button=fields.take<std::uint32_t>();
+                if(extra>1 || button>1)throw std::runtime_error("invalid legacy trainer profession flags");
+                // The current checkout's legacy dialog/button pair has no modern
+                // fields. Pinned modern Trainer::SendSpells leaves Unk440 at zero.
+                extra=0;
+            }
+            // The live backend's captured 34-byte rows carry one uint32 tail.
+            w.pack("i3I3iIBB",{spell,cost,skill,rank,abilities[0],abilities[1],abilities[2],extra,usable,level});
+        }
+        auto greeting=fields.raw(fields.remaining());fields.end();
+        if(greeting.empty() || greeting.size()>2048 || greeting.back()!=0 ||
+            std::find(greeting.begin(),greeting.end()-1,0)!=greeting.end()-1)
+            throw std::runtime_error("invalid native trainer greeting");
+        return w.bits(greeting.size()-1,11).flush().raw(greeting.first(greeting.size()-1)).finish();
+    };
+    std::vector<Bytes> candidates;
+    for(unsigned width:{34u,38u})
+    {
+        if(!count && width==38)continue;
+        try{candidates.push_back(encode(width));}catch(std::runtime_error const &){}
     }
-    auto greeting=r.raw(r.remaining());r.end();
-    if(greeting.empty() || greeting.size()>2048 || greeting.back()!=0 ||
-        std::find(greeting.begin(),greeting.end()-1,0)!=greeting.end()-1)
-        throw std::runtime_error("invalid native trainer greeting");
-    w.bits(greeting.size()-1,11).flush().raw(greeting.first(greeting.size()-1));
-    return Packet{name,w.finish()};
+    if(candidates.size()!=1)throw std::runtime_error("invalid or ambiguous native trainer row layout");
+    return Packet{name,std::move(candidates.front())};
 }
 }
