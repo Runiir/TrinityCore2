@@ -247,6 +247,11 @@ local function snapshot(viewMode,viewPage)
     data.chat_probes=chatProbes
     data.player_stats={health=call(UnitHealthMax,'player'),armor={call(UnitArmor,'player')},
         strength={call(UnitStat,'player',1)},damage={call(UnitDamage,'player')}}
+    data.target={guid=call(UnitGUID,'target'),name=call(UnitName,'target'),
+        exists=not not call(UnitExists,'target'),visible=not not call(UnitIsVisible,'target'),
+        player=not not call(UnitIsPlayer,'target'),health=call(UnitHealth,'target'),
+        max_health=call(UnitHealthMax,'target')}
+    data.world_position={call(UnitPosition,'player')}
     data.rest_info={call(GetRestState)};data.xp=call(UnitXP,'player');data.xp_max=call(UnitXPMax,'player')
     data.xp_exhaustion=call(GetXPExhaustion)
     data.guild_ui={classic=call(GetCVarBool,'useClassicGuildUI'),in_guild=call(IsInGuild),
