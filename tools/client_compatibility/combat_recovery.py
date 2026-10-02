@@ -1,8 +1,30 @@
 """Recorded physical safety withdrawal; this is not a learned combat policy."""
 import math
 import time
-from . import lab_runtime as lab,archaeology_inputs,site_boundaries,ground_navigation
+from . import lab_runtime as lab,archaeology_inputs,site_boundaries,ground_navigation,model_collision
 from tools.second_client import ctl
+
+
+def ascend(inputs,movement,extra,facts,observer,path,site):
+    # The private lab's ordinary continent leash is 90 yards from home.
+    # The former 72-yard ascent plus 45-yard retreat could remain within it.
+    target=[*facts['position'][:2],facts['position'][2]+120]
+    if not model_collision.clear_body_segment(facts['map'],facts['position'],target):
+        raise RuntimeError('combat escape ascent has a public collision obstruction')
+    keys=[];observations=[];deadline=time.monotonic()+20
+    for _ in range(8):
+        movement,extra=archaeology_inputs.screenshot(path);now=observer.poll()
+        observations.append({'facts':now,'movement':movement,'travel':extra})
+        if time.monotonic()>deadline or now['map']!=facts['map'] or movement['dead'] or movement['health_percent']<50 or (
+            not extra['mounted'] or extra['falling'] or extra['swimming'] or
+            not site_boundaries.contains(site['polygon'],now['position'])):
+            raise RuntimeError('combat escape ascent lost a bounded safe state')
+        remaining=target[2]-now['position'][2]
+        if remaining<=2:return keys,observations
+        hold=min(1.5,max(.1,remaining/28.7));before=now['position'][2]
+        inputs.key('space',hold=hold);keys.append({'key':'space','hold':hold});time.sleep(.4)
+        if observer.poll()['position'][2]<before+.3:raise RuntimeError('combat escape ascent made no vertical progress')
+    raise RuntimeError('combat escape ascent exhausted its input budget')
 
 
 def withdraw(movement,extra,facts,observer,path):
@@ -12,13 +34,15 @@ def withdraw(movement,extra,facts,observer,path):
         from .combat_clear import run
         return run(movement, extra, facts, observer, path)
     from . import combat_landing
-    if combat_landing.permitted(movement,extra,facts,observer.player_level):
+    if not extra['flying'] and combat_landing.permitted(movement,extra,facts,observer.player_level):
         return combat_landing.run(movement,extra,facts,observer,path)
     from .travel_inputs import face
     ctl._launcher_env=lab.client_environment;inputs=ctl.Input();keys=[]
     start=facts['position'];site=site_boundaries.active_site(facts['map'],start,extra['digsite_ids'])
+    ascent_observations=[]
     if extra['mounted']:
-        inputs.key('space',hold=2.5);keys.append({'key':'space','hold':2.5})
+        ascent_keys,ascent_observations=ascend(inputs,movement,extra,facts,observer,path,site)
+        keys.extend(ascent_keys)
     heading=math.atan2(site['center'][1]-start[1],site['center'][0]-start[0])
     choices=[]
     for i in range(16):
@@ -60,6 +84,7 @@ def withdraw(movement,extra,facts,observer,path):
         if movement['dead'] or movement['health_percent']<50:raise RuntimeError('combat withdrawal lost safe health')
         if not movement['in_combat']:
             return {'decision_origin':'physical_safety_guard','reason':'combat observed','before':facts,
-                'after':after,'physical_keys':keys,'public_ground_route':route,'time':time.time(),'still_mounted':extra['mounted']}
+                'after':after,'physical_keys':keys,'public_ground_route':route,'time':time.time(),'still_mounted':extra['mounted'],
+                'ascent_observations':ascent_observations,'escape_height_yards':120}
         time.sleep(.5)
     raise RuntimeError('bounded combat withdrawal did not clear combat')

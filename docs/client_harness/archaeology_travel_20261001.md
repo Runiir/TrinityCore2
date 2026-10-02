@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 155 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 156 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 86 preserve unsuccessful steps, including missing portal
+Episodes 07 through 87 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -524,6 +524,20 @@ and waits for normal addon grounding before dismounting. It then invokes
 bounded normal melee recovery. Descent, health, falling, swimming, collision,
 boundary and input/time budgets can stop it. Airborne dismounts remain rejected.
 The receipt records actual observations; no private artifact position is used.
+Episode 87 demonstrated the three-observation airborne landing and normal
+dismount, but failed to acquire an attacker left far above the eventual floor.
+It collected no find and had no site-boundary or frame-hash failure. The airborne
+landing-to-melee fallback is therefore disabled in the live routing path; only
+already grounded, verified low-threat mounted combat can use that dismount guard.
+The native `Creature::CanCreatureAttack` home-distance leash uses the continent
+visibility range, which the private configuration sets to 90 yards. The previous
+72-yard ascent plus 45-yard horizontal retreat could remain inside that distance.
+Mounted airborne withdrawal now verifies an unobstructed public vertical column
+and observes a 120-yard ascent through at most eight bounded physical inputs,
+then retains the existing in-site horizontal retreat and normal combat-clear
+wait. Lost height progress, collision, health, falling and boundaries still stop it.
+The owned client is relogged outside closed trials to reset the stranded combat
+state; this setup intervention is retained separately and counts as no trial find.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.

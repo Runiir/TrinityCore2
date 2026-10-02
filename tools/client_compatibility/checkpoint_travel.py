@@ -54,6 +54,8 @@ def main():
         'indoor_and_combat_repairs_cleanup.json',
         'bonechewer_combat_stop_85.png','archaeology_loop_completion.json',
         'archaeology_loop_ready.png','archaeology_loop_repairs_cleanup.json',
+        'unreachable_combat_relogin.json','unreachable_combat_login.png',
+        'unreachable_combat_authenticated.png','unreachable_combat_character.png','unreachable_combat_world.png',
         'standing_contact_login.png','standing_contact_character.png','standing_contact_password_login.png',
         'standing_contact_authenticated.png','standing_contact_character_ready.png','standing_contact_world_ready.png',
         'tooltip_hover_diagnostic.png','tooltip_hover_diagnostic.json','outland_repairs_cleanup.json','water_repairs_cleanup.json',

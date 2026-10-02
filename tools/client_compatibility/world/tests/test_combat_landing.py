@@ -31,3 +31,24 @@ def test_trial86_airborne_recovery_uses_collision_ceiling_and_soil_patch(monkeyp
     with pytest.raises(RuntimeError,match='obstructed'):c.flight_plan({'map':530,'position':start},{'digsite_ids':[377]})
     monkeypatch.setattr(c.model_collision,'supporting_surface',lambda *a:{'highest_surface':200})
     with pytest.raises(RuntimeError,match='excessive'):c.flight_plan({'map':530,'position':start},{'digsite_ids':[377]})
+
+
+def test_mounted_escape_exceeds_old_continent_leash_and_rejects_blocked_ascent(monkeypatch):
+    from tools.client_compatibility import combat_recovery as r
+    from types import SimpleNamespace
+    position=[0,0,0,0];movement={'dead':False,'health_percent':99}
+    extra={'mounted':True,'falling':False,'swimming':False}
+    observer=SimpleNamespace(poll=lambda:{'map':530,'position':position[:]})
+    def key(name,hold):
+        assert name=='space' and hold<=1.5
+        position[2]+=hold*28.7
+    monkeypatch.setattr(r.archaeology_inputs,'screenshot',lambda p:(movement,extra))
+    monkeypatch.setattr(r.model_collision,'clear_body_segment',lambda *a:True)
+    monkeypatch.setattr(r.site_boundaries,'contains',lambda *a:True)
+    monkeypatch.setattr(r.time,'sleep',lambda *a:None)
+    facts={'map':530,'position':[0,0,0,0]}
+    keys,observations=r.ascend(SimpleNamespace(key=key),movement,extra,facts,observer,None,{'polygon':[]})
+    assert position[2]>=118 and len(keys)==3 and len(observations)==4
+    monkeypatch.setattr(r.model_collision,'clear_body_segment',lambda *a:False)
+    with pytest.raises(RuntimeError,match='obstruction'):
+        r.ascend(SimpleNamespace(key=key),movement,extra,facts,observer,None,{'polygon':[]})
