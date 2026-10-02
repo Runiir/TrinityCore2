@@ -37,6 +37,12 @@ class NpcFixture:
                 row=(start+i,*source,name);self.rows.append(row)
                 q.execute('INSERT INTO client442_world.game_tele '
                     '(id,position_x,position_y,position_z,orientation,map,name) VALUES (%s,%s,%s,%s,%s,%s,%s)',row)
+                # FLOAT text output loses significant digits at world coordinates.
+                # Retain the actual stored value, widened before SQL serialization.
+                q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),'
+                    'CAST(position_z AS DOUBLE),CAST(orientation AS DOUBLE),map,name '
+                    'FROM client442_world.game_tele WHERE id=%s',(row[0],))
+                self.rows[-1]=q.fetchone()
         lab.private_write(self.out/'npc_fixture.json',json.dumps({'source':'code_fixture_native_console',
             'before':self.before,'npc':self.npc,'temporary_teleports':self.rows},indent=2)+'\n')
         lab.server_command('reload game_tele');time.sleep(.5)
@@ -52,12 +58,14 @@ class NpcFixture:
             if any(abs(a-b)>.01 for a,b in zip(position,self.before[3:])):
                 raise RuntimeError('NPC fixture position restoration failed; preserving restore teleport')
             for row in self.rows:
-                q.execute('SELECT id,position_x,position_y,position_z,orientation,map,name '
+                q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),'
+                    'CAST(position_z AS DOUBLE),CAST(orientation AS DOUBLE),map,name '
                     'FROM client442_world.game_tele WHERE id=%s',(row[0],))
                 # Database coordinates are floats; compare within native precision.
                 found=q.fetchone()
                 if not found or found[0]!=row[0] or found[-1]!=row[-1] or any(abs(a-b)>.001 for a,b in zip(found[1:-1],row[1:-1])):
                     raise RuntimeError('temporary NPC teleport changed; refusing deletion')
+            for row in self.rows:
                 q.execute('DELETE FROM client442_world.game_tele WHERE id=%s AND name=%s',(row[0],row[-1]))
         lab.server_command('reload game_tele')
         lab.private_write(self.out/'npc_restoration.json',json.dumps({'position':position,
