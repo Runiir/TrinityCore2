@@ -51,6 +51,8 @@ class Inputs:
         kwargs.setdefault('hold',.15)
         return self.invoke('key',*args,**kwargs)
     def click(self,*args,modifiers=(),**kwargs):
+        # Match key timing: a 50 ms tap can fall between 15-FPS client ticks.
+        kwargs.setdefault('hold',.15)
         if not modifiers:return self.invoke('click',*args,**kwargs)
         if len(modifiers)>3 or len(set(modifiers))!=len(modifiers) or any(m not in ['shift','ctrl','alt'] for m in modifiers):
             raise ValueError('unsupported mouse modifier')
