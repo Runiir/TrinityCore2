@@ -121,7 +121,7 @@ local function snapshot(viewMode,viewPage)
     end
     for _,name in ipairs({'CharacterMicroButton','SpellbookMicroButton','TalentMicroButton','AchievementMicroButton',
         'QuestLogMicroButton','SocialsMicroButton','GuildMicroButton','EJMicroButton','CollectionsMicroButton',
-        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame'}) do
+        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame','PlayerFrame'}) do
         local f=_G[name];if f then scan(f,0) end
     end
     data.control_count=#data.controls

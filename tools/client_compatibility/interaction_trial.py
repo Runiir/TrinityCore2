@@ -111,7 +111,7 @@ class Trial:
             elif action['kind']=='chat':
                 self.io.key('Return',hold=.4);time.sleep(.2)
                 self.io.type(action['value']);time.sleep(.2);self.io.key('Return',hold=.4)
-            elif action['kind']=='click':self.io.click(*action['value'])
+            elif action['kind']=='click':self.io.click(*action['value'],button=action.get('button',1))
             elif action['kind']=='edit':
                 self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
             else:raise ValueError('unsupported physical action')
