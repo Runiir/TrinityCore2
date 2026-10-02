@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=16,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=17,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -230,7 +230,17 @@ local function snapshot(viewMode,viewPage)
     end
     if ClassTrainerFrame and ClassTrainerFrame:IsVisible() then
         data.trainer={count=call(GetNumTrainerServices),selected=call(GetTrainerSelectionIndex),
-            profession=call(IsTradeskillTrainer)}
+            profession=call(IsTradeskillTrainer),filters={},service_counts={},sample={}}
+        for _,filter in ipairs({'available','unavailable','used'}) do
+            data.trainer.filters[filter]=not not call(GetTrainerServiceTypeFilter,filter)
+        end
+        for index=1,data.trainer.count or 0 do
+            local name,rank,state=call(GetTrainerServiceInfo,index)
+            if state then data.trainer.service_counts[state]=(data.trainer.service_counts[state] or 0)+1 end
+            if #data.trainer.sample<4 then
+                data.trainer.sample[#data.trainer.sample+1]={index=index,name=trim(name,48),rank=trim(rank,20),state=state}
+            end
+        end
         if data.trainer.selected then
             local name,rank,state=call(GetTrainerServiceInfo,data.trainer.selected)
             data.trainer.service={name=name,rank=rank,state=state,
