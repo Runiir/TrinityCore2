@@ -13,7 +13,7 @@ end
 local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','SkillFrame','SpellBookFrame',
     'TradeSkillFrame','CraftFrame','ArchaeologyFrame','QuestLogFrame','WorldMapFrame','PlayerTalentFrame',
     'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','GuildInfoFrame','GuildMemberDetailFrame','GuildControlPopupFrame',
-    'GuildFinderFrame','LookingForGuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
+    'GuildFinderFrame','LookingForGuildFrame','CommunitiesFrame','PVEFrame','PVPUIFrame','PVPFrame',
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
@@ -24,6 +24,7 @@ local autoPage,autoPages,groupPage=0,0,1
 local errors={}
 local chatProbes={}
 local luaErrors={}
+local blockedActions={}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
     luaErrors[#luaErrors+1]=tostring(message):sub(1,300)
@@ -111,7 +112,8 @@ end
 local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
-        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,observer_version=3}
+        level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
+        blocked_actions=blockedActions,observer_version=4}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -342,12 +344,16 @@ SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     frame:Show();update()
 end
 frame:RegisterEvent('UI_ERROR_MESSAGE')
+frame:RegisterEvent('ADDON_ACTION_BLOCKED');frame:RegisterEvent('ADDON_ACTION_FORBIDDEN')
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
     'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
     if event=='UI_ERROR_MESSAGE' then
         errors[#errors+1]={code=code,text=trim(text,120)};if #errors>3 then table.remove(errors,1) end
+    elseif event=='ADDON_ACTION_BLOCKED' or event=='ADDON_ACTION_FORBIDDEN' then
+        blockedActions[#blockedActions+1]={event=event,addon=trim(code,64),action=trim(text,80)}
+        if #blockedActions>3 then table.remove(blockedActions,1) end
     elseif type(code)=='string' and code:match('^TC442UI:[%w_-]+$') then
         chatProbes[#chatProbes+1]={event=event,text=code,sender=trim(text,64),time=GetTime()}
         if #chatProbes>4 then table.remove(chatProbes,1) end
