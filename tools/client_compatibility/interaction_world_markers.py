@@ -28,7 +28,7 @@ def suite(output,actor_name,point):
                     'escape':{'kind':'key','value':'Escape','description':'Press Escape to close or cancel.'}},
                     lambda b,a,s:{'status':'ground_target_requested' if s=='place' else 'controller_failure',
                         'oracle':{'scope':'ordinary input submitted; placement checked separately'}}),'ground_target_requested')
-                require(trial.step('raid.world_marker.place.'+str(i),'Place the selected world marker on the visible ground.',{
+                require(trial.step('raid.world_marker.place.'+str(i),'Left-click nearby ground to complete placement with the active targeting cursor.',{
                     'ground':{'kind':'click','value':point,'description':'Left-click the visible ground near the character.'},
                     'escape':{'kind':'key','value':'Escape','description':'Press Escape to cancel ground targeting.'},
                     'map':{'kind':'key','value':'m','description':'Press M to open the world map.'}},

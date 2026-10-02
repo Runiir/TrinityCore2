@@ -57,7 +57,8 @@ def binding_key(value):
 def choose(goal,state,actions,seed):
     order=list(actions);random.Random(seed).shuffle(order)
     payload={'model':MODEL,'state':{'goal':goal,'visible_panels':state.get('panels',[]),
-        'open_bags':state.get('bags',[]),'last_ui_errors':state.get('errors',[])},
+        'open_bags':state.get('bags',[]),'last_ui_errors':state.get('errors',[]),
+        'ground_targeting_cursor_active':state.get('spell_targeting',False)},
         'questions':{'action':{'type':'choice','instructions':'Choose the ordinary input that advances the player goal.',
             'criteria':{key:actions[key]['description'] for key in order}}}}
     class NoRedirect(urllib.request.HTTPRedirectHandler):

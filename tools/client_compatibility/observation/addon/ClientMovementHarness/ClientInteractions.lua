@@ -153,6 +153,7 @@ local function snapshot(viewMode,viewPage)
         data.role_poll_checked[role]=button and button.checkButton and not not call(button.checkButton.GetChecked,button.checkButton) or false
     end
     data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
+    data.spell_targeting=not not call(SpellIsTargeting)
     data.marker_spell_names={}
     for _,id in ipairs({171553,171554,171555,171556,171557}) do
         local info=call(C_Spell and C_Spell.GetSpellInfo,id)
