@@ -44,8 +44,9 @@ deposit, withdrawal and close have live evidence. Inspect gear samples and a rea
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
 adapter passes 426 regression tests and 61 selected ASan/UBSan tests. This counts
-protocol checks; sale and buyback gameplay qualification is tracked separately in
-the interaction report.
+protocol checks. A live seven-choice trial sells an existing item, buys it back,
+restores its slot and closes the merchant with exact native inventory/money
+restoration. Purchase and repair variants remain open in the interaction report.
 
 ## Endpoints and restart
 

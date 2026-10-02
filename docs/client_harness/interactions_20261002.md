@@ -601,3 +601,24 @@ The full suite initially reported 425 passes and one failure because its indepen
 create-field oracle lacked the new buyback arrays. After updating that oracle, all
 426 tests pass. These earlier failures are retained, and the native worldserver has
 not been rebuilt or restarted.
+
+`merchant_sale_02` completes seven Laya choices. It sells existing Recruit's Pants
+(entry 39, count 1, native GUID 4611686018427387908) for one copper, displays the
+item and price in Buyback, buys it back into automatically chosen backpack slot 3,
+then drags it back to original slot 8 and closes the merchant. Native and visible
+money agree at 99,977,309 after sale and 99,977,308 after buyback. The complete
+native inventory/money snapshot and original position are restored, both temporary
+teleports are removed, and screenshots were visually checked on HDMI-1.
+Packet receipts include modern/native sell and buyback request pairs.
+Purchase, repair, partial-stack, stock, discount and negative variants remain open.
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_npc --service merchant --point 639 100 --sell-buyback --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/merchant_sale_01
+```
+
+The screen point must be checked for the current camera. Failed cleanup preserves
+the NPC restore rows and open merchant. Any fallback buyback or slot restoration
+has its own code-controlled receipt and is excluded from model qualification.
+UI08's 109 raw PNG frames (166,380,164 bytes) and verified archive/cache copies
+(166,247,857 bytes each) have been removed locally. UI09 is closed as checkpoint
+`442_interactions_20261002_10.tar.gz.dvc` before its raw frames are pruned.
