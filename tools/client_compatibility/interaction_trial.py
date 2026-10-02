@@ -113,7 +113,7 @@ class Trial:
         elif action['kind']=='edit':
             self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
         else:raise ValueError('unsupported physical action')
-        time.sleep(.8)
+        time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
 
     def step(self,case_id,goal,actions,oracle):
         index=len(self.receipt['cases']);row={'id':case_id,'goal':goal,'time':time.time(),'status':'started'}
