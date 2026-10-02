@@ -46,7 +46,8 @@ Reply Protocol::trade_request(State const &owner,std::string const &name,View bo
     else if(name=="CMSG_SET_TRADE_ITEM")
     {
         auto slot=r.take<std::uint8_t>(),bag=r.take<std::uint8_t>(),item=r.take<std::uint8_t>();r.end();
-        if(slot>6)throw std::runtime_error("invalid trade slot");auto [native_bag,native_slot]=inventory_position(bag,item);
+        if(slot>6)throw std::runtime_error("invalid trade slot");
+        auto [native_bag,native_slot]=inventory_position(bag,item);
         w.pack("BBB",{native_slot,slot,native_bag});
     }
     else return {};

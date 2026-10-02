@@ -65,6 +65,13 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     {
         require_world();if(auto request=Protocol::inspect_request(state,name,body))native_send(*request);return;
     }
+    if(name=="CMSG_CANCEL_TRADE" && !in_world)
+    {
+        Reader r(body);r.end();
+        // The native handler explicitly accepts this empty cleanup after logout.
+        // No gameplay state remains on the modern endpoint at that point.
+        service.events.event("late_trade_cancel_ignored",{{"session",owner.id},{"name",name}});return;
+    }
     if(auto request=Protocol::trade_request(state,name,body))
     {require_world();native_send(*request);return;}
     if (auto request = Protocol::party_request(name, body))
