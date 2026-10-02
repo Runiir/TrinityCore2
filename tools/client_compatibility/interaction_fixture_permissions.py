@@ -11,16 +11,19 @@ def permission_rows(account,permission):
 
 
 @contextmanager
-def item_fixture_permission(trial):
-    # RBAC_PERM_COMMAND_ADDITEM=488 in the current native RBAC.h. No GM security,
-    # combat exemption, instant logout or other administrative role is granted.
-    account=trial.fixture['account_id'];permission=488
+def fixture_permission(trial,permission):
+    # Exact native RBAC command permissions only; no administrative role.
+    if permission not in [488,554]:raise ValueError('unsupported disposable inventory/money fixture permission')
+    account=trial.fixture['account_id']
     baseline=permission_rows(account,permission)
     if baseline:raise RuntimeError('item fixture requires no pre-existing direct add-item permission')
     with lab.connection() as c,c.cursor() as q:
         q.execute('SELECT username FROM client442_auth.account WHERE id=%s',(account,));row=q.fetchone()
     if not row or not re.fullmatch('[A-Z0-9_]+',row[0]):raise RuntimeError('invalid owned fixture account name')
-    name=row[0];trial.receipt['fixture_permission']={'source':'code_fixture','account_id':account,'permission':permission,'realm':-1,'baseline':baseline,'security_level_changed':False};trial.persist()
+    name=row[0];record={'source':'code_fixture','account_id':account,'permission':permission,'realm':-1,'baseline':baseline,'security_level_changed':False}
+    trial.receipt.setdefault('fixture_permissions',[]).append(record)
+    if permission==488:trial.receipt['fixture_permission']=record
+    trial.persist()
     try:
         lab.server_command(f'rbac account grant {name} {permission} -1');lab.server_command('reload rbac')
         deadline=time.monotonic()+5
@@ -35,4 +38,12 @@ def item_fixture_permission(trial):
         while permission_rows(account,permission)!=baseline:
             if time.monotonic()>deadline:raise RuntimeError('temporary fixture permission was not restored')
             time.sleep(.1)
-        trial.receipt['fixture_permission']['restored']=True;trial.persist()
+        record['restored']=True;trial.persist()
+
+
+def item_fixture_permission(trial):
+    return fixture_permission(trial,488)
+
+
+def money_fixture_permission(trial):
+    return fixture_permission(trial,554)

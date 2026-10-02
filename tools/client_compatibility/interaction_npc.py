@@ -11,7 +11,7 @@ from .npc_fixture import NpcFixture
 SERVICES={'merchant':{'entry':1285,'flag':128,'panel':'MerchantFrame','caption':'goods'}}
 
 
-def suite(t,service,point,stage_only,sell_buyback=False):
+def suite(t,service,point,stage_only,sell_buyback=False,purchase=False):
     spec=SERVICES[service];actors.session_entry(t.fixture);t.clean_panels()
     fixture=NpcFixture(t.out,t.fixture,spec['entry'],spec['flag'])
     try:
@@ -45,6 +45,9 @@ def suite(t,service,point,stage_only,sell_buyback=False):
         if sell_buyback:
             from .interaction_merchant_items import roundtrip
             roundtrip(t)
+        if purchase:
+            from .interaction_merchant_purchase import buy
+            buy(t)
         require(t.step(service+'.close','Close the '+service+' window.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the '+service+' window.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
@@ -61,10 +64,11 @@ def suite(t,service,point,stage_only,sell_buyback=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--service',choices=SERVICES,required=True);p.add_argument('--point',type=int,nargs=2)
-    p.add_argument('--stage-only',action='store_true');p.add_argument('--sell-buyback',action='store_true');a=p.parse_args()
-    if a.sell_buyback and (a.stage_only or a.service!='merchant'):p.error('sell/buyback requires the merchant service')
+    p.add_argument('--stage-only',action='store_true');commerce=p.add_mutually_exclusive_group()
+    commerce.add_argument('--sell-buyback',action='store_true');commerce.add_argument('--purchase',action='store_true');a=p.parse_args()
+    if (a.sell_buyback or a.purchase) and (a.stage_only or a.service!='merchant'):p.error('commerce requires the merchant service')
     if not a.stage_only and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):p.error('requires a bounded observed NPC point')
     t=Trial(a.output,controller='code' if a.stage_only else 'laya')
-    try:suite(t,a.service,a.point,a.stage_only,a.sell_buyback);t.receipt['completed']=True
+    try:suite(t,a.service,a.point,a.stage_only,a.sell_buyback,a.purchase);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
