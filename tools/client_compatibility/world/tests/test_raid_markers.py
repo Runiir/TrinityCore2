@@ -10,13 +10,14 @@ CAPTURE=bytes.fromhex('018709020153bc0000000000000000044c0100ebf9050000000000000
 
 def test_reported_ground_marker_forwards_native_destination(codec):
     answer=result(codec,op='stateful',character={'guid':1,'map':0},snapshot=None,
-        gameobjects=[],units=[],actions=[{'fn':'cast_request','body':CAPTURE.hex()}])
+        gameobjects=[],units=[],actions=[{'fn':'cast_request','name':'CMSG_CAST_SPELL','body':CAPTURE.hex()}])
     assert len(answer)==2 and answer[0][0]=='MSG_MOVE_HEARTBEAT'
     expected=struct.pack('<BiiBI',1,84996,0,8,64)+b'\0'+struct.pack('<3f',-6408.66552734375,-3346.190673828125,241.6666717529297)
     assert answer[1]==['CMSG_CAST_SPELL',expected.hex()]
-    for body in [CAPTURE[:-1],CAPTURE[:92]+struct.pack('<i',530)+CAPTURE[96:]]:
+    offset=CAPTURE.index(b'\xff'*4)
+    for body in [CAPTURE[:-1],CAPTURE[:offset]+struct.pack('<i',530)+CAPTURE[offset+4:]]:
         response=result(codec,op='stateful',character={'guid':1,'map':0},snapshot=None,
-            gameobjects=[],units=[],actions=[{'fn':'cast_request','body':body.hex()}])
+            gameobjects=[],units=[],actions=[{'fn':'cast_request','name':'CMSG_CAST_SPELL','body':body.hex()}])
         assert 'error' in response[-1]
 
 
