@@ -39,6 +39,10 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         if (!state.created || !active_world) throw std::runtime_error("party request without owned character");
         native_send(*request);return;
     }
+    if (auto request = Protocol::party_profiles(name, body))
+    {
+        require_world();native_send(*request);return;
+    }
     if (auto request = Protocol::reputation_request(name, body))
     {
         if (!state.created || !active_world) throw std::runtime_error("reputation request without owned character");

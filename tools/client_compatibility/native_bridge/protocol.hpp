@@ -87,6 +87,7 @@ struct Protocol
     static Reply party_response(State &owner, std::string const &name, View body, Array const &identities);
     static Array party_members(View body);
     static Reply party_state(State &owner, std::string const &name, View body);
+    static Reply party_profiles(std::string const &name, View body);
     static Reply account_request(State const &owner, std::string const &name, View body);
     static Reply account_response(State &owner, std::string const &name, View body);
     static Reply achievement_response(State const &owner, std::string const &name, View body);

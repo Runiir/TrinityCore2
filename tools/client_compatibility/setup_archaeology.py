@@ -15,6 +15,39 @@ from .world.legacy import Native
 from .world.native_objects import find_self
 
 CONFIG = lab.REPO / "experiments/configs/client_harness/85_archaeology_character_v1.json"
+BAG_CONFIG = lab.REPO / "experiments/configs/client_harness/442_interaction_fixture_v1.json"
+
+
+def equipped_bags():
+    with lab.connection() as con,con.cursor() as cur:
+        cur.execute('SELECT ci.slot,ii.itemEntry FROM client442_characters.character_inventory ci '
+            'JOIN client442_characters.item_instance ii ON ii.guid=ci.item '
+            'WHERE ci.guid=1 AND ci.bag=0 AND ci.slot BETWEEN 19 AND 22')
+        return dict(cur.fetchall())
+
+
+async def prepare_bags(command):
+    fixture=json.loads(BAG_CONFIG.read_text())
+    if (fixture['guid'],fixture['account_id'],fixture['character'])!=(1,1,'Harnessone'):
+        raise RuntimeError('bag fixture identity is not owned')
+    before=equipped_bags();entry=fixture['bag_item']
+    if any(value!=entry for value in before.values()):raise RuntimeError('refusing to replace unrelated equipped bags')
+    await command('.gm off')
+    for target in fixture['bag_slots']:
+        if target in before:continue
+        await command(f'.additem {entry}');await command('.save',1)
+        with lab.connection() as con,con.cursor() as cur:
+            cur.execute('SELECT ci.slot FROM client442_characters.character_inventory ci '
+                'JOIN client442_characters.item_instance ii ON ii.guid=ci.item '
+                'WHERE ci.guid=1 AND ci.bag=0 AND ci.slot BETWEEN 23 AND 38 AND ii.itemEntry=%s ORDER BY ci.slot',(entry,))
+            slots=[row[0] for row in cur.fetchall()]
+        if not slots:raise RuntimeError('new bag was not persisted in the backpack')
+        await command(f'.itemmove {slots[-1]} {target}');await command('.save',1)
+    after=equipped_bags()
+    if after!={slot:entry for slot in fixture['bag_slots']}:raise RuntimeError('bag fixture equipment disagrees')
+    lab.private_write(lab.ROOT/'evidence/client_interactions_20261002/bag_fixture.json',json.dumps({
+        'schema':'client442_bag_fixture_v1','source':'native_administrator_fixture','config_sha256':lab.sha256(BAG_CONFIG),
+        'before':before,'after':after,'model_qualified':False},indent=2)+'\n')
 
 
 def verify(config):
@@ -65,7 +98,7 @@ def verify(config):
     return receipt
 
 
-async def setup(config, flight_only=False):
+async def setup(config, flight_only=False, bags_only=False):
     n = Native("archaeology_setup")
     events = []
     logged_out = asyncio.Event()
@@ -94,6 +127,10 @@ async def setup(config, flight_only=False):
             encoded = text.encode()
             n.send("CMSG_MESSAGECHAT_SAY", Writer().pack("I", 7).bits(len(encoded), 9).raw(encoded).finish())
             await asyncio.sleep(delay)
+        if bags_only:
+            await prepare_bags(command)
+            n.send('CMSG_LOGOUT_REQUEST');await asyncio.wait_for(logged_out.wait(),30)
+            return
         if flight_only:
             for spell in config.get('riding_rank_spells', []): await command(f".learn {spell}")
             for spell in config["flight_spells"]: await command(f".learn {spell}")
@@ -173,7 +210,9 @@ async def setup(config, flight_only=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--flight-only", action="store_true", help="Add the flight license/riding rank without repeating equipment or changing position")
+    parser.add_argument('--bags-only',action='store_true',help='Equip the versioned empty-bag fixture without changing gear, professions or location')
     args = parser.parse_args()
+    if args.bags_only and args.flight_only:parser.error('choose one bounded fixture operation')
     config = json.loads(CONFIG.read_text())
     if (config["account_id"], config["guid"], config["character"]) != (1, 1, "Harnessone"):
         raise RuntimeError("setup identity does not match the owned lab character")
@@ -187,11 +226,15 @@ def main():
     lab.server_command("account set gmlevel CLIENTLAB 3 -1")
     try:
         time.sleep(.5)
-        asyncio.run(setup(config, flight_only=args.flight_only))
+        asyncio.run(setup(config, flight_only=args.flight_only,bags_only=args.bags_only))
     finally:
         lab.server_command("account set gmlevel CLIENTLAB 0 -1")
         time.sleep(.5)
     verify(config)
+    if args.bags_only:
+        path=lab.ROOT/'evidence/client_interactions_20261002/bag_fixture.json'
+        receipt=json.loads(path.read_text());receipt['normal_account_permissions']=True
+        lab.private_write(path,json.dumps(receipt,indent=2)+'\n')
     print("Verified level, all professions, equipped gear, Survey and normal account permissions.")
 
 

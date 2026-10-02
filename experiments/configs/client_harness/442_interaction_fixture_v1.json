@@ -1,0 +1,10 @@
+{
+  "schema": "client442_interaction_fixture_v1",
+  "account_id": 1,
+  "guid": 1,
+  "character": "Harnessone",
+  "bag_item": 21841,
+  "bag_slots": [19, 20, 21, 22],
+  "bag_capacity": 16,
+  "qualification": "Administrative fixture preparation does not count as a model action."
+}
