@@ -13,11 +13,11 @@ Reply merchant_request(Protocol const &protocol,State const &owner,std::string c
     Writer w;w.put(guid);
     if(name=="CMSG_BUY_ITEM")
     {
-        auto container=r.guid();auto quantity=r.take<std::uint32_t>(),muid=r.take<std::uint32_t>();
-        auto slot=r.take<std::uint8_t>();auto type=r.take<std::int32_t>();
+        auto container=r.guid();auto quantity=r.take<std::int32_t>();auto muid=r.take<std::uint32_t>();
+        auto slot=r.take<std::uint32_t>();auto type=r.take<std::int32_t>();
         auto item=r.take<std::int32_t>(),seed=r.take<std::int32_t>(),property=r.take<std::int32_t>();
         auto bonuses=r.bits(1);r.align();auto modifiers=r.bits(6);r.align();r.end();
-        if(!quantity || !muid || muid>0x7fffffff || item<=0 || (type!=1 && type!=2) || seed || property || bonuses || modifiers)
+        if(quantity<=0 || !muid || muid>0x7fffffff || slot>255 || item<=0 || (type!=1 && type!=2) || seed || property || bonuses || modifiers)
             throw std::runtime_error("purchase has no supported native plain-item equivalent");
         std::uint64_t bag=0;std::uint8_t destination=255;
         if(container==Array{owner.guid(),player_high()})

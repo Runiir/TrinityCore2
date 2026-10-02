@@ -10,7 +10,7 @@ from tools.client_compatibility.world.tests.test_interaction_packets import HIGH
 
 
 def buy(container=(0,0),quantity=5,muid=1,slot=255,type_=1,item=159,seed=0,property_=0,bonus=0,mods=0):
-    return Writer().guid(*modern_guid(GUID,0)).guid(*container).pack('IIBi3i',quantity,muid,slot,type_,item,seed,property_).bits(bonus,1).flush().bits(mods,6).flush().finish()
+    return Writer().guid(*modern_guid(GUID,0)).guid(*container).pack('iIIi3i',quantity,muid,slot,type_,item,seed,property_).bits(bonus,1).flush().bits(mods,6).flush().finish()
 
 
 def request(codec,body,container=None):
@@ -55,7 +55,7 @@ def test_purchase_owned_container_checks_kind_owner_and_slot(codec):
 
 
 def test_purchase_rejects_unsupported_item_instances_and_incomplete_payloads(codec):
-    for changes in [dict(quantity=0),dict(muid=0),dict(type_=3),dict(item=0),dict(seed=1),dict(property_=-1),dict(bonus=1),dict(mods=1)]:
+    for changes in [dict(quantity=0),dict(quantity=-1),dict(muid=0),dict(slot=256),dict(slot=0xffffffff),dict(type_=3),dict(item=0),dict(seed=1),dict(property_=-1),dict(bonus=1),dict(mods=1)]:
         assert 'error' in request(codec,buy(**changes))
     body=buy()
     for n in range(len(body)):assert 'error' in request(codec,body[:n])
@@ -85,3 +85,14 @@ def test_native_purchase_response_bounds_and_visibility(codec):
     for muid,available,quantity in [(0,-1,5),(1,-2,5),(1,-1,0)]:
         assert 'error' in call(codec,struct.pack('<QIiI',GUID,muid,available,quantity),fn='merchant_response',name='SMSG_BUY_ITEM')
     assert 'error' in call(codec,struct.pack('<QIB',GUID,159,255),fn='merchant_response',name='SMSG_BUY_FAILED')
+
+
+def test_real_60895_request_uses_the_pinned_32_bit_destination_slot(codec):
+    # Closed owned ui10/merchant_purchase_02 request. No authentication material.
+    body=bytes.fromhex('07a73b1001404101042000000500000001000000ff000000010000009f00000000000000000000000000')
+    r=Reader(body);vendor=r.guid();r.guid();r.unpack('iIIi3i');assert r.bits(1)==0;r.align();assert r.bits(6)==0;r.align();r.end()
+    native=(0xf13<<52)|(1285<<32)|int(vendor[0]&0xffffff)
+    unit={**UNIT,'guid':native}
+    assert modern_guid(native,0)==vendor
+    reply=call(codec,body,[unit],fn='merchant_request',name='CMSG_BUY_ITEM')
+    assert reply==['CMSG_BUY_ITEM',struct.pack('<QBIIIQB',native,1,159,1,5,0,255).hex()]
