@@ -34,6 +34,26 @@ def confined_survey_stall(history,tcp,site):
         'source':'owned displacement and ordinary telescope observations'}
 
 
+def recover_green_terrain(observer,path,recovery,error):
+    from . import green_flight,bridge_travel_probe
+    # Refresh the ordinary instrument after the rejected ground route. This can
+    # itself uncover the artifact, in which case no flight is necessary.
+    started=time.time();owned_input.Inputs().key('2');time.sleep(2.5)
+    movement,extra=inputs.screenshot(path);tcp=observer.poll(movement['facing_radians'])
+    if tcp['finds']:return {'walking_failure':str(error),'artifact_visible_after_survey':True}
+    route=green_flight.plan(tcp,movement,extra,recovery,'ground_routes_exhausted')
+    directory=path.parent/f'code_recovery_flight_{time.time_ns()}'
+    result=bridge_travel_probe.run(route,directory)
+    if not result['completed']:raise RuntimeError('diagnostic green flight failed: '+str(result['failure']))
+    movement,extra=inputs.screenshot(path);after=observer.poll(movement['facing_radians'])
+    if any(extra[k] for k in ['mounted','flying','falling','swimming']):
+        raise RuntimeError('diagnostic green flight did not restore grounded unmounted feet')
+    return {'walking_failure':str(error),'recovery_started_at':started,'hold_seconds':None,
+        'ground_route':{'green_terrain_recovery':route['green_terrain_recovery'],
+            'mounted_travel_episode':directory.name,'remaining_ground_points':[],
+            'after':after['player']['position'],'dry_unmounted_arrival':True}}
+
+
 def run(out,maximum_steps):
     if subprocess.check_output(['git','status','--porcelain'],cwd=lab.REPO,text=True):
         raise RuntimeError('commit experiment code/configs before the native archaeology probe')
@@ -47,6 +67,7 @@ def run(out,maximum_steps):
         'actor':{'name':lab.actor_name(),'guid':observer.guid,'session':observer.session},
         'bridge':bridge,'monitor':owned_input.focus(),'steps':history,'finds':finds,
         'private_next_find_coordinates_used':False,'mounted_moves':False,
+        'allow_short_terrain_recovery_flight':True,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'completed':False,'failure':None,'frames':[]}
     try:
@@ -83,8 +104,14 @@ def run(out,maximum_steps):
                     'frame_sha256':lab.sha256(cast_path)}
                 time.sleep(2)
             else:
-                step['input']=inputs.execute(action,tcp,latest,recovery.for_action(action),
-                    mounted_moves=False,object_observer=observer)
+                from .ground_escape import TerrainBlocked
+                remembered=recovery.for_action(action)
+                try:
+                    step['input']=inputs.execute(action,tcp,latest,remembered,
+                        mounted_moves=False,object_observer=observer)
+                except TerrainBlocked as error:
+                    if not action.startswith('forward_') or tcp['tool']['color']!='green':raise
+                    step['input']=recover_green_terrain(observer,latest,remembered,error)
             step.update(execution_status='completed',finished_at=time.time())
             if action=='loot':
                 confirmation=collected(observer.session,step['started_at'])
@@ -95,6 +122,8 @@ def run(out,maximum_steps):
         if not receipt['completed']:raise RuntimeError('step budget exhausted without native fragment collection')
     except (Exception,KeyboardInterrupt) as error:
         receipt['failure']=f'{type(error).__name__}: {error}'
+        if history and history[-1]['execution_status']=='started':
+            history[-1].update(execution_status='failed',input_error=receipt['failure'])
     finally:
         receipt['finished_at']=time.time();lab.private_write(out/'episode.json',json.dumps(receipt,indent=2)+'\n')
         latest.unlink(missing_ok=True)
