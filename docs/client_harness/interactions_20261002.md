@@ -683,3 +683,10 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 
 Repair and trainer probes now use existing Heinrich Stone, Wu Shen and Lilyssia
 Nightbreeze fixtures. Their windows, mutations and negative paths are pending.
+
+UI10 is closed as `442_interactions_20261003_11.tar.gz.dvc`: 229,199,169 bytes,
+SHA-256 `b3dbf33e4d8358d8d846260523cfad841e4e7050d23467d8179b76c8612470fa`.
+After remote verification, 147 raw PNG frames (230,319,590 bytes) and the local
+archive/cache copies (229,199,169 bytes each) are removed; 1.4 MiB of receipts
+remain. Post-experiment `dvc status` reports the deliberately absent local output,
+and `dvc push` confirms that the remote is up to date. UI11 is the new active batch.
