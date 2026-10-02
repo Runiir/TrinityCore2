@@ -731,3 +731,60 @@ SHA-256 `9a75a27d7866dcd9f7088e627482be9e903ba891a0eb3d74ce9f313d5b192f72`.
 Remote verification precedes removal of 230,936,255 bytes of raw frames and both
 local 229,758,220-byte archive/cache copies. Small receipts remain. `dvc status`
 reports the deliberately evicted output, and `dvc push` confirms remote completion.
+
+### Repair pricing and trainer learning
+
+UI12 starts after the one required private native worldserver rebuild. The main
+raid worldserver and databases remain untouched. `Client442.RepairCostRounding = 1`
+enables a single rounding after discount and rate in the lab; the distributed
+config defaults to zero and preserves legacy arithmetic. A compiled native pure
+calculation test covers the ten captured items, both totals, rate multiplication,
+unworn items and artifact minimum pricing. `Item.cpp` is split into 718-line item
+storage, 834-line item mechanics and a 66-line durability unit to satisfy the
+source-size guard. The incremental worldserver target builds successfully.
+
+The native-console/SQL fixture restores exactly the ten earlier observed wear
+values while the private server is stopped, after verifying owned full-durability
+items. `repair_all_03` completes four Laya choices. Native and visible money agree
+on a 163,335-copper charge, all ten items become fully repaired, and the client
+quote clears. Inventory, experiment money, position and temporary permissions
+are restored; repaired gear is retained. The obsolete 67,411,216-byte rollback
+binary is removed after the successful deployment trial. Useful build caches remain.
+
+`trainer_learn_01` selects the normal Train button for available Parry. The bridge
+drops the actual 17-byte purchase request; no money or spell mutation occurs,
+and the complete fixture is restored. The new adapter preserves native trainer,
+trainer ID and spell ID, translates money/unavailable errors, and maps the native
+skill rejection to the modern unavailable reason. The modern protocol has no
+trainer success opcode; its legacy acknowledgement is validated and consumed.
+The actual 8-byte native learned-spell message becomes the pinned 14-byte modern
+`LearnedSpells` form with normal messaging.
+
+A subsequent source audit corrects the UI11 layout interpretation: both the native
+header and writer use **two** prerequisite spells followed by profession dialog
+and button flags, totaling 34 bytes. The initial 38-byte assumption and temporary
+three-prerequisite/tail interpretation were wrong. Class catalog rows had zero
+profession flags, so the earlier warrior window passed. The corrected parser
+validates the two flags, preserves two prerequisites, and adds zero for the modern
+third prerequisite and `Unk440`. Profession flags are no longer misread as a
+prerequisite spell. The earlier 453-test/87-sanitizer run is retained; after the
+semantic correction and actual request regression, all 454 tests and 88 selected
+ASan/UBSan tests pass.
+
+`trainer_learn_02` completes four Laya choices. Parry (3127) becomes active and
+undisabled in native state and known in the client. Both charge exactly 646 copper,
+and the screenshot shows the normal learned-ability chat message. Packet receipts
+pair the 17-to-16-byte purchase and 8-to-14-byte learned-spell notification; the
+12-byte legacy acknowledgement is consumed. Inventory, experiment money and
+original position are restored, both temporary teleports are removed, and the
+learned passive skill is retained. Both clients have clean read-only observer
+version 12 and verified HDMI-1 windows. Only the bridge restarts for this training fix.
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_npc --service trainer --point 644 214 --learn --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/trainer_learn_01
+```
+
+Learning requires an existing unlearned affordable Parry fixture; it does not
+silently unlearn an already qualified skill to create artificial repetition.
+Profession training, incremental unlearn/supersession and trainer failure UI
+remain separate acceptance cases. Quest, mail and auction work remains open.
