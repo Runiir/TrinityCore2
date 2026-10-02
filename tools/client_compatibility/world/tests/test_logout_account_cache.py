@@ -10,7 +10,7 @@ def update(guid=2, size=0):
 
 def call(codec, fn, name, body, character=None, last_guid=2):
     return result(codec,op='stateful',character=character,last_logout_guid=last_guid,
-                  gameobjects=[],units=[],actions=[action(fn,name,body)])[0]
+                  snapshot=None,gameobjects=[],units=[],actions=[action(fn,name,body)])[0]
 
 
 def test_final_character_cache_write_after_logout_translates_for_last_owned_guid(codec):
