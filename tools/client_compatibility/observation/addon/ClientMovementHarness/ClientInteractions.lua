@@ -232,8 +232,8 @@ local function snapshot(viewMode,viewPage)
             data.recipe_reagents[#data.recipe_reagents+1]={name=name,need=need,have=have,link=call(GetTradeSkillReagentItemLink,id,i)}
         end
     end
-    data.crafting_probe={known=not not call(IsSpellKnown,2330),counts={}}
-    for _,id in ipairs({118,765,2447,3371}) do
+    data.crafting_probe={known=not not call(IsSpellKnown,2330),deepholm_known=not not call(IsSpellKnown,80725),counts={}}
+    for _,id in ipairs({118,765,2447,3371,52986,58487}) do
         data.crafting_probe.counts[tostring(id)]=call(C_Item and C_Item.GetItemCount or GetItemCount,id)
     end
     data.player_stats={health=call(UnitHealthMax,'player'),armor={call(UnitArmor,'player')},
