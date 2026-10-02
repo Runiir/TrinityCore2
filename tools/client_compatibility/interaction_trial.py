@@ -158,9 +158,9 @@ def panel_suite(out,catalog):
             if result['status']=='panel_open_pass':
                 close_actions={'escape':{'kind':'key','value':'Escape','description':'Press Escape to close the open panel.'},
                     **{n:registry[n] for n in trial.rng.sample([n for n in registry if n!=target and n!='TOGGLEGAMEMENU'],4)}}
-                trial.step(case_id+'.close', 'Close the currently open window or bags.',close_actions,
-                    lambda b,a,s:{'status':'panel_close_pass' if not visible(a,names) else ('controller_failure' if s!='escape' else 'client_or_protocol_failure'),
-                        'oracle':{'panel_closed':not visible(a,names),'qualified_scope':'panel visibility only'}})
+                trial.step(case_id+'.close', 'Close every open panel and bag. Leave the world view visible with no new windows.',close_actions,
+                    lambda b,a,s:{'status':'panel_close_pass' if not a.get('panels') and not a.get('bags') else ('controller_failure' if s!='escape' else 'client_or_protocol_failure'),
+                        'oracle':{'all_panels_closed':not a.get('panels') and not a.get('bags'),'qualified_scope':'panel visibility only'}})
         trial.clean_panels();trial.receipt['completed']=True
     except Exception as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:

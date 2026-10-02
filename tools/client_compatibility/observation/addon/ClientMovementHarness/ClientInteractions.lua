@@ -11,7 +11,7 @@ for i=1,math.ceil((capacity+12)/3) do
 end
 local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','SkillFrame','SpellBookFrame',
     'TradeSkillFrame','CraftFrame','ArchaeologyFrame','QuestLogFrame','WorldMapFrame','PlayerTalentFrame',
-    'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
+    'AchievementFrame','FriendsFrame','RaidFrame','GuildFrame','GuildFinderFrame','LookingForGuildFrame','PVEFrame','PVPUIFrame','PVPFrame',
     'EncounterJournal','CollectionsJournal','PetJournalParent','GameMenuFrame','SettingsPanel',
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
@@ -70,13 +70,13 @@ local function snapshot()
     local function scan(f,depth)
         if visited[f] or depth>6 or not f:IsVisible() then return end;visited[f]=true
         local kind=f:GetObjectType()
-        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider') and #data.controls<18 then
+        if (kind=='Button' or kind=='CheckButton' or kind=='EditBox' or kind=='Slider') and #data.controls<512 then
             local x,y=f:GetCenter()
             if x and y then
                 local scale=f:GetEffectiveScale();local name=f:GetName() or ''
                 data.controls[#data.controls+1]={name=trim(name,72),text=caption(f),kind=kind,
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
-                    enabled=not f.IsEnabled or f:IsEnabled()}
+                    enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
             end
         end
         if f.GetChildren then for _,child in ipairs({f:GetChildren()}) do scan(child,depth+1) end end
@@ -89,6 +89,7 @@ local function snapshot()
         data.bags[#data.bags+1]=f:GetID();scan(f,0)
     end end
     if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsVisible() then data.bags[#data.bags+1]=-1 end
+    data.bag_slots={};for i=0,4 do data.bag_slots[i+1]=call(C_Container and C_Container.GetContainerNumSlots,i) or call(GetContainerNumSlots,i) or 0 end
     data.reputations=call(GetNumFactions) or call(C_Reputation and C_Reputation.GetNumFactions)
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
@@ -113,9 +114,18 @@ local function snapshot()
     end
     for _,name in ipairs({'CharacterMicroButton','SpellbookMicroButton','TalentMicroButton','AchievementMicroButton',
         'QuestLogMicroButton','SocialsMicroButton','GuildMicroButton','EJMicroButton','CollectionsMicroButton',
-        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton'}) do
+        'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame'}) do
         local f=_G[name];if f then scan(f,0) end
     end
+    data.control_count=#data.controls
+    local controls={};local first=mode=='controls' and (page-1)*18+1 or 1
+    for i=first,math.min(#data.controls,first+17) do controls[#controls+1]=data.controls[i] end
+    data.controls=controls
+    if mode=='controls' then
+        return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
+            panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count}
+    end
+    data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     return data
 end
 local function append(bytes,value,n)
@@ -140,7 +150,7 @@ end
 SLASH_CLIENTINTERACTIONHARNESS1='/tcui'
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
-    if command=='bindings' then mode='bindings';page=math.max(1,tonumber(arg) or 1)
+    if command=='bindings' or command=='controls' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
     else mode='state' end
     frame:Show();update()
