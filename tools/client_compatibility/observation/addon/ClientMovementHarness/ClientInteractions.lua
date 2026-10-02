@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=11,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=12,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -231,7 +231,13 @@ local function snapshot(viewMode,viewPage)
     if ClassTrainerFrame and ClassTrainerFrame:IsVisible() then
         data.trainer={count=call(GetNumTrainerServices),selected=call(GetTrainerSelectionIndex),
             profession=call(IsTradeskillTrainer)}
+        if data.trainer.selected then
+            local name,rank,state=call(GetTrainerServiceInfo,data.trainer.selected)
+            data.trainer.service={name=name,rank=rank,state=state,
+                cost=call(GetTrainerServiceCost,data.trainer.selected),level=call(GetTrainerServiceLevelReq,data.trainer.selected)}
+        end
     end
+    data.trainer_probe={spell=3127,available=type(IsSpellKnown)=='function',known=call(IsSpellKnown,3127)}
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
     data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false
