@@ -38,6 +38,10 @@ and a ceiling about 11 yards above the starting feet pass the bounded collision
 checks. This is an offline planning regression, not a physical-flight receipt.
 Normal login restored the owned client to the world on HDMI-1 after a stale
 session disconnected; health was 100 and combat/death flags were clear.
+The validation XML, public replay report, restored-world screenshot and DVCLive
+metrics are checkpointed in
+`artifacts/client_harness/442_green_terrain_recovery_validation_20261002.tar.gz.dvc`.
+Scoped DVC status, push and cloud status confirmed the remote is synchronized.
 
 ## Accepted bounded loop, 2026-10-02
 
