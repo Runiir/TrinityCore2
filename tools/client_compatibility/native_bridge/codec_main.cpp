@@ -9,6 +9,8 @@
 #include "guild_packets.hpp"
 #include "merchants.hpp"
 #include "item_notifications.hpp"
+#include "repairs.hpp"
+#include "trainers.hpp"
 #include <iostream>
 #include <memory>
 
@@ -286,6 +288,12 @@ int main(int argc, char **argv)
                                 reply=merchant_response(protocol,state,name,body);
                             else if(fn=="item_notification")
                                 reply=item_notification(name,body);
+                            else if(fn=="repair_request")
+                                reply=repair_request(protocol,state,name,body);
+                            else if(fn=="trainer_request")
+                                reply=trainer_request(protocol,state,name,body);
+                            else if(fn=="trainer_response")
+                                reply=trainer_response(protocol,state,name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

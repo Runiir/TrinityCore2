@@ -3,6 +3,7 @@
 #include "guild_packets.hpp"
 #include "merchants.hpp"
 #include "item_notifications.hpp"
+#include "trainers.hpp"
 #include <ctime>
 
 namespace bridge
@@ -209,6 +210,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     if ((reply = merchant_response(protocol,state,name,body)))
     {send(*reply);co_return;}
     if ((reply = item_notification(name,body)))
+    {send(*reply);co_return;}
+    if ((reply = trainer_response(protocol,state,name,body)))
     {send(*reply);co_return;}
     if ((reply = Protocol::gossip_response(state, name, body)))
     {
