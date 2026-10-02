@@ -2,6 +2,7 @@
 #include "data.hpp"
 #include "events.hpp"
 #include "native.hpp"
+#include "ready_check.hpp"
 #include <atomic>
 
 namespace bridge
@@ -22,6 +23,19 @@ struct Service
     std::mutex markers_mutex;
     std::unordered_map<std::uint64_t,MarkerGroup> marker_groups;
     void markers(Session &session, std::optional<unsigned> mask={}, Array const &locations={},std::optional<unsigned> clear={});
+    struct ReadyGroup
+    {
+        ReadyCheck check;
+        Array guid{0,0};
+        std::unordered_map<std::string,std::weak_ptr<Session>> listeners;
+        std::unordered_set<std::string> announced;
+        std::shared_ptr<asio::steady_timer> timer;
+    };
+    std::mutex ready_mutex;
+    std::unordered_map<std::uint64_t,ReadyGroup> ready_groups;
+    void ready_roster(Session &session);
+    void ready_native(Session &session,std::string const &name,View body);
+    void ready_finish(std::uint64_t group,ReadyGroup &entry,std::string const &reason);
     std::filesystem::path root, repo;
     Protocol protocol;
     PublicData data;

@@ -3,6 +3,7 @@
 #include "fields.hpp"
 #include "protocol.hpp"
 #include "events.hpp"
+#include "ready_check.hpp"
 #include <iostream>
 #include <memory>
 
@@ -83,6 +84,26 @@ int main(int argc, char **argv)
                 }
                 else if(op=="late_party_query")
                     result=Protocol::late_party_query(truth(get(request,"active")),str(get(request,"name")),data("body"));
+                else if(op=="ready_check")
+                {
+                    ReadyCheck check;Array output;
+                    for(auto const &action:get(request,"actions").as_array())
+                    {
+                        auto fn=str(get(action,"fn"));bool accepted=false;
+                        if(fn=="start")
+                        {
+                            std::unordered_set<std::uint64_t> members;
+                            for(auto const &member:get(action,"members").as_array())members.insert(integer(member));
+                            check.start(integer(get(action,"starter")),members);accepted=true;
+                        }
+                        else if(fn=="answer")accepted=check.answer(integer(get(action,"member")));
+                        else if(fn=="finish")accepted=check.finish();
+                        else throw std::runtime_error("unknown ready check test action");
+                        output.push_back(Object{{"accepted",accepted},{"active",check.active},
+                            {"pending",check.pending.size()},{"complete",check.complete()}});
+                    }
+                    result=output;
+                }
                 else if (op == "object_values")
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "rest_update")

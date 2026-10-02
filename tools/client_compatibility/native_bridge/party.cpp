@@ -135,7 +135,8 @@ Reply Protocol::party_response(State &owner, std::string const &name, View body,
     if (name == "MSG_RAID_READY_CHECK")
     {
         auto starter = r.take<std::uint64_t>();r.end();
-        w.put<std::uint8_t>(0).guid(owner.party_guid);player(w,starter).put<std::uint32_t>(30000);
+        // WorldPackets::Duration<Milliseconds> uses int64, not uint32.
+        w.put<std::uint8_t>(0).guid(owner.party_guid);player(w,starter).put<std::int64_t>(30000);
         return Packet{"SMSG_READY_CHECK_STARTED",w.finish()};
     }
     if (name == "MSG_RAID_READY_CHECK_CONFIRM")

@@ -79,7 +79,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     }
     if ((reply = Protocol::party_response(state, name, body, party_identities)))
     {
-        this->send(*reply);if(name=="SMSG_PARTY_UPDATE")service.markers(*this);co_return;
+        if(name.starts_with("MSG_RAID_READY_CHECK"))
+            service.ready_native(*this,name,body);
+        else this->send(*reply);
+        if(name=="SMSG_PARTY_UPDATE") {service.markers(*this);service.ready_roster(*this);}
+        co_return;
     }
     if(name=="SMSG_RAID_MARKERS_CHANGED")
     {

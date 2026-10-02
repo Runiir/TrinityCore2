@@ -14,7 +14,7 @@ target_link_libraries(bridge_protocol PUBLIC OpenSSL::Crypto Threads::Threads ZL
 target_compile_options(bridge_protocol PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(bridge_codec codec_main.cpp)
 target_link_libraries(bridge_codec PRIVATE bridge_protocol)
-add_library(bridge_runtime channel.cpp native.cpp service.cpp session_auth.cpp client_requests.cpp server_packets.cpp player_names.cpp marker_runtime.cpp)
+add_library(bridge_runtime channel.cpp native.cpp service.cpp session_auth.cpp client_requests.cpp server_packets.cpp player_names.cpp marker_runtime.cpp ready_runtime.cpp)
 target_link_libraries(bridge_runtime PUBLIC bridge_protocol)
 target_compile_options(bridge_runtime PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(client442_bridge main.cpp)

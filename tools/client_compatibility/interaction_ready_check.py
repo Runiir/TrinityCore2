@@ -42,16 +42,22 @@ def round_check(output,ready):
                 t.receipt['completed']=True
             except Exception as e:t.receipt['failure']=str(e);raise
             finally:t.receipt['finished_at']=time.time();t.persist()
-        confirmations=[];finished=False
+        confirmations=[];finished=False;response_sent=False
         for row in entries(lab.ROOT/'evidence/world_packets.jsonl'):
-            if row.get('session') not in sessions or row.get('time',0)<summary['started_at'] or row.get('direction')!='from_native':continue
-            if row.get('name')=='MSG_RAID_READY_CHECK_CONFIRM':
+            if row.get('session') not in sessions or row.get('time',0)<summary['started_at']:continue
+            if row.get('direction')=='from_client' and row.get('name')=='CMSG_READY_CHECK_RESPONSE' and row.get('session')==sessions[1]:response_sent=True
+            if row.get('direction')=='from_native' and row.get('name')=='MSG_RAID_READY_CHECK_CONFIRM':
                 r=Reader(bytes.fromhex(row['body']));guid,value=r.unpack('QB');r.end()
                 confirmations.append({'guid':guid,'ready':bool(value),'time':row['time']})
-            if row.get('name')=='MSG_RAID_READY_CHECK_FINISHED':finished=True
-        if not any(r['guid']==2 and r['ready']==ready for r in confirmations) or not finished:
-            raise RuntimeError('native peer confirmation or completed ready check is missing')
-        summary.update(completed=True,native_confirmations=confirmations,native_finished=finished)
+            if row.get('direction')=='to_client' and row.get('name')=='SMSG_READY_CHECK_COMPLETED':finished=True
+        summary.update(native_confirmations=confirmations,client_response_sent=response_sent,bridge_finished=finished)
+        if not response_sent or not any(r['guid']==2 and r['ready']==ready for r in confirmations) or not finished:
+            raise RuntimeError('client response, native peer confirmation or bridge completion is missing')
+        with actor('primary'):
+            t=Trial(output/'completed');s,_=t.observe('completion')
+            t.receipt['completed']=not s.get('ready_check');t.receipt['finished_at']=time.time();t.persist()
+            if s.get('ready_check'):raise RuntimeError('leader ready-check frame did not close after completion')
+        summary['completed']=True
     except Exception as e:summary['failure']=str(e)
     finally:summary['finished_at']=time.time();lab.private_write(output/'cohort.json',json.dumps(summary,indent=2)+'\n');print(json.dumps(summary))
     return summary
