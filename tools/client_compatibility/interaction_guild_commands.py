@@ -87,7 +87,7 @@ def suite(out):
                 lambda b,a,s:{'status':'panel_open_pass' if s and 'StaticPopup1' in a['panels'] else
                     ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
             require(click_case(primary,'guild.remove_member','Confirm removing Harnesstwo from the test guild.',
-                lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Accept','Okay','Remove'],
+                lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Accept','Okay','Remove','Yes'],
                 lambda b,a,s:{'status':'guild_remove_pass' if s and not membership(scout.fixture['guid']) and
                     all(m['name'].split('-',1)[0]!='Harnesstwo' for m in a['guild_ui'].get('members',[])) else
                     ('controller_failure' if not s else 'client_or_protocol_failure'),
