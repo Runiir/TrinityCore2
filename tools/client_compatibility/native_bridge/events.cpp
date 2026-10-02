@@ -135,7 +135,8 @@ void Events::event(std::string kind, Object fields)
 {
     static std::unordered_set<std::string> const allowed = {"session",   "opcode",     "name",  "bytes",
                                                             "status",    "account_id", "error", "port",
-                                                            "direction", "guid",       "map",   "position"};
+                                                            "direction", "guid",       "map",   "position",
+                                                            "group", "starter", "member", "ready", "duration_ms", "reason"};
     for (auto const &[key, value] : fields)
         if (!allowed.contains(std::string(key)))
             throw std::runtime_error("unreviewed world diagnostic fields");

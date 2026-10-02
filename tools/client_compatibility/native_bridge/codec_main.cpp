@@ -28,6 +28,11 @@ int main(int argc, char **argv)
                     result = hex(Writer()
                                      .pack(str(get(request, "format")), get(request, "values").as_array())
                                      .finish());
+                else if(op=="event_diagnostic")
+                {
+                    Events events(str(get(request,"root")));
+                    events.event(str(get(request,"kind")),get(request,"fields").as_object());result=true;
+                }
                 else if(op=="marker_diagnostic")
                 {
                     Events events(str(get(request,"root")));events.marker_placed("fixture",get(request,"location"));result=true;

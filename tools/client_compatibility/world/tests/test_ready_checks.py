@@ -40,3 +40,16 @@ def test_confirmation_and_completion_packet_identity(codec):
     r=Reader(bytes.fromhex(body));assert r.guid()==(0,0);assert r.guid()==(2,HIGH)
     assert r.bits(1)==0;r.end()
     assert call(codec,'party_response','MSG_RAID_READY_CHECK_FINISHED',b'',identities=[])==['SMSG_READY_CHECK_COMPLETED','000000']
+
+
+def test_ready_runtime_diagnostics_are_admitted_without_packet_bodies(codec,tmp_path):
+    import json
+    (tmp_path/'logs').mkdir()
+    cases=[('ready_check_started',{'group':108,'starter':1,'duration_ms':30000}),
+        ('ready_check_native_answer',{'group':108,'member':2,'ready':False}),
+        ('ready_check_completed',{'group':108,'reason':'all_answered'})]
+    for kind,fields in cases:
+        assert result(codec,op='event_diagnostic',root=str(tmp_path),kind=kind,fields=fields)
+    rows=[json.loads(line) for line in (tmp_path/'logs/modern_world.jsonl').read_text().splitlines()]
+    assert [r['event'] for r in rows]==[x[0] for x in cases]
+    assert 'error' in codec(op='event_diagnostic',root=str(tmp_path),kind='unsafe',fields={'body':'synthetic'})
