@@ -58,7 +58,10 @@ Reply Protocol::account_response(State &owner, std::string const &name, View bod
     {
         auto guid = r.take<std::uint64_t>();auto type = r.take<std::uint32_t>();
         auto time = r.take<std::uint32_t>(), size = r.take<std::uint32_t>();auto data=r.raw(r.remaining());r.end();
-        if(type>=8 || size>65535 || (guid && guid!=cache_character(owner)))throw std::runtime_error("invalid native cache response");
+        // Native initialization can answer before the modern player create.
+        // The selected character was already checked against the owned account.
+        auto expected=owner.character.is_null() ? owner.last_logout_guid : owner.guid();
+        if(type>=8 || size>65535 || (guid && guid!=expected))throw std::runtime_error("invalid native cache response");
         if(!size)data={};
         w.pack("qI",{time,size}).guid(guid,guid ? player_high() : 0).pack("iI",{type,data.size()}).raw(data);
         return Packet{name,w.finish()};
