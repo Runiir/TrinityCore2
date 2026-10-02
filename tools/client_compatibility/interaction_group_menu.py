@@ -43,7 +43,7 @@ def open_menu(trial,player,label):
         'b':{'kind':'key','value':'o','description':'Press O to open friends and social.'},
         'c':{'kind':'key','value':'Escape','description':'Press Escape to open the game menu.'}},
         lambda b,a,s:{'status':'panel_open_pass' if 'ContextMenu' in a['panels'] else ('controller_failure' if s!='a' else 'adapter_observation_missing'),
-            'oracle':{'qualified_scope':'visible player context menu'}}),'panel_open_pass')
+            'oracle':{'qualified_scope':'visible player context menu'}},diagnostic_action='a'),'panel_open_pass')
 
 
 def verify_peer(trial,label,members,raid):

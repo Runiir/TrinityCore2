@@ -31,20 +31,14 @@ def suite(trial):
     actors.session_entry(trial.fixture);trial.clean_panels();state,_=trial.observe('group_fixture')
     if state['group']['members']!=2 or set(state['group']['names'])!={'Harnessone','Harnesstwo'} or not state['group']['leader']:
         raise RuntimeError('group fixture is not the two owned characters with the owned leader')
-    require(trial.step('friends.open','Open the friends and social window.',{
-        'a':{'kind':'key','value':'o','description':'Press O to open friends and social.'},
-        'b':{'kind':'key','value':'m','description':'Press M to open the world map.'},
-        'c':{'kind':'key','value':'c','description':'Press C to open equipment.'}},
-        lambda b,a,s:{'status':'panel_open_pass' if 'FriendsFrame' in a['panels'] else 'controller_failure'}),'panel_open_pass')
-    current,_=trial.observe('current_raid_tab')
-    if 'RaidFrame' not in current['panels']:
-        require(click_case(trial,'raid.raid_panel','Open the Raid tab.',lambda c:c['name']=='FriendsFrameTab4',
-            lambda b,a,s:{'status':'panel_open_pass' if 'RaidFrame' in a['panels'] else ('controller_failure' if not s else 'client_or_protocol_failure')}),'panel_open_pass')
-    else:trial.receipt['prerequisites']=[{'raid_tab_already_selected':True,'counts_as_model_action':False}]
-    rows=controls(trial);lab.private_write(trial.out/'raid_controls.json',json.dumps(rows,indent=2)+'\n')
-    for raid,label in [(True,'Raid'),(False,'Party')]:
+    trial.receipt['group_baseline']=state['group'];trial.persist()
+    from .interaction_group_menu import open_menu
+    for raid in [not state['group']['raid'],state['group']['raid']]:
+        label='Raid' if raid else 'Party';trial.clean_panels()
+        player=next(c for c in controls(trial) if c['name']=='PlayerFrame')
+        open_menu(trial,player,'convert_'+label.lower())
         require(click_case(trial,'raid.convert_'+('from_party' if raid else 'to_party'),'Convert this group to a '+label+'.',
-            lambda c:c['name']=='RaidFrameConvertToRaidButton',lambda b,a,s:conversion_oracle(a,s,raid)),'group_conversion_pass')
+            lambda c:c['text']=='Convert To '+label,lambda b,a,s:conversion_oracle(a,s,raid)),'group_conversion_pass')
         with actor('scout'):
             peer=Trial(trial.out/('scout_'+label.lower()))
             try:
@@ -54,6 +48,7 @@ def suite(trial):
             except Exception as e:peer.receipt['failure']=str(e);raise
             finally:peer.receipt['finished_at']=time.time();peer.persist()
     trial.receipt['native_after_conversions']=native_group()
+    trial.clean_panels()
 
 
 def main():
