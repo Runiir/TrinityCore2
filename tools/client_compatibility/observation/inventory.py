@@ -12,7 +12,12 @@ class Inventory:
 
     def poll(self):
         for row in self.cursor.poll():
-            if row.get('session')!=self.session or row.get('direction')!='from_native' or row.get('name')!='SMSG_UPDATE_OBJECT':continue
+            if row.get('session')!=self.session or row.get('direction')!='from_native':continue
+            if row.get('name')=='SMSG_DESTROY_OBJECT':
+                body=bytes.fromhex(row['body'])
+                if len(body)!=9:raise ValueError('native destroyed-item record has invalid length')
+                self.objects.pop(int.from_bytes(body[:8],'little'),None);continue
+            if row.get('name')!='SMSG_UPDATE_OBJECT':continue
             for record in records(bytes.fromhex(row['body'])):
                 if record['update_type']==3:
                     for guid in record['removed']:self.objects.pop(guid,None)

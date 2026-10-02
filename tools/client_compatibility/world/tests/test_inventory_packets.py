@@ -93,3 +93,37 @@ def test_item_signed_charge_and_enchant_nested_masks(codec):
     r=read_block(body,(10,ITEM_HIGH),1<<1)
     assert mask(r,2)=={23,24,29,42};r.align();assert r.unpack('i')==(-1,)
     assert r.bits(5)==9;assert r.unpack('h')==(-1,);r.end()
+
+
+def native_item(fields,create=False):
+    w=Writer().pack('HI',0,1).pack('B',1 if create else 0).raw(bytes([0x81,10,0x40]))
+    if create:w.pack('B',1).bits(0,38)
+    masks=[0]*(max(fields)//32+1)
+    for i in fields:masks[i//32]|=1<<(i%32)
+    w.pack('B',len(masks)).pack('I'*len(masks),*masks)
+    for i in sorted(fields):w.pack('I',fields[i])
+    return w.finish()
+
+
+def test_new_native_items_enable_owned_updates_and_disappear_on_removal(codec):
+    fields={INDEX['OBJECT_FIELD_ENTRY']:118,INDEX['OBJECT_FIELD_SCALE_X']:0x3f800000,
+        INDEX['ITEM_FIELD_OWNER']:1,INDEX['ITEM_FIELD_STACK_COUNT']:5}
+    creation=native_item(fields,True)
+    change=native_item({INDEX['ITEM_FIELD_STACK_COUNT']:3})
+    remove=Writer().pack('HIBI',0,1,3,1).raw(bytes([0x81,10,0x40])).finish()
+    auto=hint().guid(10,ITEM_HIGH).pack('B',0).finish()
+    actions=[('object_updates','SMSG_UPDATE_OBJECT',creation),('object_updates','SMSG_UPDATE_OBJECT',change),
+        ('inventory_request','CMSG_AUTO_EQUIP_ITEM_SLOT',auto),('object_updates','SMSG_UPDATE_OBJECT',remove),
+        ('inventory_request','CMSG_AUTO_EQUIP_ITEM_SLOT',auto)]
+    replies=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'map':0,'fields':{}},
+        gameobjects=[],units=[],actions=[{'fn':fn,'name':name,'body':body.hex()} for fn,name,body in actions])
+    assert replies[0][0]=='SMSG_UPDATE_OBJECT'
+    r=Reader(bytes.fromhex(replies[1][1]));assert r.unpack('HI')==(0,1)
+    assert [r.bits(1),r.bits(1)]==[1,0];size=r.unpack('I')[0]
+    item=read_block(r.raw(size).hex(),(10,ITEM_HIGH),1<<1)
+    assert mask(item,2)=={0,7};assert item.unpack('I')==(3,);item.end();r.end()
+    assert replies[2]==['CMSG_AUTOEQUIP_ITEM_SLOT',struct.pack('<QB',NATIVE_ITEM,0).hex()]
+    r=Reader(bytes.fromhex(replies[3][1]));assert r.unpack('HI')==(0,0)
+    assert [r.bits(1),r.bits(1)]==[1,1];assert r.unpack('HI')==(0,1)
+    assert r.guid()==(10,ITEM_HIGH);assert r.unpack('I')==(0,);r.end()
+    assert 'error' in replies[4]
