@@ -67,11 +67,11 @@ def landing_point(map_id,position,radius=30,start=None):
     return json.loads(result.stdout)['position']
 
 
-def safe_landing_patch(map_id,position):
+def safe_landing_patch(map_id,position,*,radius=1.5):
     """Allow steering error around a flat point without landing on a cliff."""
     samples=[]
-    points=[position[:3],*[[position[0]+1.5*math.cos(i*math.tau/8),
-        position[1]+1.5*math.sin(i*math.tau/8),position[2]] for i in range(8)]]
+    points=[position[:3],*[[position[0]+radius*math.cos(i*math.tau/8),
+        position[1]+radius*math.sin(i*math.tau/8),position[2]] for i in range(8)]]
     for index,point in enumerate(points):
         surface=probe_surface(map_id,point)
         from .model_collision import supporting_surface
@@ -85,13 +85,13 @@ def safe_landing_patch(map_id,position):
         if water_at(map_id,surface['position'])['water_above_feet']:
             raise RuntimeError('flat landing patch includes submerged ground')
         samples.append(surface)
-    return {'radius_yards':1.5,'maximum_center_slope_degrees':20,'maximum_perimeter_slope_degrees':35,
+    return {'radius_yards':radius,'maximum_center_slope_degrees':20,'maximum_perimeter_slope_degrees':35,
         'maximum_height_difference_yards':1.25,'samples':samples,'source':'public detail terrain around the selected landing'}
 
 
-def site_ground_patch(map_id,position):
+def site_ground_patch(map_id,position,*,radius=1.5):
     """Start a digsite on terrain rather than a detached building roof."""
-    patch=safe_landing_patch(map_id,position)
+    patch=safe_landing_patch(map_id,position,radius=radius)
     for sample in patch['samples']:
         terrain=sample['physical_surface']['terrain_height']
         if terrain is None or abs(terrain-sample['position'][2])>1.5:

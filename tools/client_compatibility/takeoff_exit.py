@@ -27,7 +27,7 @@ def select(facts,extra):
             if not site_boundaries.inside_segment(site['polygon'],start,goal):continue
             try:
                 point=ground.landing_point(facts['map'],goal,radius=3,start=start)
-                patch=ground.site_ground_patch(facts['map'],point)
+                patch=ground.site_ground_patch(facts['map'],point,radius=2.5)
                 route=ground.route(facts['map'],start,point);corridor=[start,*route['points']]
                 if abs(corridor[1][2]-start[2])>2 or math.dist(start[:2],point[:2])<3:continue
                 if sum(math.dist(a[:2],b[:2]) for a,b in zip(corridor,corridor[1:]))>24:continue
@@ -87,8 +87,10 @@ def escape(inputs,observer,path,extra):
             lab.private_write(file,json.dumps(receipt,indent=2)+'\n')
             if fresh['mounted']:raise RuntimeError('takeoff exit did not dismount')
             if math.dist(position[:2],planned['point'][:2])<1:
-                ground.site_ground_patch(facts['map'],position)
-                receipt.update(completed=True,after=facts);return receipt
+                try:ground.site_ground_patch(facts['map'],position)
+                except RuntimeError:pass
+                else:
+                    receipt.update(completed=True,after=facts);return receipt
             while len(points)>1 and math.dist(position[:2],points[0][:2])<=.75:points.pop(0)
             target=points[0];distance=math.dist(position[:2],target[:2]);ratio=min(1,1.4/max(.01,distance))
             endpoint=[position[i]+(target[i]-position[i])*ratio for i in range(3)]

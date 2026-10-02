@@ -15,6 +15,7 @@ def test_trial73_grounded_overhang_has_a_connected_clear_ground_exit():
     plan=exit.select(facts,EXTRA)
     assert plan['site_id']==399 and plan['point'][2]<33
     assert plan['safe_patch']['raw_terrain_height_tolerance_yards']==1.5
+    assert plan['safe_patch']['radius_yards']==2.5
     assert all(model_collision.clear_body_segment(530,a,b) for a,b in
         zip([FOOT,*plan['route']['points']],plan['route']['points']))
     assert not exit.needed({'map':530,'position':plan['point']},EXTRA)

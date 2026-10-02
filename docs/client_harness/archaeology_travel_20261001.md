@@ -336,7 +336,7 @@ The first stricter-slope check also failed two old terrain expectations: a
 column now deliberately rejected, and a landing displaced to a gentler point.
 The fixtures were updated to test those safety outcomes; its failed XML is retained.
 
-Episodes 07 through 73 preserve unsuccessful steps, including missing portal
+Episodes 07 through 74 preserve unsuccessful steps, including missing portal
 hotfixes, realm-connection transfer rejection, an orphan return trigger, portal
 contact mismatch, steep landing cycles, overlapping loot clicks, disconnected
 roof surveying, unsuccessful combat retreats, terrain-obstructed targeting,
@@ -418,6 +418,11 @@ descends to the nearby verified dry floor, with clear body-height collision rays
 and waits for settled ground before dismounting. It retains success and failure
 receipts, actual observations, health/combat/falling guards and site boundaries.
 This applies to a flight leg; green survey approaches still remain on foot.
+Episode 74 descended, dismounted on settled ground and walked toward the selected
+exit, then stopped with no collection when the actual arrival's surrounding patch
+still touched overhead collision. Exit selection now requires a 2.5-yard clear
+patch, covering the one-yard steering tolerance plus the 1.5-yard takeoff patch.
+An early failed patch check continues the bounded walk toward its validated goal.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
