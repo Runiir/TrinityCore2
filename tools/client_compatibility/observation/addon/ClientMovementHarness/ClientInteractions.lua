@@ -341,7 +341,8 @@ SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
 end
 frame:RegisterEvent('UI_ERROR_MESSAGE')
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
-    'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM','CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL'}) do frame:RegisterEvent(event) end
+    'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
+    'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
     if event=='UI_ERROR_MESSAGE' then
         errors[#errors+1]={code=code,text=trim(text,120)};if #errors>3 then table.remove(errors,1) end
