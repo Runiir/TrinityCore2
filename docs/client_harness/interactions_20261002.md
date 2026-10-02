@@ -725,3 +725,9 @@ available Parry and Plate Specialization, and closes normally. The service
 screenshot is visually checked on HDMI-1. Learning and incremental learned-spell
 notifications remain separate pending cases. All 448 regression tests and 83
 selected ASan/UBSan tests pass. Only the bridge has restarted during UI11.
+
+UI11 is closed as `442_interactions_20261003_12.tar.gz.dvc`: 229,758,220 bytes,
+SHA-256 `9a75a27d7866dcd9f7088e627482be9e903ba891a0eb3d74ce9f313d5b192f72`.
+Remote verification precedes removal of 230,936,255 bytes of raw frames and both
+local 229,758,220-byte archive/cache copies. Small receipts remain. `dvc status`
+reports the deliberately evicted output, and `dvc push` confirms remote completion.
