@@ -28,6 +28,7 @@ bool capture(std::string const &name)
     static std::unordered_set<std::string> const names = {"CMSG_SEND_CONTACT_LIST", "CMSG_CONTACT_LIST",
                                                           "CMSG_BANKER_ACTIVATE", "SMSG_SHOW_BANK", "SMSG_NPC_INTERACTION_OPEN_RESULT",
                                                           "CMSG_LIST_INVENTORY", "SMSG_VENDOR_INVENTORY",
+                                                          "CMSG_BUY_ITEM", "SMSG_BUY_ITEM", "SMSG_BUY_SUCCEEDED", "SMSG_BUY_FAILED", "SMSG_ITEM_PUSH_RESULT",
                                                           "CMSG_SELL_ITEM", "SMSG_SELL_ITEM", "SMSG_SELL_RESPONSE", "CMSG_BUY_BACK_ITEM", "CMSG_BUYBACK_ITEM",
                                                           "CMSG_AUTOBANK_ITEM", "CMSG_AUTOSTORE_BANK_ITEM", "CMSG_CLOSE_INTERACTION",
                                                           "CMSG_INSPECT", "SMSG_INSPECT_TALENT", "SMSG_INSPECT_RESULT",
