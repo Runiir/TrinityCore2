@@ -96,6 +96,7 @@ struct Protocol
     static std::vector<Packet> marker_clear(View body);
     Array marker_objects(State const &owner, View body) const;
     static void marker_permission(State const &owner);
+    static Value const *extra_marker(State const &owner);
     Reply extra_marker_go(State &owner) const;
     static Reply account_request(State const &owner, std::string const &name, View body);
     static Reply account_response(State &owner, std::string const &name, View body);

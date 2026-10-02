@@ -22,6 +22,17 @@ def test_reported_ground_marker_forwards_native_destination(codec):
         assert 'error' in response[-1]
 
 
+def test_native_marker_casts_never_enter_the_modern_only_completion_path(codec):
+    for spell in range(84996,85001):
+        body=CAPTURE.replace(struct.pack('<i',84996),struct.pack('<i',spell),1)
+        output=result(codec,op='stateful',character={'guid':1,'map':0},snapshot=None,
+            gameobjects=[],units=[],actions=[{'fn':'cast_request','name':'CMSG_CAST_SPELL','body':body.hex()},
+                {'fn':'extra_marker_go','name':'SMSG_SPELL_GO','body':''}])
+        # Uses the same discriminator as live dispatch. A missing JSON field
+        # returns numeric zero from get(), so is_null() is not a presence test.
+        assert len(output)==2 and output[-1][0]=='CMSG_CAST_SPELL'
+
+
 def test_marker_snapshots_wait_for_positions_and_clear_without_stale_locations(codec):
     empty='000000000000'
     point={'map':0,'position':[1.5,-2.0,80.0]}

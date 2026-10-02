@@ -237,10 +237,10 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         {
             auto request=protocol.cast_request(state, body);
             auto const &cast=state.casts.at(state.cast_counter);
-            if(!get(cast,"extra_marker").is_null())
+            if(auto extra=Protocol::extra_marker(state))
             {
                 Protocol::marker_permission(state);
-                auto const &location=get(cast,"extra_marker");
+                auto const &location=*extra;
                 auto const &position=get(location,"position").as_array();
                 auto const &origin=state.latest_movement.empty() ? get(get(state.self_snapshot,"movement"),"position").as_array() : state.latest_movement;
                 double distance=0;for(unsigned i=0;i<3;++i){auto d=number(position[i])-number(origin.at(i));distance+=d*d;}
