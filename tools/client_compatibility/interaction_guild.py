@@ -19,6 +19,17 @@ def suite(trial):
     trial.receipt['guild_fixture'] = {'baseline': state['guild_ui'], 'frame': frame,
                                     'qualified_scope': 'opening Classic guild UI only'}
     trial.persist()
+    with lab.connection() as connection, connection.cursor() as cursor:
+        cursor.execute('SELECT g.guildid,g.name FROM client442_characters.guild g JOIN client442_characters.guild_member m '
+                       'ON m.guildid=g.guildid WHERE m.guid=%s', (trial.fixture['guid'],))
+        guild = cursor.fetchone()
+        if not guild:
+            raise RuntimeError('guild trial requires native owned membership')
+        cursor.execute('SELECT c.name,c.level,m.rank FROM client442_characters.guild_member m '
+                       'JOIN client442_characters.characters c ON c.guid=m.guid WHERE m.guildid=%s', (guild[0],))
+        members = cursor.fetchall()
+    trial.receipt['native_guild_fixture'] = {'guild_id': guild[0], 'name': guild[1], 'members': members}
+    trial.persist()
     try:
         trial.receipt.setdefault('fixture_inputs', []).append({'time': time.time(), 'source': 'code_fixture',
             'input': '/console useClassicGuildUI 1', 'reason': 'use the installed local guild UI while Battle.net clubs are disabled'})
@@ -37,6 +48,16 @@ def suite(trial):
                            'qualified_scope': 'panel visibility only; membership and guild mutations still pending'}}),
             'panel_open_pass')
         lab.private_write(trial.out / 'guild_controls.json', json.dumps(controls(trial), indent=2) + '\n')
+        after, frame = trial.observe('guild_roster_contents')
+        observed = after.get('guild_ui', {})
+        native = {(name, level, rank) for name, level, rank in members}
+        visible = {(m['name'].split('-', 1)[0], m['level'], m['index']) for m in observed.get('members', [])}
+        passed = observed.get('name') == guild[1] and observed.get('member_count') == len(members) and native == visible
+        row = {'id': 'guild.roster_contents', 'status': 'guild_roster_pass' if passed else 'client_or_protocol_failure',
+               'selection_source': 'read_only_native_oracle', 'time': time.time(), 'after': after, 'after_frame': frame,
+               'oracle': {'native_name': guild[1], 'native_members': members, 'visible': observed,
+                          'qualified_scope': 'guild identity and roster name level rank, not guild mutations'}}
+        trial.receipt['cases'].append(row); trial.persist(); require(row, 'guild_roster_pass')
     finally:
         trial.clean_panels()
         value = '/console useClassicGuildUI ' + str(int(baseline))
