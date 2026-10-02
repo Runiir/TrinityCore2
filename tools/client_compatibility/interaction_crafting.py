@@ -31,6 +31,17 @@ def completions(trial,session,since):
     return result
 
 
+def learned_recipe(session):
+    known=None
+    for row in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+        if row.get('session')!=session or row.get('direction')!='from_native' or row['name']!='SMSG_SEND_KNOWN_SPELLS':continue
+        r=Reader(bytes.fromhex(row['body']));initial,n=r.unpack('BH')
+        if initial>1 or n>16000:raise RuntimeError('invalid native learned-spell fixture')
+        spells=[r.unpack('Ih')[0] for _ in range(n)];cooldowns,=r.unpack('H');r.raw(cooldowns*18);r.end()
+        known={'learned':SPELL in spells,'native_spell_count':n,'source_time':row['time']}
+    return known
+
+
 def craft(trial,oracle,session,quantity,label):
     baseline=counts(oracle);since=time.time()
     expected={str(i):n for i,n in [(PRODUCT,baseline[str(PRODUCT)]+quantity),*[(i,baseline[str(i)]-n*quantity) for i,n in REAGENTS.items()]]}
@@ -53,7 +64,8 @@ def craft(trial,oracle,session,quantity,label):
 def suite(trial):
     session=actors.session_entry(trial.fixture)['session'];oracle=Inventory(lab.ROOT,session,trial.fixture['guid']).poll()
     trial.clean_panels();state,_=trial.observe('fixture');baseline=counts(oracle)
-    if not state.get('crafting_probe',{}).get('deepholm_known'):raise RuntimeError('known native Deepholm recipe required')
+    known=learned_recipe(session);trial.receipt['native_recipe_fixture']=known;trial.persist()
+    if not known or not known['learned']:raise RuntimeError('known native Deepholm recipe required')
     if any(baseline.values()):raise RuntimeError('disposable crafting fixture requires zero reagent/product baseline')
     trial.receipt['crafting_baseline']=baseline;trial.persist()
     try:
