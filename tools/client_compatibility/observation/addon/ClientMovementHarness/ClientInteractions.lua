@@ -17,7 +17,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
     'MailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','LootFrame','DressUpFrame','ItemTextFrame',
-    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup'}
+    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
 local errors={}
@@ -159,6 +159,8 @@ local function snapshot(viewMode,viewPage)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
     data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false
+    data.ready_check=ReadyCheckFrame and ReadyCheckFrame:IsVisible() or false
+    data.ready_status=call(GetReadyCheckStatus,'player')
     data.role=call(UnitGroupRolesAssigned,'player')
     data.role_poll_checked={}
     for _,role in ipairs({'Tank','Healer','DPS'}) do

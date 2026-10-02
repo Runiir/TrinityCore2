@@ -64,8 +64,30 @@ def main():
     try:suite(trial);trial.receipt['completed']=True
     except BaseException as e:trial.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
+        baseline=trial.receipt.get('control_baseline')
+        if baseline:
+            try:restore(trial,baseline)
+            except Exception as e:trial.receipt['cleanup_failure']=str(e);trial.receipt['completed']=False
         trial.receipt['finished_at']=time.time();trial.persist()
         print(json.dumps({'completed':trial.receipt['completed'],'failure':trial.receipt['failure']}))
+
+
+def restore(trial,baseline):
+    previous=trial.controller;trial.controller='code'
+    try:
+        state,_=trial.observe('control_cleanup_check')
+        expected=[('everyone_assistant','CompactRaidFrameManagerDisplayFrameEveryoneIsAssistButton',baseline['group']['everyone_assistant'])]
+        expected.extend((option,'CompactRaidFrameManagerDisplayFrame'+('Locked' if option=='locked' else 'Hidden')+'ModeToggle',baseline['raid_profile'][option]) for option in ['locked','shown'])
+        for option,name,value in expected:
+            current=state['group'] if option=='everyone_assistant' else state['raid_profile']
+            if current.get(option)==value:continue
+            if not state['raid_profile']['expanded']:
+                require(click_case(trial,'cleanup.raid.expand','Expand the raid controls.',lambda c:c['name']=='CompactRaidFrameManagerToggleButton',
+                    lambda b,a,s:{'status':'cleanup_pass' if a['raid_profile']['expanded'] else 'cleanup_failure'}),'cleanup_pass')
+            require(click_case(trial,'cleanup.raid.'+option,'Restore '+option+' to '+str(value)+'.',lambda c:c['name']==name,
+                lambda b,a,s:{'status':'cleanup_pass' if (a['group'] if option=='everyone_assistant' else a['raid_profile']).get(option)==value else 'cleanup_failure'}),'cleanup_pass')
+            state,_=trial.observe('control_cleanup_'+option)
+    finally:trial.controller=previous
 
 
 if __name__=='__main__':main()
