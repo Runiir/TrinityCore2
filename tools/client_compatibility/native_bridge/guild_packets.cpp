@@ -38,7 +38,7 @@ Reply guild_request(State const &owner,std::string const &name,View body)
 Reply guild_response(std::string const &name,View body,Array const &identities)
 {
     if(auto response=guild_membership_response(name,body))return response;
-    if(auto response=guild_event_response(name,body))return response;
+    if(auto response=guild_event_response(name,body,identities))return response;
     if(auto response=guild_note_response(name,body))return response;
     if(name=="SMSG_GUILD_ROSTER")return guild_roster_response(body,identities);
     Reader r(body);Writer w;

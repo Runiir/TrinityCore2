@@ -67,6 +67,27 @@ Task<> Session::gameplay(std::string name, Bytes body)
             {Database db(root);return db.query("SELECT guid,race FROM client442_characters.characters WHERE guid IN ("+ids+")");});
         }
     }
+    if(name=="SMSG_GUILD_EVENT")
+    {
+        auto event=native_guild_event(body);auto kind=integer(get(event,"event"));
+        if(kind==1 || kind==2 || kind==6)
+        {
+            auto parameters=get(event,"parameters").as_array();std::uint64_t own;
+            {std::lock_guard lock(state_mutex);if(state.character.is_null())co_return;own=state.guid();}
+            auto root=service.root;
+            guild_identities=co_await background(service.database_workers,[root,parameters,own]
+            {
+                if(parameters.size()<2 || str(parameters[0]).size()>63 || str(parameters[1]).size()>63)
+                    throw std::runtime_error("invalid guild event identity query");
+                Database db(root);
+                auto rows=db.query("SELECT guid,name FROM client442_characters.characters WHERE name IN ("+
+                    db.quote(str(parameters[0]))+","+db.quote(str(parameters[1]))+")");
+                auto ranks=db.query("SELECT rid AS rank_id,rname AS rank_name FROM client442_characters.guild_rank WHERE guildid IN ("
+                    "SELECT guildid FROM client442_characters.guild_member WHERE guid="+std::to_string(own)+")");
+                rows.insert(rows.end(),ranks.begin(),ranks.end());return rows;
+            });
+        }
+    }
     std::lock_guard lock(state_mutex);
     auto instance = world.lock();
     if (!instance || state.character.is_null())
