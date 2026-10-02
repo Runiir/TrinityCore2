@@ -146,6 +146,12 @@ local function snapshot(viewMode,viewPage)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
     data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false
+    data.role=call(UnitGroupRolesAssigned,'player')
+    data.role_poll_checked={}
+    for _,role in ipairs({'Tank','Healer','DPS'}) do
+        local button=_G['RolePollPopupRoleButton'..role]
+        data.role_poll_checked[role]=button and button.checkButton and not not call(button.checkButton.GetChecked,button.checkButton) or false
+    end
     data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
     data.equipment={};for i=1,19 do data.equipment[i]=GetInventoryItemID('player',i) or 0 end
     data.professions={};if GetProfessions then
