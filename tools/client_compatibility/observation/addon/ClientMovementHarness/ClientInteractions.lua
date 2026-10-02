@@ -153,6 +153,11 @@ local function snapshot(viewMode,viewPage)
         data.role_poll_checked[role]=button and button.checkButton and not not call(button.checkButton.GetChecked,button.checkButton) or false
     end
     data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
+    data.marker_spell_names={}
+    for _,id in ipairs({171553,171554,171555,171556,171557}) do
+        local info=call(C_Spell and C_Spell.GetSpellInfo,id)
+        data.marker_spell_names[tostring(id)]=info and info.name or call(GetSpellInfo,id)
+    end
     data.equipment={};for i=1,19 do data.equipment[i]=GetInventoryItemID('player',i) or 0 end
     data.professions={};if GetProfessions then
         for _,id in pairs({GetProfessions()}) do local name,_,rank,max=GetProfessionInfo(id)
