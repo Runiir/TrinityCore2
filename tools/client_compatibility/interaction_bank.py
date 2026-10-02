@@ -26,7 +26,7 @@ def suite(t,point,stage_only):
             diagnostic_action='interact'),'npc_interaction_pass')
         state,_=t.observe('banker_response')
         if 'GossipFrame' in state['panels']:
-            require(click_case(t,'bank.gossip','Open your bank account.',lambda c:'bank' in c['text'].lower(),
+            require(click_case(t,'bank.gossip','Open your bank account.',lambda c:'deposit box' in c['text'].lower(),
                 lambda b,a,s:{'status':'bank_open_pass' if s and 'BankFrame' in a['panels'] else
                     ('controller_failure' if not s else 'client_or_protocol_failure'),'oracle':{'panels':a['panels'],'errors':a['errors']}}),'bank_open_pass')
         state,frame=t.observe('bank_open');t.receipt['bank_open']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
