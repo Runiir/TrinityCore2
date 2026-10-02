@@ -45,16 +45,16 @@ def transfer(trials,sender,recipient,item,case_prefix):
         if not bag or (bag['id'],bag['count'])!=(64394,item[5]):raise RuntimeError('visible keystone stack disagrees with the native fixture')
         control=slot_control(t,0,slot)
         if control is None:raise RuntimeError('observed keystone bag button missing')
-        require(t.step(case_prefix+'.offer','Offer the entire Dwarf Keystone stack in the trade.',{
-            'offer':{'kind':'click','value':point(control),'button':3,'description':'Right-click the visible Dwarf Keystone stack to offer it in the open trade.'},
+        require(t.step(case_prefix+'.offer','Offer the entire Draenei Tome stack in the trade.',{
+            'offer':{'kind':'click','value':point(control),'button':3,'description':'Right-click the visible Draenei Tome stack to offer it in the open trade.'},
             'pick':{'kind':'click','value':point(control),'description':'Left-click to pick up the stack on the cursor.'},
             'escape':{'kind':'key','value':'Escape','description':'Cancel the trade.'}},
-            lambda b,a,s:{'status':'trade_offer_pass' if s=='offer' and any(x['name']=='Dwarf Keystone' and x['count']==item[5]
+            lambda b,a,s:{'status':'trade_offer_pass' if s=='offer' and any(x['name']=='Draenei Tome' and x['count']==item[5]
                 for x in a.get('trade',{}).get('items',[])) else
                 ('controller_failure' if s!='offer' else 'client_or_protocol_failure'),'oracle':{'trade':a.get('trade')}},diagnostic_action='offer'),'trade_offer_pass')
     with actor(recipient):
         observed,frame=peer.observe(case_prefix+'_peer_offer')
-        visible=observed.get('trade',{}).get('visible') and any(x['name']=='Dwarf Keystone' and x['count']==item[5]
+        visible=observed.get('trade',{}).get('visible') and any(x['name']=='Draenei Tome' and x['count']==item[5]
             for x in observed.get('trade',{}).get('target_items',[]))
         peer.receipt.setdefault('peer_offers',[]).append({'id':case_prefix,'visible':visible,'trade':observed.get('trade'),'frame':frame});peer.persist()
         if not visible:raise RuntimeError('recipient did not observe the keystone offer')
