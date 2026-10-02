@@ -40,6 +40,27 @@ def direct_indoor_route(map_id,start,point):
         'source':'continuous sampled public MAPS/VMAP floor and clear body rays; disconnected MMAP doorway'}
 
 
+def side_detour(map_id,start,goal,site,obstructions,attempt):
+    """Probe around a client-visible obstruction absent from static MMAPs."""
+    heading=math.atan2(goal[1]-start[1],goal[0]-start[0]);failures=[]
+    choices=[(distance,sign) for distance in [3,5,8] for sign in [-1,1]]
+    if attempt%2:choices=[(d,-s) for d,s in choices]
+    for distance,sign in choices:
+        angle=heading+sign*math.pi/2;requested=[start[0]+distance*math.cos(angle),start[1]+distance*math.sin(angle),start[2]]
+        try:
+            point=physical_floor(map_id,requested)['position']
+            if not all(site_boundaries.inside_segment(site['polygon'],a,b) for a,b in [(start,point),(point,goal)]):continue
+            vx,vy=goal[0]-point[0],goal[1]-point[1];length=vx*vx+vy*vy
+            for obstacle in obstructions:
+                ratio=max(0,min(1,((obstacle[0]-point[0])*vx+(obstacle[1]-point[1])*vy)/max(.01,length)))
+                if math.dist(obstacle[:2],[point[0]+ratio*vx,point[1]+ratio*vy])<1.5:raise RuntimeError('detour returns through observed blocked advance')
+            direct_indoor_route(map_id,start,point);direct_indoor_route(map_id,point,goal)
+            return {'point':point,'distance':distance,'side':sign,'attempts':failures,
+                'source':'ordinary failed physical advances and public continuous floor; unknown obstacle size'}
+        except RuntimeError as error:failures.append({'requested':requested,'failure':str(error)})
+    raise RuntimeError('no bounded indoor side detour around the observed obstruction')
+
+
 def needed(facts,extra):
     indoors=extra.get('indoors',False)
     if not (extra['mounted'] or indoors) or any(extra[k] for k in ['falling','swimming']):return False
@@ -101,7 +122,7 @@ def escape(inputs,observer,path,extra):
     receipt={'schema':'public_takeoff_ground_exit_v1','started_at':time.time(),'site_id':site['id'],
         'decision_origin':'physical_collision_guard','reason':'indoors' if extra.get('indoors') else 'near ground under static overhead collision',
         'before':before,'public_plan':None,'physical_keys':[],'observations':[],
-        'completed':False,'failure':None}
+        'completed':False,'failure':None,'blocked_detours':[]}
     file=path.parent/f'takeoff_exit_{time.time_ns()}.json'
     try:
         movement,fresh=screenshot(path);available(movement,fresh,observer.poll(),before['map'],site,allow_descent=True)
@@ -124,7 +145,7 @@ def escape(inputs,observer,path,extra):
         points=[p[:] for p in planned['route']['points']]
         if fresh['mounted']:
             inputs.key('3');receipt['physical_keys'].append({'key':'3'});time.sleep(1)
-        blocked=0
+        blocked=0;obstructions=[]
         for _ in range(90):
             if time.time()-receipt['started_at']>120:raise RuntimeError('takeoff exit exceeded its local time budget')
             movement,fresh=screenshot(path);facts=observer.poll();position=facts['position']
@@ -147,7 +168,14 @@ def escape(inputs,observer,path,extra):
             receipt['physical_keys'].extend(face(inputs,observer,target));hold=min(.2,distance/7)
             inputs.key('w',hold=hold);time.sleep(.7 if planned['indoor_exit'] else .35);receipt['physical_keys'].append({'key':'w','hold':hold})
             after=observer.poll()['position'];blocked=blocked+1 if math.dist(position[:2],after[:2])<.1 else 0
-            if blocked>=2:raise RuntimeError('two bounded takeoff ground advances were blocked')
+            if blocked>=2:
+                if not planned['indoor_exit'] or len(receipt['blocked_detours'])>=4:
+                    raise RuntimeError('two bounded takeoff ground advances were blocked')
+                facts=observer.poll();current=facts['position'];heading=math.atan2(target[1]-current[1],target[0]-current[0])
+                obstructions.append([current[0]+1.4*math.cos(heading),current[1]+1.4*math.sin(heading),current[2]])
+                detour=side_detour(facts['map'],current,planned['point'],site,obstructions,len(receipt['blocked_detours']))
+                receipt['blocked_detours'].append({'observed_position':current,'blocked_advance':obstructions[-1],**detour})
+                points=[detour['point'],planned['point']];blocked=0
         raise RuntimeError('takeoff exit exhausted its local walking budget')
     except BaseException as error:receipt['failure']=f'{type(error).__name__}: {error}';raise
     finally:

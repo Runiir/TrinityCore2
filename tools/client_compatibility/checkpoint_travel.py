@@ -52,6 +52,8 @@ def main():
         'idle_healing_recovery.json','idle_healing_recovery.png','idle_death_setup.json','idle_death_setup.png',
         'idle_health_setup.json','idle_health_setup.png',
         'indoor_and_combat_repairs_cleanup.json',
+        'standing_contact_login.png','standing_contact_character.png','standing_contact_password_login.png',
+        'standing_contact_authenticated.png','standing_contact_character_ready.png','standing_contact_world_ready.png',
         'tooltip_hover_diagnostic.png','tooltip_hover_diagnostic.json','outland_repairs_cleanup.json','water_repairs_cleanup.json',
         'creature_movement_login.png','creature_movement_character.png','creature_movement_world.png',
         'creature_position_login.png','creature_position_character.png','creature_position_world.png',

@@ -319,7 +319,7 @@ instead of discarding them after one short probe.
 ## Validation and experiment history
 
 The authentication, world, observation, terrain, collection and combat suite
-passes 151 tests. A first broad slope-filter attempt failed six tests by rejecting
+passes 152 tests. A first broad slope-filter attempt failed six tests by rejecting
 previously working bank/water routes and one old side-slope expectation. It was
 reverted in favor of checking each actual movement segment. One later test
 exposed an overly narrow surface-projection radius at Arklon's known corner;
@@ -488,6 +488,14 @@ character. Transport objects remain unsupported. The field grants no movement:
 native position/flags are unchanged and the informational GUID is omitted from
 the legacy packet. The exact failing packet passes a regression; unknown objects
 and transport contacts still reject. Only the modern bridge needs a restart.
+Episode 84 cleared combat, accepted static-object contact without a disconnect,
+and stopped after two small advances hit room furniture absent from static
+MMAPs. Indoor exits now retain those observed blocked advances and may plan
+at most four short sideways detours (three to eight yards) on continuous public
+floor, with body-height rays and both site-boundary checks. The returning leg
+must avoid the recorded obstruction by at least 1.5 yards. Actual blocked motion,
+health, combat, falling and the total exit budget remain stop conditions. Obstacle
+size is unknown; this does not claim an exact geometry model for spawned objects.
 Successful outcomes do not
 erase these failures. One manual Tab/Attack protocol probe occurred outside
 the closed model trials and is retained as diagnostic evidence.
