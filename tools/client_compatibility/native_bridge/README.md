@@ -44,8 +44,9 @@ The earlier failed receipts are retained alongside the passing runs.
 
 Party member snapshots, compact raid-frame profiles, assistant permissions and
 role polls now translate both ways. Native partial member updates accumulate into
-bounded, complete modern snapshots without invented health values. In-range other
-player object creation and movement still need implementation and qualification.
+bounded, complete modern snapshots without invented health values. Owned peer
+creation, normal walking and follow now have live qualification. Public transport
+and vehicle movement remain open.
 
 The native five ground markers use the existing worldserver spell handlers.
 Their destinations and native dynamic-object positions feed the modern eight-slot

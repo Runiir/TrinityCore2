@@ -565,3 +565,39 @@ withdrawal is a separately attributed code-controlled ordinary-input episode.
 UI07's remote-verified archive/cache copies (336,643,587 bytes each) and 156 raw
 PNG frames (341,920,281 bytes) were removed locally; about 1.3 MiB of metadata
 remains. UI08 uses checkpoint `442_interactions_20261002_09.tar.gz.dvc`.
+
+## Merchant services
+
+UI09 stages existing Thurman Mullby (entry 1285). The initial facing offset put the
+camera behind a wall. The revised non-bank fixture approaches the NPC from its
+facing direction. A restoration attempt also exposed SQL FLOAT text rounding;
+temporary rows now retain canonical stored values and all rows are checked before
+any deletion. Failed staging and blocked attempts remain in the evidence.
+
+`merchant_open_02` selects the visible goods option, but the bridge drops the
+native `SMSG_VENDOR_INVENTORY`. The new serializer preserves native catalog IDs,
+prices, quantities and extended-cost/condition fields in the modern item-instance
+layout. Six packet tests, all 417 regression tests and 52 selected sanitizer tests
+pass. `merchant_open_03` passes three Laya choices for interaction, gossip and
+closure. Its nine displayed item IDs exactly match the native vendor fixture.
+Catalog screenshots were visually checked on HDMI-1. Commerce variants remain
+separate acceptance cases.
+
+`merchant_sale_01` selects the correct backpack right-click. The bridge logs an
+unmapped `CMSG_SELL_ITEM`; native money and item ownership remain unchanged. The
+complete native inventory/money baseline and original position are restored.
+Sell and buyback requests now preserve native vendor/item identity and translate
+the twelve buyback slots. The adapter also translates sell errors and carries
+private money, buyback-price and timestamp changes. Both pinned cores use the same
+login-relative timestamp units, as shown in the pinned
+[buyback implementation](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Entities/Player/Player.cpp#L11256).
+Observer version 9 reads only the selected merchant tab, keeping its pixel payload
+bounded. It does not mutate stock widgets or submit gameplay APIs.
+
+Nine new transaction tests pass. The first compile caught an integer deduction
+mismatch, corrected with an explicit 64-bit type. The first sanitizer invocation
+named a nonexistent test file and ran no tests; the corrected selection passes 61.
+The full suite initially reported 425 passes and one failure because its independent
+create-field oracle lacked the new buyback arrays. After updating that oracle, all
+426 tests pass. These earlier failures are retained, and the native worldserver has
+not been rebuilt or restarted.

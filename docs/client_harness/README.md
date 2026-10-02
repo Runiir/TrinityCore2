@@ -42,6 +42,10 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
+The merchant catalog displays all nine native fixture items. The merchant transaction
+adapter passes 426 regression tests and 61 selected ASan/UBSan tests. This counts
+protocol checks; sale and buyback gameplay qualification is tracked separately in
+the interaction report.
 
 ## Endpoints and restart
 
