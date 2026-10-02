@@ -78,6 +78,7 @@ local function snapshot(viewMode,viewPage)
             if x and y then
                 local scale=f:GetEffectiveScale();local name=f:GetName() or ''
                 data.controls[#data.controls+1]={name=trim(name,72),text=caption(f),kind=kind,
+                    context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
             end
@@ -130,6 +131,7 @@ local function snapshot(viewMode,viewPage)
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
+    data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
     data.input_aliases={}
     for _,name in ipairs({'LEAVEPARTY','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
         local aliases={}

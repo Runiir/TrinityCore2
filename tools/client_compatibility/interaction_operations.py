@@ -57,7 +57,7 @@ def click_case(trial,case_id,goal,target,oracle,additional=None):
         key='button_'+str(i)
         if c is selected:target_key=key
         actions[key]={'kind':'click','value':point(c),
-            'description':f"Click visible {c['kind']} {c['text'] or c['name']}."}
+            'description':f"Click visible {c['kind']} {c['text'] or c['name']}."+(' Row: '+c['context']+'.' if c.get('context') else '')}
     actions['escape']={'kind':'key','value':'Escape','description':'Press Escape to close the current dialog.'}
     if len(actions)<3:actions['spellbook']={'kind':'key','value':'p','description':'Press P to toggle the spellbook.'}
     if additional:actions.update(additional)
