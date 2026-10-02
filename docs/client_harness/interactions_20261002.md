@@ -622,3 +622,31 @@ has its own code-controlled receipt and is excluded from model qualification.
 UI08's 109 raw PNG frames (166,380,164 bytes) and verified archive/cache copies
 (166,247,857 bytes each) have been removed locally. UI09 is closed as checkpoint
 `442_interactions_20261002_10.tar.gz.dvc` before its raw frames are pruned.
+
+UI09's remote-verified archive is 274,426,128 bytes, SHA-256
+`da618f4eb7a1f10d7e50638d8bbde25fc72ac750a03be5627b4d1cb4dd11fb00`.
+Its 176 raw PNG frames (276,316,910 bytes) and local archive/cache copies were
+removed after verification; 1.5 MiB of receipts remain. Six older immutable journal
+rotations (50,332,328 bytes) were separately checkpointed, verified and removed.
+Their 5,559,199-byte archive/cache copies were also evicted. Active journals, the
+two newest rotations per journal and useful build caches were preserved.
+
+### Purchase trials
+
+UI10 (`client_interactions_20261003_ui10`) uses the same native process and separate
+databases. `merchant_purchase_01` selects the correct water bundle right-click,
+but the bridge drops `CMSG_BUY_ITEM`; inventory/money and position are restored.
+The initial adapter passes seven purchase tests, 433 regression tests and 68
+selected sanitizer tests. Its first bag fixture used the wrong object-kind byte
+offset; that fixture failure is retained and corrected.
+
+`merchant_purchase_02` exposes a gap in those generated tests: the destination slot
+was serialized as a byte, while the pinned `BuyItem` header and captured 60895
+request use `uint32`. The adapter closes the test connection on trailing bytes
+before sending a native purchase. Native inventory/money remain exactly at the
+baseline. The original position and held NPC teleports are restored through a
+separate native-console cleanup, including offline position restoration. The
+parser now matches the 32-bit slot and signed quantity and has a regression using
+the actual closed request. The generic NPC cleanup restores verified positions
+even if UI observation disconnects. These failures remain separate from later
+gameplay qualification.
