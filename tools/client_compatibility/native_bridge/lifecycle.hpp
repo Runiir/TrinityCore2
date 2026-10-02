@@ -11,9 +11,11 @@ struct LoginBarrier
     std::deque<Packet> deferred;
     std::size_t bytes = 0;
     std::vector<Packet> quest_reads;
+    bool mail_read = false;
     void begin();
     std::vector<Packet> accept(Packet packet);
     void defer_quest_read(Packet packet);
+    void defer_mail_read(Packet packet);
     std::vector<Packet> release_quest_reads();
 };
 void finish_logout(State &state);

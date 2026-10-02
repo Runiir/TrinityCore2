@@ -12,6 +12,7 @@
 #include "repairs.hpp"
 #include "trainers.hpp"
 #include "quests.hpp"
+#include "mail.hpp"
 #include <iostream>
 #include <memory>
 
@@ -60,9 +61,10 @@ int main(int argc, char **argv)
                         auto fn=str(get(a,"fn"));Array packets;
                         if(fn=="begin")barrier.begin();
                         else if(fn=="read")barrier.defer_quest_read({str(get(a,"name")),unhex(str(get(a,"body")))});
+                        else if(fn=="mail")barrier.defer_mail_read({str(get(a,"name")),unhex(str(get(a,"body")))});
                         else if(fn=="release")for(auto const &p:barrier.release_quest_reads())packets.push_back(Array{p.first,hex(p.second)});
                         else throw std::runtime_error("unknown login quest read action");
-                        output.push_back(Object{{"queued",barrier.quest_reads.size()},{"packets",packets}});
+                        output.push_back(Object{{"queued",barrier.quest_reads.size()+barrier.mail_read},{"packets",packets}});
                     }
                     result=output;
                 }
@@ -317,6 +319,10 @@ int main(int argc, char **argv)
                                 reply=quest_request(protocol,state,name,body);
                             else if(fn=="quest_response")
                                 reply=quest_response(protocol,state,name,body);
+                            else if(fn=="mail_request")
+                                reply=mail_request(protocol,state,name,body);
+                            else if(fn=="mail_response")
+                                reply=mail_response(protocol,state,name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

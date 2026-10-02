@@ -4,6 +4,7 @@
 #include "merchants.hpp"
 #include "item_notifications.hpp"
 #include "trainers.hpp"
+#include "mail.hpp"
 #include "quests.hpp"
 #include <ctime>
 
@@ -216,6 +217,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {send(*reply);co_return;}
     if (trainer_completion(name,body))co_return;
     if ((reply = quest_response(protocol,state,name,body)))
+    {send(*reply);co_return;}
+    if ((reply = mail_response(protocol,state,name,body)))
     {send(*reply);co_return;}
     if ((reply = Protocol::gossip_response(state, name, body)))
     {

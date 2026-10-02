@@ -4,7 +4,7 @@ namespace bridge
 {
 void LoginBarrier::begin()
 {
-    if(pending || !deferred.empty() || !quest_reads.empty())throw std::runtime_error("repeated native login barrier");
+    if(pending || !deferred.empty() || !quest_reads.empty() || mail_read)throw std::runtime_error("repeated native login barrier");
     pending = true;
     bytes = 0;
 }
@@ -45,7 +45,15 @@ void LoginBarrier::defer_quest_read(Packet packet)
 }
 std::vector<Packet> LoginBarrier::release_quest_reads()
 {
-    std::vector<Packet> ready;ready.swap(quest_reads);return ready;
+    std::vector<Packet> ready;ready.swap(quest_reads);
+    if(mail_read){ready.push_back({"MSG_QUERY_NEXT_MAIL_TIME",{}});mail_read=false;}
+    return ready;
+}
+void LoginBarrier::defer_mail_read(Packet packet)
+{
+    if(packet.first!="MSG_QUERY_NEXT_MAIL_TIME" || !packet.second.empty())
+        throw std::runtime_error("only the empty mail-time read may wait for player creation");
+    mail_read=true;
 }
 void finish_logout(State &state)
 {
