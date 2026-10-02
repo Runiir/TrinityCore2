@@ -14,6 +14,7 @@ from . import joins
 BUILD = lab.ROOT / 'build/native_bridge'
 BINARY = BUILD / 'client442_bridge'
 RECEIPT = BUILD / 'build_receipt.json'
+SANITIZERS = False
 
 
 def source_digest():
@@ -32,10 +33,11 @@ def source_digest():
 def build():
     """Build only the packet bridge, never Trinity's worldserver."""
     subprocess.run(['cmake', '-S', str(lab.REPO / 'tools/client_compatibility/native_bridge'),
-        '-B', str(BUILD), '-DCMAKE_BUILD_TYPE=Release'], check=True)
+        '-B', str(BUILD), '-DCMAKE_BUILD_TYPE=' + ('Debug' if SANITIZERS else 'Release'),
+        '-DCMAKE_CXX_FLAGS=' + ('-fsanitize=address,undefined -fno-omit-frame-pointer' if SANITIZERS else '')], check=True)
     subprocess.run(['cmake', '--build', str(BUILD), '-j', '4'], check=True)
     receipt = {'schema': 'client442_native_bridge_build_v1', 'engine': 'cpp',
-        'source_digest': source_digest(), 'binary_sha256': lab.sha256(BINARY),
+        'source_digest': source_digest(), 'binary_sha256': lab.sha256(BINARY), 'sanitizers': SANITIZERS,
         'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()}
     lab.private_write(RECEIPT, json.dumps(receipt, indent=2) + '\n')
     print(json.dumps(receipt, indent=2))
@@ -89,12 +91,19 @@ def start(engine='python', workers=4, maximum=64):
 
 
 def main():
+    global BUILD, BINARY, RECEIPT, SANITIZERS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["build", "start", "stop", "status"])
     parser.add_argument('--engine', choices=['cpp', 'python'], default='python')
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--maximum-connections', type=int, default=64)
+    parser.add_argument('--sanitizers', action='store_true', help='use the independent ASan/UBSan debug target')
     args = parser.parse_args()
+    if args.sanitizers:
+        SANITIZERS = True
+        BUILD = lab.ROOT / 'build/native_bridge_asan'
+        BINARY = BUILD / 'client442_bridge'
+        RECEIPT = BUILD / 'build_receipt.json'
     action = args.action
     if action == "start":
         start(args.engine, args.workers, args.maximum_connections)
