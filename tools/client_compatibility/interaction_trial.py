@@ -90,6 +90,13 @@ class Trial:
             'model':MODEL if controller=='laya' else None,'revision':REVISION if controller=='laya' else None,'fine_tuned':False,
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
             'cases':[],'cleanup':[],'completed':False,'failure':None}
+        # Runtime code can differ from orchestration HEAD during a bridge repair.
+        # Process commands contain launcher tickets; retain only safe identity fields.
+        for kind in ['worldserver','modern_world','client']:
+            runtime=lab.owned_process(kind)
+            if not runtime:raise RuntimeError('owned '+kind+' is not running')
+            self.receipt.setdefault('runtime',{})[kind]={k:runtime[k] for k in
+                ['pid','start_ticks','engine','build'] if k in runtime}
         self.persist()
         compatibility=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/Client442Compatibility/GuildTabs.lua'
         self.receipt['compatibility_addon_sha256']=lab.sha256(compatibility) if compatibility.is_file() else None
