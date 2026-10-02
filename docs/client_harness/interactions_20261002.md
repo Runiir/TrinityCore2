@@ -113,9 +113,8 @@ pixi run dvc pull artifacts/client_harness/442_interactions_20261002_01.tar.gz.d
 ```
 
 Full client compatibility, indefinite bot operation and the remaining inventory
-contracts are still open. The next group repair is public nearby-player object and
-movement translation; the next interaction cases are binding assignment, macro
-execution, complete panel/recipe trials and group leave/raid conversion.
+contracts are still open. Public nearby-player object and movement translation,
+guild services, recipe mutations and the remaining interaction families are pending.
 
 ## Continued UI qualification
 
@@ -154,3 +153,53 @@ error. Live logout cancellation, completion and re-entry are still queued.
 reports 54 passing selected packet tests under ASan/UBSan. The initial rest-test
 collection failed because of a relative import; its corrected run passes all six
 rest cases. No earlier failed receipt is discarded or counted as a pass.
+
+The follow-up batch is synchronized in
+[`442_interactions_20261002_02.tar.gz.dvc`](../../artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc).
+Its verified raw frames and local archive were removed after the remote checkpoint.
+
+## Ready checks and inventory mutations
+
+The next batch, `client_interactions_20261002_ui02`, keeps the same native worldserver
+PID and start time. It runs both owned accounts on HDMI-1. The C++ bridge is the only
+server rebuilt and restarted for these repairs.
+
+`profession_trial_01` passes ten Laya actions opening the Alchemy, Tailoring, Cooking
+and First Aid recipe catalogs and the archaeology panel. This qualifies the displayed
+catalogs and panel opening; recipe selection, crafting and skill changes remain open.
+`raid_controls_01` passes assistant toggles, lock/unlock and show/hide, including peer
+permissions and restored visible health bars.
+
+`ready_checks_04` qualifies both Ready and Not Ready. The peer sends a real client
+response, native confirmations preserve its answer, and completion closes both
+dialogs. The duration must be signed 64-bit milliseconds. Captured Whitemane 60895
+responses put the optional party-index flag before the answer bit, differing from
+the later pinned handler. The bridge completes checks after native-confirmed answers
+or its 30-second timer because the legacy backend does not implement completion.
+The initial trials retain missing responses, a rejected diagnostic field, and the
+negative-answer decoder failure. They are separate from the passing retry.
+
+`group_conversions_02` converts raid to party and back using the actual portrait menu.
+Both clients and the native group agree. Conversion clears the native everyone-assistant
+flag; ordinary-input cleanup restores it. The runner now preserves its baseline
+group type and raid controls even when a trial fails.
+
+`inventory_moves_03` moves the hearthstone from backpack slot 1 to slot 16 and back.
+Native and visible item identity/count agree. The earlier drag failed because inventory
+requests were unmapped. New translations cover swap, split, auto-equip and auto-store
+requests, with native slot validation. Sparse inventory, item, container and equipment
+updates replace stale client state; newly created items and removals are tracked.
+
+`stack_split_01` uses Shift-click and the normal split dialog, places one Dwarf Keystone
+from a stack of five, then merges it back. Native item creation, stack counts and removal
+agree with the UI, and the original five-item stack is restored. Cross-bag, equipment
+and crafting trials still need their own live receipts.
+
+The latest full auth/world regression passes 298 tests. The selected ASan/UBSan
+packet regression passes 58. The first ready-check test fixtures omitted required
+empty metadata and failed two tests; their corrected runs pass. An initial invocation
+through the `pytest` executable failed collection because the repository was absent
+from its import path; run `pixi run ... python -m pytest` as shown in the runbook.
+
+These receipts remain bounded Laya input selections. They do not qualify all 891
+contracts, an entire interaction family, screenshot planning, or long-duration autonomy.

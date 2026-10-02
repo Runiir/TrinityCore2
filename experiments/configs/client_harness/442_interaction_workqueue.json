@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "ready-check response/completion repair and party/raid conversion qualification",
+  "current": "cross-bag transfers, stack splitting, equipment and crafting outcomes",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -29,7 +29,11 @@
     "followup/keybindings_trial_03: assign secondary FPS chord, save, reload, execute, restore",
     "followup/macro_trial_01: create, physical action-bar drag, reload, native spell cast, delete/restore",
     "ui02/profession_trial_01: four recipe catalogs and archaeology panel",
-    "ui02/raid_controls_01: assistant permissions, lock/unlock, show/hide, baseline restoration"
+    "ui02/raid_controls_01: assistant permissions, lock/unlock, show/hide, baseline restoration",
+    "ui02/ready_checks_04: Ready and Not Ready native confirmations and two-client completion",
+    "ui02/group_conversions_02: raid to party and back, native and peer agreement",
+    "ui02/inventory_moves_03: hearthstone move and restore, native identity/count and client agreement",
+    "ui02/stack_split_01: split one keystone, place, merge and restore original count"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending."
 }
