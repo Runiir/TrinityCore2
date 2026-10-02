@@ -63,12 +63,15 @@ def test_native_ed25519_context_signature(codec):
 def test_native_aes_counter_direction_and_integrity(codec):
     key=bytes(range(32))
     for counter in [0,1,254,2**32+7]:
-        for body in [b'',b'packet',bytes(range(256))*8]:
+        for body in [b'',b'packet',bytes(range(256))*8,bytes(range(256))*512]:
             oracle=crypto.PacketCrypt();oracle.key=key;oracle.send_counter=counter
             assert result(codec,op='encode',key=key.hex(),counter=counter,opcode=123,body=body.hex())==oracle.encode(123,body).hex()
             cipher=AES.new(key,AES.MODE_GCM,nonce=struct.pack('<QI',counter,0x544e4c43),mac_len=12)
             payload,tag=cipher.encrypt_and_digest(struct.pack('<I',123)+body)
             args=dict(op='decode',key=key.hex(),counter=counter,payload=payload.hex(),tag=tag.hex())
+            if len(body)>65532:
+                assert 'error' in codec(**args)  # Incoming client frames retain their smaller bound.
+                continue
             assert result(codec,**args)==[123,body.hex()]
             assert 'error' in codec(**{**args,'counter':counter+1})
             assert 'error' in codec(**{**args,'tag':(bytes([tag[0]^1])+tag[1:]).hex()})

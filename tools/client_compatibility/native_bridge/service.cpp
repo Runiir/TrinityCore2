@@ -81,8 +81,10 @@ void Session::send(std::string const &name, View body)
                                                                         {"bytes", payload.size()}});
                            self->service.events.packet("to_client", name, payload, self->owner().id);
                        }
-                       catch (...)
+                       catch (std::exception const &error)
                        {
+                           self->service.events.event("packet_send_rejected", {{"session", self->id},
+                               {"name", name}, {"error", std::string(error.what()).substr(0,512)}});
                            self->stop();
                        }
                    });

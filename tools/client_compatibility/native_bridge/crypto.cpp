@@ -157,7 +157,8 @@ Bytes PacketCrypt::encode(std::uint32_t opcode, View body)
 {
     if (!key.empty() && key.size() != 32)
         throw std::runtime_error("invalid encryption key size");
-    if (body.size() > 65532 || send_counter == UINT64_MAX)
+    // Modern server frames have a uint32 length. Dense object creates exceed 64 KiB.
+    if (body.size() > 1024 * 1024 - 4 || send_counter == UINT64_MAX)
         throw std::runtime_error("modern outbound frame bound");
     auto payload = Writer().put(opcode).raw(body).finish();
     Bytes tag(12);

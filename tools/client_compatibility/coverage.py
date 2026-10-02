@@ -1,6 +1,7 @@
 """Inventory compatibility work without mistaking observations for qualified passes."""
 import argparse
 import ast
+import re
 from collections import Counter
 import json
 from pathlib import Path
@@ -32,6 +33,9 @@ def opcode_inventory():
         tree=ast.parse(path.read_text())
         referenced.update(n.value for n in ast.walk(tree) if isinstance(n,ast.Constant) and
             isinstance(n.value,str) and n.value.startswith(('CMSG_','SMSG_','MSG_')))
+    for path in (lab.REPO/'tools/client_compatibility/native_bridge').glob('*.cpp'):
+        if path.name=='codec_main.cpp':continue
+        referenced.update(re.findall(r'"((?:CMSG|SMSG|MSG)_[A-Z0-9_]+)"',path.read_text()))
     modern=table['modern']
     return {'source_revision':table['source_revision'],'source_hashes':table['source_hashes'],
         'modern_names':len(modern),'legacy_names':len(table['legacy']),
@@ -48,7 +52,8 @@ def event_inventory(path):
     for event in entries(path):
         if event.get('event')=='unmapped_client_packet':unmapped[event['name']]+=1
         if event.get('event')=='modern_packet':observed[event['name']]+=1
-        if event.get('event') in ['world_connection_error','cast_translation_rejected']:
+        if event.get('event') in ['world_connection_error','cast_translation_rejected','native_stream_closed',
+            'packet_send_rejected','native_send_rejected']:
             errors[event['event']]+=1
     return {'unmapped_client_names':dict(sorted(unmapped.items())),
         'observed_modern_names':dict(sorted(observed.items())),'translation_errors':dict(errors),

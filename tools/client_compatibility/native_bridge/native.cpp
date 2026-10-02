@@ -128,8 +128,10 @@ void Native::send(std::string const &name, View body)
                            self->events_.packet("to_native", name, payload, self->session_);
                        }
                    }
-                   catch (...)
+                   catch (std::exception const &error)
                    {
+                       self->events_.event("native_send_rejected", {{"session", self->session_},
+                           {"name", name}, {"error", std::string(error.what()).substr(0,512)}});
                        self->channel_->close();
                    }
                });
