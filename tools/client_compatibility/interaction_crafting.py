@@ -82,7 +82,7 @@ def suite(trial):
             lambda b,a,s:{'status':'panel_open_pass' if 'SpellBookFrame' in a['panels'] else 'controller_failure'},diagnostic_action='skills'),'panel_open_pass')
         require(click_case(trial,'professions.alchemy','Open Alchemy recipes.',lambda c:c['text']=='Alchemy',
             lambda b,a,s:{'status':'recipe_list_pass' if a.get('trade_skill',[None])[0]=='Alchemy' and a.get('recipe_count',0)>0 else ('controller_failure' if not s else 'client_or_protocol_failure')}),'recipe_list_pass')
-        require(edit_case(trial,'professions.recipe_search','Search the recipe list for '+NAME+'.',lambda c:c['name']=='TradeSkillFrameEditBox',NAME),'ui_edit_pass')
+        require(edit_case(trial,'professions.recipe_search','Type '+NAME+' into the visible recipe search text field.',lambda c:c['name']=='TradeSkillFrameEditBox',NAME),'ui_edit_pass')
         require(click_case(trial,'professions.recipe_select','Select the '+NAME+' recipe.',lambda c:c['name'].startswith('TradeSkillSkill') and c['text'].strip()==NAME,
             lambda b,a,s:{'status':'recipe_select_pass' if a.get('selected_recipe',{}).get('name')==NAME and ':80725|' in a['selected_recipe'].get('recipe_link','') and 'item:58487:' in a['selected_recipe'].get('link','') else ('controller_failure' if not s else 'client_or_protocol_failure')}),'recipe_select_pass')
         require(craft(trial,oracle,session,1,'craft_one'),'craft_result_pass')
