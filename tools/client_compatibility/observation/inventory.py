@@ -50,6 +50,9 @@ class Inventory:
             'damage':[floating('UNIT_FIELD_MINDAMAGE'),floating('UNIT_FIELD_MAXDAMAGE')],
             'health':fields.get(INDEX['UNIT_FIELD_MAXHEALTH'],0)}
 
+    def money(self):
+        return self.pair(self.guid,'PLAYER_FIELD_COINAGE')
+
     def count(self,item_id):
         seen={}
         for bag in range(5):

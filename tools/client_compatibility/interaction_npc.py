@@ -11,7 +11,7 @@ from .npc_fixture import NpcFixture
 SERVICES={'merchant':{'entry':1285,'flag':128,'panel':'MerchantFrame','caption':'goods'}}
 
 
-def suite(t,service,point,stage_only):
+def suite(t,service,point,stage_only,sell_buyback=False):
     spec=SERVICES[service];actors.session_entry(t.fixture);t.clean_panels()
     fixture=NpcFixture(t.out,t.fixture,spec['entry'],spec['flag'])
     try:
@@ -42,6 +42,9 @@ def suite(t,service,point,stage_only):
             matches=expected==visible and state.get('merchant',{}).get('count')==len(expected)
             t.receipt['merchant_catalog_oracle']={'native_vendor_item_ids':expected,'visible_item_ids':visible,'matches':matches};t.persist()
             if not matches:raise RuntimeError('visible merchant catalog disagrees with the existing native vendor fixture')
+        if sell_buyback:
+            from .interaction_merchant_items import roundtrip
+            roundtrip(t)
         require(t.step(service+'.close','Close the '+service+' window.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the '+service+' window.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
@@ -49,6 +52,8 @@ def suite(t,service,point,stage_only):
             lambda b,a,s:{'status':'service_close_pass' if s=='close' and spec['panel'] not in a['panels'] else
                 ('controller_failure' if s!='close' else 'client_or_protocol_failure')},diagnostic_action='close'),'service_close_pass')
     finally:
+        if getattr(t,'merchant_restore_required',False):
+            raise RuntimeError('merchant inventory cleanup remains pending; preserving the open merchant and NPC restore rows')
         t.clean_panels();fixture.restore();state,frame=t.observe('restored')
         t.receipt['restoration']={'frame':frame,'world_position':state['world_position']};t.persist()
 
@@ -56,9 +61,10 @@ def suite(t,service,point,stage_only):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--service',choices=SERVICES,required=True);p.add_argument('--point',type=int,nargs=2)
-    p.add_argument('--stage-only',action='store_true');a=p.parse_args()
+    p.add_argument('--stage-only',action='store_true');p.add_argument('--sell-buyback',action='store_true');a=p.parse_args()
+    if a.sell_buyback and (a.stage_only or a.service!='merchant'):p.error('sell/buyback requires the merchant service')
     if not a.stage_only and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):p.error('requires a bounded observed NPC point')
     t=Trial(a.output,controller='code' if a.stage_only else 'laya')
-    try:suite(t,a.service,a.point,a.stage_only);t.receipt['completed']=True
+    try:suite(t,a.service,a.point,a.stage_only,a.sell_buyback);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
