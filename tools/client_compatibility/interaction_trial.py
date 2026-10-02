@@ -103,6 +103,8 @@ class Trial:
         elif action['kind']=='chat':
             self.io.key('Return');self.io.type(action['value']);self.io.key('Return')
         elif action['kind']=='click':self.io.click(*action['value'])
+        elif action['kind']=='edit':
+            self.io.click(*action['point']);self.io.key('ctrl+a');self.io.type(action['value'])
         else:raise ValueError('unsupported physical action')
         time.sleep(.8)
 
@@ -141,12 +143,16 @@ def panel_suite(out,catalog):
             'TOGGLEWORLDMAP','TOGGLECOLLECTIONS','TOGGLEENCOUNTERJOURNAL','TOGGLEACHIEVEMENT','TOGGLESTATISTICS',
             'TOGGLESOCIAL','TOGGLEGUILDTAB','TOGGLEGROUPFINDER','TOGGLEGAMEMENU','TOGGLEBAG','TOGGLEBACKPACK','OPENALLBAGS')):
             registry[name]={'kind':'key','value':binding_key(keys[0]),'description':f"Press {keys[0]}: {row.get('caption',name)}."}
+    registry['TOGGLECHARACTER1']['description']='Press K: open or close the professions and skills spellbook.'
     registry['macro_command']={'kind':'chat','value':'/macro','description':'Type /macro in chat to open the macro editor.'}
-    registry['calendar_command']={'kind':'chat','value':'/calendar','description':'Type /calendar in chat to open the calendar.'}
+    initial,_=trial.observe('initial_registry')
+    calendar=next((c for c in initial['controls'] if c['name']=='GameTimeFrame'),None)
+    if calendar:registry['calendar_button']={'kind':'click','value':[round(calendar['x']/65535*1280),round(calendar['y']/65535*720)],
+        'description':'Click the minimap calendar button.'}
     def visible(state,names):return bool(state.get('bags')) if names==['bags'] else any(n in (state.get('panels') or []) for n in names)
     try:
         for case_id,goal,binding,names in PANELS:
-            trial.clean_panels();target=binding or ('macro_command' if case_id=='macros.open' else 'calendar_command')
+            trial.clean_panels();target=binding or ('macro_command' if case_id=='macros.open' else 'calendar_button')
             if target not in registry:
                 trial.receipt['cases'].append({'id':case_id,'status':'fixture_unavailable','error':'no owned binding'});continue
             distractors=trial.rng.sample([n for n in registry if n!=target],4)
@@ -156,7 +162,7 @@ def panel_suite(out,catalog):
                 'oracle':{'panel_visible':visible(a,names),'expected_panels':names,'qualified_scope':'panel visibility only',
                     'data':{k:a.get(k) for k in ['reputations','currency_types','equipment','professions']}}})
             if result['status']=='panel_open_pass':
-                close_actions={'escape':{'kind':'key','value':'Escape','description':'Press Escape to close the open panel.'},
+                close_actions={'escape':{'kind':'key','value':'Escape','description':'Press Escape to close open windows and return to the world.'},
                     **{n:registry[n] for n in trial.rng.sample([n for n in registry if n!=target and n!='TOGGLEGAMEMENU'],4)}}
                 trial.step(case_id+'.close', 'Close every open panel and bag. Leave the world view visible with no new windows.',close_actions,
                     lambda b,a,s:{'status':'panel_close_pass' if not a.get('panels') and not a.get('bags') else ('controller_failure' if s!='escape' else 'client_or_protocol_failure'),

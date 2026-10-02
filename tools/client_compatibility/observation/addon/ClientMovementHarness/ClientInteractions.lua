@@ -126,6 +126,11 @@ local function snapshot()
             panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
+    data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
+    local actionButton=_G.ActionButton12
+    local slot=actionButton and actionButton.action or 12
+    local kind,id=call(GetActionInfo,slot)
+    data.action_probe={slot=slot,kind=kind,id=id,macro=kind=='macro' and call(GetMacroInfo,id) or nil}
     return data
 end
 local function append(bytes,value,n)
