@@ -8,7 +8,7 @@ struct PublicData
 {
     std::unordered_map<unsigned, Array> item_displays, npc_broadcasts;
     std::unordered_map<unsigned, Bytes> broadcasts;
-    Array taxi_paths, hotfixes;
+    Array taxi_paths, hotfixes, factions;
     PublicData(std::filesystem::path const &root, std::filesystem::path const &repo);
     Bytes available() const;
     Bytes hotfix_request(View body) const;

@@ -138,6 +138,10 @@ Task<> Session::handle(std::string const &name, Bytes body)
         co_return;
     }
     auto &own = owner();
+    if (name == "CMSG_QUERY_PLAYER_NAMES")
+    {
+        co_await player_names(std::move(body));co_return;
+    }
     std::lock_guard lock(own.state_mutex);
     auto world = own.world.lock();
     bool in_world = world.get() == this && own.state.created;

@@ -35,6 +35,8 @@ int main(int argc, char **argv)
                                               integer(get(request, "visibility")));
                     result = hex(w.finish());
                 }
+                else if (op == "player_names")
+                    result = hex(Protocol::player_names_response(get(request,"requested").as_array(),get(request,"rows").as_array()));
                 else if (op == "movement")
                 {
                     auto state = movement_parse(data("body"), integer(get(request, "guid")));
@@ -126,6 +128,16 @@ int main(int argc, char **argv)
                                 reply = Protocol::initialize_response(state, name, body);
                             else if (fn == "currency")
                                 reply = Protocol::currency_response(name, body);
+                            else if (fn == "reputation")
+                                reply = Protocol::reputation_response(name, body, get(request, "factions").as_array());
+                            else if (fn == "social_request")
+                                reply = Protocol::social_request(name, body);
+                            else if (fn == "social_response")
+                                reply = Protocol::social_response(name, body);
+                            else if (fn == "party_request")
+                                reply = Protocol::party_request(name, body);
+                            else if (fn == "party_response")
+                                reply = Protocol::party_response(state, name, body, get(request, "identities").as_array());
                             else if (fn == "loot_response")
                                 reply = Protocol::loot_response(state, name, body);
                             else if (fn == "loot_request")

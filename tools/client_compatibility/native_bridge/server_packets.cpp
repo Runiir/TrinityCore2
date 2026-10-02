@@ -19,6 +19,28 @@ Task<> Session::gameplay(std::string name, Bytes body)
         send(name, service.data.enumeration(data["characters"].as_array(), data["equipment"].as_array()));
         co_return;
     }
+    Array party_identities;
+    if (name == "SMSG_PARTY_UPDATE")
+    {
+        auto members = Protocol::party_members(body);
+        {
+            std::lock_guard lock(state_mutex);
+            if (state.character.is_null()) co_return;
+            members.push_back(state.guid());
+        }
+        std::string ids;
+        for (auto const &guid : members)
+        {
+            if (!ids.empty()) ids += ',';
+            ids += std::to_string(integer(guid));
+        }
+        auto root = service.root;
+        party_identities = co_await background(service.database_workers, [root, ids]
+        {
+            Database db(root);
+            return db.query("SELECT guid,class,race FROM client442_characters.characters WHERE guid IN (" + ids + ")");
+        });
+    }
     std::lock_guard lock(state_mutex);
     auto instance = world.lock();
     if (!instance || state.character.is_null())
@@ -26,6 +48,18 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if ((reply = Protocol::party_response(state, name, body, party_identities)))
+    {
+        this->send(*reply);co_return;
+    }
+    if ((reply = Protocol::social_response(name, body)))
+    {
+        this->send(*reply);co_return;
+    }
+    if ((reply = Protocol::reputation_response(name, body, service.data.factions)))
+    {
+        send(*reply);co_return;
+    }
     if (name == "SMSG_ON_MONSTER_MOVE")
     {
         auto packets = Protocol::creature_movement(state, body);

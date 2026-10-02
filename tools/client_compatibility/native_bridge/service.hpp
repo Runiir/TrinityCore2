@@ -51,6 +51,7 @@ class Session : public std::enable_shared_from_this<Session>
     Task<> handle(std::string const &name, Bytes body);
     Task<> native_packets();
     Task<> gameplay(std::string name, Bytes body);
+    Task<> player_names(Bytes body);
     void gameplay_request(std::string const &name, View body, Session &owner,
                           std::shared_ptr<Session> const &world, bool in_world);
     void send(std::string const &name, View body = {});

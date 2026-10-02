@@ -36,6 +36,12 @@ Array dbc(std::filesystem::path const &path, unsigned wanted_fields)
 PublicData::PublicData(std::filesystem::path const &root, std::filesystem::path const &repo)
 {
     auto directory = root / "data/dbc/enUS";
+    for (auto const &row : dbc(directory / "Faction.dbc", 26))
+    {
+        auto const &v = row.as_array();
+        auto index = static_cast<std::int32_t>(integer(v[1]));
+        if (index >= 0) factions.push_back(Object{{"index", index}, {"id", v[0]}});
+    }
     for (auto const &row : dbc(directory / "TaxiPath.dbc", 4))
     {
         auto const &v = row.as_array();

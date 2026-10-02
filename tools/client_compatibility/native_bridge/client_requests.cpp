@@ -13,6 +13,22 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             throw std::runtime_error("gameplay request outside owned active world");
     };
     auto native_send = [&](Packet const &packet) { owner.native->send(packet.first, packet.second); };
+    if (name == "CMSG_SOCIAL_CONTRACT_REQUEST")
+    {
+        if (!body.empty()) throw std::runtime_error("invalid social contract request");
+        send("SMSG_SOCIAL_CONTRACT_REQUEST_RESPONSE", Bytes{0});
+        return;
+    }
+    if (auto request = Protocol::social_request(name, body))
+    {
+        if (!state.created || !active_world) throw std::runtime_error("social request without owned character");
+        native_send(*request);return;
+    }
+    if (auto request = Protocol::party_request(name, body))
+    {
+        if (!state.created || !active_world) throw std::runtime_error("party request without owned character");
+        native_send(*request);return;
+    }
     if (name == "CMSG_TIME_SYNC_RESPONSE")
     {
         if (body.size() != 8)

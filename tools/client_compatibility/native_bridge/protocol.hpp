@@ -19,6 +19,7 @@ struct State
     std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
     std::unordered_set<unsigned> creature_queries, npc_text_queries;
     Value loot, taxi_menu, gossip_menu, pending_near, pending_far;
+    Array party_guid{0,0};
     Array action_buttons;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
@@ -73,6 +74,13 @@ struct Protocol
     static Bytes aura_cancel(State const &owner, View body);
     static Reply initialize_response(State &owner, std::string const &name, View body);
     static Reply currency_response(std::string const &name, View body);
+    static Reply reputation_response(std::string const &name, View body, Array const &factions);
+    static Reply social_request(std::string const &name, View body);
+    static Reply social_response(std::string const &name, View body);
+    static Bytes player_names_response(Array const &requested, Array const &rows);
+    static Reply party_request(std::string const &name, View body);
+    static Reply party_response(State &owner, std::string const &name, View body, Array const &identities);
+    static Array party_members(View body);
     static Reply loot_response(State &owner, std::string const &name, View body);
     static std::vector<Packet> loot_request(State const &owner, std::string const &name, View body);
     static Reply transfer_response(State &owner, std::string const &name, View body);
