@@ -272,6 +272,12 @@ int main(int argc, char **argv)
                                 reply = Protocol::party_request(name, body);
                             else if(fn=="inventory_request")
                                 reply=Protocol::inventory_request(state,name,body);
+                            else if(fn=="bank_request")
+                                reply=Protocol::bank_request(state,name,body);
+                            else if(fn=="bank_response")
+                                reply=protocol.bank_response(state,name,body);
+                            else if(fn=="bank_close")
+                                Protocol::bank_close(state,name,body);
                             else if(fn=="inspect_request")
                                 reply=Protocol::inspect_request(state,name,body);
                             else if(fn=="inspect_response")

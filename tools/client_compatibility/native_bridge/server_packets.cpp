@@ -202,6 +202,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
             send(*reply);
         co_return;
     }
+    if ((reply = protocol.bank_response(state, name, body)))
+    {send(*reply);co_return;}
     if ((reply = Protocol::gossip_response(state, name, body)))
     {
         send(*reply);

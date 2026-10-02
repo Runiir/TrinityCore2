@@ -116,7 +116,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=6,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=7,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -187,6 +187,14 @@ local function snapshot(viewMode,viewPage)
         end
     end end
     data.reputations=call(GetNumFactions) or call(C_Reputation and C_Reputation.GetNumFactions)
+    data.bank={visible=BankFrame and BankFrame:IsVisible() or false,items={}}
+    if data.bank.visible then
+        data.bank.slots=call(C_Container and C_Container.GetContainerNumSlots,-1) or 0
+        for slot=1,math.min(data.bank.slots,28) do
+            local info=call(C_Container and C_Container.GetContainerItemInfo,-1,slot)
+            if info then data.bank.items[#data.bank.items+1]={bag=-1,slot=slot,id=info.itemID,count=info.stackCount,locked=info.isLocked} end
+        end
+    end
     data.currency_types=call(GetCurrencyListSize) or call(C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize)
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}

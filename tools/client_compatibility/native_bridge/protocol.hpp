@@ -34,6 +34,7 @@ struct State
     bool created = false;
     std::uint64_t last_logout_guid = 0; // Final character-cache writes, never gameplay authority.
     std::uint64_t inspect_target = 0;
+    std::uint64_t bank_target = 0; // Granted only by native SMSG_SHOW_BANK.
     Array latest_movement;
     std::function<void(std::string const &, View)> native_send;
     std::uint64_t guid() const
@@ -79,6 +80,9 @@ struct Protocol
     Bytes guild_block(Value const &snapshot,Value const &character,Value const &changed,unsigned visibility=1) const;
     static Reply inventory_request(State const &owner,std::string const &name,View body);
     Reply inventory_response(std::string const &name,View body) const;
+    static Reply bank_request(State const &owner,std::string const &name,View body);
+    Reply bank_response(State &owner,std::string const &name,View body) const;
+    static bool bank_close(State &owner,std::string const &name,View body);
     Bytes inventory_block(Value const &snapshot,Value const &changed,unsigned visibility=1) const;
     Bytes item_update(Value const &snapshot,Value const &changed) const;
     Reply object_updates(State &owner, View body,Array const &players={}) const;

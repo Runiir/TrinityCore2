@@ -41,6 +41,17 @@ std::pair<std::uint8_t,std::uint8_t> Protocol::inventory_position(std::uint8_t b
 Reply Protocol::inventory_request(State const &owner,std::string const &name,View body)
 {
     Reader r(body);Writer w;
+    if(name=="CMSG_AUTOBANK_ITEM" || name=="CMSG_AUTOSTORE_BANK_ITEM")
+    {
+        inv(r);
+        if(name=="CMSG_AUTOBANK_ITEM" && r.take<std::int8_t>()!=0)
+            throw std::runtime_error("only native character banking is supported");
+        auto pack=r.take<std::uint8_t>(),index=r.take<std::uint8_t>();r.end();
+        auto [b,s]=position(pack,index);
+        if(!owner.bank_target || !owner.visible_units.contains(owner.bank_target))
+            throw std::runtime_error("bank move without a native visible banker grant");
+        return Packet{name,w.pack("2B",{b,s}).finish()};
+    }
     if(name=="CMSG_SWAP_INV_ITEM")
     {
         inv(r);auto dst=slot(r.take<std::uint8_t>()),src=slot(r.take<std::uint8_t>());r.end();
