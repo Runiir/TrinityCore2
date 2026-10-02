@@ -97,3 +97,47 @@ def test_player_names_present_and_missing(codec):
     assert r.guid()==(0,0);assert r.guid()==(0,0);assert r.guid()==(2,HIGH)
     assert r.unpack('QI5Bi')==(0,1,1,0,1,1,0,0);assert r.raw(10)==b'Harnesstwo'
     assert r.unpack('B')==(1,);assert r.guid()==(3,HIGH);assert [r.bits(1) for _ in range(2)]==[0,0]
+
+
+def test_account_cache_global_identity_and_all_17_times(codec):
+    request=Writer().guid().pack('i',4).finish()
+    assert call(codec,'account_request','CMSG_REQUEST_ACCOUNT_DATA',request)==['CMSG_REQUEST_ACCOUNT_DATA','04000000']
+    foreign=Writer().guid(2,HIGH).pack('i',5).finish()
+    assert 'error' in call(codec,'account_request','CMSG_REQUEST_ACCOUNT_DATA',foreign)
+    timestamp=1700000000;times=struct.pack('<IBIIII',timestamp,1,0x15,10,20,30)
+    reply=call(codec,'account_response','SMSG_ACCOUNT_DATA_TIMES',times)
+    r=Reader(bytes.fromhex(reply[1]));assert r.guid()==(1,HIGH);assert r.unpack('q')==(timestamp,)
+    assert r.unpack('17q')==(10,0,20,0,30,0,0,0,0,0,0,0,0,0,0,0,0);r.end()
+    import zlib
+    text=b'owned fixture';compressed=zlib.compress(text)
+    modern=Writer().pack('qI',timestamp,len(text)).guid().pack('iI',4,len(compressed)).raw(compressed).finish()
+    assert call(codec,'account_request','CMSG_UPDATE_ACCOUNT_DATA',modern)==['CMSG_UPDATE_ACCOUNT_DATA',(struct.pack('<III',4,timestamp,len(text))+compressed).hex()]
+    native=struct.pack('<QIII',1,4,timestamp,len(text))+compressed
+    reply=call(codec,'account_response','SMSG_UPDATE_ACCOUNT_DATA',native)
+    r=Reader(bytes.fromhex(reply[1]));assert r.unpack('qI')==(timestamp,len(text));assert r.guid()==(1,HIGH)
+    assert r.unpack('iI')==(4,len(compressed));assert zlib.decompress(r.raw(len(compressed)))==text;r.end()
+
+
+def test_reputation_mutations_and_visibility_use_index(codec):
+    for name,flag in [('CMSG_SET_FACTION_AT_WAR',1),('CMSG_SET_FACTION_NOT_AT_WAR',0)]:
+        assert call(codec,'reputation_request',name,struct.pack('<i',4))==['CMSG_SET_FACTION_ATWAR',struct.pack('<IB',4,flag).hex()]
+    assert call(codec,'reputation_request','CMSG_SET_WATCHED_FACTION',struct.pack('<i',-1))==['CMSG_SET_WATCHED_FACTION','ffffffff']
+    assert 'error' in call(codec,'reputation_request','CMSG_SET_FACTION_INACTIVE',struct.pack('<iB',256,128))
+    assert call(codec,'reputation','SMSG_SET_FACTION_VISIBLE',struct.pack('<I',4),factions=[{'index':4,'id':72}])==['SMSG_SET_FACTION_VISIBLE','04000000']
+
+
+def test_achievement_bulk_preserves_counter_date_and_owner(codec):
+    # A sparse native packed GUID/counter and one earned achievement.
+    native=Writer().bits(1,21)
+    for bit in [0,0,0,1,0,0,1,0,0,0,0]:native.bits(bit,1)
+    native.bits(0,2)
+    for bit in [0,0,0,1,0]:native.bits(bit,1)
+    native.bits(1,23).raw(bytes([1])).pack('II',0,123).raw(bytes([2,0])).pack('II',0,0x1a900000)
+    native.pack('II',456,0x1a800000)
+    response=call(codec,'achievement','SMSG_ALL_ACHIEVEMENT_DATA',native.finish())
+    assert response[0]=='SMSG_ALL_ACHIEVEMENT_DATA'
+    r=Reader(bytes.fromhex(response[1]));assert r.unpack('II')==(1,1)
+    assert r.unpack('II')==(456,0x1a800000);assert r.guid()==(1,HIGH);assert r.unpack('II')==(1,1)
+    assert r.unpack('IQ')==(123,(2<<40)|3);assert r.guid()==(1,HIGH)
+    assert r.unpack('5I')==(0,0,0x1a900000,0,0);assert r.bits(1)==0;r.end()
+    assert 'error' in call(codec,'achievement','SMSG_ALL_ACHIEVEMENT_DATA',native.finish()+b'x')
