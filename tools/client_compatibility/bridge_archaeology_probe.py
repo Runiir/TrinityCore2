@@ -59,6 +59,8 @@ def run(out,maximum_steps):
         raise RuntimeError('commit experiment code/configs before the native archaeology probe')
     bridge=lab.owned_process('modern_world')
     if not bridge or bridge.get('engine')!='cpp':raise RuntimeError('owned C++ bridge is required')
+    if lab.owned_process('cohort_'+lab.actor_name()):
+        raise RuntimeError('the actor already belongs to a running cohort task')
     if not 1<=maximum_steps<=120:raise ValueError('invalid archaeology probe step bound')
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     observer=Observer();recovery=Recovery();history=[];finds=[];latest=out/'latest.png'

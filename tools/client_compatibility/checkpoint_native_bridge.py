@@ -23,7 +23,7 @@ def checkpoint(name,since,cohort_directory):
     paths+=[lab.ROOT/'evidence/client_monitor.json',lab.ROOT/'actors/scout/evidence/client_monitor.json',
         lab.ROOT/'actor.json',lab.ROOT/'actors/scout/actor.json']
     for path in paths:
-        for receipt in [path/'episode.json',path/'cohort.json'] if path.is_dir() else []:
+        for receipt in [*path.rglob('episode.json'),path/'cohort.json'] if path.is_dir() else []:
             if receipt.exists() and not json.loads(receipt.read_text()).get('finished_at'):
                 raise RuntimeError('cannot archive an open run: '+str(receipt))
     paths+=sorted((lab.ROOT/'evidence').glob('native_bridge_*.xml'))
@@ -39,6 +39,9 @@ def checkpoint(name,since,cohort_directory):
     cohort=json.loads((cohort_directory/'cohort.json').read_text())
     if not cohort.get('finished_at') or not cohort['completed']:
         raise RuntimeError('the qualifying cohort must be closed and successful')
+    archaeology=json.loads((lab.ROOT/'evidence/cpp_archaeology_probe_04/episode.json').read_text())
+    flights=[json.loads(p.read_text()) for p in (lab.ROOT/'evidence/cpp_archaeology_probe_04').glob(
+        'code_recovery_flight_*/episode.json')]
     metadata={'schema':'client442_native_bridge_checkpoint_v1','since':since,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'native_worldserver_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
@@ -46,6 +49,9 @@ def checkpoint(name,since,cohort_directory):
         'credentials_and_authentication_bodies_excluded':True,'full_suite_passed':passed,
         'qualifying_cohort':str(cohort_directory.relative_to(lab.ROOT)),
         'two_actor_probe_completed':cohort['completed'],
+        'native_archaeology_probe_completed':archaeology['completed'],
+        'native_fragments_collected':sum(f['quantity'] for f in archaeology['finds']),
+        'green_recovery_flights_completed':sum(f['completed'] for f in flights),
         'limits':['These are bounded compatibility diagnostics, not learned autonomy or whole-game coverage.',
             'Console fixture transfers do not prove autonomous portal/taxi navigation.',
             'The historical Laya proof remains in its earlier checkpoint.']}
@@ -66,6 +72,8 @@ def checkpoint(name,since,cohort_directory):
             live.log_param('engine','cpp')
             live.log_metric('full_suite_passed',passed)
             live.log_metric('two_actor_probe_completed',int(cohort['completed']))
+            live.log_metric('native_fragments_collected',metadata['native_fragments_collected'])
+            live.log_metric('green_recovery_flights_completed',metadata['green_recovery_flights_completed'])
             live.log_metric('qualified_whole_game_cases',0)
             live.next_step()
         with tarfile.open(target,'w:gz',compresslevel=6) as archive:

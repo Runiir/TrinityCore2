@@ -1,5 +1,6 @@
 """Bounded code flight for native-bridge regression, without model endpoints."""
 import json
+import subprocess
 import time
 from PIL import Image
 from . import archaeology_inputs,lab_runtime as lab,owned_input,travel_inputs,travel_policy
@@ -17,6 +18,7 @@ def run(plan,out,maximum_steps=30):
     latest=out/'latest.png';steps=[];frames=[];stalled=0;last_metric=None
     receipt={'schema':'client442_code_flight_regression_v1','started_at':time.time(),
         'controller':'deterministic_code_regression','model_called':False,'plan':plan,
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'actor':{'name':lab.actor_name(),'guid':observer.guid,'session':observer.session},
         'monitor':owned_input.focus(),'bridge':lab.owned_process('modern_world'),
         'steps':steps,'frames':frames,'completed':False,'failure':None,
