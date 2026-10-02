@@ -80,3 +80,38 @@ def test_command_error_order_is_result_then_command(codec):
     name,encoded=call(codec,'guild_response','SMSG_GUILD_COMMAND_RESULT',body)
     r=Reader(bytes.fromhex(encoded));assert r.unpack('2i')==(6,1)
     size=r.bits(8);r.align();assert r.raw(size)==b'Harnesstwo';r.end()
+
+
+def test_guild_rank_query_and_rank_records_keep_permissions_and_tab_order(codec):
+    name,encoded=call(codec,'guild_request','CMSG_GUILD_GET_RANKS',Writer().guid(1,HIGH).finish())
+    assert name=='CMSG_GUILD_QUERY_RANKS'
+    r=Reader(bytes.fromhex(encoded));octets=[0]*8
+    for i in [2,3,0,6,4,7,5,1]:octets[i]=r.bits(1)
+    r.align()
+    for i in [3,4,5,7,1,0,6,2]:
+        if octets[i]:octets[i]=r.unpack('B')[0]^1
+    r.end();assert int.from_bytes(bytes(octets),'little')==(0x1ff<<52)|1
+    w=Writer().bits(2,18).bits(12,7).bits(7,7).flush()
+    for rank,title in [(0,b'Guild Master'),(1,b'Officer')]:
+        w.pack('I',rank)
+        for tab in range(8):w.pack('II',100+tab,200+tab)
+        w.pack('II',1000,0x1ff).raw(title).pack('I',rank)
+    name,encoded=call(codec,'guild_response','SMSG_GUILD_RANKS',w.finish())
+    r=Reader(bytes.fromhex(encoded));assert name=='SMSG_GUILD_RANKS' and r.unpack('I')==(2,)
+    for rank,title in [(0,b'Guild Master'),(1,b'Officer')]:
+        assert r.unpack('BIII')==(rank,rank,0x1ff,1000)
+        for tab in range(8):assert r.unpack('II')==(200+tab,100+tab)
+        size=r.bits(7);r.align();assert r.raw(size)==title
+    r.end()
+
+
+def test_guild_permissions_retains_native_rank_and_limits(codec):
+    assert call(codec,'guild_request','CMSG_GUILD_PERMISSIONS_QUERY',b'')==['CMSG_GUILD_PERMISSIONS_QUERY','']
+    w=Writer().pack('4I',2,1,0x43,765).bits(8,23).flush()
+    for i in range(8):w.pack('II',i+1,i+30)
+    name,encoded=call(codec,'guild_response','SMSG_GUILD_PERMISSIONS_QUERY_RESULTS',w.finish())
+    r=Reader(bytes.fromhex(encoded));assert name=='SMSG_GUILD_PERMISSIONS_QUERY_RESULTS'
+    assert r.unpack('5I')==(2,0x43,765,1,8)
+    for i in range(8):assert r.unpack('II')==(i+1,i+30)
+    r.end()
+    assert 'error' in call(codec,'guild_response','SMSG_GUILD_PERMISSIONS_QUERY_RESULTS',w.finish()[:-1])
