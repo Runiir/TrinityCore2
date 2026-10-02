@@ -56,7 +56,7 @@ def request_logout(trial, packets, label, cancel):
                 'oracle': {'client_request': requested, 'native_response': response, 'popup_visible': visible}}
 
     require(click_case(trial, 'lifecycle.logout_request.' + label, 'Log out to character selection.',
-                       lambda c: c['text'] == 'Log Out', verdict), 'logout_countdown_pass')
+                       lambda c: c['name'] == 'GameMenuButtonLogout', verdict), 'logout_countdown_pass')
     if not cancel:
         return started
 
@@ -162,7 +162,12 @@ def suite(out, actor_name, cancel_only):
     except Exception as e:
         cohort['failure'] = f'{type(e).__name__}: {e}'
     finally:
-        for trial in trials.values():
+        for name, trial in trials.items():
+            with actor(name):
+                try:
+                    trial.clean_panels()
+                except Exception as e:
+                    trial.receipt['cleanup_failure'] = f'{type(e).__name__}: {e}'
             trial.receipt.update(completed=cohort['completed'], failure=cohort['failure'], finished_at=time.time())
             trial.persist()
         cohort['finished_at'] = time.time()
