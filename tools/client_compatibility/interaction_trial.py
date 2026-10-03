@@ -1,4 +1,4 @@
-"""Bounded Laya choices executed through owned physical client inputs.
+"""Bounded choices executed through owned private client inputs.
 
 This is candidate selection, not open-ended planning or screenshot vision.
 Oracles and cleanup never enter the model request.
@@ -78,7 +78,7 @@ def choose(goal,state,actions,seed):
 
 
 class Trial:
-    def __init__(self,out,controller='laya'):
+    def __init__(self,out,controller='code'):
         if controller not in ['laya','code']:raise ValueError('unknown interaction controller')
         self.controller=controller
         self.combat_observation_deadline=None
@@ -243,7 +243,7 @@ class Trial:
         raise RuntimeError('panel cleanup did not settle')
 
 
-def panel_suite(out,catalog,controller='laya'):
+def panel_suite(out,catalog,controller='code'):
     trial=Trial(out,controller);rows={r['name']:r for r in json.loads(catalog.read_text())['rows']};registry={}
     for name,row in rows.items():
         keys=row.get('keys') or []
@@ -290,7 +290,7 @@ def panel_suite(out,catalog,controller='laya'):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--bindings',type=Path,required=True);p.add_argument('--controller',choices=['laya','code'],default='laya')
+    p.add_argument('--bindings',type=Path,required=True);p.add_argument('--controller',choices=['laya','code'],default='code')
     args=p.parse_args();panel_suite(args.output,args.bindings,args.controller)
 
 
