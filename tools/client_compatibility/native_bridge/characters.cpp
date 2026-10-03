@@ -1,9 +1,11 @@
 #include "data.hpp"
+#include "character_list.hpp"
 #include <ctime>
 
 namespace bridge
 {
-Bytes PublicData::enumeration(Array const &characters, Array const &equipment) const
+Bytes character_list(Array const &characters, Array const &equipment,
+                     std::unordered_map<unsigned, Array> const &item_displays)
 {
     std::unordered_map<std::uint64_t, std::unordered_map<unsigned, Array>> visible;
     for (auto const &row : equipment)
@@ -39,6 +41,10 @@ Bytes PublicData::enumeration(Array const &characters, Array const &equipment) c
         w.bits(name.size(), 6).bits(0, 1).raw(name).bits(0, 3).pack("III", {0, 0, 0});
     }
     return w.pack("i", {1}).bits(1, 1).bits(1, 1).bits(0, 3).finish();
+}
+Bytes PublicData::enumeration(Array const &characters, Array const &equipment) const
+{
+    return character_list(characters, equipment, item_displays);
 }
 Bytes auth_success()
 {

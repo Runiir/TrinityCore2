@@ -19,6 +19,7 @@
 #include "mail.hpp"
 #include "auctions.hpp"
 #include "appearance.hpp"
+#include "character_list.hpp"
 #include <iostream>
 #include <memory>
 
@@ -120,6 +121,17 @@ int main(int argc, char **argv)
                 else if(op=="marker_diagnostic")
                 {
                     Events events(str(get(request,"root")));events.marker_placed("fixture",get(request,"location"));result=true;
+                }
+                else if (op == "character_list")
+                {
+                    std::unordered_map<unsigned, Array> displays;
+                    for (auto const &row : get(request, "displays").as_array())
+                    {
+                        auto const &v = row.as_array();
+                        displays[integer(v.at(0))] = Array{v.at(1), v.at(2), v.at(3)};
+                    }
+                    result = hex(character_list(get(request, "characters").as_array(),
+                                                get(request, "equipment").as_array(), displays));
                 }
                 else if (op == "guid")
                     result = hex(Writer().guid(get(request, "value")).finish());
