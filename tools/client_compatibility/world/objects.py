@@ -56,7 +56,11 @@ def field_values(snapshot, character):
     bytes1, bytes2 = value("UNIT_FIELD_BYTES_1"), value("UNIT_FIELD_BYTES_2")
     unit.update(StandState=bytes1 & 255, VisFlags=bytes1 >> 16 & 255, AnimTier=bytes1 >> 24 & 255,
                 SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
-    player = {"Name": character["name"], "PlayerFlags": value("PLAYER_FLAGS"),
+    # Retired differential oracle: pinned Classic visibility is in extended
+    # flags, rather than the modern warmode positions of PlayerFlags.
+    flags=value('PLAYER_FLAGS')
+    player = {"Name": character["name"], "PlayerFlags": flags & ~0xc00,
+              "PlayerFlagsEx": (0x80 if flags & 0x400 else 0) | (0x100 if flags & 0x800 else 0),
               "NativeSex": character["gender"], "VirtualPlayerRealm": 0x01010001}
     guild = value('OBJECT_FIELD_DATA') | value('OBJECT_FIELD_DATA', 1) << 32
     if snapshot.get('kind') == 4 and guild:

@@ -29,9 +29,9 @@ def test_sparse_join_and_leave_send_public_membership_and_zero_rank(codec):
         r = read_block(block, (1, player_high()), (1 << 5) | (1 << 6))
         assert mask(r, 8) == {96, 108};r.align()
         assert r.guid() == ((guild, GUILD_HIGH) if guild else (0, 0))
-        assert mask(r, 5) == {0, 9, 11, 13, 22}
+        assert mask(r, 5) == {0, 9, 10, 11, 13, 22}
         assert r.bits(1) == 0;r.align()
-        assert r.unpack('IIii') == (native[INDEX['PLAYER_FLAGS']], 0,
+        assert r.unpack('IIIii') == (native[INDEX['PLAYER_FLAGS']], 0, 0,
             native[INDEX['PLAYER_GUILDLEVEL']], native[INDEX['PLAYER_GUILD_TIMESTAMP']]);r.end()
 
 

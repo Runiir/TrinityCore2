@@ -3,6 +3,7 @@
 #include "native_transport.hpp"
 #include "guild_fields.hpp"
 #include "reputation_fields.hpp"
+#include "appearance.hpp"
 
 namespace bridge
 {
@@ -84,9 +85,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     unit["PvpFlags"] = (bytes2 >> 8) & 255;
     unit["ShapeshiftForm"] = bytes2 >> 24;
     Object player{{"Name", get(c, "name")},
-                  {"PlayerFlags", val("PLAYER_FLAGS")},
                   {"NativeSex", get(c, "gender")},
                   {"VirtualPlayerRealm", 0x01010001}};
+    appearance_fields(val("PLAYER_FLAGS"),player);
     guild_fields(*this,s,unit,player);
     player["QuestLog"]=quest_fields(s);
     Array visible;

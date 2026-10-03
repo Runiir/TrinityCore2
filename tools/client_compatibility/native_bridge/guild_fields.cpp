@@ -25,6 +25,7 @@ Bytes Protocol::guild_block(Value const &snapshot,Value const &character,Value c
     bool guild=has("OBJECT_FIELD_DATA") || has("OBJECT_FIELD_DATA",1);
     struct Scalar {char const *name;char const *native;unsigned index;char format;};
     Scalar const scalars[]={{"PlayerFlags","PLAYER_FLAGS",9,'I'},
+        {"PlayerFlagsEx","PLAYER_FLAGS",10,'I'},
         {"GuildRankID","PLAYER_GUILDRANK",11,'I'},{"GuildDeleteDate","PLAYER_GUILDDELETE_DATE",12,'I'},
         {"GuildLevel","PLAYER_GUILDLEVEL",13,'i'},{"GuildTimeStamp","PLAYER_GUILD_TIMESTAMP",22,'i'}};
     unsigned mask=0;for(auto const &field:scalars)if(has(field.native))mask|=1u<<field.index;

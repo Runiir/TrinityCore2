@@ -1,8 +1,8 @@
 """Stock visibility requests and sparse player flags follow pinned wire readers."""
 import pytest
-from tools.client_compatibility.world.buffer import Reader,player_high
+from tools.client_compatibility.world.buffer import Reader,Writer,player_high
 from tools.client_compatibility.world.objects import INDEX
-from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
+from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result,stateful,action
 from tools.client_compatibility.world.tests.test_interaction_packets import call
 from tools.client_compatibility.world.tests.test_inventory_packets import mask
 
@@ -19,15 +19,41 @@ def test_visibility_request_requires_exactly_one_byte(codec,body):
 
 
 @pytest.mark.parametrize('visibility',[0,1])
-def test_sparse_player_flags_include_visibility_and_preserve_other_flags(codec,visibility):
-    flags=0x400|0x800|2
+@pytest.mark.parametrize('hidden,extended',[(0,0),(0x400,0x80),(0x800,0x100),(0xc00,0x180)])
+def test_sparse_player_flags_move_classic_visibility_to_extended_flags(codec,visibility,hidden,extended):
+    # HermesProxy 841a26f PlayerDefines/UpdateHandler: Classic visibility is
+    # PlayerFlagsEx; the old 0x400/0x800 bits mean warmode in PlayerFlags.
+    flags=hidden|2|0x10000000
     fields={INDEX['PLAYER_FLAGS']:flags}
     body=result(codec,op='guild_update',snapshot={'guid':1,'fields':fields},character={},changed=fields,visibility=visibility)
     r=Reader(bytes.fromhex(body));assert r.unpack('B')==(0,);assert r.guid()==(1,player_high())
     assert r.unpack('I')[0]==len(r.data)-r.pos
     assert r.unpack('BBBI')==(visibility,0,3,1<<6)
-    assert mask(r,5)=={0,9};assert r.bits(1)==0;r.align()
-    assert r.unpack('I')==(flags,);r.end()
+    assert mask(r,5)=={0,9,10};assert r.bits(1)==0;r.align()
+    assert r.unpack('II')==(2|0x10000000,extended);r.end()
+
+
+@pytest.mark.parametrize('hidden,extended',[(0,0),(0x400,0x80),(0x800,0x100),(0xc00,0x180)])
+def test_created_player_uses_the_same_classic_visibility_mapping(codec,hidden,extended):
+    fields={INDEX['PLAYER_FLAGS']:hidden|4}
+    player=result(codec,op='object_values',snapshot={'fields':fields},character={})['PlayerData']
+    assert player['PlayerFlags']==4 and player['PlayerFlagsEx']==extended
+
+
+def test_native_flag_dispatch_emits_one_public_block_with_extended_visibility(codec):
+    index=INDEX['PLAYER_FLAGS'];words=[0]*(index//32+1);words[index//32]=1<<(index%32)
+    body=Writer().pack('HI',0,1).pack('B',0).raw(bytes([1,1])).pack('B',len(words))
+    body.pack('I'*len(words),*words).pack('I',0xc02)
+    reply=stateful(codec,{'guid':1,'map':0},[action('object_updates','SMSG_UPDATE_OBJECT',body.finish())],
+        snapshot={'guid':1,'map':0,'fields':{}})[0]
+    assert reply[0]=='SMSG_UPDATE_OBJECT';r=Reader(bytes.fromhex(reply[1]))
+    assert r.unpack('HI')==(0,1);assert r.bits(1)==1 and r.bits(1)==0
+    block=Reader(r.raw(r.unpack('I')[0]));r.end()
+    assert block.unpack('B')==(0,) and block.guid()==(1,player_high())
+    assert block.unpack('I')[0]==len(block.data)-block.pos
+    assert block.unpack('BBBI')==(1,0,3,1<<6)
+    assert mask(block,5)=={0,9,10};assert block.bits(1)==0;block.align()
+    assert block.unpack('II')==(2,0x180);block.end()
 
 
 def test_unrelated_delta_does_not_repeat_player_flags(codec):
