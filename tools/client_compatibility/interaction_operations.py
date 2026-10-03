@@ -53,7 +53,7 @@ def controls(trial):
     raise RuntimeError('automatic control observation page deadline exceeded')
 
 
-def click_case(trial,case_id,goal,target,oracle,additional=None):
+def click_case(trial,case_id,goal,target,oracle,additional=None,await_state=None):
     rows=controls(trial)
     candidates=[c for c in rows if c['enabled'] and c['kind'] in ['Button','CheckButton','MenuItem','ClickFrame'] and
         (target(c) or c['text'] in ['Cancel','Okay','New','Save','General Macros','Character-Specific Macros','Spellbook','Professions','Alchemy','Tailoring','Cooking','First Aid','Archaeology'])]
@@ -71,7 +71,8 @@ def click_case(trial,case_id,goal,target,oracle,additional=None):
     actions['escape']={'kind':'key','value':'Escape','description':'Press Escape to close the current dialog.'}
     if len(actions)<3:actions['spellbook']={'kind':'key','value':'p','description':'Press P to toggle the spellbook.'}
     if additional:actions.update(additional)
-    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s==target_key),diagnostic_action=target_key)
+    return trial.step(case_id,goal,actions,lambda b,a,s:oracle(b,a,s==target_key),diagnostic_action=target_key,
+        await_state=await_state)
 
 
 def profession_suite(trial):

@@ -34,7 +34,7 @@ def open_character(t,label):
     require(click_case(t,label+'.open','Open character equipment with the stock microbutton.',
         lambda c:c['name']=='CharacterMicroButton',
         lambda b,a,s:{'status':'character_open_pass' if s and 'CharacterFrame' in a['panels'] else
-            'client_or_protocol_failure'}),'character_open_pass')
+            'client_or_protocol_failure'},await_state=lambda a:'CharacterFrame' in a['panels']),'character_open_pass')
 
 
 def open_manager(t,label):
@@ -97,7 +97,7 @@ def delete_set(t,id,original):
     require(click_case(t,'sets.delete.dialog','Delete the disposable equipment set.',
         lambda c:c.get('equipment_set_button')=='delete' and c.get('equipment_set_id')==id,
         lambda b,a,s:{'status':'equipment_set_delete_dialog_pass' if s and 'StaticPopup1' in a['panels'] else
-            'client_or_protocol_failure'}),'equipment_set_delete_dialog_pass')
+            'client_or_protocol_failure'},await_state=lambda a:'StaticPopup1' in a['panels']),'equipment_set_delete_dialog_pass')
     def delete_outcome(b,a,s):
         data=sets();probe=detail(t,'deleted_set')
         checks={'selected':s,'native_empty':not data['rows'],'public_empty':probe['count']==0 and not probe['sets'],
@@ -137,12 +137,12 @@ def suite(t,source):
             lambda c:c.get('equipment_set_button')=='edit' and c.get('equipment_set_id')==id,
             lambda b,a,s:{'status':'equipment_set_edit_menu_pass' if s and 'ContextMenu' in a['panels'] and not
                 a.get('lua_errors') and not a.get('blocked_actions') else
-                'client_or_protocol_failure'}),'equipment_set_edit_menu_pass')
+                'client_or_protocol_failure'},await_state=lambda a:'ContextMenu' in a['panels']),'equipment_set_edit_menu_pass')
         require(click_case(t,'sets.save.name_icon','Open the stock name and icon dialog.',
             lambda c:c['text']=='Change Name/Icon',
             lambda b,a,s:{'status':'equipment_set_dialog_pass' if s and 'GearManagerPopupFrame' in a['panels'] and not
                 a.get('lua_errors') and not a.get('blocked_actions') else
-                'client_or_protocol_failure'}),'equipment_set_dialog_pass')
+                'client_or_protocol_failure'},await_state=lambda a:'GearManagerPopupFrame' in a['panels']),'equipment_set_dialog_pass')
         require(edit_case(t,'sets.save.name','Rename the disposable set.',lambda c:c['kind']=='EditBox',RENAMED),'ui_edit_pass')
         def save_outcome(b,a,s):
             data,native_ok=native_named(RENAMED);probe,public_ok=public_named(t,'saved_set',RENAMED)
