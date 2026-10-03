@@ -72,7 +72,7 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
     print(json.dumps({'native_unchanged':True,'lobby_frames':report['lobby_frames']}),flush=True)
 
 
-def reconnect(out,name,keyboard_modal=False,character_selection=False):
+def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_selection=False):
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('deployment process identity changed')
@@ -81,7 +81,9 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False):
     # visually reviewed 1280x720 client screens. Stop on any observation failure.
     inputs=[('okay',[640,380],.4),('reconnect',[640,418],3),('realm',[465,182],.4),
             ('realm_okay',[750,570],3),('enter',[640,661],10)]
+    if character_selection and realm_selection:raise ValueError('choose one reviewed lobby screen')
     if character_selection:inputs=inputs[-1:]
+    elif realm_selection:inputs=inputs[2:]
     with actor(name):
         t=Trial(out/(name+'_after'),controller='code')
         try:
@@ -147,6 +149,7 @@ if __name__=='__main__':
     parser.add_argument('--unavailable-scout-source',type=Path,help='Closed failed scout reentry deployment')
     parser.add_argument('--unavailable-deployment-source',type=Path,help='Failed deployment on the same verified actor/server lifetimes')
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
+    parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
@@ -157,4 +160,4 @@ if __name__=='__main__':
         recovery(args.source,args.output,args.actor)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
-        reconnect(args.output,args.actor,args.keyboard_modal,args.character_selection)
+        reconnect(args.output,args.actor,args.keyboard_modal,args.character_selection,args.realm_selection)
