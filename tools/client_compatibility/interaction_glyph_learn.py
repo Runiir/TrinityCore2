@@ -9,7 +9,7 @@ from .interaction_inventory_moves import slot_control
 from .interaction_operations import click_case,point
 from .interaction_macros import require
 from .interaction_trade import inventory
-from .interaction_talents import native_state,glyph_detail
+from .interaction_talents import native_state,glyph_detail,detail
 from .observation.inventory import Inventory
 from .observation.journal import entries
 
@@ -75,6 +75,19 @@ def suite(t):
         if not control or native['id']!=BOOK:raise RuntimeError('public glyph book position disagrees with native inventory')
         t.receipt['book_fixture']={'public':row,'native':native,'frame':frame,'control':control};t.persist()
         started=time.time()
+        def pending(b,a,s):
+            probe=detail(t,'pending_book_glyph')
+            matches=[r for r in probe.get('glyphs',[]) if r.get('matches_pending')]
+            passed=(s=='use' and probe.get('pending_glyph') and len(matches)==3 and
+                all(r.get('enabled') and r.get('type')==3 and not r.get('spell') for r in matches) and
+                oracle.poll().count(BOOK)==1 and spells()==known and native_state()==talents)
+            t.receipt['pending_book']={'probe':probe,'matching_sockets':matches,'passed':bool(passed)};t.persist()
+            return {'status':'glyph_pending_pass' if passed else 'client_or_protocol_failure',
+                'oracle':{'pending':probe.get('pending_glyph'),'matches':matches}}
+        require(t.step('glyphs.learn_book_pending','Use the glyph book to open its ordinary placement cursor.',
+            {'use':{'kind':'click','value':point(control),'button':3,'description':'Right-click the observed Glyph of Battle book.'}},
+            pending,diagnostic_action='use'),'glyph_pending_pass')
+        socket=t.receipt['pending_book']['matching_sockets'][0]['index']
         def outcome(b,a,s):
             deadline=time.monotonic()+12
             while oracle.poll().count(BOOK) and time.monotonic()<deadline:time.sleep(.25)
@@ -82,15 +95,14 @@ def suite(t):
             packets=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if p.get('session')==session and
                 p.get('time',0)>=started and p.get('name') in ['CMSG_USE_ITEM','CMSG_CAST_SPELL',
                     'SMSG_SPELL_START','SMSG_SPELL_GO','SMSG_CAST_FAILED','SMSG_LEARNED_SPELL','SMSG_LEARNED_SPELLS']]
-            passed=s=='use' and oracle.count(BOOK)==0 and len(added)==1 and added[0][0]==LEARNED and unchanged
+            passed=s and oracle.count(BOOK)==0 and len(added)==1 and added[0][0]==LEARNED and unchanged
             t.receipt['earned_glyph']={'native_spells':now,'added':added,'book_remaining':oracle.count(BOOK),'passed':passed}
             t.persist()
             return {'status':'glyph_learn_pass' if passed else 'client_or_protocol_failure',
                 'oracle':{'book_consumed':oracle.count(BOOK)==0,'native_spell_diff':added,
                     'unrelated_spells_unchanged':unchanged,'packets':packets,'public_errors':a.get('errors')}}
-        require(t.step('glyphs.learn_book','Learn Glyph of Battle from its book.',
-            {'use':{'kind':'click','value':point(control),'button':3,'description':'Right-click the observed Glyph of Battle book.'}},
-            outcome,diagnostic_action='use'),'glyph_learn_pass')
+        require(click_case(t,'glyphs.learn_book','Place the pending glyph into an observed matching empty Minor socket.',
+            lambda c:c['name']=='GlyphFrameGlyph'+str(socket),outcome),'glyph_learn_pass')
         t.clean_panels();t.execute({'kind':'key','value':'n'})
         require(click_case(t,'glyphs.learned_open','Open glyphs.',lambda c:c['name']=='PlayerTalentFrameTab3',
             lambda b,a,s:{'status':'glyph_panel_pass' if s and a.get('talent_probe',{}).get('selected')==3 else
