@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 from dvclive import Live
 from . import lab_runtime as lab
 from .observation.journal import entries
+from .interaction_metrics import choice_counts
 
 SAFE_BODY_NAMES={
     'CMSG_AUCTION_HELLO_REQUEST','MSG_AUCTION_HELLO','SMSG_AUCTION_HELLO_RESPONSE',
@@ -147,8 +148,8 @@ def checkpoint(directory,name):
         (folder/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with Live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
             live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','attributed_interaction_trials')
-            live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum(bool(c.get('response')) and 'selected' in c for _,r in episodes if r['controller']!='code' for c in r['cases']))
-            live.log_metric('code_choices_executed',sum('selected' in c for _,r in episodes if r['controller']=='code' for c in r['cases']))
+            live.log_metric('closed_runs',len(episodes))
+            for metric,count in choice_counts([run for _,run in episodes]).items():live.log_metric(metric,count)
             for status,count in counts.items():live.log_metric('case_status/'+status,count)
             live.log_metric('native_worldserver_restarts',0);live.log_metric('whole_game_qualified',0);live.next_step()
         with tarfile.open(target,'w:gz',compresslevel=3) as archive:
