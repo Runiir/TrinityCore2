@@ -36,6 +36,12 @@ def stage(out):
 
 
 def install(source,batch):
+    batch=batch.resolve()
+    if (batch.parent!=lab.ROOT/'evidence' or batch.exists() or
+            not re.fullmatch(r'[A-Za-z0-9_]+',batch.name)):
+        raise ValueError('deployment requires a new named private evidence batch')
+    backup=lab.ROOT/'bin/worldserver.before_auction_deposit'
+    if backup.exists():raise RuntimeError('an earlier native rollback binary requires review')
     report=json.loads((source/'deployment.json').read_text())
     checkpoint=source.parent/'checkpoint_receipt.json'
     if not checkpoint.is_file() or not json.loads(checkpoint.read_text()).get('cloud_verified'):
@@ -58,8 +64,6 @@ def install(source,batch):
         if time.monotonic()>deadline:raise RuntimeError('owned native graceful shutdown did not finish')
         time.sleep(.2)
     # Keep one rollback binary until the first successful new native trial.
-    backup=lab.ROOT/'bin/worldserver.before_auction_deposit'
-    if backup.exists():raise RuntimeError('an earlier native rollback binary requires review')
     target.rename(backup);shutil.copy2(binary,target);lab.private_write(config,text)
     lab.start('worldserver')
     deadline=time.monotonic()+45
