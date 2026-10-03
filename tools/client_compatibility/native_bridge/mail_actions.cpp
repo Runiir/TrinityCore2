@@ -21,18 +21,29 @@ std::uint64_t active_mailbox(Protocol const &protocol,State const &owner)
 }
 Reply mail_action(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {
-    if(name!="CMSG_MAIL_MARK_AS_READ" && name!="CMSG_MAIL_DELETE")return {};
+    if(name!="CMSG_MAIL_MARK_AS_READ" && name!="CMSG_MAIL_DELETE" &&
+       name!="CMSG_MAIL_TAKE_ITEM" && name!="CMSG_MAIL_TAKE_MONEY")return {};
     Reader r(body);auto target=active_mailbox(protocol,owner);Writer w;
-    if(name=="CMSG_MAIL_MARK_AS_READ")
+    if(name=="CMSG_MAIL_DELETE")
     {
-        auto supplied=visible_mailbox(protocol,owner,r.guid());auto id=owned_mail(owner,r.take<std::uint64_t>());r.end();
-        if(supplied!=target)throw std::runtime_error("mail read uses a different active mailbox");
-        return Packet{name,w.pack("QI",{target,id}).finish()};
+        auto id=owned_mail(owner,r.take<std::uint64_t>());auto reason=r.take<std::int32_t>();r.end();
+        // Native reads and ignores the final mailTemplateId. Preserve the modern
+        // reason without inventing outcomes or bypassing the native checks.
+        return Packet{name,w.pack("QIi",{target,id,reason}).finish()};
     }
-    auto id=owned_mail(owner,r.take<std::uint64_t>());auto reason=r.take<std::int32_t>();r.end();
-    // Native reads and ignores the final mailTemplateId; preserve the modern
-    // reason there without inventing a gameplay outcome or bypassing its checks.
-    return Packet{name,w.pack("QIi",{target,id,reason}).finish()};
+    auto supplied=visible_mailbox(protocol,owner,r.guid());auto id=owned_mail(owner,r.take<std::uint64_t>());
+    if(supplied!=target)throw std::runtime_error("mail action uses a different active mailbox");
+    w.pack("QI",{target,id});
+    if(name=="CMSG_MAIL_TAKE_ITEM")
+    {
+        auto attachment=r.take<std::uint64_t>();
+        if(!attachment || attachment>0xffffffff)throw std::runtime_error("mail attachment ID exceeds native bound");
+        // Native verifies that this attachment belongs to this owned letter,
+        // applies COD, and decides inventory capacity and all gameplay errors.
+        w.put<std::uint32_t>(attachment);
+    }
+    else if(name=="CMSG_MAIL_TAKE_MONEY")w.put(r.take<std::uint64_t>());
+    r.end();return Packet{name,w.finish()};
 }
 Reply mail_command_result(Protocol const &protocol,State &owner,View body)
 {

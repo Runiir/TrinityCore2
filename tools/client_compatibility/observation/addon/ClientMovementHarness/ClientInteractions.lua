@@ -119,7 +119,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=19,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=20,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -210,7 +210,13 @@ local function snapshot(viewMode,viewPage)
         end
         if OpenMailFrame and OpenMailFrame:IsVisible() then
             data.mail.open={index=InboxFrame.openMailID,
-                subject=trim(call(OpenMailSubject.GetText,OpenMailSubject),80)}
+                subject=trim(call(OpenMailSubject.GetText,OpenMailSubject),80),attachments={}}
+            local _,_,_,_,money,cod,_,items=call(GetInboxHeaderInfo,InboxFrame.openMailID)
+            data.mail.open.money=money;data.mail.open.cod=cod
+            for index=1,math.min(items or 0,2) do
+                local name,id,_,count=call(GetInboxItem,InboxFrame.openMailID,index)
+                data.mail.open.attachments[#data.mail.open.attachments+1]={index=index,name=trim(name,48),id=id,count=count}
+            end
         end
     end
     data.last_loot=lastLoot
