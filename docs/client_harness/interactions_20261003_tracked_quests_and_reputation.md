@@ -134,6 +134,15 @@ grant or kill command. It stages only pose and retains earned standings.
 Watched-faction reload and earned standing trials have separate runners and
 remain unqualified until their live evidence closes.
 
+The closed UI29 batch is synchronized through
+[`442_interactions_20261003_30.tar.gz.dvc`](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc),
+archive SHA-256
+`5c050a68a2afd179879f74e697054d76adce27c6a77563bb67d425ec19f7f16e`.
+Five archived receipt/review digests and 83 distinct action-frame digests are
+verified before adding six qualified operations. The checklist now has 220
+qualified fixture variants among 916 operation contracts; eight regeneration
+guards pass. Other variants and whole-game coverage remain open.
+
 ```bash
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_reputation --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/reputation_read_01
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_reputation --controls --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/reputation_controls_01

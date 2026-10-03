@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 214 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 220 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -57,12 +57,12 @@ Fixture: `known_factions`.
 
 - [x] `reputation.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `reputation.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `reputation.expand`
-- [ ] `reputation.collapse`
-- [ ] `reputation.inspect_standing`
+- [x] `reputation.expand` (qualified variant; [evidence](#reputation_standing_watch_headers))
+- [x] `reputation.collapse` (qualified variant; [evidence](#reputation_standing_watch_headers))
+- [x] `reputation.inspect_standing` (qualified variant; [evidence](#reputation_standing_watch_headers))
 - [ ] `reputation.at_war_toggle`
-- [ ] `reputation.inactive_toggle`
-- [ ] `reputation.watched_faction`
+- [x] `reputation.inactive_toggle` (qualified variant; [evidence](#reputation_inactive_roundtrip))
+- [x] `reputation.watched_faction` (qualified variant; [evidence](#reputation_standing_watch_headers))
 - [ ] `reputation.gain_standing`
 - [ ] `reputation.lose_standing`
 - [ ] `reputation.persist`
@@ -307,7 +307,7 @@ Fixture: `quest_variants`.
 - [ ] `quests.unavailable_prerequisite`
 - [ ] `quests.persist`
 - [x] `quests.giver_available_marker` (qualified variant; [evidence](#available_quest_marker))
-- [ ] `quests.giver_trivial_marker`
+- [x] `quests.giver_trivial_marker` (qualified variant; [evidence](#trivial_quest_marker_tracked))
 - [ ] `quests.giver_incomplete_marker`
 - [x] `quests.giver_complete_marker` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [ ] `quests.giver_repeatable_marker`
@@ -1673,7 +1673,36 @@ Remaining limits: Only the owned level-85 warrior catalog is qualified. Other cl
 
 Ordinary minimap tracking menu clicks enable and disable Low Level Quests. The complete public tracking catalog differs only at that boolean. Quest history, inventory, money, tracking and staged pose return to their exact baselines.
 
-Remaining limits: This qualifies the menu and setting controls only. Enabled screenshots still lack the overhead trivial marker and the captured tracked-status query is unmapped. Other tracking categories, minimap icons and persistence remain open.
+Remaining limits: This UI28 receipt qualifies the menu and setting controls only; its overhead marker was absent and tracked query unmapped. UI29 separately repairs and qualifies that trivial marker. Other tracking categories, minimap icons and persistence remain open.
 
 - [442_interactions_20261003_29.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc), member `evidence/client_interactions_20261003_ui28/quest_tracking_01/episode.json`, SHA-256 `a18c0253fb47b0c7ab87aea8b66b5dfcd9e5d93d520de300a821df648bc41cf3`.
   Checked cases: `tracking.menu.enabled` (tracking_menu_pass), `tracking.low_level.enabled` (tracking_filter_pass), `tracking.menu.disabled` (tracking_menu_pass), `tracking.low_level.disabled` (tracking_filter_pass).
+
+### trivial_quest_marker_tracked
+
+Stock Low Level Quests enable/disable shows and hides the reviewed overhead marker on the exact visible Guard Thomas GUID. Both two-GUID tracked requests refresh authoritative native visible status; native 4 and modern 64 agree. Quest history, inventory, money, tracking and staged pose are restored.
+
+Remaining limits: Only this eligible trivial creature on the owned level-85 warrior is qualified. Other eligibility categories, game-object questgivers, minimap pins and retired cached reads remain open. Native 4.3.4 refreshes all visible givers because it has no subset request. Teleport staging does not qualify navigation.
+
+- [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/quest_tracking_02/episode.json`, SHA-256 `9ce05fcca7cd96ef74715d1fd7adb99ed6315abea05c4cd493dc07e6dfe0e3f1`.
+  Checked cases: `tracking.low_level.enabled` (tracking_filter_pass), `tracking.low_level.disabled` (tracking_filter_pass).
+- [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/trivial_marker_visual_review.json`, SHA-256 `e9bd965a6bbd49927537b27f30099bfbd57b4aa0f6f0b9a953321f1ee23b8528`.
+
+### reputation_standing_watch_headers
+
+All ten displayed faction standings and native flags match racial/class bases plus saved offsets. Ordinary Stormwind detail and watch show/hide agree with native index 19, total 4165 and rendered green progress 1165/6000. Alliance header collapse/expand hides and restores exact child identities. All faction rows, public catalog, inventory and money are restored.
+
+Remaining limits: Only the owned human warrior catalog, Stormwind watched faction and Alliance header are qualified. Other factions, ranks, thresholds, guild state, at-war controls and persistence remain open. Initial scalar-mask and repeated-detail oracle failures remain unchanged in the archive.
+
+- [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/reputation_controls_03/episode.json`, SHA-256 `5a39cc4d976f6e151b1a1f9bbbf402c5d05b5f76899b58983fcc57eaad84e6e2`.
+  Checked cases: `reputation.inspect_stormwind` (reputation_standing_pass), `reputation.watch.show` (reputation_watch_pass), `reputation.watch.hide` (reputation_watch_pass), `reputation.header.collapse` (reputation_header_pass), `reputation.header.expand` (reputation_header_pass).
+- [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/reputation_watch_visual_review.json`, SHA-256 `1fd17cf203e04564ddfa3126ba3df4be1bf59421fb71825b0deef53e502c3e9d`.
+
+### reputation_inactive_roundtrip
+
+Ordinary Stormwind inactive checkbox moves it to Inactive. Stock header navigation reveals its reselected inactive detail and checked control; a second ordinary checkbox click restores Active. Native flags change only at this faction; complete native reputation, public catalog, inventory and money are restored.
+
+Remaining limits: Only Stormwind on the owned level-85 human warrior and the tested destination-header state are qualified. Other factions, multiple inactive rows, persistence and scrollbar variants remain open. Earlier selection assumptions and source-bound recovery remain in the archive.
+
+- [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/reputation_inactive_03/episode.json`, SHA-256 `0a4735def3d903bfe29e651f20f050ad0a594d85ddab180c79e9f6e4c0700dff`.
+  Checked cases: `reputation.inactive.move` (reputation_inactive_pass), `reputation.inactive_reselect.move` (reputation_standing_pass), `reputation.inactive.restore` (reputation_inactive_pass).
