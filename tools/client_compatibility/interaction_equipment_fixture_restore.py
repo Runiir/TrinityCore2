@@ -10,7 +10,7 @@ from .interaction_equipment_sets import sets,NAME,detail
 from .interaction_equipment_set_roundtrip import stable,open_manager,row,hover_button,restore_display,RENAMED
 
 
-def suite(t,source):
+def suite(t,source,recovery_source=None):
     source=source.resolve()
     if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':raise ValueError('require owned failed episode')
     old=json.loads(source.read_text());original=old['baseline']['native'];saved=old['baseline']['sets']
@@ -24,6 +24,17 @@ def suite(t,source):
     renamed=stable(saved)
     if len(renamed['rows'])!=1 or renamed['rows'][0][3]!=NAME:raise RuntimeError('source set baseline differs')
     renamed['rows'][0][3]=RENAMED
+    if recovery_source:
+        recovery_source=recovery_source.resolve()
+        if not recovery_source.is_relative_to(lab.ROOT/'evidence') or recovery_source.name!='episode.json':raise ValueError('require owned recovery episode')
+        recovery=json.loads(recovery_source.read_text())
+        if (recovery.get('completed') or not recovery.get('finished_at') or recovery['actor']!=t.fixture or
+            recovery['runtime']!=t.receipt['runtime'] or recovery.get('source',{}).get('sha256')!=lab.sha256(source) or
+            not recovery.get('native_resources_preserved') or recovery.get('native_after')!={'native':original,'sets':renamed} or
+            not any(c['id']=='restore.equip' and c['status']=='equipment_fixture_restored' for c in recovery['cases'])):
+            raise RuntimeError('name-only restoration requires exact closed recovery proving restored native gear')
+        expected=original
+        t.receipt['recovery_source']={'file':str(recovery_source),'sha256':lab.sha256(recovery_source)}
     if current!=expected or stable(sets())!=renamed:raise RuntimeError('current fixture differs beyond the exact expected helmet/name changes')
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},baseline={'native':original,'sets':saved},
         expected_pre_recovery={'native':expected,'sets':renamed});t.persist()
@@ -37,9 +48,10 @@ def suite(t,source):
                 'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
             return {'status':'equipment_fixture_restored' if all(checks.values()) else 'client_or_protocol_failure',
                 'oracle':{'checks':checks,'public':probe}}
-        require(click_case(t,'restore.equip','Restore the helmet with the normally saved equipment set.',
-            lambda c:c['name']=='PaperDollFrameEquipSet',equipped,
-            await_state=lambda a:(a.get('equipment') or [None])[0]==helmet_id),'equipment_fixture_restored')
+        if not recovery_source:
+            require(click_case(t,'restore.equip','Restore the helmet with the normally saved equipment set.',
+                lambda c:c['name']=='PaperDollFrameEquipSet',equipped,
+                await_state=lambda a:(a.get('equipment') or [None])[0]==helmet_id),'equipment_fixture_restored')
         probe=detail(t,'restore_name_before');id=probe['sets'][0]['id']
         row(t,RENAMED,'restore.hover',True);hover_button(t,'edit',id,'restore.edit_hover')
         require(click_case(t,'restore.edit','Open the stock equipment-set edit menu.',
@@ -63,7 +75,8 @@ def suite(t,source):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--recovery-source',type=Path,help='Exact failed recovery that already restored the helmet; restore only the name')
     a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t,a.source);t.receipt['completed']=True
+    try:suite(t,a.source,a.recovery_source);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

@@ -68,8 +68,14 @@ def row(t,name,label,hover=False):
 
 
 def hover_button(t,kind,id,label):
-    buttons=[c for c in controls(t) if c.get('equipment_set_button')==kind and c.get('equipment_set_id')==id]
-    if len(buttons)!=1:raise RuntimeError('one visible owned equipment-set '+kind+' button is required')
+    deadline=time.monotonic()+12;pending=[]
+    while True:
+        buttons=[c for c in controls(t) if c.get('equipment_set_button')==kind and c.get('equipment_set_id')==id]
+        if len(buttons)==1:break
+        if len(buttons)>1 or time.monotonic()>deadline:
+            raise RuntimeError('one visible owned equipment-set '+kind+' button is required')
+        pending.append({'time':time.time(),'visible_buttons':len(buttons),'input_replayed':False})
+        t.receipt.setdefault('button_visibility_waits',{})[label]=pending;t.persist();time.sleep(.2)
     # The stock row exposes these small buttons on OnUpdate. Move and settle
     # before pressing so background frame timing cannot deliver a row click.
     t.execute({'kind':'hover','value':point(buttons[0])})
