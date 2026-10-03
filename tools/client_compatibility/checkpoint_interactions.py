@@ -14,6 +14,7 @@ from dvclive import Live
 from . import lab_runtime as lab
 from .observation.journal import entries
 from .interaction_metrics import choice_counts
+from .native_input.control import verified as verified_input
 
 SAFE_BODY_NAMES={
     'CMSG_QUEST_GIVER_STATUS_QUERY','CMSG_QUEST_GIVER_STATUS_MULTIPLE_QUERY','CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY',
@@ -125,11 +126,13 @@ def checkpoint(directory,name):
         raise RuntimeError('native server identity changed during this experiment')
     target=lab.REPO/'artifacts/client_harness'/(name+'.tar.gz');pointer=str(target.relative_to(lab.REPO))+'.dvc'
     if target.exists() or (lab.REPO/pointer).exists():raise RuntimeError('checkpoint name already exists')
+    input_binary,input_build=verified_input()
     metadata={'schema':'client442_interaction_checkpoint_v1','since':since,'counts':dict(counts),
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'native_worldserver':native,'native_worldserver_restarted':False,
         'native_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
         'bridge_build':json.loads((lab.ROOT/'build/native_bridge/build_receipt.json').read_text()),
+        'input_build':input_build,
         'runs':[{'path':str(p.relative_to(lab.ROOT)),'completed':r['completed'],'failure':r['failure'],
             'controller':r['controller'],'model':r['model'],'revision':r['revision']} for p,r in episodes],
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
@@ -143,6 +146,7 @@ def checkpoint(directory,name):
         lab.ROOT/'reference/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2',lab.ROOT/'reference/ui-442',lab.ROOT/'reference/local-60895',
         lab.ROOT/'build/native_bridge/build_receipt.json',lab.ROOT/'build/native_bridge_asan/build_receipt.json',
         lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec',
+        lab.ROOT/'build/native_input/build_receipt.json',input_binary,
         lab.ROOT/'bin/worldserver']
     manifest=[]
     for path in paths:

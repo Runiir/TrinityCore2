@@ -212,6 +212,9 @@ coordinates while the workers run. It captures no desktop screenshots or keys.
 An actor's focused nested window is verified through the Wine process's parent
 chain to its owned Gamescope supervisor. Input adapters reject actor changes and
 client PID reuse. Both visible Gamescope windows must remain on HDMI-1.
+The [native-input isolation report](isolated_clients_20261003.md) records the
+successful concurrent six-action Laya trial, 2,158 unchanged desktop samples,
+and the retained failed cleanup trial.
 
 ## Faster repairs
 

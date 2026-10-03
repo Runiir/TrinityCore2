@@ -86,7 +86,7 @@ def suite(t):
                 'oracle':{'pending':probe.get('pending_glyph'),'matches':matches}}
         require(t.step('glyphs.learn_book_pending','Use the glyph book to open its ordinary placement cursor.',
             {'use':{'kind':'click','value':point(control),'button':3,'description':'Right-click the observed Glyph of Battle book.'}},
-            pending,diagnostic_action='use'),'glyph_pending_pass')
+            pending,diagnostic_action='use',await_state=lambda s:'PlayerTalentFrame' in s['panels']),'glyph_pending_pass')
         socket=t.receipt['pending_book']['matching_sockets'][0]['index']
         def outcome(b,a,s):
             deadline=time.monotonic()+12
