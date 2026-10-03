@@ -1,12 +1,17 @@
 """Reveal a faction with observed stock scrollbar arrows and restore the viewport."""
 from contextlib import contextmanager
+import re
 from .interaction_operations import controls,click_case
 from .interaction_macros import require
 
 
 def visible(rows,public):
-    names={c['text'] for c in rows if c['name'].startswith('ReputationBar') and c['text']}
-    return [r['index'] for r in public['rows'] if r['name'] in names]
+    names=[c['text'] for c in sorted(rows,key=lambda c:c['y'])
+        if re.fullmatch(r'ReputationBar\d+',c['name']) and c['text']]
+    matches=[public['rows'][start:start+len(names)] for start in range(len(public['rows'])) if names and
+        [r['name'] for r in public['rows'][start:start+len(names)]]==names]
+    if len(matches)!=1:raise RuntimeError('stock reputation rows do not uniquely identify the visible catalog slice')
+    return [r['index'] for r in matches[0]]
 
 
 def scroll(t,down,label,public,before):
