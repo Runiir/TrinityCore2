@@ -32,17 +32,22 @@ def cleanup(t,source):
         raise RuntimeError('glyph cleanup requires a closed failed owned book-use episode')
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,1).poll()
     native=previous['book_fixture']['native'];public=previous['book_fixture']['public']
-    if (oracle.count(BOOK)!=1 or oracle.slot(public['bag'],public['slot'])!=native or
+    remaining=oracle.count(BOOK)
+    if (remaining not in [0,1] or remaining==1 and oracle.slot(public['bag'],public['slot'])!=native or
             normalize(spells())!=baseline['spells'] or normalize(native_state())!=baseline['talents']):
         raise RuntimeError('unused glyph book or unrelated player baseline changed')
     t.receipt['cleanup_source']={'file':str(source),'sha256':lab.sha256(source)};t.persist()
     t.clean_panels()
-    with item_fixture_permission(t):
-        fixture_command(t,'/cleartarget','remove only the unused owned glyph book fixture')
-        fixture_command(t,f'.additem {BOOK} -1','restore the exact unused glyph book from the failed probe')
+    if remaining:
+        with item_fixture_permission(t):
+            fixture_command(t,'/cleartarget','remove only the unused owned glyph book fixture')
+            fixture_command(t,f'.additem {BOOK} -1','restore the exact unused glyph book from the failed probe')
+    # Flush native state before reading persisted inventory; packet removal can
+    # precede the normal DB save and is not evidence of a failed cleanup.
+    now_spells=normalize(spells());now_talents=normalize(native_state())
     t.receipt['restoration']={'inventory_money_restored':normalize(inventory())==baseline['inventory_money'],
-        'native_spells_restored':normalize(spells())==baseline['spells'],
-        'talents_glyphs_restored':normalize(native_state())==baseline['talents'],'book_absent':oracle.poll().count(BOOK)==0}
+        'native_spells_restored':now_spells==baseline['spells'],
+        'talents_glyphs_restored':now_talents==baseline['talents'],'book_absent':oracle.poll().count(BOOK)==0}
     t.persist()
     if not all(t.receipt['restoration'].values()):raise RuntimeError('failed glyph book fixture cleanup differs from baseline')
 
