@@ -7,4 +7,5 @@ TalentObservation.lua
 QuestObservation.lua
 GlyphObservation.lua
 ReputationObservation.lua
+CurrencyObservation.lua
 ClientInteractions.lua
