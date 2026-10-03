@@ -109,14 +109,38 @@ def start_installed(report,source,batch):
     print(json.dumps({'native_restarted':True,'bridge_unchanged':True,'lobby_frames':report['lobby_frames']}),flush=True)
 
 
+def retire_rollback(batch):
+    report=json.loads((batch/'native_deposit_deployment/deployment.json').read_text())
+    trial=json.loads((batch/'auction_roundtrip_01/episode.json').read_text())
+    checkpoint=json.loads((Path(report['source_stage']).parent/'checkpoint_receipt.json').read_text())
+    backup=lab.ROOT/'bin/worldserver.before_auction_deposit'
+    receipt=batch/'rollback_retirement.json'
+    fee=trial.get('cheap_item_fee',{})
+    archived=any(f['path']=='bin/worldserver' and f['sha256']==report['previous_binary_sha256']
+        for f in checkpoint.get('file_manifest',[]))
+    if (receipt.exists() or not checkpoint.get('cloud_verified') or not archived or
+            not trial.get('completed') or not trial.get('roundtrip_restoration',{}).get('mail_inventory_money_restored') or
+            [fee.get(k) for k in ['quoted','native_deposit','charged']]!=[0,0,0] or
+            identity('worldserver')!=report['native'] or lab.sha256(lab.ROOT/'bin/worldserver')!=report['binary_sha256'] or
+            lab.sha256(backup)!=report['previous_binary_sha256']):
+        raise RuntimeError('rollback retirement requires a successful restored trial, exact running build and archived old binary')
+    record={'schema':'client442_native_rollback_retirement_v1','bytes':backup.stat().st_size,
+        'sha256':report['previous_binary_sha256'],'old_binary_checkpoint':checkpoint['file'],
+        'checkpoint_sha256':checkpoint['sha256'],'remote_verified_before_retirement':True,
+        'running_binary_preserved':True,'time':time.time()}
+    backup.unlink();lab.private_write(receipt,json.dumps(record,indent=2)+'\n')
+    print(json.dumps(record),flush=True)
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install','resume','reconnect'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install','resume','reconnect','retire-rollback'])
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--actor',choices=['primary','scout']);a=p.parse_args()
     if a.action=='stage':stage(a.output)
     elif a.action in ['install','resume']:
         if not a.source:p.error(a.action+' requires the closed staged source')
         (install if a.action=='install' else resume)(a.source,a.output)
+    elif a.action=='retire-rollback':retire_rollback(a.output)
     else:
         if not a.actor:p.error('reconnect requires the visually reviewed actor')
         reconnect(a.output,a.actor)
