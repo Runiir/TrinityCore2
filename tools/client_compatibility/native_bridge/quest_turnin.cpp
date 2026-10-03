@@ -42,7 +42,12 @@ Reply quest_turnin_request(Protocol const &p,State &s,std::string const &name,Vi
         auto const &choices=get(offer,"choices").as_array();Value index;
         if(choices.empty() && !item && !quantity)index=0;
         for(auto const &choice:choices)
-            if(signed_integer(get(choice,"id"))==item && signed_integer(get(choice,"quantity"))==quantity)
+            // The stock 60895 client leaves Quantity zero for a plain item
+            // selection. Only the offered identity selects a native index;
+            // native awards the authoritative quantity. A supplied nonzero
+            // quantity must still agree, and duplicate identities stay denied.
+            if(signed_integer(get(choice,"id"))==item &&
+                (!quantity || signed_integer(get(choice,"quantity"))==quantity))
             {
                 if(!index.is_null())throw std::runtime_error("ambiguous native reward choice");
                 index=get(choice,"index");

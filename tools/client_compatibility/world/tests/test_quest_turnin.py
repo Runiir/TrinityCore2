@@ -63,6 +63,28 @@ def test_modern_choice_item_id_maps_to_native_index_not_the_item_id(codec):
     assert 'error' in stateful(codec,[action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',choice())])[0]
 
 
+def test_captured_stock_reward_choice_omits_quantity(codec):
+    # UI28 quest_reward_04: actual first choice from Guard Thomas, not a
+    # synthesized client quantity. The selected item is 57523, quantity zero.
+    captured=bytes.fromhex('03a373f2404104203400000000b3e000000000000000000000000000000000')
+    npc=(0xf13<<52)|(261<<32)|0xf273
+    native=struct.pack('<Q',npc)+offer([(57523,1),(57524,1),(57525,1)])[8:]
+    rows=stateful(codec,[action('quest_response','SMSG_QUEST_GIVER_OFFER_REWARD_MESSAGE',native),
+        action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',captured)],units=[{**UNIT,'guid':npc}])
+    assert rows[1]==['CMSG_QUEST_GIVER_CHOOSE_REWARD',struct.pack('<QII',npc,52,0).hex()]
+
+
+def test_zero_quantity_choice_uses_only_a_unique_offered_identity(codec):
+    rows=stateful(codec,[action('quest_response','SMSG_QUEST_GIVER_OFFER_REWARD_MESSAGE',offer()),
+        action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',choice(40,0))])
+    assert rows[1]==['CMSG_QUEST_GIVER_CHOOSE_REWARD',struct.pack('<QII',NPC,52,1).hex()]
+    for choices,item,quantity in [([(40,1),(40,2)],40,0), ([(39,1),(40,2)],999,0),
+        ([(39,1),(40,2)],40,-1), ([(39,1),(40,2)],40,3)]:
+        rows=stateful(codec,[action('quest_response','SMSG_QUEST_GIVER_OFFER_REWARD_MESSAGE',offer(choices)),
+            action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',choice(item,quantity))])
+        assert 'error' in rows[1]
+
+
 def test_fixed_rewards_survive_legacy_required_item_count_and_corrected_native_builds(codec):
     for native_count in [0,1,6]:
         body=offer(fixed=[(858,2)],fixed_count=native_count)

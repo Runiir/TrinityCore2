@@ -145,13 +145,24 @@ def reward(t,giver,point_file,complete_objectives=True):
     return 'reward_retained'
 
 
-def resume(t,source,point_file):
+def resume(t,source,point_file,restoration_source=None):
     """Resume only an attributable earned completion, never synthesize credit."""
     previous=json.loads(source.read_text());saved=previous.get('retained_completed_quest',{})
     kills=[c for c in previous.get('cases',[]) if c['id'].startswith('quests.complete_') and c['id'].endswith('_kill')]
+    restored=previous.get('restoration') or {}
+    if restoration_source:
+        restoration_source=restoration_source.resolve()
+        if not restoration_source.is_relative_to(lab.ROOT/'evidence') or restoration_source.name!='episode.json':
+            raise ValueError('require an owned completion restoration episode')
+        cleanup=json.loads(restoration_source.read_text());origin=cleanup.get('completion_source',{})
+        if (not cleanup.get('finished_at') or not cleanup.get('completed') or cleanup['actor']!=t.fixture or
+            Path(origin.get('file','')).resolve()!=source.resolve() or origin.get('sha256')!=lab.sha256(source)):
+            raise RuntimeError('restoration episode does not bind this closed completion source')
+        restored=cleanup.get('restoration') or {}
+        t.receipt['completion_restoration_source']={'file':str(restoration_source),'sha256':lab.sha256(restoration_source)};t.persist()
     if (not previous.get('finished_at') or not previous.get('completion_oracle',{}).get('passed') or
             saved.get('quest')!=QUEST or len(kills)!=13 or any(c['status']!='quest_progress_pass' for c in kills) or
-            not all(previous.get('restoration',{}).values()) or previous['actor']!=t.fixture):
+            not restored or not all(restored.values()) or previous['actor']!=t.fixture):
         raise RuntimeError('resume requires a closed, restored thirteen-kill earned completion')
     actors.session_entry(t.fixture);baseline=quest_state(1);items=inventory()
     if baseline!=saved['quest_state'] or items!=saved['inventory_money']:
@@ -177,11 +188,13 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     group=p.add_mutually_exclusive_group(required=True)
     group.add_argument('--review-point-file',type=Path);group.add_argument('--completed-episode',type=Path)
+    p.add_argument('--restoration-episode',type=Path,help='Separate verified cleanup after a disconnected completion')
     p.add_argument('--reward-point-file',type=Path,required=True);a=p.parse_args()
+    if a.restoration_episode and not a.completed_episode:p.error('restoration requires an earned completion source')
     if (a.review_point_file and a.review_point_file.exists()) or a.reward_point_file.exists():p.error('point reviews must be fresh for their staged frames')
     t=Trial(a.output,controller='code')
     try:
-        if a.completed_episode:resume(t,a.completed_episode,a.reward_point_file)
+        if a.completed_episode:resume(t,a.completed_episode,a.reward_point_file,a.restoration_episode)
         else:accept_suite(t,a.review_point_file,False,after_read=lambda t,g:reward(t,g,a.reward_point_file),retain_reward=True,exercise_log=False)
         t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
