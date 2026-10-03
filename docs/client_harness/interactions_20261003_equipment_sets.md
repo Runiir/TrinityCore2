@@ -317,3 +317,11 @@ reviewed before world entry. `interaction_character_combat_recovery --source
 <failed-episode.json> --deployment <corrected-deployment.json> --output
 <new-owned-directory>` restores the source fixture through normal input;
 it contributes no feature qualification.
+
+UI40 is remotely verified in DVC41:36 selected JSON receipts and214
+attributed images pass archive integrity review. The successful whole
+combat trial and its reviewed frames augment the existing stats record;
+unique qualification remains264/916. Failed roots and the source restoration
+retain their original outcomes. The 245 local PNGs
+(327,904,564 bytes) are pruned only after remote/archive verification.
+The committed pointer permits fetching those images for later review.

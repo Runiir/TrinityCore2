@@ -8980,8 +8980,8 @@
         "bags.unequip_item",
         "bags.equip_item"
       ],
-      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore.",
-      "limits": "Owned geared warrior and documented helmet/damage variants only. Item level, haste, crit, ranged stats, other gear slots and unsampled variants remain open. Separate weapon/set/comparison records do not imply broader equipment coverage.",
+      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass.",
+      "limits": "Owned geared warrior and documented helmet/damage/combat variants only. Item level, haste, ratings, expertise/mastery/defense, offscreen ranged/spell rows, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
@@ -9008,6 +9008,23 @@
           "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui38/character_damage_after_review.json",
           "sha256": "7fd49c603b7b6656696bed7ada8ce7e6d54a8f1ef026d9ab36b374f24c54d283",
+          "archived_receipt_digest_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_41.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui40/character_combat_after_02/episode.json",
+          "sha256": "e2a3ae008cf24dd69f05162dbb451af5603b1f186c77b82d746c06153ff0e84b",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.stats.combat.equipped_before": "character_combat_display_pass",
+            "character.stats.combat.unequipped": "character_combat_display_pass",
+            "character.stats.combat.equipped_after": "character_combat_display_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_41.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui40/character_combat_after_review.json",
+          "sha256": "8716a9d4def29c9dcad1db87b9f744651e99237e8fb115164a7fcaa4bc2e0981",
           "archived_receipt_digest_verified": true
         }
       ]

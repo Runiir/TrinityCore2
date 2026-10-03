@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "264/916 reviewed scoped operations. UI38 DVC39 and UI39 DVC40 remotely verified and raw frames/exact archive cache pruned. UI40 combat creation repair shows native10.801665% crit and1075.931 rangedDPS correctly, but first whole helmet trial fails: scalar combat parent32 was wrong; actual pinned parent38 is now repaired. Corrected regression red1/11 then879 full and46 sanitizer pass. Source-bound pending helmet recovery after corrected private launcher reconnect precedes a fresh whole trial. Native worldserver identity unchanged. Haste/ratings/mastery/expertise/item level and other variants remain open.",
+  "current": "264/916 reviewed scoped operations. UI40 DVC41 remotely verified:36 selected JSON/214 attributed PNG. Full fresh crit/ranged creation and helmet roundtrip pass, all original resources/layout restored; this augments existing character.stats without increasing unique count. Corrected parent38 candidate879 full/46 sanitizer checks pass. Prior helper/oracle/gate/live failure roots retained; source-bound restoration is separate. Both observer57 clients use private displays on HDMI-1, no host activation, same native worldserver. UI41 follows native haste/ratings/mastery/expertise/defense omissions and separately attributed item level; all other open actor requirements preserved.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -137,7 +137,8 @@
     "ui39/item_comparison_01: normal private Shift-hover shows exact Worn Greatsword/Gurthalak tooltip identities; release hides comparison; all native resources/panels restored; full frame reviewed; pending checkpoint.",
     "ui39/character_list_bridge_deploy_01: both v56 owned private clients enter after reviewed realm/character screens; no host activation and HDMI-1 verified; native worldserver unchanged.",
     "ui39/visibility_session_01: three complete ordinary logout/reentry phases; saved/modern selection flags3072 then0, hidden world/API state persists, original full resources and visibility restored. Character selection bare-head/helmet paired renders reviewed; rear cloak selection rendering unqualified.",
-    "ui39/DVC40:26 selected JSON and157 attributed PNGs archive verified; sword comparison qualifies two operations,264/916, and normal visibility session persistence augments existing qualification."
+    "ui39/DVC40:26 selected JSON and157 attributed PNGs archive verified; sword comparison qualifies two operations,264/916, and normal visibility session persistence augments existing qualification.",
+    "ui40/DVC41: full fresh combat trial, exact failed-fixture restoration, corrected parent38, both private reconnects,36 selected JSON/214 attributed PNG integrity verified. Native worldserver unchanged; stats proof augments existing qualification264/916."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

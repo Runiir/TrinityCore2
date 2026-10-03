@@ -1277,15 +1277,18 @@ Remaining limits: Other recipes/professions, cancellation, skill gains and coold
 
 ### equipment
 
-One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore.
+One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass.
 
-Remaining limits: Owned geared warrior and documented helmet/damage variants only. Item level, haste, crit, ranged stats, other gear slots and unsampled variants remain open. Separate weapon/set/comparison records do not imply broader equipment coverage.
+Remaining limits: Owned geared warrior and documented helmet/damage/combat variants only. Item level, haste, ratings, expertise/mastery/defense, offscreen ranged/spell rows, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage.
 
 - [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/equipment_02/episode.json`, SHA-256 `44214da3f31946df95c34cedc4a2ef828f8d15adbe3dc98fd39ca9797abe3a0c`.
   Checked cases: `character.unequip` (equipment_change_pass), `character.equip` (equipment_change_pass), `character.stats.unequipped` (character_stats_pass), `character.stats.equipped_after` (character_stats_pass).
 - [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_damage_after_01/episode.json`, SHA-256 `d62e1482b818d6a30dace94d80f489351944387c71d8c4a2d2856107f18b9fbf`.
   Checked cases: `character.stats.damage_modifiers` (character_damage_display_pass).
 - [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_damage_after_review.json`, SHA-256 `7fd49c603b7b6656696bed7ada8ce7e6d54a8f1ef026d9ab36b374f24c54d283`.
+- [442_interactions_20261003_41.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_41.tar.gz.dvc), member `evidence/client_interactions_20261003_ui40/character_combat_after_02/episode.json`, SHA-256 `e2a3ae008cf24dd69f05162dbb451af5603b1f186c77b82d746c06153ff0e84b`.
+  Checked cases: `character.stats.combat.equipped_before` (character_combat_display_pass), `character.stats.combat.unequipped` (character_combat_display_pass), `character.stats.combat.equipped_after` (character_combat_display_pass).
+- [442_interactions_20261003_41.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_41.tar.gz.dvc), member `evidence/client_interactions_20261003_ui40/character_combat_after_review.json`, SHA-256 `8716a9d4def29c9dcad1db87b9f744651e99237e8fb115164a7fcaa4bc2e0981`.
 
 ### inventory_movement
 
