@@ -118,21 +118,21 @@ catalog. The first catalog trial falsely rejected the stock SEARCH placeholder
 after focus loss; its failed receipt and restored native baseline are retained.
 Login persistence and glyph learning/application/removal remain open.
 
-The installed 60895 GlyphSlot.db2 uses different IDs for type/tier pairs than
-native GlyphSlot.dbc. Reusing IDs preserved three of each type but put them in
-the wrong sockets. `442_glyph_slots_60895_v1.json` pins both table hashes, rows
-and the semantic translation. The bridge maps slots during both player creation
-and incremental updates, preserving glyph values, socket indexes and unlocks.
-UI26 `glyph_slot_positions_10` passes all nine ordered socket types
-`2,3,3,2,3,2,1,1,1`, the complete catalog, Battle search/clear and closure, with
-native talents/glyphs/inventory/money unchanged. The screenshot also shows the
-stock frame cropped correctly. Earlier retries and the stale catalog-page
-failure are retained; requesting the exact diagnostic page now waits for that
-page instead of accepting the previous one. This still does not qualify learning,
-placement or removal.
+The pinned native GlyphSlot.dbc and installed 60895 GlyphSlot.db2 rows have
+identical IDs, numeric types and tiers. UI26 `glyph_slot_positions_10` initially
+passed an incorrect catalog-derived type oracle. UI27 `glyph_apply_01` exposed
+that error: pending Battle matched socket type 2, while socket 2 had type 3 and
+its stock tooltip called it Prime. GetGlyphInfo uses Prime=1/Major=2/Minor=3;
+GetGlyphSocketInfo uses Major=1/Minor=2/Prime=3. Those API enums cannot be reused.
+The erroneous rotation is removed; create and sparse updates preserve the
+pinned slot IDs. The corrected ordered socket types are
+`1,2,2,1,2,1,3,3,3`. The earlier type-position qualification is superseded and
+requires a fresh live check; historical receipts remain unchanged.
 
 `glyph_learn_01` right-clicked one staged Glyph of Battle book. The client opened
-its glyph placement UI and did not yet send an item-use request or learn a spell.
+its glyph placement UI. No item-use request was retained in that packet capture,
+and no spell was learned. Item-use packets were not included in the capture
+whitelist at the time, so that receipt cannot establish whether one was sent.
 Escape then sent a valid local cancellation for spell 483, which had no native
 cast. The bridge incorrectly closed the connection. Cleanup could not finish
 while disconnected. The primary client reconnected through ordinary private-display

@@ -11,9 +11,9 @@
     "2": "Prime"
   },
   "modern_types": {
-    "0": "Prime",
-    "1": "Major",
-    "2": "Minor"
+    "0": "Major",
+    "1": "Minor",
+    "2": "Prime"
   },
   "native_rows": [
     {
@@ -112,40 +112,53 @@
   "mapping": [
     {
       "native": 21,
-      "modern": 22
-    },
-    {
-      "native": 22,
-      "modern": 41
-    },
-    {
-      "native": 23,
-      "modern": 42
-    },
-    {
-      "native": 24,
-      "modern": 23
-    },
-    {
-      "native": 25,
-      "modern": 43
-    },
-    {
-      "native": 26,
-      "modern": 25
-    },
-    {
-      "native": 41,
       "modern": 21
     },
     {
-      "native": 42,
+      "native": 22,
+      "modern": 22
+    },
+    {
+      "native": 23,
+      "modern": 23
+    },
+    {
+      "native": 24,
       "modern": 24
     },
     {
-      "native": 43,
+      "native": 25,
+      "modern": 25
+    },
+    {
+      "native": 26,
       "modern": 26
+    },
+    {
+      "native": 41,
+      "modern": 41
+    },
+    {
+      "native": 42,
+      "modern": 42
+    },
+    {
+      "native": 43,
+      "modern": 43
     }
   ],
-  "socket_indexes_and_unlock_mask": "unchanged"
+  "socket_indexes_and_unlock_mask": "unchanged",
+  "api_type_numbers": {
+    "GetGlyphSocketInfo": {
+      "1": "Major",
+      "2": "Minor",
+      "3": "Prime"
+    },
+    "GetGlyphInfo": {
+      "1": "Prime",
+      "2": "Major",
+      "3": "Minor"
+    }
+  },
+  "semantic_evidence": "Stock GlyphUI socket constants/tooltips and UI27 glyph_apply_01 pending Battle matches type 2. The earlier catalog-based rotation was incorrect."
 }

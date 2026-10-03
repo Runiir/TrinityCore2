@@ -85,7 +85,7 @@ def field_values(snapshot, character):
     active["BuybackPrice"] = array("PLAYER_FIELD_BUYBACK_PRICE_1",12)
     active["BuybackTimestamp"] = array("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12)
     # Retired Python differential oracle: match native socket type and tier.
-    glyph_slots={0:0,21:22,22:41,23:42,24:23,25:43,26:25,41:21,42:24,43:26}
+    glyph_slots={n:n for n in [0,21,22,23,24,25,26,41,42,43]}
     active['GlyphSlots']=[glyph_slots[n] for n in array('PLAYER_FIELD_GLYPH_SLOTS_1',9)]
     active['Glyphs']=array('PLAYER_FIELD_GLYPHS_1',9)
     active['GlyphsEnabled']=value('PLAYER_GLYPHS_ENABLED')

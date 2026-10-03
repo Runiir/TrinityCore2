@@ -109,6 +109,7 @@ bool capture(std::string const &name)
                                                           "SMSG_SEND_UNLEARN_SPELLS",
                                                           "CMSG_CAST_SPELL",
                                                           "CMSG_USE_ITEM",
+                                                          "CMSG_REMOVE_GLYPH",
                                                           "CMSG_CLEAR_RAID_MARKER",
                                                           "SMSG_RAID_MARKERS_CHANGED",
                                                           "SMSG_SPELL_PREPARE",

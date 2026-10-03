@@ -81,7 +81,7 @@ def suite(t,learned_arms=False):
         # Stock 60895 XML places Major sockets at 1/4/6, Minor at 2/3/5
         # and Prime at 7/8/9. Counts alone hide incorrectly reused DB2 IDs.
         socket_types=[r.get('type') for r in glyphs]
-        if socket_types!=[2,3,3,2,3,2,1,1,1]:raise RuntimeError('glyph types do not match the stock socket positions')
+        if socket_types!=[1,2,2,1,2,1,3,3,3]:raise RuntimeError('glyph types do not match the stock socket positions')
         t.receipt['glyph_oracle']={'nine_enabled':enabled,'three_of_each_type':types,
             'socket_positions':socket_types,'native_glyphs_unchanged':native_state()==before}
         t.persist()
