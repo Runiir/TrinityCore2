@@ -82,7 +82,27 @@ def open_panel(t):
     require(t.step('reputation.open_panel','Open the reputation window.',
         {'open':{'kind':'key','value':'u','description':'Press the installed reputation binding U.'}},
         lambda b,a,s:{'status':'reputation_open_pass' if 'ReputationFrame' in a['panels'] else
-            'client_or_protocol_failure'},diagnostic_action='open'),'reputation_open_pass')
+        'client_or_protocol_failure'},diagnostic_action='open'),'reputation_open_pass')
+
+
+def inspect_stormwind(t,public,native,label='reputation.inspect_stormwind'):
+    row=next(r for r in public['rows'] if r.get('id')==72 and not r['header'])
+    target=lambda c:c['text']==row['name'] and c['name'].startswith('ReputationBar')
+    visible=lambda p:any(c['name']=='ReputationDetailFrame' and c['visible'] for c in p['controls'])
+    # Stock ReputationBar_OnClick hides an already-open selected detail. Test
+    # that ordinary close explicitly before clicking again to inspect it.
+    if public.get('selected',{}).get('id')==72 and visible(public):
+        def closed(b,a,s):
+            probe=detail(t,'stormwind_detail_closed')
+            return {'status':'reputation_detail_close_pass' if s and not visible(probe) else
+                'client_or_protocol_failure','oracle':probe}
+        require(click_case(t,label+'.close_existing','Close the already-selected Stormwind detail.',target,closed),
+            'reputation_detail_close_pass')
+    def selected(b,a,s):
+        probe=detail(t,'stormwind_selected');chosen=probe.get('selected',{})
+        passed=s and chosen.get('id')==72 and chosen['value']==native[72]['value'] and visible(probe)
+        return {'status':'reputation_standing_pass' if passed else 'client_or_protocol_failure','oracle':probe}
+    require(click_case(t,label,'Inspect the Stormwind reputation standing.',target,selected),'reputation_standing_pass')
 
 
 def suite(t,controls=False):
@@ -97,14 +117,7 @@ def suite(t,controls=False):
         if (expected_watch is None and actual_watch.get('name') or expected_watch is not None and
                 (actual_watch.get('id'),actual_watch.get('value'))!=(expected_watch['id'],expected_watch['value'])):
             raise RuntimeError('public watched faction differs from the native saved index')
-        row=next(r for r in public['rows'] if r.get('id')==72 and not r['header'])
-        def selected(b,a,s):
-            probe=detail(t,'stormwind_selected');chosen=probe.get('selected',{})
-            passed=s and chosen.get('id')==72 and chosen['value']==native[72]['value'] and any(
-                c['name']=='ReputationDetailFrame' and c['visible'] for c in probe['controls'])
-            return {'status':'reputation_standing_pass' if passed else 'client_or_protocol_failure','oracle':probe}
-        require(click_case(t,'reputation.inspect_stormwind','Inspect the Stormwind reputation standing.',
-            lambda c:c['text']==row['name'] and c['name'].startswith('ReputationBar'),selected),'reputation_standing_pass')
+        inspect_stormwind(t,public,native)
         if controls:
             from .interaction_reputation_controls import suite_controls
             suite_controls(t,public,before,native)

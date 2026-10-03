@@ -3,7 +3,7 @@ import argparse,json,time
 from pathlib import Path
 from . import actors
 from .interaction_trial import Trial
-from .interaction_reputation import open_panel,detail,catalog,native_state,native_catalog,standing_oracle
+from .interaction_reputation import open_panel,detail,catalog,native_state,native_catalog,standing_oracle,inspect_stormwind
 from .interaction_operations import click_case
 from .interaction_macros import require
 from .interaction_trade import inventory
@@ -34,12 +34,9 @@ def suite(t):
         raise RuntimeError('requires the originally active Stormwind reputation')
     t.receipt['baseline']={'native':before,'inventory_money':items};t.persist();public=None
     try:
-        open_panel(t);public=catalog(t,'inactive_baseline');standing_oracle(public,native_catalog(before))
+        open_panel(t);public=catalog(t,'inactive_baseline');native=native_catalog(before);standing_oracle(public,native)
         t.receipt['public_baseline']=public;t.persist()
-        require(click_case(t,'reputation.inactive_select','Select the existing Stormwind faction.',
-            lambda c:c['text']=='Stormwind' and c['name'].startswith('ReputationBar'),
-            lambda b,a,s:{'status':'reputation_select_pass' if s and detail(t,'inactive_selected').get('selected',{}).get('id')==72
-                else 'client_or_protocol_failure'}),'reputation_select_pass')
+        inspect_stormwind(t,public,native,'reputation.inactive_select')
         toggle(t,True,'move',before);toggle(t,False,'restore',before)
     finally:
         current=native_state()
