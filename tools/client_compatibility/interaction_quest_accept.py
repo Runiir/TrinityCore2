@@ -13,8 +13,9 @@ QUEST=52
 TITLE='Protect the Frontier'
 
 
-def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False):
+def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False,exercise_log=True):
     if action not in ['accept','decline']:raise ValueError('unsupported manual quest action')
+    if not exercise_log and after_read is None:raise ValueError('minimal acceptance requires its objective/reward callback')
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=quest_state(1);items=inventory();fixture=NpcFixture(t.out,t.fixture,261,2)
     if any(q['quest']==QUEST for group in baseline.values() for q in group):
@@ -90,32 +91,33 @@ def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False
             lambda c:c['name']=='QuestFrameAcceptButton' and c['text']=='Accept',accepted),'quest_manual_accept_pass')
         t.clean_panels();state,_=t.observe('accepted_log_binding')
         if not state.get('quest_log_keys'):raise RuntimeError('no observed quest-log binding')
-        require(t.step('quests.manual_log','Open the quest log.',
-            {'log':{'kind':'key','value':binding_key(state['quest_log_keys'][0]),'description':'Use the observed quest-log binding.'}},
-            lambda b,a,s:{'status':'quest_log_open_pass' if 'QuestLogFrame' in a['panels'] else 'client_or_protocol_failure'},
-            diagnostic_action='log'),'quest_log_open_pass')
-        state,_=t.observe('manual_log_open')
-        if any(h.get('title')=='Elwynn Forest' and h.get('collapsed') for h in state.get('quest_headers',[])):
-            require(click_case(t,'quests.manual_expand','Expand the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
+        if exercise_log:
+            require(t.step('quests.manual_log','Open the quest log.',
+                {'log':{'kind':'key','value':binding_key(state['quest_log_keys'][0]),'description':'Use the observed quest-log binding.'}},
+                lambda b,a,s:{'status':'quest_log_open_pass' if 'QuestLogFrame' in a['panels'] else 'client_or_protocol_failure'},
+                diagnostic_action='log'),'quest_log_open_pass')
+            state,_=t.observe('manual_log_open')
+            if any(h.get('title')=='Elwynn Forest' and h.get('collapsed') for h in state.get('quest_headers',[])):
+                require(click_case(t,'quests.manual_expand','Expand the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
+                    lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
+                        'client_or_protocol_failure'}),'quest_zone_expand_pass')
+            require(click_case(t,'quests.manual_collapse','Collapse the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
+                lambda b,a,s:{'status':'quest_zone_collapse_pass' if s and any(h.get('title')=='Elwynn Forest' and h.get('collapsed')
+                    for h in a.get('quest_headers',[])) and not any(q.get('id')==QUEST for q in a.get('quests',[])) and
+                    a.get('manual_quest_probe',{}).get('active') is True else 'client_or_protocol_failure',
+                    'oracle':{'headers':a.get('quest_headers'),'public_active_quest':a.get('manual_quest_probe')}}),'quest_zone_collapse_pass')
+            require(click_case(t,'quests.manual_reexpand','Reopen the collapsed Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
                 lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
                     'client_or_protocol_failure'}),'quest_zone_expand_pass')
-        require(click_case(t,'quests.manual_collapse','Collapse the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
-            lambda b,a,s:{'status':'quest_zone_collapse_pass' if s and any(h.get('title')=='Elwynn Forest' and h.get('collapsed')
-                for h in a.get('quest_headers',[])) and not any(q.get('id')==QUEST for q in a.get('quests',[])) and
-                a.get('manual_quest_probe',{}).get('active') is True else 'client_or_protocol_failure',
-                'oracle':{'headers':a.get('quest_headers'),'public_active_quest':a.get('manual_quest_probe')}}),'quest_zone_collapse_pass')
-        require(click_case(t,'quests.manual_reexpand','Reopen the collapsed Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
-            lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
-                'client_or_protocol_failure'}),'quest_zone_expand_pass')
-        def read_log(b,a,s):
-            probe=a.get('manual_quest_probe',{});objectives=probe.get('objectives',[])
-            named_bear=any(o.get('required')==5 and o.get('fulfilled')==0 and 'Young Forest Bear' in o.get('text','') for o in objectives)
-            wolf=any(o.get('required')==8 and o.get('fulfilled')==0 and 'Wolf' in o.get('text','') for o in objectives)
-            return {'status':'quest_log_details_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST and named_bear and wolf else
-                'client_or_protocol_failure','oracle':{'selection':a.get('quest_log_selection'),'public_active_quest':probe,
-                    'unseen_bear_name_displayed':named_bear,'wolf_objective_displayed':wolf}}
-        require(click_case(t,'quests.manual_read_log','Read '+TITLE+' and both named kill objectives in the quest log.',
-            lambda c:c['text'].strip()==TITLE,read_log),'quest_log_details_pass')
+            def read_log(b,a,s):
+                probe=a.get('manual_quest_probe',{});objectives=probe.get('objectives',[])
+                named_bear=any(o.get('required')==5 and o.get('fulfilled')==0 and 'Young Forest Bear' in o.get('text','') for o in objectives)
+                wolf=any(o.get('required')==8 and o.get('fulfilled')==0 and 'Wolf' in o.get('text','') for o in objectives)
+                return {'status':'quest_log_details_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST and named_bear and wolf else
+                    'client_or_protocol_failure','oracle':{'selection':a.get('quest_log_selection'),'public_active_quest':probe,
+                        'unseen_bear_name_displayed':named_bear,'wolf_objective_displayed':wolf}}
+            require(click_case(t,'quests.manual_read_log','Read '+TITLE+' and both named kill objectives in the quest log.',
+                lambda c:c['text'].strip()==TITLE,read_log),'quest_log_details_pass')
         if after_read:
             result=after_read(t,fixture)
             if retain_reward:

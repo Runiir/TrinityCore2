@@ -147,7 +147,7 @@ if __name__=='__main__':
     if a.review_point_file.exists() or a.reward_point_file.exists():p.error('point reviews must be fresh for their staged frames')
     t=Trial(a.output,controller='code')
     try:
-        accept_suite(t,a.review_point_file,False,after_read=lambda t,g:reward(t,g,a.reward_point_file),retain_reward=True)
+        accept_suite(t,a.review_point_file,False,after_read=lambda t,g:reward(t,g,a.reward_point_file),retain_reward=True,exercise_log=False)
         t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
