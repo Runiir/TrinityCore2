@@ -11,4 +11,5 @@ CurrencyObservation.lua
 ArchaeologyObservation.lua
 MapObservation.lua
 TooltipObservation.lua
+EquipmentObservation.lua
 ClientInteractions.lua

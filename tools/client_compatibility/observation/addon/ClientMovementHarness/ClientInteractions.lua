@@ -18,7 +18,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'InterfaceOptionsFrame','VideoOptionsFrame','AudioOptionsFrame','KeyBindingFrame','MacroFrame','MacroPopupFrame',
     'ChatConfigFrame','HelpFrame','CalendarFrame','BankFrame','MerchantFrame','GossipFrame','QuestFrame',
     'MailFrame','OpenMailFrame','AuctionFrame','AuctionHouseFrame','TradeFrame','InspectFrame','LootFrame','DressUpFrame','ItemTextFrame','ClassTrainerFrame',
-    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame','StackSplitFrame'}
+    'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame','StackSplitFrame','GearManagerPopupFrame'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
 local autoPhase,controlPage='group',1
@@ -126,7 +126,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=45,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=46,observer_skips=observerSkips}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
     data.player_cast={active=cast~=nil,name=cast,started_ms=started,finished_ms=finished,
@@ -141,6 +141,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='archaeology' then data.archaeology_probe=Client442ObserveArchaeology(page);return data end
     if mode=='map' then data.map_probe=Client442ObserveMap();return data end
     if mode=='tooltip' then data.tooltip_probe=Client442ObserveTooltip();return data end
+    if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -643,7 +644,7 @@ SlashCmdList.CLIENTOBSERVERPANELS=function(text)
 end
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
-    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' then mode=command;page=math.max(1,tonumber(arg) or 1)
+    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='equipment' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
     else mode='state';autoPage=0;autoPhase='group';controlPage=1;groupPage=1 end
     frame:Show();update()
