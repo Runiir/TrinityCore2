@@ -3,7 +3,7 @@ import argparse,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
-from .interaction_currency import open_panel,detail,catalog,inspect,native_state,native_catalog,content_oracle,visible
+from .interaction_currency import open_panel,detail,catalog,inspect,native_state,native_catalog,content_oracle,semantic_rows
 from .interaction_operations import click_case
 from .interaction_macros import require
 from .interaction_trade import inventory
@@ -125,7 +125,7 @@ def suite(t,kind,persist=False):
             toggle(t,kind,initial,'cleanup_restore',baseline,session)
         restored=catalog(t,'flags_restored') if public else None
         t.clean_panels();checks={'native_currency_restored':native_state()==baseline,
-            'inventory_money_unchanged':inventory()==items,'public_catalog_restored':not public or restored['rows']==public['rows']}
+            'inventory_money_unchanged':inventory()==items,'public_catalog_restored':not public or semantic_rows(restored)==semantic_rows(public)}
         t.receipt['restoration']=checks;t.persist()
         if not all(checks.values()):raise RuntimeError('currency flags did not restore the complete baseline')
 

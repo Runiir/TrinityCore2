@@ -77,6 +77,12 @@ def visible(probe,name):
     return any(c['name']==name and c['visible'] for c in probe['controls'])
 
 
+def semantic_rows(probe):
+    # Installed TokenUI uses isExpanded only for headers. Nonheader returns
+    # vary between reads even when identity, count and all currency flags agree.
+    return [{k:v for k,v in row.items() if k!='expanded' or row['header']} for row in probe['rows']]
+
+
 def open_panel(t):
     require(t.step('currency.character_navigation','Open the character window.',
         {'character':{'kind':'key','value':'c','description':'Press C to open the character window.'}},
@@ -118,7 +124,7 @@ def headers(t,original):
             current=next(r for r in probe['rows'] if r['header'] and r['name']==header['name'])
             ids={r.get('id') for r in probe['rows'] if not r['header']}
             passed=s and current['expanded']==expanded and (hidden<=ids if expanded else not hidden&ids)
-            if expanded:passed=passed and probe['rows']==original['rows']
+            if expanded:passed=passed and semantic_rows(probe)==semantic_rows(original)
             return {'status':'currency_header_pass' if passed else 'client_or_protocol_failure','oracle':probe}
         require(click_case(t,'currency.'+label,'Click '+header['name']+' to '+label+' its currencies.',
             lambda c:c['text']==header['name'] and c['name'].startswith('TokenFrameContainerButton'),oracle),
