@@ -32,7 +32,7 @@ def header(t,collapsed,label,baseline):
     def outcome(b,a,s):
         probe=catalog(t,'header_'+label);current=next(r for r in probe['rows'] if r.get('id')==469)
         removed=[r['id'] for r in baseline['rows'] if r['index']>row['index']]
-        expected=[{**r,'collapsed':True} if r.get('id')==469 else r for r in baseline['rows'] if
+        expected=[{**r,'collapsed':collapsed} if r.get('id')==469 else r for r in baseline['rows'] if
             not collapsed or r['index']<=row['index']]
         passed=s and current['collapsed']==collapsed and comparable(probe['rows'])==comparable(expected)
         oracle={'public':probe,'hidden_ids':removed if collapsed else [],'passed':bool(passed)}
