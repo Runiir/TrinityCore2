@@ -50,7 +50,11 @@ def suite(t,phase):
             lambda c:c['text']=='New Set',
             lambda b,a,s:{'status':'equipment_set_dialog_pass' if s and 'GearManagerPopupFrame' in a['panels'] else
                 'client_or_protocol_failure'}),'equipment_set_dialog_pass')
-        t.receipt['popup_controls']=controls(t);t.receipt['popup_probe']=detail(t,'new_set_popup');t.persist()
+        t.receipt['popup_controls']=controls(t)
+        # This stock dialog focuses its name edit box. Return is consumed there,
+        # so observer chat commands cannot be used while it is open.
+        state,frame=t.observe('new_set_popup')
+        t.receipt['popup_observation']={'state':state,'frame':frame};t.persist()
         if phase=='create':
             require(edit_case(t,'character.set_name','Name the disposable equipment set.',
                 lambda c:c['kind']=='EditBox',NAME),'ui_edit_pass')
