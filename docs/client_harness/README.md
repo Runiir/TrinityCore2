@@ -41,6 +41,8 @@ logout/reentry persistence, stock continent/zone navigation, digsite overlays an
 reversible minimap zoom through isolated ordinary inputs.
 The [stock tooltip report](interactions_20261003_tooltips.md) covers equipped item
 identity, the learned Battle glyph tooltip and source-bound search-focus cleanup.
+The [equipment-set report](interactions_20261003_equipment_sets.md) records the
+native set translations, stock control trials and retained harness failures.
 The initial optimized bridge passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
