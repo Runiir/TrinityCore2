@@ -83,9 +83,9 @@ def field_values(snapshot, character):
               "WatchedFactionIndex": array("PLAYER_FIELD_WATCHED_FACTION_INDEX", 1, signed=True)[0],
               "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
               "ProfessionSkillLine": array("PLAYER_PROFESSION_SKILL_LINE_1", 2)}
-    for modern,native in {'CritPercentage':'PLAYER_CRIT_PERCENTAGE','RangedCritPercentage':'PLAYER_RANGED_CRIT_PERCENTAGE',
+    for modern,native_name in {'CritPercentage':'PLAYER_CRIT_PERCENTAGE','RangedCritPercentage':'PLAYER_RANGED_CRIT_PERCENTAGE',
         'OffhandCritPercentage':'PLAYER_OFFHAND_CRIT_PERCENTAGE','ShieldBlockCritPercentage':'PLAYER_SHIELD_BLOCK_CRIT_PERCENTAGE'}.items():
-        active[modern]=float_value(native)
+        active[modern]=float_value(native_name)
     active['SpellCritPercentage']=array('PLAYER_SPELL_CRIT_PERCENTAGE1',7,True)
     active["RestInfo"] = [{"Threshold": value("PLAYER_REST_STATE_EXPERIENCE"),
                            "StateID": value("PLAYER_BYTES_2") >> 24},
