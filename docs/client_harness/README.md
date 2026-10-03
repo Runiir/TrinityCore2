@@ -33,6 +33,9 @@ Both clients share one native worldserver and the lab databases. The bridge
 translates client packets and forwards normal native requests; it does not run a
 second game world. Authentication is a separate login service. Independent bridge
 builds let packet repairs proceed without rebuilding or restarting the worldserver.
+The [archaeology project report](interactions_20261003_archaeology_projects.md)
+records ordinary earned-fragment solving, backpack artifacts and exact rendered
+completion history across interface reload, including both retained protocol failures.
 Its optimized build passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
