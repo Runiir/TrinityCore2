@@ -18,20 +18,21 @@ def quest_state(guid):
     return {'active':active,'rewarded':rewarded}
 
 
-def restore_autoaccepted(trial,baseline):
+def restore_autoaccepted(trial,baseline,quest=QUEST):
+    if quest not in [QUEST,52]:raise ValueError('quest cleanup requires a bounded registered trial quest')
     if (trial.fixture['account_id'],trial.fixture['guid'],trial.fixture['character_name'])!=(1,1,'Harnessone'):
         raise RuntimeError('quest restoration requires the isolated primary actor')
     before=quest_state(1)
     if before==baseline:return
-    extra=[row for row in before['active'] if row['quest']==QUEST]
-    remaining={**before,'active':[row for row in before['active'] if row['quest']!=QUEST]}
+    extra=[row for row in before['active'] if row['quest']==quest]
+    remaining={**before,'active':[row for row in before['active'] if row['quest']!=quest]}
     if len(extra)!=1 or extra[0]['status']!=3 or remaining!=baseline:
         raise RuntimeError('unexpected quest mutation; preserving state for diagnosis')
     with lab.connection() as c,c.cursor() as q:
-        q.execute('SELECT StartItem FROM client442_world.quest_template WHERE ID=%s',(QUEST,))
+        q.execute('SELECT StartItem FROM client442_world.quest_template WHERE ID=%s',(quest,))
         if q.fetchall()!=((0,),):raise RuntimeError('quest source items require a separate restoration contract')
     items=inventory();trial.clean_panels()
-    record={'source':'code_fixture_cleanup','quest':QUEST,'before':before,'baseline':baseline,
+    record={'source':'code_fixture_cleanup','quest':quest,'before':before,'baseline':baseline,
         'target_actor':1,'inventory_money_before':items}
     trial.receipt['quest_fixture_cleanup']=record;trial.persist()
     try:
@@ -40,7 +41,7 @@ def restore_autoaccepted(trial,baseline):
         record['target_frame']=frame;trial.persist()
         if state.get('target',{}).get('guid')!=trial.guid:raise RuntimeError('quest cleanup target is not the owned actor')
         with quest_fixture_permission(trial):
-            fixture_command(trial,f'.quest remove {QUEST}','restore only the quest introduced by the failed compatibility trial')
+            fixture_command(trial,f'.quest remove {quest}','restore only the quest introduced by the failed compatibility trial')
         after=quest_state(1);record['after']=after;record['inventory_money_restored']=inventory()==items
         record['restored']=after==baseline and record['inventory_money_restored'];trial.persist()
         if not record['restored']:raise RuntimeError('quest fixture restoration did not match the original state')
