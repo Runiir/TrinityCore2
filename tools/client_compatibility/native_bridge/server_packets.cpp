@@ -8,6 +8,7 @@
 #include "auctions.hpp"
 #include "quests.hpp"
 #include "talents.hpp"
+#include "archaeology.hpp"
 #include <ctime>
 
 namespace bridge
@@ -128,6 +129,14 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if(research_complete(name,body))
+    {
+        // The completion packet reports count 1 even on repeats. Fetch native
+        // canonical history to preserve the first time and accumulated count.
+        native->send("CMSG_REQUEST_RESEARCH_HISTORY",{});co_return;
+    }
+    if((reply=research_history(state,name,body)))
+    {send(*reply);co_return;}
     if((reply=protocol.inventory_response(name,body)))
     {send(*reply);co_return;}
     if((reply=protocol.inspect_response(state,name,body)))
@@ -302,6 +311,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
             send(*reply);
         if (!was_created && state.created)
         {
+            native->send("CMSG_REQUEST_RESEARCH_HISTORY",{});
             for(auto const &request:login_barrier.release_quest_reads())native->send(request.first,request.second);
             instance->send("SMSG_MOVE_SET_ACTIVE_MOVER", Writer().guid(state.guid(), player_high()).finish());
             instance->send("SMSG_CONTROL_UPDATE",

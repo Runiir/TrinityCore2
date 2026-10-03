@@ -1,5 +1,6 @@
 #include "protocol.hpp"
 #include "spell_failures.hpp"
+#include "archaeology.hpp"
 #include <unordered_set>
 #include <cmath>
 
@@ -54,7 +55,7 @@ Packet Protocol::cast_request(State &owner, View body) const
                 throw std::runtime_error("raid marker targets another map");
         }
     }
-    if (source || (!marker && (dest || orientation || map)) || name_len || weights || order || item != Array{0, 0})
+    if (source || (!marker && (dest || orientation || map)) || name_len || order || item != Array{0, 0})
         throw std::runtime_error("unsupported cast target");
     auto target = (target_flags & 2) ? owner.guid() : 0;
     if (target_flags == 2048 && spell == 73979)
@@ -67,6 +68,8 @@ Packet Protocol::cast_request(State &owner, View body) const
     }
     else if (!marker && !glyph && ((unit != Array{0, 0} && unit != Array{owner.guid(), player_high()}) || (target_flags & ~2u)))
         throw std::runtime_error("unsupported or foreign cast target");
+    if(weights && (marker || glyph || target_flags || unit!=Array{0,0} || moving))
+        throw std::runtime_error("archaeology weights require a stationary self cast");
     if (moving)
     {
         auto state = movement_parse(r.raw(r.remaining()), owner.guid());
@@ -74,8 +77,9 @@ Packet Protocol::cast_request(State &owner, View body) const
         owner.native_send(name, encoded);
         owner.latest_movement=get(state,"position").as_array();
     }
+    auto weight_data=archaeology_weights(r,weights);
     r.end();
-    if (spell <= 0 || integer(cast[1]) >> 58 != 47 || (flags & (marker ? 2 : 10)))
+    if (spell <= 0 || integer(cast[1]) >> 58 != 47 || (flags & ((marker || weights) ? 2 : 10)))
         throw std::runtime_error("invalid cast identity/flags");
     owner.cast_counter = owner.cast_counter % 255 + 1;
     auto high = (47ull << 58) | (1ull << 42) | (static_cast<std::uint64_t>(owner.map()) << 29) |
@@ -93,10 +97,16 @@ Packet Protocol::cast_request(State &owner, View body) const
     // the same bit requires a trailing weight count and would truncate parsing.
     // Modern's glyph-slot flag moved from bit 17 to bit 27. Misc remains the
     // zero-based socket index. Native known-spell/reagent/slot checks still run.
-    w.pack("BiiBI", {owner.cast_counter, spell, misc0, marker ? flags&~8u : flags, glyph ? 0x20000u : target_flags});
+    auto native_flags=marker ? flags&~8u : weights ? flags|8u : flags;
+    w.pack("BiiBI", {owner.cast_counter, spell, misc0, native_flags, glyph ? 0x20000u : target_flags});
     if (target_flags & (2 | 2048))
         packed(w, target);
     if(marker)w.put<std::uint8_t>(0).pack("3f",destination);
+    if(weights)
+    {
+        w.put<std::uint32_t>(weights);
+        for(auto const &weight:weight_data)w.pack("BiI",weight.as_array());
+    }
     return {"CMSG_CAST_SPELL", w.finish()};
 }
 Reply Protocol::cast_prepare(State &owner, View body)

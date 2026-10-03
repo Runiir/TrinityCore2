@@ -3,6 +3,7 @@
 #include "fields.hpp"
 #include "protocol.hpp"
 #include "currency.hpp"
+#include "archaeology.hpp"
 #include "reputation_fields.hpp"
 #include "events.hpp"
 #include "ready_check.hpp"
@@ -318,6 +319,10 @@ int main(int argc, char **argv)
                                 reply = Protocol::currency_response(name, body);
                             else if (fn == "currency_request")
                                 reply = currency_request(name, body);
+                            else if (fn == "research_history")
+                                reply = research_history(state,name,body);
+                            else if (fn == "research_complete")
+                                research_complete(name,body);
                             else if (fn == "reputation")
                                 reply = Protocol::reputation_response(name, body, get(request, "factions").as_array());
                             else if (fn == "social_request")
