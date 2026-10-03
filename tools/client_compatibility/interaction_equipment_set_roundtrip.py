@@ -40,12 +40,14 @@ def open_character(t,label):
 def open_manager(t,label):
     open_character(t,label)
     collapsed=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
+    if 'display_baseline' not in t.receipt:
+        t.receipt['display_baseline']={'collapsed':collapsed};t.persist()
     if collapsed:
         require(click_case(t,label+'.expand','Expand the character sidebar.',
             lambda c:c['name']=='CharacterFrameExpandButton',
             lambda b,a,s:{'status':'character_expand_pass' if s and
                 any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
-                'client_or_protocol_failure'}),'character_expand_pass')
+                'client_or_protocol_failure'},await_state=lambda a:a.get('character_expanded') is True),'character_expand_pass')
     require(click_case(t,label+'.manager','Open the equipment manager.',
         lambda c:c['name']=='PaperDollSidebarTab3',
         lambda b,a,s:{'status':'equipment_manager_pass' if s and detail(t,label+'_manager')['manager_visible'] else
@@ -181,7 +183,7 @@ def suite(t,source):
             t.clean_panels()
             for key in ['c','b']:t.execute({'kind':'key','value':key})
             require(change(t,oracle,item,destination,True),'equipment_change_pass')
-        try:restore_display(t,collapsed)
+        try:restore_display(t,collapsed if collapsed is not None else t.receipt.get('display_baseline',{}).get('collapsed'))
         finally:
             t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
             t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()

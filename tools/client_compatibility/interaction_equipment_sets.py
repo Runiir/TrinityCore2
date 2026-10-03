@@ -37,11 +37,12 @@ def suite(t,phase):
                 'client_or_protocol_failure'},diagnostic_action='open',
             await_state=lambda a:'CharacterFrame' in a['panels']),'character_open_pass')
         if not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)):
+            expanded=True
             require(click_case(t,'character.set_expand','Expand the character sidebar.',
                 lambda c:c['name']=='CharacterFrameExpandButton',
                 lambda b,a,s:{'status':'character_expand_pass' if s and
                     any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
-                    'client_or_protocol_failure'}),'character_expand_pass');expanded=True
+                    'client_or_protocol_failure'},await_state=lambda a:a.get('character_expanded') is True),'character_expand_pass')
         require(click_case(t,'character.set_manager','Open the stock equipment manager.',
             lambda c:c['name']=='PaperDollSidebarTab3',
             lambda b,a,s:{'status':'equipment_manager_pass' if s and detail(t,'manager_open')['manager_visible'] else
@@ -80,11 +81,12 @@ def suite(t,phase):
                 t.execute({'kind':'key','value':'Escape'})
                 state,_=t.observe('popup_cancelled')
                 if 'GearManagerPopupFrame' in state['panels']:raise RuntimeError('new-set popup did not close')
-            require(click_case(t,'character.set_collapse_restore','Restore the collapsed character sidebar.',
-                lambda c:c['name']=='CharacterFrameExpandButton',
-                lambda b,a,s:{'status':'character_display_restore_pass' if s and not
-                    any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
-                    'client_or_protocol_failure'}),'character_display_restore_pass')
+            if any(c['name']=='PaperDollSidebarTab3' for c in controls(t)):
+                require(click_case(t,'character.set_collapse_restore','Restore the collapsed character sidebar.',
+                    lambda c:c['name']=='CharacterFrameExpandButton',
+                    lambda b,a,s:{'status':'character_display_restore_pass' if s and not
+                        any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
+                        'client_or_protocol_failure'},await_state=lambda a:a.get('character_expanded') is False),'character_display_restore_pass')
         t.clean_panels();t.receipt['native_after']={'native':baseline(),'sets':sets()}
         t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
         if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment manager changed native resources')
