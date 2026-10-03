@@ -387,7 +387,7 @@ local function snapshot(viewMode,viewPage)
     end
     data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
     data.spell_targeting=not not call(SpellIsTargeting)
-    data.pending_glyph=call(GetPendingGlyphInfo)
+    if PlayerTalentFrame and PlayerTalentFrame:IsVisible() then data.pending_glyph=call(GetPendingGlyphInfo) end
     data.marker_spell_names={}
     for _,id in ipairs({171553,171554,171555,171556,171557}) do
         local info=call(C_Spell and C_Spell.GetSpellInfo,id)
