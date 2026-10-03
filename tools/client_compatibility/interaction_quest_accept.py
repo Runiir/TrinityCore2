@@ -118,12 +118,14 @@ def suite(t,point,stage_only,action='accept'):
                     for p in a.get('quest_popups',[])) else 'client_or_protocol_failure'}),'quest_abandon_prompt_pass')
         abandon_prompt('quests.manual_abandon_prompt')
         active_before_cancel=quest_state(1)
-        require(click_case(t,'quests.manual_abandon_cancel','Keep the trial quest by cancelling abandonment.',
-            lambda c:c['name']=='StaticPopup1Button2' and c['text']=='Cancel',
-            lambda b,a,s:{'status':'quest_abandon_cancel_pass' if s and not a.get('quest_popups') and
-                a.get('manual_quest_probe',{}).get('active') is True and quest_state(1)==active_before_cancel and inventory()==items else
+        def cancelled(b,a,s):
+            unchanged=quest_state(1)==active_before_cancel
+            return {'status':'quest_abandon_cancel_pass' if s and not a.get('quest_popups') and
+                a.get('manual_quest_probe',{}).get('active') is True and unchanged and inventory()==items else
                 'client_or_protocol_failure','oracle':{'public_active_quest':a.get('manual_quest_probe'),
-                    'native_quest_unchanged':quest_state(1)==active_before_cancel}}),'quest_abandon_cancel_pass')
+                    'native_quest_unchanged':unchanged}}
+        require(click_case(t,'quests.manual_abandon_cancel','Keep the trial quest by cancelling abandonment.',
+            lambda c:c['name']=='StaticPopup1Button2' and c['text'] in ['Cancel','No'],cancelled),'quest_abandon_cancel_pass')
         abandon_prompt('quests.manual_abandon_reprompt')
         require(click_case(t,'quests.manual_abandon_confirm','Confirm abandoning the trial quest.',
             lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Abandon','Yes'],
