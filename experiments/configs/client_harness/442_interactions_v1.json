@@ -1244,7 +1244,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_completed_project_tooltip"
     },
     {
       "id": "archaeology.survey",
@@ -1263,7 +1264,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_stationary_solve_cast_bar"
     },
     {
       "id": "archaeology.telescope_direction",
@@ -1322,7 +1324,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_existing_keystone_solve"
     },
     {
       "id": "archaeology.project_completion",
@@ -10426,8 +10429,91 @@
           }
         }
       ]
+    },
+    {
+      "id": "archaeology_existing_keystone_solve",
+      "operations": [
+        "archaeology.use_keystone"
+      ],
+      "scope": "Ordinary add, remove and re-add of one existing Draenei Tome on common project 245 shows exact socket/icon and +12 fragment adjustment without native mutation. Stationary Solve sends native currency 398 quantity 34 and keystone 64394 quantity 1; earned fragments 47 to 13, existing stack 5 to 4, one artifact 64444 and exact completed history. All other resources and items preserved.",
+      "limits": "One keystone on one common Draenei project only; additional socket counts, other races, rares and repeated completions remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json",
+          "sha256": "1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.keystone.add": "archaeology_keystone_pass",
+            "archaeology.keystone.remove": "archaeology_keystone_pass",
+            "archaeology.solve_project": "archaeology_solve_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json",
+          "sha256": "6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "archaeology_completed_project_tooltip",
+      "operations": [
+        "archaeology.project_tooltip"
+      ],
+      "scope": "Physical hover over the disabled stock Scepter of the Nathrezim common-artifact button shows the exact native project title, completion count 1 and first-completion date. Public timestamp/count and rendered history match all three legitimate native completed projects; native resources unchanged.",
+      "limits": "One common completed Draenei tooltip; rare selection, repeated counts, other races and history pagination remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json",
+          "sha256": "1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.project_tooltip": "archaeology_tooltip_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json",
+          "sha256": "6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "archaeology_stationary_solve_cast_bar",
+      "operations": [
+        "archaeology.cast_bar"
+      ],
+      "scope": "Original immediate weighted-Solve frame and public UnitCastingInfo show active spell 90864, matching Scepter of the Nathrezim text, visible stock bar and exact 3000 ms duration. Source-bound review pins the original episode at 899bd592f2, before the later helper, and the captured valid native weighted request.",
+      "limits": "Stationary common-project Solve only. Survey cast-bar visibility, cancellation and movement variants remain open; no learned autonomy is qualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json",
+          "sha256": "1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.solve_project": "archaeology_solve_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json",
+          "sha256": "6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
     }
   ],
-  "qualified_operations": 239,
+  "qualified_operations": 242,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

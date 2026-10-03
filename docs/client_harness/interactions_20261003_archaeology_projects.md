@@ -109,6 +109,10 @@ Eleven private-input/cohort guards pass. An earlier command selected a nonexiste
 test file and collected no tests; that selection error is retained in the batch.
 The native worldserver and bridge lifetimes remain unchanged throughout UI33.
 The weighted solve, frames and source-bound review are checkpointed separately in
-`442_interactions_20261003_34.tar.gz.dvc`. One-keystone, common Draenei Solve and
+[442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc),
+archive SHA-256 `f5804bb941fe4505930c6416230841cabd4f137d0b94b3327d02a5a87f60d743`.
+Five JSON receipts/reviews and 73 attributed PNG hashes pass the archive review.
+Three new scoped operations bring the checklist to 242/916; eight qualification
+and inventory guards pass. One-keystone, common Draenei Solve and
 its completed tooltip are the tested variants. Additional socket counts, rare
 artifacts, repeats, other races and Survey casts remain pending.

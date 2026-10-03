@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 239 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 242 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -173,15 +173,15 @@ Fixture: `digsite_variants`.
 - [x] `archaeology.close` (qualified variant; [evidence](#archaeology_current_draenei_project))
 - [x] `archaeology.race_select` (qualified variant; [evidence](#archaeology_current_draenei_project))
 - [x] `archaeology.project_select` (qualified variant; [evidence](#archaeology_current_draenei_project))
-- [ ] `archaeology.project_tooltip`
+- [x] `archaeology.project_tooltip` (qualified variant; [evidence](#archaeology_completed_project_tooltip))
 - [x] `archaeology.survey` (qualified variant; [evidence](#archaeology_loop))
-- [ ] `archaeology.cast_bar`
+- [x] `archaeology.cast_bar` (qualified variant; [evidence](#archaeology_stationary_solve_cast_bar))
 - [x] `archaeology.telescope_direction` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.distance_lantern` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.approach_find` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.loot_find` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.solve_project` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
-- [ ] `archaeology.use_keystone`
+- [x] `archaeology.use_keystone` (qualified variant; [evidence](#archaeology_existing_keystone_solve))
 - [x] `archaeology.project_completion` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
 - [x] `archaeology.site_completion` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.site_rotation` (qualified variant; [evidence](#archaeology_loop))
@@ -1806,3 +1806,33 @@ Remaining limits: Interface-reload persistence on this owned actor only. Full-se
 
 - [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json`, SHA-256 `e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8`.
   Checked cases: `archaeology.reload_persistence` (archaeology_reload_pass), `archaeology.completed_history.after_reload_history` (archaeology_history_pass).
+
+### archaeology_existing_keystone_solve
+
+Ordinary add, remove and re-add of one existing Draenei Tome on common project 245 shows exact socket/icon and +12 fragment adjustment without native mutation. Stationary Solve sends native currency 398 quantity 34 and keystone 64394 quantity 1; earned fragments 47 to 13, existing stack 5 to 4, one artifact 64444 and exact completed history. All other resources and items preserved.
+
+Remaining limits: One keystone on one common Draenei project only; additional socket counts, other races, rares and repeated completions remain open.
+
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json`, SHA-256 `1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211`.
+  Checked cases: `archaeology.keystone.add` (archaeology_keystone_pass), `archaeology.keystone.remove` (archaeology_keystone_pass), `archaeology.solve_project` (archaeology_solve_pass).
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json`, SHA-256 `6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05`.
+
+### archaeology_completed_project_tooltip
+
+Physical hover over the disabled stock Scepter of the Nathrezim common-artifact button shows the exact native project title, completion count 1 and first-completion date. Public timestamp/count and rendered history match all three legitimate native completed projects; native resources unchanged.
+
+Remaining limits: One common completed Draenei tooltip; rare selection, repeated counts, other races and history pagination remain open.
+
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json`, SHA-256 `1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211`.
+  Checked cases: `archaeology.project_tooltip` (archaeology_tooltip_pass).
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json`, SHA-256 `6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05`.
+
+### archaeology_stationary_solve_cast_bar
+
+Original immediate weighted-Solve frame and public UnitCastingInfo show active spell 90864, matching Scepter of the Nathrezim text, visible stock bar and exact 3000 ms duration. Source-bound review pins the original episode at 899bd592f2, before the later helper, and the captured valid native weighted request.
+
+Remaining limits: Stationary common-project Solve only. Survey cast-bar visibility, cancellation and movement variants remain open; no learned autonomy is qualified.
+
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json`, SHA-256 `1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211`.
+  Checked cases: `archaeology.solve_project` (archaeology_solve_pass).
+- [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json`, SHA-256 `6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05`.
