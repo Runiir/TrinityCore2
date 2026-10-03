@@ -122,7 +122,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=28,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=29,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -162,6 +162,8 @@ local function snapshot(viewMode,viewPage)
                     local row=call(f.GetRowData,f)
                     if type(row)=='table' and type(row.auctionID)=='number' then
                         data.controls[#data.controls].auction_id=row.auctionID
+                        data.controls[#data.controls].width=math.floor(f:GetWidth()*scale/width*65535)
+                        data.controls[#data.controls].mouse_click=call(f.IsMouseClickEnabled,f)
                         if not auctionInputHooks[f] then
                             auctionInputHooks[f]=true
                             for _,event in ipairs({'OnMouseDown','OnMouseUp','OnClick'}) do
@@ -329,6 +331,16 @@ local function snapshot(viewMode,viewPage)
             data.auction.input_probe={rows=auctionRowInputs,control=call(IsControlKeyDown),
                 shift=call(IsShiftKeyDown),alt=call(IsAltKeyDown),dressup=call(IsModifiedClick,'DRESSUP'),
                 chatlink=call(IsModifiedClick,'CHATLINK')}
+            local foci=call(GetMouseFoci) or {call(GetMouseFocus)}
+            data.auction.input_probe.foci={}
+            for i=1,math.min(#foci,3) do
+                local focus=foci[i];local parent=focus and call(focus.GetParent,focus)
+                data.auction.input_probe.foci[#data.auction.input_probe.foci+1]={
+                    name=call(focus.GetName,focus) or '',kind=call(focus.GetObjectType,focus),
+                    parent=parent and call(parent.GetName,parent) or '',
+                    parent_kind=parent and call(parent.GetObjectType,parent),
+                    mouse_click=call(focus.IsMouseClickEnabled,focus)}
+            end
             local selected=auctions.AllAuctionsList and call(auctions.AllAuctionsList.GetSelectedEntry,auctions.AllAuctionsList)
             data.auction.list_selected_id=selected and selected.auctionID
         end
