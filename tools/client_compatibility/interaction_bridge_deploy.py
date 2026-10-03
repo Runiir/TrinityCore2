@@ -1,5 +1,6 @@
 """Restart only the owned bridge, then reconnect reviewed lobby screens on HDMI-1."""
 import argparse
+import fcntl
 from contextlib import redirect_stdout
 from io import StringIO
 import json
@@ -85,8 +86,16 @@ def reconnect(out,name,keyboard_modal=False):
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
-            if len(report['reconnected'])==2:report['finished_at']=time.time()
-            lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
+            # Independent private-display clients can reconnect concurrently.
+            # Merge their results under a short metadata lock instead of losing
+            # the other actor's result through last-writer-wins replacement.
+            with (out/'deployment.lock').open('a') as handle:
+                fcntl.flock(handle,fcntl.LOCK_EX)
+                latest=json.loads((out/'deployment.json').read_text())
+                latest['reconnected'].update(report['reconnected'])
+                expected=1 if latest.get('recovery_source') else 2
+                if len(latest['reconnected'])==expected:latest['finished_at']=time.time()
+                lab.private_write(out/'deployment.json',json.dumps(latest,indent=2)+'\n')
             print(json.dumps({'actor':name,'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
