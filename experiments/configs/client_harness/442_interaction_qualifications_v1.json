@@ -1218,13 +1218,22 @@
       "operations": [
         "talents.glyph_open"
       ],
-      "scope": "Stock glyph panel opens with nine correctly cropped enabled Prime/Major/Minor sockets; native talent/glyph state and inventory/money remain unchanged.",
+      "scope": "Stock glyph panel opens with nine correctly cropped enabled sockets in installed order Major/Minor/Minor/Major/Minor/Major/Prime/Prime/Prime. Native talent/glyph state and inventory/money remain unchanged.",
       "limits": "Application, removal, learning, tooltips, other classes and level/locked variants remain open.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json",
           "sha256": "b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "talents.glyph_open_repaired": "glyph_panel_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_27.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui26/glyph_slot_positions_10/episode.json",
+          "sha256": "cabc0b6ae287e18e0d7e7b84740b704dea16aac4ed920b114ad6ba8cc9312e8c",
           "archived_receipt_digest_verified": true,
           "cases": {
             "talents.glyph_open_repaired": "glyph_panel_pass"
