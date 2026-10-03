@@ -99,8 +99,12 @@ def suite(t,roundtrip,haste_roundtrip=False):
             require(change(t,oracle,item,destination,equipment_slot=slot,equipment_control=control,case_suffix=suffix),'equipment_change_pass')
             label='unequipped' if slot==1 else 'waist_unequipped'
             unequipped=verify(t,oracle,label)
-            if unequipped['ratings']==equipped['ratings'] or close(unequipped['mastery'],equipped['mastery']):
-                raise RuntimeError('item did not change ratings/mastery; update remains untested')
+            if unequipped['ratings']==equipped['ratings']:
+                raise RuntimeError('item did not change native ratings; update remains untested')
+            if slot==1 and unequipped['expertise']==equipped['expertise']:
+                raise RuntimeError('helmet did not change native expertise; update remains untested')
+            if slot==6 and close(unequipped['mastery'],equipped['mastery']):
+                raise RuntimeError('belt did not change native mastery; update remains untested')
             if slot==6 and (close(unequipped['melee_haste'],equipped['melee_haste']) or
                 close(unequipped['ranged_haste'],equipped['ranged_haste'])):raise RuntimeError('belt did not change native haste')
             require(change(t,oracle,item,destination,True,equipment_slot=slot,equipment_control=control,case_suffix=suffix),'equipment_change_pass')
