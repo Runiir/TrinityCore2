@@ -294,7 +294,10 @@ int main(int argc, char **argv)
                             else if (fn == "cast_prepare")
                                 reply = Protocol::cast_prepare(state, body);
                             else if (fn == "cast_cancel")
-                                reply = Packet{name, Protocol::cast_cancel(state, body)};
+                            {
+                                auto cancelled=Protocol::cast_cancel(state,body);
+                                if(!cancelled.empty())reply=Packet{name,cancelled};
+                            }
                             else if (fn == "aura_response")
                                 reply = Protocol::aura_response(state, name, body);
                             else if (fn == "aura_cancel")

@@ -312,7 +312,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if (name == "CMSG_CANCEL_CAST")
     {
         require_world();
-        owner.native->send(name, Protocol::cast_cancel(state, body));
+        auto cancelled=Protocol::cast_cancel(state,body);
+        if(!cancelled.empty())owner.native->send(name,cancelled);
         return;
     }
     if (name == "CMSG_CAST_SPELL")

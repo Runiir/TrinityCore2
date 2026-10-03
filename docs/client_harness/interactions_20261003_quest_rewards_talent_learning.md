@@ -2,7 +2,9 @@
 
 The isolated native worldserver remains PID 3428101, start ticks 15075252.
 The main raid-bot worktree and databases are unchanged. New trials use ordinary
-keyboard/mouse inputs with the code controller; no new Laya or Jev calls occur.
+keyboard/mouse inputs with the code controller. The later user-requested desktop
+isolation check explicitly uses Laya for a bounded two-client UI probe; it does
+not change the controller attribution of the quest or talent trials.
 Temporary console teleports place the actor beside existing creatures and NPCs.
 They do not qualify navigation, quest completion or combat.
 
@@ -108,8 +110,42 @@ Preview rank is the eighth GetTalentInfo result, as used by the pinned stock
 TalentFrameBase source. Observer v34 omitted the explicit talent-group argument when reading per-tree
 totals, although the stock frame correctly displayed one point. The pending v35
 observer passes the active group used by the stock UI and adds bounded read-only
-glyph catalog pages. It is committed but not yet deployed. Login persistence and
-other talent/glyph operations remain open.
+glyph catalog pages. `fixed_reward_deployment_01` deployed v35 on both clients.
+`talent_glyph_catalog_02` passed with Arms/Fury/Protection totals 1/0/0,
+40 unspent points, all nine typed sockets and the complete 37-row catalog. Search
+for Battle showed the one matching glyph and clearing restored the original
+catalog. The first catalog trial falsely rejected the stock SEARCH placeholder
+after focus loss; its failed receipt and restored native baseline are retained.
+Login persistence and glyph learning/application/removal remain open.
+
+`glyph_learn_01` right-clicked one staged Glyph of Battle book. The client opened
+its glyph placement UI and did not yet send an item-use request or learn a spell.
+Escape then sent a valid local cancellation for spell 483, which had no native
+cast. The bridge incorrectly closed the connection. Cleanup could not finish
+while disconnected. The primary client reconnected through ordinary private-display
+input, and the exact unused book was removed. The first cleanup checked persisted
+inventory before a native save and reported a stale DB row; a read-only saved-state
+verification then passed the full original inventory/money/spell/talent baseline.
+Neither failed receipt is counted as glyph learning. Local cursor cancellations
+now produce no native packet when there is no owned cast; malformed requests are
+still rejected. Observer v36 adds read-only pending-glyph/socket-match diagnostics
+for the next ordinary placement trace.
+
+## Desktop isolation
+
+Both actors already run in separate Gamescope X displays, Wine prefixes and
+client directories. The old input adapter activated their host windows and shared
+one global input lock. Input now verifies HDMI-1 placement without moving the
+window, focuses only the owned nested game window, and uses one lock per actor.
+The Wine window is bound to its Gamescope supervisor by process ancestry. Reused
+client PIDs and actor switches invalidate an existing adapter.
+
+`isolated_laya_ui_01` passed three ordinary panel operations on both clients,
+using the explicitly requested local Laya model and its pinned revision. The two
+worker lifetimes overlap. Across 593 read-only desktop samples, host focus and
+pointer stayed unchanged and both game windows remained in the background.
+Resources, equipment and groups were unchanged, and panels were closed afterward.
+This proves the bounded two-client input case; long-running roaming remains open.
 
 ## Validation and deployment
 

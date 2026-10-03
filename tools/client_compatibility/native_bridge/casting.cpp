@@ -250,10 +250,15 @@ Bytes Protocol::cast_cancel(State const &owner, View body)
     auto identity = r.guid();
     auto spell = r.take<std::uint32_t>();
     r.end();
+    if(integer(identity[1])>>58!=47 || !spell || spell>0x7fffffff)
+        throw std::runtime_error("invalid local cast cancellation identity");
     for (auto const &[counter, cast] : owner.casts)
         if ((identity == get(cast, "guid").as_array() || identity == get(cast, "server_guid").as_array()) &&
             integer(get(cast, "spell")) == spell)
             return Writer().pack("BI", {counter, spell}).finish();
-    throw std::runtime_error("cancel does not match an owned cast");
+    // The client creates local casts while choosing a glyph socket, before an
+    // item-use packet reaches the server. Escape cancels that cursor. There is
+    // no native cast to cancel, and this ordinary UI action must not disconnect.
+    return {};
 }
 } // namespace bridge

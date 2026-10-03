@@ -12,7 +12,8 @@ function Client442ObserveTalents()
         primary=call(GetPrimaryTalentTree,false,false),preview_primary=call(GetPreviewPrimaryTalentTree,false,false),
         preview_option=call(GetCVarBool,'previewTalentsOption'),
         preview_spent=call(GetGroupPreviewTalentPointsSpent,false,call(GetActiveTalentGroup)),
-        rank_columns={'tree','index','name','rank','max_rank','preview_rank'},ranks={},popups={}}
+        rank_columns={'tree','index','name','rank','max_rank','preview_rank'},ranks={},popups={},
+        pending_glyph=call(GetPendingGlyphInfo)}
     for i=1,3 do
         local id,name,description,icon,spent,background,preview,unlocked=call(GetTalentTabInfo,i,false,false,group)
         data.tabs[#data.tabs+1]={id=id,name=name,spent=spent,background=background,unlocked=unlocked,
@@ -28,7 +29,7 @@ function Client442ObserveTalents()
     end
     for i=1,9 do
         local enabled,type_,tooltip,spell,icon,id=call(GetGlyphSocketInfo,i)
-        data.glyphs[#data.glyphs+1]={index=i,enabled=enabled,type=type_,spell=spell,id=id}
+        data.glyphs[#data.glyphs+1]={index=i,enabled=enabled,type=type_,spell=spell,id=id,matches_pending=call(GlyphMatchesSocket,i)}
     end
     for _,name in ipairs({'PlayerTalentFrame','PlayerTalentFrameInset','PlayerTalentFrameInsetBg','PlayerTalentFrameTalents',
         'PlayerTalentFramePanel1','PlayerTalentFramePanel2','PlayerTalentFramePanel3','GlyphFrame',

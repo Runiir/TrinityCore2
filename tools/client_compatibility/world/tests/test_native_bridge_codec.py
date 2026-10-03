@@ -186,6 +186,14 @@ def test_native_survey_start_ack_cast_bar_cancel_and_failure_match(codec):
         ['CMSG_CANCEL_CAST',casting.cancel(owner,cancel).hex()],['SMSG_CAST_FAILED',casting.response(owner,'SMSG_CAST_FAILED',failure).hex()]]
 
 
+def test_local_glyph_cursor_cancellation_is_not_forwarded_without_a_native_cast(codec):
+    # Actual Escape after right-clicking an unlearned Glyph of Battle book.
+    body=bytes.fromhex('018301c278bce3010000')
+    assert stateful(codec,dict(guid=1,map=0),[action('cast_cancel','CMSG_CANCEL_CAST',body)])==[None]
+    for invalid in [body[:-1],body+b'x',Writer().guid(1,0).pack('I',483).finish()]:
+        assert 'error' in stateful(codec,dict(guid=1,map=0),[action('cast_cancel','CMSG_CANCEL_CAST',invalid)])[0]
+
+
 def test_native_artifact_gather_loot_and_duplicate_guards_match(codec):
     from types import SimpleNamespace
     from tools.client_compatibility.world import casting,looting

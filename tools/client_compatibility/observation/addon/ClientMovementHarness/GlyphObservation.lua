@@ -12,8 +12,12 @@ function Client442ObserveGlyphs(page)
         local name,type_,known,icon,id=call(GetGlyphInfo,i)
         data.rows[#data.rows+1]={index=i,name=name,type=type_,known=known,id=id}
     end
-    for _,name in ipairs({'GLYPH_FILTER_KNOWN','GLYPH_FILTER_UNKNOWN','GLYPH_FILTER_PRIME','GLYPH_FILTER_MAJOR','GLYPH_FILTER_MINOR'}) do
+    for _,name in ipairs({'GLYPH_FILTER_KNOWN','GLYPH_FILTER_UNKNOWN'}) do
         data.filters[#data.filters+1]={name=name,value=_G[name],active=call(IsGlyphFlagSet,_G[name])}
+    end
+    for i,name in ipairs({'Prime','Major','Minor'}) do
+        local flag=2^(i-1)
+        data.filters[#data.filters+1]={name=name,value=flag,active=call(IsGlyphFlagSet,flag)}
     end
     for i=1,9 do
         local enabled,type_,tooltip,spell,icon,id=call(GetGlyphSocketInfo,i)
