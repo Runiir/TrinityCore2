@@ -65,7 +65,7 @@ def verify(t,oracle,label):
         outcome,diagnostic_action='inspect');require(row,'character_ratings_display_pass');return row['oracle']['native']
 
 
-def suite(t,roundtrip):
+def suite(t,roundtrip,haste_roundtrip=False):
     if t.fixture['guid']!=1:raise RuntimeError('requires the owned geared primary warrior')
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,1).poll()
     original=stable(baseline());t.receipt.update(baseline=original,native_session=session);creation=None
@@ -74,7 +74,7 @@ def suite(t,roundtrip):
             if find_self(bytes.fromhex(row['body']),1):
                 creation={'time':row['time'],'session':session,'body_sha256':hashlib.sha256(bytes.fromhex(row['body'])).hexdigest()}
     if not creation:raise RuntimeError('native full creation is not attributable')
-    t.receipt['native_creation']=creation;t.persist();collapsed=None;item=destination=None
+    t.receipt['native_creation']=creation;t.persist();collapsed=None;item=destination=None;slot=1;control='CharacterHeadSlot';suffix=''
     try:
         open_character(t,'ratings.character');collapsed=not any(c['name']=='PaperDollSidebarTab1' for c in controls(t))
         t.receipt['display_baseline']={'collapsed':collapsed};t.persist()
@@ -87,22 +87,31 @@ def suite(t,roundtrip):
             lambda b,a,s:{'status':'character_stats_sidebar_pass' if s and detail(t,'selected_stats')['stats']['sheet'] else
                 'client_or_protocol_failure'}),'character_stats_sidebar_pass')
         equipped=verify(t,oracle,'equipped_before')
-        if roundtrip:
-            item=oracle.equipment(1);empty=[s for s in range(1,17) if not oracle.slot(0,s)['guid']]
-            if not item['guid'] or not empty:raise RuntimeError('requires helmet and empty backpack slot')
-            destination=(0,empty[-1]);t.receipt['helmet_fixture']={'item':item,'destination':destination};t.persist()
-            t.execute({'kind':'key','value':'b'});started=time.time();require(change(t,oracle,item,destination),'equipment_change_pass')
-            unequipped=verify(t,oracle,'unequipped')
+        fixtures=([(1,'CharacterHeadSlot','')] if roundtrip else [])+([(6,'CharacterWaistSlot','.waist')] if haste_roundtrip else [])
+        started=time.time()
+        for slot,control,suffix in fixtures:
+            item=oracle.equipment(slot);empty=[s for s in range(1,17) if not oracle.slot(0,s)['guid']]
+            if not item['guid'] or not empty:raise RuntimeError('requires equipped item and empty backpack slot')
+            if slot==6 and item['id']!=78416:raise RuntimeError('requires the catalog-attributed haste belt78416')
+            destination=(0,empty[-1]);t.receipt.setdefault('equipment_fixtures',[]).append({'item':item,'destination':destination,'slot':slot,'control':control});t.persist()
+            if not t.observe('before_bag_'+str(slot))[0].get('bags'):t.execute({'kind':'key','value':'b'})
+            require(change(t,oracle,item,destination,equipment_slot=slot,equipment_control=control,case_suffix=suffix),'equipment_change_pass')
+            label='unequipped' if slot==1 else 'waist_unequipped'
+            unequipped=verify(t,oracle,label)
             if unequipped['ratings']==equipped['ratings'] or close(unequipped['mastery'],equipped['mastery']):
-                raise RuntimeError('helmet did not change ratings/mastery; update remains untested')
-            require(change(t,oracle,item,destination,True),'equipment_change_pass')
-            if verify(t,oracle,'equipped_after')!=equipped:raise RuntimeError('native ratings did not restore')
+                raise RuntimeError('item did not change ratings/mastery; update remains untested')
+            if slot==6 and (close(unequipped['melee_haste'],equipped['melee_haste']) or
+                close(unequipped['ranged_haste'],equipped['ranged_haste'])):raise RuntimeError('belt did not change native haste')
+            require(change(t,oracle,item,destination,True,equipment_slot=slot,equipment_control=control,case_suffix=suffix),'equipment_change_pass')
+            label='equipped_after' if slot==1 else 'waist_equipped_after'
+            if verify(t,oracle,label)!=equipped:raise RuntimeError('native ratings did not restore')
+        if fixtures:
             updates=[]
             for row in Cursor(lab.ROOT/'evidence/world_packets.jsonl').poll():
                 if (row.get('time',0)<started or row.get('session')!=session or
                     row.get('direction')!='from_native' or row.get('name')!='SMSG_UPDATE_OBJECT'):continue
                 for record in records(bytes.fromhex(row['body'])):
-                    fields={str(i):v for i,v in record.get('fields',{}).items() if i==INDEX['PLAYER_MASTERY'] or
+                    fields={str(i):v for i,v in record.get('fields',{}).items() if i in [INDEX['PLAYER_MASTERY'],INDEX['PLAYER_FIELD_MOD_HASTE'],INDEX['PLAYER_FIELD_MOD_RANGED_HASTE'],INDEX['PLAYER_FIELD_MOD_HASTE_REGEN']] or
                         INDEX['PLAYER_FIELD_COMBAT_RATING_1']<=i<INDEX['PLAYER_FIELD_COMBAT_RATING_1']+26}
                     if record['guid']==1 and record['update_type']==0 and fields:
                         updates.append({'time':row['time'],'body_sha256':hashlib.sha256(bytes.fromhex(row['body'])).hexdigest(),'fields':fields})
@@ -110,8 +119,8 @@ def suite(t,roundtrip):
             t.receipt['native_sparse_ratings_updates']=updates;t.persist()
     finally:
         try:
-            if item and destination and not oracle.poll().equipment(1)['guid'] and oracle.slot(*destination)==item:
-                require(change(t,oracle,item,destination,True),'equipment_change_pass')
+            if item and destination and not oracle.poll().equipment(slot)['guid'] and oracle.slot(*destination)==item:
+                require(change(t,oracle,item,destination,True,equipment_slot=slot,equipment_control=control,case_suffix=suffix),'equipment_change_pass')
         finally:
             try:restore_display(t,collapsed)
             finally:
@@ -121,7 +130,7 @@ def suite(t,roundtrip):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--helmet-roundtrip',action='store_true');a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t,a.helmet_roundtrip);t.receipt['completed']=True
+    p.add_argument('--helmet-roundtrip',action='store_true');p.add_argument('--haste-roundtrip',action='store_true');a=p.parse_args();t=Trial(a.output,controller='code')
+    try:suite(t,a.helmet_roundtrip,a.haste_roundtrip);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

@@ -21,26 +21,29 @@ def stats_check(trial,oracle,label):
     return scalar and damage
 
 
-def change(trial,oracle,item,destination,equip=False):
-    rows=controls(trial);head=next((c for c in rows if c['name']=='CharacterHeadSlot'),None)
+def change(trial,oracle,item,destination,equip=False,equipment_slot=1,equipment_control='CharacterHeadSlot',case_suffix=''):
+    if not 1<=equipment_slot<=19:raise ValueError('equipment slot outside the native range')
+    rows=controls(trial);head=next((c for c in rows if c['name']==equipment_control),None)
     bag=slot_control(trial,*destination)
-    if head is None or bag is None:raise RuntimeError('visible head and bag controls required')
+    if head is None or bag is None:raise RuntimeError('visible equipment and bag controls required')
     actions={'change':({'kind':'click','value':point(bag),'button':3,
-        'description':'Right-click the helmet in the backpack to equip it.'} if equip else
-        {'kind':'drag','start':point(head),'end':point(bag),'description':'Drag the equipped helmet into the indicated empty backpack slot.'}),
+        'description':'Right-click the equipment item in the backpack to equip it.'} if equip else
+        {'kind':'drag','start':point(head),'end':point(bag),'description':'Drag the equipped item into the indicated empty backpack slot.'}),
         'escape':{'kind':'key','value':'Escape','description':'Close the equipment window.'},
         'map':{'kind':'key','value':'m','description':'Open the world map.'}}
     def visible_outcome(a):
-        equipped=(a.get('equipment') or [None])[0]==(item['id'] if equip else 0)
+        equipped=(a.get('equipment') or [None]*19)[equipment_slot-1]==(item['id'] if equip else 0)
         shown=next((x for x in a.get('bag_items',[]) if (x['bag'],x['slot'])==destination),None)
         return equipped and (shown is None if equip else shown is not None and shown['id']==item['id'] and shown['count']==item['count'])
     def outcome(b,a,s):
-        oracle.poll();actual=oracle.equipment(1);stored=oracle.slot(*destination)
+        oracle.poll();actual=oracle.equipment(equipment_slot);stored=oracle.slot(*destination)
         expected=actual==item and stored['guid']==0 if equip else actual['guid']==0 and stored==item
         visible=visible_outcome(a)
         return {'status':'equipment_change_pass' if expected and visible else ('controller_failure' if s!='change' else 'client_or_protocol_failure'),
             'oracle':{'native_head':actual,'native_bag':stored,'native_matches':expected,'visible_matches':visible}}
-    return trial.step('character.equip' if equip else 'character.unequip','Equip the helmet from the backpack.' if equip else 'Unequip the helmet into the empty backpack slot.',actions,outcome,diagnostic_action='change',await_state=visible_outcome)
+    return trial.step(('character.equip' if equip else 'character.unequip')+case_suffix,
+        'Equip the item from the backpack.' if equip else 'Unequip the item into the empty backpack slot.',
+        actions,outcome,diagnostic_action='change',await_state=visible_outcome)
 
 
 def open_panels(trial):
