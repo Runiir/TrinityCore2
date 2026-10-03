@@ -203,3 +203,12 @@ slots support indices 0 through 9. Larger catalogs, specialization assignment,
 appearance sets, cosmetic fields and full-inventory swap failures remain open.
 The bridge rejects unsupported types and fields rather than saving false native
 state. These limits remain in the checklist's qualification records.
+
+The fresh `character_visibility_02` whole trial passes all four directions and
+restores the full original fixture. Reviewed paired character/world models show
+the helmet and cloak disappear and return. Captured false requests stay `00`;
+actual true requests `80` become native `01`. Native flags follow 1024/0/2048/0,
+and modern Classic extended flags follow 128/0/256/0 with no legacy hide bits
+left in PlayerFlags. The sword partly occludes the rear cloak, but its visible
+blue-red fabric changes in the paired views. All native resources, settings
+search, panels and model camera are restored. Qualification awaits DVC39.
