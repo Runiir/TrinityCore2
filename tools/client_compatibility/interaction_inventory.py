@@ -76,7 +76,7 @@ def checklist():
 
 def render(data):
     lines=['# 4.4.2 player interaction checklist','',f"{len(data['cases'])} operation contracts across {len(data['families'])} families. Each is pending qualification until a run supplies evidence.",'',data['scope'],'',
-        'Laya chooses ordinary keyboard/mouse actions. Screenshots are retained; this text-only model reads addon-visible state. Fixture setup, cleanup and outcome checks are recorded separately. A model error and a protocol error have different results.','',
+        'New trials use code-controlled ordinary keyboard/mouse inputs under the current AGENTS.md. Screenshots and normal addon-visible state are retained. Historical Laya receipts preserve their actual identities. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.','',
         'Each successful mutation needs its native or local saved-state oracle and cleanup. Variants include class, race, faction, account versus character, solo versus group, combat versus idle, dead versus alive, zones, permissions and failure paths. Content IDs come from the existing content census.','']
     for family in data['families']:
         rows=[c for c in data['cases'] if c['family']==family]
