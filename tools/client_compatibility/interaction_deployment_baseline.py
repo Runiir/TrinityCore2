@@ -92,7 +92,7 @@ def unavailable_deployment(t,source,native,bridge):
         json.loads(json.dumps(inventory()))!=original['native_baseline']['inventory']):
         raise RuntimeError('native inventory or worldserver changed')
     if name=='primary' and (json.loads(json.dumps(native_state()))!=original['native_baseline']['talents'] or
-                            spells()!=original['native_baseline']['spells']):
+                            json.loads(json.dumps(spells()))!=original['native_baseline']['spells']):
         raise RuntimeError('primary native talents or spells changed')
     baseline=run['baselines'][name]
     if baseline['guid']!=t.guid:raise RuntimeError('public baseline belongs to another character')
