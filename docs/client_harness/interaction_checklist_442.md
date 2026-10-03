@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 201 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 204 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -125,10 +125,10 @@ Fixture: `class_variants`.
 - [ ] `talents.glyph_filter_prime`
 - [ ] `talents.glyph_filter_major`
 - [ ] `talents.glyph_filter_minor`
-- [ ] `talents.glyph_learn`
-- [ ] `talents.glyph_apply`
+- [x] `talents.glyph_learn` (qualified variant; [evidence](#glyph_book_learning))
+- [x] `talents.glyph_apply` (qualified variant; [evidence](#glyph_minor_application))
 - [ ] `talents.glyph_replace`
-- [ ] `talents.glyph_remove`
+- [x] `talents.glyph_remove` (qualified variant; [evidence](#glyph_minor_removal))
 - [ ] `talents.glyph_tooltip`
 - [x] `talents.persist` (qualified variant; [evidence](#warrior_talent_allocation))
 
@@ -1563,14 +1563,14 @@ Remaining limits: Code-controlled fixture inputs qualify client behavior. Object
 
 ### glyph_socket_panel
 
-Stock glyph panel opens with nine cropped enabled sockets. Native talent/glyph state and inventory/money remain unchanged.
+Stock glyph panel opens with nine cropped enabled sockets in the correct Major/Minor/Minor/Major/Minor/Major/Prime/Prime/Prime order. Public socket types are 1/2/2/1/2/1/3/3/3; pending Battle independently matches Minor sockets 2/3/5. Native talents/glyphs/inventory/money unchanged in the complete panel readback.
 
-Remaining limits: UI27 pending Battle placement disproved the UI26 catalog-derived socket-type oracle. Correct ordered socket semantics require fresh live qualification. Application, removal, learning, tooltips, other classes and level/locked variants remain open.
+Remaining limits: Other classes and level/locked variants remain open. UI26 socket-position oracle was incorrect and is superseded by the corrected UI27 readback; historical receipts are retained.
 
-- [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json`, SHA-256 `b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58`.
+- [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_socket_types_11/episode.json`, SHA-256 `310acd68c711cea04f064ee9d2586e7dac044ff14e5c61601a59a9f85e57e6d6`.
   Checked cases: `talents.glyph_open_repaired` (glyph_panel_pass).
-- [442_interactions_20261003_27.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_27.tar.gz.dvc), member `evidence/client_interactions_20261003_ui26/glyph_slot_positions_10/episode.json`, SHA-256 `cabc0b6ae287e18e0d7e7b84740b704dea16aac4ed920b114ad6ba8cc9312e8c`.
-  Checked cases: `talents.glyph_open_repaired` (glyph_panel_pass).
+- [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_apply_04/episode.json`, SHA-256 `c0ef7ac20d89ab361628d06c8e3d576ff379b07bc43bb3c8599c9676b517b318`.
+  Checked cases: `glyphs.select_learned` (glyph_pending_pass).
 
 ### available_quest_marker
 
@@ -1614,3 +1614,30 @@ Remaining limits: Reward turn-in failed its capped XP oracle before claiming and
 
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/episode.json`, SHA-256 `82dbeca029d751b5a8bd5e8bbe2b7d6e9c41ac9df3d46cce95381f51738c1a22`.
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/melee_review.json`, SHA-256 `5345ded64629c637902dd9e8c6d04ed69cb0a151198e860248d67b5fa8536036`.
+
+### glyph_book_learning
+
+An ordinary bag right-click consumes one Glyph of Battle book 43395, learns native spell 58276 and shows Battle known in the stock glyph catalog. Unrelated spells, talents, inventory and money are preserved.
+
+Remaining limits: Only the owned level-85 warrior Battle book is qualified. Obtaining/crafting the book, other glyphs/classes and reload persistence remain open.
+
+- [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_learn_07/episode.json`, SHA-256 `3efc9fef928c4b8e12168bd9a9771d573ac2fd66b9575fb74ca0d70770caf8aa`.
+  Checked cases: `glyphs.learn_book` (glyph_learn_pass).
+
+### glyph_minor_application
+
+Ordinary learned Battle selection and Minor socket 2 click apply native glyph 483 and public aura spell 58095. Correct socket types and pending matches agree; learned spells, talents, inventory and money are preserved.
+
+Remaining limits: Only empty Minor socket 2 on the owned level-85 warrior is qualified. Replacement, other sockets/classes, locked/error variants, aura effects and reload persistence remain open.
+
+- [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_apply_04/episode.json`, SHA-256 `c0ef7ac20d89ab361628d06c8e3d576ff379b07bc43bb3c8599c9676b517b318`.
+  Checked cases: `glyphs.select_learned` (glyph_pending_pass), `glyphs.application` (glyph_application_pass).
+
+### glyph_minor_removal
+
+Ordinary Shift-right-click and stock Yes confirmation clear Battle from native/public Minor socket 2. Clear Glyph 89964 consumes exactly one Vanishing Powder 64670; learned spells, talents, original inventory/money and fixture permission are restored.
+
+Remaining limits: Only the owned level-85 warrior Battle socket and one staged powder are qualified. Reagent acquisition, other glyphs/classes and insufficient-reagent variants remain open.
+
+- [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_remove_03/episode.json`, SHA-256 `809ad4687e996bf28ece2097baae7280a74e3810fae560c65b89621bffaf2e35`.
+  Checked cases: `glyphs.remove_dialog` (glyph_remove_dialog_pass), `glyphs.removal` (glyph_removal_pass).

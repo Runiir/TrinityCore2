@@ -858,7 +858,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_book_learning"
     },
     {
       "id": "talents.glyph_apply",
@@ -867,7 +868,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_minor_application"
     },
     {
       "id": "talents.glyph_replace",
@@ -885,7 +887,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_minor_removal"
     },
     {
       "id": "talents.glyph_tooltip",
@@ -9718,25 +9721,27 @@
       "operations": [
         "talents.glyph_open"
       ],
-      "scope": "Stock glyph panel opens with nine cropped enabled sockets. Native talent/glyph state and inventory/money remain unchanged.",
-      "limits": "UI27 pending Battle placement disproved the UI26 catalog-derived socket-type oracle. Correct ordered socket semantics require fresh live qualification. Application, removal, learning, tooltips, other classes and level/locked variants remain open.",
+      "scope": "Stock glyph panel opens with nine cropped enabled sockets in the correct Major/Minor/Minor/Major/Minor/Major/Prime/Prime/Prime order. Public socket types are 1/2/2/1/2/1/3/3/3; pending Battle independently matches Minor sockets 2/3/5. Native talents/glyphs/inventory/money unchanged in the complete panel readback.",
+      "limits": "Other classes and level/locked variants remain open. UI26 socket-position oracle was incorrect and is superseded by the corrected UI27 readback; historical receipts are retained.",
       "evidence": [
         {
-          "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
-          "member": "evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json",
-          "sha256": "b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58",
+          "pointer": "artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui27/glyph_socket_types_11/episode.json",
+          "sha256": "310acd68c711cea04f064ee9d2586e7dac044ff14e5c61601a59a9f85e57e6d6",
           "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
           "cases": {
             "talents.glyph_open_repaired": "glyph_panel_pass"
           }
         },
         {
-          "pointer": "artifacts/client_harness/442_interactions_20261003_27.tar.gz.dvc",
-          "member": "evidence/client_interactions_20261003_ui26/glyph_slot_positions_10/episode.json",
-          "sha256": "cabc0b6ae287e18e0d7e7b84740b704dea16aac4ed920b114ad6ba8cc9312e8c",
+          "pointer": "artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui27/glyph_apply_04/episode.json",
+          "sha256": "c0ef7ac20d89ab361628d06c8e3d576ff379b07bc43bb3c8599c9676b517b318",
           "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
           "cases": {
-            "talents.glyph_open_repaired": "glyph_panel_pass"
+            "glyphs.select_learned": "glyph_pending_pass"
           }
         }
       ]
@@ -9844,8 +9849,70 @@
           "archived_receipt_digest_verified": true
         }
       ]
+    },
+    {
+      "id": "glyph_book_learning",
+      "operations": [
+        "talents.glyph_learn"
+      ],
+      "scope": "An ordinary bag right-click consumes one Glyph of Battle book 43395, learns native spell 58276 and shows Battle known in the stock glyph catalog. Unrelated spells, talents, inventory and money are preserved.",
+      "limits": "Only the owned level-85 warrior Battle book is qualified. Obtaining/crafting the book, other glyphs/classes and reload persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui27/glyph_learn_07/episode.json",
+          "sha256": "3efc9fef928c4b8e12168bd9a9771d573ac2fd66b9575fb74ca0d70770caf8aa",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "glyphs.learn_book": "glyph_learn_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "glyph_minor_application",
+      "operations": [
+        "talents.glyph_apply"
+      ],
+      "scope": "Ordinary learned Battle selection and Minor socket 2 click apply native glyph 483 and public aura spell 58095. Correct socket types and pending matches agree; learned spells, talents, inventory and money are preserved.",
+      "limits": "Only empty Minor socket 2 on the owned level-85 warrior is qualified. Replacement, other sockets/classes, locked/error variants, aura effects and reload persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui27/glyph_apply_04/episode.json",
+          "sha256": "c0ef7ac20d89ab361628d06c8e3d576ff379b07bc43bb3c8599c9676b517b318",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "glyphs.select_learned": "glyph_pending_pass",
+            "glyphs.application": "glyph_application_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "glyph_minor_removal",
+      "operations": [
+        "talents.glyph_remove"
+      ],
+      "scope": "Ordinary Shift-right-click and stock Yes confirmation clear Battle from native/public Minor socket 2. Clear Glyph 89964 consumes exactly one Vanishing Powder 64670; learned spells, talents, original inventory/money and fixture permission are restored.",
+      "limits": "Only the owned level-85 warrior Battle socket and one staged powder are qualified. Reagent acquisition, other glyphs/classes and insufficient-reagent variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui27/glyph_remove_03/episode.json",
+          "sha256": "809ad4687e996bf28ece2097baae7280a74e3810fae560c65b89621bffaf2e35",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "glyphs.remove_dialog": "glyph_remove_dialog_pass",
+            "glyphs.removal": "glyph_removal_pass"
+          }
+        }
+      ]
     }
   ],
-  "qualified_operations": 201,
+  "qualified_operations": 204,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
