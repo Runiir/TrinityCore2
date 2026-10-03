@@ -36,3 +36,31 @@ def unavailable_primary(t,source,native,bridge):
         failure='Client is at a verified failed-reentry lobby; current public checks deferred until reconnect.')
     t.persist()
     return {key:state.get(key) for key in ['guid','money','equipment','group','raid_profile']}
+
+
+def unavailable_scout(t,source,inventory_source,native,bridge):
+    source=source.resolve();inventory_source=inventory_source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='deployment.json':
+        raise ValueError('require an owned scout recovery deployment')
+    run=json.loads(source.read_text());episode_path=source.parent/'scout_after/episode.json'
+    episode=json.loads(episode_path.read_text())
+    identity=lambda row:{key:row[key] for key in ['pid','start_ticks']}
+    if (not run.get('recovery_source') or not episode.get('finished_at') or episode.get('completed') or
+            episode['actor']!=t.fixture or identity(run['native'])!=identity(native) or
+            identity(run['after'])!=identity(bridge) or
+            identity(episode['runtime']['client'])!=identity(lab.owned_process('client'))):
+        raise RuntimeError('scout recovery does not bind the current failed actor and servers')
+    if not inventory_source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('inventory source must belong to this private lab')
+    shared=json.loads(inventory_source.read_text())
+    if (not shared.get('finished_at') or shared['before']['worldserver']!=identity(native) or
+            shared['before']['modern_world']!=identity(bridge) or
+            json.loads(json.dumps(inventory()))!=shared['native_baseline']['inventory']):
+        raise RuntimeError('both-character inventory/money baseline changed')
+    baseline=run['baselines']['scout']
+    if baseline['guid']!=t.guid:raise RuntimeError('scout public baseline GUID differs')
+    t.receipt.update(public_precheck_deferred=True,inventory_money_verified=True,
+        recovery_source={'file':str(source),'sha256':lab.sha256(source)},
+        inventory_source={'file':str(inventory_source),'sha256':lab.sha256(inventory_source)},
+        failure='Client failed reentry; previous public baseline is deferred until reconnect.')
+    t.persist();return baseline
