@@ -56,10 +56,11 @@ def reenter(t,source):
         raise RuntimeError('set session reentry requires exact actor/client/server source')
     t.receipt.update(phase='set_reenter',source={'file':str(source),'sha256':lab.sha256(source)},
         baseline=saved['baseline'],reviewed_character_selection=saved['character_selection']);t.persist()
+    packets=Packets(saved['baseline']['session'])
     before=shot(t.out/'reviewed_selection_before.png');started=time.time()
     t.execute({'kind':'key','value':'Return','hold':.4});time.sleep(8)
     state,frame=t.observe('after_set_reentry');probe,valid=public_named(t,'set_catalog_after_reentry',NAME)
-    current=native();packets=Packets(saved['baseline']['session'])
+    current=native()
     checks={'public_baseline':public(state)==saved['baseline']['public'],
         'native_baseline':current==saved['baseline']['native'],'public_set':valid,
         'ordinary_login':packets.has(started,'CMSG_PLAYER_LOGIN','from_client'),
