@@ -1,5 +1,6 @@
 """Input on an actor's private Gamescope display without changing host focus."""
 import os
+from pathlib import Path
 import time
 import fcntl
 from contextlib import contextmanager
@@ -99,6 +100,17 @@ def focus():
     with lease():return _focus()
 
 
+def descendant(pid,owner):
+    # Wine starts a new process group for the game. Bound ownership by its
+    # parent chain to the verified Gamescope supervisor, not by that group.
+    for _ in range(16):
+        if pid==owner:return True
+        if pid<=1:return False
+        try:pid=int(Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[1])
+        except (OSError,ValueError,IndexError):return False
+    return False
+
+
 def _focus():
     from Xlib import X, display
     from tools.second_client.place_window import place
@@ -119,9 +131,7 @@ def _focus():
             pid=window.get_full_property(screen.intern_atom('_NET_WM_PID'),X.AnyPropertyType)
             if pid is None or len(pid.value)!=1:continue
             process_pid=int(pid.value[0])
-            try:group=os.getpgid(process_pid)
-            except ProcessLookupError:continue
-            if group==client['pid']:candidates.append((window,process_pid))
+            if descendant(process_pid,client['pid']):candidates.append((window,process_pid))
         if len(candidates)!=1:raise RuntimeError('private display lacks exactly one owned visible game window')
         window,process_pid=candidates[0];geometry=window.get_geometry()
         if (geometry.width,geometry.height)!=(1280,720):raise RuntimeError('private game window dimensions changed')
