@@ -65,7 +65,27 @@ def install(source,batch):
         time.sleep(.2)
     # Keep one rollback binary until the first successful new native trial.
     target.rename(backup);shutil.copy2(binary,target);lab.private_write(config,text)
-    lab.start('worldserver')
+    start_installed(report,source,batch)
+
+
+def resume(source,batch):
+    report=json.loads((source/'deployment.json').read_text())
+    backup=lab.ROOT/'bin/worldserver.before_auction_deposit'
+    config=lab.ROOT/'config/worldserver.conf'
+    if (lab.owned_process('worldserver') or batch.exists() or batch.resolve().parent!=lab.ROOT/'evidence' or
+            not re.fullmatch(r'[A-Za-z0-9_]+',batch.name) or
+            identity('modern_world')!=report['bridge_before'] or
+            lab.sha256(lab.ROOT/'bin/worldserver')!=report['binary_sha256'] or
+            lab.sha256(backup)!=report['previous_binary_sha256'] or
+            not re.search(r'(?m)^Client442\.AuctionDepositRules\s*=\s*1\s*$',config.read_text())):
+        raise RuntimeError('resume requires the exact installed build, rollback binary, private configuration and absent native process')
+    report['installation_recovery']={'original_failure':'AttributeError: lab.start; supervisor API is start_server',
+        'stage':'after graceful shutdown and binary/config installation; before native launch'}
+    start_installed(report,source,batch)
+
+
+def start_installed(report,source,batch):
+    lab.start_server('worldserver')
     deadline=time.monotonic()+45
     import socket
     while True:
@@ -79,7 +99,8 @@ def install(source,batch):
     out=batch/'native_deposit_deployment';out.mkdir(mode=0o700)
     report.update(started_at=time.time(),source_stage=str(source),native=identity('worldserver'),
         after=identity('modern_world'),reconnected={},native_restarted=True,
-        config_flag=key,config_enabled=True,rollback_binary_sha256=lab.sha256(backup))
+        config_flag='Client442.AuctionDepositRules',config_enabled=True,
+        rollback_binary_sha256=lab.sha256(lab.ROOT/'bin/worldserver.before_auction_deposit'))
     if report['after']!=report['bridge_before']:raise RuntimeError('owned bridge changed during native deployment')
     report.pop('finished_at',None)
     for name in ['primary','scout']:
@@ -89,13 +110,13 @@ def install(source,batch):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install','reconnect'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install','resume','reconnect'])
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--actor',choices=['primary','scout']);a=p.parse_args()
     if a.action=='stage':stage(a.output)
-    elif a.action=='install':
-        if not a.source:p.error('install requires the closed staged source')
-        install(a.source,a.output)
+    elif a.action in ['install','resume']:
+        if not a.source:p.error(a.action+' requires the closed staged source')
+        (install if a.action=='install' else resume)(a.source,a.output)
     else:
         if not a.actor:p.error('reconnect requires the visually reviewed actor')
         reconnect(a.output,a.actor)
