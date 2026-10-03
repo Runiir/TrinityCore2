@@ -170,6 +170,12 @@ class Trial:
         transport=[]
         if action['kind']=='chat':
             state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check')
+            deadline=time.monotonic()+12
+            while state.get('chat_edit_open') and time.monotonic()<deadline:
+                transport.append({'reason':'wait for selected command submission','frame':frame,
+                    'observed_text':state.get('chat_edit_text'),'input_replayed':False})
+                time.sleep(.2)
+                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_settling')
             if state.get('chat_edit_open'):
                 if state.get('chat_edit_text','').rstrip(' ')!=action['value']:
                     raise RuntimeError('chat input differs from the selected command; refusing to submit it')
