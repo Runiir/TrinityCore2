@@ -317,7 +317,7 @@ uint32 Quest::GetRewMoneyMaxLevel(Player const* player /*= nullptr*/) const
 void Quest::BuildQuestRewards(WorldPackets::Quest::QuestRewards& rewards, Player* player) const
 {
     rewards.ChoiceItemCount = GetRewChoiceItemsCount();
-    rewards.ItemCount = GetReqItemsCount();
+    rewards.ItemCount = GetRewItemsCount();
     rewards.Money = player->GetQuestMoneyReward(this);
     rewards.XP = player->GetQuestXPReward(this);
     rewards.Title = GetCharTitleId();

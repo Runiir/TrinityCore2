@@ -9,15 +9,16 @@ NPC=(0xf13<<52)|(261<<32)|500
 UNIT={'guid':NPC,'kind':3,'map':0,'fields':{str(INDEX['UNIT_NPC_FLAGS']):2}}
 
 
-def native_rewards(choices):
+def native_rewards(choices,fixed=None,fixed_count=0):
     ids=[x[0] for x in choices]+[0]*(6-len(choices));qty=[x[1] for x in choices]+[0]*(6-len(choices))
-    return (struct.pack('<I18I',len(choices),*ids,*qty,*([0]*6))+struct.pack('<I12I',0,*([0]*12))+
+    fixed=fixed or [];fixed_ids=[x[0] for x in fixed]+[0]*(4-len(fixed));fixed_qty=[x[1] for x in fixed]+[0]*(4-len(fixed))
+    return (struct.pack('<I18I',len(choices),*ids,*qty,*([0]*6))+struct.pack('<I12I',fixed_count,*fixed_ids,*fixed_qty,*([0]*4))+
         struct.pack('<4If3I',12345,350,0,0,0,0,0,0)+bytes(5*3*4)+bytes((2+4+4+2)*4))
 
 
-def offer(choices=[(39,1),(40,2)]):
+def offer(choices=[(39,1),(40,2)],**rewards):
     return (struct.pack('<QI',NPC,52)+b'Protect the Frontier\0Well done.\0\0\0\0\0'+
-        struct.pack('<2IB3I2I',0,0,1,8,0,1,10,6)+native_rewards(choices))
+        struct.pack('<2IB3I2I',0,0,1,8,0,1,10,6)+native_rewards(choices,**rewards))
 
 
 def stateful(codec,actions,units=None,active=True):
@@ -60,6 +61,17 @@ def test_modern_choice_item_id_maps_to_native_index_not_the_item_id(codec):
             action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',choice(item,quantity))])
         assert 'error' in rows[1]
     assert 'error' in stateful(codec,[action('quest_request','CMSG_QUEST_GIVER_CHOOSE_REWARD',choice())])[0]
+
+
+def test_fixed_rewards_survive_legacy_required_item_count_and_corrected_native_builds(codec):
+    for native_count in [0,1,6]:
+        body=offer(fixed=[(858,2)],fixed_count=native_count)
+        reply=stateful(codec,[action('quest_response','SMSG_QUEST_GIVER_OFFER_REWARD_MESSAGE',body)])[0]
+        r=Reader(bytes.fromhex(reply[1]))
+        assert r.unpack('8i')==(858,2,0,0,0,0,0,0);r.raw(48)
+        assert r.unpack('4i')==(2,1,12345,350)
+    assert 'error' in stateful(codec,[action('quest_response','SMSG_QUEST_GIVER_OFFER_REWARD_MESSAGE',
+        offer(fixed=[(0,0),(858,2)]))])[0]
 
 
 def test_no_choice_reward_keeps_native_index_zero(codec):

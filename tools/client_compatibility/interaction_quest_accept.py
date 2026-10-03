@@ -173,6 +173,17 @@ def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False
                 t.receipt['retained_reward']={'source':'ordinary player quest reward',
                     'quest':QUEST,'quest_state':baseline,'inventory_money':items,
                     'fixture_position_will_be_restored':True,'validation_failed_after_reward':True};t.persist()
+            elif t.receipt.get('completion_oracle',{}).get('passed'):
+                completed=[q for q in now['active'] if q['quest']==QUEST]
+                remaining={**now,'active':[q for q in now['active'] if q['quest']!=QUEST]}
+                kills=[c for c in t.receipt['cases'] if c['id'].startswith('quests.complete_') and c['id'].endswith('_kill')]
+                if (len(completed)==1 and completed[0]['status']==1 and completed[0]['mobcount1']==8 and
+                        completed[0]['mobcount2']==5 and remaining==baseline and inventory()==items and
+                        len(kills)==13 and all(c['status']=='quest_progress_pass' for c in kills)):
+                    baseline=now;retained=True
+                    t.receipt['retained_completed_quest']={'source':'thirteen ordinary player kills',
+                        'quest':QUEST,'quest_state':baseline,'inventory_money':items,
+                        'fixture_position_will_be_restored':True,'validation_failed_after_completion':True};t.persist()
         try:t.clean_panels();restore_autoaccepted(t,baseline,quest=QUEST)
         finally:fixture.restore()
         t.receipt['restoration']=({'earned_quest_history_preserved':quest_state(1)==baseline,

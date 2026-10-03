@@ -12,7 +12,7 @@ Bytes quest_rewards(Reader &r,Value *offered_choices)
     auto flags=r.take<std::uint32_t>();auto factions=r.unpack("5I"),values=r.unpack("5i"),overrides=r.unpack("5I");
     auto displaySpell=r.take<std::uint32_t>(),spell=r.take<std::uint32_t>();auto currencies=r.unpack("4I"),currencyQty=r.unpack("4I");
     auto skill=r.take<std::uint32_t>(),skillUps=r.take<std::uint32_t>();
-    if(choiceCount>6 || itemCount>4 || reserved || reserved2 || reservedFloat!=0 || money>0x7fffffff || xp>0x7fffffff)
+    if(choiceCount>6 || itemCount>6 || reserved || reserved2 || reservedFloat!=0 || money>0x7fffffff || xp>0x7fffffff)
         throw std::runtime_error("invalid native quest rewards");
     auto validate=[](Array const &ids,Array const &quantities)
     {
@@ -21,6 +21,16 @@ Bytes quest_rewards(Reader &r,Value *offered_choices)
                 throw std::runtime_error("invalid native quest reward item");
     };
     validate(choices,choiceQty);validate(items,itemQty);validate(currencies,currencyQty);
+    // Older native builds wrote the required-item count here. The serialized
+    // reward arrays are authoritative; support those builds without restarting
+    // the worldserver. Reject sparse rows rather than hiding a later reward.
+    itemCount=0;
+    for(unsigned i=0;i<4;++i)
+        if(integer(items[i]))
+        {
+            if(i!=itemCount || !integer(itemQty[i]))throw std::runtime_error("sparse native quest reward items");
+            ++itemCount;
+        }
     if(offered_choices)
     {
         Array offered;

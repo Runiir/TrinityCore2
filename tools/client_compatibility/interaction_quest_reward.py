@@ -16,6 +16,8 @@ from .observation.interactions import decode_image
 from .observation.transport import Observer
 from .observation.journal import entries
 from .world.buffer import Reader
+from . import actors
+from .npc_fixture import NpcFixture
 
 
 def detail(t,label):
@@ -49,7 +51,8 @@ def native_offer(body):
     if choices>6 or fixed>4:raise ValueError('unsupported native offer item counts')
     return {'giver':giver,'quest':quest,'money':money,'xp':xp,
         'choices':[{'id':ids[i],'quantity':qty[i],'index':i+1} for i in range(choices)],
-        'fixed':[{'id':fixed_ids[i],'quantity':fixed_qty[i],'index':i+1} for i in range(fixed)]}
+        'native_fixed_count':fixed,
+        'fixed':[{'id':item,'quantity':fixed_qty[i],'index':i+1} for i,item in enumerate(fixed_ids) if item]}
 
 
 def packets_since(started,session,name):
@@ -57,8 +60,9 @@ def packets_since(started,session,name):
         p.get('session')==session and p.get('name')==name]
 
 
-def reward(t,giver,point_file):
-    complete(t,giver);t.clean_panels()
+def reward(t,giver,point_file,complete_objectives=True):
+    if complete_objectives:complete(t,giver)
+    t.clean_panels()
     t.execute({'kind':'chat','value':'/targetexact '+giver.npc[2]})
     state,frame=t.observe('reward_giver_staged');t.receipt['reward_staging']={'state':state,'frame':frame};t.persist()
     deadline=time.monotonic()+60
@@ -92,14 +96,15 @@ def reward(t,giver,point_file):
     if not native:raise RuntimeError('ordinary turn-in did not produce an authoritative native reward offer')
     offered=native_offer(native[-1]['body'])
     plain=lambda rows:[(x.get('id'),x.get('quantity')) for x in rows]
-    # Some Classic quest UIs do not expose GetRewardXP. Only this level-cap
-    # fixture permits its absence, and only when the native offer gives zero.
+    # Native offers include calculated XP even at the cap. SendQuestReward
+    # explicitly grants/displays zero XP for IsMaxLevel().
+    expected_xp=0 if t.fixture['level']==85 else offered['xp']
     xp_available=probe.get('xp') is not None
-    xp_agrees=probe.get('xp')==offered['xp'] if xp_available else t.fixture['level']==85 and offered['xp']==0
+    xp_agrees=probe.get('xp')==expected_xp if xp_available else t.fixture['level']==85
     agrees=(probe.get('id')==QUEST and probe.get('money')==offered['money'] and xp_agrees and
         plain(probe.get('choices',[]))==plain(offered['choices']) and plain(probe.get('fixed',[]))==plain(offered['fixed']))
     t.receipt['offer_oracle']={'native':offered,'public':probe,'packets':offers,'passed':agrees,
-        'public_xp_available':xp_available,'xp_gain_qualification':False};t.persist()
+        'public_xp_available':xp_available,'expected_awarded_xp':expected_xp,'xp_gain_qualification':False};t.persist()
     if not agrees or not 2<=len(offered['choices'])<=6:
         raise RuntimeError('stock reward display disagrees with the native multiple-choice offer')
     chosen=offered['choices'][0];t.receipt['reward_choice_controls']=controls(t);t.persist()
@@ -124,7 +129,7 @@ def reward(t,giver,point_file):
             if p['direction']=='from_native':
                 talent,skillups,money,xp,quest,skill=r.unpack('2Ii3I');completion.append((quest,xp,money,skill,skillups))
             elif p['direction']=='to_client':completion.append(r.unpack('IIqII'))
-        agrees=len(completion)==2 and completion[0]==completion[1] and completion[0][:3]==(QUEST,offered['xp'],offered['money'])
+        agrees=len(completion)==2 and completion[0]==completion[1] and completion[0][:3]==(QUEST,expected_xp,offered['money'])
         passed=(s and any(x['quest']==QUEST for x in now['rewarded']) and not any(x['quest']==QUEST for x in now['active']) and
             delta==dict(expected) and money_now-money_before==offered['money'] and a.get('money')==money_now and agrees)
         return {'status':'quest_reward_pass' if passed else 'client_or_protocol_failure',
@@ -142,13 +147,44 @@ def reward(t,giver,point_file):
     return 'reward_retained'
 
 
+def resume(t,source,point_file):
+    """Resume only an attributable earned completion, never synthesize credit."""
+    previous=json.loads(source.read_text());saved=previous.get('retained_completed_quest',{})
+    kills=[c for c in previous.get('cases',[]) if c['id'].startswith('quests.complete_') and c['id'].endswith('_kill')]
+    if (not previous.get('finished_at') or not previous.get('completion_oracle',{}).get('passed') or
+            saved.get('quest')!=QUEST or len(kills)!=13 or any(c['status']!='quest_progress_pass' for c in kills) or
+            not all(previous.get('restoration',{}).values()) or previous['actor']!=t.fixture):
+        raise RuntimeError('resume requires a closed, restored thirteen-kill earned completion')
+    actors.session_entry(t.fixture);baseline=quest_state(1);items=inventory()
+    if baseline!=saved['quest_state'] or items!=saved['inventory_money']:
+        raise RuntimeError('earned completion baseline changed before turn-in resume')
+    t.receipt['completion_source']={'file':str(source),'sha256':lab.sha256(source)}
+    t.receipt['baseline']={'quests':baseline,'inventory_money':items};t.persist()
+    fixture=NpcFixture(t.out,t.fixture,261,2)
+    try:
+        fixture.prepare();reward(t,fixture,point_file,complete_objectives=False)
+    finally:
+        t.clean_panels();fixture.restore();now=quest_state(1)
+        rows=[q for q in now['rewarded'] if q['quest']==QUEST]
+        original={**baseline,'active':[q for q in baseline['active'] if q['quest']!=QUEST]}
+        remaining={**now,'rewarded':[q for q in now['rewarded'] if q['quest']!=QUEST]}
+        passed=now==baseline and inventory()==items or len(rows)==1 and remaining==original
+        t.receipt['restoration']={'earned_quest_history_preserved':passed,'fixture_pose_restored':True}
+        t.receipt['retained_reward' if rows else 'retained_completed_quest']={
+            'source':'ordinary player quest progress','quest':QUEST,'quest_state':now,'inventory_money':inventory()};t.persist()
+        if not passed:raise RuntimeError('turn-in resume changed unrelated quest state')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--review-point-file',type=Path,required=True);p.add_argument('--reward-point-file',type=Path,required=True);a=p.parse_args()
-    if a.review_point_file.exists() or a.reward_point_file.exists():p.error('point reviews must be fresh for their staged frames')
+    group=p.add_mutually_exclusive_group(required=True)
+    group.add_argument('--review-point-file',type=Path);group.add_argument('--completed-episode',type=Path)
+    p.add_argument('--reward-point-file',type=Path,required=True);a=p.parse_args()
+    if (a.review_point_file and a.review_point_file.exists()) or a.reward_point_file.exists():p.error('point reviews must be fresh for their staged frames')
     t=Trial(a.output,controller='code')
     try:
-        accept_suite(t,a.review_point_file,False,after_read=lambda t,g:reward(t,g,a.reward_point_file),retain_reward=True,exercise_log=False)
+        if a.completed_episode:resume(t,a.completed_episode,a.reward_point_file)
+        else:accept_suite(t,a.review_point_file,False,after_read=lambda t,g:reward(t,g,a.reward_point_file),retain_reward=True,exercise_log=False)
         t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:

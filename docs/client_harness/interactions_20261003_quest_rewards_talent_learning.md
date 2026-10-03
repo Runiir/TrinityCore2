@@ -33,6 +33,14 @@ quest/inventory/money/pose baseline. Initial combat staging now starts eight yar
 above spawn Z, and target staging three yards above observed creature Z, so
 normal client gravity can settle before the ground approach.
 
+UI25 `quest_reward_03` earned all five bear and eight wolf credits in one run.
+Native quest 52 was complete with counters 8/5, and both public objectives were
+finished. The fresh giver frame showed the yellow turn-in question mark above
+Guard Thomas. Reward collection stopped before the choice because the diagnostic
+incorrectly required the capped character's public zero XP to equal the raw offer
+XP of 65. Cleanup restored the disposable quest; no reward was claimed. The
+runner now expects zero awarded XP at level 85, matching native SendQuestReward.
+
 `observation/spline_pose.py` estimates current ground movement from ordinary
 native spline packets. It uses path distance and recorded duration. Curved
 uncompressed paths remain a polyline estimate, not an exact private server pose.
@@ -57,6 +65,20 @@ Legitimate rewards are retained. They are recorded separately from reversible
 fixture setup. If the native server awards the quest before a later observation
 fails, cleanup preserves the earned history and items instead of removing them.
 The failed diagnostic remains failed.
+
+The same offer exposed a backend bug in Quest::BuildQuestRewards: its fixed-item
+count used GetReqItemsCount instead of GetRewItemsCount. Quest 52 serialized two
+healing potions (item 858), but advertised zero fixed rewards. The source is
+corrected. The bridge also derives the count from contiguous authoritative reward
+arrays, supporting the still-running old native binary without a worldserver
+restart. Sparse or incomplete rows are rejected. The native source correction
+will enter the next required native build; it is not deployed in this batch.
+
+Future failed reward checks preserve an attributable completed quest when all
+thirteen ordinary kills, native counters and unchanged inventory agree. Use
+`interaction_quest_reward --completed-episode <closed episode.json>` with a fresh
+reward point file to retry only turn-in. The source receipt digest and current
+native quest/inventory baseline are verified; no command generates quest credit.
 
 The read-only observer v34 has a dedicated quest reward page and records stock
 minimap tracking state. The page never invokes quest actions or changes frames.
