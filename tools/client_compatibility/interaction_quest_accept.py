@@ -40,9 +40,15 @@ def suite(t,point,stage_only):
         t.receipt['giver_controls']=controls(t);t.persist()
         state,_=t.observe('manual_offered')
         if state.get('quest_giver',{}).get('id')!=QUEST:
+            def details_ready(before,after,selected):
+                observations=[];deadline=time.monotonic()+12
+                while selected and after.get('quest_giver',{}).get('id')!=QUEST and time.monotonic()<deadline:
+                    time.sleep(.5);after,frame=t.observe('manual_details_settle_'+str(len(observations)))
+                    observations.append({'state':after,'frame':frame})
+                return {'status':'quest_details_open_pass' if selected and after.get('quest_giver',{}).get('id')==QUEST else
+                    'client_or_protocol_failure','oracle':{'settled_observations':observations,'quest_giver':after.get('quest_giver')}}
             require(click_case(t,'quests.manual_select','Read the offered '+TITLE+' quest.',lambda c:TITLE in c['text'],
-                lambda b,a,s:{'status':'quest_details_open_pass' if s and a.get('quest_giver',{}).get('id')==QUEST else
-                    'client_or_protocol_failure'}),'quest_details_open_pass')
+                details_ready),'quest_details_open_pass')
         if quest_state(1)!=baseline:raise RuntimeError('quest became active before the manual Accept input')
         def accepted(b,a,s):
             native=quest_state(1);added=[q for q in native['active'] if q['quest']==QUEST]
