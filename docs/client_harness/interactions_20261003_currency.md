@@ -20,24 +20,32 @@ zero as empty while checking every nonzero string address and all row boundaries
 
 The bridge maps native Honor 392 to modern 1901 in startup, incremental amounts,
 quest-offer rewards and trade updates. Native balances and IDs stay authoritative.
-Static quest-cache reward/required-currency references still need the same mapping
-and a bounded regression/live currency-quest fixture; those remain open.
+Static quest-cache reward/required-currency references use the same mapping, with
+a regression that preserves quantity fields. A live currency-quest fixture remains open.
 
 The pinned [modern request parser](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/MiscPackets.cpp#L108)
-reads uint32 ID followed by uint8 flags. This checkout's native parser reads
-uint32 flags followed by uint32 ID. The new C++ adapter reverses and widens
-that request and maps Honor back to 392. It rejects truncation, extra bytes,
+reads uint32 ID followed by uint8 flags. That reference is newer than the installed
+60895 client. Both first live flag trials disconnected: captured backpack body
+`6d07000004000000` and unused body `6d07000008000000` prove that this installed
+client sends uint32 ID followed by uint32 flags. Native saved flags remained zero;
+no matching native request was forwarded. The initial five-byte regression tests
+mirrored the wrong reference and did not establish installed-client compatibility.
+The corrected adapter accepts the installed eight-byte contract, reverses the two
+uint32 fields and maps Honor back to 392. It rejects truncation, extra bytes,
 deprecated Honor requests, zero/out-of-range IDs and flags outside the native
 four-bit representation. Backpack and unused bits are 4 and 8 in the pinned
 [currency flags](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Miscellaneous/SharedDefines.h#L6679).
 Public currency packet bodies are retained by the bounded capture allowlist;
 authentication bodies remain excluded.
 
-The optimized and sanitizer builds share source digest
+The initial, failing optimized and sanitizer builds share source digest
 `fbbc3071468603000a6af6dc3a1df74f6174a0972a9a21f9977d523739c3e837`.
 The optimized binary SHA-256 is
 `98ca8c9b47be6e15ae18c19632fac59cf817770594c7131b244210df096f91db`.
-772 world/auth regression checks and 25 focused ASan/UBSan checks pass.
+772 world/auth regression checks and 25 focused ASan/UBSan checks passed before
+the live request-width failure. Those results remain historical evidence and do
+not validate the corrected implementation. Captured-body regressions now cover
+both failing requests and the live harness's independent journal decoder.
 Build source revision is `52473380f23c68a1cc719b913bfaf1a50c6efeae`;
 later ordinary-input orchestration commits do not relabel that runtime identity.
 

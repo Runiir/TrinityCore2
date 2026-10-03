@@ -1,5 +1,6 @@
 // Translate the native static quest cache reply; modern-only systems default empty.
 #include "quests.hpp"
+#include "currency.hpp"
 
 namespace bridge
 {
@@ -27,6 +28,11 @@ Reply quest_query_response(std::string const &name,View body)
     auto creatures=r.unpack("16I"),requiredItems=r.unpack("12I");auto requiredSpell=r.take<std::uint32_t>();
     std::array<Bytes,4> objectiveText;for(auto &text:objectiveText)text=native_text(r);
     auto currencies=r.unpack("8I"),requiredCurrencies=r.unpack("8I");
+    for(unsigned i=0;i<4;++i)
+    {
+        currencies[i*2]=modern_currency(integer(currencies[i*2]));
+        requiredCurrencies[i*2]=modern_currency(integer(requiredCurrencies[i*2]));
+    }
     auto giverText=native_text(r),giverName=native_text(r),turnText=native_text(r),turnName=native_text(r);
     auto acceptedSound=r.take<std::uint32_t>(),completeSound=r.take<std::uint32_t>();r.end();
     if(talents || requiredSpell || logTitle.size()>511 || summary.size()>4095 || description.size()>4095 ||

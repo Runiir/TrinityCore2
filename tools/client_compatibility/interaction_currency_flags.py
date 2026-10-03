@@ -24,7 +24,7 @@ def requests(session,started):
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
         if p.get('session')!=session or p.get('time',0)<started or p.get('name')!='CMSG_SET_CURRENCY_FLAGS':continue
         direction=p.get('direction');r=Reader(bytes.fromhex(p['body']))
-        if direction=='from_client':id,flags=r.unpack('IB')
+        if direction=='from_client':id,flags=r.unpack('II')
         elif direction=='to_native':flags,id=r.unpack('II')
         else:continue
         r.end();out.append({'direction':direction,'id':id,'flags':flags,'time':p['time']})
