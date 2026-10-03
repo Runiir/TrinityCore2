@@ -37,6 +37,7 @@ Reply quest_request(Protocol const &protocol,State const &owner,std::string cons
 Reply quest_response(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {
     if(auto reply=quest_status_response(protocol,owner,name,body))return reply;
+    if(auto reply=quest_list_response(protocol,owner,name,body))return reply;
     if(name=="SMSG_QUEST_QUERY_RESPONSE")return quest_query_response(name,body);
     if(name!="SMSG_QUEST_GIVER_QUEST_DETAILS")return {};
     Reader r(body);auto npc=r.take<std::uint64_t>(),inform=r.take<std::uint64_t>();auto id=r.take<std::uint32_t>();
