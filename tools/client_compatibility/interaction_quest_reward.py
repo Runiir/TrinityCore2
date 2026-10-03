@@ -25,7 +25,7 @@ def detail(t,label):
         if state.get('mode')!='quest_reward' or state.get('guid')!=t.guid:
             raise RuntimeError('quest reward diagnostic identity mismatch')
         t.receipt.setdefault('reward_details',{})[label]={'state':state,'frame':frame};t.persist()
-        return state['quest_reward_probe']
+        return state['quest_reward']
     finally:command(t,'/tcui state')
 
 
