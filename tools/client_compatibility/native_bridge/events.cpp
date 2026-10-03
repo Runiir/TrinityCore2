@@ -20,7 +20,7 @@ bool capture(std::string const &name)
         return false;
     if (name == "SMSG_MOVE_UPDATE") return false; // Opt-in public movement probe below.
     for (auto token : {"TAXI", "GOSSIP", "TELEPORT", "TRANSFER", "NEW_WORLD", "TOKEN", "WORLD_PORT",
-                       "WORLDPORT", "AREA_TRIGGER", "NPC_TEXT", "MAIL", "AUCTION"})
+                       "WORLDPORT", "AREA_TRIGGER", "NPC_TEXT", "MAIL", "AUCTION", "QUEST", "TALENT", "GLYPH"})
         if (name.find(token) != std::string::npos)
             return true;
     if (name.starts_with("CMSG_MOVE_") || name.starts_with("MSG_MOVE_") || name.starts_with("SMSG_MOVE_"))

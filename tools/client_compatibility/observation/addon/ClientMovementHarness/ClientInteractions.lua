@@ -122,7 +122,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=31,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=32,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -442,6 +442,7 @@ local function snapshot(viewMode,viewPage)
     data.chat_probes=chatProbes
     data.player_stats={health=call(UnitHealthMax,'player'),armor={call(UnitArmor,'player')},
         strength={call(UnitStat,'player',1)},damage={call(UnitDamage,'player')}}
+    data.talent_probe=Client442ObserveTalents()
     data.target={guid=call(UnitGUID,'target'),name=call(UnitName,'target'),
         exists=not not call(UnitExists,'target'),visible=not not call(UnitIsVisible,'target'),
         player=not not call(UnitIsPlayer,'target'),health=call(UnitHealth,'target'),
