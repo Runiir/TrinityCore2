@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_macros import require,edit_case
-from .interaction_operations import controls,click_case
+from .interaction_operations import controls,click_case,point
 from .interaction_auction import auction_state,query_packets
 from .interaction_auction import open_auction
 from .npc_fixture import NpcFixture
@@ -55,9 +55,22 @@ def cancel(t,row):
                 and r.get('buyout')==10000 for r in a.get('auction',{}).get('owned',[])) and not a.get('lua_errors')
             else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_owned_populated_pass')
     state,frame=t.observe('owned_listing');t.receipt['owned_listing']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
-    require(click_case(t,'auction.select_owned','Select the posted Recruit\'s Pants auction.',lambda c:c.get('auction_id')==row[0],
-        lambda b,a,s:{'status':'auction_select_owned_pass' if s and a.get('auction',{}).get('selected_id')==row[0]
-            and a.get('auction',{}).get('cancel_enabled') else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_select_owned_pass')
+    def selected(b,a,s):
+        return {'status':'auction_select_owned_pass' if s and a.get('auction',{}).get('selected_id')==row[0]
+            and a.get('auction',{}).get('cancel_enabled') else ('controller_failure' if not s else 'client_or_protocol_failure')}
+    selection=click_case(t,'auction.select_owned','Select the posted Recruit\'s Pants auction.',
+        lambda c:c.get('auction_id')==row[0],selected)
+    if selection['status']!='auction_select_owned_pass':
+        # Keep the failed center click. A table cell can absorb its mouse event;
+        # try the item end within the same passively measured row once.
+        control=next(c for c in t.receipt['owned_listing']['controls'] if c.get('auction_id')==row[0])
+        width=control.get('width',0)*1280/65535
+        if width<80:raise RuntimeError('owned row has no measured item-end click bounds')
+        item_point=point(control);item_point[0]=round(item_point[0]-width/2+20)
+        selection=t.step('auction.select_owned_item_end','Select the posted auction at its item end.',
+            {'item_end':{'kind':'click','value':item_point,'description':'Click the observed auction row near its item icon.'}},
+            lambda b,a,s:selected(b,a,s=='item_end'),diagnostic_action='item_end')
+    require(selection,'auction_select_owned_pass')
     require(click_case(t,'auction.cancel_dialog','Cancel the selected auction.',lambda c:c['text']=='Cancel Auction',
         lambda b,a,s:{'status':'auction_cancel_dialog_pass' if s and 'StaticPopup1' in a['panels'] else
             ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_cancel_dialog_pass')
