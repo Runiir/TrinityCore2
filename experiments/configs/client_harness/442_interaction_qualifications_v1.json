@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791046982.5862582,
+  "reviewed_at": 1791049282.8219433,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -2270,6 +2270,51 @@
           "sha256": "46e4eb487f5e1ac73722db60ea38e5de89ee13c58668e0e2b5a0a47e73e22062",
           "archived_receipt_digest_verified": true,
           "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "stock_equipment_set_roundtrip",
+      "operations": [
+        "character.equipment_set_save",
+        "character.equipment_set_equip",
+        "character.equipment_set_delete"
+      ],
+      "scope": "Normally created owned set GUID 2: stock Change Name/Icon to HarnessSaved, native and public name/item identities, reload persistence; ordinary helmet displacement, stock Equip restores all gear/resources; stock delete confirmation clears native/public catalogs and survives reload. Full successful root restores layout/resources, and a source-bound inspection confirms the empty rendered manager.",
+      "limits": "One level-85 human warrior, one ASCII set, one displaced helmet on bridge 715ee470/build60895. Larger catalogs, specialization assignment, cosmetic sets, cancellation and full-bag failure variants remain open. Prior failed roots do not qualify this lifecycle. Immediate equip frame precedes rendering; following deletion-dialog frame confirms restored gear.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui37/equipment_set_roundtrip_05/episode.json",
+          "sha256": "4eed6a4cfff2b1e85ba059727806ccf1278acf0937d266151a55b3eb65e87064",
+          "archived_receipt_digest_verified": true,
+          "archived_frame_digests_verified": true,
+          "cases": {
+            "character.equipment_set_save": "equipment_set_save_pass",
+            "character.equipment_set_equip": "equipment_set_equip_pass",
+            "character.equipment_set_delete": "equipment_set_delete_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui37/equipment_empty_02/episode.json",
+          "sha256": "2dd09e2b4133ca1a6099bc28b3f4c110f98bd8885595ec79873946920d07d43c",
+          "archived_receipt_digest_verified": true,
+          "archived_frame_digests_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui37/equipment_roundtrip_packet_review.json",
+          "sha256": "fd60f3dbbfebf137e6c4feb0252dfdfba9f44a5f597117ef70711b10983c575c",
+          "archived_receipt_digest_verified": true,
+          "archived_frame_digests_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui37/equipment_roundtrip_render_review.json",
+          "sha256": "1c830f3baec3f06f662feb54760cef7ea43860f85280b88e7615164d5744952f",
+          "archived_receipt_digest_verified": true,
+          "archived_frame_digests_verified": true
         }
       ]
     }

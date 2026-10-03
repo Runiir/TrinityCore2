@@ -7,7 +7,8 @@ from tools.client_compatibility.interaction_inventory import checklist,render
 
 def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidence():
     data=checklist();by_id={case['id']:case for case in data['cases']}
-    for key in ['raid.world_marker','raid.clear_marker','raid.roster_health_bars',
+    for key in ['character.equipment_set_save','character.equipment_set_equip','character.equipment_set_delete',
+            'raid.world_marker','raid.clear_marker','raid.roster_health_bars',
             'party.role_poll','party.role_assign','archaeology.survey','archaeology.site_rotation',
             'quests.accept','quests.decline','quests.collapse_zone','quests.abandon_cancel',
             'quests.choose_reward','quests.reward_item','quests.reward_money',

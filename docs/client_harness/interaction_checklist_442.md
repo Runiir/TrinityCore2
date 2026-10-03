@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 256 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 259 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -45,9 +45,9 @@ Fixture: `equipped_character`.
 - [ ] `character.display_helm`
 - [ ] `character.display_cloak`
 - [x] `character.equipment_set_create` (qualified variant; [evidence](#stock_equipment_set_creation))
-- [ ] `character.equipment_set_save`
-- [ ] `character.equipment_set_equip`
-- [ ] `character.equipment_set_delete`
+- [x] `character.equipment_set_save` (qualified variant; [evidence](#stock_equipment_set_roundtrip))
+- [x] `character.equipment_set_equip` (qualified variant; [evidence](#stock_equipment_set_roundtrip))
+- [x] `character.equipment_set_delete` (qualified variant; [evidence](#stock_equipment_set_roundtrip))
 - [ ] `character.titles`
 - [ ] `character.select_title`
 
@@ -1927,3 +1927,15 @@ Remaining limits: One ordinary equipment set, ASCII name, owned warrior gear. Sa
 - [442_interactions_20261003_37.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc), member `evidence/client_interactions_20261003_ui36/equipment_creation_repeat_review.json`, SHA-256 `38cfc97ceea8d010b5bf6641bcc5f64f8e02468349d465136b688c58163aca10`.
 - [442_interactions_20261003_37.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc), member `evidence/client_interactions_20261003_ui36/equipment_set_reenter_02/episode.json`, SHA-256 `bd949907a3782f9e52011a57b937f5e571d05a04ca0162bcd0415b00c90e30f6`.
 - [442_interactions_20261003_37.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc), member `evidence/client_interactions_20261003_ui36/equipment_session_review.json`, SHA-256 `46e4eb487f5e1ac73722db60ea38e5de89ee13c58668e0e2b5a0a47e73e22062`.
+
+### stock_equipment_set_roundtrip
+
+Normally created owned set GUID 2: stock Change Name/Icon to HarnessSaved, native and public name/item identities, reload persistence; ordinary helmet displacement, stock Equip restores all gear/resources; stock delete confirmation clears native/public catalogs and survives reload. Full successful root restores layout/resources, and a source-bound inspection confirms the empty rendered manager.
+
+Remaining limits: One level-85 human warrior, one ASCII set, one displaced helmet on bridge 715ee470/build60895. Larger catalogs, specialization assignment, cosmetic sets, cancellation and full-bag failure variants remain open. Prior failed roots do not qualify this lifecycle. Immediate equip frame precedes rendering; following deletion-dialog frame confirms restored gear.
+
+- [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_set_roundtrip_05/episode.json`, SHA-256 `4eed6a4cfff2b1e85ba059727806ccf1278acf0937d266151a55b3eb65e87064`.
+  Checked cases: `character.equipment_set_save` (equipment_set_save_pass), `character.equipment_set_equip` (equipment_set_equip_pass), `character.equipment_set_delete` (equipment_set_delete_pass).
+- [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_empty_02/episode.json`, SHA-256 `2dd09e2b4133ca1a6099bc28b3f4c110f98bd8885595ec79873946920d07d43c`.
+- [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_roundtrip_packet_review.json`, SHA-256 `fd60f3dbbfebf137e6c4feb0252dfdfba9f44a5f597117ef70711b10983c575c`.
+- [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_roundtrip_render_review.json`, SHA-256 `1c830f3baec3f06f662feb54760cef7ea43860f85280b88e7615164d5744952f`.
