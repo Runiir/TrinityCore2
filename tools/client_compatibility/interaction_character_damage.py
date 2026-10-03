@@ -55,7 +55,7 @@ def suite(t):
         def outcome(b,a,s):
             native=native_damage(oracle);public=detail(t,'character_damage')['stats'];damage=public['damage'];speed=public['attack_speed']
             melee=[row for row in public['sheet'] if row.get('category')=='MELEE' and
-                re.sub(r'\|c[0-9a-fA-F]{8}|\|r','',row.get('label') or '').strip()== 'DPS:']
+                re.sub(r'\|c[0-9a-fA-F]{8}|\|r','',row.get('label') or '').strip().removesuffix(':')=='DPS']
             text=re.sub(r'\|c[0-9a-fA-F]{8}|\|r','',melee[0].get('text') or '').replace(',','') if len(melee)==1 else ''
             try:shown=float(text)
             except ValueError:shown=None
