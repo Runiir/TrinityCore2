@@ -12,8 +12,13 @@ from . import archaeology_inputs
 MANIFEST=lab.REPO/'tools/client_compatibility/auth/pixi.toml'
 
 
-def command(job,out):
+def command(job,out,allow_laya=False):
     common=['pixi','run','--manifest-path',str(MANIFEST),'python','-m']
+    if job['task']=='ui_probe':
+        controller=job.get('controller','code')
+        if controller not in ['code','laya'] or controller=='laya' and not allow_laya:
+            raise ValueError('new Laya runs require an explicit --use-laya invocation authorized by the user')
+        return [*common,'tools.client_compatibility.isolated_ui_probe','--output',str(out),'--controller',controller]
     if job['task']=='archaeology':
         raise ValueError('historical Laya controller retired by AGENTS.md; connect a current controller adapter')
     if job['task']=='travel':
@@ -31,7 +36,7 @@ def select_actor(name):
     lab.actor_name()
 
 
-def start(path,out):
+def start(path,out,allow_laya=False):
     if subprocess.check_output(['git','status','--porcelain'],cwd=lab.REPO,text=True):
         raise RuntimeError('commit experiment code/configs before starting a client cohort')
     if out.exists():raise ValueError('cohort output exists; use a fresh directory')
@@ -63,7 +68,7 @@ def start(path,out):
             environment=os.environ.copy();environment['CLIENT442_CHARACTER_GUID']=str(fixture['guid'])
             environment['CLIENT442_SESSION']=entry['session']
             environment.pop('WM_WEB_TOKEN',None)
-            prepared.append((job,fixture,monitor,environment,command(job,out/job['actor'])))
+            prepared.append((job,fixture,monitor,environment,command(job,out/job['actor'],allow_laya)))
         if len({fixture['guid'] for _,fixture,_,_,_ in prepared})!=len(prepared):
             raise ValueError('cohort actors cannot share a character')
         if len({monitor['pid'] for _,_,monitor,_,_ in prepared})!=len(prepared):
@@ -117,10 +122,12 @@ def status(out,stop=False):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['start','status','stop'])
-    p.add_argument('--config',type=Path);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--config',type=Path);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--use-laya',action='store_true',help='Explicit user-authorized bounded Laya UI probe')
+    a=p.parse_args()
     if a.action=='start':
         if not a.config:p.error('start requires --config')
-        start(a.config.resolve(),a.output.resolve())
+        start(a.config.resolve(),a.output.resolve(),a.use_laya)
     else:status(a.output.resolve(),a.action=='stop')
 
 

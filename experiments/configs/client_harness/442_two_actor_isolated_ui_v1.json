@@ -1,0 +1,9 @@
+{
+  "schema": "client442_cohort_v1",
+  "maximum_clients": 2,
+  "purpose": "October 3 user-requested simultaneous Laya client control without host desktop activation",
+  "jobs": [
+    {"actor": "primary", "task": "ui_probe", "controller": "laya"},
+    {"actor": "scout", "task": "ui_probe", "controller": "laya"}
+  ]
+}
