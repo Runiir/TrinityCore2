@@ -37,12 +37,24 @@ it does not allocate talents or modify frames.
 
 ## Live evidence and validation
 
-The closed batch is `client_interactions_20261003_ui24`. The pure panel trial
+The batch is `client_interactions_20261003_ui24`, checkpointed in
+[`442_interactions_20261003_25.tar.gz.dvc`](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc).
+The pure panel trial
 `talent_glyph_panels_02` opens talents, selects the stock Talents and Glyphs tabs,
 checks the three named catalogs and nine enabled sockets, and closes the panel.
 Native specialization, talents, glyphs, inventory and money remain unchanged.
 `marker_visual_review.json` binds the before/after scout screenshots and status
 packets to their SHA-256 hashes. Only the ordinary available marker is qualified.
+
+`quest_progress_04` manually accepts quest 52, kills an existing Prowler through
+ordinary melee and checks native and public wolf objective counts both advance
+from 0/8 to 1/8. It then abandons the quest through stock confirmation and restores
+quest, inventory, money and pose baselines. Native teleport staging does not
+qualify navigation. Earlier combat attempts failed before credit: stale giver
+points and a roaming wolf's outdated spawn position. The successful setup stages
+beside its observed packet position and records that distinction. The trace also
+identifies the untranslated `SMSG_QUEST_UPDATE_ADD_CREDIT` notification for the
+next repair; the present progress proof covers counter agreement only.
 
 The final world regression passes 664 checks. The selected ASan/UBSan regression
 passes 15 checks. Earlier failures remain in the batch: a mixed-width C++ `auto`
