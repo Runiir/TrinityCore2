@@ -106,6 +106,32 @@ then stops at the stock detail toggle: clicking the already-selected faction
 hides its detail. No native state changes. The runner now tests that close
 explicitly before reopening; fresh watch/header trials need their own closure.
 
+`reputation_controls_03` closes successfully. Stock watch show/hide preserves
+the exact native Stormwind index 19 and total 4165. The public bar shows
+1165/6000, with reviewed screenshots showing green progress when watched and
+an empty bar after hiding it. Alliance collapse/expand hides/restores the exact
+child identities. All faction rows, inventory, money and public catalog are
+restored. `reputation_watch_visual_review.json` binds the reviewed source
+screenshots and action-bar crops by digest.
+
+The initial inactive trial changes only Stormwind's native inactive flag but
+stops because the collapsed destination clears selection and hides detail.
+`reputation_inactive_recovery_01` binds that failed source, folds Alliance,
+expands Inactive, reselects Stormwind and unchecks the stock control. Native
+reputation, public catalog, inventory and money are restored exactly.
+The next trial's already-expanded destination instead retains selection at its
+new index; its too-strict selection oracle fails, while ordinary cleanup restores
+every baseline. The runner now validates either the correct updated selection
+or a cleared/hidden detail, then independently reselects and verifies the inactive
+faction. Fresh full round-trip qualification remains pending its closed receipt.
+
+No eligible displayed non-header faction currently permits an at-war toggle.
+The next ordinary-combat trial uses an existing Bloodsail Raider and its native
+positive Booty Bay/negative Bloodsail reward definition, without a reputation
+grant or kill command. It stages only pose and retains earned standings.
+Watched-faction reload and earned standing trials have separate runners and
+remain unqualified until their live evidence closes.
+
 ```bash
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_reputation --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/reputation_read_01
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_reputation --controls --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/reputation_controls_01
