@@ -6,6 +6,8 @@ from .interaction_settings_search import resources,open_search
 from .interaction_operations import controls,point,click_case
 from .interaction_macros import edit_case,require
 from .observation.inventory import Inventory
+from .interaction_equipment_set_roundtrip import stable
+from .interaction_tooltips import baseline
 
 
 def owned_json(path):
@@ -17,6 +19,10 @@ def owned_json(path):
 def comparable_flags(value):
     # Ordinary client input clears idle AFK. It is not a saved appearance bit.
     return {**value,'native_player_flags':value['native_player_flags']&~2}
+
+
+def snapshot(t,oracle):
+    return stable(baseline()) if t.fixture['guid']==1 else resources(oracle)
 
 
 def close_source(t,source):
@@ -46,25 +52,26 @@ def close_source(t,source):
 
 def recover(t,source,deployment):
     old,source_ref=owned_json(source);deploy,deploy_ref=owned_json(deployment/'deployment.json')
-    before,_=owned_json(deployment/'scout_before/episode.json')
-    after,_=owned_json(deployment/'scout_after/episode.json')
+    name=t.fixture['actor']
+    before,_=owned_json(deployment/(name+'_before/episode.json'))
+    after,_=owned_json(deployment/(name+'_after/episode.json'))
     original=old['appearance_baseline'];session=actors.session_entry(t.fixture)['session']
     oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     changed=[c['oracle']['native'] for c in old['cases'] if c.get('oracle',{}).get('native') and
-        c['id'] in ['character.display_helm','appearance.cleanup.helm']]
+        c['id'] in ['character.display_helm','appearance.cleanup.helm','appearance.recovery_restore_helm']]
     current=flags(t,oracle)
-    if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or t.fixture['guid']!=2 or
+    if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or t.fixture['guid'] not in [1,2] or
         not old.get('native_resources_preserved') or not deploy.get('completed') or not after.get('completed') or
         deploy['native']!=old['runtime']['worldserver'] or deploy['native']!=t.receipt['runtime']['worldserver'] or
         deploy['before']!=old['runtime']['modern_world'] or deploy['after']!=t.receipt['runtime']['modern_world'] or
         before['runtime']['client']!=old['runtime']['client'] or after['runtime']['client']!=t.receipt['runtime']['client'] or
-        not changed or comparable_flags(current)!=comparable_flags(changed[-1]) or resources(oracle)!=old['baseline'] or
+        not changed or comparable_flags(current)!=comparable_flags(changed[-1]) or snapshot(t,oracle)!=old['baseline'] or
         any((comparable_flags(current)[k]^comparable_flags(original['native'])[k])!=0x400 for k in current) or
-        oracle.equipment(1)['guid'] or oracle.equipment(15)['guid']):
-        raise RuntimeError('recovery requires the exact failed scout helm mutation and completed owned deployment')
+        (t.fixture['guid']==2 and (oracle.equipment(1)['guid'] or oracle.equipment(15)['guid']))):
+        raise RuntimeError('recovery requires the exact failed owned helm mutation and completed owned deployment')
     t.receipt.update(source=source_ref,deployment_source=deploy_ref,baseline=old['baseline'],
         appearance_baseline=original,native_before=current,native_session=session,
-        qualified_scope='Source-bound restoration of the failed scout fixture only');t.persist()
+        qualified_scope='Source-bound restoration of the failed owned fixture only');t.persist()
     try:
         t.clean_panels();field=open_search(t);predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
         require(edit_case(t,'appearance.recovery_find','Find the original stock helm setting.',predicate,'helm'),'ui_edit_pass')
@@ -85,6 +92,6 @@ def recover(t,source,deployment):
         if state['appearance']!=original['state'] or t.receipt['appearance_restored']['native']!=original['native']:
             raise RuntimeError('source visibility did not restore and survive ordinary reload')
     finally:
-        t.receipt['native_after']=resources(oracle);t.receipt['native_resources_preserved']=t.receipt['native_after']==old['baseline']
+        t.receipt['native_after']=snapshot(t,oracle);t.receipt['native_resources_preserved']=t.receipt['native_after']==old['baseline']
         t.receipt['native_visibility_after']=flags(t,oracle);t.persist()
     if not t.receipt['native_resources_preserved']:raise RuntimeError('recovery changed native equipment or money')
