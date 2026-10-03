@@ -1,4 +1,4 @@
-"""Focus only this lab's verified game window before physical input."""
+"""Input on an actor's private Gamescope display without changing host focus."""
 import os
 import time
 import fcntl
@@ -6,21 +6,25 @@ from contextlib import contextmanager
 import threading
 from . import lab_runtime as lab
 
-INPUT_LOCK=threading.RLock()
+INPUT_LOCKS={}
+LOCK_REGISTRY=threading.Lock()
 LEASE_STATE=threading.local()
 
 
 @contextmanager
 def lease(timeout=10):
-    """Serialize focus and one bounded physical primitive across actor processes."""
-    with INPUT_LOCK:
+    """Serialize one actor's primitives; different actor processes can overlap."""
+    name=lab.actor_name()
+    with LOCK_REGISTRY:lock=INPUT_LOCKS.setdefault(name,threading.RLock())
+    with lock:
         # Public focus also takes the lease. Reuse this thread's existing flock.
-        if getattr(LEASE_STATE,'owner_pid',None)==os.getpid() and getattr(LEASE_STATE,'depth',0):
+        if (getattr(LEASE_STATE,'owner_pid',None)==os.getpid() and getattr(LEASE_STATE,'actor',None)==name
+                and getattr(LEASE_STATE,'depth',0)):
             LEASE_STATE.depth+=1
             try:yield
             finally:LEASE_STATE.depth-=1
             return
-        path=lab.ROOT/'run/client_input.lock';path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
+        path=lab.ROOT/('run/client_input_'+name+'.lock');path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
         with path.open('a') as handle:
             os.chmod(path,0o600);deadline=time.monotonic()+timeout
             while True:
@@ -28,7 +32,7 @@ def lease(timeout=10):
                 except BlockingIOError:
                     if time.monotonic()>deadline:raise RuntimeError('owned input lease timed out')
                     time.sleep(.025)
-            LEASE_STATE.owner_pid=os.getpid();LEASE_STATE.depth=1
+            LEASE_STATE.owner_pid=os.getpid();LEASE_STATE.actor=name;LEASE_STATE.depth=1
             try:yield
             finally:
                 LEASE_STATE.depth=0
@@ -39,10 +43,19 @@ class Inputs:
     def __init__(self):
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
+        self.actor=lab.actor_name()
+        self.runtime=lab.owned_process('client')
         self.raw=ctl.Input()
+
+    def validate(self):
+        current=lab.owned_process('client')
+        if (lab.actor_name()!=self.actor or not current or
+                (current['pid'],current['start_ticks'])!=(self.runtime['pid'],self.runtime['start_ticks'])):
+            raise RuntimeError('input adapter belongs to a different actor or client lifetime')
 
     def invoke(self,name,*args,**kwargs):
         with lease():
+            self.validate()
             focus()
             return getattr(self.raw,name)(*args,**kwargs)
 
@@ -57,7 +70,7 @@ class Inputs:
         if len(modifiers)>3 or len(set(modifiers))!=len(modifiers) or any(m not in ['shift','ctrl','alt'] for m in modifiers):
             raise ValueError('unsupported mouse modifier')
         with lease():
-            focus();pressed=[]
+            self.validate();focus();pressed=[]
             try:
                 for name in modifiers:
                     code=self.raw._keycode(self.raw.XK.string_to_keysym(self.raw.MODIFIERS[name]))[0]
@@ -73,7 +86,7 @@ class Inputs:
             not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
             raise ValueError('drag exceeds the owned client input bounds')
         with lease():
-            focus();self.raw.move(*start);time.sleep(.1)
+            self.validate();focus();self.raw.move(*start);time.sleep(.1)
             self.raw._send(self.raw.X.ButtonPress,button)
             try:
                 for i in range(1,11):
@@ -88,28 +101,36 @@ def focus():
 
 def _focus():
     from Xlib import X, display
-    from Xlib.protocol import event
     from tools.second_client.place_window import place
     client=lab.owned_process('client')
     if not client:raise RuntimeError('owned game client is absent')
-    monitor=place(client['pid'])
+    # Read-only physical-monitor verification. Never reposition or activate the
+    # host window during a task; launch-time placement remains separate.
+    monitor=place(client['pid'],timeout=1,reposition=False)
     if monitor['monitor']['name']!='HDMI-1':raise RuntimeError('game is not on HDMI-1')
-    screen=display.Display(os.environ.get('DISPLAY',':0'))
+    environment=lab.client_environment();nested=environment.get('DISPLAY')
+    if not nested or nested.split('.')[0]==os.environ.get('DISPLAY',':0').split('.')[0]:
+        raise RuntimeError('input requires a private display, refusing the host desktop')
+    screen=display.Display(nested)
     try:
-        root=screen.screen().root;window=screen.create_resource_object('window',monitor['window_id'])
-        atom=screen.intern_atom('_NET_ACTIVE_WINDOW')
-        active=root.get_full_property(atom,X.AnyPropertyType)
-        if active is not None and len(active.value) and int(active.value[0])==window.id:
-            return monitor
-        root.send_event(event.ClientMessage(window=window,client_type=atom,
-            data=(32,[2,X.CurrentTime,0,0,0])),
-            event_mask=X.SubstructureRedirectMask|X.SubstructureNotifyMask)
-        screen.flush()
-        for _ in range(20):
-            active=root.get_full_property(atom,X.AnyPropertyType)
-            if active is not None and len(active.value) and int(active.value[0])==window.id:
-                time.sleep(.15) # Let the nested SDL/Wine focus event settle before keys.
-                return monitor
-            time.sleep(.05)
-        raise RuntimeError('owned game window did not acquire focus')
+        root=screen.screen().root;candidates=[]
+        for window in root.query_tree().children:
+            if window.get_attributes().map_state!=X.IsViewable or window.get_wm_name()!='World of Warcraft':continue
+            pid=window.get_full_property(screen.intern_atom('_NET_WM_PID'),X.AnyPropertyType)
+            if pid is None or len(pid.value)!=1:continue
+            process_pid=int(pid.value[0])
+            try:group=os.getpgid(process_pid)
+            except ProcessLookupError:continue
+            if group==client['pid']:candidates.append((window,process_pid))
+        if len(candidates)!=1:raise RuntimeError('private display lacks exactly one owned visible game window')
+        window,process_pid=candidates[0];geometry=window.get_geometry()
+        if (geometry.width,geometry.height)!=(1280,720):raise RuntimeError('private game window dimensions changed')
+        current=screen.get_input_focus().focus
+        if not hasattr(current,'id') or current.id!=window.id:
+            window.set_input_focus(X.RevertToParent,X.CurrentTime);screen.sync();time.sleep(.15)
+        current=screen.get_input_focus().focus
+        if not hasattr(current,'id') or current.id!=window.id:raise RuntimeError('private game window did not acquire focus')
+        monitor['input_isolation']={'actor':lab.actor_name(),'display':nested,'window_id':window.id,
+            'game_pid':process_pid,'host_activation_sent':False,'actor_lock':lab.actor_name()}
+        return monitor
     finally:screen.close()

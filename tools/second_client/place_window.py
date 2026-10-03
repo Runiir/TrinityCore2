@@ -22,7 +22,7 @@ def second_monitor() -> dict:
     return monitors[1]
 
 
-def place(pid: int, timeout: float = 30) -> dict:
+def place(pid: int, timeout: float = 30, *, reposition: bool = True) -> dict:
     from Xlib import X, display
     from Xlib.protocol import event
 
@@ -43,11 +43,12 @@ def place(pid: int, timeout: float = 30) -> dict:
             geometry = window.get_geometry()
             x = monitor["x"] + max(0, (monitor["width"] - geometry.width) // 2)
             y = monitor["y"] + max(0, (monitor["height"] - geometry.height) // 2)
-            message = event.ClientMessage(window=window.id,
-                client_type=screen.intern_atom("_NET_MOVERESIZE_WINDOW"),
-                data=(32, [(1 << 8) | (1 << 9) | (2 << 12), x, y, 0, 0]))
-            root.send_event(message, event_mask=X.SubstructureRedirectMask | X.SubstructureNotifyMask)
-            screen.flush()
+            if reposition:
+                message = event.ClientMessage(window=window.id,
+                    client_type=screen.intern_atom("_NET_MOVERESIZE_WINDOW"),
+                    data=(32, [(1 << 8) | (1 << 9) | (2 << 12), x, y, 0, 0]))
+                root.send_event(message, event_mask=X.SubstructureRedirectMask | X.SubstructureNotifyMask)
+                screen.flush()
             for _ in range(20):
                 time.sleep(0.1)
                 location = root.translate_coords(window, 0, 0)
@@ -60,6 +61,7 @@ def place(pid: int, timeout: float = 30) -> dict:
                               "second_monitor_verified": True}
                     screen.close()
                     return result
+                if not reposition:break
         time.sleep(0.2)
     screen.close()
     raise RuntimeError("could not verify the owned game window on the second monitor")
