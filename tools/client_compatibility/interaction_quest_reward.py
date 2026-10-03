@@ -18,14 +18,12 @@ from .observation.journal import entries
 from .world.buffer import Reader
 from . import actors
 from .npc_fixture import NpcFixture
+from .interaction_observation import read_page
 
 
 def detail(t,label):
     try:
-        command(t,'/tcui quest_reward');path=t.out/(label+'.png');frame=shot(path)
-        with Image.open(path) as image:state=decode_image(image)
-        if state.get('mode')!='quest_reward' or state.get('guid')!=t.guid:
-            raise RuntimeError('quest reward diagnostic identity mismatch')
+        state,frame=read_page(t,label,'quest_reward','/tcui quest_reward')
         t.receipt.setdefault('reward_details',{})[label]={'state':state,'frame':frame};t.persist()
         return state['quest_reward']
     finally:command(t,'/tcui state')

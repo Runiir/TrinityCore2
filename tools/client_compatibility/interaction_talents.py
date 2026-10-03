@@ -9,6 +9,7 @@ from .interaction_bridge_deploy import shot
 from .interaction_macros import require,edit_case
 from .interaction_trade import inventory
 from .observation.interactions import decode_image
+from .interaction_observation import read_page
 
 
 def native_state():
@@ -24,8 +25,7 @@ def native_state():
 
 def detail(t,label):
     try:
-        command(t,'/tcui talents');p=t.out/(label+'.png');frame=shot(p);state=decode_image(Image.open(p))
-        if state.get('mode')!='talents' or state.get('guid')!=t.guid:raise RuntimeError('talent diagnostic page identity mismatch')
+        state,frame=read_page(t,label,'talents','/tcui talents')
         record={'state':state,'frame':frame};t.receipt.setdefault('detail',{})[label]=record;t.persist()
         return state['talent_probe']
     finally:command(t,'/tcui state')
@@ -33,9 +33,7 @@ def detail(t,label):
 
 def glyph_detail(t,label,page=1):
     try:
-        command(t,'/tcui glyphs '+str(page));p=t.out/(label+'.png');frame=shot(p)
-        with Image.open(p) as image:state=decode_image(image)
-        if state.get('mode')!='glyphs' or state.get('guid')!=t.guid:raise RuntimeError('glyph diagnostic identity mismatch')
+        state,frame=read_page(t,label,'glyphs','/tcui glyphs '+str(page))
         t.receipt.setdefault('glyph_detail',{})[label]={'state':state,'frame':frame};t.persist()
         return state['glyph_probe']
     finally:command(t,'/tcui state')
