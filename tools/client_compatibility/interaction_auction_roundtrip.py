@@ -1,0 +1,148 @@
+"""Post/cancel one owned item, collect its return and restore exact resources."""
+import argparse,json,time
+from pathlib import Path
+from . import actors,lab_runtime as lab
+from .interaction_trial import Trial
+from .interaction_macros import require,edit_case
+from .interaction_operations import controls,click_case
+from .interaction_auction import auction_state,query_packets
+from .interaction_auction_sell import suite as sell_suite
+from .interaction_mail import mailbox_state
+from .interaction_mail_actions import open_mailbox,letter
+from .mailbox_fixture import MailboxFixture
+from .interaction_inventory_moves import move
+from .observation.inventory import Inventory
+from .interaction_fixture_permissions import money_fixture_permission
+from .interaction_crafting import fixture_command
+
+
+def set_price(t):
+    fields=[c for c in t.receipt['sale_selected']['controls'] if c['kind']=='EditBox' and not c['name']]
+    if len(fields)!=3:raise RuntimeError('requires the observed three buyout money fields')
+    gold=min(fields,key=lambda c:c['x'])
+    require(edit_case(t,'auction.set_buyout','Set the buyout price to one gold.',
+        lambda c:c['x']==gold['x'] and c['y']==gold['y'],'1'),'ui_edit_pass')
+    state,frame=t.observe('price_ready');sell=state.get('auction',{}).get('sell',{})
+    t.receipt['price_ready']={'sell':sell,'frame':frame};t.persist()
+    if sell.get('buyout')!=10000 or not sell.get('post_enabled'):raise RuntimeError('stock sale price is not ready')
+
+
+def post(t,baseline):
+    set_price(t);since=time.time()
+    def outcome(b,a,selected):
+        native=auction_state();rows=native['auctions'];packets=query_packets(t,since)
+        row=rows[0] if len(rows)==1 else None
+        expected=(row and row[1:5]==(2,4,1,10000) and row[6:9]==(0,0,10000))
+        command=any(p['name']=='SMSG_AUCTION_COMMAND_RESULT' and p['direction']=='from_native'
+            and int.from_bytes(bytes.fromhex(p['body'])[8:12],'little')==0 for p in packets)
+        gone=not any(r['bag']==0 and r['slot']==8 for r in a.get('bag_items',[]))
+        return {'status':'auction_post_pass' if selected and expected and command and gone and not a.get('lua_errors') else
+            ('controller_failure' if not selected else 'client_or_protocol_failure'),
+            'oracle':{'native_after':native,'packets':packets,'expected_native_listing':bool(expected),
+                'native_success':command,'sale_item_removed':gone,'qualified_scope':'plain buyout-only posting; fees remain separate'}}
+    require(click_case(t,'auction.post','Create the one-gold pants auction.',lambda c:c['text']=='Create Auction',outcome),'auction_post_pass')
+    rows=auction_state()['auctions']
+    if len(rows)!=1 or rows[0][2:4]!=(4,1):raise RuntimeError('posted fixture auction changed')
+    row=rows[0];t.receipt['posted_auction']=row;t.persist();return row
+
+
+def cancel(t,row):
+    require(click_case(t,'auction.show_owned','Show the owned auction listing.',lambda c:c['name']=='AuctionHouseFrameAuctionsTab',
+        lambda b,a,s:{'status':'auction_owned_populated_pass' if s and a.get('auction',{}).get('full_owned')
+            and a.get('auction',{}).get('owned_count')==1 and any(r.get('auction_id')==row[0] and r.get('id')==39
+                and r.get('buyout')==10000 for r in a.get('auction',{}).get('owned',[])) and not a.get('lua_errors')
+            else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_owned_populated_pass')
+    state,frame=t.observe('owned_listing');t.receipt['owned_listing']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
+    require(click_case(t,'auction.select_owned','Select the posted Recruit\'s Pants auction.',lambda c:c.get('auction_id')==row[0],
+        lambda b,a,s:{'status':'auction_select_owned_pass' if s and a.get('auction',{}).get('selected_id')==row[0]
+            and a.get('auction',{}).get('cancel_enabled') else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_select_owned_pass')
+    require(click_case(t,'auction.cancel_dialog','Cancel the selected auction.',lambda c:c['text']=='Cancel Auction',
+        lambda b,a,s:{'status':'auction_cancel_dialog_pass' if s and 'StaticPopup1' in a['panels'] else
+            ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_cancel_dialog_pass')
+    since=time.time()
+    def canceled(b,a,s):
+        gone=not auction_state()['auctions'];packets=query_packets(t,since)
+        routed=any(p['name']=='CMSG_AUCTION_REMOVE_ITEM' and p['direction']=='to_native' for p in packets)
+        return {'status':'auction_cancel_pass' if s and gone and routed and not a.get('lua_errors') else
+            ('controller_failure' if not s else 'client_or_protocol_failure'),
+            'oracle':{'native_auction_absent':gone,'native_routed':routed,'packets':packets}}
+    require(click_case(t,'auction.confirm_cancel','Confirm cancellation of the selected auction.',
+        lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Yes','Okay'],canceled),'auction_cancel_pass')
+
+
+def recover_mail(t,point,baseline,deposit):
+    state=mailbox_state();new=[r for r in state['mails'] if r[0] not in {m[0] for m in baseline['mails']}]
+    if len(new)!=1 or new[0][1:4]!=(2,2,1) or new[0][5:7]!=(0,0) or not new[0][8]:
+        raise RuntimeError('requires one native alliance-auction cancellation return')
+    mail=new[0];attached=[r for r in state['attachments'] if r[0]==mail[0]]
+    if attached!=[(mail[0],4,39,1)]:raise RuntimeError('auction return does not contain the exact original pants')
+    t.receipt['cancellation_mail']={'native':mail,'attachments':attached};t.persist()
+    folder=t.out/'mailbox';folder.mkdir(mode=0o700)
+    fixture=MailboxFixture(folder,t.fixture)
+    try:
+        fixture.prepare();staged,frame=t.observe('mailbox_staged');t.receipt['mailbox_staging']={'state':staged,'frame':frame};t.persist()
+        open_mailbox(t,point);shown,_=t.observe('return_inbox')
+        letter_row=next((r for r in shown.get('mail',{}).get('inbox',[]) if r['subject']==mail[4]),None)
+        if not letter_row:raise RuntimeError('the exact auction return is outside the observed inbox')
+        require(click_case(t,'auction.read_return','Read the auction cancellation return.',
+            lambda c:c['name']=='MailItem'+str(letter_row['index'])+'Button',
+            lambda b,a,s:{'status':'auction_return_read_pass' if s and a.get('mail',{}).get('open',{}).get('subject')==mail[4]
+                else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_read_pass')
+        require(click_case(t,'auction.collect_return','Take the returned Recruit\'s Pants.',lambda c:c['name']=='OpenMailAttachmentButton1',
+            lambda b,a,s:{'status':'auction_return_collect_pass' if s and any(r['id']==39 and r['count']==1 for r in a.get('bag_items',[]))
+                and not a.get('mail',{}).get('open',{}).get('attachments') and not letter(mail[4])[9] else
+                ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_collect_pass')
+        require(click_case(t,'auction.delete_return','Delete the now-empty auction cancellation letter.',
+            lambda c:c['name']=='OpenMailDeleteButton' and c['text']=='Delete',
+            lambda b,a,s:{'status':'auction_return_delete_pass' if s and letter(mail[4]) is None else
+                ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_delete_pass')
+        t.clean_panels();t.execute({'kind':'key','value':'b'})
+        native=Inventory(lab.ROOT,actors.session_entry(t.fixture)['session'],1).poll()
+        positions=[(bag,slot) for bag in range(5) for slot in range(1,17) if native.slot(bag,slot)['guid']==((0x4000<<48)|4)]
+        if len(positions)!=1:raise RuntimeError('returned original item is not uniquely in owned bags')
+        source=positions[0]
+        if source!=(0,8):
+            if native.slot(0,8)['guid']:raise RuntimeError('original bag slot became occupied')
+            require(move(t,native,source,(0,8),native.slot(*source),'auction.restore_slot'),'inventory_move_pass')
+        t.clean_panels();native.poll()
+        before=next(r[1] for r in baseline['inventory']['money'] if r[0]==1);delta=before-native.money()
+        if delta not in [0,deposit]:raise RuntimeError('auction money delta differs from its native deposit')
+        t.receipt['deposit']={'native_deposit':deposit,'native_charge':delta,'stock_quote':'zero in the reviewed cheap-item UI; fee discrepancy remains open'};t.persist()
+        if delta:
+            fixture_command(t,'/cleartarget','restore auction deposit only on the owned actor')
+            with money_fixture_permission(t):fixture_command(t,f'.modify money {delta}','restore only the recorded auction deposit charge')
+    finally:
+        t.clean_panels();fixture.restore()
+
+
+def suite(t,auction_point,mail_point):
+    baseline=mailbox_state();t.receipt['mailbox_baseline']=baseline;t.persist()
+    def transaction(t,auction_baseline,fixture):
+        row=post(t,auction_baseline)
+        cancel(t,row);t.clean_panels();fixture.restore();fixture.rows=[]
+        recover_mail(t,mail_point,baseline,row[9])
+    try:sell_suite(t,auction_point,catalog=True,transaction=transaction)
+    finally:
+        after=mailbox_state();t.receipt['roundtrip_restoration']={'mail_inventory_money_restored':after==baseline,'after':after};t.persist()
+        if after!=baseline:raise RuntimeError('auction roundtrip requires cleanup; preserve native return/listing for recovery')
+
+
+def stage(t):
+    fixture=MailboxFixture(t.out,t.fixture)
+    try:
+        t.clean_panels();fixture.prepare();state,frame=t.observe('mailbox_point_review')
+        t.receipt['staging']={'state':state,'frame':frame};t.persist()
+    finally:fixture.restore()
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--stage-mail',action='store_true');p.add_argument('--auction-point',type=int,nargs=2);p.add_argument('--mail-point',type=int,nargs=2)
+    a=p.parse_args()
+    if not a.stage_mail and (not a.auction_point or not a.mail_point):p.error('requires separately reviewed auction and mailbox points')
+    if any(not 0<=v<bound for point in [a.auction_point,a.mail_point] if point for v,bound in zip(point,[1280,720])):
+        p.error('fixture points must be within the owned 1280x720 client')
+    t=Trial(a.output,controller='code')
+    try:stage(t) if a.stage_mail else suite(t,a.auction_point,a.mail_point);t.receipt['completed']=True
+    except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
+    finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

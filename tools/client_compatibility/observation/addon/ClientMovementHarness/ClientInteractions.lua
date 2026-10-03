@@ -120,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=25,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=26,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -156,6 +156,12 @@ local function snapshot(viewMode,viewPage)
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
                 local parent=f:GetParent()
+                if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
+                    local row=call(f.GetElementData,f)
+                    if type(row)=='table' and type(row.auctionID)=='number' then
+                        data.controls[#data.controls].auction_id=row.auctionID
+                    end
+                end
                 local bag=call(f.GetBagID,f)
                 if bag==nil and name:match('^ContainerFrame%d+Item%d+$') then bag=call(parent.GetID,parent) end
                 if bag~=nil and f.GetID then
@@ -303,6 +309,11 @@ local function snapshot(viewMode,viewPage)
             end
         end
         sample(api.GetBrowseResults,'browse');sample(api.GetOwnedAuctions,'owned');sample(api.GetBids,'bids')
+        local auctions=AuctionHouseFrame.AuctionsFrame
+        if auctions and auctions:IsVisible() then
+            data.auction.selected_id=auctions.selectedAuctionID
+            data.auction.cancel_enabled=auctions.CancelAuctionButton and call(auctions.CancelAuctionButton.IsEnabled,auctions.CancelAuctionButton)
+        end
         local sell=AuctionHouseFrame.ItemSellFrame
         if sell and sell:IsVisible() then
             local item=call(sell.GetItem,sell)

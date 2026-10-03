@@ -12,7 +12,7 @@ from .interaction_macros import require,edit_case
 from .npc_fixture import NpcFixture
 
 
-def suite(t,npc_point,catalog=False,capture_post=False):
+def suite(t,npc_point,catalog=False,capture_post=False,transaction=None):
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=auction_state();fixture=NpcFixture(t.out,t.fixture,8719,2097152)
     items=[r for r in baseline['inventory']['items'] if r[0]==1 and r[3]==4]
@@ -59,6 +59,8 @@ def suite(t,npc_point,catalog=False,capture_post=False):
             'escape':{'kind':'key','value':'Escape','description':'Close the auction house.'}},outcome,diagnostic_action='select'),
             'auction_sale_catalog_pass' if catalog else 'auction_sale_selection_pass')
         state,frame=t.observe('sale_selected');t.receipt['sale_selected']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
+        if transaction:
+            transaction(t,baseline,fixture)
         if capture_post:
             # This probe is limited to the query-only deployed adapter. A future
             # real transaction needs cancellation/mail restoration instead.
