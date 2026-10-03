@@ -57,7 +57,9 @@ def test_actual_warrior_quest_details_preserve_identity_text_and_rewards(codec):
     assert d['header'][0]==28766 and d['header'][16]==197 and d['header'][11]==4
     assert d['texts'][0]=='Beating Them Back!'
     assert 'Blackrock' in d['texts'][1] and d['texts'][2]=='Kill 6 Blackrock Battle Worgs.'
-    assert d['counts'][0:4]==(0,0,350,50)
+    # The captured legacy packet misreported zero reward items, although its
+    # authoritative arrays contain the reward. The bridge repairs that count.
+    assert d['counts'][0:4]==(0,1,350,50)
     assert d['items']==[(57255,1),(0,0),(0,0),(0,0)] and d['currencies']==[(0,0,0)]*4
     assert d['factions'][0]==(72,5,0,0)
     assert d['choices']==[(0,(0,0,0),0,0,0)]*6 and d['boost']==0

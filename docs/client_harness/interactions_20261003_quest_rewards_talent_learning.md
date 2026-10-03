@@ -119,6 +119,12 @@ checks. The reward/talent candidate passed 13 selected packet tests and 13
 sanitizer tests, then 685 world regression tests. These are protocol tests, not
 live reward or talent qualification.
 
+The fixed-reward count candidate initially passed 685 tests and failed one old
+quest-details assertion that expected the erroneous zero count. Its captured
+packet already contains item 57255 quantity one. The assertion now requires one
+fixed reward and still verifies the exact item. The sanitizer selection initially
+failed the same assertion (8 passed); its corrected rerun passed all 9 checks.
+
 The first deployment precheck found the scout at character selection and stopped
 before changing the bridge. Ordinary Enter World input recovered the scout.
 `quest_reward_deployment_02` then restarted only the independent C++ bridge and
