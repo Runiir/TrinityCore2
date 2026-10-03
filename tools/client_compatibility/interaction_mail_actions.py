@@ -51,7 +51,7 @@ def suite(t,point):
                                       'subject':subject,'body':body};t.persist()
         open_mailbox(t,point);state,frame=t.observe('inbox_with_fixture')
         row=next((r for r in state.get('mail',{}).get('inbox',[]) if r['subject']==subject),None)
-        if not row or row['read'] or row['items'] or row['money'] or row['cod']:
+        if not row or row['read'] or row.get('items') or row['money'] or row['cod']:
             raise RuntimeError('disposable unread letter is not visible in the observed inbox')
         def read_oracle(b,a,correct):
             native=letter(subject);opened=a.get('mail',{}).get('open',{})
