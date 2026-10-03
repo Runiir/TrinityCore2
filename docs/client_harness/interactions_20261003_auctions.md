@@ -11,6 +11,12 @@ catalog agree. All native auctions, both characters' items and money, and the
 staged character position are restored. Both windows remain on HDMI-1; the native
 worldserver was not rebuilt or restarted.
 
+`ui19/auction_browse_02` also passes five ordinary choices, including a unique
+absent-name search, search-text restoration and the visible stock close button.
+Native search request/result, modern browse response, public complete empty
+catalog and browse-results event agree. The reviewed UI shows "No items found".
+Both inventory/money baselines and the staged position are restored.
+
 These are empty-catalog qualifications. Populated rows, sorting, paging, posting,
 bidding, buying, cancellation, commodity semantics, fees, delivery and negative
 paths remain open. Opening a panel is not transaction coverage. The broader
@@ -32,11 +38,29 @@ reads those public catalog APIs, completeness flags, recent catalog events and
 the actual search field. It makes no gameplay calls. Quiet catalog observations
 skip unnecessary bag-control traversal while retaining all passive item data.
 
-`auction_browse_02` exposes the next missing adapter. Its ordinary Search button
+`ui18/auction_browse_02` exposed the missing browse adapter. Its ordinary Search button
 emits a captured `CMSG_AUCTION_BROWSE_QUERY`, with the default 4032 quality mask,
 zero class filters and price/name sorts. No native search request follows.
 This failed verdict is retained. The original search text and complete native
-auction/inventory/money/position baseline are restored.
+auction/inventory/money/position baseline are restored. The UI19 C++ adapter now
+collects every native search page before applying supported modern class, quality
+and required-level filters, grouping and sorting. Native DB2/hotfix metadata is
+loaded once at bridge startup. Partial commodity transactions, fractional native
+unit prices, random-suffix keys, collection filters and concurrent catalog changes
+remain open. A 4,096-native-row bound prevents unbounded scans.
+
+Observer v24 adds passive stock sale-item, quantity, price, duration and item-search
+observations. `ui19/auction_sell_select_01` qualifies selecting the existing unbound
+pants through their ordinary bag button, with no native mutation. The stock UI
+then remains stuck on "Searching..." because its item-ID search was unmapped.
+The next adapter adds native-backed item-ID/bucket-key reads and base item keys to
+plain owned/bid rows. `auction_sell_post_probe_01` reaches native search and returns
+a modern result but still fails completeness: the response envelope incorrectly
+uses base level one where an item-ID query requires wildcard level zero. No
+posting input is attempted, and all native state is restored. The source fix now
+echoes a bucket request's key or uses itemID/level zero for an item-ID request.
+Its live retry belongs to the next batch; item-search and posting coverage remain
+open until that retry succeeds.
 
 Layouts are checked against the pinned [TrinityCore auction packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/AuctionHousePackets.cpp)
 and [4.4.2 WowPacketParser auction parser](https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/AuctionHandler.cs).
@@ -66,6 +90,10 @@ The catalog suite passes 598 regression tests and 35 selected ASan/UBSan checks.
 The later transport suite passes 601 regression tests and 50 selected sanitizer
 checks; a further four-test sanitizer run includes the added native visibility
 and targetability case. These are protocol checks, not unique feature counts.
+The browse suite passes 617 full checks and 45 selected sanitizer checks. The
+subsequent item-search suite passes 632 full checks and 56 selected sanitizer
+checks before the live response-key correction. That correction still requires
+its own checks and live retry.
 
 - The initial open failed before the hello translator existed.
 - The first focused catalog sanitizer command named a nonexistent test file;
@@ -81,6 +109,15 @@ and targetability case. These are protocol checks, not unique feature counts.
   the attributable missing-adapter trace.
 - The first independent native restoration check compared JSON arrays to SQL
   tuples. The normalized comparison passes, with the original check retained.
+- UI19's first browse retry passes search but incorrectly assumes one Escape
+  closes the panel after restoring a focused search field. The corrected visible
+  close-button retry passes; the original verdict is retained and classified as
+  a runner failure.
+- The first two focused item-search selections each have six browse failures and
+  30 passes because the new query-kind read required a string on older browse
+  state. Explicit browse-kind initialization fixes this. The corrected focused
+  run passes 37 checks, followed by the 632-check full suite. These failures are
+  retained separately from the later live wildcard response-key failure.
 
 ## Reproduction and storage
 
@@ -100,6 +137,8 @@ each reviewed client serially. Observer-only changes use the reload helper.
 
 The closed UI18 batch is tracked by
 `artifacts/client_harness/442_interactions_20261003_19.tar.gz.dvc`.
+The closed UI19 batch uses
+`artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc`.
 Commit source/configuration before checkpointing, verify the DVC remote and
 archive hashes, then prune only that batch's raw frames and evict only its named
 archive/cache object. Keep small receipts locally. The checkpoint records code

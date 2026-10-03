@@ -38,10 +38,11 @@ See [the native bridge notes](../../tools/client_compatibility/native_bridge/REA
 The [October 2 interaction report](interactions_20261002.md) records the later
 group-frame, role and marker repairs, individual qualifications and remaining gaps.
 The [October 3 auction report](interactions_20261003_auctions.md) records stock
-auction opening, complete empty bid/owned catalogs and the city vehicle-create
-repair. Its latest full run passes 601 regression checks, with 50 selected
-sanitizer checks and a further four-test visibility check. Search and auction
-transactions remain open; captured failures and cleanup receipts are retained.
+auction opening, complete empty browse/bid/owned catalogs and the city vehicle-create
+repair. The latest item-search suite passes 632 regression checks and 56 selected
+sanitizer checks, but its live response-key retry still needs qualification.
+Posting and auction transactions remain open; captured failures and cleanup
+receipts are retained.
 The later bank batch passes 411 regression tests, including nine bank packet tests;
 46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
