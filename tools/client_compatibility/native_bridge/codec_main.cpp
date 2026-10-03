@@ -53,7 +53,8 @@ int main(int argc, char **argv)
                 }
                 else if(op=="mail_context")
                 {
-                    require_mail_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
+                    require_mail_character(str(get(request,"name")),truth(get(request,"created")),
+                        truth(get(request,"active_world")),truth(get(request,"in_world")));result=true;
                 }
                 else if(op=="native_guild_roster")
                     result=native_guild_roster(data("body"));

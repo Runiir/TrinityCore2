@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import time
 import uuid
+import re
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
@@ -147,6 +148,53 @@ def cleanup_letters(out,trials,subjects,points):
             finally:cleanup.receipt['finished_at']=time.time();cleanup.persist()
 
 
+def restore_failed(out,source,points):
+    """Restore a closed failed owned-mail episode without changing its verdict."""
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence'):raise ValueError('repair source must be private lab evidence')
+    original=json.loads((source/'cohort.json').read_text())
+    if original.get('schema')!='client442_owned_mail_roundtrip_v1' or original.get('completed') or not original.get('finished_at'):
+        raise ValueError('repair requires a closed failed owned-mail round trip')
+    subject=original['subject'];reply_subject=original['reply_subject']
+    if not re.fullmatch(r'442 UI (return|reply) [0-9a-f]{8}',subject) or reply_subject!='RE: '+subject:
+        raise ValueError('repair source is outside the owned disposable subject namespace')
+    out.mkdir(exist_ok=False,parents=True,mode=0o700);trials={}
+    report={'started_at':time.time(),'source':str(source),'controller':'code_fixture_cleanup','completed':False}
+    try:
+        baselines={}
+        for name in ['primary','scout']:
+            with actor(name):
+                t=trials[name]=Trial(out/name,controller='code');actors.session_entry(t.fixture)
+                saved=json.loads((source/name/'episode.json').read_text())
+                if saved['actor']!=t.fixture or saved['runtime']['worldserver']!=t.receipt['runtime']['worldserver']:
+                    raise RuntimeError('repair actor or native server differs from failed source')
+                baselines[name]=saved['mailbox_baseline']
+        cleanup_letters(out,trials,[subject,reply_subject],points)
+        for name,t in trials.items():
+            with actor(name):
+                t.clean_panels();expected=dict(baselines[name]['inventory']['money'])[t.fixture['guid']]
+                lab.server_command('saveall');time.sleep(1);delta=dict(inventory()['money'])[t.fixture['guid']]-expected
+                if delta not in ([0,-30,-31] if name=='primary' else [0,30,1]):raise RuntimeError('unexpected failed-trial money delta')
+                if delta:money_adjust(t,-delta,'restore only the failed owned mail fixture')
+                after=mailbox_state(t.fixture['guid']);matches=json.loads(json.dumps(after))==baselines[name]
+                t.receipt['mailbox_restoration']={'matches':matches,'after':after};t.persist()
+                if not matches:raise RuntimeError('failed mail inventory/money/reward-mail baseline differs')
+                pose_file=source/name/'mailbox_fixture.json'
+                if pose_file.exists():
+                    expected_pose=json.loads(pose_file.read_text())['before'][3:]
+                    with lab.connection() as c,c.cursor() as q:
+                        q.execute('SELECT position_x,position_y,position_z,orientation,map FROM client442_characters.characters WHERE guid=%s',(t.fixture['guid'],))
+                        actual=q.fetchone()
+                    matches=all(abs(a-b)<.01 for a,b in zip(actual,expected_pose))
+                    t.receipt['source_pose_restoration']={'matches':matches,'actual':actual,'expected':expected_pose};t.persist()
+                    if not matches:raise RuntimeError('failed mail source pose differs after repair')
+        report['completed']=True
+    except Exception as error:report['failure']=f'{type(error).__name__}: {error}'
+    finally:
+        for t in trials.values():t.receipt.update(completed=report['completed'],failure=report.get('failure'),finished_at=time.time());t.persist()
+        report['finished_at']=time.time();lab.private_write(out/'cohort.json',json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
+
+
 def suite(out,mode,points):
     out.mkdir(exist_ok=False,parents=True,mode=0o700);trials={};baseline={}
     cohort={'schema':'client442_owned_mail_roundtrip_v1','started_at':time.time(),'mode':mode,'completed':False,'failure':None}
@@ -224,8 +272,13 @@ def suite(out,mode,points):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--mode',choices=['return','reply'],required=True)
+    p.add_argument('--mode',choices=['return','reply']);p.add_argument('--restore-source',type=Path)
     p.add_argument('--primary-point',type=int,nargs=2,required=True);p.add_argument('--scout-point',type=int,nargs=2,required=True);a=p.parse_args()
     points={'primary':a.primary_point,'scout':a.scout_point}
     if any(not 0<=v<bound for point in points.values() for v,bound in zip(point,[1280,720])):p.error('mailbox point is outside the owned window')
-    suite(a.output,a.mode,points)
+    if a.restore_source:
+        if a.mode:p.error('restore-source does not run a new model trial')
+        restore_failed(a.output,a.restore_source,points)
+    else:
+        if not a.mode:p.error('new trial requires a mode')
+        suite(a.output,a.mode,points)

@@ -11,11 +11,13 @@ ITEM=(0x4000<<48)|0x12345678
 ITEM_HIGH=(3<<58)|(1<<42)
 
 
-@pytest.mark.parametrize('created,active_world',[(False,False),(False,True),(True,False),(True,True)])
-def test_realm_mail_requires_its_owned_active_character(codec,created,active_world):
-    answer=codec(op='mail_context',created=created,active_world=active_world)
-    assert (answer.get('result') is True)==(created and active_world)
-    if not created or not active_world:assert 'error' in answer
+@pytest.mark.parametrize('name',['CMSG_SEND_MAIL','CMSG_MAIL_RETURN_TO_SENDER','CMSG_MAIL_GET_LIST','CMSG_MAIL_DELETE'])
+@pytest.mark.parametrize('created,active_world,in_world',[(c,a,w) for c in [False,True] for a in [False,True] for w in [False,True]])
+def test_mail_channel_requires_its_owned_active_character(codec,name,created,active_world,in_world):
+    answer=codec(op='mail_context',name=name,created=created,active_world=active_world,in_world=in_world)
+    allowed=created and active_world and (in_world or name in ['CMSG_SEND_MAIL','CMSG_MAIL_RETURN_TO_SENDER'])
+    assert (answer.get('result') is True)==allowed
+    if not allowed:assert 'error' in answer
 
 
 def send(target=b'Harnesstwo',subject=b'Protocol letter',body=b'Ordinary text',money=0,cod=0,stationery=41,items=()):
