@@ -13,20 +13,24 @@ def resources(oracle):
     return {'money':oracle.money(),'equipment':[oracle.equipment(i) for i in range(1,20)]}
 
 
+def open_search(t):
+    require(t.step('settings.inspect_menu','Open the game menu.',
+        {'open':{'kind':'key','value':'Escape','description':'Open the ordinary game menu.'}},
+        lambda b,a,s:{'status':'panel_open_pass' if 'GameMenuFrame' in a['panels'] else 'client_or_protocol_failure'},
+        diagnostic_action='open',await_state=lambda a:'GameMenuFrame' in a['panels']),'panel_open_pass')
+    require(click_case(t,'settings.inspect_open','Open stock settings.',lambda c:c['text']=='Options',
+        lambda b,a,s:{'status':'panel_open_pass' if s and 'SettingsPanel' in a['panels'] else 'client_or_protocol_failure'},
+        await_state=lambda a:'SettingsPanel' in a['panels']),'panel_open_pass')
+    fields=[c for c in controls(t) if c['kind']=='EditBox' and c['enabled']]
+    if len(fields)!=1:raise RuntimeError('require one visible stock settings search field')
+    field=fields[0];t.receipt['search_field']=field;t.persist();return field
+
+
 def suite(t):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();before=resources(oracle);t.receipt['baseline']=before;t.persist();original=None
     try:
-        require(t.step('settings.inspect_menu','Open the game menu.',
-            {'open':{'kind':'key','value':'Escape','description':'Open the ordinary game menu.'}},
-            lambda b,a,s:{'status':'panel_open_pass' if 'GameMenuFrame' in a['panels'] else 'client_or_protocol_failure'},
-            diagnostic_action='open',await_state=lambda a:'GameMenuFrame' in a['panels']),'panel_open_pass')
-        require(click_case(t,'settings.inspect_open','Open stock settings.',lambda c:c['text']=='Options',
-            lambda b,a,s:{'status':'panel_open_pass' if s and 'SettingsPanel' in a['panels'] else 'client_or_protocol_failure'},
-            await_state=lambda a:'SettingsPanel' in a['panels']),'panel_open_pass')
-        fields=[c for c in controls(t) if c['kind']=='EditBox' and c['enabled']]
-        if len(fields)!=1:raise RuntimeError('require one visible stock settings search field')
-        field=fields[0];original=field['text'];t.receipt['search_field']=field;t.persist()
+        field=open_search(t);original=field['text']
         predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
         for term in ['helm','cloak']:
             require(edit_case(t,'settings.search.'+term,'Search stock settings for '+term+'.',predicate,term),'ui_edit_pass')
