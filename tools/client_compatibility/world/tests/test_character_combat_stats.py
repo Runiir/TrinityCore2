@@ -62,6 +62,14 @@ def test_crit_sparse_values_include_zero_reset_and_school_parent(codec):
     assert r.unpack('7f')==tuple(i*1.5 for i in range(7));r.end()
 
 
+def test_combined_ranged_and_mount_scalars_keep_wire_order(codec):
+    fields={INDEX['UNIT_FIELD_RANGEDATTACKTIME']:2034,INDEX['UNIT_FIELD_MOUNTDISPLAYID']:16085}
+    body=result(codec,op='unit_update',snapshot={'guid':1,'map':0,'fields':fields},character={},changed=fields,visibility=1)
+    r=read_block(body,(1,player_high()),1<<5)
+    assert mask(r,8)=={32,46,52,172,175};r.align()
+    assert r.unpack('IiI')==(2034,16085,2034);r.end()
+
+
 def test_schools_interleave_crit_and_damage_with_the_actual_parent_gate(codec):
     fields={INDEX['PLAYER_SPELL_CRIT_PERCENTAGE1']:bits(5.5),
         INDEX['PLAYER_FIELD_MOD_DAMAGE_DONE_PCT']:bits(1.25),
