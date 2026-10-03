@@ -30,3 +30,10 @@ def test_cleanup_timeout_refuses_to_replay_escape(monkeypatch):
     ticks=iter([0,13]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
     with pytest.raises(RuntimeError,match='refusing to replay Escape'):t.clean_panels()
     assert events==['Escape']
+
+
+def test_pending_glyph_cancel_is_progress_even_when_the_panel_stays_open(monkeypatch):
+    pending=state(1,True);pending['pending_glyph']=483
+    t,events=trial([pending,state(2,True),state(3,False),state(4,False)],monkeypatch)
+    t.clean_panels()
+    assert events==['Escape','Escape']
