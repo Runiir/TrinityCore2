@@ -37,6 +37,8 @@ SAFE_BODY_NAMES={
     'SMSG_QUEST_QUERY_RESPONSE',
     'CMSG_QUEST_GIVER_ACCEPT_QUEST','CMSG_QUEST_LOG_REMOVE_QUEST',
     'SMSG_QUEST_GIVER_QUEST_DETAILS','SMSG_QUEST_GIVER_QUEST_LIST_MESSAGE',
+    'CMSG_QUEST_GIVER_STATUS_QUERY','CMSG_QUEST_GIVER_STATUS_MULTIPLE_QUERY',
+    'SMSG_QUEST_GIVER_STATUS','SMSG_QUEST_GIVER_STATUS_MULTIPLE',
     'CMSG_BUY_ITEM','SMSG_BUY_ITEM','SMSG_BUY_SUCCEEDED','SMSG_BUY_FAILED','SMSG_ITEM_PUSH_RESULT',
     'CMSG_SELL_ITEM','SMSG_SELL_ITEM','SMSG_SELL_RESPONSE','CMSG_BUY_BACK_ITEM','CMSG_BUYBACK_ITEM',
     'CMSG_BANKER_ACTIVATE','SMSG_SHOW_BANK','SMSG_NPC_INTERACTION_OPEN_RESULT',
@@ -126,7 +128,8 @@ def checkpoint(directory,name):
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
             'The 891-operation plan and 275-binding catalog remain broader than the completed trials.'],
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
-    paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',lab.ROOT/'reference/ui-442',
+    paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',
+        lab.ROOT/'reference/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2',lab.ROOT/'reference/ui-442',
         lab.ROOT/'build/native_bridge/build_receipt.json',lab.ROOT/'build/native_bridge_asan/build_receipt.json',
         lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec',
         lab.ROOT/'bin/worldserver']
