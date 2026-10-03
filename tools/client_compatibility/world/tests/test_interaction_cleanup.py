@@ -1,5 +1,6 @@
 """A delayed panel close must never turn into repeated Escape input."""
 from types import SimpleNamespace
+from contextlib import nullcontext
 import pytest
 from tools.client_compatibility import interaction_trial as module
 
@@ -37,3 +38,15 @@ def test_pending_glyph_cancel_is_progress_even_when_the_panel_stays_open(monkeyp
     t,events=trial([pending,state(2,True),state(3,False),state(4,False)],monkeypatch)
     t.clean_panels()
     assert events==['Escape','Escape']
+
+
+def test_delayed_partial_chat_observation_does_not_resubmit_or_fail(monkeypatch):
+    partial={'chat_edit_open':True,'chat_edit_text':'/cleartar'}
+    t,_=trial([partial,{'chat_edit_open':False}],monkeypatch)
+    t.receipt['cases']=[];events=[]
+    t.io=SimpleNamespace(key=lambda key,**kwargs:events.append(('key',key)),
+        type=lambda text:events.append(('text',text)))
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    transport=t.execute({'kind':'chat','value':'/cleartarget'})
+    assert events==[('key','Return'),('text','/cleartarget'),('key','Return')]
+    assert transport[0]['input_replayed'] is False
