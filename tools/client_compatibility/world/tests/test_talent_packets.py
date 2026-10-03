@@ -34,8 +34,8 @@ def test_talent_update_rejects_all_prefixes_trailing_duplicate_and_invalid_field
     for n in range(len(body)):assert 'error' in call(codec,'SMSG_TALENTS_INFO',body[:n])
     for bad in [body+b'x',b'\x02'+body[1:],b'\x01'+body[1:],
                 body[:5]+b'\x03'+body[6:],body[:6]+b'\x02'+body[7:],
-                struct.pack('<BIBB',0,101,1,0),body[:15]+b'\x05'+body[16:],
-                body[:16]+struct.pack('<I',122)+body[20:],body[:21]+b'\x08'+body[22:]]:
+                struct.pack('<BIBB',0,101,1,0),body[:16]+b'\x05'+body[17:],
+                body[:17]+struct.pack('<I',122)+body[21:],body[:22]+b'\x08'+body[23:]]:
         assert 'error' in call(codec,'SMSG_TALENTS_INFO',bad)
 
 
