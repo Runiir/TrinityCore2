@@ -94,6 +94,7 @@ bool capture(std::string const &name)
                                                           "SMSG_LOOT_RELEASE",
                                                           "SMSG_SETUP_CURRENCY",
                                                           "SMSG_SET_CURRENCY",
+                                                          "CMSG_SET_CURRENCY_FLAGS",
                                                           "SMSG_AURA_UPDATE",
                                                           "SMSG_AURA_UPDATE_ALL",
                                                           "CMSG_CANCEL_AURA",

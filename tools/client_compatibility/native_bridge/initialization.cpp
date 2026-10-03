@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "currency.hpp"
 
 namespace bridge
 {
@@ -87,7 +88,7 @@ Reply Protocol::currency_response(std::string const &name, View body)
             auto kind = r.take<std::uint32_t>();
             if (truth(f[0]))
                 weekly = r.take<std::uint32_t>();
-            w.pack("ii", {kind, quantity})
+            w.pack("ii", {modern_currency(kind), quantity})
                 .bits(integer(f[0]), 1)
                 .bits(integer(f[2]), 1)
                 .bits(integer(f[3]), 1)
@@ -110,7 +111,7 @@ Reply Protocol::currency_response(std::string const &name, View body)
         if (weekly)
             weekly_value = r.take<std::int32_t>();
         r.end();
-        w.pack("iiII", {kind, quantity, 0, 0});
+        w.pack("iiII", {modern_currency(kind), quantity, 0, 0});
         for (auto bit : std::array<std::uint64_t, 12>{weekly, tracked, 0, 0, suppress, 0, 0, 0, 0, 0, 0, 0})
             w.bits(bit, 1);
         w.flush();

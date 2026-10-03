@@ -1,5 +1,6 @@
 // Pinned native/modern TradePackets and SharedDefines. Native handlers retain authority.
 #include "peer_identity.hpp"
+#include "currency.hpp"
 
 namespace bridge
 {
@@ -98,7 +99,7 @@ Reply Protocol::trade_response(std::string const &name,View body) const
         }
         masks(r,item.gift,{6,4,2,0,5});
     }
-    r.align();w.pack("BIIIQiiiI",{who,id,client,current,gold,currency,quantity,enchant,count});
+    r.align();w.pack("BIIIQiiiI",{who,id,client,current,gold,modern_currency(currency),quantity,enchant,count});
     bool unsupported_gems=false;std::unordered_set<unsigned> slots;
     for(auto &item:items)
     {

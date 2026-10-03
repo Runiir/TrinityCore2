@@ -1,5 +1,6 @@
 // Native QuestRewards -> pinned 60895 rewards and plain choice ItemInstances.
 #include "quest_rewards.hpp"
+#include "currency.hpp"
 
 namespace bridge
 {
@@ -43,7 +44,7 @@ Bytes quest_rewards(Reader &r,Value *offered_choices)
     }
     Writer w;
     for(unsigned i=0;i<4;++i)w.pack("2i",{items[i],itemQty[i]});
-    for(unsigned i=0;i<4;++i)w.pack("3i",{currencies[i],currencyQty[i],0});
+    for(unsigned i=0;i<4;++i)w.pack("3i",{modern_currency(integer(currencies[i])),currencyQty[i],0});
     w.pack("4iQi3i",{choiceCount,itemCount,money,xp,0,0,0,title,flags});
     for(unsigned i=0;i<5;++i)w.pack("4i",{factions[i],values[i],overrides[i],0});
     w.pack("7i",{displaySpell,0,0,spell,skill,skillUps,0});

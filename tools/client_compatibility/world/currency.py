@@ -15,7 +15,7 @@ def translate(name, body):
             tracked_value = r.unpack("I")[0] if tracked else None
             kind, = r.unpack("I")
             weekly_value = r.unpack("I")[0] if weekly else None
-            w.pack("ii", kind, quantity).bits(weekly, 1).bits(maximum, 1).bits(tracked, 1).bits(0, 4).bits(flag, 5).flush()
+            w.pack("ii", 1901 if kind == 392 else kind, quantity).bits(weekly, 1).bits(maximum, 1).bits(tracked, 1).bits(0, 4).bits(flag, 5).flush()
             for value in [weekly_value, max_value, tracked_value]:
                 if value is not None: w.pack("I", value)
         r.end()
@@ -27,7 +27,7 @@ def translate(name, body):
         quantity, kind = r.unpack("ii")
         weekly_value = r.unpack("i")[0] if weekly else None
         r.end()
-        w = Writer().pack("iiII", kind, quantity, 0, 0)
+        w = Writer().pack("iiII", 1901 if kind == 392 else kind, quantity, 0, 0)
         for value in [weekly, tracked, 0, 0, suppress, 0, 0, 0, 0, 0, 0, 0]: w.bits(value, 1)
         w.flush()
         for value in [weekly_value, tracked_value]:

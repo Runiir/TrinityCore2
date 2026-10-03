@@ -31,7 +31,8 @@ def native_catalog(state):
     out={}
     for kind,quantity,weekly,tracked,flags in state:
         row=entries[kind];precision=100 if row[9]&8 else 1
-        out[kind]={'id':kind,'name':text[row[2]:].split(b'\0',1)[0].decode(),
+        modern=1901 if kind==392 else kind
+        out[modern]={'id':modern,'native_id':kind,'name':text[row[2]:].split(b'\0',1)[0].decode(),
             'quantity':quantity//precision,'weekly':weekly//precision,'tracked':tracked//precision,
             'max_quantity':row[7]//precision,'static_weekly_cap':row[8]//precision,'flags':flags,
             'precision':precision,'category':row[1]}
