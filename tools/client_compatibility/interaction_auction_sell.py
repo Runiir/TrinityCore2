@@ -5,14 +5,14 @@ from pathlib import Path
 import time
 from . import actors
 from .interaction_trial import Trial
-from .interaction_auction import auction_state,open_auction
+from .interaction_auction import auction_state,open_auction,query_packets
 from .interaction_operations import controls,click_case,point
 from .interaction_inventory_moves import slot_control
 from .interaction_macros import require
 from .npc_fixture import NpcFixture
 
 
-def suite(t,npc_point):
+def suite(t,npc_point,catalog=False):
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=auction_state();fixture=NpcFixture(t.out,t.fixture,8719,2097152)
     items=[r for r in baseline['inventory']['items'] if r[0]==1 and r[3]==4]
@@ -40,14 +40,21 @@ def suite(t,npc_point):
             sell=a.get('auction',{}).get('sell',{})
             shown=sell.get('id')==39 and sell.get('quantity')==1 and (sell.get('bag'),sell.get('slot'))==(0,8)
             unchanged=auction_state()==baseline
-            return {'status':'auction_sale_selection_pass' if s=='select' and shown and unchanged else
+            packets=query_packets(t,t.receipt['started_at'])
+            routed=all(any(r['name']==name and r['direction']==direction for r in packets) for name,direction in
+                [('CMSG_AUCTION_LIST_ITEMS','to_native'),('SMSG_AUCTION_LIST_RESULT','from_native'),('SMSG_AUCTION_LIST_ITEMS_RESULT','to_client')])
+            complete=sell.get('full_search') is True and sell.get('search_count')==0 and a.get('auction',{}).get('throttle_ready') is True
+            clean=not a.get('lua_errors') and not a.get('blocked_actions')
+            passed=shown and unchanged and clean and (not catalog or (routed and complete))
+            return {'status':('auction_sale_catalog_pass' if catalog else 'auction_sale_selection_pass') if s=='select' and passed else
                 ('controller_failure' if s!='select' else 'client_or_protocol_failure'),
-                'oracle':{'sale_item_shown':shown,'native_unchanged':unchanged,'sell':sell,
-                    'qualified_scope':'sale item selection only; not posting or catalog completeness'}}
+                'oracle':{'sale_item_shown':shown,'native_unchanged':unchanged,'sell':sell,'routed':routed,'complete':complete,'ui_clean':clean,'packets':packets,
+                    'qualified_scope':'sale selection and complete empty item catalog' if catalog else 'sale item selection only; not posting or catalog completeness'}}
         require(t.step('auction.select_sale_item','Select the unbound Recruit\'s Pants for sale.',{
             'select':{'kind':'click','value':point(control),'button':3,'description':'Right-click the visible unbound pants to select them in the auction Sell tab.'},
             'pick':{'kind':'click','value':point(control),'description':'Pick up the pants on the cursor without posting them.'},
-            'escape':{'kind':'key','value':'Escape','description':'Close the auction house.'}},outcome,diagnostic_action='select'),'auction_sale_selection_pass')
+            'escape':{'kind':'key','value':'Escape','description':'Close the auction house.'}},outcome,diagnostic_action='select'),
+            'auction_sale_catalog_pass' if catalog else 'auction_sale_selection_pass')
         state,frame=t.observe('sale_selected');t.receipt['sale_selected']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
     finally:
         errors=[]
@@ -63,9 +70,9 @@ def suite(t,npc_point):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--point',type=int,nargs=2,required=True);a=p.parse_args()
+    p.add_argument('--point',type=int,nargs=2,required=True);p.add_argument('--catalog',action='store_true');a=p.parse_args()
     if any(not 0<=v<bound for v,bound in zip(a.point,[1280,720])):p.error('requires a bounded observed auctioneer point')
     t=Trial(a.output,controller='code')
-    try:suite(t,a.point);t.receipt['completed']=True
+    try:suite(t,a.point,a.catalog);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
