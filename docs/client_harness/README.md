@@ -19,10 +19,9 @@ The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
 historical receipts remain on disk. New UI trials use the code controller with
 ordinary keyboard and mouse inputs. Earlier October 2–3 interaction receipts
 retain their actual Laya identities; they do not authorize new model calls under
-the updated instructions. The user's October 3 desktop-isolation request explicitly
-authorizes a new bounded two-client Laya UI trial. It requires the separate
-`--use-laya` cohort flag; other new regression trials continue using the code
-controller. Code checks qualify client behavior, not model autonomy.
+the updated instructions. The earlier two-client Laya isolation trial is retained
+as historical evidence. New compatibility runs use the code controller under the
+latest AGENTS.md. Code checks qualify client behavior, not model autonomy.
 Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A code-driven native-bridge
 trial completed one such flight and then recovered a Dwarf artifact for eight
@@ -30,6 +29,10 @@ fragments. This qualifies that physical recovery case. Learned selection and wid
 terrain variants still need fresh evidence.
 
 The world packet bridge now runs as a separate C++20 service and is the default.
+Both clients share one native worldserver and the lab databases. The bridge
+translates client packets and forwards normal native requests; it does not run a
+second game world. Authentication is a separate login service. Independent bridge
+builds let packet repairs proceed without rebuilding or restarting the worldserver.
 Its optimized build passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
@@ -204,15 +207,10 @@ while waiting. The
 [libei device protocol](https://libinput.pages.freedesktop.org/libei/interfaces/ei_device/index.html)
 requires a resumed device before emulation.
 
-The user-requested two-client Laya UI check uses the existing local model endpoint
-and opens bags, equipment and friends separately on each actor. It preserves
-resources, equipment and group state. Run the committed config with a fresh output:
-
-```bash
-pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort start --use-laya --config experiments/configs/client_harness/442_two_actor_isolated_ui_v1.json --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
-pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.host_desktop_watch --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
-pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort status --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
-```
+The historical two-client Laya UI check opened bags, equipment and friends
+separately on each actor and preserved resources, equipment and group state.
+Its config and receipts retain their original model identities. Use the
+code-controlled cohort above for new runs under the current AGENTS.md.
 
 The optional read-only desktop watcher records opaque focus handles and pointer
 coordinates while the workers run. It captures no desktop screenshots or keys.
