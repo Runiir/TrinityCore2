@@ -33,11 +33,18 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
         (static_cast<std::uint64_t>(field(snapshot,name,offset+1))<<32));};
     std::map<unsigned,Array> slots;std::map<unsigned,std::uint32_t> visible;
     std::map<unsigned,std::pair<bool,bool>> buyback;
+    std::map<unsigned,unsigned> damage;
     bool coinage=(visibility&1) && (has("PLAYER_FIELD_COINAGE") || has("PLAYER_FIELD_COINAGE",1));
     if(visibility&1)for(unsigned i=0;i<12;++i)
     {
         bool price=has("PLAYER_FIELD_BUYBACK_PRICE_1",i),stamp=has("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",i);
         if(price || stamp)buyback[i]={price,stamp};
+    }
+    if(visibility&1)for(unsigned i=0;i<7;++i)
+    {
+        unsigned parts=(has("PLAYER_FIELD_MOD_DAMAGE_DONE_POS",i)?1:0)|
+            (has("PLAYER_FIELD_MOD_DAMAGE_DONE_NEG",i)?2:0)|(has("PLAYER_FIELD_MOD_DAMAGE_DONE_PCT",i)?4:0);
+        if(parts)damage[i]=parts;
     }
     for(unsigned old=0;old<86;++old)
         if((visibility&1) && (has("PLAYER_FIELD_INV_SLOT_HEAD",old*2) || has("PLAYER_FIELD_INV_SLOT_HEAD",old*2+1)))
@@ -45,7 +52,7 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
     for(unsigned i=0;i<19;++i)
         if(has("PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2))
             visible.emplace(i,field(snapshot,"PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2));
-    bool active=!slots.empty() || coinage || !buyback.empty();
+    bool active=!slots.empty() || coinage || !buyback.empty() || !damage.empty();
     if(!active && visible.empty())return {};
     Writer data;data.pack("BBBI",{visibility,0,3,(active?1u<<7:0u)|(visible.empty()?0u:1u<<6)});
     if(!visible.empty())
@@ -61,6 +68,13 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
         if(coinage){set(mask,0);set(mask,31);}
         if(!slots.empty())set(mask,131);
         for(auto const &[i,guid]:slots)set(mask,132+i);
+        if(!damage.empty())set(mask,288);
+        for(auto const &[i,parts]:damage)
+        {
+            if(parts&1)set(mask,289+i);
+            if(parts&2)set(mask,296+i);
+            if(parts&4)set(mask,303+i);
+        }
         if(!buyback.empty())set(mask,320);
         for(auto const &[i,changed]:buyback)
         {if(changed.first)set(mask,321+i);if(changed.second)set(mask,333+i);}
@@ -68,6 +82,14 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
         if(coinage)data.put<std::uint64_t>(static_cast<std::uint64_t>(field(snapshot,"PLAYER_FIELD_COINAGE"))|
             (static_cast<std::uint64_t>(field(snapshot,"PLAYER_FIELD_COINAGE",1))<<32));
         for(auto const &[i,guid]:slots)data.guid(guid);
+        // The pinned update contract interleaves positive, negative and percent
+        // within each school, rather than sorting all child mask indices.
+        for(auto const &[i,parts]:damage)
+        {
+            if(parts&1)data.put<std::int32_t>(field(snapshot,"PLAYER_FIELD_MOD_DAMAGE_DONE_POS",i));
+            if(parts&2)data.put<std::int32_t>(field(snapshot,"PLAYER_FIELD_MOD_DAMAGE_DONE_NEG",i));
+            if(parts&4)data.put<float>(float_field(snapshot,"PLAYER_FIELD_MOD_DAMAGE_DONE_PCT",i));
+        }
         for(auto const &[i,changed]:buyback)
         {
             if(changed.first)data.put(field(snapshot,"PLAYER_FIELD_BUYBACK_PRICE_1",i));

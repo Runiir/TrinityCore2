@@ -83,6 +83,10 @@ def field_values(snapshot, character):
                           {"Threshold": 0, "StateID": 2}]
     from .inventory import inventory_slots
     active["InvSlots"] = inventory_slots(native)
+    # Retired differential oracle for the pinned native school modifier fields.
+    active['ModDamageDonePos']=array('PLAYER_FIELD_MOD_DAMAGE_DONE_POS',7,signed=True)
+    active['ModDamageDoneNeg']=array('PLAYER_FIELD_MOD_DAMAGE_DONE_NEG',7,signed=True)
+    active['ModDamageDonePercent']=array('PLAYER_FIELD_MOD_DAMAGE_DONE_PCT',7,floating=True)
     active["BuybackPrice"] = array("PLAYER_FIELD_BUYBACK_PRICE_1",12)
     active["BuybackTimestamp"] = array("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12)
     # Retired Python differential oracle: match native socket type and tier.

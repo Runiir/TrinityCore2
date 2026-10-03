@@ -115,6 +115,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
         slots[slot] = inventory_guid(native);
     }
     active["InvSlots"] = slots;
+    active["ModDamageDonePos"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_POS",7,false,true);
+    active["ModDamageDoneNeg"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_NEG",7,false,true);
+    active["ModDamageDonePercent"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_PCT",7,true);
     active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);
     // Both pinned cores use seconds relative to login plus thirty hours.
     active["BuybackTimestamp"] = arr("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12);
