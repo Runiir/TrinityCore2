@@ -10,7 +10,7 @@ Bytes Protocol::glyph_block(Value const &snapshot,Value const &changed) const
     bool enabled=has("PLAYER_GLYPHS_ENABLED"),any=enabled;
     std::array<std::uint32_t,46> mask{};
     auto set=[&](unsigned bit){mask.at(bit/32)|=1u<<(bit%32);};
-    if(enabled){set(96);set(127);}
+    if(enabled){set(102);set(127);}
     for(unsigned i=0;i<9;++i)
     {
         if(has("PLAYER_FIELD_GLYPH_SLOTS_1",i)){set(1410);set(1411+i);any=true;}
@@ -27,6 +27,9 @@ Bytes Protocol::glyph_block(Value const &snapshot,Value const &changed) const
         auto value=field(snapshot,"PLAYER_GLYPHS_ENABLED");
         if(value&~511u)throw std::runtime_error("native glyph enablement exceeds nine Classic slots");
         data.put<std::uint16_t>(value);
+        // Group 102 unconditionally writes optional PetStable presence after
+        // its scalars. Creation has no modern PetStable for this native client.
+        data.bits(0,1).flush();
     }
     for(unsigned i=0;i<9;++i)
     {

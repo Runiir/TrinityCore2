@@ -25,8 +25,11 @@ def test_sparse_glyph_updates_preserve_clears_last_slot_and_only_owner_fields(co
     body=result(codec,op='glyph_update',snapshot={'guid':1,'fields':fields},changed=fields)
     r=Reader(bytes.fromhex(body));assert r.unpack('B')==(0,) and r.guid()==(1,player_high())
     assert r.unpack('I')[0]==len(r.data)-r.pos and r.unpack('BBBI')==(1,0,3,1<<7)
-    assert mask(r,46,first32=True)=={96,127,1410,1419,1420,1428};r.align()
+    # The pinned update nests scalar 127 under gate 102, which also emits
+    # optional PetStable presence before the later glyph arrays.
+    assert mask(r,46,first32=True)=={102,127,1410,1419,1420,1428};r.align()
     assert r.unpack('H')==(511,)
+    assert r.bits(1)==0;r.align()
     assert r.unpack('3I')==(0,43,109);r.end()
     assert result(codec,op='glyph_update',snapshot={'guid':1,'fields':fields},changed={INDEX['UNIT_FIELD_HEALTH']:100})==''
     assert 'error' in codec(op='glyph_update',snapshot={'guid':1,'fields':{ENABLED:512}},changed={ENABLED:512})

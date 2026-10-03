@@ -14,10 +14,11 @@ Bytes watched_faction_block(Protocol const &protocol,Value const &snapshot,Value
 {
     if(!changed.as_object().contains(std::to_string(protocol.field_index("PLAYER_FIELD_WATCHED_FACTION_INDEX"))))
         return {};
-    // Pinned ActivePlayerData::WriteUpdate: group 96, scalar 97. The field is
+    // Pinned ActivePlayerData::WriteUpdate: group 70, scalar 97. The field is
     // signed int32; native uint32 0xffffffff means no watched faction, not 0.
-    Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{1u<<3})
-        .bits(0,14).bits(3,32).flush().put(watched_faction_index(protocol,snapshot));
+    Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{(1u<<2)|(1u<<3)})
+        .bits(0,14).bits(1u<<6,32).bits(1u<<1,32).flush()
+        .put(watched_faction_index(protocol,snapshot));
     return Writer().put<std::uint8_t>(0).guid(integer(get(snapshot,"guid")),player_high())
         .put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
 }
