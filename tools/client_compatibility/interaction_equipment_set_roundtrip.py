@@ -179,15 +179,20 @@ def suite(t,source):
         delete_set(t,id,original)
     finally:
         oracle.poll()
-        if not oracle.equipment(1)['guid'] and oracle.slot(*destination)==item:
-            t.clean_panels()
-            for key in ['c','b']:t.execute({'kind':'key','value':key})
-            require(change(t,oracle,item,destination,True),'equipment_change_pass')
-        try:restore_display(t,collapsed if collapsed is not None else t.receipt.get('display_baseline',{}).get('collapsed'))
+        try:
+            if not oracle.equipment(1)['guid'] and oracle.slot(*destination)==item:
+                open_character(t,'sets.cleanup')
+                require(t.step('sets.cleanup.bags','Open the backpack for restoring the helmet.',
+                    {'open':{'kind':'key','value':'b','description':'Open bags.'}},
+                    lambda b,a,s:{'status':'bag_open_pass' if a.get('bags') else 'client_or_protocol_failure'},
+                    diagnostic_action='open',await_state=lambda a:bool(a.get('bags'))),'bag_open_pass')
+                require(change(t,oracle,item,destination,True),'equipment_change_pass')
         finally:
-            t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
-            t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
-            if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set roundtrip did not restore native resources')
+            try:restore_display(t,collapsed if collapsed is not None else t.receipt.get('display_baseline',{}).get('collapsed'))
+            finally:
+                t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
+                t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
+                if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set roundtrip did not restore native resources')
 
 
 if __name__=='__main__':
