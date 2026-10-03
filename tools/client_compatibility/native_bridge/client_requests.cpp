@@ -5,6 +5,7 @@
 #include "repairs.hpp"
 #include "trainers.hpp"
 #include "quests.hpp"
+#include "talents.hpp"
 #include "mail.hpp"
 #include "auctions.hpp"
 
@@ -48,6 +49,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         return;
     }
     if(Protocol::bank_close(state,name,body))return;
+    if(auto request=talent_request(name,body))
+    {require_world();native_send(*request);return;}
     if(auto request=Protocol::bank_request(state,name,body))
     {require_world();native_send(*request);return;}
     if(auto request=merchant_request(protocol,state,name,body))

@@ -12,6 +12,7 @@
 #include "repairs.hpp"
 #include "trainers.hpp"
 #include "quests.hpp"
+#include "talents.hpp"
 #include "mail.hpp"
 #include "auctions.hpp"
 #include <iostream>
@@ -346,6 +347,10 @@ int main(int argc, char **argv)
                                 reply=quest_request(protocol,state,name,body);
                             else if(fn=="quest_response")
                                 reply=quest_response(protocol,state,name,body);
+                            else if(fn=="talent_response")
+                                reply=talent_response(name,body);
+                            else if(fn=="talent_request")
+                                reply=talent_request(name,body);
                             else if(fn=="mail_request")
                                 reply=mail_request(protocol,state,name,body);
                             else if(fn=="mail_response")

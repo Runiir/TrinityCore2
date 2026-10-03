@@ -7,6 +7,7 @@
 #include "mail.hpp"
 #include "auctions.hpp"
 #include "quests.hpp"
+#include "talents.hpp"
 #include <ctime>
 
 namespace bridge
@@ -223,6 +224,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {send(*reply);co_return;}
     if (trainer_completion(name,body))co_return;
     if ((reply = quest_response(protocol,state,name,body)))
+    {send(*reply);co_return;}
+    if ((reply = talent_response(name,body)))
     {send(*reply);co_return;}
     if ((reply = mail_response(protocol,state,name,body)))
     {send(*reply);co_return;}
