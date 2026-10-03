@@ -82,8 +82,31 @@ def cancel(t,row):
         lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Accept','Yes','Okay'],canceled),'auction_cancel_pass')
 
 
-def recover_mail(t,point,baseline,deposit):
+def restore_return(t,baseline,deposit):
+    t.clean_panels();t.execute({'kind':'key','value':'b'})
+    native=Inventory(lab.ROOT,actors.session_entry(t.fixture)['session'],1).poll()
+    positions=[(bag,slot) for bag in range(5) for slot in range(1,17) if native.slot(bag,slot)['guid']==((0x4000<<48)|4)]
+    if len(positions)!=1:raise RuntimeError('returned original item is not uniquely in owned bags')
+    source=positions[0]
+    if source!=(0,8):
+        if native.slot(0,8)['guid']:raise RuntimeError('original bag slot became occupied')
+        require(move(t,native,source,(0,8),native.slot(*source),'auction.restore_slot'),'inventory_move_pass')
+    t.clean_panels();native.poll()
+    before=next(r[1] for r in baseline['inventory']['money'] if r[0]==1);delta=before-native.money()
+    if delta not in [0,deposit]:raise RuntimeError('auction money delta differs from its native deposit')
+    t.receipt['deposit']={'native_deposit':deposit,'native_charge':delta,'stock_quote':'zero in the reviewed cheap-item UI; fee discrepancy remains open'};t.persist()
+    if delta:
+        fixture_command(t,'/cleartarget','restore auction deposit only on the owned actor')
+        with money_fixture_permission(t):fixture_command(t,f'.modify money {delta}','restore only the recorded auction deposit charge')
+
+
+def recover_mail(t,point,baseline,deposit,allow_collected=False):
     state=mailbox_state();new=[r for r in state['mails'] if r[0] not in {m[0] for m in baseline['mails']}]
+    if not new and allow_collected:
+        original=[r for r in state['inventory']['items'] if r[3]==4 and r[4:]==(39,1,1)]
+        if len(original)!=1 or original[0][0]!=1:raise RuntimeError('collected auction return is not the exact original owned item')
+        t.receipt['recovery_stage']='original item already collected; restore its slot and recorded deposit';t.persist()
+        restore_return(t,baseline,deposit);return
     if len(new)!=1 or new[0][1:4]!=(2,2,1) or new[0][5:7]!=(0,0) or not new[0][8]:
         raise RuntimeError('requires one native alliance-auction cancellation return')
     mail=new[0];attached=[r for r in state['attachments'] if r[0]==mail[0]]
@@ -105,29 +128,21 @@ def recover_mail(t,point,baseline,deposit):
             lambda c:c['name']=='MailItem'+str(letter_row['index'])+'Button',
             lambda b,a,s:{'status':'auction_return_read_pass' if s and a.get('mail',{}).get('open',{}).get('subject')==display_subject
                 else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_read_pass')
-        require(click_case(t,'auction.collect_return','Take the returned Recruit\'s Pants.',lambda c:c['name']=='OpenMailAttachmentButton1',
-            lambda b,a,s:{'status':'auction_return_collect_pass' if s and any(r['id']==39 and r['count']==1 for r in a.get('bag_items',[]))
-                and not a.get('mail',{}).get('open',{}).get('attachments') and not letter(mail[4])[9] else
-                ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_collect_pass')
-        require(click_case(t,'auction.delete_return','Delete the now-empty auction cancellation letter.',
-            lambda c:c['name']=='OpenMailDeleteButton' and c['text']=='Delete',
-            lambda b,a,s:{'status':'auction_return_delete_pass' if s and letter(mail[4]) is None else
-                ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_delete_pass')
-        t.clean_panels();t.execute({'kind':'key','value':'b'})
-        native=Inventory(lab.ROOT,actors.session_entry(t.fixture)['session'],1).poll()
-        positions=[(bag,slot) for bag in range(5) for slot in range(1,17) if native.slot(bag,slot)['guid']==((0x4000<<48)|4)]
-        if len(positions)!=1:raise RuntimeError('returned original item is not uniquely in owned bags')
-        source=positions[0]
-        if source!=(0,8):
-            if native.slot(0,8)['guid']:raise RuntimeError('original bag slot became occupied')
-            require(move(t,native,source,(0,8),native.slot(*source),'auction.restore_slot'),'inventory_move_pass')
-        t.clean_panels();native.poll()
-        before=next(r[1] for r in baseline['inventory']['money'] if r[0]==1);delta=before-native.money()
-        if delta not in [0,deposit]:raise RuntimeError('auction money delta differs from its native deposit')
-        t.receipt['deposit']={'native_deposit':deposit,'native_charge':delta,'stock_quote':'zero in the reviewed cheap-item UI; fee discrepancy remains open'};t.persist()
-        if delta:
-            fixture_command(t,'/cleartarget','restore auction deposit only on the owned actor')
-            with money_fixture_permission(t):fixture_command(t,f'.modify money {delta}','restore only the recorded auction deposit charge')
+        def collected(b,a,s):
+            remaining=letter(mail[4]);native=mailbox_state()
+            item=any(r[0]==1 and r[3:]==(4,39,1,1) for r in native['inventory']['items'])
+            passed=s and item and any(r['id']==39 and r['count']==1 for r in a.get('bag_items',[])) and (
+                remaining is None or not remaining[9]) and not a.get('mail',{}).get('open',{}).get('attachments')
+            return {'status':'auction_return_collect_pass' if passed else ('controller_failure' if not s else 'client_or_protocol_failure'),
+                'oracle':{'original_guid_in_inventory':item,'native_letter_auto_deleted':remaining is None}}
+        require(click_case(t,'auction.collect_return','Take the returned Recruit\'s Pants.',
+            lambda c:c['name']=='OpenMailAttachmentButton1',collected),'auction_return_collect_pass')
+        if letter(mail[4]) is not None:
+            require(click_case(t,'auction.delete_return','Delete the now-empty auction cancellation letter.',
+                lambda c:c['name']=='OpenMailDeleteButton' and c['text']=='Delete',
+                lambda b,a,s:{'status':'auction_return_delete_pass' if s and letter(mail[4]) is None else
+                    ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_delete_pass')
+        restore_return(t,baseline,deposit)
     finally:
         t.clean_panels();fixture.restore()
 
@@ -166,7 +181,7 @@ def recover(t,source,auction_point,mail_point):
             t.clean_panels();fixture.restore();fixture.rows=[]
         else:
             t.receipt['recovery_stage']='already canceled; recover only the uniquely pinned native return';t.persist()
-        recover_mail(t,mail_point,baseline,row[9])
+        recover_mail(t,mail_point,baseline,row[9],allow_collected=True)
     except Exception as error:
         t.receipt['transaction_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
