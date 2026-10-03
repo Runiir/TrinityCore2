@@ -120,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=24,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=25,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -316,8 +316,14 @@ local function snapshot(viewMode,viewPage)
                 data.auction.sell.bag=bag;data.auction.sell.slot=slot
                 if key then
                     data.auction.sell.item_key=key
-                    data.auction.sell.search_count=call(api.GetNumItemSearchResults,key)
-                    data.auction.sell.full_search=call(api.HasFullItemSearchResults,key)
+                    -- The stock sale list searches all equipment levels. Read
+                    -- its displayed key, rather than the bag item's base key.
+                    local searchKey=sell.listDisplayedItemKey
+                    if searchKey then
+                        data.auction.sell.search_key=searchKey
+                        data.auction.sell.search_count=call(api.GetNumItemSearchResults,searchKey)
+                        data.auction.sell.full_search=call(api.HasFullItemSearchResults,searchKey)
+                    end
                 end
             end
         end

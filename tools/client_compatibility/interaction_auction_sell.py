@@ -43,7 +43,10 @@ def suite(t,npc_point,catalog=False,capture_post=False):
             packets=query_packets(t,t.receipt['started_at'])
             routed=all(any(r['name']==name and r['direction']==direction for r in packets) for name,direction in
                 [('CMSG_AUCTION_LIST_ITEMS','to_native'),('SMSG_AUCTION_LIST_RESULT','from_native'),('SMSG_AUCTION_LIST_ITEMS_RESULT','to_client')])
-            complete=sell.get('full_search') is True and sell.get('search_count')==0 and a.get('auction',{}).get('throttle_ready') is True
+            key=sell.get('search_key',{})
+            event=any(r.get('event')=='ITEM_SEARCH_RESULTS_UPDATED' for r in a.get('auction',{}).get('events',[]))
+            complete=(key.get('itemID')==39 and key.get('itemLevel')==0 and sell.get('full_search') is True
+                and sell.get('search_count')==0 and a.get('auction',{}).get('throttle_ready') is True and event)
             clean=not a.get('lua_errors') and not a.get('blocked_actions')
             passed=shown and unchanged and clean and (not catalog or (routed and complete))
             return {'status':('auction_sale_catalog_pass' if catalog else 'auction_sale_selection_pass') if s=='select' and passed else
