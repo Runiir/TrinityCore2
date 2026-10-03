@@ -25,7 +25,7 @@ def enumeration(account_id):
     for c in characters:
         w.guid(c["guid"], player_high()).pack("IBBBBhI", ADDRESS, c["slot"], c["race"], c["gender"], c["class"], 0, 0)
         w.pack("Bii3fQ", c["level"], c["map"], c["zone"], c["position_x"], c["position_y"], c["position_z"], 0).guid()
-        w.pack("IIIBIII", 0, 0, 0, 0, 0, 0, 0)
+        w.pack("IIIBIII", c.get('characterFlags',0)&0xc00, 0, 0, 0, 0, 0, 0)
         for item in equipment.get(c['guid'],[None]*19):
             w.pack('IBIBiII',*(item or (0,0,0,0,0,0,0)))
         w.pack("iQi5iIIiI", 0, int(c["logout_time"]), 60895, 0, 0, 0, 0, 0, 0, 0, 0, 0)

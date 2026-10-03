@@ -29,7 +29,11 @@ Bytes character_list(Array const &characters, Array const &equipment,
         w.pack("Bii3fQ", {get(c, "level"), get(c, "map"), get(c, "zone"), get(c, "position_x"),
                           get(c, "position_y"), get(c, "position_z"), 0})
             .guid();
-        w.pack("IIIBIII", {0, 0, 0, 0, 0, 0, 0});
+        // Character-list Classic hide bits retain their native positions. World
+        // PlayerFlagsEx uses a different representation. Other login flags are
+        // not covered by this translation.
+        auto visibility = integer(get(c, "characterFlags")) & 0xc00u;
+        w.pack("IIIBIII", {visibility, 0, 0, 0, 0, 0, 0});
         for (unsigned slot = 0; slot < 19; ++slot)
         {
             auto &items = visible[guid];
