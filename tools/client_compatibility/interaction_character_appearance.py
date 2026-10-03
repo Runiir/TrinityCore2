@@ -40,13 +40,18 @@ def toggle(t,oracle,kind,shown,case_id):
         await_state=lambda a:a.get('appearance',{}).get(kind)==shown)
 
 
-def suite(t):
-    if t.fixture['guid']!=1:raise RuntimeError('requires the owned geared primary warrior')
+def suite(t,scout_diagnostic=False):
+    expected=2 if scout_diagnostic else 1
+    if t.fixture['guid']!=expected:raise RuntimeError('appearance trial actor does not match its declared scope')
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
+    if scout_diagnostic and (t.fixture['level']!=1 or oracle.equipment(1)['guid'] or oracle.equipment(15)['guid']):
+        raise RuntimeError('scout diagnostic requires its unchanged level-one fixture without helm/cloak')
+    snapshot=(lambda:resources(oracle)) if scout_diagnostic else baseline
     t.clean_panels();state,frame=t.observe('appearance_before')
     if state.get('observer_version',0)<54:raise RuntimeError('require committed read-only appearance observer v54')
-    original=stable(baseline());initial=flags(t,oracle);visibility=state['appearance'];search=None;active=None
-    t.receipt.update(baseline=original,appearance_baseline={'state':visibility,'native':initial,'frame':frame},native_session=session);t.persist()
+    original=stable(snapshot());initial=flags(t,oracle);visibility=state['appearance'];search=None;active=None
+    t.receipt.update(baseline=original,appearance_baseline={'state':visibility,'native':initial,'frame':frame},native_session=session,
+        qualified_scope='scout request/flag diagnostic only; geared rendering unqualified' if scout_diagnostic else 'geared primary stock visibility toggles');t.persist()
     try:
         field=open_search(t);search=field['text'];predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
         for kind in ['helm','cloak']:
@@ -69,7 +74,7 @@ def suite(t):
             t.clean_panels();state,frame=t.observe('appearance_restored')
             t.receipt['appearance_restored']={'state':state['appearance'],'native':flags(t,oracle),'frame':frame}
         finally:
-            t.receipt['native_after']=stable(baseline());t.receipt['native_resources_preserved']=t.receipt['native_after']==original;t.persist()
+            t.receipt['native_after']=stable(snapshot());t.receipt['native_resources_preserved']=t.receipt['native_after']==original;t.persist()
     restored=t.receipt.get('appearance_restored',{})
     if not t.receipt['native_resources_preserved'] or restored.get('state')!=visibility or restored.get('native')!=initial:
         raise RuntimeError('original character visibility or native resources remain unrestored')
@@ -77,7 +82,8 @@ def suite(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--scout-diagnostic',action='store_true',help='Owned unarmored scout request/flag probe; does not qualify geared rendering')
     a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t);t.receipt['completed']=True
+    try:suite(t,a.scout_diagnostic);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
