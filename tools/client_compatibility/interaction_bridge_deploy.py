@@ -45,6 +45,8 @@ def restart(out,version,unavailable_primary_source=None):
                     t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
                 shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
                     lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
+            except Exception as error:
+                t.receipt['failure']=f'{type(error).__name__}: {error}';raise
             finally: t.receipt['finished_at']=time.time();t.persist()
     report={'schema':'client442_bridge_deployment_v1','started_at':time.time(),'native':native,'before':before,
             'observer_version':version,'baselines':baselines,'reconnected':{}}
@@ -59,7 +61,7 @@ def restart(out,version,unavailable_primary_source=None):
     print(json.dumps({'native_unchanged':True,'lobby_frames':report['lobby_frames']}),flush=True)
 
 
-def reconnect(out,name,keyboard_modal=False):
+def reconnect(out,name,keyboard_modal=False,character_selection=False):
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('deployment process identity changed')
@@ -68,6 +70,7 @@ def reconnect(out,name,keyboard_modal=False):
     # visually reviewed 1280x720 client screens. Stop on any observation failure.
     inputs=[('okay',[640,380],.4),('reconnect',[640,418],3),('realm',[465,182],.4),
             ('realm_okay',[750,570],3),('enter',[640,661],10)]
+    if character_selection:inputs=inputs[-1:]
     with actor(name):
         t=Trial(out/(name+'_after'),controller='code')
         try:
@@ -126,6 +129,7 @@ if __name__=='__main__':
     parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
     parser.add_argument('--unavailable-primary-source',type=Path,help='Closed failed reentry baseline for a disconnected primary')
+    parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
@@ -136,4 +140,4 @@ if __name__=='__main__':
         recovery(args.source,args.output,args.actor)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
-        reconnect(args.output,args.actor,args.keyboard_modal)
+        reconnect(args.output,args.actor,args.keyboard_modal,args.character_selection)
