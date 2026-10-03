@@ -32,7 +32,9 @@ function Client442ObserveEquipment()
     end
     local sheet={}
     local spellCrit={}
+    local ratings={}
     for school=1,7 do spellCrit[school]=read(GetSpellCritChance,school) end
+    for index=1,26 do ratings[index]=read(GetCombatRating,index) end
     local scene=CharacterModelScene
     local camera=scene and read(scene.GetActiveCamera,scene)
     for category=1,8 do
@@ -55,6 +57,9 @@ function Client442ObserveEquipment()
             ranged_damage={read(UnitRangedDamage,'player')},crit=read(GetCritChance),
             ranged_crit=read(GetRangedCritChance),spell_crit=spellCrit,
             melee_haste=read(GetMeleeHaste),ranged_haste=read(GetRangedHaste),
+            ratings=ratings,expertise={read(GetExpertise)},expertise_percent={read(GetExpertisePercent)},
+            mastery=read(GetMastery),dodge=read(GetDodgeChance),parry=read(GetParryChance),
+            block=read(GetBlockChance),shield_block=read(GetShieldBlock),
             attack_power={read(UnitAttackPower,'player')},item_level={read(GetAverageItemLevel)},sheet=sheet},
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,
         selected=pane and pane.selectedSetID,

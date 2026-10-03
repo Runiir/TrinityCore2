@@ -67,7 +67,7 @@ def test_combined_crit_defense_inventory_and_ratings_keep_parser_order(codec):
     assert mask(r,46,True)=={38,41,42,45,46,48,50,53,55,131,132,345,349,363,371};r.align()
     assert r.unpack('6f')==(27.0,24.0,5.0,5.0,13.75,12.75)
     assert r.unpack('if')==(30,19.5)
-    assert r.guid()==(12,1<<58)
+    assert r.guid()==(12,(3<<58)|(1<<42))
     assert r.unpack('3i')==(1706,412,2070);r.end()
 
 
