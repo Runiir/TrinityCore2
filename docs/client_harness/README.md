@@ -39,7 +39,7 @@ The [October 2 interaction report](interactions_20261002.md) records the later
 group-frame, role and marker repairs, individual qualifications and remaining gaps.
 The [October 3 auction report](interactions_20261003_auctions.md) records stock
 auction opening, complete empty browse/bid/owned catalogs and the city vehicle-create
-repair. The latest full suite passes 659 regression checks; the transaction bridge
+repair. That auction suite passes 659 regression checks; the transaction bridge
 also passes 77 selected sanitizer checks. The empty Sell catalog and price entry
 work. UI21 posts and cancels one plain auction, collects the same original item,
 then fully restores native resources in separate recovery episodes. The stock
@@ -85,7 +85,12 @@ Questgiver details and the native 0/6 kill objective display correctly in the
 latest trial. Its initial cleanup exposes a dropped self-selection request,
 which is fixed. A five-choice quest-log trial expands the zone, reads the
 accepted quest and confirms abandonment with exact native quest/inventory/money
-restoration. Other quest mutations, completion/rewards and travel remain open.
+restoration. The later [manual quest report](interactions_20261003_quests.md)
+records normal acceptance/decline, zone collapse and cancelled abandonment,
+plus repaired public creature-name lookup for both kill objectives. The latest
+full suite passes 673 world/auth tests; 41 selected public-template/mail/quest
+checks pass ASan/UBSan. Objective progress, completion/rewards, sharing,
+persistence and travel remain open.
 
 ## Endpoints and restart
 
