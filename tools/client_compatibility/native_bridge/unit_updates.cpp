@@ -11,7 +11,9 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
     static Scalar const scalars[] = {
         {"Health",5,'q',"UNIT_FIELD_HEALTH"}, {"MaxHealth",6,'q',"UNIT_FIELD_MAXHEALTH"},
         {"DisplayID",7,'i',"UNIT_FIELD_DISPLAYID"}, {"Flags",41,'I',"UNIT_FIELD_FLAGS"},
-        {"Flags2",42,'I',"UNIT_FIELD_FLAGS_2"}, {"MountDisplayID",52,'i',"UNIT_FIELD_MOUNTDISPLAYID"},
+        {"Flags2",42,'I',"UNIT_FIELD_FLAGS_2"},
+        {"RangedAttackRoundBaseTime",46,'I',"UNIT_FIELD_RANGEDATTACKTIME"},
+        {"MountDisplayID",52,'i',"UNIT_FIELD_MOUNTDISPLAYID"},
         {"MinDamage",53,'f',"UNIT_FIELD_MINDAMAGE",true}, {"MaxDamage",54,'f',"UNIT_FIELD_MAXDAMAGE",true},
         {"MinOffHandDamage",55,'f',"UNIT_FIELD_MINOFFHANDDAMAGE",true}, {"MaxOffHandDamage",56,'f',"UNIT_FIELD_MAXOFFHANDDAMAGE",true},
         {"StandState",57,'B',"UNIT_FIELD_BYTES_1"}, {"VisFlags",59,'B',"UNIT_FIELD_BYTES_1"},

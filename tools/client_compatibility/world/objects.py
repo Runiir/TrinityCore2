@@ -45,6 +45,7 @@ def field_values(snapshot, character):
                         "AttackPowerMultiplier":"UNIT_FIELD_ATTACK_POWER_MULTIPLIER",
                         "RangedAttackPowerMultiplier":"UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER"}.items():
         unit[modern] = float_value(old)
+    unit['RangedAttackRoundBaseTime']=value('UNIT_FIELD_RANGEDATTACKTIME')
     unit.update(Power=array("UNIT_FIELD_POWER1", 5), MaxPower=array("UNIT_FIELD_MAXPOWER1", 5),
                 Stats=array("UNIT_FIELD_STAT0", 5,signed=True), StatPosBuff=array('UNIT_FIELD_POSSTAT0',5,signed=True),
                 StatNegBuff=array('UNIT_FIELD_NEGSTAT0',5,signed=True),Resistances=array("UNIT_FIELD_RESISTANCES", 7,signed=True),
@@ -82,6 +83,10 @@ def field_values(snapshot, character):
               "WatchedFactionIndex": array("PLAYER_FIELD_WATCHED_FACTION_INDEX", 1, signed=True)[0],
               "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
               "ProfessionSkillLine": array("PLAYER_PROFESSION_SKILL_LINE_1", 2)}
+    for modern,native in {'CritPercentage':'PLAYER_CRIT_PERCENTAGE','RangedCritPercentage':'PLAYER_RANGED_CRIT_PERCENTAGE',
+        'OffhandCritPercentage':'PLAYER_OFFHAND_CRIT_PERCENTAGE','ShieldBlockCritPercentage':'PLAYER_SHIELD_BLOCK_CRIT_PERCENTAGE'}.items():
+        active[modern]=float_value(native)
+    active['SpellCritPercentage']=array('PLAYER_SPELL_CRIT_PERCENTAGE1',7,True)
     active["RestInfo"] = [{"Threshold": value("PLAYER_REST_STATE_EXPERIENCE"),
                            "StateID": value("PLAYER_BYTES_2") >> 24},
                           {"Threshold": 0, "StateID": 2}]

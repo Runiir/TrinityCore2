@@ -4,6 +4,7 @@
 #include "guild_fields.hpp"
 #include "reputation_fields.hpp"
 #include "appearance.hpp"
+#include "character_combat.hpp"
 
 namespace bridge
 {
@@ -77,6 +78,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     auto attack_times = arr("UNIT_FIELD_BASEATTACKTIME", 2);
     attack_times.push_back(val("UNIT_FIELD_RANGEDATTACKTIME"));
     unit["AttackRoundBaseTime"] = attack_times;
+    unit["RangedAttackRoundBaseTime"] = val("UNIT_FIELD_RANGEDATTACKTIME");
     auto bytes1 = val("UNIT_FIELD_BYTES_1"), bytes2 = val("UNIT_FIELD_BYTES_2");
     unit["StandState"] = bytes1 & 255;
     unit["VisFlags"] = (bytes1 >> 16) & 255;
@@ -117,6 +119,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     }
     active["InvSlots"] = slots;
     active["ModDamageDonePos"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_POS",7,false,true);
+    combat_creation(*this,s,active);
     active["ModDamageDoneNeg"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_NEG",7,false,true);
     active["ModDamageDonePercent"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_PCT",7,true);
     active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);

@@ -30,7 +30,9 @@ def test_sparse_native_school_modifiers_interleave_by_school(codec):
         INDEX['PLAYER_FIELD_MOD_DAMAGE_DONE_POS']+2:20,INDEX['PLAYER_FIELD_MOD_DAMAGE_DONE_NEG']+2:(-2)&0xffffffff}
     body=result(codec,op='inventory_update',snapshot={'guid':1,'fields':fields},changed=changed,visibility=1)
     r=read_block(body,(1,player_high()),1<<7)
-    assert mask(r,46,True)=={288,303,291,298};r.align()
+    # The old assertion used child288 (spell school6) as the parent. WPP's
+    # actual interleaved school parent is281 for crit and damage together.
+    assert mask(r,46,True)=={281,303,291,298};r.align()
     assert abs(r.unpack('f')[0]-1.2936)<1e-6
     assert r.unpack('2i')==(20,-2);r.end()
 
