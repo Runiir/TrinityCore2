@@ -21,7 +21,7 @@
     "bank": 12,
     "merchant": 14,
     "trainer": 12,
-    "quests": 26,
+    "quests": 32,
     "map": 24,
     "achievements": 13,
     "collections": 22,
@@ -2129,6 +2129,60 @@
       "id": "quests.persist",
       "family": "quests",
       "operation": "persist",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_available_marker",
+      "family": "quests",
+      "operation": "giver_available_marker",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_trivial_marker",
+      "family": "quests",
+      "operation": "giver_trivial_marker",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_incomplete_marker",
+      "family": "quests",
+      "operation": "giver_incomplete_marker",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_complete_marker",
+      "family": "quests",
+      "operation": "giver_complete_marker",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_repeatable_marker",
+      "family": "quests",
+      "operation": "giver_repeatable_marker",
+      "fixture": "quest_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "quests.giver_unavailable_marker",
+      "family": "quests",
+      "operation": "giver_unavailable_marker",
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",

@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-901 operation contracts across 45 families. 187 have a qualified fixture variant; the rest remain pending.
+907 operation contracts across 45 families. 187 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -297,6 +297,12 @@ Fixture: `quest_variants`.
 - [ ] `quests.auto_complete`
 - [ ] `quests.unavailable_prerequisite`
 - [ ] `quests.persist`
+- [ ] `quests.giver_available_marker`
+- [ ] `quests.giver_trivial_marker`
+- [ ] `quests.giver_incomplete_marker`
+- [ ] `quests.giver_complete_marker`
+- [ ] `quests.giver_repeatable_marker`
+- [ ] `quests.giver_unavailable_marker`
 
 ## map
 
