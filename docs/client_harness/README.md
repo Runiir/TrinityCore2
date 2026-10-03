@@ -44,8 +44,11 @@ also passes 77 selected sanitizer checks. The empty Sell catalog and price entry
 work. UI21 posts and cancels one plain auction, collects the same original item,
 then fully restores native resources in separate recovery episodes. The stock
 price-column center absorbs row clicks; the runner uses the measured item end.
-Fees still disagree with the legacy minimum. An isolated opt-in native correction
-is compiled; a fresh uninterrupted round trip after deployment remains pending.
+After deploying the isolated opt-in native deposit correction, UI22 passes all
+14 inputs in one uninterrupted posting/cancellation/item-return round trip.
+The zero quote, native deposit and charge agree for the cheap one-day pants
+auction, and complete resources and poses are restored without a money refund.
+Other fee values, bids, buyouts and broader auction variants remain open.
 Captured failures, observer corrections and cleanup receipts are retained.
 The later bank batch passes 411 regression tests, including nine bank packet tests;
 46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,

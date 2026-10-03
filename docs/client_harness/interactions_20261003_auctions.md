@@ -134,6 +134,27 @@ succeeds. UI21 still runs the old native binary; deployment and a complete fresh
 round trip are the next batch. The 100-copper refund in UI21 is fixture cleanup,
 not the compatibility fix.
 
+UI22 deploys the compiled native correction after UI21 is verified in DVC. The
+first installer mistakenly calls `lab.start`; the actual supervisor API is
+`start_server`. It fails after graceful shutdown and installation, before launch.
+The recovery validates the exact new/rollback binaries, configuration, absent
+native process and unchanged C++ bridge, then resumes that installation. This
+failure is retained in the deployment receipt. Only the isolated native server
+restarts; both clients reconnect on HDMI-1 with exact baseline resources, gear,
+group and raid profile retained. The C++ bridge stays running.
+
+`ui22/auction_roundtrip_01` passes all 14 ordinary-input choices in one uninterrupted
+run: open, select sale, price, post, populated owned row, item-end selection,
+cancel/confirmation, read/collect the original return and restore its original
+bag slot. The public quote, native deposit and actual money charge all equal zero
+for the one-copper pants' one-day auction. Both characters' complete inventory
+and money, original mail, poses and temporary fixture state are restored. No
+money command or temporary money permission is needed. This qualifies the plain
+round trip and that cheap-item deposit only, not other fee values or transactions.
+The archived old native binary allows retiring the temporary 67 MB rollback copy
+after the successful trial. Required current binaries and incremental build cache
+remain local.
+
 Layouts are checked against the pinned [TrinityCore auction packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/AuctionHousePackets.cpp)
 and [4.4.2 WowPacketParser auction parser](https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/AuctionHandler.cs).
 Selected source files and hash/provenance receipts are included with the evidence.
@@ -224,6 +245,8 @@ The closed UI20 batch uses
 `artifacts/client_harness/442_interactions_20261003_21.tar.gz.dvc`.
 The closed UI21 batch uses
 `artifacts/client_harness/442_interactions_20261003_22.tar.gz.dvc`.
+The closed UI22 batch uses
+`artifacts/client_harness/442_interactions_20261003_23.tar.gz.dvc`.
 The original UI18/UI19 tracking counter compared the persisted controller name
 to the short name `code` and therefore reported zero code choices. Their immutable
 episode receipts each confirm 20 code inputs and zero model inputs. The correction
