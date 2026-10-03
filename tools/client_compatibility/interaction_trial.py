@@ -166,7 +166,21 @@ class Trial:
                 self.io.type(action['value']);time.sleep(.2);self.io.key('Return',hold=.4)
             elif action['kind']=='click':self.io.click(*action['value'],button=action.get('button',1),modifiers=action.get('modifiers',()))
             elif action['kind']=='edit':
-                self.io.click(*action['point']);self.io.key('ctrl+a')
+                self.io.click(*action['point'])
+                deadline=time.monotonic()+12;samples=[]
+                while True:
+                    state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_edit_focus')
+                    focused=any(field.get('focused') and
+                        [round(field['x']/65535*1280),round(field['y']/65535*720)]==action['point']
+                        for field in state.get('edit_fields') or [])
+                    samples.append({'sequence':state['sequence'],'frame':frame,'focused':focused,
+                        'input_replayed':False})
+                    self.receipt.setdefault('edit_focus_checks',[]).append(samples[-1]);self.persist()
+                    if focused:break
+                    if time.monotonic()>deadline:
+                        raise RuntimeError('selected edit field did not gain focus; refusing to send text')
+                    time.sleep(.2)
+                self.io.key('ctrl+a',hold=.4);time.sleep(.2)
                 if action['value']:self.io.type(action['value'])
                 else:self.io.key('BackSpace')
             elif action['kind']=='drag':self.io.drag(action['start'],action['end'])

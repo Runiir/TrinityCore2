@@ -126,7 +126,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=51,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=52,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
@@ -150,7 +150,7 @@ local function snapshot(viewMode,viewPage)
         bars_visible=CompactRaidFrameContainer and CompactRaidFrameContainer:IsVisible() or false}
     if mode=='group' then data.page=page;data.group_count=GetNumGroupMembers();data.everyone_assistant=call(IsEveryoneAssistant)
         data.units=groupUnits(page);data.frames=groupFrames(data.units);return data end
-    data.panels={};data.controls={};data.bags={}
+    data.panels={};data.controls={};data.bags={};data.edit_fields={}
     local visited={};local width=GetScreenWidth()*UIParent:GetEffectiveScale()
     local height=GetScreenHeight()*UIParent:GetEffectiveScale()
     local function scan(f,depth)
@@ -177,6 +177,11 @@ local function snapshot(viewMode,viewPage)
                     context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
+                if kind=='EditBox' and #data.edit_fields<8 then
+                    local control=data.controls[#data.controls]
+                    data.edit_fields[#data.edit_fields+1]={name=control.name,text=trim(call(f.GetText,f),384),
+                        x=control.x,y=control.y,focused=not not call(f.HasFocus,f)}
+                end
                 local parent=f:GetParent()
                 if parent and type(parent.setID)=='number' then
                     if f==parent.DeleteButton then data.controls[#data.controls].equipment_set_button='delete'

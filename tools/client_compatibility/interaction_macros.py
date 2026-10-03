@@ -33,7 +33,10 @@ def edit_case(trial,case_id,goal,predicate,value):
         entered=any(c['text']==value for c in matches)
         return {'status':'ui_edit_pass' if entered else ('controller_failure' if selected!='field' else 'client_or_protocol_failure'),
             'oracle':{'field_value_matches':entered,'qualified_scope':'visible edit field'}}
-    return trial.step(case_id,goal,actions,oracle,diagnostic_action='field')
+    return trial.step(case_id,goal,actions,oracle,diagnostic_action='field',
+        await_state=lambda state:any(c.get('text')==value and
+            [round(c['x']/65535*1280),round(c['y']/65535*720)]==point(field)
+            for c in state.get('edit_fields') or []))
 
 
 def require(row,status):

@@ -66,3 +66,21 @@ def test_panel_open_wait_uses_one_input_and_keeps_timeout_failed(monkeypatch,ope
     assert inputs==[{'kind':'key','value':'o'}]
     assert result['input_replayed_while_settling'] is False
     assert result['status']==('panel_open_pass' if opens else 'client_or_protocol_failure')
+
+
+@pytest.mark.parametrize('focused',[True,False])
+def test_edit_does_not_send_text_until_the_selected_field_has_focus(monkeypatch,focused):
+    pending={'sequence':1,'edit_fields':[{'x':0,'y':0,'focused':False}]}
+    ready={'sequence':2,'edit_fields':[{'x':0,'y':0,'focused':focused}]}
+    t,_=trial([pending,ready],monkeypatch);t.receipt['cases']=[];events=[]
+    t.io=SimpleNamespace(click=lambda *p:events.append(('click',p)),
+        key=lambda k,**kw:events.append(('key',k)),type=lambda text:events.append(('text',text)))
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    ticks=iter([0,1] if focused else [0,1,13])
+    monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    if focused:t.execute({'kind':'edit','point':[0,0],'value':'Owned name'})
+    else:
+        with pytest.raises(RuntimeError,match='refusing to send text'):
+            t.execute({'kind':'edit','point':[0,0],'value':'Owned name'})
+    assert events==([('click',(0,0)),('key','ctrl+a'),('text','Owned name')] if focused else [('click',(0,0))])
+    assert all(row['input_replayed'] is False for row in t.receipt['edit_focus_checks'])
