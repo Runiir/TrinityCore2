@@ -48,5 +48,9 @@ glyph-tooltip episode with unchanged actor, process lifetimes and native state:
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_tooltips --family glyph --recover-source <closed-failed-glyph-episode.json> --output <new-cleanup-directory>
 ```
 
-Lua syntax checks pass. Original failures and reviewed frames are retained for
-the DVC checkpoint; cleanup recovery does not relabel the failed trial.
+Lua syntax checks pass. The closed batch is remote-verified in
+[442_interactions_20261003_36.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc),
+archive SHA-256 `7f6c0d2f47d3282d49f2c00177bb584efc0219d58ab8cd4360154ca061b257e8`.
+Eight JSON receipts/reviews and 90 attributed PNG hashes pass streamed archive
+verification. Two new scoped operations bring the checklist to 255/916. Cleanup
+recovery does not relabel the failed trial.

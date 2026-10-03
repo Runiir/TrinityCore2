@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 253 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 255 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -37,7 +37,7 @@ Fixture: `equipped_character`.
 - [x] `character.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `character.close` (qualified variant; [evidence](#panel_visibility))
 - [x] `character.stats` (qualified variant; [evidence](#equipment))
-- [ ] `character.equipment_tooltips`
+- [x] `character.equipment_tooltips` (qualified variant; [evidence](#stock_equipped_item_tooltip_identity))
 - [ ] `character.compare_items`
 - [x] `character.equip` (qualified variant; [evidence](#equipment))
 - [x] `character.unequip` (qualified variant; [evidence](#equipment))
@@ -129,7 +129,7 @@ Fixture: `class_variants`.
 - [x] `talents.glyph_apply` (qualified variant; [evidence](#glyph_minor_application))
 - [ ] `talents.glyph_replace`
 - [x] `talents.glyph_remove` (qualified variant; [evidence](#glyph_minor_removal))
-- [ ] `talents.glyph_tooltip`
+- [x] `talents.glyph_tooltip` (qualified variant; [evidence](#stock_learned_battle_glyph_tooltip))
 - [x] `talents.persist` (qualified variant; [evidence](#warrior_talent_allocation))
 
 ## professions
@@ -1892,3 +1892,23 @@ Remaining limits: Adjacent zoom levels zero/one on this owned outdoor actor; max
 - [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_03/episode.json`, SHA-256 `37bf8d3e0391d35fca480f3b0db33dbb96ea9abf1538efcaa90d0a068aa9a7d1`.
   Checked cases: `map.minimap_zoom.change` (minimap_zoom_pass), `map.minimap_zoom.restore` (minimap_zoom_pass).
 - [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_review.json`, SHA-256 `f1fab98c7f1976b87359857e2bbd1335114a790e1b3cb89af81cab09c130bbf0`.
+
+### stock_equipped_item_tooltip_identity
+
+Stock pointer hovers on the native equipped head, cloak and two-handed sword show exact item names and links for 78688, 77097 and 78478 with their expected owner frames. Rendered frames reviewed; full native inventory, money, archaeology, talents, glyphs and spells unchanged.
+
+Remaining limits: Three slots and this warrior only; effective stats, all tooltip lines and account appearance collection remain open. Observer reads only 16 of 29 helmet lines and partly obscures its heading; public stock text checks its full name.
+
+- [442_interactions_20261003_36.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc), member `evidence/client_interactions_20261003_ui35/equipment_tooltips_01/episode.json`, SHA-256 `888cd850c0680e351f449d0f33bd29456ad3db4c829dd51c37e42df6e49c35da`.
+  Checked cases: `character.equipment_tooltip.CharacterHeadSlot` (stock_tooltip_pass), `character.equipment_tooltip.CharacterBackSlot` (stock_tooltip_pass), `character.equipment_tooltip.CharacterMainHandSlot` (stock_tooltip_pass).
+- [442_interactions_20261003_36.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc), member `evidence/client_interactions_20261003_ui35/tooltip_review.json`, SHA-256 `583e0d9194fa124df730f7b3150c7233164bfa35a36a0a0d391af83e2a98999e`.
+
+### stock_learned_battle_glyph_tooltip
+
+Ordinary search and pointer hover on the already learned Battle glyph show the stock Glyph of Battle minor tooltip matching native GlyphProperties 483/aura 58095/learned spell 58276. Fresh whole trial restores search and closes the stock window normally; full native baseline unchanged and rendered tooltip reviewed.
+
+Remaining limits: Learned Battle catalog tooltip only; replacement and effects remain open. Original search-focus cleanup failure stays failed, with a separate source-bound cleanup receipt and a fresh successful trial.
+
+- [442_interactions_20261003_36.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc), member `evidence/client_interactions_20261003_ui35/glyph_tooltip_02/episode.json`, SHA-256 `aa4d6b87ce30668db928a7d334591cd428064dd17364fc868bca163246c43f5a`.
+  Checked cases: `talents.glyph_tooltip` (stock_tooltip_pass), `glyphs.tooltip_search_restore` (ui_edit_pass), `glyphs.tooltip_close` (glyph_panel_closed).
+- [442_interactions_20261003_36.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc), member `evidence/client_interactions_20261003_ui35/tooltip_review.json`, SHA-256 `583e0d9194fa124df730f7b3150c7233164bfa35a36a0a0d391af83e2a98999e`.

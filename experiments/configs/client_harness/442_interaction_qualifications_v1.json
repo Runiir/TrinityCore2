@@ -2156,6 +2156,64 @@
           "action_frame_digests_verified": true
         }
       ]
+    },
+    {
+      "id": "stock_equipped_item_tooltip_identity",
+      "operations": [
+        "character.equipment_tooltips"
+      ],
+      "scope": "Stock pointer hovers on the native equipped head, cloak and two-handed sword show exact item names and links for 78688, 77097 and 78478 with their expected owner frames. Rendered frames reviewed; full native inventory, money, archaeology, talents, glyphs and spells unchanged.",
+      "limits": "Three slots and this warrior only; effective stats, all tooltip lines and account appearance collection remain open. Observer reads only 16 of 29 helmet lines and partly obscures its heading; public stock text checks its full name.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui35/equipment_tooltips_01/episode.json",
+          "sha256": "888cd850c0680e351f449d0f33bd29456ad3db4c829dd51c37e42df6e49c35da",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "character.equipment_tooltip.CharacterHeadSlot": "stock_tooltip_pass",
+            "character.equipment_tooltip.CharacterBackSlot": "stock_tooltip_pass",
+            "character.equipment_tooltip.CharacterMainHandSlot": "stock_tooltip_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui35/tooltip_review.json",
+          "sha256": "583e0d9194fa124df730f7b3150c7233164bfa35a36a0a0d391af83e2a98999e",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "stock_learned_battle_glyph_tooltip",
+      "operations": [
+        "talents.glyph_tooltip"
+      ],
+      "scope": "Ordinary search and pointer hover on the already learned Battle glyph show the stock Glyph of Battle minor tooltip matching native GlyphProperties 483/aura 58095/learned spell 58276. Fresh whole trial restores search and closes the stock window normally; full native baseline unchanged and rendered tooltip reviewed.",
+      "limits": "Learned Battle catalog tooltip only; replacement and effects remain open. Original search-focus cleanup failure stays failed, with a separate source-bound cleanup receipt and a fresh successful trial.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui35/glyph_tooltip_02/episode.json",
+          "sha256": "aa4d6b87ce30668db928a7d334591cd428064dd17364fc868bca163246c43f5a",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "talents.glyph_tooltip": "stock_tooltip_pass",
+            "glyphs.tooltip_search_restore": "ui_edit_pass",
+            "glyphs.tooltip_close": "glyph_panel_closed"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui35/tooltip_review.json",
+          "sha256": "583e0d9194fa124df730f7b3150c7233164bfa35a36a0a0d391af83e2a98999e",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
     }
   ]
 }

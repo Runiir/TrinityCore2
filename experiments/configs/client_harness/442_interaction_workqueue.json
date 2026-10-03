@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI34 full-session quest/archaeology persistence and stock zone/continent maps are closed and archive/frame reviewed. Eleven new scoped operations bring the checklist to 253/916. Normal map navigation, all four named digsite overlays, native planar coordinates and reversible minimap zoom pass; original compact-layout control failure retained. Continue glyph/equipment tooltips, then every remaining UI family. One shared native worldserver and bridge unchanged.",
+  "current": "UI35 stock equipment and learned Battle glyph tooltips are closed and archive/frame reviewed. Two new scoped operations bring the checklist to 255/916. Original glyph-search cleanup failure is retained; source-bound stock-button recovery and fresh whole trial pass. Continue stock equipment sets and character display controls, then every remaining UI family. One shared native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -124,7 +124,8 @@
     "ui32/archaeology_project_solve_03: 14 ordinary choices, earned 46-fragment Paperweight solve, backpack item, exact full native/API/rendered history and interface reload persistence; legitimate items/completions retained",
     "ui33/archaeology_keystone_solve_01: 16 ordinary actions, one existing Tome, exact 34-fragment/one-keystone spend, new 64444 artifact, completed tooltip and visible three-second Solve bar; DVC34 reviewed",
     "ui34/session_logout_01 and session_reenter_01: ordinary cancel/full logout and reviewed reentry preserve earned archaeology and native/public quest state",
-    "ui34/map_navigation_03: nine ordinary actions, public/native planar coordinates, compact zone/continent navigation, exact named owned digsite overlay and reversible minimap zoom; native resources/settings preserved"
+    "ui34/map_navigation_03: nine ordinary actions, public/native planar coordinates, compact zone/continent navigation, exact named owned digsite overlay and reversible minimap zoom; native resources/settings preserved",
+    "ui35/equipment_tooltips_01 and glyph_tooltip_02: three native equipped item identities and learned Battle stock tooltip; 8 JSON/90 attributed PNG hashes archive verified; original glyph focus-cleanup failure retained"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
