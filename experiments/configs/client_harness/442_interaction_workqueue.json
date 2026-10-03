@@ -67,7 +67,10 @@
     "ui16/mail_collect_item_01: five Laya choices, five native/visible water items collected, disposable letter deleted, original mail/inventory/money/pose and temporary permission restored",
     "ui16/mail_collect_money_01: five Laya choices, exact 12345-copper native/visible acquisition, disposable letter deleted, complete original state and temporary permission restored",
     "ui17/mail_return_04: 14 code-controlled choices, real player send with one copper and 30-copper postage, human-reviewed return body, collection/delete and full two-character mail/inventory/money/pose restoration",
-    "ui17/mail_reply_01: 17 code-controlled choices, real send/reply with two exact 30-copper postage charges, correct native and human-reviewed sender/subject/body, both letters deleted and complete baseline restored"
+    "ui17/mail_reply_01: 17 code-controlled choices, real send/reply with two exact 30-copper postage charges, correct native and human-reviewed sender/subject/body, both letters deleted and complete baseline restored",
+    "ui18/auction_open_02: three code-controlled choices, native hello translated into stock modern AuctionHouseFrame; full native auction/inventory/money/pose restored",
+    "ui18/auction_bids_01: complete empty initial bid catalog agrees with native packets and public BIDS_UPDATED/full_bids state; baseline restored",
+    "ui18/auction_owned_02: four code-controlled choices, human-reviewed owned Auctions tab and No items found; native/public complete empty catalog and event agree, full baseline restored"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -82,6 +85,8 @@
     "Merchant individual/guild repair, partial-stack, stock, discount and negative purchase variants are pending; one plain-item purchase with acquisition chat is qualified. Item identity-dependent acquisition toasts and quest notification variants remain pending.",
     "Profession-trainer new learning, trainer failure UI, incremental unlearn and superseded-spell variants remain unqualified. Native trainer rows have two prerequisites and two profession flags; warrior learning and the all-known alchemy catalog/filter are qualified.",
     "Quest variants remain pending: manual acceptance, objective progress, completion/reward, sharing, maps/POIs, item/currency/timed/required-spell objectives and persistence. One kill-quest display and abandonment are qualified.",
-    "Mail COD, text-copy, invoice/HTML, gems, native 12 versus modern 16 attachments, delayed delivery and negative gameplay paths remain pending; player send/return/reply with plain text and exact postage are qualified alongside catalog/read/delete/item/money collection."
+    "Mail COD, text-copy, invoice/HTML, gems, native 12 versus modern 16 attachments, delayed delivery and negative gameplay paths remain pending; player send/return/reply with plain text and exact postage are qualified alongside catalog/read/delete/item/money collection.",
+    "Auction search CMSG_AUCTION_BROWSE_QUERY is not yet routed to native search: ui18/auction_browse_02 retains the exact default-filter/price-name-sort request and restored search/native baseline. Populated bid/owned rows, sort/paging, posting/bid/buyout/cancel, commodity semantics, fees/mail, tainted metadata and negative paths remain pending.",
+    "Public city vehicle/passenger create transport is parsed and serialized with captured-packet/targetability regressions. The successful auction retry has no repeated matching live vehicle create; player vehicle control and public boat/elevator travel remain unqualified."
   ]
 }
