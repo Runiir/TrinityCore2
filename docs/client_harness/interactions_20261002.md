@@ -980,3 +980,9 @@ bytes) are stored in `442_journal_rotations_20261003_05.tar.gz.dvc`. Their
 4,749,960-byte archive is verified before pruning. Active UI evidence, recent
 journals and the two newest rotations per journal are preserved. Small receipts
 remain local and exact archive/cache copies are evicted after remote verification.
+
+UI15 is closed as `442_interactions_20261003_16.tar.gz.dvc`: 108,165,635 bytes,
+SHA-256 `d625c04b7ca05ab5573349e0f95aed7392702ca9ae9883d5d957ec190227533e`.
+The complete remotely verified checkpoint preserves the initial failed fixtures,
+corrected tests, deployment and accepted letter trial. Its raw frames and local
+archive/cache copies are removed afterward; receipts remain locally.
