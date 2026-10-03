@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 190 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 201 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -109,17 +109,17 @@ Fixture: `class_variants`.
 
 - [x] `talents.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `talents.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `talents.specialization_preview`
-- [ ] `talents.choose_specialization`
-- [ ] `talents.spend_point`
+- [x] `talents.specialization_preview` (qualified variant; [evidence](#warrior_talent_allocation))
+- [x] `talents.choose_specialization` (qualified variant; [evidence](#warrior_talent_allocation))
+- [x] `talents.spend_point` (qualified variant; [evidence](#warrior_talent_allocation))
 - [ ] `talents.reset_talents`
 - [ ] `talents.dual_spec`
 - [ ] `talents.switch_spec`
 - [ ] `talents.inspect_talents`
 - [x] `talents.glyph_open` (qualified variant; [evidence](#glyph_socket_panel))
-- [ ] `talents.glyph_catalog`
-- [ ] `talents.glyph_search`
-- [ ] `talents.glyph_clear_search`
+- [x] `talents.glyph_catalog` (qualified variant; [evidence](#warrior_glyph_catalog_search))
+- [x] `talents.glyph_search` (qualified variant; [evidence](#warrior_glyph_catalog_search))
+- [x] `talents.glyph_clear_search` (qualified variant; [evidence](#warrior_glyph_catalog_search))
 - [ ] `talents.glyph_filter_known`
 - [ ] `talents.glyph_filter_unknown`
 - [ ] `talents.glyph_filter_prime`
@@ -130,7 +130,7 @@ Fixture: `class_variants`.
 - [ ] `talents.glyph_replace`
 - [ ] `talents.glyph_remove`
 - [ ] `talents.glyph_tooltip`
-- [ ] `talents.persist`
+- [x] `talents.persist` (qualified variant; [evidence](#warrior_talent_allocation))
 
 ## professions
 
@@ -294,7 +294,7 @@ Fixture: `quest_variants`.
 - [x] `quests.accept` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.decline` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.progress` (qualified variant; [evidence](#ordinary_quest_kill_progress))
-- [ ] `quests.complete`
+- [x] `quests.complete` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [ ] `quests.choose_reward`
 - [ ] `quests.reward_item`
 - [ ] `quests.reward_money`
@@ -309,7 +309,7 @@ Fixture: `quest_variants`.
 - [x] `quests.giver_available_marker` (qualified variant; [evidence](#available_quest_marker))
 - [ ] `quests.giver_trivial_marker`
 - [ ] `quests.giver_incomplete_marker`
-- [ ] `quests.giver_complete_marker`
+- [x] `quests.giver_complete_marker` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [ ] `quests.giver_repeatable_marker`
 - [ ] `quests.giver_unavailable_marker`
 
@@ -882,7 +882,7 @@ Fixture: `owned_targets`.
 
 Fixture: `class_variants`.
 
-- [ ] `combat.melee_start`
+- [x] `combat.melee_start` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [ ] `combat.melee_stop`
 - [ ] `combat.ranged_attack`
 - [ ] `combat.instant_cast`
@@ -890,7 +890,7 @@ Fixture: `class_variants`.
 - [ ] `combat.channel`
 - [ ] `combat.cast_cancel`
 - [ ] `combat.interrupt`
-- [ ] `combat.auto_attack`
+- [x] `combat.auto_attack` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [ ] `combat.cooldown`
 - [ ] `combat.resource_cost`
 - [ ] `combat.insufficient_resource`
@@ -1586,3 +1586,29 @@ Remaining limits: Fixture teleports do not qualify navigation. This checks one k
 
 - [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/quest_progress_04/episode.json`, SHA-256 `487b5b1539e8acdc484e97b6b732f3528051dd5ae245984615ae1973a8fc9a02`.
   Checked cases: `quests.progress_kill` (quest_progress_pass).
+
+### warrior_talent_allocation
+
+Primary warrior stock Arms selection, one Blitz point preview and confirmation: native tree 746 and spell 80976, public unspent points 41 to 40; learned state persists through ordinary addon reload.
+
+Remaining limits: Other talents/specs/classes, multi-point allocation, reset, dual spec and logout/login persistence remain open. The v34 diagnostic per-tree total was corrected separately; slot positions were not qualified.
+
+- [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/talent_learn_01/episode.json`, SHA-256 `8e471cf86b5e8bfa38c45bf165d8f72524999c58d351abbff23cc2338be80e98`.
+
+### warrior_glyph_catalog_search
+
+Complete primary warrior public catalog of 34 glyph IDs/types and three headers, checked against native GlyphProperties. Ordinary Battle search and clearing to the stock Search placeholder restore the catalog.
+
+Remaining limits: Learned glyphs, filters, tooltips, socket positions, placement/removal and effects remain open. Catalog type agreement does not establish the correct GlyphSlot ID mapping.
+
+- [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/talent_glyph_catalog_02/episode.json`, SHA-256 `2a654b0848ea92421b16ff362beff3a3feb3313d469f199b39ba4d02050c4655`.
+- [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/talent_glyph_catalog_02/glyph_catalog_review.json`, SHA-256 `b1c89757271a444870323ce1f31eea6a80ad302aaff8de8b1ab2f85db9d540f8`.
+
+### ordinary_quest_melee_completion
+
+One quest 52 run earns five bear and eight wolf kills through ordinary melee against existing creatures. Each attack start and native/public/translated credit matches its victim; 8/5 objectives complete and Guard Thomas shows a visible yellow turn-in question mark.
+
+Remaining limits: Reward turn-in failed its capped XP oracle before claiming and remains open. Setup uses native pose staging, so it does not qualify navigation. Repeated swing cadence, damage values, alive-target stop, ranged/spell combat and other marker categories remain open.
+
+- [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/episode.json`, SHA-256 `82dbeca029d751b5a8bd5e8bbe2b7d6e9c41ac9df3d46cce95381f51738c1a22`.
+- [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/melee_review.json`, SHA-256 `5345ded64629c637902dd9e8c6d04ed69cb0a151198e860248d67b5fa8536036`.

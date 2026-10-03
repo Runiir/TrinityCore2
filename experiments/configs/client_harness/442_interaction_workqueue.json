@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Retain qualified ordinary quest completion and Arms learning; finish reward collection, trace pending glyph placement/book use, test remaining marker categories and auction bid/buyout/negative paths. Use private per-actor displays without host activation and retain every other open UI family",
+  "current": "Validate GlyphSlot type/tier translation against the installed client, then finish reward collection and pending glyph placement/book use; test remaining markers, auction bid/buyout/negative paths and every other open UI family. Both clients use private displays without host activation.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -20,7 +20,7 @@
     "second_monitor": "HDMI-1",
     "isolated_databases": true,
     "native_worldserver_restart_only_when_required": true,
-    "decision_models": "No new Laya or Jev calls under the updated AGENTS.md; code-controlled ordinary-input checks retain historical model receipts."
+    "decision_models": "Code-controlled ordinary-input compatibility checks by default. The latest explicit user request authorizes the bounded two-client Laya isolation probe; cohort UI jobs require --use-laya and retain actual model identity. Historical receipts are unchanged."
   },
   "last_closed_batches": [
     "followup/panel_trial_01: 22 opens, 10 closes, 13 controller failures, 1 guild failure",
