@@ -176,6 +176,10 @@ def restore_failed(out,source,points):
                 lab.server_command('saveall');time.sleep(1);delta=dict(inventory()['money'])[t.fixture['guid']]-expected
                 if delta not in ([0,-30,-31] if name=='primary' else [0,30,1]):raise RuntimeError('unexpected failed-trial money delta')
                 if delta:money_adjust(t,-delta,'restore only the failed owned mail fixture')
+        # Inventory snapshots include both actors. Restore both balances before
+        # comparing either receiver's complete baseline.
+        for name,t in trials.items():
+            with actor(name):
                 after=mailbox_state(t.fixture['guid']);matches=json.loads(json.dumps(after))==baselines[name]
                 t.receipt['mailbox_restoration']={'matches':matches,'after':after};t.persist()
                 if not matches:raise RuntimeError('failed mail inventory/money/reward-mail baseline differs')
