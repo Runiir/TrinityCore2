@@ -144,6 +144,41 @@ now produce no native packet when there is no owned cast; malformed requests are
 still rejected. Observer v36 adds read-only pending-glyph/socket-match diagnostics
 for the next ordinary placement trace.
 
+UI27 `glyph_learn_07` now passes an ordinary book right-click: item 43395 is
+consumed, native spell 58276 is learned, and Battle appears known in the public
+catalog. The item-use adapter validates carried inventory ownership and slot
+identity, then correlates native item-caster start/completion packets. The 709
+regression checks and 29 selected sanitizer checks pass. Earlier failed probes
+and exact unused-book cleanup are retained.
+
+UI27 `glyph_apply_03` proves the corrected socket API types and pending Minor
+matches at sockets 2/3/5. Its ordinary cast applies native glyph 483 and public
+aura 58095 to socket 2, but the receipt fails its original oracle: it saved native
+state before cast completion and expected an unavailable sixth public API ID.
+The runner now reads the public aura, then waits for saved native socket state.
+Modern glyph target bit 27 translates to native bit 17 in requests and back in
+results; native ownership, known-spell, reagent and glyph-type checks remain.
+The latest full suite has 720 passes and the selected sanitizer suite has 18.
+
+UI27 `glyph_remove_02` passes Shift-right-click and the stock confirmation. It
+casts native Clear Glyph 89964, consumes one Vanishing Powder 64670, clears
+native/public socket 2 and preserves learned spells, talents, inventory and
+money. No worldserver rebuild or glyph state write was needed. Trial 01 staged
+Dust of Disappearance 63388; the stock confirmation correctly stayed disabled,
+and that unused fixture was removed. UI27 `glyph_apply_04` and `glyph_remove_03` then pass a fresh placement/removal
+pair with the corrected oracles. Native/public socket agreement, exact powder
+consumption and unrelated state restoration all pass. The failed receipts remain
+unchanged.
+
+UI27 `glyph_socket_types_11` then passes the complete corrected panel readback:
+all nine enabled sockets in order `1,2,2,1,2,1,3,3,3`, the full 37-row warrior
+catalog including learned Battle, search, clear and close. Native talents, glyphs,
+inventory and money remain unchanged. This supersedes the earlier socket-position
+oracle. Cached unseen quest-status reads also now clear valid owned-map entries
+without forwarding a native interaction; hello, accept and reward stay visibility
+guarded. Both clients reconnect on the latest bridge with the native server
+unchanged; live reproduction of that stale-cache branch remains open.
+
 ## Desktop isolation
 
 Both actors already run in separate Gamescope X displays, Wine prefixes and

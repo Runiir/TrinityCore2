@@ -114,6 +114,11 @@ class Trial:
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
         monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+28
+        # Multiple cleanup calls and settling samples may reuse a logical label.
+        # A receipt's retained frame must never be overwritten by a later read.
+        suffix=1
+        while path.exists():
+            path=self.out/(label+'_'+str(suffix)+'.png');suffix+=1
         while True:
             with redirect_stdout(StringIO()):ctl.shot(str(path))
             try:

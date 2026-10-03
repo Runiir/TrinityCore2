@@ -1563,9 +1563,9 @@ Remaining limits: Code-controlled fixture inputs qualify client behavior. Object
 
 ### glyph_socket_panel
 
-Stock glyph panel opens with nine correctly cropped enabled sockets in installed order Major/Minor/Minor/Major/Minor/Major/Prime/Prime/Prime. Native talent/glyph state and inventory/money remain unchanged.
+Stock glyph panel opens with nine cropped enabled sockets. Native talent/glyph state and inventory/money remain unchanged.
 
-Remaining limits: Application, removal, learning, tooltips, other classes and level/locked variants remain open.
+Remaining limits: UI27 pending Battle placement disproved the UI26 catalog-derived socket-type oracle. Correct ordered socket semantics require fresh live qualification. Application, removal, learning, tooltips, other classes and level/locked variants remain open.
 
 - [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json`, SHA-256 `b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58`.
   Checked cases: `talents.glyph_open_repaired` (glyph_panel_pass).

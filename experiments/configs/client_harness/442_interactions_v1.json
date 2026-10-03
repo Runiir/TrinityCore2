@@ -9718,8 +9718,8 @@
       "operations": [
         "talents.glyph_open"
       ],
-      "scope": "Stock glyph panel opens with nine correctly cropped enabled sockets in installed order Major/Minor/Minor/Major/Minor/Major/Prime/Prime/Prime. Native talent/glyph state and inventory/money remain unchanged.",
-      "limits": "Application, removal, learning, tooltips, other classes and level/locked variants remain open.",
+      "scope": "Stock glyph panel opens with nine cropped enabled sockets. Native talent/glyph state and inventory/money remain unchanged.",
+      "limits": "UI27 pending Battle placement disproved the UI26 catalog-derived socket-type oracle. Correct ordered socket semantics require fresh live qualification. Application, removal, learning, tooltips, other classes and level/locked variants remain open.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
