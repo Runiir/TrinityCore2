@@ -21,6 +21,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
     'PetStableFrame','GuildBankFrame','StaticPopup1','StaticPopup2','StaticPopup3','DropDownList1','DropDownList2','RolePollPopup','ReadyCheckFrame','StackSplitFrame'}
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
+local autoPhase,controlPage='group',1
 local errors={}
 local chatProbes={}
 local luaErrors={}
@@ -590,11 +591,20 @@ local function update()
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
-        if viewMode=='state' then autoPages=math.ceil((data.control_count or 0)/12);autoPage=-1;groupPage=1
+        -- Keep ordinary state fresh even when a panel has many control pages.
+        -- Every diagnostic page is followed by a new normal state snapshot.
+        if viewMode=='state' then
+            autoPages=math.ceil((data.control_count or 0)/12)
+            autoPage=autoPhase=='controls' and autoPages>0 and math.min(controlPage,autoPages) or -1
         elseif viewMode=='group' then
             if groupPage<math.ceil((data.group_count or 0)/6) then groupPage=groupPage+1
-            else autoPage=autoPages>0 and 1 or 0 end
-        else autoPage=autoPage<autoPages and autoPage+1 or 0 end
+            else groupPage=1;autoPhase='controls';controlPage=1 end
+            autoPage=0
+        else
+            if viewPage<autoPages then controlPage=viewPage+1
+            else autoPhase='group';groupPage=1 end
+            autoPage=0
+        end
     end
     if not ok then data={observer_error=trim(data,250),mode=mode} end
     local payload=json(data)
@@ -621,7 +631,7 @@ SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
     if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
-    else mode='state';autoPage=0 end
+    else mode='state';autoPage=0;autoPhase='group';controlPage=1;groupPage=1 end
     frame:Show();update()
 end
 frame:RegisterEvent('UI_ERROR_MESSAGE')
