@@ -22,7 +22,7 @@ def test_visibility_request_requires_exactly_one_byte(codec,body):
 def test_sparse_player_flags_include_visibility_and_preserve_other_flags(codec,visibility):
     flags=0x400|0x800|2
     fields={INDEX['PLAYER_FLAGS']:flags}
-    body=result(codec,op='inventory_update',snapshot={'guid':1,'fields':fields},changed=fields,visibility=visibility)
+    body=result(codec,op='guild_update',snapshot={'guid':1,'fields':fields},character={},changed=fields,visibility=visibility)
     r=Reader(bytes.fromhex(body));assert r.unpack('B')==(0,);assert r.guid()==(1,player_high())
     assert r.unpack('I')[0]==len(r.data)-r.pos
     assert r.unpack('BBBI')==(visibility,0,3,1<<6)
@@ -32,17 +32,16 @@ def test_sparse_player_flags_include_visibility_and_preserve_other_flags(codec,v
 
 def test_unrelated_delta_does_not_repeat_player_flags(codec):
     fields={INDEX['PLAYER_FLAGS']:0x400}
-    assert result(codec,op='inventory_update',snapshot={'guid':1,'fields':fields},changed={},visibility=1)==''
+    assert result(codec,op='guild_update',snapshot={'guid':1,'fields':fields},character={},changed={},visibility=1)==''
 
 
 def test_appearance_handler_does_not_claim_other_requests(codec):
     assert call(codec,'appearance_request','CMSG_LOGOUT_REQUEST',b'') is None
 
 
-def test_player_flags_precede_sparse_visible_item_data(codec):
+def test_inventory_does_not_duplicate_the_public_player_flag_block(codec):
     fields={INDEX['PLAYER_FLAGS']:0x400,INDEX['PLAYER_VISIBLE_ITEM_1_ENTRYID']:78688}
     body=result(codec,op='inventory_update',snapshot={'guid':1,'fields':fields},changed=fields,visibility=1)
     r=Reader(bytes.fromhex(body));r.unpack('B');r.guid();r.unpack('IBBBI')
-    assert mask(r,5)=={0,9,68,69};assert r.bits(1)==0;r.align()
-    assert r.unpack('I')==(0x400,)
+    assert mask(r,5)=={68,69};assert r.bits(1)==0;r.align()
     assert r.bits(4)==3;r.align();assert r.unpack('i')==(78688,);r.end()

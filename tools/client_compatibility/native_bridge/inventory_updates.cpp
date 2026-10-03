@@ -34,7 +34,6 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
     std::map<unsigned,Array> slots;std::map<unsigned,std::uint32_t> visible;
     std::map<unsigned,std::pair<bool,bool>> buyback;
     std::map<unsigned,unsigned> damage;
-    bool flags=has("PLAYER_FLAGS");
     bool coinage=(visibility&1) && (has("PLAYER_FIELD_COINAGE") || has("PLAYER_FIELD_COINAGE",1));
     if(visibility&1)for(unsigned i=0;i<12;++i)
     {
@@ -54,17 +53,13 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
         if(has("PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2))
             visible.emplace(i,field(snapshot,"PLAYER_VISIBLE_ITEM_1_ENTRYID",i*2));
     bool active=!slots.empty() || coinage || !buyback.empty() || !damage.empty();
-    bool player=flags || !visible.empty();
-    if(!active && !player)return {};
-    Writer data;data.pack("BBBI",{visibility,0,3,(active?1u<<7:0u)|(player?1u<<6:0u)});
-    if(player)
+    if(!active && visible.empty())return {};
+    Writer data;data.pack("BBBI",{visibility,0,3,(active?1u<<7:0u)|(visible.empty()?0u:1u<<6)});
+    if(!visible.empty())
     {
-        std::array<std::uint32_t,5> mask{};
-        if(flags){set(mask,0);set(mask,9);}
-        if(!visible.empty())set(mask,68);
+        std::array<std::uint32_t,5> mask{};set(mask,68);
         for(auto const &[i,id]:visible)set(mask,69+i);
         write_mask(data,mask,5);data.bits(0,1).flush(); // No quest-log skipped mask.
-        if(flags)data.put(field(snapshot,"PLAYER_FLAGS"));
         for(auto const &[i,id]:visible)data.bits(3,4).flush().put<std::int32_t>(id);
     }
     if(active)
