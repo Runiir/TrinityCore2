@@ -17,9 +17,11 @@ Native search request/result, modern browse response, public complete empty
 catalog and browse-results event agree. The reviewed UI shows "No items found".
 Both inventory/money baselines and the staged position are restored.
 
-These are empty-catalog qualifications. Populated rows, sorting, paging, posting,
-bidding, buying, cancellation, commodity semantics, fees, delivery and negative
-paths remain open. Opening a panel is not transaction coverage. The broader
+The early runs are empty-catalog qualifications. UI21 adds native-backed plain
+buyout-only posting, a populated owned row, cancellation and exact item-return
+recovery in separate episodes. Sorting, paging, bidding, buying, commodity
+semantics, fee agreement and negative paths remain open. Opening a panel is not
+transaction coverage. The broader
 891-operation inventory remains a plan, not coverage, and these code-controlled
 trials do not evaluate learned autonomy.
 
@@ -85,6 +87,53 @@ missing adapter. The overall probe retains its failed verdict. Native auctions,
 both inventories and balances, staged pose and temporary fixture state are fully
 restored. The empty catalog and price entry are qualified separately from posting.
 
+## Plain posting, cancellation and return
+
+UI21 adds native-backed sale, cancel and bid request translation and native command
+outcomes. Only a single owned nonstackable plain item is admitted for posting;
+unsupported commodity quantities and metadata fail explicitly. The modern
+buyout-only zero minimum becomes the same native buyout price as minimum. Native
+ownership, eligibility, balances and fees remain authoritative. Bid and buyout
+transactions have offline checks but no live qualification yet.
+
+`auction_roundtrip_01` posts the original Recruit's Pants (GUID 4) for one gold.
+The native listing, success reply, bag removal and populated owned catalog agree.
+It stops at a runner observation error: stock row data comes from `GetRowData`,
+not `GetElementData`. Observer v27 corrects that read. Later center clicks reach a
+child price-column Frame rather than the row Button. Passive v28/v29 mouse-event,
+focus and modifier observations establish this; a measured item-end click selects
+the row and enables Cancel Auction. The runner now uses that point. This does not
+qualify clicking every child cell of the stock table.
+
+`auction_roundtrip_recovery_04` cancels the original listing through the observed
+stock Accept confirmation. Native auction absence and the routed cancel request
+agree. Its return mail contains the same item GUID and count. The runner initially
+compares the native encoded subject to a localized public header; those differ.
+The next retry reads the observed "Auction cancelled: Recruit's Pants" letter and
+collects the item. Native automatically deletes that emptied auction return, so
+an assumption that an empty letter remains triggers a failed oracle after the
+successful collection. The screenshot and native final-state evidence retain
+that distinction. The runner now accepts either an automatically deleted return
+or a remaining empty letter, while checking the exact original GUID.
+
+The independent native inventory reader also lacked the city transport layout
+already supported by the C++ bridge. Captured vehicle/passenger differential tests
+now pass for that read-only Python observer. This does not restore the Python
+world bridge or change the running C++ service. `auction_roundtrip_recovery_07`
+restores the original bag slot and recorded deposit. Native mail, both inventories
+and balances, staged poses and temporary RBAC permissions exactly match the
+original baseline. All failed episodes remain failed; this segmented recovery
+does not count as one uninterrupted round trip or learned autonomy.
+
+The reviewed stock Sell UI quotes zero for these one-copper pants, while native
+posting charges its legacy one-silver minimum. `Client442.AuctionDepositRules`
+adds the pinned modern arithmetic without that minimum, defaults off and is
+enabled only by isolated lab configuration. Its pure calculation tests pass
+alongside the existing repair calculation, and the incremental native build
+succeeds. UI21 still runs the old native binary; deployment and a complete fresh
+round trip are the next batch. The 100-copper refund in UI21 is fixture cleanup,
+not the compatibility fix.
+
 Layouts are checked against the pinned [TrinityCore auction packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/AuctionHousePackets.cpp)
 and [4.4.2 WowPacketParser auction parser](https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/AuctionHandler.cs).
 Selected source files and hash/provenance receipts are included with the evidence.
@@ -119,6 +168,10 @@ checks before the live response-key correction. UI20's corrected-key full suite
 passes 635 checks and 59 selected ASan/UBSan checks. The realm-routing full suite
 also passes 635 checks. These offline suites do not establish live catalog or
 transaction coverage; the physical trials remain separate evidence.
+UI21's transaction suite passes 656 full checks and 77 selected sanitizer checks.
+The independent transport observer and native deposit helper bring the full suite
+to 659 passes. Its first transport-observer command omitted `CLIENT442_CODEC` and
+skipped all six tests; the corrected focused run passes six. Skips are not passes.
 
 - The initial open failed before the hello translator existed.
 - The first focused catalog sanitizer command named a nonexistent test file;
@@ -169,6 +222,8 @@ The closed UI19 batch uses
 `artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc`.
 The closed UI20 batch uses
 `artifacts/client_harness/442_interactions_20261003_21.tar.gz.dvc`.
+The closed UI21 batch uses
+`artifacts/client_harness/442_interactions_20261003_22.tar.gz.dvc`.
 The original UI18/UI19 tracking counter compared the persisted controller name
 to the short name `code` and therefore reported zero code choices. Their immutable
 episode receipts each confirm 20 code inputs and zero model inputs. The correction

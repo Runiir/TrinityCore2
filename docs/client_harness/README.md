@@ -39,10 +39,13 @@ The [October 2 interaction report](interactions_20261002.md) records the later
 group-frame, role and marker repairs, individual qualifications and remaining gaps.
 The [October 3 auction report](interactions_20261003_auctions.md) records stock
 auction opening, complete empty browse/bid/owned catalogs and the city vehicle-create
-repair. The latest item-search suite passes 635 regression checks and 59 selected
-sanitizer checks. Its live empty Sell catalog passes after observer v25 reads the
-stock list's wildcard key; ordinary price entry also works. Posting captures an
-unmapped sale request and remains open alongside other auction transactions.
+repair. The latest full suite passes 659 regression checks; the transaction bridge
+also passes 77 selected sanitizer checks. The empty Sell catalog and price entry
+work. UI21 posts and cancels one plain auction, collects the same original item,
+then fully restores native resources in separate recovery episodes. The stock
+price-column center absorbs row clicks; the runner uses the measured item end.
+Fees still disagree with the legacy minimum. An isolated opt-in native correction
+is compiled; a fresh uninterrupted round trip after deployment remains pending.
 Captured failures, observer corrections and cleanup receipts are retained.
 The later bank batch passes 411 regression tests, including nine bank packet tests;
 46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,
