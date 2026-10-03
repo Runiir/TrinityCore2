@@ -87,13 +87,32 @@ def reconnect(out,name):
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
+def recovery(source,out,name):
+    """Prepare a new lobby receipt after a failed input on the same deployment."""
+    previous=json.loads((source/'deployment.json').read_text())
+    if identity('worldserver')!=previous['native'] or identity('modern_world')!=previous['after']:
+        raise RuntimeError('recovery requires the same verified deployment processes')
+    if not previous['reconnected'].get(name,{}).get('completed'):
+        raise RuntimeError('recovery requires a previously verified actor entry')
+    out.mkdir(exist_ok=False,parents=True,mode=0o700)
+    report={key:previous[key] for key in ['schema','native','after','observer_version','baselines']}
+    report.update(started_at=time.time(),reconnected={},recovery_source=str(source),native_unchanged=True)
+    with actor(name):report['lobby_frames']={name:shot(out/(name+'_disconnected.png'))}
+    lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
+    print(json.dumps({'lobby_frames':report['lobby_frames'],'requires_separate_visual_review':True}),flush=True)
+
+
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery'])
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
-    parser.add_argument('--actor',choices=['primary','scout']);args=parser.parse_args()
+    parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path);args=parser.parse_args()
+    # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
         restart(args.output,args.version)
+    elif args.action=='recovery':
+        if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
+        recovery(args.source,args.output,args.actor)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
         reconnect(args.output,args.actor)

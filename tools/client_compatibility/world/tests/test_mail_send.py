@@ -11,6 +11,13 @@ ITEM=(0x4000<<48)|0x12345678
 ITEM_HIGH=(3<<58)|(1<<42)
 
 
+@pytest.mark.parametrize('created,active_world',[(False,False),(False,True),(True,False),(True,True)])
+def test_realm_mail_requires_its_owned_active_character(codec,created,active_world):
+    answer=codec(op='mail_context',created=created,active_world=active_world)
+    assert (answer.get('result') is True)==(created and active_world)
+    if not created or not active_world:assert 'error' in answer
+
+
 def send(target=b'Harnesstwo',subject=b'Protocol letter',body=b'Ordinary text',money=0,cod=0,stationery=41,items=()):
     w=Writer().guid(*modern_guid(GUID,0)).pack('iqq',stationery,money,cod)
     w.bits(len(target),9).bits(len(subject),9).bits(len(body),11).bits(len(items),5).flush()
@@ -52,6 +59,25 @@ def test_send_preserves_strings_mailbox_money_and_cod(codec,money,cod):
     row=request(codec,send(money=money,cod=cod));assert row[0]=='CMSG_SEND_MAIL'
     assert legacy_send(bytes.fromhex(row[1]))=={'package':0,'stationery':41,'cod':cod,'money':money,'mailbox':GUID,
         'target':b'Harnesstwo','subject':b'Protocol letter','body':b'Ordinary text','attachments':[]}
+
+
+def test_live_client_removes_local_realm_suffix_before_serializing(codec):
+    # UI17 mail_return_02: ordinary autocomplete displays the local realm, but
+    # the captured Realm-channel SendMail packet already contains a bare name.
+    body=bytes.fromhex('03a7d12dc083c0042c29000000010000000000000000000000000000000505814800'
+        '4861726e65737374776f3434322055492072657475726e203061313436316538'
+        '4f776e656420636f6d7061746962696c697479206c65747465722e2052657475726e20747269616c2e')
+    live_guid=0xf113020f00002dd1
+    box=Writer().guid(*modern_guid(live_guid,0)).finish()
+    row=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
+        gameobjects=[dict(GO,guid=live_guid)],units=[],actions=[
+            action('mail_request','CMSG_MAIL_GET_LIST',box),setup()[1],
+            action('mail_request','CMSG_SEND_MAIL',body)])[-1]
+    assert row[0]=='CMSG_SEND_MAIL'
+    parsed=legacy_send(bytes.fromhex(row[1]));assert parsed['mailbox']==live_guid
+    assert parsed['target']==b'Harnesstwo' and parsed['money']==1 and parsed['cod']==0
+    assert parsed['subject']==b'442 UI return 0a1461e8'
+    assert parsed['body']==b'Owned compatibility letter. Return trial.'
 
 
 def test_owned_attachments_and_maximum_native_strings(codec):

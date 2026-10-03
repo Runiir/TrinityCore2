@@ -51,6 +51,10 @@ int main(int argc, char **argv)
                 {
                     require_chat_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
                 }
+                else if(op=="mail_context")
+                {
+                    require_mail_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
+                }
                 else if(op=="native_guild_roster")
                     result=native_guild_roster(data("body"));
                 else if(op=="login_quest_reads")

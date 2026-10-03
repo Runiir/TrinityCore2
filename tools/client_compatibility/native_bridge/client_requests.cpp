@@ -58,7 +58,11 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if(auto request=quest_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}
     if(auto request=mail_request(protocol,state,name,body))
-    {require_world();native_send(*request);return;}
+    {
+        if(name=="CMSG_SEND_MAIL")require_mail_character(state.created,bool(active_world));
+        else require_world();
+        native_send(*request);return;
+    }
     if(auto packet=chat_request(state,name,body))
     {
         require_chat_character(state.created,bool(active_world));native_send(*packet);return;
