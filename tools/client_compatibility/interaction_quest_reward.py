@@ -92,9 +92,14 @@ def reward(t,giver,point_file):
     if not native:raise RuntimeError('ordinary turn-in did not produce an authoritative native reward offer')
     offered=native_offer(native[-1]['body'])
     plain=lambda rows:[(x.get('id'),x.get('quantity')) for x in rows]
-    agrees=(probe.get('id')==QUEST and probe.get('money')==offered['money'] and probe.get('xp')==offered['xp'] and
+    # Some Classic quest UIs do not expose GetRewardXP. Only this level-cap
+    # fixture permits its absence, and only when the native offer gives zero.
+    xp_available=probe.get('xp') is not None
+    xp_agrees=probe.get('xp')==offered['xp'] if xp_available else t.fixture['level']==85 and offered['xp']==0
+    agrees=(probe.get('id')==QUEST and probe.get('money')==offered['money'] and xp_agrees and
         plain(probe.get('choices',[]))==plain(offered['choices']) and plain(probe.get('fixed',[]))==plain(offered['fixed']))
-    t.receipt['offer_oracle']={'native':offered,'public':probe,'packets':offers,'passed':agrees};t.persist()
+    t.receipt['offer_oracle']={'native':offered,'public':probe,'packets':offers,'passed':agrees,
+        'public_xp_available':xp_available,'xp_gain_qualification':False};t.persist()
     if not agrees or len(offered['choices'])!=2:raise RuntimeError('stock reward display disagrees with the native two-choice offer')
     chosen=offered['choices'][0];t.receipt['reward_choice_controls']=controls(t);t.persist()
     require(click_case(t,'quests.reward_choice','Choose the first displayed reward.',
