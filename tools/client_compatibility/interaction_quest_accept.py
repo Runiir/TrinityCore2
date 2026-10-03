@@ -98,15 +98,33 @@ def suite(t,point,stage_only,action='accept'):
             require(click_case(t,'quests.manual_expand','Expand the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
                 lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
                     'client_or_protocol_failure'}),'quest_zone_expand_pass')
+        require(click_case(t,'quests.manual_collapse','Collapse the Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
+            lambda b,a,s:{'status':'quest_zone_collapse_pass' if s and any(h.get('title')=='Elwynn Forest' and h.get('collapsed')
+                for h in a.get('quest_headers',[])) and not any(q.get('id')==QUEST for q in a.get('quests',[])) and
+                a.get('manual_quest_probe',{}).get('active') is True else 'client_or_protocol_failure',
+                'oracle':{'headers':a.get('quest_headers'),'public_active_quest':a.get('manual_quest_probe')}}),'quest_zone_collapse_pass')
+        require(click_case(t,'quests.manual_reexpand','Reopen the collapsed Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
+            lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
+                'client_or_protocol_failure'}),'quest_zone_expand_pass')
         require(click_case(t,'quests.manual_read_log','Read '+TITLE+' in the quest log.',lambda c:c['text'].strip()==TITLE,
             lambda b,a,s:{'status':'quest_log_details_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST else
                 'client_or_protocol_failure','oracle':{'selection':a.get('quest_log_selection')}}),'quest_log_details_pass')
         state,_=t.observe('manual_abandon_guard')
         if state.get('quest_log_selection',{}).get('abandon_name')!=TITLE:raise RuntimeError('manual quest abandonment is not correctly selected')
-        require(click_case(t,'quests.manual_abandon_prompt','Abandon only the trial '+TITLE+' quest.',
-            lambda c:c['name']=='QuestLogFrameAbandonButton',
-            lambda b,a,s:{'status':'quest_abandon_prompt_pass' if s and any(p.get('which')=='ABANDON_QUEST' and TITLE in p.get('text','')
-                for p in a.get('quest_popups',[])) else 'client_or_protocol_failure'}),'quest_abandon_prompt_pass')
+        def abandon_prompt(case):
+            require(click_case(t,case,'Abandon only the trial '+TITLE+' quest.',
+                lambda c:c['name']=='QuestLogFrameAbandonButton',
+                lambda b,a,s:{'status':'quest_abandon_prompt_pass' if s and any(p.get('which')=='ABANDON_QUEST' and TITLE in p.get('text','')
+                    for p in a.get('quest_popups',[])) else 'client_or_protocol_failure'}),'quest_abandon_prompt_pass')
+        abandon_prompt('quests.manual_abandon_prompt')
+        active_before_cancel=quest_state(1)
+        require(click_case(t,'quests.manual_abandon_cancel','Keep the trial quest by cancelling abandonment.',
+            lambda c:c['name']=='StaticPopup1Button2' and c['text']=='Cancel',
+            lambda b,a,s:{'status':'quest_abandon_cancel_pass' if s and not a.get('quest_popups') and
+                a.get('manual_quest_probe',{}).get('active') is True and quest_state(1)==active_before_cancel and inventory()==items else
+                'client_or_protocol_failure','oracle':{'public_active_quest':a.get('manual_quest_probe'),
+                    'native_quest_unchanged':quest_state(1)==active_before_cancel}}),'quest_abandon_cancel_pass')
+        abandon_prompt('quests.manual_abandon_reprompt')
         require(click_case(t,'quests.manual_abandon_confirm','Confirm abandoning the trial quest.',
             lambda c:c['name']=='StaticPopup1Button1' and c['text'] in ['Abandon','Yes'],
             lambda b,a,s:{'status':'quest_abandon_pass' if s and quest_state(1)==baseline and inventory()==items else
