@@ -165,7 +165,9 @@ def resume(t,source,point_file,restoration_source=None):
             not restored or not all(restored.values()) or previous['actor']!=t.fixture):
         raise RuntimeError('resume requires a closed, restored thirteen-kill earned completion')
     actors.session_entry(t.fixture);baseline=quest_state(1);items=inventory()
-    if baseline!=saved['quest_state'] or items!=saved['inventory_money']:
+    # Database rows are tuples; closed JSON evidence represents them as lists.
+    # Normalize only that representation, preserving every identity/value.
+    if baseline!=saved['quest_state'] or json.loads(json.dumps(items))!=saved['inventory_money']:
         raise RuntimeError('earned completion baseline changed before turn-in resume')
     t.receipt['completion_source']={'file':str(source),'sha256':lab.sha256(source)}
     t.receipt['baseline']={'quests':baseline,'inventory_money':items};t.persist()
