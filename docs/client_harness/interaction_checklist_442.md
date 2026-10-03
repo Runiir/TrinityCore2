@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 242 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 253 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -185,7 +185,7 @@ Fixture: `digsite_variants`.
 - [x] `archaeology.project_completion` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
 - [x] `archaeology.site_completion` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.site_rotation` (qualified variant; [evidence](#archaeology_loop))
-- [ ] `archaeology.continent_map`
+- [x] `archaeology.continent_map` (qualified variant; [evidence](#stock_owned_continent_digsite_overlay))
 - [ ] `archaeology.fragments_cap`
 - [x] `archaeology.persist` (qualified variant; [evidence](#archaeology_earned_reload_persistence))
 
@@ -305,7 +305,7 @@ Fixture: `quest_variants`.
 - [ ] `quests.auto_accept`
 - [ ] `quests.auto_complete`
 - [ ] `quests.unavailable_prerequisite`
-- [ ] `quests.persist`
+- [x] `quests.persist` (qualified variant; [evidence](#quest_full_session_persistence))
 - [x] `quests.giver_available_marker` (qualified variant; [evidence](#available_quest_marker))
 - [x] `quests.giver_trivial_marker` (qualified variant; [evidence](#trivial_quest_marker_tracked))
 - [ ] `quests.giver_incomplete_marker`
@@ -319,23 +319,23 @@ Fixture: `map_variants`.
 
 - [x] `map.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `map.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `map.continent`
-- [ ] `map.zone`
+- [x] `map.continent` (qualified variant; [evidence](#stock_zone_continent_navigation))
+- [x] `map.zone` (qualified variant; [evidence](#stock_zone_continent_navigation))
 - [ ] `map.subzone`
-- [ ] `map.zoom_in`
-- [ ] `map.zoom_out`
+- [x] `map.zoom_in` (qualified variant; [evidence](#stock_zone_continent_navigation))
+- [x] `map.zoom_out` (qualified variant; [evidence](#stock_zone_continent_navigation))
 - [ ] `map.pan`
 - [ ] `map.quest_pin`
 - [ ] `map.quest_details`
 - [ ] `map.quest_route`
-- [ ] `map.digsite_overlay`
+- [x] `map.digsite_overlay` (qualified variant; [evidence](#stock_owned_continent_digsite_overlay))
 - [ ] `map.taxi_overlay`
 - [ ] `map.dungeon_floor`
-- [ ] `map.coordinates`
-- [ ] `map.player_position`
+- [x] `map.coordinates` (qualified variant; [evidence](#stock_player_planar_map_coordinates))
+- [x] `map.player_position` (qualified variant; [evidence](#stock_player_planar_map_coordinates))
 - [x] `map.tracking_menu` (qualified variant; [evidence](#minimap_quest_tracking_controls))
-- [ ] `map.world_map_binding`
-- [ ] `map.minimap_zoom`
+- [x] `map.world_map_binding` (qualified variant; [evidence](#stock_zone_continent_navigation))
+- [x] `map.minimap_zoom` (qualified variant; [evidence](#stock_reversible_minimap_zoom))
 - [x] `map.minimap_tracking` (qualified variant; [evidence](#minimap_quest_tracking_controls))
 - [ ] `map.minimap_calendar`
 - [ ] `map.minimap_clock`
@@ -1800,12 +1800,17 @@ Remaining limits: One common Draenei project and archaeology-currency spend. Mov
 
 ### archaeology_earned_reload_persistence
 
-Ordinary /reload retains the earned Draenei fragment balance, current project, both crafted items, all native completion counts/first timestamps and complete rendered stock history without Lua errors or blocked actions.
+Ordinary /reload retains the earned Draenei fragment balance, current project, both crafted items, all native completion counts/first timestamps and complete rendered stock history without Lua errors or blocked actions. UI34 normal menu logout/cancel/completion and reviewed Enter reentry retain all three earned Draenei artifacts, exact native completed counts/first timestamps, current project, 13 fragments and four keystones; complete stock history renders after login.
 
-Remaining limits: Interface-reload persistence on this owned actor only. Full-session logout/reconnect, other races and other completion variants remain open.
+Remaining limits: Interface reload and one ordinary full-session logout/reentry on the owned level-85 actor. Other races, repeated/rare completions and server-restart persistence remain open.
 
 - [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json`, SHA-256 `e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8`.
   Checked cases: `archaeology.reload_persistence` (archaeology_reload_pass), `archaeology.completed_history.after_reload_history` (archaeology_history_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_logout_01/episode.json`, SHA-256 `4d6492077afc10016b24148087f651589674a6c79729bc0e712006e8b2909a7d`.
+  Checked cases: `lifecycle.logout_cancel` (logout_cancel_pass), `lifecycle.logout_complete` (logout_complete_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_reenter_01/episode.json`, SHA-256 `0492b5dc32c503c8219ee9aa986d1a1b56167a646d4b910c6acf5a476584ea4e`.
+  Checked cases: `lifecycle.reenter` (session_persistence_pass), `archaeology.completed_history.after_reentry_history` (archaeology_history_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_persistence_review.json`, SHA-256 `67f497647a642d79688375b521527f1f5757d64fc5e2373466577b79d0721e13`.
 
 ### archaeology_existing_keystone_solve
 
@@ -1836,3 +1841,54 @@ Remaining limits: Stationary common-project Solve only. Survey cast-bar visibili
 - [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_solve_01/episode.json`, SHA-256 `1d16c7381c6fb658ad2e198ccbf9679ba79347b4f3b60740e839c66bca924211`.
   Checked cases: `archaeology.solve_project` (archaeology_solve_pass).
 - [442_interactions_20261003_34.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_34.tar.gz.dvc), member `evidence/client_interactions_20261003_ui33/archaeology_keystone_review.json`, SHA-256 `6f507103aeda5551fe0f851115155df2b2d1dea748fab84cf94bbf9578a1cb05`.
+
+### quest_full_session_persistence
+
+Ordinary full logout/reentry retains active quest 28825 A Personal Summons and rewarded quest 52, with exact saved native quest rows/objectives. Public log entries and headers match before/after; the stock log displays A Personal Summons details after login. All gear, items, money, archaeology and group/profile baselines preserved.
+
+Remaining limits: One active and one rewarded quest on this level-85 actor; broader objective types, timers, quest sharing and server restart remain open.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_logout_01/episode.json`, SHA-256 `4d6492077afc10016b24148087f651589674a6c79729bc0e712006e8b2909a7d`.
+  Checked cases: `quests.session_log` (quest_session_log_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_reenter_01/episode.json`, SHA-256 `0492b5dc32c503c8219ee9aa986d1a1b56167a646d4b910c6acf5a476584ea4e`.
+  Checked cases: `lifecycle.reenter` (session_persistence_pass), `quests.session_log` (quest_session_log_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_persistence_review.json`, SHA-256 `67f497647a642d79688375b521527f1f5757d64fc5e2373466577b79d0721e13`.
+
+### stock_zone_continent_navigation
+
+Observed M binding opens Badlands map 1418, right-clicking the owned canvas navigates to Eastern Kingdoms 1415, and physical left-click at public Hammertoe digsite coordinates enters Badlands. Bound close/reopen restores the player zone. Native resources/project/history/inventory unchanged; no Lua errors or blocked actions.
+
+Remaining limits: Compact stock map, one outdoor zone and its continent; other worlds/zones, dungeon floors, pan and quest/taxi routes remain open. Original hidden-Zoom-Out-button trial remains failed evidence.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_03/episode.json`, SHA-256 `37bf8d3e0391d35fca480f3b0db33dbb96ea9abf1538efcaa90d0a068aa9a7d1`.
+  Checked cases: `map.bound_open` (map_navigation_pass), `map.continent_zoom_out` (map_navigation_pass), `map.zone_zoom_in` (map_navigation_pass), `map.bound_close` (map_close_pass), `map.bound_reopen_zone` (map_navigation_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_review.json`, SHA-256 `f1fab98c7f1976b87359857e2bbd1335114a790e1b3cb89af81cab09c130bbf0`.
+
+### stock_player_planar_map_coordinates
+
+Public player world XY and normalized Badlands map position match saved native character coordinates and an independent pinned WorldMapArea.dbc rectangle within 0.1 world unit and 0.0001 normalized coordinate. Owned player marker and digsite boundary are visually reviewed in the stock map.
+
+Remaining limits: Planar XY in Badlands only. Public UnitPosition Z returns zero while native Z is 241.668; height, other maps/floors and movement updates remain unqualified.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_03/episode.json`, SHA-256 `37bf8d3e0391d35fca480f3b0db33dbb96ea9abf1538efcaa90d0a068aa9a7d1`.
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_review.json`, SHA-256 `f1fab98c7f1976b87359857e2bbd1335114a790e1b3cb89af81cab09c130bbf0`.
+
+### stock_owned_continent_digsite_overlay
+
+Eastern Kingdoms exposes four unique owned public research-site IDs, blobs and positions. Stock Show Digsites checkbox removes/restores exactly four visible shovel icons whose names match every public site. Normal left-click enters the current site zone and its rendered blob boundary. Original display preference and all native resources are preserved.
+
+Remaining limits: Four current Eastern Kingdoms sites and one Badlands blob; other continents, rotated site sets, boundary geometry gameplay and fragment caps remain separate variants.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_03/episode.json`, SHA-256 `37bf8d3e0391d35fca480f3b0db33dbb96ea9abf1538efcaa90d0a068aa9a7d1`.
+  Checked cases: `map.digsites_False` (map_digsite_overlay_pass), `map.digsites_True` (map_digsite_overlay_pass), `map.zone_zoom_in` (map_navigation_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_review.json`, SHA-256 `f1fab98c7f1976b87359857e2bbd1335114a790e1b3cb89af81cab09c130bbf0`.
+
+### stock_reversible_minimap_zoom
+
+Physical clicks on observed stock minimap button rectangles change public zoom from zero to one and back to zero, retaining the six-level public zoom catalog and every native resource. Both zoom frames are visually reviewed.
+
+Remaining limits: Adjacent zoom levels zero/one on this owned outdoor actor; max-level disablement, other levels and minimap services remain open.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_03/episode.json`, SHA-256 `37bf8d3e0391d35fca480f3b0db33dbb96ea9abf1538efcaa90d0a068aa9a7d1`.
+  Checked cases: `map.minimap_zoom.change` (minimap_zoom_pass), `map.minimap_zoom.restore` (minimap_zoom_pass).
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/map_navigation_review.json`, SHA-256 `f1fab98c7f1976b87359857e2bbd1335114a790e1b3cb89af81cab09c130bbf0`.

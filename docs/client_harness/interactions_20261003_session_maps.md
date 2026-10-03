@@ -70,3 +70,11 @@ The runner requires an outdoor player zone with one owned visible digsite for
 the zone-selection fixture. It uses the observed binding and public map/button
 coordinates. It preserves original failures, closes panels and restores the
 digsite/minimap settings.
+
+The closed batch is remote-verified in
+[442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc),
+archive SHA-256 `e75dc660f10749ee29f0f5474639cf638aa83a68c1ae929c42b99adfadebc3e5`.
+Fourteen JSON receipts/reviews and 149 attributed frame hashes pass the streamed
+archive review. Eleven new scoped operations bring the checklist to 253/916,
+and the existing archaeology persistence record gains the full-session variant.
+Eight qualification/inventory guards pass. Remaining variants stay open.
