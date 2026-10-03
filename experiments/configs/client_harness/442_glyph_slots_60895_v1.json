@@ -1,0 +1,151 @@
+{
+  "schema": "client442_glyph_slot_catalog_v1",
+  "native_build": 15595,
+  "modern_build": 60895,
+  "native_sha256": "bd4651c229ef00f18d2bb2513d52fffc093b8caa7ad7df6c282aca07a6e6a565",
+  "modern_sha256": "876631e290e9d468171f670f0118328ef4bc55fcb9eeeac378544541a35a183e",
+  "modern_source": "read-only local CASC DBFilesClient/GlyphSlot.db2",
+  "native_types": {
+    "0": "Major",
+    "1": "Minor",
+    "2": "Prime"
+  },
+  "modern_types": {
+    "0": "Prime",
+    "1": "Major",
+    "2": "Minor"
+  },
+  "native_rows": [
+    {
+      "id": 21,
+      "type": 0,
+      "order": 0
+    },
+    {
+      "id": 22,
+      "type": 1,
+      "order": 0
+    },
+    {
+      "id": 23,
+      "type": 1,
+      "order": 1
+    },
+    {
+      "id": 24,
+      "type": 0,
+      "order": 1
+    },
+    {
+      "id": 25,
+      "type": 1,
+      "order": 2
+    },
+    {
+      "id": 26,
+      "type": 0,
+      "order": 2
+    },
+    {
+      "id": 41,
+      "type": 2,
+      "order": 0
+    },
+    {
+      "id": 42,
+      "type": 2,
+      "order": 1
+    },
+    {
+      "id": 43,
+      "type": 2,
+      "order": 2
+    }
+  ],
+  "modern_rows": [
+    {
+      "id": 21,
+      "order": 0,
+      "type": 0
+    },
+    {
+      "id": 22,
+      "order": 0,
+      "type": 1
+    },
+    {
+      "id": 23,
+      "order": 1,
+      "type": 1
+    },
+    {
+      "id": 24,
+      "order": 1,
+      "type": 0
+    },
+    {
+      "id": 25,
+      "order": 2,
+      "type": 1
+    },
+    {
+      "id": 26,
+      "order": 2,
+      "type": 0
+    },
+    {
+      "id": 41,
+      "order": 0,
+      "type": 2
+    },
+    {
+      "id": 42,
+      "order": 1,
+      "type": 2
+    },
+    {
+      "id": 43,
+      "order": 2,
+      "type": 2
+    }
+  ],
+  "mapping": [
+    {
+      "native": 21,
+      "modern": 22
+    },
+    {
+      "native": 22,
+      "modern": 41
+    },
+    {
+      "native": 23,
+      "modern": 42
+    },
+    {
+      "native": 24,
+      "modern": 23
+    },
+    {
+      "native": 25,
+      "modern": 43
+    },
+    {
+      "native": 26,
+      "modern": 25
+    },
+    {
+      "native": 41,
+      "modern": 21
+    },
+    {
+      "native": 42,
+      "modern": 24
+    },
+    {
+      "native": 43,
+      "modern": 26
+    }
+  ],
+  "socket_indexes_and_unlock_mask": "unchanged"
+}

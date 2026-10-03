@@ -1,5 +1,6 @@
 // Owner-only glyph slots, values and enablement follow pinned WriteUpdate masks.
 #include "protocol.hpp"
+#include "glyph_slots.hpp"
 namespace bridge
 {
 Bytes Protocol::glyph_block(Value const &snapshot,Value const &changed) const
@@ -29,7 +30,7 @@ Bytes Protocol::glyph_block(Value const &snapshot,Value const &changed) const
     }
     for(unsigned i=0;i<9;++i)
     {
-        if(has("PLAYER_FIELD_GLYPH_SLOTS_1",i))data.put(field(snapshot,"PLAYER_FIELD_GLYPH_SLOTS_1",i));
+        if(has("PLAYER_FIELD_GLYPH_SLOTS_1",i))data.put(modern_glyph_slot(field(snapshot,"PLAYER_FIELD_GLYPH_SLOTS_1",i)));
         if(has("PLAYER_FIELD_GLYPHS_1",i))data.put(field(snapshot,"PLAYER_FIELD_GLYPHS_1",i));
     }
     return Writer().put<std::uint8_t>(0).guid(integer(get(snapshot,"guid")),player_high())

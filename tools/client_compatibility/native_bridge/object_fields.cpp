@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "glyph_slots.hpp"
 #include "native_transport.hpp"
 #include "guild_fields.hpp"
 
@@ -115,7 +116,10 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);
     // Both pinned cores use seconds relative to login plus thirty hours.
     active["BuybackTimestamp"] = arr("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12);
-    active["GlyphSlots"]=arr("PLAYER_FIELD_GLYPH_SLOTS_1",9);
+    Array glyph_slots;
+    for(unsigned i=0;i<9;++i)
+        glyph_slots.push_back(modern_glyph_slot(val("PLAYER_FIELD_GLYPH_SLOTS_1",i)));
+    active["GlyphSlots"]=glyph_slots;
     active["Glyphs"]=arr("PLAYER_FIELD_GLYPHS_1",9);
     active["GlyphsEnabled"]=val("PLAYER_GLYPHS_ENABLED");
     Object skill;
