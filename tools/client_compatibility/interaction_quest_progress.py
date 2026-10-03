@@ -38,7 +38,10 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
         # This registered bear spawn overlaps a large client tree. The farther
         # initial observation point passed the ordinary exact-name probe.
         dx,dy=(8,0) if entry==822 else (2*math.cos(o),2*math.sin(o))
-        row=(tele_id,x+dx,y+dy,z,math.atan2(-dy,-dx)%(2*math.pi),0,NAME)
+        # A spawn's ground Z is not the height at an offset point. Start above
+        # that floor so normal client gravity can settle on nearby terrain;
+        # otherwise a slightly uphill offset can put the actor under the map.
+        row=(tele_id,x+dx,y+dy,z+8,math.atan2(-dy,-dx)%(2*math.pi),0,NAME)
         q.execute('INSERT INTO client442_world.game_tele '
             '(id,position_x,position_y,position_z,orientation,map,name) VALUES (%s,%s,%s,%s,%s,%s,%s)',row)
         q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
@@ -69,7 +72,7 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
             x,y,z,o=unit['position'];dx,dy=2*math.cos(o),2*math.sin(o)
             with lab.connection() as c,c.cursor() as q:
                 q.execute('UPDATE client442_world.game_tele SET position_x=%s,position_y=%s,position_z=%s,orientation=%s '
-                    'WHERE id=%s AND name=%s',(x+dx,y+dy,z,math.atan2(-dy,-dx)%(2*math.pi),row[0],NAME))
+                    'WHERE id=%s AND name=%s',(x+dx,y+dy,z+3,math.atan2(-dy,-dx)%(2*math.pi),row[0],NAME))
                 q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
                     'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(row[0],));row=q.fetchone()
             t.receipt['combat_fixture']['observed_target_staging']={'facts':facts,'teleport':row};t.persist()
