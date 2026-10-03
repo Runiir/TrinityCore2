@@ -27,6 +27,7 @@ local luaErrors={}
 local blockedActions={}
 local following={active=false}
 local inspectionReady,tradeEvents,lastLoot={},{},nil
+local auctionEvents={}
 local observerSkips,skipKeys={},{}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
@@ -119,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=21,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=22,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -177,8 +178,14 @@ local function snapshot(viewMode,viewPage)
     local manager=Menu and call(Menu.GetManager)
     local menu=manager and call(manager.GetOpenMenu,manager)
     if menu and menu.IsVisible and menu:IsVisible() then data.panels[#data.panels+1]='ContextMenu';scan(menu,0) end
+    -- Inbox and auction browsing do not use bag-item controls. Keep the close
+    -- buttons and all passive bag contents, without paging dozens of empty slots.
+    local quietBags=(MailFrame and MailFrame:IsVisible() and not (SendMailFrame and SendMailFrame:IsVisible())) or
+        (AuctionHouseFrame and AuctionHouseFrame:IsVisible() and call(PanelTemplates_GetSelectedTab,AuctionHouseFrame)~=2)
     for i=1,13 do local f=_G['ContainerFrame'..i];if f and f:IsVisible() then
-        data.bags[#data.bags+1]=f:GetID();scan(f,0)
+        data.bags[#data.bags+1]=f:GetID()
+        if quietBags then local close=_G['ContainerFrame'..i..'CloseButton'];if close then scan(close,0) end
+        else scan(f,0) end
     end end
     if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsVisible() then data.bags[#data.bags+1]=-1 end
     data.bag_slots={};for i=0,4 do data.bag_slots[i+1]=call(C_Container and C_Container.GetContainerNumSlots,i) or call(GetContainerNumSlots,i) or 0 end
@@ -275,6 +282,26 @@ local function snapshot(viewMode,viewPage)
         end
     end
     data.trainer_probe={spell=3127,available=type(IsSpellKnown)=='function',known=call(IsSpellKnown,3127)}
+    if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
+        local api=C_AuctionHouse or {}
+        data.auction={tab=call(PanelTemplates_GetSelectedTab,AuctionHouseFrame),events=auctionEvents,
+            api_available=type(api.GetBrowseResults)=='function',browse={},owned={},bids={},
+            full_browse=call(api.HasFullBrowseResults),full_owned=call(api.HasFullOwnedAuctionResults),
+            full_bids=call(api.HasFullBidResults),throttle_ready=call(api.IsThrottledMessageSystemReady)}
+        local function sample(getter,kind)
+            local rows=call(getter)
+            if type(rows)~='table' then return end
+            data.auction[kind..'_count']=#rows
+            for i=1,math.min(#rows,4) do local row=rows[i];local key=row.itemKey or {}
+                data.auction[kind][#data.auction[kind]+1]={id=key.itemID,level=key.itemLevel,
+                    pet=key.battlePetSpeciesID,suffix=key.itemSuffix,auction_id=row.auctionID,
+                    quantity=row.totalQuantity or row.quantity,min_price=tonumber(row.minPrice),
+                    bid=tonumber(row.bidAmount),buyout=tonumber(row.buyoutAmount),status=row.status,
+                    owner_item=row.containsOwnerItem}
+            end
+        end
+        sample(api.GetBrowseResults,'browse');sample(api.GetOwnedAuctions,'owned');sample(api.GetBids,'bids')
+    end
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
     data.role_poll=RolePollPopup and RolePollPopup:IsVisible() or false
@@ -517,11 +544,17 @@ frame:RegisterEvent('AUTOFOLLOW_BEGIN');frame:RegisterEvent('AUTOFOLLOW_END')
 frame:RegisterEvent('INSPECT_READY')
 frame:RegisterEvent('CHAT_MSG_LOOT')
 for _,event in ipairs({'TRADE_SHOW','TRADE_CLOSED','TRADE_REQUEST_CANCEL','TRADE_ACCEPT_UPDATE'}) do frame:RegisterEvent(event) end
+for _,event in ipairs({'AUCTION_HOUSE_SHOW','AUCTION_HOUSE_CLOSED','AUCTION_HOUSE_BROWSE_RESULTS_UPDATED',
+    'AUCTION_HOUSE_BROWSE_RESULTS_ADDED','OWNED_AUCTIONS_UPDATED','BIDS_UPDATED',
+    'AUCTION_HOUSE_THROTTLED_MESSAGE_RESPONSE_RECEIVED'}) do frame:RegisterEvent(event) end
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
     'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
-    if event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
+    if event:match('^AUCTION_HOUSE_') or event=='OWNED_AUCTIONS_UPDATED' or event=='BIDS_UPDATED' then
+        auctionEvents[#auctionEvents+1]={event=event,time=GetTime()}
+        if #auctionEvents>4 then table.remove(auctionEvents,1) end
+    elseif event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
     elseif event=='AUTOFOLLOW_END' then following={active=false}
     elseif event=='INSPECT_READY' then inspectionReady={guid=trim(code,64),time=GetTime()}
     elseif event=='CHAT_MSG_LOOT' and type(code)=='string' then
