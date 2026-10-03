@@ -12,12 +12,16 @@ from dvclive import Live
 from . import lab_runtime as lab
 
 
-def select_frames(names, episodes):
+def select_frames(names, episodes, evidence_names=()):
     files = []
     for basename in sorted(set(names)):
         if not re.fullmatch(r'[A-Za-z0-9_-]+\.png', basename):
             raise ValueError('only explicitly named top-level scratch PNGs are allowed')
         files.append((lab.ROOT / 'run' / basename, True))
+    for basename in sorted(set(evidence_names)):
+        if not re.fullmatch(r'[A-Za-z0-9_-]+\.(png|webp)', basename):
+            raise ValueError('require explicitly named top-level evidence frames')
+        files.append((lab.ROOT / 'evidence' / basename, True))
     for basename in sorted(set(episodes)):
         if not re.fullmatch(r'[A-Za-z0-9_-]+', basename):
             raise ValueError('require explicit top-level episode names')
@@ -59,7 +63,7 @@ def select_frames(names, episodes):
     return selected
 
 
-def checkpoint(names, name, receipt, episodes=()):
+def checkpoint(names, name, receipt, episodes=(), evidence_names=()):
     receipt = receipt.resolve()
     if not receipt.is_relative_to(lab.ROOT / 'evidence') or receipt.exists():
         raise ValueError('require a new private cleanup receipt')
@@ -71,7 +75,7 @@ def checkpoint(names, name, receipt, episodes=()):
     relative = str(archive.relative_to(lab.REPO)); pointer = relative + '.dvc'
     if archive.exists() or (lab.REPO / pointer).exists():
         raise RuntimeError('checkpoint name exists')
-    selected = select_frames(names, episodes)
+    selected = select_frames(names, episodes, evidence_names)
     frames = [row for row in selected if row['prune']]
     report = {'schema': 'client442_scratch_frames_checkpoint_v1', 'started_at': time.time(),
               'code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip(),
@@ -118,5 +122,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--frame', action='append', default=[])
     parser.add_argument('--episode', action='append', default=[])
+    parser.add_argument('--evidence-frame', action='append', default=[])
     parser.add_argument('--name', required=True); parser.add_argument('--receipt', type=Path, required=True)
-    args = parser.parse_args(); checkpoint(args.frame, args.name, args.receipt, args.episode)
+    args = parser.parse_args(); checkpoint(args.frame, args.name, args.receipt, args.episode, args.evidence_frame)
