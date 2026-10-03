@@ -38,6 +38,7 @@ def revealed(t,row,public,label):
         else:raise RuntimeError('faction did not become visible within bounded stock scrolling')
         yield
     finally:
+        current=visible(controls(t),public)
         for attempt in range(32):
             if current==original:break
             current=scroll(t,min(current)<min(original),label+'_restore_'+str(attempt),public,current)
