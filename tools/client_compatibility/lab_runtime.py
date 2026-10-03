@@ -365,7 +365,8 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
     config_path = folder / "WTF/Config.wtf"
     import re
     config = config_path.read_text()
-    for name, value in {"portal": "127.0.0.1", "realmlist": "127.0.0.1:13724", "useClassicGuildUI": "1"}.items():
+    for name, value in {"portal": "127.0.0.1", "realmlist": "127.0.0.1:13724", "useClassicGuildUI": "1",
+                        "gxApi": "D3D11"}.items():
         line = f'SET {name} "{value}"'
         pattern = rf"(?m)^SET {name} .*$"
         config = re.sub(pattern, line, config) if re.search(pattern, config) else config + "\n" + line + "\n"
@@ -388,7 +389,10 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
         if not launcher or not game_account or not sso_ticket.startswith("TC-"):
             raise ValueError("SSO requires the local launcher and a lab account")
         env.update(WM_PORTAL="127.0.0.1:1119", WM_WEB_TOKEN=sso_ticket, WM_GAME_ACCOUNT=game_account)
-    executable = [str(folder / "WowClassic.exe")]
+    # Config.wtf can retain the client's automatic D3D12 choice after a run.
+    # Pin the isolated harness to DXVK/D3D11 for repeatable graphics recovery.
+    # Both launcher and direct-login paths pass the flag to the game itself.
+    executable = [str(folder / "WowClassic.exe"), "-d3d11"]
     if launcher:
         executable = [str(root / "bin/launcher-game.exe"), "--exe",
             "Z:" + str(folder / "WowClassic.exe").replace("/", "\\"), "--working-dir",
@@ -396,8 +400,9 @@ def start_client(launcher: bool = False, sso_ticket: str | None = None, game_acc
             "--version-url", "http://m.gamefreedom.org/w/60895/versions",
             "--cdn-url", "http://m.gamefreedom.org/w/60895/cdn",
             "--realmlist-url", "127.0.0.1", "--locale", "enUS"]
+        executable.extend(["--", "-d3d11"])
         if sso_ticket:
-            executable.extend(["--", "-launcherlogin", "-uid", "WoW"])
+            executable.extend(["-launcherlogin", "-uid", "WoW"])
     # Gamescope owns host X sockets; put only Wine in the data overlay namespace.
     command = ["gamescope", "-w", "1280", "-h", "720", "-W", "1280",
         "-H", "720", "-r", "30", "-o", "15", "--backend", "sdl", "--",
