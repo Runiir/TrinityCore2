@@ -30,7 +30,9 @@ void CombatChanges::mask(std::array<std::uint32_t, 46> &mask) const
     auto set = [&](unsigned bit) { mask.at(bit / 32) |= 1u << (bit % 32); };
     for (auto const &[bit, value] : percentages)
     {
-        set(32);
+        // Scalar combat fields50..54 are gated by38. Bit32 is the
+        // AccountBankCoinage child, not the parent of this group.
+        set(38);
         set(bit);
     }
     for (unsigned i = 0; i < 7; ++i)

@@ -1,7 +1,7 @@
 """Independent pinned 4.4.2 ranged and crit fields, including sparse resets.
 
 WPP28fc3d1 UpdateFieldsHandler442: Unit ranged scalar46 plus its valid third
-attack-array entry175; Active crit50/51/52/54 under32, schools under281.
+attack-array entry175; Active crit50/51/52/54 under38, schools under281.
 """
 import struct
 import pytest
@@ -57,7 +57,7 @@ def test_crit_sparse_values_include_zero_reset_and_school_parent(codec):
     fields=values();body=result(codec,op='inventory_update',snapshot={'guid':1,'fields':fields},changed=fields,visibility=1)
     assert body,'native crit change was silently dropped'
     r=read_block(body,(1,player_high()),1<<7)
-    assert mask(r,46,True)=={32,50,51,52,54,281,*range(282,289)};r.align()
+    assert mask(r,46,True)=={38,50,51,52,54,281,*range(282,289)};r.align()
     assert r.unpack('4f')==tuple(v for _,_,_,v in SCALARS)
     assert r.unpack('7f')==tuple(i*1.5 for i in range(7));r.end()
 
