@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 204 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 214 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -120,11 +120,11 @@ Fixture: `class_variants`.
 - [x] `talents.glyph_catalog` (qualified variant; [evidence](#warrior_glyph_catalog_search))
 - [x] `talents.glyph_search` (qualified variant; [evidence](#warrior_glyph_catalog_search))
 - [x] `talents.glyph_clear_search` (qualified variant; [evidence](#warrior_glyph_catalog_search))
-- [ ] `talents.glyph_filter_known`
-- [ ] `talents.glyph_filter_unknown`
-- [ ] `talents.glyph_filter_prime`
-- [ ] `talents.glyph_filter_major`
-- [ ] `talents.glyph_filter_minor`
+- [x] `talents.glyph_filter_known` (qualified variant; [evidence](#glyph_learned_filters))
+- [x] `talents.glyph_filter_unknown` (qualified variant; [evidence](#glyph_learned_filters))
+- [x] `talents.glyph_filter_prime` (qualified variant; [evidence](#glyph_type_filters))
+- [x] `talents.glyph_filter_major` (qualified variant; [evidence](#glyph_type_filters))
+- [x] `talents.glyph_filter_minor` (qualified variant; [evidence](#glyph_type_filters))
 - [x] `talents.glyph_learn` (qualified variant; [evidence](#glyph_book_learning))
 - [x] `talents.glyph_apply` (qualified variant; [evidence](#glyph_minor_application))
 - [ ] `talents.glyph_replace`
@@ -295,9 +295,9 @@ Fixture: `quest_variants`.
 - [x] `quests.decline` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.progress` (qualified variant; [evidence](#ordinary_quest_kill_progress))
 - [x] `quests.complete` (qualified variant; [evidence](#ordinary_quest_melee_completion))
-- [ ] `quests.choose_reward`
-- [ ] `quests.reward_item`
-- [ ] `quests.reward_money`
+- [x] `quests.choose_reward` (qualified variant; [evidence](#earned_quest_reward))
+- [x] `quests.reward_item` (qualified variant; [evidence](#earned_quest_reward))
+- [x] `quests.reward_money` (qualified variant; [evidence](#earned_quest_reward))
 - [ ] `quests.escort`
 - [ ] `quests.timed`
 - [ ] `quests.daily`
@@ -333,10 +333,10 @@ Fixture: `map_variants`.
 - [ ] `map.dungeon_floor`
 - [ ] `map.coordinates`
 - [ ] `map.player_position`
-- [ ] `map.tracking_menu`
+- [x] `map.tracking_menu` (qualified variant; [evidence](#minimap_quest_tracking_controls))
 - [ ] `map.world_map_binding`
 - [ ] `map.minimap_zoom`
-- [ ] `map.minimap_tracking`
+- [x] `map.minimap_tracking` (qualified variant; [evidence](#minimap_quest_tracking_controls))
 - [ ] `map.minimap_calendar`
 - [ ] `map.minimap_clock`
 - [ ] `map.minimap_mail`
@@ -1554,7 +1554,7 @@ Remaining limits: Bounded two-site proof, using historical Laya identities. Inde
 
 Primary warrior manually accepts native Guard Thomas quest 52 through stock UI, reads the correctly named wolf 0/8 and unseen Young Forest Bear 0/5 objectives, collapses/reexpands its zone, cancels abandonment, then abandons it. A separate trial declines without accepting. Native/public quest state and complete quest/inventory/money/pose restoration agree, without fallback cleanup.
 
-Remaining limits: Code-controlled fixture inputs qualify client behavior. Objective progress, completion/rewards, sharing, persistence, other questgiver types, eligibility and objective variants remain open.
+Remaining limits: Code-controlled fixture inputs qualify client behavior. Completion and rewards have separately qualified receipts. Sharing, persistence, other questgiver types, eligibility and objective variants remain open.
 
 - [442_interactions_20261003_24.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc), member `evidence/client_interactions_20261003_ui23/manual_quest_accept_11/episode.json`, SHA-256 `d0777925ada8a4ae8be930d95b59912ab50136d45872dd53242baa2bc724b386`.
   Checked cases: `quests.manual_accept` (quest_manual_accept_pass), `quests.manual_collapse` (quest_zone_collapse_pass), `quests.manual_abandon_cancel` (quest_abandon_cancel_pass), `quests.manual_read_log` (quest_log_details_pass), `quests.manual_abandon_confirm` (quest_abandon_pass).
@@ -1601,7 +1601,7 @@ Remaining limits: Other talents/specs/classes, multi-point allocation, reset, du
 
 Complete primary warrior public catalog of 34 glyph IDs/types and three headers, checked against native GlyphProperties. Ordinary Battle search and clearing to the stock Search placeholder restore the catalog.
 
-Remaining limits: Learned glyphs, filters, tooltips, socket positions, placement/removal and effects remain open. Catalog type agreement does not establish the correct GlyphSlot ID mapping.
+Remaining limits: Socket panel, Battle learning/application/removal and stock filters have separate qualified receipts. Other glyphs/classes, tooltips, effects and persistence remain open. Catalog type agreement alone does not establish GlyphSlot mapping.
 
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/talent_glyph_catalog_02/episode.json`, SHA-256 `2a654b0848ea92421b16ff362beff3a3feb3313d469f199b39ba4d02050c4655`.
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/talent_glyph_catalog_02/glyph_catalog_review.json`, SHA-256 `b1c89757271a444870323ce1f31eea6a80ad302aaff8de8b1ab2f85db9d540f8`.
@@ -1610,7 +1610,7 @@ Remaining limits: Learned glyphs, filters, tooltips, socket positions, placement
 
 One quest 52 run earns five bear and eight wolf kills through ordinary melee against existing creatures. Each attack start and native/public/translated credit matches its victim; 8/5 objectives complete and Guard Thomas shows a visible yellow turn-in question mark.
 
-Remaining limits: Reward turn-in failed its capped XP oracle before claiming and remains open. Setup uses native pose staging, so it does not qualify navigation. Repeated swing cadence, damage values, alive-target stop, ranged/spell combat and other marker categories remain open.
+Remaining limits: The original reward attempt failed its capped XP oracle before claiming; a later earned turn-in is qualified separately. Setup uses native pose staging and does not qualify navigation. Repeated swing cadence, damage values, alive-target stop, ranged/spell combat and other marker categories remain open.
 
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/episode.json`, SHA-256 `82dbeca029d751b5a8bd5e8bbe2b7d6e9c41ac9df3d46cce95381f51738c1a22`.
 - [442_interactions_20261003_26.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc), member `evidence/client_interactions_20261003_ui25/quest_reward_03/melee_review.json`, SHA-256 `5345ded64629c637902dd9e8c6d04ed69cb0a151198e860248d67b5fa8536036`.
@@ -1641,3 +1641,39 @@ Remaining limits: Only the owned level-85 warrior Battle socket and one staged p
 
 - [442_interactions_20261003_28.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_28.tar.gz.dvc), member `evidence/client_interactions_20261003_ui27/glyph_remove_03/episode.json`, SHA-256 `809ad4687e996bf28ece2097baae7280a74e3810fae560c65b89621bffaf2e35`.
   Checked cases: `glyphs.remove_dialog` (glyph_remove_dialog_pass), `glyphs.removal` (glyph_removal_pass).
+
+### earned_quest_reward
+
+Primary level-85 warrior resumes an attributable thirteen-kill quest 52 completion, selects the first stock reward and completes the turn-in. Native and public inventory gain item 57523 once and two potions 858; money gains 640 copper. Native and modern completion packets agree. Earned history, items and money are retained; fixture pose is restored.
+
+Remaining limits: Only this plain-item reward and level-capped turn-in are qualified. XP gain, leveling, other reward choices, currencies, persistence and quest variants remain open. Fixture teleports do not qualify navigation. Historical failed request, cleanup and representation guard receipts remain unchanged.
+
+- [442_interactions_20261003_29.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc), member `evidence/client_interactions_20261003_ui28/quest_reward_06/episode.json`, SHA-256 `662df730a997bdd3dab8c398e96cf39f2f035ff604e2cbb3f301a05ac7f5b46e`.
+  Checked cases: `quests.reward_interact` (questgiver_open_pass), `quests.reward_select` (quest_turnin_open_pass), `quests.reward_choice` (quest_reward_choice_pass), `quests.reward_confirm` (quest_reward_pass).
+
+### glyph_learned_filters
+
+Stock Already Known and Unavailable checkboxes produce Battle-only, the other 33 glyphs, and the restored complete 34-glyph catalog. Identities, names, types, learned flags and filter settings agree; native spells, talents, glyphs, inventory and money are preserved.
+
+Remaining limits: Only the owned level-85 warrior catalog with Battle learned is qualified. Other classes, empty/fully learned catalogs, persistence and glyph effects remain open. The failed caption trial and separate restoration are retained.
+
+- [442_interactions_20261003_29.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc), member `evidence/client_interactions_20261003_ui28/glyph_filters_02/episode.json`, SHA-256 `5daa622d4c8191cdc8f8caab51e74097d618ff4b9891c55023f1a6baba1c56f8`.
+  Checked cases: `glyphs.application_open` (talents_open_pass), `glyphs.filter_menu.known_only` (glyph_filter_menu_pass), `glyphs.filter_unknown.known_only` (glyph_filter_pass), `glyphs.filter_menu.unknown_restore` (glyph_filter_menu_pass), `glyphs.filter_unknown.unknown_restore` (glyph_filter_pass), `glyphs.filter_menu.unknown_only` (glyph_filter_menu_pass), `glyphs.filter_known.unknown_only` (glyph_filter_pass), `glyphs.filter_menu.known_restore` (glyph_filter_menu_pass), `glyphs.filter_known.known_restore` (glyph_filter_pass).
+
+### glyph_type_filters
+
+Ordinary stock Prime, Major and Minor header clicks collapse all types then restore them in reverse order, giving 25/8/0/8/25/34 glyphs with exact type/catalog checks. All five filters and original native spells, talents, glyphs, inventory and money are restored.
+
+Remaining limits: Only the owned level-85 warrior catalog is qualified. Other classes, persistence and glyph effects remain open. Catalog types and socket API types have separate identities.
+
+- [442_interactions_20261003_29.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc), member `evidence/client_interactions_20261003_ui28/glyph_type_filters_01/episode.json`, SHA-256 `092110d03cf1107c7e49bcc64f20385eccfc7c6d9089c22e44f1707e1e085829`.
+  Checked cases: `glyphs.application_open` (talents_open_pass), `glyphs.type_prime.prime_collapse` (glyph_type_filter_pass), `glyphs.type_major.major_collapse` (glyph_type_filter_pass), `glyphs.type_minor.minor_collapse` (glyph_type_filter_pass), `glyphs.type_minor.minor_expand` (glyph_type_filter_pass), `glyphs.type_major.major_expand` (glyph_type_filter_pass), `glyphs.type_prime.prime_expand` (glyph_type_filter_pass).
+
+### minimap_quest_tracking_controls
+
+Ordinary minimap tracking menu clicks enable and disable Low Level Quests. The complete public tracking catalog differs only at that boolean. Quest history, inventory, money, tracking and staged pose return to their exact baselines.
+
+Remaining limits: This qualifies the menu and setting controls only. Enabled screenshots still lack the overhead trivial marker and the captured tracked-status query is unmapped. Other tracking categories, minimap icons and persistence remain open.
+
+- [442_interactions_20261003_29.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc), member `evidence/client_interactions_20261003_ui28/quest_tracking_01/episode.json`, SHA-256 `a18c0253fb47b0c7ab87aea8b66b5dfcd9e5d93d520de300a821df648bc41cf3`.
+  Checked cases: `tracking.menu.enabled` (tracking_menu_pass), `tracking.low_level.enabled` (tracking_filter_pass), `tracking.menu.disabled` (tracking_menu_pass), `tracking.low_level.disabled` (tracking_filter_pass).

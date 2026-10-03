@@ -813,7 +813,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_learned_filters"
     },
     {
       "id": "talents.glyph_filter_unknown",
@@ -822,7 +823,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_learned_filters"
     },
     {
       "id": "talents.glyph_filter_prime",
@@ -831,7 +833,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_type_filters"
     },
     {
       "id": "talents.glyph_filter_major",
@@ -840,7 +843,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_type_filters"
     },
     {
       "id": "talents.glyph_filter_minor",
@@ -849,7 +853,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_type_filters"
     },
     {
       "id": "talents.glyph_learn",
@@ -2136,7 +2141,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "earned_quest_reward"
     },
     {
       "id": "quests.reward_item",
@@ -2145,7 +2151,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "earned_quest_reward"
     },
     {
       "id": "quests.reward_money",
@@ -2154,7 +2161,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "earned_quest_reward"
     },
     {
       "id": "quests.escort",
@@ -2437,7 +2445,8 @@
       "fixture": "map_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "minimap_quest_tracking_controls"
     },
     {
       "id": "map.world_map_binding",
@@ -2464,7 +2473,8 @@
       "fixture": "map_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "minimap_quest_tracking_controls"
     },
     {
       "id": "map.minimap_calendar",
@@ -9690,7 +9700,7 @@
         "quests.abandon_cancel"
       ],
       "scope": "Primary warrior manually accepts native Guard Thomas quest 52 through stock UI, reads the correctly named wolf 0/8 and unseen Young Forest Bear 0/5 objectives, collapses/reexpands its zone, cancels abandonment, then abandons it. A separate trial declines without accepting. Native/public quest state and complete quest/inventory/money/pose restoration agree, without fallback cleanup.",
-      "limits": "Code-controlled fixture inputs qualify client behavior. Objective progress, completion/rewards, sharing, persistence, other questgiver types, eligibility and objective variants remain open.",
+      "limits": "Code-controlled fixture inputs qualify client behavior. Completion and rewards have separately qualified receipts. Sharing, persistence, other questgiver types, eligibility and objective variants remain open.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc",
@@ -9809,7 +9819,7 @@
         "talents.glyph_clear_search"
       ],
       "scope": "Complete primary warrior public catalog of 34 glyph IDs/types and three headers, checked against native GlyphProperties. Ordinary Battle search and clearing to the stock Search placeholder restore the catalog.",
-      "limits": "Learned glyphs, filters, tooltips, socket positions, placement/removal and effects remain open. Catalog type agreement does not establish the correct GlyphSlot ID mapping.",
+      "limits": "Socket panel, Battle learning/application/removal and stock filters have separate qualified receipts. Other glyphs/classes, tooltips, effects and persistence remain open. Catalog type agreement alone does not establish GlyphSlot mapping.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc",
@@ -9834,7 +9844,7 @@
         "quests.giver_complete_marker"
       ],
       "scope": "One quest 52 run earns five bear and eight wolf kills through ordinary melee against existing creatures. Each attack start and native/public/translated credit matches its victim; 8/5 objectives complete and Guard Thomas shows a visible yellow turn-in question mark.",
-      "limits": "Reward turn-in failed its capped XP oracle before claiming and remains open. Setup uses native pose staging, so it does not qualify navigation. Repeated swing cadence, damage values, alive-target stop, ranged/spell combat and other marker categories remain open.",
+      "limits": "The original reward attempt failed its capped XP oracle before claiming; a later earned turn-in is qualified separately. Setup uses native pose staging and does not qualify navigation. Repeated swing cadence, damage values, alive-target stop, ranged/spell combat and other marker categories remain open.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_26.tar.gz.dvc",
@@ -9911,8 +9921,114 @@
           }
         }
       ]
+    },
+    {
+      "id": "earned_quest_reward",
+      "operations": [
+        "quests.choose_reward",
+        "quests.reward_item",
+        "quests.reward_money"
+      ],
+      "scope": "Primary level-85 warrior resumes an attributable thirteen-kill quest 52 completion, selects the first stock reward and completes the turn-in. Native and public inventory gain item 57523 once and two potions 858; money gains 640 copper. Native and modern completion packets agree. Earned history, items and money are retained; fixture pose is restored.",
+      "limits": "Only this plain-item reward and level-capped turn-in are qualified. XP gain, leveling, other reward choices, currencies, persistence and quest variants remain open. Fixture teleports do not qualify navigation. Historical failed request, cleanup and representation guard receipts remain unchanged.",
+      "evidence": [
+        {
+          "member": "evidence/client_interactions_20261003_ui28/quest_reward_06/episode.json",
+          "sha256": "662df730a997bdd3dab8c398e96cf39f2f035ff604e2cbb3f301a05ac7f5b46e",
+          "cases": {
+            "quests.reward_interact": "questgiver_open_pass",
+            "quests.reward_select": "quest_turnin_open_pass",
+            "quests.reward_choice": "quest_reward_choice_pass",
+            "quests.reward_confirm": "quest_reward_pass"
+          },
+          "pointer": "artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "glyph_learned_filters",
+      "operations": [
+        "talents.glyph_filter_known",
+        "talents.glyph_filter_unknown"
+      ],
+      "scope": "Stock Already Known and Unavailable checkboxes produce Battle-only, the other 33 glyphs, and the restored complete 34-glyph catalog. Identities, names, types, learned flags and filter settings agree; native spells, talents, glyphs, inventory and money are preserved.",
+      "limits": "Only the owned level-85 warrior catalog with Battle learned is qualified. Other classes, empty/fully learned catalogs, persistence and glyph effects remain open. The failed caption trial and separate restoration are retained.",
+      "evidence": [
+        {
+          "member": "evidence/client_interactions_20261003_ui28/glyph_filters_02/episode.json",
+          "sha256": "5daa622d4c8191cdc8f8caab51e74097d618ff4b9891c55023f1a6baba1c56f8",
+          "cases": {
+            "glyphs.application_open": "talents_open_pass",
+            "glyphs.filter_menu.known_only": "glyph_filter_menu_pass",
+            "glyphs.filter_unknown.known_only": "glyph_filter_pass",
+            "glyphs.filter_menu.unknown_restore": "glyph_filter_menu_pass",
+            "glyphs.filter_unknown.unknown_restore": "glyph_filter_pass",
+            "glyphs.filter_menu.unknown_only": "glyph_filter_menu_pass",
+            "glyphs.filter_known.unknown_only": "glyph_filter_pass",
+            "glyphs.filter_menu.known_restore": "glyph_filter_menu_pass",
+            "glyphs.filter_known.known_restore": "glyph_filter_pass"
+          },
+          "pointer": "artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "glyph_type_filters",
+      "operations": [
+        "talents.glyph_filter_prime",
+        "talents.glyph_filter_major",
+        "talents.glyph_filter_minor"
+      ],
+      "scope": "Ordinary stock Prime, Major and Minor header clicks collapse all types then restore them in reverse order, giving 25/8/0/8/25/34 glyphs with exact type/catalog checks. All five filters and original native spells, talents, glyphs, inventory and money are restored.",
+      "limits": "Only the owned level-85 warrior catalog is qualified. Other classes, persistence and glyph effects remain open. Catalog types and socket API types have separate identities.",
+      "evidence": [
+        {
+          "member": "evidence/client_interactions_20261003_ui28/glyph_type_filters_01/episode.json",
+          "sha256": "092110d03cf1107c7e49bcc64f20385eccfc7c6d9089c22e44f1707e1e085829",
+          "cases": {
+            "glyphs.application_open": "talents_open_pass",
+            "glyphs.type_prime.prime_collapse": "glyph_type_filter_pass",
+            "glyphs.type_major.major_collapse": "glyph_type_filter_pass",
+            "glyphs.type_minor.minor_collapse": "glyph_type_filter_pass",
+            "glyphs.type_minor.minor_expand": "glyph_type_filter_pass",
+            "glyphs.type_major.major_expand": "glyph_type_filter_pass",
+            "glyphs.type_prime.prime_expand": "glyph_type_filter_pass"
+          },
+          "pointer": "artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "minimap_quest_tracking_controls",
+      "operations": [
+        "map.tracking_menu",
+        "map.minimap_tracking"
+      ],
+      "scope": "Ordinary minimap tracking menu clicks enable and disable Low Level Quests. The complete public tracking catalog differs only at that boolean. Quest history, inventory, money, tracking and staged pose return to their exact baselines.",
+      "limits": "This qualifies the menu and setting controls only. Enabled screenshots still lack the overhead trivial marker and the captured tracked-status query is unmapped. Other tracking categories, minimap icons and persistence remain open.",
+      "evidence": [
+        {
+          "member": "evidence/client_interactions_20261003_ui28/quest_tracking_01/episode.json",
+          "sha256": "a18c0253fb47b0c7ab87aea8b66b5dfcd9e5d93d520de300a821df648bc41cf3",
+          "cases": {
+            "tracking.menu.enabled": "tracking_menu_pass",
+            "tracking.low_level.enabled": "tracking_filter_pass",
+            "tracking.menu.disabled": "tracking_menu_pass",
+            "tracking.low_level.disabled": "tracking_filter_pass"
+          },
+          "pointer": "artifacts/client_harness/442_interactions_20261003_29.tar.gz.dvc",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
     }
   ],
-  "qualified_operations": 204,
+  "qualified_operations": 214,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
