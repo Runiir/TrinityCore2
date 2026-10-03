@@ -129,6 +129,13 @@ def solve(t,contract,baseline,keystones=0):
     if keystones and (not stone or stone[5]<=keystones or not 0<fragment_cost<=contract['quantity']):
         raise RuntimeError('requires an affordable weighted solve and a keystone stack with a remainder')
     def outcome(b,a,s):
+        cast=a.get('player_cast') or {}
+        bar_checks={'native_spell':cast.get('spell')==contract['spell'],
+            'active_cast':cast.get('active') is True,'visible_bar':cast.get('bar_visible') is True,
+            'rendered_name':cast.get('bar_text')==contract['project_name'],
+            'positive_duration':cast.get('finished_ms',0)>cast.get('started_ms',0)}
+        t.receipt['cast_bar_observation']={'status':'archaeology_cast_bar_pass' if all(bar_checks.values()) else
+            'not_qualified_by_this_frame','checks':bar_checks,'public':cast};t.persist()
         deadline=time.monotonic()+18;samples=[]
         while True:
             after=native();history=next((r for r in after['completed'] if r[0]==contract['id']),None)
