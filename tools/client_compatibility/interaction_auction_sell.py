@@ -8,11 +8,11 @@ from .interaction_trial import Trial
 from .interaction_auction import auction_state,open_auction,query_packets
 from .interaction_operations import controls,click_case,point
 from .interaction_inventory_moves import slot_control
-from .interaction_macros import require
+from .interaction_macros import require,edit_case
 from .npc_fixture import NpcFixture
 
 
-def suite(t,npc_point,catalog=False):
+def suite(t,npc_point,catalog=False,capture_post=False):
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=auction_state();fixture=NpcFixture(t.out,t.fixture,8719,2097152)
     items=[r for r in baseline['inventory']['items'] if r[0]==1 and r[3]==4]
@@ -56,6 +56,34 @@ def suite(t,npc_point,catalog=False):
             'escape':{'kind':'key','value':'Escape','description':'Close the auction house.'}},outcome,diagnostic_action='select'),
             'auction_sale_catalog_pass' if catalog else 'auction_sale_selection_pass')
         state,frame=t.observe('sale_selected');t.receipt['sale_selected']={'state':state,'frame':frame,'controls':controls(t)};t.persist()
+        if capture_post:
+            # This probe is limited to the query-only deployed adapter. A future
+            # real transaction needs cancellation/mail restoration instead.
+            from . import lab_runtime as lab
+            from .world import control
+            if t.receipt['runtime']['modern_world']['build']['source_digest']!=control.source_digest():
+                raise RuntimeError('posting capture requires the exact deployed bridge sources')
+            if any('CMSG_AUCTION_SELL_ITEM' in path.read_text() for path in
+                   (lab.REPO/'tools/client_compatibility/native_bridge').glob('*.cpp')):
+                raise RuntimeError('capture-only posting is forbidden once a native transaction adapter exists')
+            fields=[c for c in t.receipt['sale_selected']['controls'] if c['kind']=='EditBox' and not c['name']]
+            if len(fields)!=3:raise RuntimeError('requires the observed three ordinary buyout money fields')
+            gold=min(fields,key=lambda c:c['x'])
+            require(edit_case(t,'auction.set_buyout','Set the buyout price to one gold.',
+                lambda c:c['x']==gold['x'] and c['y']==gold['y'],'1'),'ui_edit_pass')
+            state,frame=t.observe('sale_price_ready');t.receipt['sale_price_ready']={'state':state,'frame':frame};t.persist()
+            sell=state.get('auction',{}).get('sell',{})
+            if sell.get('buyout')!=10000 or not sell.get('post_enabled'):
+                raise RuntimeError('the ordinary sale UI did not accept one gold')
+            since=time.time()
+            def posted(b,a,s):
+                packets=query_packets(t,since);native=auction_state()
+                routed=any(r['name']=='CMSG_AUCTION_SELL_ITEM' and r['direction']=='to_native' for r in packets)
+                return {'status':'auction_post_pass' if s and routed and native['auctions'] else 'client_or_protocol_failure',
+                    'oracle':{'native_routed':routed,'native_after':native,'packets':packets,
+                        'qualified_scope':'capture-only unsupported posting; real posting must include cancellation and mail restoration'}}
+            require(click_case(t,'auction.post_probe','Create the one-gold pants auction.',
+                lambda c:c['text']=='Create Auction',posted),'auction_post_pass')
     finally:
         errors=[]
         try:t.clean_panels()
@@ -70,9 +98,11 @@ def suite(t,npc_point,catalog=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--point',type=int,nargs=2,required=True);p.add_argument('--catalog',action='store_true');a=p.parse_args()
+    p.add_argument('--point',type=int,nargs=2,required=True);p.add_argument('--catalog',action='store_true')
+    p.add_argument('--capture-post',action='store_true');a=p.parse_args()
+    if a.capture_post and not a.catalog:p.error('posting probe requires an attributable complete catalog first')
     if any(not 0<=v<bound for v,bound in zip(a.point,[1280,720])):p.error('requires a bounded observed auctioneer point')
     t=Trial(a.output,controller='code')
-    try:suite(t,a.point,a.catalog);t.receipt['completed']=True
+    try:suite(t,a.point,a.catalog,a.capture_post);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
