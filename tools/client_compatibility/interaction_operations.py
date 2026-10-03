@@ -35,6 +35,17 @@ def controls(trial):
         if state['mode']!='controls':continue
         current=state.get('panels') or []
         current_revision=(tuple(current),state['control_count'],state.get('control_snapshot'))
+        cached=getattr(trial,'control_catalog',None)
+        if state.get('control_snapshot') is not None and cached and cached['revision']==current_revision:
+            # The observer fingerprints the complete current list before paging.
+            # Reuse only an exact list from this Trial/actor, retaining the new
+            # frame that establishes the matching current fingerprint.
+            reused=trial.receipt.setdefault('control_catalog_reuse',[])
+            target=trial.out/('controls_reuse_'+str(len(reused))+'.png');path.replace(target)
+            reused.append({'frame':{'file':target.name,'sha256':__import__('hashlib').sha256(target.read_bytes()).hexdigest()},
+                'sequence':state['sequence'],'control_snapshot':state['control_snapshot'],
+                'control_count':state['control_count'],'source_catalog':cached['source']});trial.persist()
+            return cached['rows']
         if current_revision!=revision:
             pages={};revision=current_revision
         if panels is None:panels=current
@@ -56,7 +67,12 @@ def controls(trial):
             trial.receipt.setdefault('control_frames',{})[digest]={'file':target.name,'observed':observed}
             trial.persist()
         if total is not None and len(pages)==__import__('math').ceil(total/state.get('page_size',18)):
-            return [c for p in sorted(pages) for c in pages[p]]
+            rows=[c for p in sorted(pages) for c in pages[p]]
+            trial.control_catalog={'revision':revision,'rows':rows,'source':
+                {'control_snapshot':state.get('control_snapshot'),'frames':[
+                    key for key,row in trial.receipt.get('control_frames',{}).items()
+                    if row['observed'].get('control_snapshot')==state.get('control_snapshot')]}}
+            return rows
         time.sleep(.1)
     raise RuntimeError('automatic control observation page deadline exceeded')
 
