@@ -100,6 +100,8 @@ int main(int argc, char **argv)
                     state.casts[6]=true;state.visible_auras[7]=true;state.pending_movement[8]=true;
                     state.party_members.insert(9);state.party_leader=2;state.latest_movement={1,2};
                     state.account_times[3]=123;bool callback=false;
+                    state.creature_queries.insert(10);state.creature_query_waiting.insert(11);
+                    state.creature_query_queue.push_back(11);
                     state.native_send=[&](std::string const &,View){callback=true;};
                     finish_logout(state);state.native_send("fixture",{});
                     result=Object{{"last_guid",state.last_logout_guid},{"account_time",state.account_times[3]},
@@ -107,7 +109,8 @@ int main(int argc, char **argv)
                         {"snapshot",state.self_snapshot},{"world_entries",state.visible_units.size()+
                             state.visible_gameobjects.size()+state.inventory_items.size()+state.casts.size()+
                             state.visible_auras.size()+state.pending_movement.size()+state.party_members.size()+
-                            state.latest_movement.size()+state.party_leader}};
+                            state.latest_movement.size()+state.party_leader+state.creature_queries.size()+
+                            state.creature_query_waiting.size()+state.creature_query_queue.size()}};
                 }
                 else if(op=="marker_diagnostic")
                 {

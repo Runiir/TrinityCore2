@@ -21,6 +21,8 @@ struct State
     std::unordered_map<unsigned, Value> casts, visible_auras, pending_movement;
     std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
     std::unordered_set<unsigned> creature_queries, npc_text_queries;
+    std::unordered_set<unsigned> creature_query_waiting;
+    std::deque<unsigned> creature_query_queue;
     std::unordered_set<unsigned> mail_creatures; // Public sender entries from the owned native mail catalog.
     std::unordered_set<unsigned> mail_ids;
     std::uint64_t pending_mailbox=0,mail_target=0; // Granted by a validated native catalog, cleared on close/logout.

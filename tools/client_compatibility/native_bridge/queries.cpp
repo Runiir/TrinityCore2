@@ -2,6 +2,23 @@
 
 namespace bridge
 {
+namespace
+{
+constexpr unsigned CREATURE_IN_FLIGHT=64,CREATURE_PENDING=4096;
+Bytes creature_request(State const &owner,unsigned entry)
+{
+    for(auto const &[guid,record]:owner.visible_units)
+        if(((guid>>32)&0xfffff)==entry)return Writer().pack("IQ",{entry,get(record,"guid")}).finish();
+    return Writer().pack("IQ",{entry,0}).finish();
+}
+void drain_creature_query(State &owner)
+{
+    if(owner.creature_query_queue.empty())return;
+    auto entry=owner.creature_query_queue.front();owner.creature_query_queue.pop_front();
+    owner.creature_query_waiting.erase(entry);owner.creature_queries.insert(entry);
+    owner.native_send("CMSG_CREATURE_QUERY",creature_request(owner,entry));
+}
+}
 Bytes Protocol::gameobject_query(State &owner, View body)
 {
     Reader r(body);
@@ -59,19 +76,19 @@ std::optional<Bytes> Protocol::creature_query(State &owner, View body)
     auto entry = r.take<std::uint32_t>();
     r.end();
     if(!entry || entry&0x80000000)throw std::runtime_error("invalid public creature template identity");
-    if(owner.creature_queries.size()>=256)throw std::runtime_error("creature queries exceed bound");
-    for (auto const &[guid, record] : owner.visible_units)
-        if (((guid >> 32) & 0xfffff) == entry)
-        {
-            owner.creature_queries.insert(entry);
-            return Writer().pack("IQ", {entry, get(record, "guid")}).finish();
-        }
+    if(owner.creature_queries.contains(entry) || owner.creature_query_waiting.contains(entry))return {};
+    if(owner.creature_queries.size()+owner.creature_query_waiting.size()>=CREATURE_PENDING)
+        throw std::runtime_error("creature queries exceed bounded pending queue");
+    if(owner.creature_queries.size()>=CREATURE_IN_FLIGHT)
+    {
+        owner.creature_query_waiting.insert(entry);owner.creature_query_queue.push_back(entry);return {};
+    }
     // Quest objectives and mail senders can reference unspawned creatures.
     // Native HandleCreatureQueryOpcode serves public templates by entry; GUID
     // is diagnostic only. Native data, including a missing-template reply,
     // remains authoritative. This grants no interaction with an unseen unit.
     owner.creature_queries.insert(entry);
-    return Writer().pack("IQ",{entry,0}).finish();
+    return creature_request(owner,entry);
 }
 Reply Protocol::creature_reply(State &owner, View body)
 {
@@ -86,6 +103,7 @@ Reply Protocol::creature_reply(State &owner, View body)
     if (!allow)
     {
         r.end();
+        drain_creature_query(owner);
         return Packet{"SMSG_QUERY_CREATURE_RESPONSE", w.finish()};
     }
     std::array<Bytes, 4> names, alternate;
@@ -128,6 +146,7 @@ Reply Protocol::creature_reply(State &owner, View body)
     if (!cursor.empty())
         w.raw(cursor).put<std::uint8_t>(0);
     w.pack(std::string(quests.size(), 'I'), quests);
+    drain_creature_query(owner);
     return Packet{"SMSG_QUERY_CREATURE_RESPONSE", w.finish()};
 }
 Bytes Protocol::npc_query(State &owner, View body)
