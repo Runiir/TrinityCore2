@@ -115,14 +115,23 @@ def suite(t,point,stage_only,query=None):
                         ('controller_failure' if s!='close' else 'client_or_protocol_failure')},
             diagnostic_action='close'),'auction_close_pass')
     finally:
+        cleanup_errors=[]
         try:
             if search_control:
                 restore_search(t,search_control,search_before)
             t.clean_panels()
-        finally:fixture.restore()
-        after=auction_state();state,frame=t.observe('auction_restored')
-        t.receipt['restoration']={'auction_inventory_money_unchanged':after==baseline,'after':after,'frame':frame};t.persist()
+        except Exception as error:cleanup_errors.append(f'UI cleanup: {type(error).__name__}: {error}')
+        try:fixture.restore()
+        except Exception as error:cleanup_errors.append(f'NPC fixture: {type(error).__name__}: {error}')
+        # A disconnected client must not prevent the independent native check.
+        after=auction_state();restoration={'auction_inventory_money_unchanged':after==baseline,
+            'after':after,'cleanup_errors':cleanup_errors};t.receipt['restoration']=restoration;t.persist()
+        try:
+            state,frame=t.observe('auction_restored');restoration['frame']=frame
+        except Exception as error:cleanup_errors.append(f'Final observation: {type(error).__name__}: {error}')
+        t.persist()
         if after!=baseline:raise RuntimeError('auction opening changed native auctions/inventory/money')
+        if cleanup_errors:raise RuntimeError('; '.join(cleanup_errors))
 
 
 if __name__=='__main__':

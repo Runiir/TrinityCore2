@@ -118,7 +118,7 @@ def checkpoint(directory,name):
         'runs':[{'path':str(p.relative_to(lab.ROOT)),'completed':r['completed'],'failure':r['failure'],
             'controller':r['controller'],'model':r['model'],'revision':r['revision']} for p,r in episodes],
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
-            'The base text-only Laya selects bounded input candidates; this is not open-ended screenshot autonomy.',
+            'Historical Laya trials used bounded candidates; new trials use the code controller and do not measure learned autonomy.',
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
             'The 891-operation plan and 275-binding catalog remain broader than the completed trials.'],
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
@@ -144,7 +144,8 @@ def checkpoint(directory,name):
         (folder/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
         with Live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
             live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','attributed_interaction_trials')
-            live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum(bool(c.get('response')) and 'selected' in c for c in cases))
+            live.log_metric('closed_runs',len(episodes));live.log_metric('model_choices_executed',sum(bool(c.get('response')) and 'selected' in c for _,r in episodes if r['controller']!='code' for c in r['cases']))
+            live.log_metric('code_choices_executed',sum('selected' in c for _,r in episodes if r['controller']=='code' for c in r['cases']))
             for status,count in counts.items():live.log_metric('case_status/'+status,count)
             live.log_metric('native_worldserver_restarts',0);live.log_metric('whole_game_qualified',0);live.next_step()
         with tarfile.open(target,'w:gz',compresslevel=3) as archive:
