@@ -47,6 +47,7 @@ class Inputs:
         self.actor=lab.actor_name()
         self.runtime=lab.owned_process('client')
         self.raw=ctl.Input()
+        self.initialization=None
 
     def validate(self):
         current=lab.owned_process('client')
@@ -54,10 +55,25 @@ class Inputs:
                 (current['pid'],current['start_ticks'])!=(self.runtime['pid'],self.runtime['start_ticks'])):
             raise RuntimeError('input adapter belongs to a different actor or client lifetime')
 
+    def prepare(self):
+        self.validate();monitor=focus()
+        if self.initialization is None:
+            # A new XTEST sender can lose its first event while Xwayland and
+            # Gamescope create/resume its libei virtual device. Warm that
+            # connection with zero pointer displacement, never a gameplay key
+            # or click. Keep this once-per-connection setup inside the actor
+            # lease and on the already verified private display.
+            pointer=self.raw.display.screen().root.query_pointer()
+            self.raw._send(self.raw.X.MotionNotify,x=pointer.root_x,y=pointer.root_y)
+            time.sleep(1)
+            self.initialization={'time':time.time(),'actor':self.actor,
+                'display':monitor['input_isolation']['display'],'event':'MotionNotify',
+                'pointer_displacement':0,'settle_seconds':1,'gameplay_input_replayed':False}
+        return monitor
+
     def invoke(self,name,*args,**kwargs):
         with lease():
-            self.validate()
-            focus()
+            self.prepare()
             return getattr(self.raw,name)(*args,**kwargs)
 
     def key(self,*args,**kwargs):
@@ -71,7 +87,7 @@ class Inputs:
         if len(modifiers)>3 or len(set(modifiers))!=len(modifiers) or any(m not in ['shift','ctrl','alt'] for m in modifiers):
             raise ValueError('unsupported mouse modifier')
         with lease():
-            self.validate();focus();pressed=[]
+            self.prepare();pressed=[]
             try:
                 for name in modifiers:
                     code=self.raw._keycode(self.raw.XK.string_to_keysym(self.raw.MODIFIERS[name]))[0]
@@ -87,7 +103,7 @@ class Inputs:
             not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
             raise ValueError('drag exceeds the owned client input bounds')
         with lease():
-            self.validate();focus();self.raw.move(*start);time.sleep(.1)
+            self.prepare();self.raw.move(*start);time.sleep(.1)
             self.raw._send(self.raw.X.ButtonPress,button)
             try:
                 for i in range(1,11):

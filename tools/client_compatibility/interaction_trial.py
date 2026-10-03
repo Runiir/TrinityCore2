@@ -105,6 +105,8 @@ class Trial:
         self.persist()
 
     def persist(self):
+        if self.io.initialization is not None:
+            self.receipt['input_initialization']=self.io.initialization
         lab.private_write(self.out/'episode.json',json.dumps(self.receipt,indent=2)+'\n')
 
     def observe(self,label):
