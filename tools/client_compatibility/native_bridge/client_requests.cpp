@@ -315,6 +315,18 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         if(!cancelled.empty())owner.native->send(name,cancelled);
         return;
     }
+    if(name=="CMSG_USE_ITEM")
+    {
+        require_world();
+        try {native_send(protocol.item_use(state,body));service.events.event("item_use_forwarded",{{"session",id}});}
+        catch(std::exception const &e)
+        {
+            service.events.event("item_use_translation_rejected",{{"session",id},{"error",e.what()}});
+            try {auto failure=Protocol::item_use_rejected(body);if(!failure.empty())send("SMSG_CAST_FAILED",failure);}
+            catch(...) {}
+        }
+        return;
+    }
     if (name == "CMSG_CAST_SPELL")
     {
         require_world();

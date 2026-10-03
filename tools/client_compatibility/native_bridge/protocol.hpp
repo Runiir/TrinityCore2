@@ -98,6 +98,8 @@ struct Protocol
     Bytes item_update(Value const &snapshot,Value const &changed) const;
     Reply object_updates(State &owner, View body,Array const &players={}) const;
     Packet cast_request(State &owner, View body) const;
+    Packet item_use(State &owner,View body) const;
+    static Bytes item_use_rejected(View body);
     Reply cast_response(State &owner, std::string const &name, View body) const;
     static Reply cast_prepare(State &owner, View body);
     static Bytes cast_rejected(View body);

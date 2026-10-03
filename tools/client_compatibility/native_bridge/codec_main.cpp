@@ -291,6 +291,8 @@ int main(int argc, char **argv)
                                 reply=Protocol::combat_response(state,name,body);
                             else if (fn == "cast_request")
                                 reply = protocol.cast_request(state, body);
+                            else if(fn=="item_use")reply=protocol.item_use(state,body);
+                            else if(fn=="item_use_rejected")reply=Packet{"SMSG_CAST_FAILED",Protocol::item_use_rejected(body)};
                             else if(fn=="extra_marker_go")
                                 reply = protocol.extra_marker_go(state);
                             else if (fn == "cast_response")

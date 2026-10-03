@@ -100,7 +100,8 @@ Reply Protocol::cast_prepare(State &owner, View body)
     auto counter = r.take<std::uint8_t>();
     auto spell = r.take<std::int32_t>();
     auto p = owner.casts.find(counter);
-    if (caster == unit && unit == owner.guid() && p != owner.casts.end() &&
+    if (unit == owner.guid() && p != owner.casts.end() &&
+        (caster==unit || (get(p->second,"item_guid").is_uint64() && caster==integer(get(p->second,"item_guid")))) &&
         signed_integer(get(p->second, "spell")) == spell)
     {
         p->second.as_object()["prepared"] = true;
@@ -159,7 +160,8 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
     auto spell = r.take<std::int32_t>();
     auto flags = r.take<std::uint32_t>(), extra = r.take<std::uint32_t>(), duration = r.take<std::uint32_t>();
     auto p = owner.casts.find(counter);
-    if (caster != owner.guid() || unit != caster || p == owner.casts.end() ||
+    if (p == owner.casts.end() || unit!=owner.guid() ||
+        (caster!=unit && (!get(p->second,"item_guid").is_uint64() || caster!=integer(get(p->second,"item_guid")))) ||
         signed_integer(get(p->second, "spell")) != spell)
         return {};
     auto const &cast = p->second;
@@ -187,7 +189,7 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
             throw std::runtime_error("transport destination is unsupported");
         dest = r.unpack("3f");
     }
-    std::unordered_set<std::uint64_t> allowed = {0, caster, integer(get(cast, "native_target"))};
+    std::unordered_set<std::uint64_t> allowed = {0, unit, integer(get(cast, "native_target"))};
     if ((target_flags & ~(98u | 2048u)) || !allowed.contains(target))
         throw std::runtime_error("unexpected self-cast result targets");
     for (auto hit : hits)
@@ -200,7 +202,7 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
     auto immunity = flags & 0x4000000 ? r.unpack("ii") : Array{0, 0};
     r.end();
     Writer w;
-    w.guid(caster, player_high()).guid(unit, player_high()).guid(get(cast, "server_guid")).guid();
+    w.guid(inventory_guid(caster)).guid(unit, player_high()).guid(get(cast, "server_guid")).guid();
     w.pack("iIIII", {spell, get(cast, "visual"), flags | 0x40000, extra, duration})
         .pack("IfBii", {0, 0, dest_index, immunity[0], immunity[1]});
     w.pack("iB", {0, 0})
