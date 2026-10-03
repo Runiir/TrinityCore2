@@ -53,7 +53,7 @@ def restart(out,version):
     print(json.dumps({'native_unchanged':True,'lobby_frames':report['lobby_frames']}),flush=True)
 
 
-def reconnect(out,name):
+def reconnect(out,name,keyboard_modal=False):
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('deployment process identity changed')
@@ -68,8 +68,12 @@ def reconnect(out,name):
             t.receipt['lobby_inputs']=[]
             for label,point,delay in inputs:
                 frame=shot(t.out/(label+'_before.png'))
-                t.io.click(*point);time.sleep(delay)
-                t.receipt['lobby_inputs'].append({'source':'code_fixture_reconnect','label':label,'point':point,'before_frame':frame})
+                use_key=keyboard_modal and label in ['okay','realm_okay','enter']
+                if use_key:t.io.key('Return',hold=.4)
+                else:t.io.click(*point)
+                time.sleep(delay)
+                t.receipt['lobby_inputs'].append({'source':'code_fixture_reconnect','label':label,
+                    'point':None if use_key else point,'key':'Return' if use_key else None,'before_frame':frame})
                 t.persist()
             state,frame=t.observe('reconnected');entry=actors.session_entry(t.fixture)
             restored=all(state.get(key)==value for key,value in report['baselines'][name].items())
@@ -105,7 +109,9 @@ def recovery(source,out,name):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery'])
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
-    parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path);args=parser.parse_args()
+    parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
+    parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
+    args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
@@ -115,4 +121,4 @@ if __name__=='__main__':
         recovery(args.source,args.output,args.actor)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
-        reconnect(args.output,args.actor)
+        reconnect(args.output,args.actor,args.keyboard_modal)
