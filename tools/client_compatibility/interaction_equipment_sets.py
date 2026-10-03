@@ -34,7 +34,8 @@ def suite(t,phase):
         require(t.step('character.set_open','Open character equipment.',
             {'open':{'kind':'key','value':'c','description':'Press C for character equipment.'}},
             lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
-                'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
+                'client_or_protocol_failure'},diagnostic_action='open',
+            await_state=lambda a:'CharacterFrame' in a['panels']),'character_open_pass')
         if not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)):
             require(click_case(t,'character.set_expand','Expand the character sidebar.',
                 lambda c:c['name']=='CharacterFrameExpandButton',
@@ -49,7 +50,7 @@ def suite(t,phase):
         require(click_case(t,'character.set_new','Open the new equipment-set dialog.',
             lambda c:c['text']=='New Set',
             lambda b,a,s:{'status':'equipment_set_dialog_pass' if s and 'GearManagerPopupFrame' in a['panels'] else
-                'client_or_protocol_failure'}),'equipment_set_dialog_pass')
+                'client_or_protocol_failure'},await_state=lambda a:'GearManagerPopupFrame' in a['panels']),'equipment_set_dialog_pass')
         t.receipt['popup_controls']=controls(t)
         # This stock dialog focuses its name edit box. Return is consumed there,
         # so observer chat commands cannot be used while it is open.
