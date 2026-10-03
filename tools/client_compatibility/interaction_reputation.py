@@ -86,6 +86,13 @@ def open_panel(t):
 
 
 def inspect_faction(t,public,native,faction_id,label):
+    from .reputation_viewport import revealed
+    row=next(r for r in public['rows'] if r.get('id')==faction_id and not r['header'])
+    with revealed(t,row,public,label):
+        _inspect_visible_faction(t,public,native,faction_id,label)
+
+
+def _inspect_visible_faction(t,public,native,faction_id,label):
     row=next(r for r in public['rows'] if r.get('id')==faction_id and not r['header'])
     target=lambda c:c['text']==row['name'] and c['name'].startswith('ReputationBar')
     visible=lambda p:any(c['name']=='ReputationDetailFrame' and c['visible'] for c in p['controls'])
