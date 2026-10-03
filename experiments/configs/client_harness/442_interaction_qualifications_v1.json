@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": "2026-10-03",
+  "reviewed_at": 1791046982.5862582,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -2210,6 +2210,64 @@
           "pointer": "artifacts/client_harness/442_interactions_20261003_36.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui35/tooltip_review.json",
           "sha256": "583e0d9194fa124df730f7b3150c7233164bfa35a36a0a0d391af83e2a98999e",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "stock_equipment_set_creation",
+      "operations": [
+        "character.equipment_set_create"
+      ],
+      "scope": "Normally create the stock HarnessUI36 equipment set for the owned geared warrior. Native GUID assignment and all 19 native slots match the current inventory; public catalog shows the one equipped set and the stock manager rendering is reviewed. Full normal logout/reentry preserves the first created set; a second fresh creation also passes and restores the original collapsed sidebar.",
+      "limits": "One ordinary equipment set, ASCII name, owned warrior gear. Save/use/delete and whole-lifecycle qualification remain open because later failed roots are retained. Specialization assignment, cosmetic/appearance sets, larger catalogs and full-inventory swap failures remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_sets_create_02/episode.json",
+          "sha256": "e76f7a0d18063e9e2b0e83094621dbdd29be64b0df4ef368426b3ecd71d6a38b",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "character.equipment_set_create": "equipment_set_create_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_sets_create_03/episode.json",
+          "sha256": "fc8ceebf84110c30c17c63715d338806c635870a10b4fbff94ffbed66d2ac5e4",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "character.equipment_set_create": "equipment_set_create_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_creation_review.json",
+          "sha256": "eb0c4164bb3b4589351796dbdc72870d00d03bc73e3470e6f6b89cee5fa0d633",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_creation_repeat_review.json",
+          "sha256": "38cfc97ceea8d010b5bf6641bcc5f64f8e02468349d465136b688c58163aca10",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_set_reenter_02/episode.json",
+          "sha256": "bd949907a3782f9e52011a57b937f5e571d05a04ca0162bcd0415b00c90e30f6",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui36/equipment_session_review.json",
+          "sha256": "46e4eb487f5e1ac73722db60ea38e5de89ee13c58668e0e2b5a0a47e73e22062",
           "archived_receipt_digest_verified": true,
           "action_frame_digests_verified": true
         }

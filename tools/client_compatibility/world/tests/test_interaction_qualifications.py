@@ -25,7 +25,7 @@ def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidenc
             'quests.persist','map.continent','map.zone','map.zoom_in','map.zoom_out',
             'map.world_map_binding','map.coordinates','map.player_position',
             'map.digsite_overlay','archaeology.continent_map','map.minimap_zoom',
-            'character.equipment_tooltips','talents.glyph_tooltip']:
+            'character.equipment_tooltips','talents.glyph_tooltip','character.equipment_set_create']:
         assert by_id[key]['qualification'] and '- [x] `'+key+'`' in render(data)
     for key in ['raid.assistant_promote','party.full_group_error',
             'talents.glyph_replace','currency.gain_currency','currency.weekly_cap',

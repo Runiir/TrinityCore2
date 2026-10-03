@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI35 stock equipment and learned Battle glyph tooltips are closed and archive/frame reviewed. Two new scoped operations bring the checklist to 255/916. Original glyph-search cleanup failure is retained; source-bound stock-button recovery and fresh whole trial pass. Continue stock equipment sets and character display controls, then every remaining UI family. One shared native worldserver unchanged.",
+  "current": "UI36 stock equipment-set creation is closed and archive/frame reviewed: 58 JSON receipts and 1150 attributed PNGs verified. One scoped operation brings the checklist to 256/916. Save/reload and native equip successes in failed later roots remain unqualified. Exact source-bound recovery restores gear, original set name and sidebar. UI37 runs a new full save/equip/delete lifecycle, then live damage-modifier and stock appearance checks. One shared native worldserver remains unchanged; new trials use ordinary code-controlled inputs.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -125,7 +125,9 @@
     "ui33/archaeology_keystone_solve_01: 16 ordinary actions, one existing Tome, exact 34-fragment/one-keystone spend, new 64444 artifact, completed tooltip and visible three-second Solve bar; DVC34 reviewed",
     "ui34/session_logout_01 and session_reenter_01: ordinary cancel/full logout and reviewed reentry preserve earned archaeology and native/public quest state",
     "ui34/map_navigation_03: nine ordinary actions, public/native planar coordinates, compact zone/continent navigation, exact named owned digsite overlay and reversible minimap zoom; native resources/settings preserved",
-    "ui35/equipment_tooltips_01 and glyph_tooltip_02: three native equipped item identities and learned Battle stock tooltip; 8 JSON/90 attributed PNG hashes archive verified; original glyph focus-cleanup failure retained"
+    "ui35/equipment_tooltips_01 and glyph_tooltip_02: three native equipped item identities and learned Battle stock tooltip; 8 JSON/90 attributed PNG hashes archive verified; original glyph focus-cleanup failure retained",
+    "ui36/equipment_sets_create_02, full session reenter_02 and fresh create_03: normal owned set creation and authoritative all19 slots/public equipped stock row; first created set survives complete logout/reentry. All failed later lifecycle/recovery roots preserved; exact fixture_restore_02 passes. DVC37 archive review verifies 58 JSON and 1150 attributed PNGs.",
+    "ui36/scout_display_settings_inspection_01: concurrent private scout searches show stock Show Helm/Cloak checkboxes; original search/window/native money and equipment restored. Visibility toggles remain unqualified."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -143,6 +145,9 @@
     "Mail COD, text-copy, invoice/HTML, gems, native 12 versus modern 16 attachments, delayed delivery and negative gameplay paths remain pending; player send/return/reply with plain text and exact postage are qualified alongside catalog/read/delete/item/money collection.",
     "Auction empty browse/bid/owned and Sell wildcard catalogs, price entry and one uninterrupted plain buyout-only posting/populated owned row/cancellation/original-GUID return have live evidence. UI22 verifies zero quote, native deposit and charge for cheap one-day pants after isolated native deployment. Populated bids, sorting/paging, bidding/buyout, commodity semantics, other fees/invoices, random suffixes, tainted metadata and negative paths remain pending.",
     "Public city vehicle/passenger create transport is parsed and serialized with captured-packet/targetability regressions. The successful auction retry has no repeated matching live vehicle create; player vehicle control and public boat/elevator travel remain unqualified.",
-    "Trivial marker UI29 passes for one eligible creature on the level-85 warrior. Retired cached single reads, other eligibility categories, game-object questgivers and minimap icon variants remain unqualified. Tracked requests use the native all-visible refresh because 4.3.4 has no subset request."
+    "Trivial marker UI29 passes for one eligible creature on the level-85 warrior. Retired cached single reads, other eligibility categories, game-object questgivers and minimap icon variants remain unqualified. Tracked requests use the native all-visible refresh because 4.3.4 has no subset request.",
+    "Equipment set save/use/delete require a successful fresh complete lifecycle. Failed name input, late equipment observation, early cleanup panel and hover-only-button misses are retained. Source-bound recovery restores exact gear/name/sidebar. Basic stock name/icon menu repaired; specialization assignment, appearance/cosmetics, larger catalogs and full-inventory failures remain open.",
+    "Expanded stock melee DPS shows a nonnumeric value: public damage percentage0 versus native physical school modifier1.29359996. School-modifier create/sparse bridge repair passes824 protocol/authentication and23 sanitizer tests; compiled build is not yet deployed/live-qualified. Item-level0/0 remains a separate open check.",
+    "Stock Show Helm/Show Cloak controls exist and have been visually inspected on the scout. Native flag mutation, public visibility and geared-player rendering remain unqualified."
   ]
 }
