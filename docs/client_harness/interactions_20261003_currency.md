@@ -65,3 +65,29 @@ must restore changed flags, headers and the visible catalog; successful checkbox
 rendering alone is insufficient. Earning/spending, nonzero caps, PvP, other
 currencies and full-session persistence remain separate requirements. Closed
 results and DVC-qualified scopes will be added after their live trials.
+
+The first deployment's flag adapter was corrected in
+`currency_corrected_bridge_deployment_01`. Source revision is
+`b903e2d54a440053dd3c472cfb802f5baca795aa`, source digest
+`957d3237b085e06f6bf52e6e90de6ca1c31655ca16d337e88f183fb195801897`,
+optimized SHA-256 `4f80eab08a17659b0b47aac00894165cb4e750b69c68c7fad367def4318728ec`
+and sanitizer SHA-256 `fbe67da7b0e84322a468ef7570f1eaaef833d90c85c87a53f0ed696cdb160d34`.
+779 full regression checks and 32 focused ASan/UBSan checks pass. Both clients
+reenter with observer v39, intact baselines and unchanged native worldserver.
+Source-bound reentries verify restoration after the two original disconnects.
+
+`currency_read_03` passes opening, stock Justice inspection, Dungeon and Raid
+collapse/expand and closing. The earlier two header-oracle failures compared an
+unstable expansion field on currency rows. Installed stock Lua only interprets
+that field on category headers; the corrected comparison preserves every other
+field. All original failures remain in the batch.
+
+`currency_scout_backpack_02` passes Honor watch enable, visible backpack count,
+ordinary reload persistence and disable. `currency_unused_02` passes moving
+Honor into Unused, selecting it there and returning it to Player vs. Player.
+Captured eight-byte requests agree with reversed native fields and exact saved
+flags. Both complete native catalogs, public catalogs, inventory and money are
+restored. Screenshots of inspection, collapsed/expanded headers, watched bag,
+unused destination and restored checkboxes are reviewed. These are bounded
+zero-balance stock controls; earning, spending, nonzero caps and full-session
+persistence remain open.
