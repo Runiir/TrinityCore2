@@ -35,6 +35,7 @@ Array dbc(std::filesystem::path const &path, unsigned wanted_fields)
 } // namespace
 PublicData::PublicData(std::filesystem::path const &root, std::filesystem::path const &repo)
 {
+    auction_items=load_auction_items(root);
     auto directory = root / "data/dbc/enUS";
     for (auto const &row : dbc(directory / "Faction.dbc", 26))
     {

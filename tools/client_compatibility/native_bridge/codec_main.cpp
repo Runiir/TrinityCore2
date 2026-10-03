@@ -139,6 +139,18 @@ int main(int argc, char **argv)
                         records.push_back(record);
                     result = records;
                 }
+                else if(op=="auction_sparse")
+                {
+                    Object rows;for(auto const &[id,row]:auction_sparse(data("body")))rows[std::to_string(id)]=row;
+                    result=rows;
+                }
+                else if(op=="auction_metadata")
+                {
+                    auto items=load_auction_items(str(get(request,"root")));Object selected;
+                    for(auto const &id:get(request,"ids").as_array())
+                        if(auto found=items.find(integer(id));found!=items.end())selected[std::to_string(integer(id))]=found->second;
+                    result=Object{{"count",items.size()},{"items",selected}};
+                }
                 else if(op=="raid_markers")
                 {
                     RaidMarkers markers;Array output;
@@ -239,6 +251,9 @@ int main(int argc, char **argv)
                 }
                 else if (op == "stateful")
                 {
+                    AuctionItems auction_items;
+                    if(auto const &items=get(request,"auction_items");items.is_object())
+                        for(auto const &[id,item]:items.as_object())auction_items[std::stoul(std::string(id))]=item;
                     State state;
                     state.character = get(request, "character");
                     state.self_snapshot = get(request, "snapshot");
@@ -316,7 +331,7 @@ int main(int argc, char **argv)
                             else if(fn=="auction_request")
                                 reply=auction_request(protocol,state,name,body);
                             else if(fn=="auction_response")
-                                reply=auction_response(protocol,state,name,body);
+                                reply=auction_response(protocol,state,name,body,auction_items);
                             else if(fn=="item_notification")
                                 reply=item_notification(name,body);
                             else if(fn=="repair_request")

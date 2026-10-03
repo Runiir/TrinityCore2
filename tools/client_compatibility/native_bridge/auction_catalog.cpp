@@ -4,9 +4,7 @@
 
 namespace bridge
 {
-namespace
-{
-std::pair<unsigned,Bytes> auction_item(Reader &r)
+NativeAuctionRow read_auction_item(Reader &r)
 {
     auto id=r.take<std::uint32_t>(),entry=r.take<std::uint32_t>();std::vector<Array> enchants;
     for(unsigned slot=0;slot<10;++slot)
@@ -34,8 +32,7 @@ std::pair<unsigned,Bytes> auction_item(Reader &r)
     w.put(minimum).put(increment);if(buyout)w.put(buyout);
     if(bidder)w.guid(bidder,player_high());
     if(bid)w.put(bid);
-    return {id,w.finish()};
-}
+    return {id,entry,count,owner,minimum,increment,buyout,bid,property,w.finish()};
 }
 Reply auction_catalog(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {
@@ -48,7 +45,7 @@ Reply auction_catalog(Protocol const &protocol,State const &owner,std::string co
     std::vector<Bytes> rows;std::unordered_map<unsigned,Bytes> seen;
     for(unsigned i=0;i<count;++i)
     {
-        auto [id,row]=auction_item(r);auto found=seen.find(id);
+        auto parsed=read_auction_item(r);auto id=parsed.id;auto row=std::move(parsed.encoded);auto found=seen.find(id);
         if(found!=seen.end())
         {
             // Native bidder reads append requested IDs and then all current

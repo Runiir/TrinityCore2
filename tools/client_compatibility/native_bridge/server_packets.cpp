@@ -212,7 +212,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {send(*reply);co_return;}
     if ((reply = merchant_response(protocol,state,name,body)))
     {send(*reply);co_return;}
-    if ((reply = auction_response(protocol,state,name,body)))
+    if ((reply = auction_response(protocol,state,name,body,service.data.auction_items)))
     {send(*reply);co_return;}
     if ((reply = item_notification(name,body)))
     {send(*reply);co_return;}

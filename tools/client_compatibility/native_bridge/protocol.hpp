@@ -39,6 +39,7 @@ struct State
     std::uint64_t inspect_target = 0;
     std::uint64_t bank_target = 0; // Granted only by native SMSG_SHOW_BANK.
     std::uint64_t auction_target = 0; // Granted only by native MSG_AUCTION_HELLO.
+    Value auction_browse; // One attributable native paged search at a time.
     Array latest_movement;
     std::function<void(std::string const &, View)> native_send;
     std::uint64_t guid() const

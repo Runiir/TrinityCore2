@@ -1,6 +1,7 @@
 #pragma once
 #include "database.hpp"
 #include "protocol.hpp"
+#include "auction_data.hpp"
 
 namespace bridge
 {
@@ -9,6 +10,7 @@ struct PublicData
     std::unordered_map<unsigned, Array> item_displays, npc_broadcasts;
     std::unordered_map<unsigned, Bytes> broadcasts;
     Array taxi_paths, hotfixes, factions;
+    AuctionItems auction_items;
     PublicData(std::filesystem::path const &root, std::filesystem::path const &repo);
     Bytes available() const;
     Bytes hotfix_request(View body) const;

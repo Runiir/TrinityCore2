@@ -11,8 +11,9 @@ bool auctioneer(Protocol const &protocol,Value const &unit)
     return integer(get(unit,"kind"))==3 && (protocol.field(unit,"UNIT_NPC_FLAGS")&2097152);
 }
 }
-Reply auction_request(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply auction_request(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
+    if(name=="CMSG_AUCTION_BROWSE_QUERY")return auction_browse_request(protocol,owner,name,body);
     if(name!="CMSG_AUCTION_HELLO_REQUEST" && name!="CMSG_AUCTION_LIST_BIDDED_ITEMS" &&
        name!="CMSG_AUCTION_LIST_OWNED_ITEMS")return {};
     Reader r(body);auto guid=owned_unit(owner,r.guid());
@@ -41,8 +42,9 @@ Reply auction_request(Protocol const &protocol,State const &owner,std::string co
     // remains a separate qualification; all native rows are retained.
     return Packet{name=="CMSG_AUCTION_LIST_BIDDED_ITEMS"?"CMSG_AUCTION_LIST_BIDDER_ITEMS":"CMSG_AUCTION_LIST_OWNER_ITEMS",w.finish()};
 }
-Reply auction_response(Protocol const &protocol,State &owner,std::string const &name,View body)
+Reply auction_response(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items)
 {
+    if(name=="SMSG_AUCTION_LIST_RESULT")return auction_browse_response(protocol,owner,name,body,items);
     if(name!="MSG_AUCTION_HELLO")return auction_catalog(protocol,owner,name,body);
     Reader r(body);auto guid=r.take<std::uint64_t>();auto house=r.take<std::uint32_t>();
     auto enabled=r.take<std::uint8_t>();r.end();
@@ -50,6 +52,7 @@ Reply auction_response(Protocol const &protocol,State &owner,std::string const &
     auto found=owner.visible_units.find(guid);
     if(found==owner.visible_units.end() || !auctioneer(protocol,found->second))return {};
     owner.auction_target=enabled?guid:0;
+    owner.auction_browse=nullptr;
     // Native won-item and cancellation mail are immediate. Delayed seller
     // proceeds are a separate auction notification, not either opening delay.
     return Packet{"SMSG_AUCTION_HELLO_RESPONSE",Writer()
