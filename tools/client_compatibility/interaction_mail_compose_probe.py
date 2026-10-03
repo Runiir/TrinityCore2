@@ -20,7 +20,7 @@ def suite(t,point):
         t.receipt['staging']={'state':state,'frame':frame};t.persist()
         open_mailbox(t,point)
         require(click_case(t,'mail.compose_probe','Open the Send Mail tab.',lambda c:c['name']=='MailFrameTab2',
-            lambda b,a,s:{'status':'mail_compose_open_pass' if s and 'SendMailFrame' in a['panels'] else
+            lambda b,a,s:{'status':'mail_compose_open_pass' if s and a.get('mail',{}).get('compose') is not None else
                         ('controller_failure' if not s else 'client_or_protocol_failure')}),'mail_compose_open_pass')
         state,frame=t.observe('compose_controls');rows=controls(t)
         t.receipt['compose_probe']={'state':state,'frame':frame,'controls':rows};t.persist()
