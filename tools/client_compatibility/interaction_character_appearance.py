@@ -37,7 +37,44 @@ def toggle(t,oracle,kind,shown,case_id):
             'oracle':{'checks':checks,'native':native,'expected_shown':shown,'stock_controls':rows}}
     return click_case(t,case_id,'Set '+label+' to '+str(shown)+'.',
         lambda c:c['kind']=='CheckButton' and c.get('context')==label,outcome,
-        await_state=lambda a:a.get('appearance',{}).get(kind)==shown)
+        await_state=lambda a:a.get('appearance',{}).get(kind)==shown and any(
+            c['kind']=='CheckButton' and c.get('context')==label and c.get('checked')==shown for c in controls(t)))
+
+
+def recover(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':raise ValueError('require owned failed appearance episode')
+    old=json.loads(source.read_text());session=actors.session_entry(t.fixture)['session']
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
+    original=old['appearance_baseline']
+    if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or
+        not old.get('native_resources_preserved') or t.fixture['guid']!=2 or resources(oracle)!=old['baseline'] or
+        flags(t,oracle)!=original['native']):raise RuntimeError('cleanup requires the exact failed scout with its unchanged original native fixture')
+    t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},baseline=old['baseline'],
+        appearance_baseline=original,qualified_scope='source-bound stock settings cleanup only');t.persist()
+    try:
+        search=old['search_field'];predicate=lambda c:c['kind']=='EditBox' and point(c)==point(search)
+        require(edit_case(t,'appearance.recovery_search','Restore the original stock settings search.',predicate,search['text']),'ui_edit_pass')
+        def close_settings():
+            require(click_case(t,'appearance.recovery_close','Close stock settings.',lambda c:c['text']=='Close',
+                lambda b,a,s:{'status':'panel_closed_pass' if s and 'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'},
+                await_state=lambda a:'SettingsPanel' not in a['panels']),'panel_closed_pass')
+            t.clean_panels()
+        close_settings();t.execute({'kind':'chat','value':'/reload'})
+        field=open_search(t);predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
+        require(edit_case(t,'appearance.recovery_verify_search','Verify the stock helm setting after normal reload.',predicate,'helm'),'ui_edit_pass')
+        rows=[c for c in controls(t) if c['kind']=='CheckButton' and c.get('context')=='Show Helm']
+        state,frame=t.observe('restored_stock_helm')
+        if len(rows)!=1 or rows[0].get('checked')!=original['state']['helm'] or state['appearance']!=original['state']:
+            raise RuntimeError('reloaded stock visibility setting differs from the original native fixture')
+        t.receipt['stock_restored']={'controls':rows,'state':state,'frame':frame};t.persist()
+        require(edit_case(t,'appearance.recovery_final_search','Restore the original stock search again.',predicate,search['text']),'ui_edit_pass')
+        close_settings()
+    finally:
+        t.receipt['native_after']=resources(oracle);t.receipt['native_resources_preserved']=t.receipt['native_after']==old['baseline']
+        t.receipt['native_visibility_after']=flags(t,oracle);t.persist()
+    if not t.receipt['native_resources_preserved'] or t.receipt['native_visibility_after']!=original['native']:
+        raise RuntimeError('appearance cleanup changed original native resources or flags')
 
 
 def suite(t,scout_diagnostic=False):
@@ -83,7 +120,11 @@ def suite(t,scout_diagnostic=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--scout-diagnostic',action='store_true',help='Owned unarmored scout request/flag probe; does not qualify geared rendering')
+    p.add_argument('--recover-source',type=Path,help='Restore exact failed scout stock settings through closure/reload, without repeating a visibility toggle')
     a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t,a.scout_diagnostic);t.receipt['completed']=True
+    try:
+        if a.recover_source:recover(t,a.recover_source)
+        else:suite(t,a.scout_diagnostic)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
