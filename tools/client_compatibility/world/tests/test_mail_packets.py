@@ -151,13 +151,13 @@ def test_public_mail_sender_queries_work_before_and_after_catalog_and_logout(cod
              {'fn':'creature_query','name':'CMSG_QUERY_CREATURE','body':query.hex()}]
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
-    assert rows[0]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
-    assert rows[2]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
-    assert rows[3]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',99,0).hex()]
+    assert rows[0]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',16128,0).hex()]
+    assert rows[2] is None # Existing outstanding entry is coalesced.
+    assert rows[3]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',99,0).hex()]
     assert rows[4] is None
     # The codec is not a live session. The service's require_world gate still
     # rejects any cache request without an authenticated, entered actor.
-    assert rows[5]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
+    assert rows[5]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',16128,0).hex()]
 
 
 def test_malformed_mail_catalog_cannot_disable_public_template_queries(codec):
@@ -168,8 +168,8 @@ def test_malformed_mail_catalog_cannot_disable_public_template_queries(codec):
                    for entry_ in [32216,16128])
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
-    assert 'error' in rows[1] and rows[2]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',32216,0).hex()]
-    assert rows[3]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
+    assert 'error' in rows[1] and rows[2]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',32216,0).hex()]
+    assert rows[3]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',16128,0).hex()]
 
 
 def test_actual_three_reward_letters_keep_attachment_identity_and_subjects(codec):

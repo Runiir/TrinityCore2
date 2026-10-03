@@ -193,8 +193,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         auto query = Protocol::creature_query(state, body);
         if (query)
             owner.native->send("CMSG_CREATURE_QUERY", *query);
-        else
-            send("SMSG_QUERY_CREATURE_RESPONSE", Writer().raw(body).bits(0, 1).finish());
+        // A coalesced or queued request waits for its authoritative native
+        // response. It must not be answered with a fabricated missing template.
         return;
     }
     if (name == "CMSG_QUERY_NPC_TEXT")
