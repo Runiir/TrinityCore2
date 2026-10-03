@@ -20,7 +20,9 @@
 #include "AuctionHouseBot.h"
 #include "Bag.h"
 #include "CharacterCache.h"
+#include "Client442AuctionDeposit.h"
 #include "Common.h"
+#include "Config.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
 #include "GameTime.h"
@@ -89,6 +91,9 @@ AuctionHouseObject* AuctionHouseMgr::GetAuctionsMapByHouseId(uint8 auctionHouseI
 uint64 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item* pItem, uint32 count)
 {
     uint32 MSV = pItem->GetTemplate()->GetSellPrice();
+
+    if (sConfigMgr->GetBoolDefault("Client442.AuctionDepositRules", false))
+        return Client442AuctionDeposit::Calculate(MSV, time, count);
 
     if (MSV <= 0)
         return AsUnderlyingType(AH_MINIMUM_DEPOSIT) * sWorld->getRate(RATE_AUCTION_DEPOSIT);

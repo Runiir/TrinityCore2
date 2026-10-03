@@ -86,6 +86,7 @@ def prepare_servers() -> None:
                 "Ra.Enable": "0", "SOAP.Enabled": "0", "BotWorld.Enable": "0",
                 "InstantFlightPaths": "1",
                 "Client442.RepairCostRounding": "1",
+                "Client442.AuctionDepositRules": "1",
                 "PlayerBot.Enable": "0", "BotWorld.AutoStart": "0", "BotWorld.AutoStartRecording": "0",
                 "BotWorld.PlayMode.Enable": "0", "BotWorld.RuntimeProfile": '""',
                 "BotWorld.ValidationRoute.Enable": "0", "Appender.Server": "2,3,0,Server.log,a",

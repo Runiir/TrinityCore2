@@ -2326,6 +2326,15 @@ Rate.RepairCost = 1
 Client442.RepairCostRounding = 0
 
 #
+#    Client442.AuctionDepositRules
+#        Description: Use modern auction deposits for plain template sell prices,
+#                     including zero-cost cheap items. Ignores legacy house/rate
+#                     multipliers. Enable only on the isolated 4.4.2 server.
+#        Default:     0 - retain legacy deposits and one-silver minimum
+
+Client442.AuctionDepositRules = 0
+
+#
 #    Rate.Rest.InGame
 #    Rate.Rest.Offline.InTavernOrCity
 #    Rate.Rest.Offline.InWilderness
