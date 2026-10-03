@@ -72,7 +72,8 @@
     "ui18/auction_bids_01: complete empty initial bid catalog agrees with native packets and public BIDS_UPDATED/full_bids state; baseline restored",
     "ui18/auction_owned_02: four code-controlled choices, human-reviewed owned Auctions tab and No items found; native/public complete empty catalog and event agree, full baseline restored",
     "ui19/auction_browse_02: five code-controlled choices, complete empty absent-name search agrees with native/public response and event; original text plus auction/inventory/money/pose restored",
-    "ui19/auction_sell_select_01: four code-controlled choices, existing unbound pants selected through the stock bag button with exact native restoration; item search remains incomplete"
+    "ui19/auction_sell_select_01: four code-controlled choices, existing unbound pants selected through the stock bag button with exact native restoration; item search remains incomplete",
+    "ui20/auction_sell_post_probe_03: complete empty stock Sell catalog and one-gold price entry pass with observer v25; posting captures an unmapped modern request, overall verdict failed; full native auction/inventory/money/pose restored"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

@@ -39,10 +39,11 @@ The [October 2 interaction report](interactions_20261002.md) records the later
 group-frame, role and marker repairs, individual qualifications and remaining gaps.
 The [October 3 auction report](interactions_20261003_auctions.md) records stock
 auction opening, complete empty browse/bid/owned catalogs and the city vehicle-create
-repair. The latest item-search suite passes 632 regression checks and 56 selected
-sanitizer checks, but its live response-key retry still needs qualification.
-Posting and auction transactions remain open; captured failures and cleanup
-receipts are retained.
+repair. The latest item-search suite passes 635 regression checks and 59 selected
+sanitizer checks. Its live empty Sell catalog passes after observer v25 reads the
+stock list's wildcard key; ordinary price entry also works. Posting captures an
+unmapped sale request and remains open alongside other auction transactions.
+Captured failures, observer corrections and cleanup receipts are retained.
 The later bank batch passes 411 regression tests, including nine bank packet tests;
 46 selected bank, peer-service and inventory tests also pass ASan/UBSan. Bank open,
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real

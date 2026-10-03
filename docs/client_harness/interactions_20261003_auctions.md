@@ -55,12 +55,35 @@ pants through their ordinary bag button, with no native mutation. The stock UI
 then remains stuck on "Searching..." because its item-ID search was unmapped.
 The next adapter adds native-backed item-ID/bucket-key reads and base item keys to
 plain owned/bid rows. `auction_sell_post_probe_01` reaches native search and returns
-a modern result but still fails completeness: the response envelope incorrectly
-uses base level one where an item-ID query requires wildcard level zero. No
+a modern result but fails the completeness oracle. Its response envelope uses
+base level one where the pinned item-ID handler uses wildcard level zero. No
 posting input is attempted, and all native state is restored. The source fix now
 echoes a bucket request's key or uses itemID/level zero for an item-ID request.
-Its live retry belongs to the next batch; item-search and posting coverage remain
-open until that retry succeeds.
+
+UI20's `auction_sell_post_probe_02` still fails that oracle, but its screenshot
+shows "No items found", its public `ITEM_SEARCH_RESULTS_UPDATED` event arrives,
+and throttling is ready. Observer v24 queried completeness with the bag item's
+level-one key instead of the stock Sell list's wildcard key. This was an observer
+failure, not evidence that the client ignored the level-zero response. Observer
+v25 reads the stock frame's `listDisplayedItemKey` without changing it, retains
+the original item key separately, and requires the search-results event.
+
+Auction replies also now use the realm connection specified by the pinned
+[opcode connection table](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Protocol/Opcodes.cpp).
+This corrects a separate routing mismatch; it was not established as the cause
+of the earlier completeness failure. Both clients reconnect with observer v25
+and exact money, inventory, equipment and group baselines retained. The native
+worldserver remains unchanged.
+
+`ui20/auction_sell_post_probe_03` now passes the complete empty Sell catalog:
+native request/result, realm reply, wildcard completeness flag, zero rows, ready
+throttling and public results event agree. The ordinary price field accepts one
+gold and enables Create Auction. Clicking it captures a 38-byte modern sale
+request with minimum bid zero, buyout 10,000 copper, 1,440-minute duration and
+one owned item. No native sale request follows, so posting remains a captured
+missing adapter. The overall probe retains its failed verdict. Native auctions,
+both inventories and balances, staged pose and temporary fixture state are fully
+restored. The empty catalog and price entry are qualified separately from posting.
 
 Layouts are checked against the pinned [TrinityCore auction packets](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/AuctionHousePackets.cpp)
 and [4.4.2 WowPacketParser auction parser](https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/AuctionHandler.cs).
@@ -92,8 +115,10 @@ checks; a further four-test sanitizer run includes the added native visibility
 and targetability case. These are protocol checks, not unique feature counts.
 The browse suite passes 617 full checks and 45 selected sanitizer checks. The
 subsequent item-search suite passes 632 full checks and 56 selected sanitizer
-checks before the live response-key correction. That correction still requires
-its own checks and live retry.
+checks before the live response-key correction. UI20's corrected-key full suite
+passes 635 checks and 59 selected ASan/UBSan checks. The realm-routing full suite
+also passes 635 checks. These offline suites do not establish live catalog or
+transaction coverage; the physical trials remain separate evidence.
 
 - The initial open failed before the hello translator existed.
 - The first focused catalog sanitizer command named a nonexistent test file;
@@ -118,6 +143,9 @@ its own checks and live retry.
   state. Explicit browse-kind initialization fixes this. The corrected focused
   run passes 37 checks, followed by the 632-check full suite. These failures are
   retained separately from the later live wildcard response-key failure.
+- UI20's second posting probe fails before any price or posting input. Its
+  completion assertion uses the wrong public search key. The original receipt
+  and a visual-review correction remain preserved; observer v25 fixes the read.
 
 ## Reproduction and storage
 
@@ -139,6 +167,8 @@ The closed UI18 batch is tracked by
 `artifacts/client_harness/442_interactions_20261003_19.tar.gz.dvc`.
 The closed UI19 batch uses
 `artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc`.
+The closed UI20 batch uses
+`artifacts/client_harness/442_interactions_20261003_21.tar.gz.dvc`.
 The original UI18/UI19 tracking counter compared the persisted controller name
 to the short name `code` and therefore reported zero code choices. Their immutable
 episode receipts each confirm 20 code inputs and zero model inputs. The correction
