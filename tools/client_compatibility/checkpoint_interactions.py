@@ -67,6 +67,21 @@ SAFE_BODY_NAMES={
     'SMSG_ALL_ACHIEVEMENT_DATA','SMSG_CRITERIA_UPDATE','SMSG_ACHIEVEMENT_EARNED'}
 
 
+def initialize(directory):
+    directory=directory.resolve()
+    if directory.parent!=lab.ROOT/'evidence' or not re.fullmatch(r'[A-Za-z0-9_]+',directory.name):
+        raise ValueError('require a new named private interaction batch')
+    native=lab.owned_process('worldserver')
+    if not native:raise RuntimeError('owned native worldserver is absent')
+    directory.mkdir(mode=0o700,exist_ok=False)
+    identity={key:native[key] for key in ['pid','start_ticks']}
+    lab.private_write(directory/'native_server_before.json',json.dumps(identity,indent=2)+'\n')
+    lab.private_write(directory/'batch.json',json.dumps({'schema':'client442_interaction_batch_v1',
+        'started_at':__import__('time').time(),'native_worldserver':identity,
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip()},indent=2)+'\n')
+    print(json.dumps({'directory':str(directory),'native_worldserver':identity}))
+
+
 def checkpoint(directory,name):
     directory=directory.resolve()
     if directory.parent!=lab.ROOT/'evidence' or not re.fullmatch(r'[A-Za-z0-9_]+',name):
@@ -146,8 +161,14 @@ def checkpoint(directory,name):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True);p.add_argument('--name',required=True)
-    a=p.parse_args();checkpoint(a.directory,a.name)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True);p.add_argument('--name')
+    p.add_argument('--initialize',action='store_true');a=p.parse_args()
+    if a.initialize:
+        if a.name:p.error('initialization does not name an archive')
+        initialize(a.directory)
+    else:
+        if not a.name:p.error('checkpoint requires --name')
+        checkpoint(a.directory,a.name)
 
 
 if __name__=='__main__':main()

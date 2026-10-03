@@ -212,3 +212,39 @@ pixi run dvc pull artifacts/client_harness/442_native_bridge_and_cohort_20261002
 
 The inherited checkout has unrelated historical DVC outputs absent locally. Scoped
 status/push checks verify this lab's checkpoints without downloading those datasets.
+
+Start each interaction batch with the owned native server identity, then place
+standalone trial outputs underneath it. Mail examples use the existing visible
+mailbox at the verified 1280x720 point `(640,248)`; review staging after camera or
+UI layout changes. Run physical-input trials one at a time across both actors.
+
+```bash
+pixi run python -m tools.client_compatibility.checkpoint_interactions --initialize --directory ~/.local/share/trinity-client442-lab/evidence/<new-batch>
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_mail_actions --point 640 248 --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/mail_read_delete_01
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_mail_collect --point 640 248 --resource item --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/mail_collect_item_01
+```
+
+Use `--resource money` for the separate money trial. These runners create a
+uniquely tagged native console letter, use Laya for ordinary UI choices and verify
+restoration. Temporary item/money command permissions are revoked afterward.
+They require clean fixtures and preserve failures; resolve a leftover disposable
+letter before creating another. They do not qualify player-to-player send/return,
+COD, copied text, invoices or every attachment variant.
+
+After every run in a batch is closed, commit its code/configuration, checkpoint,
+prune only verified frames, and evict only the named remote-verified archive:
+
+```bash
+pixi run python -m tools.client_compatibility.checkpoint_interactions --directory ~/.local/share/trinity-client442-lab/evidence/<closed-batch> --name 442_<unique-checkpoint>
+pixi run python -m tools.client_compatibility.prune_checkpoint_frames --directory ~/.local/share/trinity-client442-lab/evidence/<closed-batch>
+pixi run python -m tools.client_compatibility.evict_checkpoints 442_<unique-checkpoint>.tar.gz --receipt ~/.local/share/trinity-client442-lab/evidence/<unique-eviction-receipt>.json
+```
+
+Commit the generated `.dvc` pointer and `artifacts/client_harness/.gitignore`.
+The checkpoint and eviction helpers run scoped DVC status/push and remote
+verification. Missing local cache after deliberate eviction is expected. Keep
+small receipts, active journals, required builds and client/model assets. Use
+`checkpoint_run_frames --episode <explicit-closed-episode>` for older closed
+frames or `--evidence-frame <explicit-old-basename>` for historical loose frames;
+those paths retain provenance and require stable sources and verified remote data.
+Never run global DVC cache collection to clean this worktree.
