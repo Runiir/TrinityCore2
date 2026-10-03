@@ -119,18 +119,42 @@ save, reload, helmet displacement, stock set equip, delete and reload, with all
 native resources and the collapsed sidebar restored. A separate source-bound
 inspection confirms the empty stock manager. Immediate equip screenshots can
 precede rendering: the following delete-dialog frame shows the restored helmet.
-These operations await the UI37 DVC checkpoint and archive review before checklist
-qualification. Earlier failed roots remain recorded.
+UI37 is remotely verified in DVC archive 38. Its selected 31 JSON receipts and
+456 attributed frames pass archive verification; save, equip and delete are now
+qualified, taking the checklist to 259/916. The 499 local batch PNGs and verified
+archive/cache copies are removed after remote verification. Earlier failed roots
+remain recorded.
 
 The scout also reproduces a stock visibility failure: `CMSG_SHOWING_HELM` is
 unmapped, so native flags do not change. Exact search closure and normal reload
 restore its original checkbox and native fixture. The new independent bridge
-adds one-byte helm/cloak request translation and sparse PlayerData flag bit 9,
-preserving unrelated flags for both the owner and nearby players. Six positive
-regressions fail before this repair; all 841 protocol/authentication checks and
-28 focused ASan/UBSan checks pass afterwards. No native worldserver rebuild is
-needed. Both actors reconnect to this bridge for fresh damage and visibility
-checks; live qualification remains pending.
+adds one-byte helm/cloak request translation. Six initial regressions fail and
+all 841 protocol/authentication checks and 28 focused ASan/UBSan checks pass after
+that patch. The two sparse-flag regressions only examined the inventory serializer;
+they did not establish that the entire update pipeline lacked flags. The existing
+guild serializer already sends PlayerData bit 9. The duplicate added to inventory
+is removed.
+
+UI38 proves the damage fix: the same native damage fields produce public damage
+percentage 1.2935999631882 and rendered melee DPS 2619.6, matching native
+2619.5782157388157. A separate whole weapon-swap trial exchanges Gurthalak and
+Worn Greatsword through ordinary backpack right-clicks and restores both exact
+item identities, all native resources and the rendered character/stat deltas.
+These new receipts await the UI38 checkpoint before qualification.
+
+The fresh scout visibility trial persists native hidden-helm flag 1024, but
+ShowingHelm remains true. Cleanup cannot emit the restoring request because the
+client still considers the helm shown. This failed whole root and a subsequent
+cleanup guard failure remain open evidence. A pinned
+[Classic protocol implementation](https://github.com/WowLegacyCore/HermesProxy/blob/841a26f5c06679680fd5a396922c293d36e84b71/HermesProxy/World/Client/PacketHandlers/UpdateHandler.cs#L2020)
+maps legacy hide bits into PlayerFlagsEx 0x80/0x100. The legacy PlayerFlags
+positions have modern warmode meanings. The bridge now translates both creation
+and sparse updates into PlayerData bits 9 and 10 and clears extended visibility
+when the native hide bits clear. Thirteen new semantic/wire regressions fail
+against the prior codec; the repaired codec passes 856 protocol/authentication
+checks and 30 focused ASan/UBSan checks. This reference covers earlier Classic
+clients; live 4.4.2 rendering is still required. Only the bridge is rebuilt and
+restarted. The native worldserver process and binary remain unchanged.
 
 Observer v55 tags the stock model controls and reads the camera yaw. Geared
 appearance trials open the stock character view, use ordinary rotation buttons
