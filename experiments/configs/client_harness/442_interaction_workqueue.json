@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI29 tracked quest-status adapter is deployed and trivial marker visual/packet checks pass. Continue reputation catalog/control trials, checkpoint and qualify the closed evidence, then every remaining UI family. Both clients use isolated input; native worldserver unchanged.",
+  "current": "UI29 tracked quest markers, reputation standing/watch/header controls and inactive round trip are closed passes with exact restoration. Checkpoint and qualify the reviewed receipts, prune remote-verified data, then test watched reload persistence and ordinary earned positive/negative standing in UI30 before continuing every remaining UI family. Both clients use isolated input; native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -104,7 +104,10 @@
     "ui28/glyph_filters_02: Already Known and Unavailable stock checkboxes pass one learned, 33 unlearned and restored 34-glyph catalogs. Full filters/native spells/talents/glyphs/inventory/money restored. Wrong Used-caption failure 01 and successful separate cleanup retained.",
     "ui28/glyph_type_filters_01: ordinary Prime/Major/Minor collapse and reverse expansion produce 25/8/0/8/25/34 exact glyph identities; complete original filters/catalog and native character state restored.",
     "ui28/quest_tracking_01: stock minimap menu and Low Level Quests on/off pass public tracking and exact restoration. Overhead trivial marker still absent despite matching native/modern status GUID and 4-to-64 category; both actual two-GUID CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY requests are unmapped. Marker remains open.",
-    "ui29/quest_tracking_02: actual two-GUID tracked reads refresh native visible questgivers. Native Guard Thomas status 4 and modern 64 match its exact visible GUID on both toggles. Reviewed overhead exclamation appears enabled and disappears disabled; exact quest/inventory/money/tracking/pose restoration. No unmatched request or invented eligibility."
+    "ui29/quest_tracking_02: actual two-GUID tracked reads refresh native visible questgivers. Native Guard Thomas status 4 and modern 64 match its exact visible GUID on both toggles. Reviewed overhead exclamation appears enabled and disappears disabled; exact quest/inventory/money/tracking/pose restoration. No unmatched request or invented eligibility.",
+    "ui29/reputation_controls_01 plus watch_recovery_01: native no-watch creation repaired; incorrect scalar delta gate exposed live and restored through a source-bound stock checkbox. Corrective watched gate 70/scalar 97 and glyph gate 102/scalar 127 with optional PetStable presence pass 731 full and 22 sanitizer checks. Earlier mirrored-gate test passes and nonexistent-file sanitizer command retained.",
+    "ui29/reputation_controls_03: exact ten-faction standings and Stormwind detail, native index 19/total 4165, stock watch show/hide and 1165/6000 green bar, Alliance collapse/expand. All native faction rows, public catalog, inventory and money restored. Previous selected-detail toggle oracle failure retained.",
+    "ui29/reputation_inactive_03: ordinary Stormwind inactive move, destination header navigation, reselected checked detail and active restore. All native reputation/public catalog/inventory/money restored. Prior collapsed/expanded destination selection assumptions and source-bound recovery retained; no privileged faction mutation."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

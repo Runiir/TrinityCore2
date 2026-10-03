@@ -104,7 +104,7 @@ and native/client lifetime. It verifies the only native mutation is watch index
 All faction rows, inventory and money are restored. `reputation_controls_02`
 then stops at the stock detail toggle: clicking the already-selected faction
 hides its detail. No native state changes. The runner now tests that close
-explicitly before reopening; fresh watch/header trials need their own closure.
+explicitly before reopening in the next trial.
 
 `reputation_controls_03` closes successfully. Stock watch show/hide preserves
 the exact native Stormwind index 19 and total 4165. The public bar shows
@@ -123,7 +123,9 @@ The next trial's already-expanded destination instead retains selection at its
 new index; its too-strict selection oracle fails, while ordinary cleanup restores
 every baseline. The runner now validates either the correct updated selection
 or a cleared/hidden detail, then independently reselects and verifies the inactive
-faction. Fresh full round-trip qualification remains pending its closed receipt.
+faction. `reputation_inactive_03` closes successfully: ordinary move, destination
+navigation, reselected checked detail and restore pass, with the complete native
+reputation, public catalog, inventory and money baseline restored.
 
 No eligible displayed non-header faction currently permits an at-war toggle.
 The next ordinary-combat trial uses an existing Bloodsail Raider and its native
