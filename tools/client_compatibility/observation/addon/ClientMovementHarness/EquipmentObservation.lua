@@ -16,9 +16,14 @@ function Client442ObserveEquipment()
             spec=read(api.GetEquipmentSetAssignedSpec,id)}
     end
     local pane=PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    local spec=C_SpecializationInfo or {}
     return {count=read(api.GetNumEquipmentSets),sets=rows,
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,
         selected=pane and pane.selectedSetID,
         popup_visible=GearManagerPopupFrame and not not read(GearManagerPopupFrame.IsVisible,GearManagerPopupFrame) or false,
-        helm=read(IsHelmShowing),cloak=read(IsCloakShowing)}
+        helm=read(IsHelmShowing),cloak=read(IsCloakShowing),
+        specialization_apis={legacy_count=type(GetNumSpecializations),legacy_info=type(GetSpecializationInfo),
+            legacy_by_id=type(GetSpecializationInfoByID),namespace_count=type(spec.GetNumSpecializations),
+            namespace_info=type(spec.GetSpecializationInfo),namespace_by_id=type(spec.GetSpecializationInfoByID),
+            talent_groups=read(GetNumTalentGroups),active_group=read(GetActiveTalentGroup)}}
 end
