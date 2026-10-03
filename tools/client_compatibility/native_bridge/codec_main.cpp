@@ -203,6 +203,8 @@ int main(int argc, char **argv)
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "quest_update")
                     result = hex(protocol.quest_block(get(request, "snapshot"), get(request, "changed")));
+                else if (op == "glyph_update")
+                    result = hex(protocol.glyph_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "guild_update")
                     result=hex(protocol.guild_block(get(request,"snapshot"),get(request,"character"),get(request,"changed"),
                         request.as_object().contains("visibility")?integer(get(request,"visibility")):1));
