@@ -139,6 +139,13 @@ The closed UI18 batch is tracked by
 `artifacts/client_harness/442_interactions_20261003_19.tar.gz.dvc`.
 The closed UI19 batch uses
 `artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc`.
+The original UI18/UI19 tracking counter compared the persisted controller name
+to the short name `code` and therefore reported zero code choices. Their immutable
+episode receipts each confirm 20 code inputs and zero model inputs. The correction
+is tracked separately in
+`artifacts/client_harness/442_interaction_tracking_corrections_20261003_01.json.dvc`;
+future checkpoints use the persisted controller names and distinguish a saved
+choice from confirmed input completion.
 Commit source/configuration before checkpointing, verify the DVC remote and
 archive hashes, then prune only that batch's raw frames and evict only its named
 archive/cache object. Keep small receipts locally. The checkpoint records code
