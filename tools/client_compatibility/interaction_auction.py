@@ -62,6 +62,16 @@ def query_result(t,state,since,kind):
                   'ui_clean':clean,'auction':auction,'packets':packets}}
 
 
+def restore_search(t,control,before):
+    state,_=t.observe('search_cleanup_before')
+    if 'AuctionHouseFrame' not in state['panels']:raise RuntimeError('search panel closed before its field restoration')
+    t.receipt['cleanup'].append({'source':'code_fixture_search_cleanup','value':before,'point':control_point(control)})
+    t.execute({'kind':'edit','point':control_point(control),'value':before})
+    restored,frame=t.observe('search_restored');matches=restored.get('auction',{}).get('search_text')==before
+    t.receipt['search_restoration']={'matches':matches,'frame':frame};t.persist()
+    if not matches:raise RuntimeError('search field differs from its original value')
+
+
 def suite(t,point,stage_only,query=None):
     actors.session_entry(t.fixture);t.clean_panels();fixture=NpcFixture(t.out,t.fixture,8719,2097152)
     baseline=auction_state();t.receipt['auction_baseline']=baseline;t.persist()
@@ -95,6 +105,8 @@ def suite(t,point,stage_only,query=None):
             since=time.time()
             require(click_case(t,'auction.search','Search the auction house.',lambda c:c['kind']=='Button' and c['text']=='Search',
                 lambda b,a,s:query_result(t,a,since,'browse') if s else {'status':'controller_failure'}),'auction_catalog_pass')
+        if search_control:
+            restore_search(t,search_control,search_before);search_control=None
         require(t.step('auction.close','Close the auction house.',{
             'close':{'kind':'key','value':'Escape','description':'Close the auction house with Escape.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
@@ -105,14 +117,7 @@ def suite(t,point,stage_only,query=None):
     finally:
         try:
             if search_control:
-                state,_=t.observe('search_cleanup_before')
-                if 'AuctionHouseFrame' not in state['panels']:raise RuntimeError('search panel closed before its field restoration')
-                t.receipt['cleanup'].append({'source':'code_fixture_search_cleanup','value':search_before,'point':control_point(search_control)})
-                t.execute({'kind':'edit','point':control_point(search_control),'value':search_before})
-                restored,frame=t.observe('search_restored')
-                matches=restored.get('auction',{}).get('search_text')==search_before
-                t.receipt['search_restoration']={'matches':matches,'frame':frame};t.persist()
-                if not matches:raise RuntimeError('search field differs from its original value')
+                restore_search(t,search_control,search_before)
             t.clean_panels()
         finally:fixture.restore()
         after=auction_state();state,frame=t.observe('auction_restored')
