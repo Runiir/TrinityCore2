@@ -61,6 +61,9 @@ def decode_history(body):
     assert r.unpack('I')[0]==len(r.data)-r.pos and r.unpack('BBBI')==(1,0,3,1<<7)
     assert mask(r,46,first32=True)=={102,122};r.align()
     assert r.bits(1)==0 # Required optional PetStable presence for gate 102.
+    # The pinned 4.4.2 reader resets its bit cursor on entering ResearchHistory.
+    # Its nested mask starts in a fresh byte, after PetStable presence padding.
+    r.align()
     assert r.bits(2)==3
     count=r.bits(32);assert [r.bits(1) for _ in range(count)]==[1]*count;r.align()
     rows=[]

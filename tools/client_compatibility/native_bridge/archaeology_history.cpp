@@ -25,9 +25,10 @@ Reply research_history(State const &owner,std::string const &name,View body)
     }
     r.end();
     // Pinned ActivePlayerData bits 102/122 contain owner-only ResearchHistory.
-    // Group 102 always writes PetStable presence before the nested history.
+    // The pinned 4.4.2 reader aligns on entering ResearchHistory after the
+    // mandatory PetStable presence bit. Sharing that byte hides its mask.
     Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{1u<<3})
-        .bits(0,14).bits((1u<<6)|(1u<<26),32).flush().bits(0,1);
+        .bits(0,14).bits((1u<<6)|(1u<<26),32).flush().bits(0,1).flush();
     data.bits(3,2).bits(count,32);
     for(unsigned i=0;i<count;++i)data.bits(1,1);
     data.flush();
