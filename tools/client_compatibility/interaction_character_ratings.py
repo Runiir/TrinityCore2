@@ -116,9 +116,10 @@ def suite(t,roundtrip,haste_roundtrip=False):
                 if (row.get('time',0)<started or row.get('session')!=session or
                     row.get('direction')!='from_native' or row.get('name')!='SMSG_UPDATE_OBJECT'):continue
                 for record in records(bytes.fromhex(row['body'])):
+                    if record.get('update_type')!=0 or record.get('guid')!=1:continue
                     fields={str(i):v for i,v in record.get('fields',{}).items() if i in [INDEX['PLAYER_MASTERY'],INDEX['PLAYER_FIELD_MOD_HASTE'],INDEX['PLAYER_FIELD_MOD_RANGED_HASTE'],INDEX['PLAYER_FIELD_MOD_HASTE_REGEN']] or
                         INDEX['PLAYER_FIELD_COMBAT_RATING_1']<=i<INDEX['PLAYER_FIELD_COMBAT_RATING_1']+26}
-                    if record['guid']==1 and record['update_type']==0 and fields:
+                    if fields:
                         updates.append({'time':row['time'],'body_sha256':hashlib.sha256(bytes.fromhex(row['body'])).hexdigest(),'fields':fields})
             if not updates:raise RuntimeError('native sparse ratings are not attributable')
             t.receipt['native_sparse_ratings_updates']=updates;t.persist()

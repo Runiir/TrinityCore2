@@ -310,7 +310,7 @@ after DVC41 remote/archive verification; the unique operation count stays264.
 
 Reproduction uses `interaction_character_combat --helmet-roundtrip --output
 <new-owned-directory>` under the authentication Pixi manifest. For a trace-
-bound pending helmet failure, `interaction_bridge_deploy restart --version57
+bound pending helmet failure, `interaction_bridge_deploy restart --version 57
 --combat-source <failed-episode.json>` carries only its exact native pending
 fixture across deployment. Fresh launcher/realm/character screens must be
 reviewed before world entry. `interaction_character_combat_recovery --source
@@ -325,3 +325,29 @@ unique qualification remains264/916. Failed roots and the source restoration
 retain their original outcomes. The 245 local PNGs
 (327,904,564 bytes) are pruned only after remote/archive verification.
 The committed pointer permits fetching those images for later review.
+
+UI41 maps the native haste multipliers, mastery, main/offhand expertise,
+defense values and 16 supported rating slots. Obsolete or repurposed native
+rating slots stay zero in the modern 32-entry array. The independent bridge
+passes 895 full protocol/auth checks and 62 focused sanitizer checks. The
+pre-fix run has 15 actual failures; one later mixed-packet fixture used the
+wrong modern item GUID high bits and is retained as an oracle failure.
+Observer58 reads the stock public stat APIs without setters.
+
+The whole pre-fix live ratings trial fails because public values are zero
+while native values are positive; its complete cleanup passes. Both clients
+reconnect on the compiled candidate through reviewed launcher/realm/character
+screens, separate private displays and HDMI-1. The native worldserver is
+unchanged. The first post-fix trial fails an overstrict fixture assertion:
+the helmet changes expertise and crit but has no mastery. Native/public and
+reviewed rendered values agree in its initial and removed phases. Its full
+original inventory/money/archaeology/talent/glyph/spell resources and sidebar
+restore pass, but the failed root contributes no qualification.
+
+A fresh complete retry uses the helmet for expertise and ratings updates,
+and equipped belt78416 for haste and mastery updates. Reproduction is
+`interaction_character_ratings --helmet-roundtrip --haste-roundtrip --output
+<new-owned-directory>` under the authentication Pixi manifest. Qualification
+requires the whole trial, native sparse packets, five reviewed stat phases,
+full cleanup and remote/archive verification. Spell-haste sparse updates,
+item level, offscreen stats and other classes remain open.
