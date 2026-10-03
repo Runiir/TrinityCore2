@@ -33,7 +33,8 @@ def detail(t,label):
 
 def suite(t):
     actors.session_entry(t.fixture);t.clean_panels();before=native_state();items=inventory()
-    if before['character']!=('0 0',1,0) or before['talents'] or any(any(r[2:]) for r in before['glyphs']):
+    if (before['character'][0].split()!=['0','0'] or before['character'][1:]!=(1,0) or
+            before['talents'] or any(any(r[2:]) for r in before['glyphs'])):
         raise RuntimeError('requires the registered unallocated primary warrior fixture')
     t.receipt['baseline']={'talents':before,'inventory_money':items};t.persist()
     try:
