@@ -58,6 +58,56 @@ def row(t,name,label,hover=False):
             lambda b,a,s:{'status':'equipment_set_select_pass' if s else 'controller_failure'}),'equipment_set_select_pass')
 
 
+def hover_button(t,kind,id,label):
+    buttons=[c for c in controls(t) if c.get('equipment_set_button')==kind and c.get('equipment_set_id')==id]
+    if len(buttons)!=1:raise RuntimeError('one visible owned equipment-set '+kind+' button is required')
+    # The stock row exposes these small buttons on OnUpdate. Move and settle
+    # before pressing so background frame timing cannot deliver a row click.
+    t.execute({'kind':'hover','value':point(buttons[0])})
+    state,frame=t.observe(label)
+    t.receipt.setdefault('button_hovers',{})[label]={'state':state,'frame':frame};t.persist()
+
+
+def restore_display(t,collapsed):
+    if collapsed is None:return
+    t.clean_panels()
+    require(t.step('sets.display.open','Open character equipment for display restoration.',
+        {'open':{'kind':'key','value':'c','description':'Press C for character equipment.'}},
+        lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
+            'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
+    current=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
+    if current!=collapsed:
+        require(click_case(t,'sets.display.restore','Restore the original character-sidebar layout.',
+            lambda c:c['name']=='CharacterFrameExpandButton',
+            lambda b,a,s:{'status':'character_display_restore_pass' if s and
+                (not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)))==collapsed else
+                'client_or_protocol_failure'}),'character_display_restore_pass')
+    t.receipt['display_restoration']={'target_collapsed':collapsed,'verified':
+        (not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)))==collapsed};t.persist()
+    if not t.receipt['display_restoration']['verified']:raise RuntimeError('original character-sidebar layout remains unrestored')
+    t.clean_panels()
+
+
+def delete_set(t,id,original):
+    row(t,RENAMED,'sets.delete.hover',True)
+    hover_button(t,'delete',id,'sets.delete.button_hover')
+    require(click_case(t,'sets.delete.dialog','Delete the disposable equipment set.',
+        lambda c:c.get('equipment_set_button')=='delete' and c.get('equipment_set_id')==id,
+        lambda b,a,s:{'status':'equipment_set_delete_dialog_pass' if s and 'StaticPopup1' in a['panels'] else
+            'client_or_protocol_failure'}),'equipment_set_delete_dialog_pass')
+    def delete_outcome(b,a,s):
+        data=sets();probe=detail(t,'deleted_set')
+        checks={'selected':s,'native_empty':not data['rows'],'public_empty':probe['count']==0 and not probe['sets'],
+            'resources_preserved':stable(baseline())==original,
+            'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+        return {'status':'equipment_set_delete_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'native':data,'public':probe}}
+    require(click_case(t,'character.equipment_set_delete','Confirm deleting the disposable equipment set.',
+        lambda c:c['name']=='StaticPopup1Button1',delete_outcome),'equipment_set_delete_pass')
+    t.clean_panels();t.execute({'kind':'chat','value':'/reload'})
+    if detail(t,'deleted_set_reload')['count'] or sets()['rows']:raise RuntimeError('set deletion did not persist')
+
+
 def suite(t,source):
     source=source.resolve()
     if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':raise ValueError('require owned set-creation source')
@@ -78,6 +128,8 @@ def suite(t,source):
         probe,valid=public_named(t,'before_set_edit',NAME)
         if not valid:raise RuntimeError('public created set differs from its native catalog')
         id=probe['sets'][0]['id']
+        t.receipt['display_baseline']={'collapsed':collapsed};t.persist()
+        hover_button(t,'edit',id,'sets.save.button_hover')
         require(click_case(t,'sets.save.edit','Edit the owned equipment set.',
             lambda c:c.get('equipment_set_button')=='edit' and c.get('equipment_set_id')==id,
             lambda b,a,s:{'status':'equipment_set_edit_menu_pass' if s and 'ContextMenu' in a['panels'] and not
@@ -118,31 +170,14 @@ def suite(t,source):
                 'oracle':{'checks':checks,'native':data,'public':probe}}
         require(click_case(t,'character.equipment_set_equip','Equip the saved set to restore the helmet.',
             lambda c:c['name']=='PaperDollFrameEquipSet',use_outcome),'equipment_set_equip_pass')
-        row(t,RENAMED,'sets.delete.hover',True)
-        require(click_case(t,'sets.delete.dialog','Delete the disposable equipment set.',
-            lambda c:c.get('equipment_set_button')=='delete' and c.get('equipment_set_id')==id,
-            lambda b,a,s:{'status':'equipment_set_delete_dialog_pass' if s and 'StaticPopup1' in a['panels'] else
-                'client_or_protocol_failure'}),'equipment_set_delete_dialog_pass')
-        def delete_outcome(b,a,s):
-            data=sets();probe=detail(t,'deleted_set')
-            checks={'selected':s,'native_empty':not data['rows'],'public_empty':probe['count']==0 and not probe['sets'],
-                'resources_preserved':stable(baseline())==original,
-                'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
-            return {'status':'equipment_set_delete_pass' if all(checks.values()) else 'client_or_protocol_failure',
-                'oracle':{'checks':checks,'native':data,'public':probe}}
-        require(click_case(t,'character.equipment_set_delete','Confirm deleting the disposable equipment set.',
-            lambda c:c['name']=='StaticPopup1Button1',delete_outcome),'equipment_set_delete_pass')
-        t.clean_panels();t.execute({'kind':'chat','value':'/reload'})
-        if detail(t,'deleted_set_reload')['count'] or sets()['rows']:raise RuntimeError('set deletion did not persist')
+        delete_set(t,id,original)
     finally:
         oracle.poll()
         if not oracle.equipment(1)['guid'] and oracle.slot(*destination)==item:
             t.clean_panels()
             for key in ['c','b']:t.execute({'kind':'key','value':key})
             require(change(t,oracle,item,destination,True),'equipment_change_pass')
-        t.clean_panels()
-        # Reload initializes the stock character frame collapsed. Record this
-        # display boundary rather than silently asserting arbitrary UI state.
+        restore_display(t,collapsed)
         t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
         t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
         if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set roundtrip did not restore native resources')
