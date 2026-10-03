@@ -8,7 +8,7 @@ namespace bridge
 Reply talent_response(std::string const &name,View body)
 {
     if(name!="SMSG_TALENTS_INFO")return {};
-    Reader r(body);auto pet=r.take<std::uint8_t>(),points=r.take<std::uint32_t>();
+    Reader r(body);auto pet=r.take<std::uint8_t>();auto points=r.take<std::uint32_t>();
     if(pet>1 || points>100)throw std::runtime_error("invalid native talent header");
     // Pet talents have a separate native layout and require their own actor
     // qualification. Never interpret that layout as a player specialization.
