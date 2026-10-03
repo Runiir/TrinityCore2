@@ -4,7 +4,8 @@ namespace bridge
 {
 void LoginBarrier::begin()
 {
-    if(pending || !deferred.empty() || !quest_reads.empty() || mail_read)throw std::runtime_error("repeated native login barrier");
+    if(pending || !deferred.empty() || !quest_reads.empty() || !template_reads.empty() || mail_read)
+        throw std::runtime_error("repeated native login barrier");
     pending = true;
     bytes = 0;
 }
@@ -46,8 +47,21 @@ void LoginBarrier::defer_quest_read(Packet packet)
 std::vector<Packet> LoginBarrier::release_quest_reads()
 {
     std::vector<Packet> ready;ready.swap(quest_reads);
+    for(auto &packet:template_reads)ready.push_back(std::move(packet));
+    template_reads.clear();
     if(mail_read){ready.push_back({"MSG_QUERY_NEXT_MAIL_TIME",{}});mail_read=false;}
     return ready;
+}
+void LoginBarrier::defer_template_read(Packet packet)
+{
+    if((packet.first!="CMSG_GAMEOBJECT_QUERY" && packet.first!="CMSG_CREATURE_QUERY") || packet.second.size()!=12)
+        throw std::runtime_error("only static template reads may wait for player creation");
+    Reader r(packet.second);auto entry=r.take<std::uint32_t>();auto guid=r.take<std::uint64_t>();r.end();
+    if(!entry || entry&0x80000000 || (packet.first=="CMSG_GAMEOBJECT_QUERY" && entry>0xfffff) ||
+       (guid && ((guid>>32)&0xfffff)!=entry))throw std::runtime_error("invalid deferred template identity");
+    for(auto const &existing:template_reads)if(existing==packet)return;
+    if(template_reads.size()>=512)throw std::runtime_error("deferred template reads exceed bound");
+    template_reads.push_back(std::move(packet));
 }
 void LoginBarrier::defer_mail_read(Packet packet)
 {

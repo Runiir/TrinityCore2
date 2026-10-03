@@ -69,9 +69,10 @@ int main(int argc, char **argv)
                         if(fn=="begin")barrier.begin();
                         else if(fn=="read")barrier.defer_quest_read({str(get(a,"name")),unhex(str(get(a,"body")))});
                         else if(fn=="mail")barrier.defer_mail_read({str(get(a,"name")),unhex(str(get(a,"body")))});
+                        else if(fn=="template")barrier.defer_template_read({str(get(a,"name")),unhex(str(get(a,"body")))});
                         else if(fn=="release")for(auto const &p:barrier.release_quest_reads())packets.push_back(Array{p.first,hex(p.second)});
                         else throw std::runtime_error("unknown login quest read action");
-                        output.push_back(Object{{"queued",barrier.quest_reads.size()+barrier.mail_read},{"packets",packets}});
+                        output.push_back(Object{{"queued",barrier.quest_reads.size()+barrier.template_reads.size()+barrier.mail_read},{"packets",packets}});
                     }
                     result=output;
                 }
@@ -429,7 +430,7 @@ int main(int argc, char **argv)
                                 continue;
                             }
                             else if (fn == "gameobject_query")
-                                reply = Packet{name, Protocol::gameobject_query(state, body)};
+                                reply = Packet{"CMSG_GAMEOBJECT_QUERY", Protocol::gameobject_query(state, body)};
                             else if (fn == "gameobject_reply")
                                 reply = Protocol::gameobject_reply(state, body);
                             else if (fn == "creature_query")

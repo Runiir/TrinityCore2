@@ -22,6 +22,21 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             throw std::runtime_error("gameplay request outside owned active world");
     };
     auto native_send = [&](Packet const &packet) { owner.native->send(packet.first, packet.second); };
+    if(name=="CMSG_QUERY_GAME_OBJECT" || name=="CMSG_QUERY_CREATURE")
+    {
+        if(active_world.get()!=this || !state.guid())
+        {service.events.event("late_template_query_ignored",{{"session",owner.id},{"name",name}});return;}
+        std::optional<Packet> request;
+        if(name=="CMSG_QUERY_GAME_OBJECT")
+            request=Packet{"CMSG_GAMEOBJECT_QUERY",Protocol::gameobject_query(state,body)};
+        else if(auto query=Protocol::creature_query(state,body))request=Packet{"CMSG_CREATURE_QUERY",*query};
+        if(request)
+        {
+            if(!state.created)owner.login_barrier.defer_template_read(*request);
+            else native_send(*request);
+        }
+        return;
+    }
     if(name=="CMSG_QUERY_NEXT_MAIL_TIME")
     {
         auto request=mail_request(protocol,state,name,body);
@@ -187,16 +202,6 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             native_send(*request);
         return;
     }
-    if (name == "CMSG_QUERY_CREATURE")
-    {
-        require_world();
-        auto query = Protocol::creature_query(state, body);
-        if (query)
-            owner.native->send("CMSG_CREATURE_QUERY", *query);
-        // A coalesced or queued request waits for its authoritative native
-        // response. It must not be answered with a fabricated missing template.
-        return;
-    }
     if (name == "CMSG_QUERY_NPC_TEXT")
     {
         require_world();
@@ -293,12 +298,6 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         if (index >= 144)
             throw std::runtime_error("action bar slot has no native equivalent");
         owner.native->send(name, Writer().pack("BI", {index, action}).finish());
-        return;
-    }
-    if (name == "CMSG_QUERY_GAME_OBJECT")
-    {
-        require_world();
-        owner.native->send("CMSG_GAMEOBJECT_QUERY", Protocol::gameobject_query(state, body));
         return;
     }
     if (name == "CMSG_GAME_OBJ_USE" || name == "CMSG_GAME_OBJ_REPORT_USE" || name == "CMSG_LOOT_ITEM" ||

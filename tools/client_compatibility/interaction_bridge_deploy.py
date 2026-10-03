@@ -28,7 +28,7 @@ def shot(path):
     return {'file':path.name,'sha256':lab.sha256(path),'monitor':monitor}
 
 
-def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None):
+def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
     baselines={}
@@ -36,7 +36,10 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
         with actor(name):
             t=Trial(out/(name+'_before'),controller='code')
             try:
-                if name=='primary' and unavailable_primary_source:
+                if unavailable_deployment_source:
+                    from .interaction_deployment_baseline import unavailable_deployment
+                    baselines[name]=unavailable_deployment(t,unavailable_deployment_source,native,before)
+                elif name=='primary' and unavailable_primary_source:
                     from .interaction_deployment_baseline import unavailable_primary
                     baselines[name]=unavailable_primary(t,unavailable_primary_source,native,before)
                 elif name=='scout' and unavailable_scout_source:
@@ -56,6 +59,9 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
             'observer_version':version,'baselines':baselines,'reconnected':{}}
     if unavailable_primary_source:report['primary_public_precheck_deferred']=True
     if unavailable_scout_source:report['scout_public_precheck_deferred']=True
+    if unavailable_deployment_source:
+        report.update(primary_public_precheck_deferred=True,scout_public_precheck_deferred=True,
+            unavailable_deployment_source=str(unavailable_deployment_source))
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
     lab.stop('modern_world');control.start();report['after']=identity('modern_world')
     if identity('worldserver')!=native: raise RuntimeError('native worldserver changed during bridge deployment')
@@ -139,12 +145,13 @@ if __name__=='__main__':
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
     parser.add_argument('--unavailable-primary-source',type=Path,help='Closed failed reentry baseline for a disconnected primary')
     parser.add_argument('--unavailable-scout-source',type=Path,help='Closed failed scout reentry deployment')
+    parser.add_argument('--unavailable-deployment-source',type=Path,help='Failed deployment on the same verified actor/server lifetimes')
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
-        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source)
+        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         recovery(args.source,args.output,args.actor)

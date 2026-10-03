@@ -1,5 +1,6 @@
 """Carry a failed owned client's verified baseline into a bridge recovery."""
 import json,re
+from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_talents import native_state
 from .interaction_trade import inventory
@@ -63,4 +64,40 @@ def unavailable_scout(t,source,inventory_source,native,bridge):
         recovery_source={'file':str(source),'sha256':lab.sha256(source)},
         inventory_source={'file':str(inventory_source),'sha256':lab.sha256(inventory_source)},
         failure='Client failed reentry; previous public baseline is deferred until reconnect.')
+    t.persist();return baseline
+
+
+def unavailable_deployment(t,source,native,bridge):
+    """Retry a trace-backed failed bridge deployment without fabricating UI state."""
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='deployment.json':
+        raise ValueError('require an owned failed bridge deployment')
+    run=json.loads(source.read_text());name=t.fixture['actor']
+    if run.get('completed') or run['native']!=native or run['after']!=bridge:
+        raise RuntimeError('failed deployment does not bind the current servers')
+    episode_path=source.parent/(name+'_after')/'episode.json'
+    if not episode_path.exists():episode_path=source.parent/(name+'_before')/'episode.json'
+    episode=json.loads(episode_path.read_text())
+    identity=lambda row:{key:row[key] for key in ['pid','start_ticks']}
+    if (not episode.get('finished_at') or episode.get('completed') or episode['actor']!=t.fixture or
+        identity(episode['runtime']['client'])!=identity(lab.owned_process('client'))):
+        raise RuntimeError('unavailable actor differs from the closed failed trial')
+    origin=json.loads((source.parent/'primary_before/episode.json').read_text())
+    snapshot_path=Path(origin['recovery_source']['file']).resolve()
+    if (not snapshot_path.is_relative_to(lab.ROOT/'evidence') or
+        lab.sha256(snapshot_path)!=origin['recovery_source']['sha256']):
+        raise RuntimeError('native baseline source changed')
+    original=json.loads(snapshot_path.read_text())
+    if (original['before']['worldserver']!=identity(native) or
+        json.loads(json.dumps(inventory()))!=original['native_baseline']['inventory']):
+        raise RuntimeError('native inventory or worldserver changed')
+    if name=='primary' and (json.loads(json.dumps(native_state()))!=original['native_baseline']['talents'] or
+                            spells()!=original['native_baseline']['spells']):
+        raise RuntimeError('primary native talents or spells changed')
+    baseline=run['baselines'][name]
+    if baseline['guid']!=t.guid:raise RuntimeError('public baseline belongs to another character')
+    t.receipt.update(public_precheck_deferred=True,inventory_money_verified=True,
+        recovery_source=origin['recovery_source'],
+        unavailable_deployment_source={'file':str(source),'sha256':lab.sha256(source)},
+        failure='Closed failed client entry; public checks deferred until a new reconnect.')
     t.persist();return baseline

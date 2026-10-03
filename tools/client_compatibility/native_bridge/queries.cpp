@@ -25,9 +25,18 @@ Bytes Protocol::gameobject_query(State &owner, View body)
     auto entry = r.take<std::uint32_t>();
     auto identity = r.guid();
     r.end();
-    auto native = owned_gameobject(owner, identity);
-    if (entry != ((native >> 32) & 0xfffff))
+    if(!entry || entry>0xfffff)throw std::runtime_error("invalid public game-object template identity");
+    auto low=integer(identity[0]),high=integer(identity[1]);
+    auto map=(high>>29)&0x1fff;
+    auto cached=(0xf11ull<<52)|(static_cast<std::uint64_t>(entry)<<32)|low;
+    if(!low || low>0xffffffff || identity!=Protocol::modern_guid(cached,map))
         throw std::runtime_error("game-object template identity mismatch");
+    std::uint64_t native=0;
+    // A cold login reuses cached object identities before player creation.
+    // This native handler reads public templates by entry. Only visible objects
+    // receive a native GUID; this never adds a cached object to visibility.
+    if(auto pos=owner.visible_gameobjects.find(cached);pos!=owner.visible_gameobjects.end() &&
+       identity==Protocol::modern_guid(cached,integer(get(pos->second,"map"))))native=cached;
     if (owner.gameobject_queries.size() >= 256 || owner.gameobject_queries[entry].size() >= 64)
         throw std::runtime_error("game object queries exceed bound");
     owner.gameobject_queries[entry].push_back(identity);
