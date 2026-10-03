@@ -99,6 +99,7 @@ def suite(t,scout_diagnostic=False):
             if not scout_diagnostic:
                 render(t,kind,not visibility[kind]);field=open_search(t)
                 predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
+                require(edit_case(t,'appearance.restore_find.'+kind,'Find the stock '+kind+' setting again.',predicate,kind),'ui_edit_pass')
             require(toggle(t,oracle,kind,visibility[kind],'appearance.restore.'+kind),'character_appearance_pass')
             if not scout_diagnostic:
                 render(t,kind,visibility[kind]);field=open_search(t)

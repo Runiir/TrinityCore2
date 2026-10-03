@@ -8,9 +8,11 @@ from tools.client_compatibility.world.tests.test_inventory_packets import mask
 
 
 @pytest.mark.parametrize('name',['CMSG_SHOWING_HELM','CMSG_SHOWING_CLOAK'])
-@pytest.mark.parametrize('shown',[0,1])
-def test_stock_visibility_request_preserves_native_byte_boolean(codec,name,shown):
-    assert call(codec,'appearance_request',name,bytes([shown]))==[name,bytes([shown]).hex()]
+@pytest.mark.parametrize('encoded,expected',[(0,0),(1,1),(0x80,1)])
+def test_stock_visibility_request_normalizes_native_byte_boolean(codec,name,encoded,expected):
+    # Actual 60895 ShowHelm(true) is 0x80. Native ByteBuffer reads signed char
+    # >0, so forwarding the high-bit byte falsely hides the helm again.
+    assert call(codec,'appearance_request',name,bytes([encoded]))==[name,bytes([expected]).hex()]
 
 
 @pytest.mark.parametrize('body',[b'',b'\x00\x00',b'\x01\xff'])
