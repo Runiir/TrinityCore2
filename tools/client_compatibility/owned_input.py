@@ -65,9 +65,16 @@ class Inputs:
             # lease and on the already verified private display.
             pointer=self.raw.display.screen().root.query_pointer()
             self.raw._send(self.raw.X.MotionNotify,x=pointer.root_x,y=pointer.root_y)
+            # Xwayland initializes keyboard emulation independently of pointer
+            # emulation. Release an already-up key without ever pressing it.
+            code=self.raw._keycode(self.raw.XK.string_to_keysym('F12'))[0]
+            if self.raw.display.query_keymap()[code//8]>>(code%8)&1:
+                raise RuntimeError('private input initialization requires F12 to be released')
+            self.raw._send(self.raw.X.KeyRelease,code)
             time.sleep(1)
             self.initialization={'time':time.time(),'actor':self.actor,
-                'display':monitor['input_isolation']['display'],'event':'MotionNotify',
+                'display':monitor['input_isolation']['display'],'events':['MotionNotify','KeyRelease'],
+                'released_key':'already-up F12','key_pressed':False,
                 'pointer_displacement':0,'settle_seconds':1,'gameplay_input_replayed':False}
         return monitor
 
