@@ -142,6 +142,28 @@ Worn Greatsword through ordinary backpack right-clicks and restores both exact
 item identities, all native resources and the rendered character/stat deltas.
 These new receipts await the UI38 checkpoint before qualification.
 
+The first extended-flag restore exposes another wire boundary: the real client
+sends `0x80` for Show Helm true. The native signed-char boolean reader treats
+that byte as false. Two positive regressions fail before the bridge normalizes
+an exact one-byte request to `0x00` or `0x01`; the corrected build passes 858
+protocol/authentication tests and 32 focused sanitizer tests. Both clients
+reconnect through separately reviewed character selection, and source-bound
+normal checkbox restorations recover the original saved/runtime helmet flags
+and survive interface reload. The native worldserver stays unchanged.
+
+The first geared visibility trial hides the helmet correctly, including its
+rendered model, but the runner loses the stock search when it reopens settings.
+That whole root stays failed. The corrected runner refinds the setting after
+each rendered inspection. Source-bound recovery qualifies no additional
+interaction; a fresh whole helmet/cloak trial is required.
+
+Character selection has a separate visibility failure: the captured modern
+enumeration writes zero Flags while the original native fixture has hidden-helm
+flag 1024, and the reviewed selection model still wears its helmet. This path
+remains open. Read-only observer v56 and the normal Shift-hover comparison
+runner are prepared for the next batch; 22 modifier, input and cleanup guards
+pass. Item comparison remains unqualified until its live trial and frame review.
+
 The fresh scout visibility trial persists native hidden-helm flag 1024, but
 ShowingHelm remains true. Cleanup cannot emit the restoring request because the
 client still considers the helm shown. This failed whole root and a subsequent

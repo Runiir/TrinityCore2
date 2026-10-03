@@ -1,4 +1,4 @@
-"""Restore the exact scout visibility changed by a closed failed protocol trial."""
+"""Restore owned visibility changed by a closed failed protocol trial."""
 import json
 from . import actors,lab_runtime as lab
 from .interaction_character_appearance import flags,toggle

@@ -128,7 +128,7 @@ def suite(t,scout_diagnostic=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--scout-diagnostic',action='store_true',help='Owned unarmored scout request/flag probe; does not qualify geared rendering')
-    p.add_argument('--recover-source',type=Path,help='Restore exact failed scout stock settings through closure/reload, without repeating a visibility toggle')
+    p.add_argument('--recover-source',type=Path,help='Failed owned episode: restore scout settings, or its exact helm mutation when bound to --recover-deployment')
     p.add_argument('--recover-deployment',type=Path,help='Completed owned bridge deployment binding the exact failed native helm mutation')
     p.add_argument('--close-source',type=Path,help='Close only the source-bound failed scout settings, preserving its pending native mutation')
     a=p.parse_args();t=Trial(a.output,controller='code')
