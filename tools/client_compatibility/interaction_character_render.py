@@ -2,7 +2,7 @@
 import math
 from .interaction_equipment_sets import detail
 from .interaction_equipment_set_roundtrip import open_character
-from .interaction_operations import controls,point
+from .interaction_operations import controls,point,click_case
 from .interaction_macros import require
 
 
@@ -44,6 +44,12 @@ def rotate(t,target,label):
 
 def render(t,kind,shown):
     label='appearance.render.'+kind+('.shown' if shown else '.hidden')
+    state,_=t.observe(label+'_before_close')
+    if 'SettingsPanel' in state['panels']:
+        require(click_case(t,label+'.close_settings','Close stock settings before inspecting the character.',
+            lambda c:c['text']=='Close',lambda b,a,s:{'status':'panel_closed_pass' if s and
+                'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'},
+            await_state=lambda a:'SettingsPanel' not in a['panels']),'panel_closed_pass')
     open_character(t,label);original=yaw(t,label+'_front')
     try:
         if kind=='cloak':rotate(t,original+math.pi,label+'.back')
