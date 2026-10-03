@@ -10,4 +10,5 @@ ReputationObservation.lua
 CurrencyObservation.lua
 ArchaeologyObservation.lua
 MapObservation.lua
+TooltipObservation.lua
 ClientInteractions.lua
