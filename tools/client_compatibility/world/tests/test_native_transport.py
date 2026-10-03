@@ -1,5 +1,7 @@
 """Regression for the city passenger/vehicle creates that disconnected UI18."""
 import pytest
+import json
+from tools.client_compatibility.world.native_objects import records
 from tools.client_compatibility.world.buffer import Reader,Writer
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 
@@ -55,3 +57,14 @@ def test_both_captured_vehicles_remain_visible_and_targetable(codec):
         units=[],gameobjects=[],actions=actions)
     assert [r[0] for r in replies]==['SMSG_UPDATE_OBJECT','SMSG_UPDATE_OBJECT','CMSG_SET_SELECTION']
     assert replies[-1][1]==guid.to_bytes(8,'little').hex()
+
+
+@pytest.mark.parametrize('body',[VEHICLE,PASSENGER])
+def test_independent_native_observer_reads_captured_city_transport(codec,body):
+    native=records(body)
+    # The independently implemented observer must retain complete native fields
+    # after the transport, without invoking the modern serialization path.
+    assert json.loads(json.dumps(native))==result(codec,op='records',body=body.hex())
+    for malformed in [body[:len(body)//2],body[:-1],body+b'x']:
+        with pytest.raises(ValueError):
+            records(malformed)

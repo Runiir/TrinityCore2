@@ -1,5 +1,6 @@
 """Read native object snapshots. Unsupported movement layouts fail explicitly."""
 from .buffer import Reader
+from .native_transport import Transport
 
 
 def guid(r):
@@ -19,8 +20,6 @@ def movement(r):
     f = {name: r.bits(1) for name in names}
     pauses = r.bits(24)
     f.update({name: r.bits(1) for name in ["birth", "transport", "stationary", "area", "portals", "time"]})
-    if f["transport"]:
-        raise ValueError("unsupported native object transport")
     m = {"flags": 0, "flags2": 0, "position": (0, 0, 0, 0), "pitch": 0, "time": 0}
     if f["movement"]:
         no_flags, no_o = r.bits(1), r.bits(1)
@@ -29,8 +28,7 @@ def movement(r):
         npc_spline, no_pitch, spline, fall, no_elevation = [r.bits(1) for _ in range(5)]
         present[5] = r.bits(1)
         transport, no_time = r.bits(1), r.bits(1)
-        if transport:
-            raise ValueError("unsupported native object transport")
+        unit_transport=Transport(r) if transport else None
         present[4] = r.bits(1)
         spline_info = None
         if spline:
@@ -50,6 +48,7 @@ def movement(r):
         if not r.bits(1): m["flags2"] = r.bits(12)
         def octet(i):
             if present[i]: r.raw(1)
+    go_transport=Transport(r,gameobject=True) if f['transport'] else None
     victim = [r.bits(1) for _ in range(8)] if f["victim"] else []
     animkits = [not r.bits(1) for _ in range(3)] if f["animkit"] else []
     r.align()
@@ -76,6 +75,7 @@ def movement(r):
                 r.raw(4)
             r.raw(16)
         z, = r.unpack("f"); octet(5)
+        if unit_transport:m['transport']=unit_transport.read(r)
         x, pitch_rate = r.unpack("ff"); octet(3); octet(0)
         swim, y = r.unpack("ff"); octet(7); octet(1); octet(2)
         walk, = r.unpack("f")
@@ -87,7 +87,9 @@ def movement(r):
         if not no_pitch: m["pitch"], = r.unpack("f")
         flight_back, = r.unpack("f")
         m.update(position=(x, y, z, orientation), speeds=(walk, run, run_back, swim, swim_back, flight, flight_back, turn_rate, pitch_rate))
-    if f["vehicle"]: r.raw(8)
+    if f["vehicle"]:
+        facing,vehicle=r.unpack('fI');m['vehicle']={'id':vehicle,'facing':facing}
+    if go_transport:m['transport']=go_transport.read(r)
     if f["rotation"]: m["rotation"], = r.unpack("Q")
     if f["area"]: r.raw(65)
     if f["stationary"]:
