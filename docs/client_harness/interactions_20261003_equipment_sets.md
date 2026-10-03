@@ -77,6 +77,28 @@ pass for multi-record catalog bit boundaries and bounded FIFO use attribution.
 Eight existing input/cleanup guards pass. These are protocol and harness checks;
 they do not replace the remaining live set deletion and complete roundtrip.
 
+The source-bound deletion recovery later confirms and deletes the native set,
+and both catalogs remain empty after reload. Its final sidebar observation fails,
+so that whole episode stays failed. A separate display recovery verifies the
+original collapsed layout and unchanged native resources. A fresh creation trial
+then creates HarnessUI36 normally and restores the sidebar. Its reviewed stock
+manager shows the native set equipped. The next roundtrip reaches the name/icon
+dialog, but physical editing leaves its original name unchanged. The original
+cause remains unproven; cleanup restores the layout and native resources.
+Observer v52 records visible edit-field text and keyboard focus. The runner now
+waits for the selected field to have focus before sending text, then waits for the
+requested value without repeating the input. All 13 selected input, cleanup and
+control-catalog guards pass. A fresh complete roundtrip remains required.
+
+A reviewed expanded stats panel also shows a nonnumeric melee DPS value. The
+public damage percentage is zero while the native school modifier is nonzero.
+Two positive wire regressions fail against the retained running bridge. The next
+bridge build translates all seven native school damage modifiers in both full
+creation and sparse updates. All 824 protocol/authentication tests and 23 focused
+ASan/UBSan tests pass. This build is not yet deployed or live-qualified; the
+equipment trial continues on its retained earlier bridge. Item-level display
+remains a separate open check. Neither build changes the native worldserver.
+
 Reproduction uses new owned output directories:
 
 ```sh
