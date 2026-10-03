@@ -224,3 +224,15 @@ beyond the observer's first 16 remain unqualified. Four character-list visibilit
 regressions fail before the C++ mask0xc00 repair. The new target passes 867 full
 protocol/authentication tests and 34 focused sanitizer checks; live selection
 validation is next.
+
+UI39 deploys the compiled character-list repair on both owned clients through
+reviewed fresh launcher/realm/character screens. Three complete normal menu
+logout/reentry phases preserve hidden world/API settings, render the helmet
+hidden on selection, restore both controls, render the helmet shown on selection
+and restore the complete original fixture in the world. Selection flags are
+3072 then zero; all 19 equipment slots and native resources stay unchanged.
+Rear cloak selection rendering remains unsampled. These new receipts await
+DVC40. The next read-only diagnostic pins native crit 10.801665% and ranged
+attack time 2034ms: the bridge omits active-player crit fields and puts ranged
+time into a third melee-array element instead of its separate field. Haste,
+item level and other unsampled stats remain open.

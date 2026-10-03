@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI38 DVC39 remotely synchronized;61 selected JSON and578 attributed frames verified. Fresh weapon and geared visibility qualify three operations:262/916.644 raw PNGs(855137248 bytes) pruned after remote verification. Both isolated clients run observer56; ordinary Shift-hover comparison passes exact native item identities and resource restoration, pending UI39 checkpoint. Character-selection flag repair preserves only0xc00 and passes867 full protocol/authentication and34 focused sanitizer checks; four pre-fix failures retained. Bridge deployment and normal logout/reentry visibility trial next. Native worldserver unchanged.",
+  "current": "UI38 DVC39 remotely verified and raw frames/archive/cache pruned;262/916 qualified. UI39 Shift-hover comparison and three-stage ordinary hidden/logout/reentry/restore/logout/reentry pass, original flags/resources restored. Character selection now preserves0xc00, paired helmet rendering reviewed; rear selection cloak rendering remains unsampled. Both v56 clients reconnect through fresh reviewed launcher sessions; native worldserver unchanged.867 full and34 sanitizer checks pass;4 pre-fix character-list failures retained. UI39 checkpoint next. UI40 diagnostics show native crit10.801665 and ranged attack time2034ms: crit fields are omitted and ranged time is appended to the two-hand-time array instead of its own field. Character item level/haste/ranged stats remain open.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -134,7 +134,9 @@
     "ui38/primary_visibility_mutation_cleanup_01 and scout_visibility_mutation_cleanup_02: exact failed hidden-helm fixtures restored through normal stock checkboxes and reload; native resources and original flags restored. Recovery alone qualifies no new operation.",
     "ui38/character_visibility_02: fresh whole geared helm/cloak hide/show, four paired reviewed renders, exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic extended flags128/0/256/0. All native resources, original flags, settings search, panels and model camera restored. Earlier whole failures remain failed; pending UI38 checkpoint.",
     "ui38/DVC39:61 selected receipts and578 attributed PNGs archive verified; weapon swap and geared helm/cloak roundtrip qualified, damage stats proof augmented;262/916.644 local frames pruned after verification.",
-    "ui39/item_comparison_01: normal private Shift-hover shows exact Worn Greatsword/Gurthalak tooltip identities; release hides comparison; all native resources/panels restored; full frame reviewed; pending checkpoint."
+    "ui39/item_comparison_01: normal private Shift-hover shows exact Worn Greatsword/Gurthalak tooltip identities; release hides comparison; all native resources/panels restored; full frame reviewed; pending checkpoint.",
+    "ui39/character_list_bridge_deploy_01: both v56 owned private clients enter after reviewed realm/character screens; no host activation and HDMI-1 verified; native worldserver unchanged.",
+    "ui39/visibility_session_01: three complete ordinary logout/reentry phases; saved/modern selection flags3072 then0, hidden world/API state persists, original full resources and visibility restored. Character selection bare-head/helmet paired renders reviewed; rear cloak selection rendering unqualified."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -156,6 +158,6 @@
     "Equipment set create/save/use/delete are qualified for the owned catalog through a fresh complete lifecycle and full reentry. Failed name input, late observations and cleanup misses remain historical evidence. Specialization assignment, appearance/cosmetics, larger catalogs and full-inventory failures remain open.",
     "UI38 whole geared melee damage/DPS now matches exact native school modifier and rendered 2619.6; pending archive qualification. Item-level0/0, haste, crit, ranged and unsampled stats remain open.",
     "World Show Helm/Cloak repaired at the Classic extended visibility fields and one-byte boolean boundary. Source-bound original helmet restorations pass; fresh whole geared rendering and both cloak directions pass, qualified through DVC39. Earlier duplicate-flag tests, skipped/failed collection invocations, semantic mismatches, 0x80 restore failure and missing-search cleanup are retained.",
-    "Character-selection enumeration writes zero visibility Flags despite saved hidden-helm flag1024; reviewed primary selection still shows its helm. World visibility repair does not qualify this separate entry path."
+    "Character-selection0xc00 wire repair and paired helmet rendering pass through normal logout/reentry; rear selection cloak rendering, other races/customization and unrelated login flags remain open, pending UI39 checkpoint."
   ]
 }
