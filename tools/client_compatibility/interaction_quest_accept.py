@@ -106,9 +106,15 @@ def suite(t,point,stage_only,action='accept'):
         require(click_case(t,'quests.manual_reexpand','Reopen the collapsed Elwynn Forest quests.',lambda c:c['text'].strip()=='Elwynn Forest',
             lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
                 'client_or_protocol_failure'}),'quest_zone_expand_pass')
-        require(click_case(t,'quests.manual_read_log','Read '+TITLE+' in the quest log.',lambda c:c['text'].strip()==TITLE,
-            lambda b,a,s:{'status':'quest_log_details_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST else
-                'client_or_protocol_failure','oracle':{'selection':a.get('quest_log_selection')}}),'quest_log_details_pass')
+        def read_log(b,a,s):
+            probe=a.get('manual_quest_probe',{});objectives=probe.get('objectives',[])
+            named_bear=any(o.get('required')==5 and o.get('fulfilled')==0 and 'Young Forest Bear' in o.get('text','') for o in objectives)
+            wolf=any(o.get('required')==8 and o.get('fulfilled')==0 and 'Wolf' in o.get('text','') for o in objectives)
+            return {'status':'quest_log_details_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST and named_bear and wolf else
+                'client_or_protocol_failure','oracle':{'selection':a.get('quest_log_selection'),'public_active_quest':probe,
+                    'unseen_bear_name_displayed':named_bear,'wolf_objective_displayed':wolf}}
+        require(click_case(t,'quests.manual_read_log','Read '+TITLE+' and both named kill objectives in the quest log.',
+            lambda c:c['text'].strip()==TITLE,read_log),'quest_log_details_pass')
         state,_=t.observe('manual_abandon_guard')
         if state.get('quest_log_selection',{}).get('abandon_name')!=TITLE:raise RuntimeError('manual quest abandonment is not correctly selected')
         def abandon_prompt(case):

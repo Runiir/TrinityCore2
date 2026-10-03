@@ -19,7 +19,7 @@ def stage(out):
     report={'schema':'client442_native_deployment_v1','started_at':time.time(),
         'native_before':identity('worldserver'),'bridge_before':identity('modern_world'),
         'binary_sha256':lab.sha256(binary),'previous_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
-        'config_sha256':lab.sha256(config),'observer_version':30,'baselines':{},'reconnected':{}}
+        'config_sha256':lab.sha256(config),'observer_version':31,'baselines':{},'reconnected':{}}
     if auction_state()['auctions']:raise RuntimeError('recover outstanding native auctions before deployment')
     report['native_resources']=mailbox_state()
     for name in ['primary','scout']:

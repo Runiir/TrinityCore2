@@ -141,7 +141,7 @@ def test_early_mail_read_deduplicates_and_releases_once_without_mutation(codec):
         assert 'error' in codec(op='login_quest_reads',actions=[invalid])
 
 
-def test_mail_sender_queries_require_native_catalog_provenance_and_clear_on_logout(codec):
+def test_public_mail_sender_queries_work_before_and_after_catalog_and_logout(codec):
     query=struct.pack('<I',16128)
     actions=[{'fn':'creature_query','name':'CMSG_QUERY_CREATURE','body':query.hex()},
              {'fn':'mail_response','name':'SMSG_MAIL_LIST_RESULT','body':catalog([entry(type_=3,sender=16128)]).hex()},
@@ -151,12 +151,16 @@ def test_mail_sender_queries_require_native_catalog_provenance_and_clear_on_logo
              {'fn':'creature_query','name':'CMSG_QUERY_CREATURE','body':query.hex()}]
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
-    assert rows[0] is None
+    assert rows[0]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
     assert rows[2]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
-    assert rows[3:] == [None,None,None]
+    assert rows[3]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',99,0).hex()]
+    assert rows[4] is None
+    # The codec is not a live session. The service's require_world gate still
+    # rejects any cache request without an authenticated, entered actor.
+    assert rows[5]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
 
 
-def test_malformed_mail_catalog_cannot_replace_sender_query_provenance(codec):
+def test_malformed_mail_catalog_cannot_disable_public_template_queries(codec):
     valid=catalog([entry(type_=3,sender=16128)])
     invalid=catalog([entry(type_=3,sender=32216),entry(type_=3,sender=32216)])
     actions=[{'fn':'mail_response','name':'SMSG_MAIL_LIST_RESULT','body':body.hex()} for body in [valid,invalid]]
@@ -164,7 +168,7 @@ def test_malformed_mail_catalog_cannot_replace_sender_query_provenance(codec):
                    for entry_ in [32216,16128])
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
-    assert 'error' in rows[1] and rows[2] is None
+    assert 'error' in rows[1] and rows[2]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',32216,0).hex()]
     assert rows[3]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
 
 

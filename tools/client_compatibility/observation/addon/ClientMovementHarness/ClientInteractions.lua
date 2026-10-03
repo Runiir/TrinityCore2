@@ -122,7 +122,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=30,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=31,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -488,7 +488,13 @@ local function snapshot(viewMode,viewPage)
     -- IsOnQuest remains meaningful when a quest's zone header is collapsed.
     -- Observing this public API does not expand or change the player's log.
     data.manual_quest_probe={id=52,active=call(C_QuestLog and C_QuestLog.IsOnQuest,52),
-        title=trim(call(C_QuestLog and C_QuestLog.GetQuestInfo,52),80)}
+        title=trim(call(C_QuestLog and C_QuestLog.GetQuestInfo,52),80),objectives={}}
+    local manualObjectives=call(C_QuestLog and C_QuestLog.GetQuestObjectives,52)
+    for _,objective in ipairs(type(manualObjectives)=='table' and manualObjectives or {}) do
+        data.manual_quest_probe.objectives[#data.manual_quest_probe.objectives+1]={text=trim(objective.text,120),type=objective.type,
+            fulfilled=objective.numFulfilled,required=objective.numRequired,finished=objective.finished}
+        if #data.manual_quest_probe.objectives>=4 then break end
+    end
     local objectives=call(C_QuestLog and C_QuestLog.GetQuestObjectives,28766)
     for _,objective in ipairs(type(objectives)=='table' and objectives or {}) do
         data.quest_probe.objectives[#data.quest_probe.objectives+1]={text=trim(objective.text,120),type=objective.type,
