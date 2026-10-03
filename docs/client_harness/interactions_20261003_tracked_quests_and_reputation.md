@@ -201,5 +201,28 @@ The full suite passes 731 checks and 19 focused ASan/UBSan checks pass. The
 first commands failed collection (112/2 import errors) because direct `pytest`
 omitted the repository import path; both failed XML results are retained.
 The corrected commands use `python -m pytest` and run the same requested suites.
-Live corrected At War, earned-kill qualification and UI30 checkpointing remain
-open until their own receipts and archived frame reviews pass.
+`atwar_deployment_01` replaces only the bridge and both clients reenter with
+observer v38, intact resources/equipment/groups/profiles and the same native
+worldserver. The scout's separate D3D11 recovery also passes and its process
+loads D3D11 without D3D12. These loading retries do not establish every stall's
+cause or full fleet recovery coverage.
+
+`reputation_atwar_02` passes both stock checkbox clicks. Captured modern requests
+are two bytes and their native translations are five bytes at exact index 1.
+Only Booty Bay changes flags 65 -> 67 -> 65. All native reputation rows,
+inventory/money and public catalog are restored. The checked and unchecked
+screenshots are reviewed in `reputation_atwar_visual_review.json`.
+
+`reputation_combat_03` passes the corrected exact-victim death oracle, normal
+positive/negative standing packets and complete public/native standing agreement.
+It again earns +5 Booty Bay, -22 Bloodsail and +2 to each other goblin faction.
+Pose and inventory/money are restored; earned standings are retained. The same
+map transition that previously stalled completes under D3D11 in this run.
+The notification screenshot is reviewed separately from corpse or loot behavior.
+
+`earned_reputation_read_02` passes inspection of below-viewport Stormwind after
+one ordinary scroll down, then scrolls up to restore exact visible indexes 1–15.
+All public/native standings and the original inventory/money remain unchanged.
+Together with the earlier watched-reload pass, the new results are ready for
+UI30 DVC checkpoint and archived-frame qualification. Currency controls are next;
+remaining player interaction families stay open.

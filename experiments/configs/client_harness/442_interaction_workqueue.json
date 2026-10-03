@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI29 is checkpointed and qualified (220/916). UI30 watched reload passes; initial earned kill has a corrected deselection oracle, and subsequent loading/viewport failures remain retained. Primary D3D11 reentry preserves all native state. At War exposed a uint16/uint32 bridge mismatch, corrected in an independent build with 731 full and 19 sanitizer checks; failed source baseline is restored. Finish scout D3D11 reentry, deploy only the bridge, retry ordinary At War and earned kill, then checkpoint/qualify reviewed passes and continue all remaining UI families. Native worldserver unchanged.",
+  "current": "UI30 watched reload persistence, ordinary At War change/restore, positive/negative earned standing and below-viewport inspection/restoration are closed passes. Primary and scout D3D11 entries recover recorded loading failures; the independent uint16 At War bridge repair passes 731 full and 19 sanitizer checks and both clients reenter with baselines intact. Checkpoint and qualify reviewed UI30 scopes, prune remote-verified data, then continue currency controls and all remaining UI families. Native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -107,7 +107,12 @@
     "ui29/quest_tracking_02: actual two-GUID tracked reads refresh native visible questgivers. Native Guard Thomas status 4 and modern 64 match its exact visible GUID on both toggles. Reviewed overhead exclamation appears enabled and disappears disabled; exact quest/inventory/money/tracking/pose restoration. No unmatched request or invented eligibility.",
     "ui29/reputation_controls_01 plus watch_recovery_01: native no-watch creation repaired; incorrect scalar delta gate exposed live and restored through a source-bound stock checkbox. Corrective watched gate 70/scalar 97 and glyph gate 102/scalar 127 with optional PetStable presence pass 731 full and 22 sanitizer checks. Earlier mirrored-gate test passes and nonexistent-file sanitizer command retained.",
     "ui29/reputation_controls_03: exact ten-faction standings and Stormwind detail, native index 19/total 4165, stock watch show/hide and 1165/6000 green bar, Alliance collapse/expand. All native faction rows, public catalog, inventory and money restored. Previous selected-detail toggle oracle failure retained.",
-    "ui29/reputation_inactive_03: ordinary Stormwind inactive move, destination header navigation, reselected checked detail and active restore. All native reputation/public catalog/inventory/money restored. Prior collapsed/expanded destination selection assumptions and source-bound recovery retained; no privileged faction mutation."
+    "ui29/reputation_inactive_03: ordinary Stormwind inactive move, destination header navigation, reselected checked detail and active restore. All native reputation/public catalog/inventory/money restored. Prior collapsed/expanded destination selection assumptions and source-bound recovery retained; no privileged faction mutation.",
+    "ui30/reputation_persist_01: watched Stormwind survives ordinary reload; no-watch baseline restored",
+    "ui30/atwar_deployment_01: bridge-only protocol correction, both v38 clients reenter with intact baselines and unchanged native worldserver",
+    "ui30/reputation_atwar_02: modern uint16/native uint32-plus-byte requests and exact Booty Bay flags 65/67/65 agree; native/public/resource baseline restored",
+    "ui30/reputation_combat_03: ordinary existing Raider kill earns positive/negative standing, exact native death after stock deselection, public/native packets and standing agree; pose/resources restored and earned standings retained",
+    "ui30/earned_reputation_read_02: public/native standing inspection with ordinary scroll reveal and exact viewport restoration"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
