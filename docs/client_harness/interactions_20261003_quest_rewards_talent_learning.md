@@ -26,7 +26,12 @@ Retained failures include moving-target out-of-range engagement, a staging
 radius that rejected the third wolf, combat cleanup checked before departure,
 a fresh point review that expired, and the bear targeting failure. The staging
 radius and combat cleanup were repaired; earlier partial kills are not combined
-into a completion claim.
+into a completion claim. `quest_reward_01` earned three bear credits, then an
+uphill offset placed the actor below the client floor and produced a -561-yard
+player Z. Its 3D distance guard stopped the run and cleanup restored the full
+quest/inventory/money/pose baseline. Initial combat staging now starts eight yards
+above spawn Z, and target staging three yards above observed creature Z, so
+normal client gravity can settle before the ground approach.
 
 `observation/spline_pose.py` estimates current ground movement from ordinary
 native spline packets. It uses path distance and recorded duration. Curved
@@ -67,14 +72,22 @@ its modern 16-bit rank to the native 32-bit rank.
 `interaction_talent_learn.py` selects Arms and spends one first-tier point through
 the stock UI. It verifies the requested talent against the native Talent.dbc,
 checks the learned spell and one-point charge, and checks the public rank after
-an ordinary addon reload. Learned state is retained. The trial is implemented;
-live specialization and point-spending qualification remain pending.
+an ordinary addon reload. Learned state is retained. UI25 `talent_learn_01` passed. The stock UI selected Arms, previewed one point
+in Blitz, opened the normal Learn confirmation and learned native talent 9664,
+rank zero, corresponding to spell 80976. Native talent tree 746 and the public
+Blitz rank one agree; unspent points changed from 41 to 40. The learned state
+persisted in native storage and after an ordinary addon reload. Inventory and
+money were unchanged. The screenshot shows the correct Arms total of one.
+Logout/login persistence and other talents remain open.
 
 The talent observer records the stock preview preference, primary and preview
 specializations, first-tier and allocated ranks, and confirmation dialogs.
 Preview rank is the eighth GetTalentInfo result, as used by the pinned stock
-TalentFrameBase source. Login persistence and other talent/glyph operations remain
-open.
+TalentFrameBase source. Observer v34 omitted the explicit talent-group argument when reading per-tree
+totals, although the stock frame correctly displayed one point. The pending v35
+observer passes the active group used by the stock UI and adds bounded read-only
+glyph catalog pages. It is committed but not yet deployed. Login persistence and
+other talent/glyph operations remain open.
 
 ## Validation and deployment
 
