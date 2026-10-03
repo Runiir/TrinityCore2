@@ -75,6 +75,7 @@ def field_values(snapshot, character):
             if i<4 else 0 for i in range(24)]} for slot in range(25)]
     active = {"XP": value("PLAYER_XP"), "NextLevelXP": value("PLAYER_NEXT_LEVEL_XP"), "MaxLevel": 85,
               "NumBackpackSlots": 16,
+              "WatchedFactionIndex": array("PLAYER_FIELD_WATCHED_FACTION_INDEX", 1, signed=True)[0],
               "Coinage": value("PLAYER_FIELD_COINAGE") | value("PLAYER_FIELD_COINAGE", 1) << 32,
               "ProfessionSkillLine": array("PLAYER_PROFESSION_SKILL_LINE_1", 2)}
     active["RestInfo"] = [{"Threshold": value("PLAYER_REST_STATE_EXPERIENCE"),

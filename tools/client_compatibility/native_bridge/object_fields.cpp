@@ -2,6 +2,7 @@
 #include "glyph_slots.hpp"
 #include "native_transport.hpp"
 #include "guild_fields.hpp"
+#include "reputation_fields.hpp"
 
 namespace bridge
 {
@@ -96,6 +97,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                   {"NextLevelXP", val("PLAYER_NEXT_LEVEL_XP")},
                   {"MaxLevel", 85},
                   {"NumBackpackSlots", 16},
+                  {"WatchedFactionIndex", watched_faction_index(*this,s)},
                   {"Coinage", static_cast<std::uint64_t>(val("PLAYER_FIELD_COINAGE")) |
                                   (static_cast<std::uint64_t>(val("PLAYER_FIELD_COINAGE", 1)) << 32)},
                   {"ProfessionSkillLine", arr("PLAYER_PROFESSION_SKILL_LINE_1", 2)}};

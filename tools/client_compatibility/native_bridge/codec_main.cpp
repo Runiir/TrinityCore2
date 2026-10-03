@@ -2,6 +2,7 @@
 #include "crypto.hpp"
 #include "fields.hpp"
 #include "protocol.hpp"
+#include "reputation_fields.hpp"
 #include "events.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
@@ -205,6 +206,8 @@ int main(int argc, char **argv)
                     result = protocol.field_values(get(request, "snapshot"), get(request, "character"));
                 else if (op == "rest_update")
                     result = hex(protocol.rest_block(get(request, "snapshot"), get(request, "changed")));
+                else if(op=="watched_faction_update")
+                    result=hex(watched_faction_block(protocol,get(request,"snapshot"),get(request,"changed")));
                 else if (op == "quest_update")
                     result = hex(protocol.quest_block(get(request, "snapshot"), get(request, "changed")));
                 else if (op == "glyph_update")

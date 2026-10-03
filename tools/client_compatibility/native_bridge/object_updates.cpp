@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "reputation_fields.hpp"
 
 namespace bridge
 {
@@ -136,6 +137,8 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
             auto rest = rest_block(s, get(record, "fields"));
             if (!rest.empty())
                 blocks.push_back(rest);
+            auto watched=watched_faction_block(*this,s,get(record,"fields"));
+            if(!watched.empty())blocks.push_back(watched);
             auto guild=guild_block(s,owner.character,get(record,"fields"));
             if(!guild.empty())blocks.push_back(guild);
             auto quests=quest_block(s,get(record,"fields"));
