@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791049282.8219433,
+  "reviewed_at": 1791052817.1646776,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -417,8 +417,8 @@
         "bags.unequip_item",
         "bags.equip_item"
       ],
-      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored.",
-      "limits": "Unsampled gear slots, weapon swaps, sets and item comparison/tooltips remain open.",
+      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore.",
+      "limits": "Owned geared warrior and documented helmet/damage variants only. Item level, haste, crit, ranged stats, other gear slots and unsampled variants remain open. Separate weapon/set/comparison records do not imply broader equipment coverage.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
@@ -431,6 +431,21 @@
             "character.stats.unequipped": "character_stats_pass",
             "character.stats.equipped_after": "character_stats_pass"
           }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/character_damage_after_01/episode.json",
+          "sha256": "d62e1482b818d6a30dace94d80f489351944387c71d8c4a2d2856107f18b9fbf",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.stats.damage_modifiers": "character_damage_display_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/character_damage_after_review.json",
+          "sha256": "7fd49c603b7b6656696bed7ada8ce7e6d54a8f1ef026d9ab36b374f24c54d283",
+          "archived_receipt_digest_verified": true
         }
       ]
     },
@@ -2221,7 +2236,7 @@
         "character.equipment_set_create"
       ],
       "scope": "Normally create the stock HarnessUI36 equipment set for the owned geared warrior. Native GUID assignment and all 19 native slots match the current inventory; public catalog shows the one equipped set and the stock manager rendering is reviewed. Full normal logout/reentry preserves the first created set; a second fresh creation also passes and restores the original collapsed sidebar.",
-      "limits": "One ordinary equipment set, ASCII name, owned warrior gear. Save/use/delete and whole-lifecycle qualification remain open because later failed roots are retained. Specialization assignment, cosmetic/appearance sets, larger catalogs and full-inventory swap failures remain open.",
+      "limits": "Owned human warrior, ASCII set and catalog variants only. Save/use/delete are separately qualified by stock_equipment_set_roundtrip. Specialization assignment, cosmetic/appearance sets, larger catalogs and full-inventory failure variants remain open.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc",
@@ -2315,6 +2330,65 @@
           "sha256": "1c830f3baec3f06f662feb54760cef7ea43860f85280b88e7615164d5744952f",
           "archived_receipt_digest_verified": true,
           "archived_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "stock_twohand_weapon_swap",
+      "operations": [
+        "character.weapon_swap"
+      ],
+      "scope": "Normal backpack right-click exchanges owned Worn Greatsword49778 and Gurthalak78478, then reverses the exact item GUIDs. Public equipment/bag slots, native resources and rendered strength/armor/health/damage changes agree; original full fixture and sidebar restored. Actual modern40ff2cff2c/nativeff20 requests captured for both swaps.",
+      "limits": "One owned human warrior and two two-hand swords with empty offhand. One-hand/offhand pairs, bag pressure, class/level restrictions, combat changes and failure variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/weapon_swap_01/episode.json",
+          "sha256": "cb2516f042c70972465ec332fef4b8a6fe0fa4fab36f8112941993b00d56b75f",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "weapon.character.open": "character_open_pass",
+            "weapon.backpack": "backpack_open_pass",
+            "character.weapon_swap": "weapon_swap_pass",
+            "character.stats.alternate_weapon": "character_stats_pass",
+            "weapon.restore": "weapon_swap_pass",
+            "character.stats.original_weapon": "character_stats_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/weapon_swap_review.json",
+          "sha256": "4886fa148a6d3c22e3233bb4de74f64645e171839c0451c2f0ae159563440be1",
+          "archived_receipt_digest_verified": true
+        }
+      ]
+    },
+    {
+      "id": "stock_geared_visibility_roundtrip",
+      "operations": [
+        "character.display_helm",
+        "character.display_cloak"
+      ],
+      "scope": "Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored.",
+      "limits": "One geared human warrior and exact stock controls. Sword partly occludes rear cloak; visible fabric changes are reviewed. Other races/models, full logout persistence, character-selection visibility and arbitrary bindings remain open. Earlier failed roots and source-bound recovery do not qualify behavior.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/character_visibility_02/episode.json",
+          "sha256": "d78beb105316f8728dd5246cf742cfad4f12362177c7bad65ee3b82c363ef7f5",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.display_helm": "character_appearance_pass",
+            "appearance.restore.helm": "character_appearance_pass",
+            "character.display_cloak": "character_appearance_pass",
+            "appearance.restore.cloak": "character_appearance_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui38/character_visibility_review.json",
+          "sha256": "a6cda1075d07c550bd0eae4c91213f25e15778608f831e782abc3c4672198e3d",
+          "archived_receipt_digest_verified": true
         }
       ]
     }

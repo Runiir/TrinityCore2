@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 259 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 262 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -41,9 +41,9 @@ Fixture: `equipped_character`.
 - [ ] `character.compare_items`
 - [x] `character.equip` (qualified variant; [evidence](#equipment))
 - [x] `character.unequip` (qualified variant; [evidence](#equipment))
-- [ ] `character.weapon_swap`
-- [ ] `character.display_helm`
-- [ ] `character.display_cloak`
+- [x] `character.weapon_swap` (qualified variant; [evidence](#stock_twohand_weapon_swap))
+- [x] `character.display_helm` (qualified variant; [evidence](#stock_geared_visibility_roundtrip))
+- [x] `character.display_cloak` (qualified variant; [evidence](#stock_geared_visibility_roundtrip))
 - [x] `character.equipment_set_create` (qualified variant; [evidence](#stock_equipment_set_creation))
 - [x] `character.equipment_set_save` (qualified variant; [evidence](#stock_equipment_set_roundtrip))
 - [x] `character.equipment_set_equip` (qualified variant; [evidence](#stock_equipment_set_roundtrip))
@@ -1277,12 +1277,15 @@ Remaining limits: Other recipes/professions, cancellation, skill gains and coold
 
 ### equipment
 
-One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored.
+One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore.
 
-Remaining limits: Unsampled gear slots, weapon swaps, sets and item comparison/tooltips remain open.
+Remaining limits: Owned geared warrior and documented helmet/damage variants only. Item level, haste, crit, ranged stats, other gear slots and unsampled variants remain open. Separate weapon/set/comparison records do not imply broader equipment coverage.
 
 - [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/equipment_02/episode.json`, SHA-256 `44214da3f31946df95c34cedc4a2ef828f8d15adbe3dc98fd39ca9797abe3a0c`.
   Checked cases: `character.unequip` (equipment_change_pass), `character.equip` (equipment_change_pass), `character.stats.unequipped` (character_stats_pass), `character.stats.equipped_after` (character_stats_pass).
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_damage_after_01/episode.json`, SHA-256 `d62e1482b818d6a30dace94d80f489351944387c71d8c4a2d2856107f18b9fbf`.
+  Checked cases: `character.stats.damage_modifiers` (character_damage_display_pass).
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_damage_after_review.json`, SHA-256 `7fd49c603b7b6656696bed7ada8ce7e6d54a8f1ef026d9ab36b374f24c54d283`.
 
 ### inventory_movement
 
@@ -1917,7 +1920,7 @@ Remaining limits: Learned Battle catalog tooltip only; replacement and effects r
 
 Normally create the stock HarnessUI36 equipment set for the owned geared warrior. Native GUID assignment and all 19 native slots match the current inventory; public catalog shows the one equipped set and the stock manager rendering is reviewed. Full normal logout/reentry preserves the first created set; a second fresh creation also passes and restores the original collapsed sidebar.
 
-Remaining limits: One ordinary equipment set, ASCII name, owned warrior gear. Save/use/delete and whole-lifecycle qualification remain open because later failed roots are retained. Specialization assignment, cosmetic/appearance sets, larger catalogs and full-inventory swap failures remain open.
+Remaining limits: Owned human warrior, ASCII set and catalog variants only. Save/use/delete are separately qualified by stock_equipment_set_roundtrip. Specialization assignment, cosmetic/appearance sets, larger catalogs and full-inventory failure variants remain open.
 
 - [442_interactions_20261003_37.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_37.tar.gz.dvc), member `evidence/client_interactions_20261003_ui36/equipment_sets_create_02/episode.json`, SHA-256 `e76f7a0d18063e9e2b0e83094621dbdd29be64b0df4ef368426b3ecd71d6a38b`.
   Checked cases: `character.equipment_set_create` (equipment_set_create_pass).
@@ -1939,3 +1942,23 @@ Remaining limits: One level-85 human warrior, one ASCII set, one displaced helme
 - [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_empty_02/episode.json`, SHA-256 `2dd09e2b4133ca1a6099bc28b3f4c110f98bd8885595ec79873946920d07d43c`.
 - [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_roundtrip_packet_review.json`, SHA-256 `fd60f3dbbfebf137e6c4feb0252dfdfba9f44a5f597117ef70711b10983c575c`.
 - [442_interactions_20261003_38.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_38.tar.gz.dvc), member `evidence/client_interactions_20261003_ui37/equipment_roundtrip_render_review.json`, SHA-256 `1c830f3baec3f06f662feb54760cef7ea43860f85280b88e7615164d5744952f`.
+
+### stock_twohand_weapon_swap
+
+Normal backpack right-click exchanges owned Worn Greatsword49778 and Gurthalak78478, then reverses the exact item GUIDs. Public equipment/bag slots, native resources and rendered strength/armor/health/damage changes agree; original full fixture and sidebar restored. Actual modern40ff2cff2c/nativeff20 requests captured for both swaps.
+
+Remaining limits: One owned human warrior and two two-hand swords with empty offhand. One-hand/offhand pairs, bag pressure, class/level restrictions, combat changes and failure variants remain open.
+
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/weapon_swap_01/episode.json`, SHA-256 `cb2516f042c70972465ec332fef4b8a6fe0fa4fab36f8112941993b00d56b75f`.
+  Checked cases: `weapon.character.open` (character_open_pass), `weapon.backpack` (backpack_open_pass), `character.weapon_swap` (weapon_swap_pass), `character.stats.alternate_weapon` (character_stats_pass), `weapon.restore` (weapon_swap_pass), `character.stats.original_weapon` (character_stats_pass).
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/weapon_swap_review.json`, SHA-256 `4886fa148a6d3c22e3233bb4de74f64645e171839c0451c2f0ae159563440be1`.
+
+### stock_geared_visibility_roundtrip
+
+Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored.
+
+Remaining limits: One geared human warrior and exact stock controls. Sword partly occludes rear cloak; visible fabric changes are reviewed. Other races/models, full logout persistence, character-selection visibility and arbitrary bindings remain open. Earlier failed roots and source-bound recovery do not qualify behavior.
+
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_visibility_02/episode.json`, SHA-256 `d78beb105316f8728dd5246cf742cfad4f12362177c7bad65ee3b82c363ef7f5`.
+  Checked cases: `character.display_helm` (character_appearance_pass), `appearance.restore.helm` (character_appearance_pass), `character.display_cloak` (character_appearance_pass), `appearance.restore.cloak` (character_appearance_pass).
+- [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_visibility_review.json`, SHA-256 `a6cda1075d07c550bd0eae4c91213f25e15778608f831e782abc3c4672198e3d`.

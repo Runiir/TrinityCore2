@@ -255,7 +255,7 @@ Its reviewed mappings live in
 `experiments/configs/client_harness/442_interaction_qualifications_v1.json`;
 `interaction_inventory write` reconciles them when regenerating the human checklist
 and machine inventory. Unmapped operations stay pending. Current reconciled evidence
-qualifies 259 operations out of 916 across 45 families. This is a count of qualified
+qualifies 262 operations out of 916 across 45 families. This is a count of qualified
 fixture variants, not a percentage of complete game compatibility. Eight raid/party
 controls, the known-trainer filter and plain-item auction posting were added to the
 original 891-operation plan because they were missing individual contracts. Six NPC marker variants are now explicit checks. The talent/glyph and available-marker repairs are documented in [the UI24 report](interactions_20261003_talents_markers.md).

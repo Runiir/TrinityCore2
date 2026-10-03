@@ -212,3 +212,15 @@ and modern Classic extended flags follow 128/0/256/0 with no legacy hide bits
 left in PlayerFlags. The sword partly occludes the rear cloak, but its visible
 blue-red fabric changes in the paired views. All native resources, settings
 search, panels and model camera are restored. Qualification awaits DVC39.
+
+UI38 is remotely verified in DVC39: 61 selected JSON receipts and 578
+attributed frames pass archive integrity checks. Weapon swap and both visibility
+controls bring the checklist to 262/916; the damage proof augments the existing
+stats qualification. The 644 local batch PNGs (855,137,248 bytes) are pruned
+after verification. UI39 normal Shift-hover comparison passes exact item
+identities and Shift release with unchanged native resources. Its reviewed
+frame shows both sword tooltips; numeric comparison deltas and tooltip lines
+beyond the observer's first 16 remain unqualified. Four character-list visibility
+regressions fail before the C++ mask0xc00 repair. The new target passes 867 full
+protocol/authentication tests and 34 focused sanitizer checks; live selection
+validation is next.
