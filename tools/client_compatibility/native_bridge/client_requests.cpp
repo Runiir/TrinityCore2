@@ -76,17 +76,24 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     {require_world();native_send(*request);return;}
     if(auto request=trainer_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}
-    if(name=="CMSG_QUEST_GIVER_STATUS_QUERY")
+    if(name=="CMSG_QUEST_GIVER_STATUS_QUERY" || name=="CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY")
     {
         auto request=quest_status_request(protocol,state,name,body);
         if(active_world.get()!=this || !state.guid())
         {service.events.event("late_quest_query_ignored",{{"session",owner.id},{"name",name}});return;}
-        if(request->first=="SMSG_QUEST_GIVER_STATUS")
+        bool tracked=name=="CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY";
+        if(tracked)require_world();
+        if(request->first=="SMSG_QUEST_GIVER_STATUS" || request->first=="SMSG_QUEST_GIVER_STATUS_MULTIPLE")
         {
             send(*request);
-            service.events.event("cached_quest_status_cleared",{{"session",owner.id},{"name",name}});
+            service.events.event(tracked?"empty_tracked_quest_status":"cached_quest_status_cleared",
+                {{"session",owner.id},{"name",name}});
         }
-        else {require_world();native_send(*request);}
+        else
+        {
+            require_world();native_send(*request);
+            if(tracked)service.events.event("tracked_quest_status_refreshed",{{"session",owner.id},{"name",name}});
+        }
         return;
     }
     if(auto request=quest_request(protocol,state,name,body))

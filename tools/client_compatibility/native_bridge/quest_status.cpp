@@ -26,9 +26,32 @@ Value const *giver(Protocol const &protocol,State const &owner,std::uint64_t gui
         ((protocol.field(object->second,"GAMEOBJECT_BYTES_1")>>8)&255)==2)return &object->second;
     return nullptr;
 }
+void require_owned_giver_identity(State const &owner,Array const &identity)
+{
+    auto low=integer(identity[0]),high=integer(identity[1]);auto type=high>>58;
+    auto entry=(high>>6)&0x7fffffu;
+    if((type!=8 && type!=11) || !low || low>0xffffffffu || !entry || entry>0xfffffu)
+        throw std::runtime_error("invalid cached questgiver identity");
+    auto native=((type==8 ? 0xf13ull : 0xf11ull)<<52) | (entry<<32) | low;
+    if(identity!=Protocol::modern_guid(native,owner.map()))
+        throw std::runtime_error("cached questgiver targets another realm or map");
+}
 }
 Reply quest_status_request(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {
+    if(name=="CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY")
+    {
+        Reader r(body);auto count=r.take<std::uint32_t>();
+        if(count>1000)throw std::runtime_error("tracked quest status exceeds bound");
+        for(unsigned i=0;i<count;++i)require_owned_giver_identity(owner,r.guid());
+        r.end();
+        if(!count)return Packet{"SMSG_QUEST_GIVER_STATUS_MULTIPLE",Writer().put<std::uint32_t>(0).finish()};
+        // 4.3.4 has no subset request. Refresh all native-visible givers instead.
+        // Do not queue a subset against the next multiple reply: native also
+        // sends unsolicited multiple updates after quest-state changes.
+        // Retired/cached identities grant no visibility or interaction access.
+        return Packet{"CMSG_QUEST_GIVER_STATUS_MULTIPLE_QUERY",{}};
+    }
     if(name=="CMSG_QUEST_GIVER_STATUS_MULTIPLE_QUERY")
     {
         Reader(body).end();return Packet{name,{}};
@@ -42,13 +65,7 @@ Reply quest_status_request(Protocol const &protocol,State const &owner,std::stri
     // Cached NPC status reads can precede creation or arrive after destruction.
     // Clear only a well-formed identity on the owned map. No native request or
     // visibility grant is produced, and hello/accept/reward keep their guards.
-    auto low=integer(identity[0]),high=integer(identity[1]);auto type=high>>58;
-    auto entry=(high>>6)&0x7fffffu;
-    if((type!=8 && type!=11) || !low || low>0xffffffffu || !entry || entry>0xfffffu)
-        throw std::runtime_error("invalid cached questgiver identity");
-    auto native=((type==8 ? 0xf13ull : 0xf11ull)<<52) | (entry<<32) | low;
-    if(identity!=Protocol::modern_guid(native,owner.map()))
-        throw std::runtime_error("cached questgiver targets another realm or map");
+    require_owned_giver_identity(owner,identity);
     return Packet{"SMSG_QUEST_GIVER_STATUS",Writer().guid(identity).put<std::uint64_t>(0).finish()};
 }
 Reply quest_status_response(Protocol const &protocol,State const &owner,std::string const &name,View body)
