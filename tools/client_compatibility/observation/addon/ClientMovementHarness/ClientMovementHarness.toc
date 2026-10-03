@@ -9,4 +9,5 @@ GlyphObservation.lua
 ReputationObservation.lua
 CurrencyObservation.lua
 ArchaeologyObservation.lua
+MapObservation.lua
 ClientInteractions.lua
