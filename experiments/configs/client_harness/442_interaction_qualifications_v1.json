@@ -1177,6 +1177,41 @@
           "cases": {}
         }
       ]
+    },
+    {
+      "id": "manual_quest_controls",
+      "operations": [
+        "quests.accept",
+        "quests.decline",
+        "quests.collapse_zone",
+        "quests.abandon_cancel"
+      ],
+      "scope": "Primary warrior manually accepts native Guard Thomas quest 52 through stock UI, reads the correctly named wolf 0/8 and unseen Young Forest Bear 0/5 objectives, collapses/reexpands its zone, cancels abandonment, then abandons it. A separate trial declines without accepting. Native/public quest state and complete quest/inventory/money/pose restoration agree, without fallback cleanup.",
+      "limits": "Code-controlled fixture inputs qualify client behavior. Objective progress, completion/rewards, sharing, persistence, other questgiver types, eligibility and objective variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui23/manual_quest_accept_11/episode.json",
+          "sha256": "d0777925ada8a4ae8be930d95b59912ab50136d45872dd53242baa2bc724b386",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "quests.manual_accept": "quest_manual_accept_pass",
+            "quests.manual_collapse": "quest_zone_collapse_pass",
+            "quests.manual_abandon_cancel": "quest_abandon_cancel_pass",
+            "quests.manual_read_log": "quest_log_details_pass",
+            "quests.manual_abandon_confirm": "quest_abandon_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui23/manual_quest_decline_12/episode.json",
+          "sha256": "56635a814a344dd1d2f7d3d53b2f9d78edfc482b749a7138df0b67781b33b23e",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "quests.manual_decline": "quest_manual_decline_pass"
+          }
+        }
+      ]
     }
   ]
 }

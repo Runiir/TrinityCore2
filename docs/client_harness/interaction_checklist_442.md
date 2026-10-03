@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-901 operation contracts across 45 families. 183 have a qualified fixture variant; the rest remain pending.
+901 operation contracts across 45 families. 187 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -275,15 +275,15 @@ Fixture: `quest_variants`.
 - [x] `quests.close_log` (qualified variant; [evidence](#panel_visibility))
 - [x] `quests.select` (qualified variant; [evidence](#quest_log))
 - [x] `quests.expand_zone` (qualified variant; [evidence](#quest_log))
-- [ ] `quests.collapse_zone`
+- [x] `quests.collapse_zone` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.details` (qualified variant; [evidence](#quest_log))
 - [ ] `quests.track`
 - [ ] `quests.untrack`
-- [ ] `quests.abandon_cancel`
+- [x] `quests.abandon_cancel` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.abandon_confirm` (qualified variant; [evidence](#quest_log))
 - [ ] `quests.share`
-- [ ] `quests.accept`
-- [ ] `quests.decline`
+- [x] `quests.accept` (qualified variant; [evidence](#manual_quest_controls))
+- [x] `quests.decline` (qualified variant; [evidence](#manual_quest_controls))
 - [ ] `quests.progress`
 - [ ] `quests.complete`
 - [ ] `quests.choose_reward`
@@ -1534,3 +1534,14 @@ Historical accepted loop 89 performs six finds at two fresh Outland sites (351 a
 Remaining limits: Bounded two-site proof, using historical Laya identities. Indefinite operation, other races/terrain, solve/keystones, caps and reconnect persistence remain open. New runs use code under current AGENTS.md.
 
 - [442_archaeology_loop_proof_20261002.tar.gz.dvc](../../artifacts/client_harness/442_archaeology_loop_proof_20261002.tar.gz.dvc), member `evidence/laya_archaeology_travel_loop_89/episode.json`, SHA-256 `2b3ce1bc3d87851b49c052a734eeec411af1ff04a8a2692fc45398d1b5187968`.
+
+### manual_quest_controls
+
+Primary warrior manually accepts native Guard Thomas quest 52 through stock UI, reads the correctly named wolf 0/8 and unseen Young Forest Bear 0/5 objectives, collapses/reexpands its zone, cancels abandonment, then abandons it. A separate trial declines without accepting. Native/public quest state and complete quest/inventory/money/pose restoration agree, without fallback cleanup.
+
+Remaining limits: Code-controlled fixture inputs qualify client behavior. Objective progress, completion/rewards, sharing, persistence, other questgiver types, eligibility and objective variants remain open.
+
+- [442_interactions_20261003_24.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc), member `evidence/client_interactions_20261003_ui23/manual_quest_accept_11/episode.json`, SHA-256 `d0777925ada8a4ae8be930d95b59912ab50136d45872dd53242baa2bc724b386`.
+  Checked cases: `quests.manual_accept` (quest_manual_accept_pass), `quests.manual_collapse` (quest_zone_collapse_pass), `quests.manual_abandon_cancel` (quest_abandon_cancel_pass), `quests.manual_read_log` (quest_log_details_pass), `quests.manual_abandon_confirm` (quest_abandon_pass).
+- [442_interactions_20261003_24.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc), member `evidence/client_interactions_20261003_ui23/manual_quest_decline_12/episode.json`, SHA-256 `56635a814a344dd1d2f7d3d53b2f9d78edfc482b749a7138df0b67781b33b23e`.
+  Checked cases: `quests.manual_decline` (quest_manual_decline_pass).

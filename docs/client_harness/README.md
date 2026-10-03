@@ -195,7 +195,7 @@ Its reviewed mappings live in
 `experiments/configs/client_harness/442_interaction_qualifications_v1.json`;
 `interaction_inventory write` reconciles them when regenerating the human checklist
 and machine inventory. Unmapped operations stay pending. Current reconciled evidence
-qualifies 183 operations out of 901 across 45 families. This is a count of qualified
+qualifies 187 operations out of 901 across 45 families. This is a count of qualified
 fixture variants, not a percentage of complete game compatibility. Eight raid/party
 controls, the known-trainer filter and plain-item auction posting were added to the
 original 891-operation plan because they were missing individual contracts.

@@ -5,10 +5,11 @@ from tools.client_compatibility.interaction_qualifications import reconcile
 from tools.client_compatibility.interaction_inventory import checklist,render
 
 
-def test_current_checklist_preserves_markers_group_and_archaeology_evidence():
+def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidence():
     data=checklist();by_id={case['id']:case for case in data['cases']}
     for key in ['raid.world_marker','raid.clear_marker','raid.roster_health_bars',
-            'party.role_poll','party.role_assign','archaeology.survey','archaeology.site_rotation']:
+            'party.role_poll','party.role_assign','archaeology.survey','archaeology.site_rotation',
+            'quests.accept','quests.decline','quests.collapse_zone','quests.abandon_cancel']:
         assert by_id[key]['qualification'] and '- [x] `'+key+'`' in render(data)
     for key in ['raid.assistant_promote','party.full_group_error','archaeology.solve_project','quests.reward_item']:
         assert 'qualification' not in by_id[key] and '- [ ] `'+key+'`' in render(data)
