@@ -73,6 +73,8 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
 
 
 def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_selection=False):
+    if not character_selection or realm_selection:
+        raise ValueError('Review character selection first; select-realm performs only the reviewed realm inputs. Refusing timed login/cancel/world-entry guesses.')
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('deployment process identity changed')
@@ -125,6 +127,29 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
+def select_realm(out,name):
+    """Emit only realm selection inputs, then retain the next screen for review."""
+    report=json.loads((out/'deployment.json').read_text())
+    if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
+        raise RuntimeError('realm selection requires the same deployment processes')
+    with actor(name):
+        t=Trial(out/(name+'_realm'),controller='code')
+        try:
+            t.receipt['qualified_scope']='Reviewed realm selection inputs only; world entry requires separate screenshot review'
+            t.receipt['lobby_inputs']=[]
+            for label,action in [('realm',{'kind':'click','value':[465,182]}),
+                                 ('realm_okay',{'kind':'key','value':'Return','hold':.4})]:
+                frame=shot(t.out/(label+'_before.png'));t.execute(action)
+                t.receipt['lobby_inputs'].append({'label':label,'input':action,'before_frame':frame});t.persist()
+            time.sleep(3);t.receipt['next_screen']=shot(t.out/'next_screen.png')
+            t.receipt.update(completed=True,requires_character_selection_review=True)
+        except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({'actor':name,'inputs_completed':t.receipt['completed'],'failure':t.receipt['failure'],
+            'requires_separate_character_selection_review':True}),flush=True)
+        if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
+
+
 def recovery(source,out,name,client_restart_source=None):
     """Prepare a new lobby receipt after a failed input on the same deployment."""
     previous=json.loads((source/'deployment.json').read_text())
@@ -153,7 +178,7 @@ def recovery(source,out,name,client_restart_source=None):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery','select-realm'])
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
     parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
@@ -171,6 +196,9 @@ if __name__=='__main__':
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source)
+    elif args.action=='select-realm':
+        if args.actor is None:parser.error('realm selection requires an actor')
+        select_realm(args.output,args.actor)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
         reconnect(args.output,args.actor,args.keyboard_modal,args.character_selection,args.realm_selection)
