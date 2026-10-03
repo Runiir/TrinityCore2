@@ -34,7 +34,7 @@ def native_update(guid,value):
 
 
 def test_live_update_dispatch_keeps_watch_changes_owner_only(codec):
-    replies=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'fields':{FIELD:0xffffffff}},
+    replies=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'fields':{FIELD:0xffffffff}},gameobjects=[],
         units=[{'guid':2,'kind':4,'map':0,'fields':{},'public_character':{'name':'Harnesstwo','gender':0}}],
         actions=[{'fn':'object_updates','name':'SMSG_UPDATE_OBJECT','body':native_update(guid,value).hex()}
             for guid,value in [(1,4),(1,0xffffffff),(2,4)]])
