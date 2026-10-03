@@ -39,6 +39,8 @@ completion history across interface reload, including both retained protocol fai
 The [session and map report](interactions_20261003_session_maps.md) covers full
 logout/reentry persistence, stock continent/zone navigation, digsite overlays and
 reversible minimap zoom through isolated ordinary inputs.
+The [stock tooltip report](interactions_20261003_tooltips.md) covers equipped item
+identity, the learned Battle glyph tooltip and source-bound search-focus cleanup.
 The initial optimized bridge passed both login routes and the two-client probe: the primary
 remained still while the scout moved through ordinary keyboard input, with native
 saved positions confirming both outcomes. Both owned windows were verified on
