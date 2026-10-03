@@ -19,4 +19,6 @@ Reply auction_browse_request(Protocol const &protocol,State &owner,std::string c
 Reply auction_browse_response(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items);
 Reply auction_item_request(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items);
 Reply auction_item_result(State &owner,AuctionItems const &items,unsigned delay);
+Reply auction_transaction(Protocol const &protocol,State const &owner,std::string const &name,View body,AuctionItems const &items);
+Reply auction_command_result(Protocol const &protocol,std::string const &name,View body);
 }

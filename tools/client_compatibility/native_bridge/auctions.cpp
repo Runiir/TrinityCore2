@@ -13,6 +13,8 @@ bool auctioneer(Protocol const &protocol,Value const &unit)
 }
 Reply auction_request(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items)
 {
+    if(name=="CMSG_AUCTION_SELL_ITEM" || name=="CMSG_AUCTION_REMOVE_ITEM" || name=="CMSG_AUCTION_PLACE_BID")
+        return auction_transaction(protocol,owner,name,body,items);
     if(name=="CMSG_AUCTION_LIST_ITEMS_BY_ITEM_ID" || name=="CMSG_AUCTION_LIST_ITEMS_BY_BUCKET_KEY")
         return auction_item_request(protocol,owner,name,body,items);
     if(name=="CMSG_AUCTION_BROWSE_QUERY")return auction_browse_request(protocol,owner,name,body);
@@ -46,6 +48,7 @@ Reply auction_request(Protocol const &protocol,State &owner,std::string const &n
 }
 Reply auction_response(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items)
 {
+    if(name=="SMSG_AUCTION_COMMAND_RESULT")return auction_command_result(protocol,name,body);
     if(name=="SMSG_AUCTION_LIST_RESULT")return auction_browse_response(protocol,owner,name,body,items);
     if(name!="MSG_AUCTION_HELLO")return auction_catalog(protocol,owner,name,body,items);
     Reader r(body);auto guid=r.take<std::uint64_t>();auto house=r.take<std::uint32_t>();

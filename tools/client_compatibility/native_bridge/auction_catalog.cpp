@@ -23,7 +23,8 @@ NativeAuctionRow read_auction_item(Reader &r,AuctionItems const &items)
     auto metadata=items.find(entry);bool key=metadata!=items.end() && !property;
     auto level=key?integer(get(metadata->second,"level")):0;
     if(key && (entry>0xfffff || level>2047))throw std::runtime_error("native auction bucket key exceeds modern bounds");
-    Writer w;w.bits(1,1).bits(enchants.size(),4).bits(0,2).bits(1,1).bits(1,1)
+    bool can_bid=minimum && (!buyout || minimum<buyout);
+    Writer w;w.bits(1,1).bits(enchants.size(),4).bits(0,2).bits(can_bid,1).bits(can_bid && increment,1)
         .bits(buyout!=0,1).bits(0,1).bits(1,1).bits(0,1).bits(key,1).bits(0,1)
         .bits(bidder!=0,1).bits(bid!=0,1).flush();
     // Native socket enchant IDs lack underlying gem item IDs. Preserve native
@@ -32,7 +33,9 @@ NativeAuctionRow read_auction_item(Reader &r,AuctionItems const &items)
     w.pack("iiiI",{count,charges,flags,id}).guid(owner,owner?player_high():0).put(duration)
         .put<std::uint8_t>(0).put<std::uint32_t>(0);
     for(auto const &enchant:enchants)w.pack("3IB",enchant);
-    w.put(minimum).put(increment);if(buyout)w.put(buyout);
+    if(can_bid)w.put(minimum);
+    if(can_bid && increment)w.put(increment);
+    if(buyout)w.put(buyout);
     if(bidder)w.guid(bidder,player_high());
     if(bid)w.put(bid);
     if(key)w.bits(entry,20).bits(0,1).bits(level,11).bits(0,1).flush();

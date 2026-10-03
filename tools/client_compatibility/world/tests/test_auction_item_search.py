@@ -96,8 +96,8 @@ def test_large_filtered_item_results_preserve_real_has_more_and_total(codec):
     rows=[row(id_=i,buyout=i) for i in range(1,502)]
     reply=calls(codec,[OPEN,query(),response(rows)])[-1]
     delay,more,key,total,shown=read_result(reply)
-    assert (delay,more,key,total,len(shown))==(300,1,(39,0),501,500)
-    assert shown[0][0]==1 and shown[-1][0]==500
+    assert (delay,more,key,total,len(shown))==(300,1,(39,0),501,50)
+    assert shown[0][0]==1 and shown[-1][0]==50
 
 
 @pytest.mark.parametrize('bucket',[False,True])

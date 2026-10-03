@@ -71,7 +71,7 @@ Reply auction_item_result(State &s,AuctionItems const &items,unsigned delay)
         }
         return integer(get(*a,"id"))>integer(get(*b,"id"));
     });
-    auto start=std::min<std::uint64_t>(integer(get(q,"offset")),rows.size()),end=std::min<std::uint64_t>(start+500,rows.size());
+    auto start=std::min<std::uint64_t>(integer(get(q,"offset")),rows.size()),end=std::min<std::uint64_t>(start+50,rows.size());
     Writer w;w.pack("3I",{end-start,0,delay});for(auto i=start;i<end;++i)w.raw(unhex(str(get(*rows[i],"encoded"))));
     // Correlate with the request key. Item-ID queries intentionally cover all
     // levels and therefore use level zero, while a bucket query echoes its key.
