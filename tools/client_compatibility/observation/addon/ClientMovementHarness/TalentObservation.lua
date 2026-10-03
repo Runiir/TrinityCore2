@@ -9,15 +9,15 @@ function Client442ObserveTalents()
     local data={groups=call(GetNumTalentGroups),active=call(GetActiveTalentGroup),
         unspent=call(GetUnspentTalentPoints),selected=call(PanelTemplates_GetSelectedTab,PlayerTalentFrame),tabs={},glyphs={},frames={},
         primary=call(GetPrimaryTalentTree,false,false),preview_primary=call(GetPreviewPrimaryTalentTree,false,false),
-        preview_option=call(GetCVarBool,'previewTalentsOption'),preview_spent=call(GetGroupPreviewTalentPointsSpent,false),
+        preview_option=call(GetCVarBool,'previewTalentsOption'),
+        preview_spent=call(GetGroupPreviewTalentPointsSpent,false,call(GetActiveTalentGroup)),
         rank_columns={'tree','index','name','rank','max_rank','preview_rank'},ranks={},popups={}}
     for i=1,3 do
         local id,name,description,icon,spent,background,preview,unlocked=call(GetTalentTabInfo,i,false,false)
         data.tabs[#data.tabs+1]={id=id,name=name,spent=spent,background=background,unlocked=unlocked,
             count=call(GetNumTalents,i,false,false)}
         for j=1,(call(GetNumTalents,i,false,false) or 0) do
-            local talentName,texture,tier,column,rank,maxRank=call(GetTalentInfo,i,j,false,false)
-            local _,_,_,_,previewRank=call(GetTalentInfo,i,j,false,false,nil,true)
+            local talentName,texture,tier,column,rank,maxRank,meetsPrereq,previewRank=call(GetTalentInfo,i,j,false,false)
             -- First-tier choices and allocated ranks suffice for the bounded
             -- learning trial without overflowing the screenshot payload.
             if tier==1 or (rank or 0)>0 or (previewRank or 0)>0 then
