@@ -5,4 +5,5 @@
 ClientMovementHarness.lua
 TalentObservation.lua
 QuestObservation.lua
+GlyphObservation.lua
 ClientInteractions.lua
