@@ -18,11 +18,27 @@ function Client442ObserveEquipment()
     local pane=PaperDollFrame and PaperDollFrame.EquipmentManagerPane
     local spec=C_SpecializationInfo or {}
     local compat=Client442CompatibilityStatus or {}
+    local titlePane=PaperDollFrame and PaperDollFrame.TitleManagerPane
+    local titleCount=read(GetNumTitles) or 0
+    local titles,known={},0
+    if type(titleCount)=='number' and titleCount>=0 and titleCount<=1024 then
+        for id=1,titleCount do
+            if read(IsTitleKnown,id) then
+                known=known+1
+                if #titles<16 then local name,valid=read(GetTitleName,id)
+                    titles[#titles+1]={id=id,name=name,valid=valid} end
+            end
+        end
+    end
     return {count=read(api.GetNumEquipmentSets),sets=rows,
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,
         selected=pane and pane.selectedSetID,
         popup_visible=GearManagerPopupFrame and not not read(GearManagerPopupFrame.IsVisible,GearManagerPopupFrame) or false,
-        helm=read(IsHelmShowing),cloak=read(IsCloakShowing),
+        helm=read(ShowingHelm),cloak=read(ShowingCloak),
+        display_apis={helm=type(ShowingHelm),cloak=type(ShowingCloak),
+            show_helm=type(ShowHelm),show_cloak=type(ShowCloak)},
+        titles={available=titleCount,known=known,rows=titles,current=read(GetCurrentTitle),
+            pane_visible=titlePane and not not read(titlePane.IsVisible,titlePane) or false},
         compatibility={menu_version=compat.equipment_menu_version,menu_repaired=compat.equipment_menu_repaired,
             assignment_available=compat.equipment_assignment_available},
         specialization_apis={legacy_count=type(GetNumSpecializations),legacy_info=type(GetSpecializationInfo),
