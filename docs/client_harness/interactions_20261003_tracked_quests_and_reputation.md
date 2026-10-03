@@ -68,17 +68,43 @@ That read also exposes an independent defect: native watched index `0xffffffff`
 means none, while the client reported Bloodsail Buccaneers, index zero. The bridge
 had omitted `ActivePlayerData.WatchedFactionIndex` from creation and owner updates.
 `reputation_fields.cpp` now preserves the signed `-1` sentinel and bounded native
-indexes, including explicit zero. Sparse owner deltas use pinned group 96 and
+indexes, including explicit zero. Sparse owner deltas use pinned group 70 and
 scalar 97; visible peers never receive the owner's field.
 
-The watched-field candidate passes 731 full regression checks and 19 focused
-checks under ASan/UBSan. The first runs retained one failed dispatch regression
+The initial watched-field candidate passed 731 full regression checks and 19
+focused checks under ASan/UBSan. Those assertions mirrored an incorrect gate:
+bit 96 is `LastWeekRank`, while scalar 97 is nested under gate 70. The live
+`reputation_controls_01` trial exposed this: native watch became Stormwind index
+19 while the public watch/bar remained absent. Its cleanup failed as well.
+The first regression runs also retained one failed dispatch regression
 whose test setup omitted the required empty game-object list (730/1 full and
-18/1 focused); the complete test setup passes. Its optimized bridge SHA-256 is
+18/1 focused); the complete test setup passed. That initial bridge SHA-256 is
 `31903115e0cd13cce0c6eaa3fc0578bd17fba61b9ff51a755b450259cddc6322`,
 source digest
 `2da576cade666a0ff30d0d0e149c7f1a1983ce076ce20e1afa551a470a01cff3`.
-Live watch/header trials remain pending until their own receipts close.
+
+The corrected watched delta emits both gate 70 and scalar 97. A source audit
+also repairs glyph-enable scalar 127 under gate 102, including that group's
+unconditional absent `PetStable` presence bit. Glyph-slot arrays retain their
+separate gate 1410; a live glyph-enable delta remains unqualified.
+
+The correction passes 731 full regression checks and 22 focused ASan/UBSan
+checks. One sanitizer invocation named a nonexistent test file and ran no tests;
+that JUnit result is retained alongside the successful corrected invocation.
+The optimized bridge SHA-256 is
+`3c48929324ceab8696f8597153fd808cb9c1b275ed7d3fa999e7a8bfbcb6d3e3`,
+source digest
+`5238de8ccb39e8f6677855fa4a932a48b8dde5ae8388a086df773e38d7c65a82`.
+Both observer-v38 clients reconnect with original resources, equipment, groups
+and profiles and the same native worldserver lifetime.
+
+`reputation_watch_recovery_01` binds the closed failed trial by SHA-256, actor
+and native/client lifetime. It verifies the only native mutation is watch index
+19, then uses the stock checkbox to restore the source sentinel and public bar.
+All faction rows, inventory and money are restored. `reputation_controls_02`
+then stops at the stock detail toggle: clicking the already-selected faction
+hides its detail. No native state changes. The runner now tests that close
+explicitly before reopening; fresh watch/header trials need their own closure.
 
 ```bash
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_reputation --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/reputation_read_01
