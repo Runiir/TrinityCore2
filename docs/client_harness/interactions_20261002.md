@@ -986,3 +986,28 @@ SHA-256 `d625c04b7ca05ab5573349e0f95aed7392702ca9ae9883d5d957ec190227533e`.
 The complete remotely verified checkpoint preserves the initial failed fixtures,
 corrected tests, deployment and accepted letter trial. Its raw frames and local
 archive/cache copies are removed afterward; receipts remain locally.
+
+UI16 qualifies mail resource collection. The bridge translates the owned
+mailbox/letter IDs for item and money requests, rejects attachment-ID truncation,
+and preserves full 64-bit money. Native handlers still verify attachment
+membership, COD, inventory capacity, balances and gameplay errors. v20 observes
+the open letter's normal attachment identity/count and money APIs; it does not
+invoke collection or text-reading APIs.
+
+`mail_collect_item_01` completes five Laya choices and receives five Refreshing
+Spring Water items (159). Native and visible counts agree, the attachment leaves
+the letter, and money remains unchanged. `mail_collect_money_01` completes five
+choices and receives exactly 12,345 copper, with exact native/visible balance
+agreement and zero money left in the letter. Each trial reads and deletes its
+empty disposable letter, closes mail, and restores original reward mail,
+attachments, complete inventory/money and pose. Code removes only the acquired
+fixture resource; temporary permissions 488 and 554 are revoked. Both UI paths
+are clean of Lua errors and blocked actions. Screenshots and attributable native
+packet receipts accompany the outcomes.
+
+All 526 regression tests and 62 selected ASan/UBSan checks pass. Both clients
+reconnect with v20 on HDMI-1. Only the bridge is rebuilt/restarted; native
+worldserver PID 3123698/start ticks 13177436 remains unchanged. Player-to-player
+send, reply/return, COD, text-copy, invoices, gems and other attachment variants
+remain open. Successful console fixtures do not qualify sender postage or
+delivery semantics.

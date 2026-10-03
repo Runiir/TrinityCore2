@@ -43,7 +43,7 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
-adapter and subsequent quest/mail work pass 516 regression tests (499 world and
+adapter and subsequent quest/mail work pass 526 regression tests (509 world and
 17 authentication checks). The quest batch
 passes 101 selected ASan/UBSan tests; the later self-target correction passes
 26 selected sanitizer checks and the login-read followup passes 32. This counts
@@ -60,8 +60,10 @@ remain open. Mailbox opening and closure now display all three existing reward
 letters with correct sender names, subjects and attachment counts. The mail and
 login followup passes 35 selected sanitizer checks. A later disposable-letter
 trial qualifies reading its displayed body, native read marking and deletion;
-its 52 selected mail/login sanitizer checks pass. Sending, taking, returning,
-COD, text-copy and invoice variants remain separate pending cases.
+its 52 selected mail/login sanitizer checks pass. Two subsequent trials qualify
+collecting five water items and 12,345 copper, each with full fixture restoration;
+62 selected sanitizer checks pass. Sending, returning, COD, text-copy and invoice
+variants remain separate pending cases.
 Questgiver details and the native 0/6 kill objective display correctly in the
 latest trial. Its initial cleanup exposes a dropped self-selection request,
 which is fixed. A five-choice quest-log trial expands the zone, reads the

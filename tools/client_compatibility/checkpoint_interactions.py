@@ -8,6 +8,7 @@ import re
 import subprocess
 import tarfile
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 from dvclive import Live
 from . import lab_runtime as lab
@@ -77,7 +78,7 @@ def initialize(directory):
     identity={key:native[key] for key in ['pid','start_ticks']}
     lab.private_write(directory/'native_server_before.json',json.dumps(identity,indent=2)+'\n')
     lab.private_write(directory/'batch.json',json.dumps({'schema':'client442_interaction_batch_v1',
-        'started_at':__import__('time').time(),'native_worldserver':identity,
+        'started_at':time.time(),'native_worldserver':identity,
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip()},indent=2)+'\n')
     print(json.dumps({'directory':str(directory),'native_worldserver':identity}))
 
