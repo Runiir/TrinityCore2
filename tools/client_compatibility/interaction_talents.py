@@ -54,10 +54,16 @@ def suite(t,learned_arms=False):
                 a.get('talent_probe',{}).get('groups')==1 and a['talent_probe'].get('unspent')==41-int(learned_arms) and not a.get('lua_errors') else
                 'client_or_protocol_failure','oracle':{'public':a.get('talent_probe'),'native':before}},diagnostic_action='open',
             await_state=lambda s:'PlayerTalentFrame' in s['panels']),'talents_open_pass')
-        require(click_case(t,'talents.select_talent_panel','View the three warrior specializations.',
-            lambda c:c['name']=='PlayerTalentFrameTab1' and c['text']=='Talents',
-            lambda b,a,s:{'status':'talent_panel_pass' if s and a.get('talent_probe',{}).get('selected')==1 else
-                'client_or_protocol_failure'}),'talent_panel_pass')
+        state,_=t.observe('talent_selected_tab')
+        if state.get('talent_probe',{}).get('selected')==1:
+            # Stock tabs disable their already-selected button. Read this panel
+            # directly rather than treating its disabled tab as a failure.
+            t.receipt['talent_tab_already_selected']=True;t.persist()
+        else:
+            require(click_case(t,'talents.select_talent_panel','View the three warrior specializations.',
+                lambda c:c['name']=='PlayerTalentFrameTab1' and c['text']=='Talents',
+                lambda b,a,s:{'status':'talent_panel_pass' if s and a.get('talent_probe',{}).get('selected')==1 else
+                    'client_or_protocol_failure'}),'talent_panel_pass')
         probe=detail(t,'talent_details')
         if [(r.get('id'),r.get('name'),r.get('count')) for r in probe['tabs']]!=[(746,'Arms',20),(815,'Fury',21),(845,'Protection',20)]:
             raise RuntimeError('public warrior talent catalogs differ from pinned native/client tables')
