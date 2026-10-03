@@ -122,7 +122,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=36,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=37,observer_skips=observerSkips}
     if mode=='talents' then data.talent_probe=Client442ObserveTalents();return data end
     if mode=='quest_reward' then data.quest_reward=Client442ObserveQuestReward();return data end
     if mode=='glyphs' then data.glyph_probe=Client442ObserveGlyphs(page);return data end
@@ -386,6 +386,7 @@ local function snapshot(viewMode,viewPage)
     end
     data.world_markers={};for i=1,8 do data.world_markers[i]=not not call(IsRaidMarkerActive,i) end
     data.spell_targeting=not not call(SpellIsTargeting)
+    data.pending_glyph=call(GetPendingGlyphInfo)
     data.marker_spell_names={}
     for _,id in ipairs({171553,171554,171555,171556,171557}) do
         local info=call(C_Spell and C_Spell.GetSpellInfo,id)

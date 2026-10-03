@@ -48,6 +48,17 @@ class Input(ctl.Input):
         self.sender.stdin.write(json.dumps(request)+'\n');self.sender.stdin.flush()
         if self.reply().get('ok') is not True:raise RuntimeError('native private input was not acknowledged')
 
+    def type(self,text):
+        # Background clients run at 15 FPS. Both the down interval and the gap
+        # must span a client tick, including repeated letters and slash prefixes.
+        for char in text:
+            mapped=ctl.key_for_char(char)
+            if mapped:
+                code,_=self._keycode(self.XK.string_to_keysym(mapped[0]));shifted=mapped[1]
+            else:code,shifted=self._keycode(ord(char))
+            shift=[self._keycode(self.XK.string_to_keysym('Shift_L'))[0]] if shifted else []
+            self._tap(shift+[code],.1);time.sleep(.07)
+
     def close(self):
         if self.sender is None:return
         try:
