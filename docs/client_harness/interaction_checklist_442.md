@@ -1,6 +1,8 @@
 # 4.4.2 player interaction checklist
 
-891 operation contracts across 45 families. Each is pending qualification until a run supplies evidence.
+901 operation contracts across 45 families. 183 have a qualified fixture variant; the rest remain pending.
+
+A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
 Player interaction families and every installed binding. Per-spell/item/quest/encounter variants are expanded by the native content census.
 
@@ -18,9 +20,9 @@ Fixture: `disposable_account`.
 - [ ] `lifecycle.appearance_preview`
 - [ ] `lifecycle.name_validation`
 - [ ] `lifecycle.delete_character`
-- [ ] `lifecycle.enter_world`
-- [ ] `lifecycle.logout_cancel`
-- [ ] `lifecycle.logout_confirm`
+- [x] `lifecycle.enter_world` (qualified variant; [evidence](#logout_reentry))
+- [x] `lifecycle.logout_cancel` (qualified variant; [evidence](#logout_reentry))
+- [x] `lifecycle.logout_confirm` (qualified variant; [evidence](#logout_reentry))
 - [ ] `lifecycle.reconnect`
 - [ ] `lifecycle.launcher_login`
 - [ ] `lifecycle.password_login`
@@ -32,13 +34,13 @@ Fixture: `disposable_account`.
 
 Fixture: `equipped_character`.
 
-- [ ] `character.open`
-- [ ] `character.close`
-- [ ] `character.stats`
+- [x] `character.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `character.close` (qualified variant; [evidence](#panel_visibility))
+- [x] `character.stats` (qualified variant; [evidence](#equipment))
 - [ ] `character.equipment_tooltips`
 - [ ] `character.compare_items`
-- [ ] `character.equip`
-- [ ] `character.unequip`
+- [x] `character.equip` (qualified variant; [evidence](#equipment))
+- [x] `character.unequip` (qualified variant; [evidence](#equipment))
 - [ ] `character.weapon_swap`
 - [ ] `character.display_helm`
 - [ ] `character.display_cloak`
@@ -53,8 +55,8 @@ Fixture: `equipped_character`.
 
 Fixture: `known_factions`.
 
-- [ ] `reputation.open`
-- [ ] `reputation.close`
+- [x] `reputation.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `reputation.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `reputation.expand`
 - [ ] `reputation.collapse`
 - [ ] `reputation.inspect_standing`
@@ -85,8 +87,8 @@ Fixture: `known_currencies`.
 
 Fixture: `class_variants`.
 
-- [ ] `spellbook.open`
-- [ ] `spellbook.close`
+- [x] `spellbook.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `spellbook.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `spellbook.general_tab`
 - [ ] `spellbook.class_tab`
 - [ ] `spellbook.pet_tab`
@@ -105,8 +107,8 @@ Fixture: `class_variants`.
 
 Fixture: `class_variants`.
 
-- [ ] `talents.open`
-- [ ] `talents.close`
+- [x] `talents.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `talents.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `talents.specialization_preview`
 - [ ] `talents.choose_specialization`
 - [ ] `talents.spend_point`
@@ -125,24 +127,24 @@ Fixture: `class_variants`.
 
 Fixture: `profession_variants`.
 
-- [ ] `professions.open`
-- [ ] `professions.close`
-- [ ] `professions.primary_one`
-- [ ] `professions.primary_two`
-- [ ] `professions.cooking`
-- [ ] `professions.first_aid`
+- [x] `professions.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `professions.close` (qualified variant; [evidence](#panel_visibility))
+- [x] `professions.primary_one` (qualified variant; [evidence](#profession_catalogs))
+- [x] `professions.primary_two` (qualified variant; [evidence](#profession_catalogs))
+- [x] `professions.cooking` (qualified variant; [evidence](#profession_catalogs))
+- [x] `professions.first_aid` (qualified variant; [evidence](#profession_catalogs))
 - [ ] `professions.fishing`
-- [ ] `professions.archaeology`
-- [ ] `professions.recipe_list`
-- [ ] `professions.recipe_search`
+- [x] `professions.archaeology` (qualified variant; [evidence](#profession_catalogs))
+- [x] `professions.recipe_list` (qualified variant; [evidence](#crafting))
+- [x] `professions.recipe_search` (qualified variant; [evidence](#crafting))
 - [ ] `professions.recipe_filter`
 - [ ] `professions.recipe_tooltip`
-- [ ] `professions.recipe_select`
+- [x] `professions.recipe_select` (qualified variant; [evidence](#crafting))
 - [ ] `professions.reagent_tooltip`
-- [ ] `professions.craft_one`
-- [ ] `professions.craft_multiple`
+- [x] `professions.craft_one` (qualified variant; [evidence](#crafting))
+- [x] `professions.craft_multiple` (qualified variant; [evidence](#crafting))
 - [ ] `professions.cancel_craft`
-- [ ] `professions.craft_result`
+- [x] `professions.craft_result` (qualified variant; [evidence](#crafting))
 - [ ] `professions.skill_gain`
 - [ ] `professions.learn_recipe`
 - [ ] `professions.unlearn_profession`
@@ -158,22 +160,22 @@ Fixture: `profession_variants`.
 
 Fixture: `digsite_variants`.
 
-- [ ] `archaeology.open`
+- [x] `archaeology.open` (qualified variant; [evidence](#profession_catalogs))
 - [ ] `archaeology.close`
 - [ ] `archaeology.race_select`
 - [ ] `archaeology.project_select`
 - [ ] `archaeology.project_tooltip`
-- [ ] `archaeology.survey`
+- [x] `archaeology.survey` (qualified variant; [evidence](#archaeology_loop))
 - [ ] `archaeology.cast_bar`
-- [ ] `archaeology.telescope_direction`
-- [ ] `archaeology.distance_lantern`
-- [ ] `archaeology.approach_find`
-- [ ] `archaeology.loot_find`
+- [x] `archaeology.telescope_direction` (qualified variant; [evidence](#archaeology_loop))
+- [x] `archaeology.distance_lantern` (qualified variant; [evidence](#archaeology_loop))
+- [x] `archaeology.approach_find` (qualified variant; [evidence](#archaeology_loop))
+- [x] `archaeology.loot_find` (qualified variant; [evidence](#archaeology_loop))
 - [ ] `archaeology.solve_project`
 - [ ] `archaeology.use_keystone`
 - [ ] `archaeology.project_completion`
-- [ ] `archaeology.site_completion`
-- [ ] `archaeology.site_rotation`
+- [x] `archaeology.site_completion` (qualified variant; [evidence](#archaeology_loop))
+- [x] `archaeology.site_rotation` (qualified variant; [evidence](#archaeology_loop))
 - [ ] `archaeology.continent_map`
 - [ ] `archaeology.fragments_cap`
 - [ ] `archaeology.persist`
@@ -182,13 +184,13 @@ Fixture: `digsite_variants`.
 
 Fixture: `inventory_items`.
 
-- [ ] `bags.open_all`
-- [ ] `bags.close_all`
-- [ ] `bags.backpack`
-- [ ] `bags.bag_one`
-- [ ] `bags.bag_two`
-- [ ] `bags.bag_three`
-- [ ] `bags.bag_four`
+- [x] `bags.open_all` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.close_all` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.backpack` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.bag_one` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.bag_two` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.bag_three` (qualified variant; [evidence](#panel_visibility))
+- [x] `bags.bag_four` (qualified variant; [evidence](#panel_visibility))
 - [ ] `bags.combined_bags_toggle`
 - [ ] `bags.sort`
 - [ ] `bags.search`
@@ -196,13 +198,13 @@ Fixture: `inventory_items`.
 - [ ] `bags.item_tooltip`
 - [ ] `bags.compare_tooltip`
 - [ ] `bags.item_link`
-- [ ] `bags.move_item`
+- [x] `bags.move_item` (qualified variant; [evidence](#inventory_movement))
 - [ ] `bags.swap_item`
-- [ ] `bags.split_stack`
-- [ ] `bags.merge_stack`
+- [x] `bags.split_stack` (qualified variant; [evidence](#stack_split_merge))
+- [x] `bags.merge_stack` (qualified variant; [evidence](#stack_split_merge))
 - [ ] `bags.use_item`
-- [ ] `bags.equip_item`
-- [ ] `bags.unequip_item`
+- [x] `bags.equip_item` (qualified variant; [evidence](#equipment))
+- [x] `bags.unequip_item` (qualified variant; [evidence](#equipment))
 - [ ] `bags.destroy_confirm`
 - [ ] `bags.destroy_cancel`
 - [ ] `bags.bag_replace`
@@ -216,10 +218,10 @@ Fixture: `inventory_items`.
 
 Fixture: `banker_inventory`.
 
-- [ ] `bank.open`
-- [ ] `bank.close`
-- [ ] `bank.deposit`
-- [ ] `bank.withdraw`
+- [x] `bank.open` (qualified variant; [evidence](#bank))
+- [x] `bank.close` (qualified variant; [evidence](#bank))
+- [x] `bank.deposit` (qualified variant; [evidence](#bank))
+- [x] `bank.withdraw` (qualified variant; [evidence](#bank))
 - [ ] `bank.swap`
 - [ ] `bank.split`
 - [ ] `bank.buy_slot`
@@ -233,15 +235,15 @@ Fixture: `banker_inventory`.
 
 Fixture: `merchant_inventory`.
 
-- [ ] `merchant.open`
-- [ ] `merchant.close`
+- [x] `merchant.open` (qualified variant; [evidence](#merchant))
+- [x] `merchant.close` (qualified variant; [evidence](#merchant))
 - [ ] `merchant.browse_page`
 - [ ] `merchant.buy_one`
-- [ ] `merchant.buy_stack`
-- [ ] `merchant.sell`
-- [ ] `merchant.buyback`
+- [x] `merchant.buy_stack` (qualified variant; [evidence](#purchase))
+- [x] `merchant.sell` (qualified variant; [evidence](#merchant))
+- [x] `merchant.buyback` (qualified variant; [evidence](#merchant))
 - [ ] `merchant.repair_one`
-- [ ] `merchant.repair_all`
+- [x] `merchant.repair_all` (qualified variant; [evidence](#repair_all))
 - [ ] `merchant.insufficient_money`
 - [ ] `merchant.unavailable_stock`
 - [ ] `merchant.currency_cost`
@@ -252,12 +254,13 @@ Fixture: `merchant_inventory`.
 
 Fixture: `trainer_skills`.
 
-- [ ] `trainer.open`
-- [ ] `trainer.close`
+- [x] `trainer.open` (qualified variant; [evidence](#trainer))
+- [x] `trainer.close` (qualified variant; [evidence](#trainer))
 - [ ] `trainer.filter_available`
 - [ ] `trainer.filter_unavailable`
+- [x] `trainer.filter_known` (qualified variant; [evidence](#trainer_known_filter))
 - [ ] `trainer.skill_tooltip`
-- [ ] `trainer.learn_skill`
+- [x] `trainer.learn_skill` (qualified variant; [evidence](#trainer))
 - [ ] `trainer.learn_rank`
 - [ ] `trainer.insufficient_money`
 - [ ] `trainer.prerequisite_error`
@@ -268,16 +271,16 @@ Fixture: `trainer_skills`.
 
 Fixture: `quest_variants`.
 
-- [ ] `quests.open_log`
-- [ ] `quests.close_log`
-- [ ] `quests.select`
-- [ ] `quests.expand_zone`
+- [x] `quests.open_log` (qualified variant; [evidence](#panel_visibility))
+- [x] `quests.close_log` (qualified variant; [evidence](#panel_visibility))
+- [x] `quests.select` (qualified variant; [evidence](#quest_log))
+- [x] `quests.expand_zone` (qualified variant; [evidence](#quest_log))
 - [ ] `quests.collapse_zone`
-- [ ] `quests.details`
+- [x] `quests.details` (qualified variant; [evidence](#quest_log))
 - [ ] `quests.track`
 - [ ] `quests.untrack`
 - [ ] `quests.abandon_cancel`
-- [ ] `quests.abandon_confirm`
+- [x] `quests.abandon_confirm` (qualified variant; [evidence](#quest_log))
 - [ ] `quests.share`
 - [ ] `quests.accept`
 - [ ] `quests.decline`
@@ -299,8 +302,8 @@ Fixture: `quest_variants`.
 
 Fixture: `map_variants`.
 
-- [ ] `map.open`
-- [ ] `map.close`
+- [x] `map.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `map.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `map.continent`
 - [ ] `map.zone`
 - [ ] `map.subzone`
@@ -328,8 +331,8 @@ Fixture: `map_variants`.
 
 Fixture: `achievement_variants`.
 
-- [ ] `achievements.open`
-- [ ] `achievements.close`
+- [x] `achievements.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `achievements.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `achievements.category`
 - [ ] `achievements.achievement`
 - [ ] `achievements.search`
@@ -339,15 +342,15 @@ Fixture: `achievement_variants`.
 - [ ] `achievements.compare`
 - [ ] `achievements.criteria_progress`
 - [ ] `achievements.earned_notification`
-- [ ] `achievements.statistics`
+- [x] `achievements.statistics` (qualified variant; [evidence](#panel_visibility))
 - [ ] `achievements.persist`
 
 ## collections
 
 Fixture: `mount_pet_variants`.
 
-- [ ] `collections.open`
-- [ ] `collections.close`
+- [x] `collections.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `collections.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `collections.mount_tab`
 - [ ] `collections.mount_search`
 - [ ] `collections.mount_filter`
@@ -373,8 +376,8 @@ Fixture: `mount_pet_variants`.
 
 Fixture: `encounter_variants`.
 
-- [ ] `journal.open`
-- [ ] `journal.close`
+- [x] `journal.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `journal.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `journal.expansion`
 - [ ] `journal.instance`
 - [ ] `journal.difficulty`
@@ -393,10 +396,10 @@ Fixture: `encounter_variants`.
 
 Fixture: `owned_second_actor`.
 
-- [ ] `friends.open`
-- [ ] `friends.close`
+- [x] `friends.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `friends.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `friends.list`
-- [ ] `friends.add_friend`
+- [x] `friends.add_friend` (qualified variant; [evidence](#party_invitation))
 - [ ] `friends.online_presence`
 - [ ] `friends.offline_presence`
 - [ ] `friends.note_edit`
@@ -417,21 +420,21 @@ Fixture: `owned_second_actor`.
 
 Fixture: `owned_second_actor`.
 
-- [ ] `chat.say`
-- [ ] `chat.yell`
-- [ ] `chat.whisper`
+- [x] `chat.say` (qualified variant; [evidence](#chat))
+- [x] `chat.yell` (qualified variant; [evidence](#chat))
+- [x] `chat.whisper` (qualified variant; [evidence](#chat))
 - [ ] `chat.reply`
 - [ ] `chat.party`
-- [ ] `chat.raid`
-- [ ] `chat.raid_warning`
-- [ ] `chat.guild`
-- [ ] `chat.officer`
+- [x] `chat.raid` (qualified variant; [evidence](#chat))
+- [x] `chat.raid_warning` (qualified variant; [evidence](#chat))
+- [x] `chat.guild` (qualified variant; [evidence](#guild_notes))
+- [x] `chat.officer` (qualified variant; [evidence](#guild_notes))
 - [ ] `chat.channel_join`
 - [ ] `chat.channel_leave`
 - [ ] `chat.channel_list`
 - [ ] `chat.channel_password`
 - [ ] `chat.channel_owner`
-- [ ] `chat.emote`
+- [x] `chat.emote` (qualified variant; [evidence](#chat))
 - [ ] `chat.language_switch`
 - [ ] `chat.combat_log`
 - [ ] `chat.chat_settings`
@@ -450,15 +453,16 @@ Fixture: `owned_second_actor`.
 
 Fixture: `owned_second_actor`.
 
-- [ ] `party.invite`
-- [ ] `party.accept`
+- [x] `party.invite` (qualified variant; [evidence](#party_invitation))
+- [x] `party.accept` (qualified variant; [evidence](#party_invitation))
 - [ ] `party.decline`
 - [ ] `party.cancel_pending`
 - [ ] `party.duplicate_invite`
 - [ ] `party.full_group_error`
 - [ ] `party.cross_map_invite`
 - [ ] `party.leader_promote`
-- [ ] `party.role_assign`
+- [x] `party.role_poll` (qualified variant; [evidence](#roles))
+- [x] `party.role_assign` (qualified variant; [evidence](#roles))
 - [ ] `party.loot_method`
 - [ ] `party.loot_threshold`
 - [ ] `party.master_looter`
@@ -477,20 +481,27 @@ Fixture: `owned_second_actor`.
 
 Fixture: `owned_group`.
 
-- [ ] `raid.convert_from_party`
-- [ ] `raid.convert_to_party`
+- [x] `raid.convert_from_party` (qualified variant; [evidence](#group_conversion))
+- [x] `raid.convert_to_party` (qualified variant; [evidence](#group_conversion))
 - [ ] `raid.raid_panel`
-- [ ] `raid.roster`
+- [x] `raid.roster` (qualified variant; [evidence](#group_roster))
+- [x] `raid.roster_health_bars` (qualified variant; [evidence](#group_roster))
 - [ ] `raid.subgroup_move`
 - [ ] `raid.assistant_promote`
 - [ ] `raid.assistant_demote`
+- [x] `raid.everyone_assistant` (qualified variant; [evidence](#raid_profiles))
+- [x] `raid.frame_lock` (qualified variant; [evidence](#raid_profiles))
+- [x] `raid.frame_unlock` (qualified variant; [evidence](#raid_profiles))
+- [x] `raid.frame_show` (qualified variant; [evidence](#raid_profiles))
+- [x] `raid.frame_hide` (qualified variant; [evidence](#raid_profiles))
 - [ ] `raid.main_tank`
 - [ ] `raid.main_assist`
-- [ ] `raid.ready_check`
+- [x] `raid.ready_check` (qualified variant; [evidence](#ready_check))
+- [x] `raid.ready_timeout` (qualified variant; [evidence](#ready_timeout))
 - [ ] `raid.raid_target`
-- [ ] `raid.world_marker`
-- [ ] `raid.clear_marker`
-- [ ] `raid.raid_warning`
+- [x] `raid.world_marker` (qualified variant; [evidence](#world_markers))
+- [x] `raid.clear_marker` (qualified variant; [evidence](#world_markers))
+- [x] `raid.raid_warning` (qualified variant; [evidence](#chat))
 - [ ] `raid.loot_method`
 - [ ] `raid.leave`
 - [ ] `raid.kick`
@@ -507,23 +518,23 @@ Fixture: `owned_group`.
 
 Fixture: `disposable_guild`.
 
-- [ ] `guild.open`
+- [x] `guild.open` (qualified variant; [evidence](#guild_open))
 - [ ] `guild.close`
-- [ ] `guild.roster`
+- [x] `guild.roster` (qualified variant; [evidence](#guild_membership))
 - [ ] `guild.online_filter`
-- [ ] `guild.member_detail`
-- [ ] `guild.note`
-- [ ] `guild.officer_note`
-- [ ] `guild.invite`
-- [ ] `guild.accept`
-- [ ] `guild.decline`
-- [ ] `guild.rank_promote`
-- [ ] `guild.rank_demote`
-- [ ] `guild.remove_member`
+- [x] `guild.member_detail` (qualified variant; [evidence](#guild_notes))
+- [x] `guild.note` (qualified variant; [evidence](#guild_notes))
+- [x] `guild.officer_note` (qualified variant; [evidence](#guild_notes))
+- [x] `guild.invite` (qualified variant; [evidence](#guild_membership))
+- [x] `guild.accept` (qualified variant; [evidence](#guild_membership))
+- [x] `guild.decline` (qualified variant; [evidence](#guild_membership))
+- [x] `guild.rank_promote` (qualified variant; [evidence](#guild_ranks))
+- [x] `guild.rank_demote` (qualified variant; [evidence](#guild_ranks))
+- [x] `guild.remove_member` (qualified variant; [evidence](#guild_ranks))
 - [ ] `guild.leadership_transfer`
-- [ ] `guild.motd`
-- [ ] `guild.information`
-- [ ] `guild.chat`
+- [x] `guild.motd` (qualified variant; [evidence](#guild_membership))
+- [x] `guild.information` (qualified variant; [evidence](#guild_notes))
+- [x] `guild.chat` (qualified variant; [evidence](#guild_notes))
 - [ ] `guild.permissions`
 - [ ] `guild.news`
 - [ ] `guild.achievements`
@@ -533,8 +544,8 @@ Fixture: `disposable_guild`.
 - [ ] `guild.charter_buy`
 - [ ] `guild.charter_sign`
 - [ ] `guild.charter_turn_in`
-- [ ] `guild.leave`
-- [ ] `guild.disband`
+- [x] `guild.leave` (qualified variant; [evidence](#guild_membership))
+- [x] `guild.disband` (qualified variant; [evidence](#guild_disband))
 - [ ] `guild.persist`
 
 ## guild bank
@@ -562,16 +573,16 @@ Fixture: `disposable_guild_bank`.
 
 Fixture: `owned_second_actor`.
 
-- [ ] `trade.request`
-- [ ] `trade.accept`
-- [ ] `trade.cancel`
-- [ ] `trade.offer_item`
+- [x] `trade.request` (qualified variant; [evidence](#trade_roundtrip))
+- [x] `trade.accept` (qualified variant; [evidence](#trade_roundtrip))
+- [x] `trade.cancel` (qualified variant; [evidence](#trade_cancel))
+- [x] `trade.offer_item` (qualified variant; [evidence](#trade_roundtrip))
 - [ ] `trade.remove_item`
-- [ ] `trade.offer_stack`
+- [x] `trade.offer_stack` (qualified variant; [evidence](#trade_roundtrip))
 - [ ] `trade.offer_money`
 - [ ] `trade.nontraded_item`
 - [ ] `trade.enchant_nontraded`
-- [ ] `trade.confirm`
+- [x] `trade.confirm` (qualified variant; [evidence](#trade_roundtrip))
 - [ ] `trade.changed_offer_reconfirm`
 - [ ] `trade.out_of_range`
 - [ ] `trade.reject`
@@ -582,24 +593,24 @@ Fixture: `owned_second_actor`.
 
 Fixture: `owned_second_actor_mailbox`.
 
-- [ ] `mail.open`
-- [ ] `mail.close`
-- [ ] `mail.inbox`
-- [ ] `mail.read`
-- [ ] `mail.attachment_money`
-- [ ] `mail.take_item`
+- [x] `mail.open` (qualified variant; [evidence](#mail_read))
+- [x] `mail.close` (qualified variant; [evidence](#mail_read))
+- [x] `mail.inbox` (qualified variant; [evidence](#mail_read))
+- [x] `mail.read` (qualified variant; [evidence](#mail_read))
+- [x] `mail.attachment_money` (qualified variant; [evidence](#mail_collection))
+- [x] `mail.take_item` (qualified variant; [evidence](#mail_collection))
 - [ ] `mail.take_all`
-- [ ] `mail.return`
-- [ ] `mail.delete`
-- [ ] `mail.reply`
-- [ ] `mail.compose`
-- [ ] `mail.add_recipient`
+- [x] `mail.return` (qualified variant; [evidence](#player_mail))
+- [x] `mail.delete` (qualified variant; [evidence](#mail_read))
+- [x] `mail.reply` (qualified variant; [evidence](#player_mail))
+- [x] `mail.compose` (qualified variant; [evidence](#player_mail))
+- [x] `mail.add_recipient` (qualified variant; [evidence](#player_mail))
 - [ ] `mail.attach_item`
-- [ ] `mail.attach_money`
+- [x] `mail.attach_money` (qualified variant; [evidence](#player_mail))
 - [ ] `mail.cod_send`
 - [ ] `mail.cod_accept`
-- [ ] `mail.send`
-- [ ] `mail.postage`
+- [x] `mail.send` (qualified variant; [evidence](#player_mail))
+- [x] `mail.postage` (qualified variant; [evidence](#player_mail))
 - [ ] `mail.insufficient_money`
 - [ ] `mail.full_bag_error`
 - [ ] `mail.expired_mail`
@@ -609,32 +620,33 @@ Fixture: `owned_second_actor_mailbox`.
 
 Fixture: `disposable_auction`.
 
-- [ ] `auction.open`
-- [ ] `auction.close`
-- [ ] `auction.browse`
-- [ ] `auction.search`
+- [x] `auction.open` (qualified variant; [evidence](#auction_read))
+- [x] `auction.close` (qualified variant; [evidence](#auction_read))
+- [x] `auction.browse` (qualified variant; [evidence](#auction_read))
+- [x] `auction.search` (qualified variant; [evidence](#auction_read))
 - [ ] `auction.category`
 - [ ] `auction.filter`
 - [ ] `auction.sort`
-- [ ] `auction.select`
+- [x] `auction.select` (qualified variant; [evidence](#auction_roundtrip))
 - [ ] `auction.inspect`
 - [ ] `auction.bid`
 - [ ] `auction.buyout`
+- [x] `auction.sell_item` (qualified variant; [evidence](#auction_roundtrip))
 - [ ] `auction.sell_stack`
 - [ ] `auction.duration`
-- [ ] `auction.deposit`
-- [ ] `auction.auction_cancel`
-- [ ] `auction.owned_auctions`
+- [x] `auction.deposit` (qualified variant; [evidence](#auction_roundtrip))
+- [x] `auction.auction_cancel` (qualified variant; [evidence](#auction_roundtrip))
+- [x] `auction.owned_auctions` (qualified variant; [evidence](#auction_roundtrip))
 - [ ] `auction.bids_outbid`
-- [ ] `auction.mail_delivery`
+- [x] `auction.mail_delivery` (qualified variant; [evidence](#auction_roundtrip))
 - [ ] `auction.persist`
 
 ## calendar
 
 Fixture: `disposable_calendar`.
 
-- [ ] `calendar.open`
-- [ ] `calendar.close`
+- [x] `calendar.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `calendar.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `calendar.previous_month`
 - [ ] `calendar.next_month`
 - [ ] `calendar.event_view`
@@ -656,44 +668,44 @@ Fixture: `saved_local_bindings`.
 
 - [ ] `keybindings.open`
 - [ ] `keybindings.close`
-- [ ] `keybindings.category_search`
-- [ ] `keybindings.select_action`
+- [x] `keybindings.category_search` (qualified variant; [evidence](#keybinding_mutation))
+- [x] `keybindings.select_action` (qualified variant; [evidence](#keybinding_mutation))
 - [ ] `keybindings.assign_key`
-- [ ] `keybindings.assign_second_key`
-- [ ] `keybindings.modifier_chord`
+- [x] `keybindings.assign_second_key` (qualified variant; [evidence](#keybinding_mutation))
+- [x] `keybindings.modifier_chord` (qualified variant; [evidence](#keybinding_mutation))
 - [ ] `keybindings.conflict_replace`
 - [ ] `keybindings.conflict_cancel`
 - [ ] `keybindings.clear_binding`
 - [ ] `keybindings.per_character_toggle`
 - [ ] `keybindings.defaults_cancel`
 - [ ] `keybindings.defaults_apply`
-- [ ] `keybindings.save`
+- [x] `keybindings.save` (qualified variant; [evidence](#keybinding_mutation))
 - [ ] `keybindings.cancel`
-- [ ] `keybindings.persistence`
-- [ ] `keybindings.restore_original`
+- [x] `keybindings.persistence` (qualified variant; [evidence](#keybinding_mutation))
+- [x] `keybindings.restore_original` (qualified variant; [evidence](#keybinding_mutation))
 
 ## macros
 
 Fixture: `saved_local_macros`.
 
-- [ ] `macros.open`
-- [ ] `macros.close`
+- [x] `macros.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `macros.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `macros.account_tab`
 - [ ] `macros.character_tab`
-- [ ] `macros.create`
-- [ ] `macros.name`
+- [x] `macros.create` (qualified variant; [evidence](#macro_mutation))
+- [x] `macros.name` (qualified variant; [evidence](#macro_mutation))
 - [ ] `macros.icon`
 - [ ] `macros.select`
-- [ ] `macros.edit_body`
-- [ ] `macros.save`
+- [x] `macros.edit_body` (qualified variant; [evidence](#macro_mutation))
+- [x] `macros.save` (qualified variant; [evidence](#macro_mutation))
 - [ ] `macros.rename`
-- [ ] `macros.drag_to_actionbar`
-- [ ] `macros.execute`
-- [ ] `macros.delete_confirm`
+- [x] `macros.drag_to_actionbar` (qualified variant; [evidence](#macro_mutation))
+- [x] `macros.execute` (qualified variant; [evidence](#macro_mutation))
+- [x] `macros.delete_confirm` (qualified variant; [evidence](#macro_mutation))
 - [ ] `macros.delete_cancel`
 - [ ] `macros.macro_limit`
-- [ ] `macros.persistence`
-- [ ] `macros.restore_original`
+- [x] `macros.persistence` (qualified variant; [evidence](#macro_mutation))
+- [x] `macros.restore_original` (qualified variant; [evidence](#macro_mutation))
 
 ## actionbars
 
@@ -701,7 +713,7 @@ Fixture: `saved_local_bars`.
 
 - [ ] `actionbars.drag_spell`
 - [ ] `actionbars.drag_item`
-- [ ] `actionbars.drag_macro`
+- [x] `actionbars.drag_macro` (qualified variant; [evidence](#macro_mutation))
 - [ ] `actionbars.clear_slot`
 - [ ] `actionbars.swap_slots`
 - [ ] `actionbars.page_next`
@@ -719,7 +731,7 @@ Fixture: `saved_local_bars`.
 - [ ] `actionbars.override_bar`
 - [ ] `actionbars.extra_action_button`
 - [ ] `actionbars.persist`
-- [ ] `actionbars.restore_original`
+- [x] `actionbars.restore_original` (qualified variant; [evidence](#macro_mutation))
 
 ## settings
 
@@ -756,8 +768,8 @@ Fixture: `saved_local_settings`.
 
 Fixture: `in_world`.
 
-- [ ] `menu.open`
-- [ ] `menu.close`
+- [x] `menu.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `menu.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `menu.options`
 - [ ] `menu.keybindings`
 - [ ] `menu.macros`
@@ -788,7 +800,7 @@ Fixture: `safe_terrain_variants`.
 - [ ] `movement.turn_left`
 - [ ] `movement.turn_right`
 - [ ] `movement.strafe_left`
-- [ ] `movement.strafe_right`
+- [x] `movement.strafe_right` (qualified variant; [evidence](#follow))
 - [ ] `movement.mouse_turn`
 - [ ] `movement.autorun`
 - [ ] `movement.stop`
@@ -821,7 +833,7 @@ Fixture: `safe_terrain_variants`.
 - [ ] `movement.vehicle_enter`
 - [ ] `movement.vehicle_exit`
 - [ ] `movement.vehicle_seat`
-- [ ] `movement.follow`
+- [x] `movement.follow` (qualified variant; [evidence](#follow))
 - [ ] `movement.interact_with_target`
 
 ## targeting
@@ -831,7 +843,7 @@ Fixture: `owned_targets`.
 - [ ] `targeting.click_target`
 - [ ] `targeting.tab_enemy`
 - [ ] `targeting.previous_enemy`
-- [ ] `targeting.friendly_target`
+- [x] `targeting.friendly_target` (qualified variant; [evidence](#nearby_target))
 - [ ] `targeting.clear_target`
 - [ ] `targeting.target_self`
 - [ ] `targeting.party_target`
@@ -844,7 +856,7 @@ Fixture: `owned_targets`.
 - [ ] `targeting.mouseover`
 - [ ] `targeting.tooltip`
 - [ ] `targeting.nameplate`
-- [ ] `targeting.inspect_player`
+- [x] `targeting.inspect_player` (qualified variant; [evidence](#inspect))
 - [ ] `targeting.trade_context`
 - [ ] `targeting.duel_context`
 - [ ] `targeting.follow_context`
@@ -998,8 +1010,8 @@ Fixture: `travel_variants`.
 
 Fixture: `owned_group_and_queue`.
 
-- [ ] `pve_group_finder.open`
-- [ ] `pve_group_finder.close`
+- [x] `pve_group_finder.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `pve_group_finder.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `pve_group_finder.role_choose`
 - [ ] `pve_group_finder.dungeon_select`
 - [ ] `pve_group_finder.random_dungeon`
@@ -1023,8 +1035,8 @@ Fixture: `owned_group_and_queue`.
 
 Fixture: `owned_pvp_fixture`.
 
-- [ ] `pvp.open`
-- [ ] `pvp.close`
+- [x] `pvp.open` (qualified variant; [evidence](#panel_visibility))
+- [x] `pvp.close` (qualified variant; [evidence](#panel_visibility))
 - [ ] `pvp.battleground_select`
 - [ ] `pvp.battleground_queue`
 - [ ] `pvp.group_queue`
@@ -1127,3 +1139,398 @@ Fixture: `unsupported_service_contract`.
 ## Installed bindings
 
 Run `pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_inventory capture-bindings --output <owned-evidence-directory>`. This reads all binding names, categories and current keys from build 60895. Every command is an additional parametrized test contract; headers are classified rather than counted as actions. The generated catalog and screenshots belong in DVC.
+
+## Qualification evidence
+
+Each checked operation refers to one reviewed record below. Receipt paths are members of the linked DVC archive; hashes identify the reviewed JSON receipt.
+
+### panel_visibility
+
+Ordinary installed bindings and visible controls open and close the listed panels on build 60895. All four equipped bags open individually.
+
+Remaining limits: Panel contents, mutations and unsampled variants remain open; bags with other sizes and layouts are unqualified.
+
+- [442_interactions_20261002_02.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc), member `evidence/client_interactions_20261002_followup/panel_diagnostic_01/episode.json`, SHA-256 `1712c3bcfe29754345b5c8ff03afb6831957fd235a44263fa61fbf017a89c77f`.
+  Checked cases: `bags.backpack` (panel_open_pass), `bags.bag_one` (panel_open_pass), `bags.bag_two` (panel_open_pass), `bags.bag_three` (panel_open_pass), `bags.bag_four` (panel_open_pass), `bags.open_all` (panel_open_pass), `bags.open_all.close` (panel_close_pass), `character.open` (panel_open_pass), `character.open.close` (panel_close_pass), `reputation.open` (panel_open_pass), `reputation.open.close` (panel_close_pass), `professions.open` (panel_open_pass), `professions.open.close` (panel_close_pass), `spellbook.open` (panel_open_pass), `spellbook.open.close` (panel_close_pass), `talents.open` (panel_open_pass), `talents.open.close` (panel_close_pass), `quests.open_log` (panel_open_pass), `quests.open_log.close` (panel_close_pass), `map.open` (panel_open_pass), `map.open.close` (panel_close_pass), `collections.open` (panel_open_pass), `collections.open.close` (panel_close_pass), `journal.open` (panel_open_pass), `journal.open.close` (panel_close_pass), `achievements.open` (panel_open_pass), `achievements.open.close` (panel_close_pass), `achievements.statistics` (panel_open_pass), `friends.open` (panel_open_pass), `friends.open.close` (panel_close_pass), `pve_group_finder.open` (panel_open_pass), `pve_group_finder.open.close` (panel_close_pass), `pvp.open` (panel_open_pass), `pvp.open.close` (panel_close_pass), `menu.open` (panel_open_pass), `menu.open.close` (panel_close_pass), `macros.open` (panel_open_pass), `macros.open.close` (panel_close_pass), `calendar.open` (panel_open_pass), `calendar.open.close` (panel_close_pass).
+
+### world_markers
+
+Eight outdoor Northshire world markers placed through ordinary ground clicks, observed on both clients, individually removed and cleared together. Native five spells and three modern-only annotations are attributed.
+
+Remaining limits: Other maps/phases, transport-ground coordinates, range boundaries and relog/restart persistence remain open.
+
+- [442_interactions_20261002_01.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc), member `evidence/client_interactions_20261002/world_markers_trial_02/episode.json`, SHA-256 `2a9498b60cc74f87bf97f1f58cef25542a0102becd25381fc24ccbc5b614db71`.
+  Checked cases: `raid.world_marker.place.1` (world_marker_visible_pass), `raid.world_marker.place.2` (world_marker_visible_pass), `raid.world_marker.place.3` (world_marker_visible_pass), `raid.world_marker.place.4` (world_marker_visible_pass), `raid.world_marker.place.5` (world_marker_visible_pass), `raid.world_marker.place.6` (world_marker_visible_pass), `raid.world_marker.place.7` (world_marker_visible_pass), `raid.world_marker.place.8` (world_marker_visible_pass), `raid.world_marker.clear.individual` (world_marker_clear_pass), `raid.world_marker.clear.all` (world_marker_clear_pass).
+
+### group_roster
+
+Both owned characters show valid native member contents and visible health bars on the main screen.
+
+Remaining limits: Two clients on map 0, in different zones; larger rosters, pets and cross-map variants remain open.
+
+- [442_interactions_20261002_01.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc), member `evidence/client_interactions_20261002/group_display_02/cohort.json`, SHA-256 `599f24ddb05fbe55b00640662cd5824c8a5e376788b65939ae2d84d1950c6558`.
+
+### roles
+
+Ordinary role poll completes with Tank and Damage; both clients agree on both assignments.
+
+Remaining limits: Healer, rejection permissions and larger groups remain open.
+
+- [442_interactions_20261002_01.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc), member `evidence/client_interactions_20261002/roles_trial_02/cohort.json`, SHA-256 `d135d79783e9b533bced976c919c81a502ebe5af10d4c3063c03c787139cd6fd`.
+
+### raid_profiles
+
+Everyone-assistant changed both ways with peer flags; raid frame lock/unlock and show/hide controls change the saved profile and restore it.
+
+Remaining limits: Individual assistant promotion/demotion, reconnect persistence and combat variants remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/raid_controls_01/episode.json`, SHA-256 `542b14fc867f1b1dbde6d9c7c221f0dff21600350ef9235216a4644c119215d1`.
+  Checked cases: `raid.everyone_assistant.false` (assistant_change_pass), `raid.everyone_assistant.true` (assistant_change_pass), `raid.profile.locked.false` (raid_profile_change_pass), `raid.profile.locked.true` (raid_profile_change_pass), `raid.profile.shown.false` (raid_profile_change_pass), `raid.profile.shown.true` (raid_profile_change_pass).
+
+### group_conversion
+
+Both party-to-raid and raid-to-party conversions agree with native group state and the peer client.
+
+Remaining limits: Larger groups, permission rejections and conversion during combat remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/group_conversions_02/episode.json`, SHA-256 `df30e5321a720951bef6855caf1c6420e89448194a375defe2a94ebbd45db3c0`.
+  Checked cases: `raid.convert_to_party` (group_conversion_pass), `raid.convert_from_party` (group_conversion_pass).
+
+### ready_check
+
+Raid ready checks initiated and answered Ready and Not Ready by the two owned accounts, with native completion and both dialogs closed.
+
+Remaining limits: Party-only mode, larger rosters and permissions remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/ready_checks_04/ready/cohort.json`, SHA-256 `a399814abf99954035833bc5cb4849f9668356a1b2fa0739d458ac026ec4e2fb`.
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/ready_checks_04/not_ready/cohort.json`, SHA-256 `b92f1ac5093161793970d590516199267cc6bf87501b60b11ab441726b228c05`.
+
+### ready_timeout
+
+No client answer; native timer completion is observed on both sessions and both dialogs close.
+
+Remaining limits: Other group sizes and disconnect timing remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/ready_timeout_01/cohort.json`, SHA-256 `e514a36cd465fad32d51a8433b60ec1c809482d3281f34835358da250e22d71a`.
+
+### party_invitation
+
+Native friend addition, normal party invitation and acceptance by the second account are attributed.
+
+Remaining limits: Decline, duplicate/full-group errors, remove/notes/ignore and cross-map variants remain open.
+
+- [442_interactions_20261002_01.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc), member `evidence/client_interactions_20261002/social_trial_07/primary/episode.json`, SHA-256 `084cf3964ca335ec4668efab6045bf9dd93909062d9dc9e51fe09bda7b1833d1`.
+  Checked cases: `friends.add_friend` (friend_add_pass), `party.invite` (invitation_submitted).
+- [442_interactions_20261002_01.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc), member `evidence/client_interactions_20261002/social_trial_07/scout/episode.json`, SHA-256 `c79fd90b076f648676771d586b875bdf0d19f4166fe75f30e606e89c687dd29e`.
+  Checked cases: `party.accept` (party_accept_pass).
+
+### keybinding_mutation
+
+Secondary Ctrl-Shift-F12 FPS binding searched, selected, assigned, saved, reloaded, executed twice and restored.
+
+Remaining limits: First-slot replacement, conflicts, defaults and full client reconnect persistence remain open.
+
+- [442_interactions_20261002_02.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc), member `evidence/client_interactions_20261002_followup/keybindings_trial_03/episode.json`, SHA-256 `edd3f452aa1faa1590c03477d5209c2a38e8b3f90946ddcfcc4e9467e6586ed2`.
+  Checked cases: `keybindings.search` (ui_edit_pass), `keybindings.listen` (binding_listener_pass), `keybindings.assign` (binding_assign_pass), `keybindings.save` (binding_save_pass), `keybindings.reload` (binding_reload_pass), `keybindings.execute` (binding_execute_pass), `keybindings.toggle_back` (binding_execute_pass).
+
+### macro_mutation
+
+Temporary account macro created, saved, physically dragged to an action slot, reloaded and executed with native Battle Shout completion. Ordinary code cleanup confirms deletion and empty original macro/action slot state.
+
+Remaining limits: Character macro variants, rename/icon selection, cancellation/limits and full reconnect persistence remain open.
+
+- [442_interactions_20261002_02.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc), member `evidence/client_interactions_20261002_followup/macro_trial_01/episode.json`, SHA-256 `dab77c3fa1773db6f19d94f3e7ea7c565a3e883f963d2d9beead65353b2f23f7`.
+  Checked cases: `macros.create` (macro_create_pass), `macros.name` (ui_edit_pass), `macros.body` (ui_edit_pass), `macros.save` (macro_save_pass), `macros.drag_to_bar` (macro_bar_pass), `macros.reload` (macro_reload_pass), `macros.execute` (macro_execute_pass).
+
+### profession_catalogs
+
+Alchemy, Tailoring, Cooking and First Aid recipe catalogs and the Archaeology panel display through ordinary controls.
+
+Remaining limits: Other professions, filters, recipe metadata and archaeology panel mutations remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/profession_trial_01/episode.json`, SHA-256 `72892c1026504b1f96b5174831c892775cfc5e20e79da95967851d5310414ad9`.
+  Checked cases: `professions.primary_one` (profession_recipe_pass), `professions.primary_two` (profession_recipe_pass), `professions.cooking` (profession_recipe_pass), `professions.first_aid` (profession_recipe_pass), `professions.archaeology` (panel_open_pass).
+
+### crafting
+
+Alchemy recipe searched/selected; one and two crafts complete with exact native/client reagent and product accounting and restored resources.
+
+Remaining limits: Other recipes/professions, cancellation, skill gains and cooldowns remain open.
+
+- [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/crafting_04/episode.json`, SHA-256 `9b89a460135227b0f5dc80f44e40dd4348c31b2d8b811996281c4fc66ea37d61`.
+  Checked cases: `professions.alchemy` (recipe_list_pass), `professions.recipe_search` (ui_edit_pass), `professions.recipe_select` (recipe_select_pass), `professions.craft_one` (craft_result_pass), `professions.craft_multiple` (craft_result_pass).
+
+### equipment
+
+One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored.
+
+Remaining limits: Unsampled gear slots, weapon swaps, sets and item comparison/tooltips remain open.
+
+- [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/equipment_02/episode.json`, SHA-256 `44214da3f31946df95c34cedc4a2ef828f8d15adbe3dc98fd39ca9797abe3a0c`.
+  Checked cases: `character.unequip` (equipment_change_pass), `character.equip` (equipment_change_pass), `character.stats.unequipped` (character_stats_pass), `character.stats.equipped_after` (character_stats_pass).
+
+### inventory_movement
+
+Hearthstone moved and restored, then an existing stack moved to an equipped bag and back with exact native identity/count, UI and complete resource agreement.
+
+Remaining limits: Other bag types, persistence and error paths remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/inventory_moves_03/episode.json`, SHA-256 `3aa66e8d3128c998d7c32269d5b3cd56f4b65b1e205508cb98f17dab11ccf02a`.
+  Checked cases: `bags.move_item` (inventory_move_pass), `bags.move_item_restore` (inventory_move_pass).
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/cross_bag_01/episode.json`, SHA-256 `5253326841cc1e7f56a5abf91fb0ec0c50e53b9878b7f8993f1d5d8efe1263f0`.
+  Checked cases: `bags.move_to_equipped_bag` (inventory_move_pass), `bags.move_from_equipped_bag` (inventory_move_pass).
+
+### stack_split_merge
+
+One keystone split from a five-item stack, placed and merged; original identity/count and full resources restored.
+
+Remaining limits: Other quantities, full bags and persistence remain open.
+
+- [442_interactions_20261002_03.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc), member `evidence/client_interactions_20261002_ui02/stack_split_01/episode.json`, SHA-256 `8ebc84f1af3dc985124f3a63e5f44fedf507873da73ab46f1bdfb4f05b4e4a9e`.
+  Checked cases: `bags.split_stack` (inventory_split_pass), `bags.merge_stack` (inventory_merge_pass).
+
+### chat
+
+Six normal chat sends reach native handlers; raid, raid-warning and whisper are independently received by the peer.
+
+Remaining limits: Say/yell/emote peer delivery, other languages/channels and failure variants remain open.
+
+- [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/chat_03/primary/episode.json`, SHA-256 `b8c8ae5b0c7720b781bb374924f45d764ff4f93d121c7da395355b6eca553809`.
+  Checked cases: `chat.say` (chat_send_pass), `chat.yell` (chat_send_pass), `chat.emote` (chat_send_pass), `chat.raid` (chat_send_pass), `chat.raid_warning` (chat_send_pass), `chat.whisper` (chat_send_pass).
+- [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/chat_03/scout/episode.json`, SHA-256 `2c667f6d1f464d89398de4619c954ae2739835a334f477ff56174ede5a2180d4`.
+  Checked cases: `chat.receive.raid` (chat_receive_pass), `chat.receive.raid_warning` (chat_receive_pass), `chat.receive.whisper` (chat_receive_pass).
+
+### logout_reentry
+
+Scout logout countdown cancelled, later completed and reentered through the visible selected character; primary sees offline/online and original resources/equipment/group/profile restored.
+
+Remaining limits: Character creation/deletion and other lifecycle failure variants remain open.
+
+- [442_interactions_20261002_04.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc), member `evidence/client_interactions_20261002_ui03/lifecycle_06/scout/episode.json`, SHA-256 `188949c5d63e88ea9b8c39d08adac51dfef9eb1a10916d85c083ba09d5cf8325`.
+  Checked cases: `lifecycle.logout_cancel` (logout_cancel_pass), `lifecycle.logout_complete` (logout_complete_pass), `lifecycle.reenter` (reenter_pass).
+
+### guild_membership
+
+Disposable guild invitations declined and accepted, both rosters shown, MOTD delivered to peer, then ordinary leave and native fixture restoration.
+
+Remaining limits: Guild bank/rank permissions, recruitment and larger rosters remain open.
+
+- [442_interactions_20261002_05.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc), member `evidence/client_interactions_20261002_ui04/guild_membership_02/primary/episode.json`, SHA-256 `558fc277b3219275dace71dfded918f0924649a037dcdcec185508abdfb3c2e3`.
+  Checked cases: `guild.invite` (guild_invite_submitted), `guild.open_roster` (guild_roster_pass), `guild.motd` (guild_motd_pass).
+- [442_interactions_20261002_05.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc), member `evidence/client_interactions_20261002_ui04/guild_membership_02/scout/episode.json`, SHA-256 `f220f0ef7c03496d229fc6309d98e2a711b93148bd1900985b40fb912acc9d81`.
+  Checked cases: `guild.decline` (guild_decline_pass), `guild.accept` (guild_accept_pass), `guild.open_roster` (guild_roster_pass), `guild.leave` (guild_leave_pass).
+
+### guild_open
+
+Classic guild preference enabled through ordinary controls and populated native roster rendered.
+
+Remaining limits: The stock six-tab/eight-tab Lua mismatch still affects Guild Control; this qualifies opening and roster display only.
+
+- [442_interactions_20261002_05.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc), member `evidence/client_interactions_20261002_ui04/guild_open_03/episode.json`, SHA-256 `e7c1d62ec684cb7ad81ec3cb904a129a0c619439b5f226a07cfdb6017f788c41`.
+  Checked cases: `guild.classic_open` (panel_open_pass), `guild.roster_contents` (guild_roster_pass).
+
+### guild_notes
+
+Public/officer notes use separate native columns; nonempty information saved/refreshed and guild/officer messages reach native.
+
+Remaining limits: Empty information emits no request. Guild Control permission mutations remain blocked by stock XML/Lua mismatch.
+
+- [442_interactions_20261002_05.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc), member `evidence/client_interactions_20261002_ui04/guild_notes_02/episode.json`, SHA-256 `7faeeb192614a10f72a2b7656447fe1e6cd3634bce9cc4ea2d2ff62a0fa45a1b`.
+  Checked cases: `guild.member_details` (guild_details_pass), `guild.public_note_save` (guild_note_pass), `guild.officer_note_save` (guild_note_pass), `guild.information_save` (guild_info_native_pass), `guild.information_refresh` (guild_info_visible_pass), `guild.chat.guild` (guild_chat_pass), `guild.chat.officer` (guild_chat_pass).
+
+### guild_ranks
+
+Visible promotion/demotion controls change native rank and peer roster; removal reaches native and peer.
+
+Remaining limits: These episodes retain Guild Control Lua errors (ui_clean=false). Bare-name promotion slash command emits no request. Wider rank/permission variants remain open.
+
+- [442_interactions_20261002_06.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc), member `evidence/client_interactions_20261002_ui05/guild_commands_06/primary/episode.json`, SHA-256 `f1a22d34a37f82e37e3423fe0e38d6ee3d9229dc617269015838831fcb3d3450`.
+  Checked cases: `guild.rank_promote` (guild_rank_pass), `guild.rank_demote` (guild_rank_pass), `guild.remove_member` (guild_remove_pass).
+- [442_interactions_20261002_06.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc), member `evidence/client_interactions_20261002_ui05/guild_commands_06/scout/episode.json`, SHA-256 `8031711a326e8e885acbaaa16581e31977070f20362bee83035e3530f12fb380`.
+  Checked cases: `guild.rank_promote_peer` (guild_rank_peer_pass), `guild.rank_demote_peer` (guild_rank_peer_pass), `guild.remove_member_peer` (guild_remove_peer_pass).
+
+### guild_disband
+
+Ordinary disband confirmation removes the disposable native guild and shows an unguilded leader.
+
+Remaining limits: Other leadership/rank constraints remain open.
+
+- [442_interactions_20261002_06.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc), member `evidence/client_interactions_20261002_ui05/guild_disband_01/episode.json`, SHA-256 `276600bec3147d04c8da60ac7f0c62a4ba32302d8d0fbeb57655599f044865a7`.
+  Checked cases: `guild.disband` (guild_disband_pass).
+
+### nearby_target
+
+Both owned clients create the native nearby geared player and target the peer by normal exact-name chat input.
+
+Remaining limits: Mouse/tab targeting, enemies and larger groups remain open.
+
+- [442_interactions_20261002_07.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc), member `evidence/client_interactions_20261002_ui06/nearby_players_02/primary/episode.json`, SHA-256 `a9a1e006090de63c3b9fcbafac9e6994c83b99fd53a5788617af800899b4b452`.
+  Checked cases: `player.target_nearby` (nearby_target_pass).
+- [442_interactions_20261002_07.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc), member `evidence/client_interactions_20261002_ui06/nearby_players_02/scout/episode.json`, SHA-256 `cf6f74c4d86c4e7edc44a77623b71b0112cac370eab695671d7ec279fdfb8cef`.
+  Checked cases: `player.target_nearby` (nearby_target_pass).
+
+### follow
+
+Ordinary strafe/follow/stop with peer position agreement and 11 attributed native/modern movement pairs; both original poses restored.
+
+Remaining limits: Other directions, combat, transports and cross-map follow remain open.
+
+- [442_interactions_20261002_07.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc), member `evidence/client_interactions_20261002_ui06/public_follow_02/primary/episode.json`, SHA-256 `b6ebf7c4eaa59b4ac295335bd9c7b72ab6f953708ad4a4f0480640ed7cfc660b`.
+  Checked cases: `movement.strafe_public` (movement_pass), `movement.follow_nearby` (follow_pass), `movement.stop_follow` (stop_follow_pass).
+
+### inspect
+
+Both clients inspect the visible peer and sampled equipment agrees with native identity.
+
+Remaining limits: Unsampled slots, PvP/item-level/customizations remain open.
+
+- [442_interactions_20261002_08.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc), member `evidence/client_interactions_20261002_ui07/peer_services_03/primary/episode.json`, SHA-256 `aa447b9803de659c4c8ee74a8219654e5f198d6273fd5045792c4f01fbfc9000`.
+  Checked cases: `player.inspect_nearby` (inspect_equipment_pass).
+- [442_interactions_20261002_08.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc), member `evidence/client_interactions_20261002_ui07/peer_services_03/scout/episode.json`, SHA-256 `68ab2e352bf1c8e70bcaf9a526ccafb160831aa9647b97bee38d7ec254c381b6`.
+  Checked cases: `player.inspect_nearby` (inspect_equipment_pass).
+
+### trade_cancel
+
+Ordinary cancel closes both owned trade windows.
+
+Remaining limits: Range, permission, inventory and gold error paths remain open.
+
+- [442_interactions_20261002_08.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc), member `evidence/client_interactions_20261002_ui07/peer_services_03/primary/episode.json`, SHA-256 `aa447b9803de659c4c8ee74a8219654e5f198d6273fd5045792c4f01fbfc9000`.
+  Checked cases: `trade.cancel` (trade_cancel_pass).
+
+### trade_roundtrip
+
+Five-item stack offered, both parties confirm, then the exact stack returns in another normal trade; full native inventories/money and poses restored.
+
+Remaining limits: Gold, enchantment, unaccept, changed offers and bag errors remain open.
+
+- [442_interactions_20261002_08.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc), member `evidence/client_interactions_20261002_ui07/trade_roundtrip_02/primary/episode.json`, SHA-256 `38901a2ebc037620ae9e167aebbede479c631631528e020b67f93270d0b84eac`.
+  Checked cases: `trade.outbound.open` (trade_open_pass), `trade.outbound.offer` (trade_offer_pass), `trade.outbound.accept_sender` (trade_accept_pass), `trade.return.accept_recipient` (trade_complete_pass).
+- [442_interactions_20261002_08.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc), member `evidence/client_interactions_20261002_ui07/trade_roundtrip_02/scout/episode.json`, SHA-256 `0679d6c5bd514499823ca6a33a7f5902048991deb616333ca2236a10bc85caf7`.
+  Checked cases: `trade.outbound.accept_recipient` (trade_complete_pass), `trade.return.open` (trade_open_pass), `trade.return.offer` (trade_offer_pass), `trade.return.accept_sender` (trade_accept_pass).
+
+### bank
+
+Stock 28-slot base bank opens; existing stack deposited/withdrawn with exact identity/count and UI agreement; full fixture and pose restored.
+
+Remaining limits: Bank bags/slots, split variants, reconnect persistence and negative paths remain open.
+
+- [442_interactions_20261002_09.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_09.tar.gz.dvc), member `evidence/client_interactions_20261002_ui08/bank_roundtrip_01/episode.json`, SHA-256 `c2cdbe04b1a9594afe8604243a1be23c2ba442628386e74374aa79ff07789145`.
+  Checked cases: `bank.gossip` (bank_open_pass), `bank.deposit_existing_stack` (bank_transfer_pass), `bank.withdraw_existing_stack` (bank_transfer_pass), `bank.close` (bank_close_pass).
+
+### merchant
+
+All nine native vendor rows display; existing pants sold, bought back and moved to original slot with exact identity/money and pose restoration.
+
+Remaining limits: Individual repair, discounts, stock and negative variants remain open.
+
+- [442_interactions_20261002_10.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261002_10.tar.gz.dvc), member `evidence/client_interactions_20261002_ui09/merchant_sale_02/episode.json`, SHA-256 `a811157d5743bf82ecf7151f7781579b603a71ac211c8535cf731d82b6d651ea`.
+  Checked cases: `merchant.gossip` (service_open_pass), `merchant.sell_existing_pants` (sale_pass), `merchant.buyback.item` (buyback_pass), `merchant.close` (service_close_pass).
+
+### purchase
+
+One five-item water bundle purchased with exact native/public quantity, price and received-item chat; fixture restored.
+
+Remaining limits: Single-item purchase, stock/currency/discount and error paths remain open.
+
+- [442_interactions_20261003_11.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_11.tar.gz.dvc), member `evidence/client_interactions_20261003_ui10/merchant_purchase_04/episode.json`, SHA-256 `3df30263483070cfe021582b94f7adbd66bb544a419df5029e0518c12207cc07`.
+  Checked cases: `merchant.buy_bundle` (purchase_pass).
+
+### repair_all
+
+Repair-all quote and native/visible charge agree after isolated opt-in rounding correction; damaged fixture restored.
+
+Remaining limits: Individual/guild repairs, other prices and discounts remain open.
+
+- [442_interactions_20261003_13.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_13.tar.gz.dvc), member `evidence/client_interactions_20261003_ui12/repair_all_03/episode.json`, SHA-256 `1b0f33d31ac0439f1a55fda0f152c64910789133d164c74930468ab42a3d0070`.
+  Checked cases: `merchant.repair_all` (repair_all_pass).
+
+### trainer
+
+Warrior learns Parry through stock trainer with native/public learned spell, price and notification agreement, then fixture restored.
+
+Remaining limits: Profession learning/unlearning, rank upgrades and errors remain open.
+
+- [442_interactions_20261003_13.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_13.tar.gz.dvc), member `evidence/client_interactions_20261003_ui12/trainer_learn_02/episode.json`, SHA-256 `088bf9d0b8d920841efa3109439c8e275a86d6c2d85263d5bc33f1c0cbf74672`.
+  Checked cases: `trainer.gossip` (service_open_pass), `trainer.learn` (trainer_learning_pass), `trainer.close` (service_close_pass).
+
+### trainer_known_filter
+
+Already Known filter shows and hides all 141 native known Alchemy recipes.
+
+Remaining limits: Available/unavailable filters and new profession learning remain open.
+
+- [442_interactions_20261003_15.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_15.tar.gz.dvc), member `evidence/client_interactions_20261003_ui14/profession_trainer_filters_02/episode.json`, SHA-256 `42c34504bbbb94817481a3ab0a1141e0a68cd1a7594010658e6749d3f5de7219`.
+  Checked cases: `trainer.known_filter.show` (trainer_filter_change_pass), `trainer.known_filter.hide` (trainer_filter_change_pass).
+
+### quest_log
+
+Auto-accepted kill quest displayed with native 0/6 objective; log zone expanded, selected and abandoned with exact quest/inventory/money restoration.
+
+Remaining limits: Manual acceptance, progress/rewards, sharing, POIs and other objective types remain open.
+
+- [442_interactions_20261003_14.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_14.tar.gz.dvc), member `evidence/client_interactions_20261003_ui13/quest_details_04/episode.json`, SHA-256 `151fd23a865d052d623486b6ad04eac8dcc5d3d784dc36bf402302f1b1b61eeb`.
+  Checked cases: `quests.select_giver_quest` (quest_details_open_pass).
+- [442_interactions_20261003_14.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_14.tar.gz.dvc), member `evidence/client_interactions_20261003_ui13/quest_log_02/episode.json`, SHA-256 `6e3116e8ab34f4b47dfd12bd82d953eae3b9f39ab3716d1ddac7c4dee58d4360`.
+  Checked cases: `quests.expand_zone` (quest_zone_expand_pass), `quests.select_log_entry` (quest_log_details_pass), `quests.confirm_abandon` (quest_abandon_pass).
+
+### mail_read
+
+Existing native reward catalog displays correct senders, subjects and attachment counts. Disposable plain letter body visually reviewed, read-marked natively and deleted; original mailbox/resources/pose restored.
+
+Remaining limits: COD, HTML/invoices, text-copy, attachment limits and delay/error variants remain open.
+
+- [442_interactions_20261003_15.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_15.tar.gz.dvc), member `evidence/client_interactions_20261003_ui14/mailbox_open_02/episode.json`, SHA-256 `8d0178529d61c9ff391d60e5682977665b23d838c0d2bfa07b31910147c6161f`.
+  Checked cases: `mail.open` (mailbox_open_pass), `mail.close` (mailbox_close_pass).
+- [442_interactions_20261003_16.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_16.tar.gz.dvc), member `evidence/client_interactions_20261003_ui15/mail_read_delete_01/episode.json`, SHA-256 `ab9bafe8c343252db2d20da5a6d8bbb8dc3647bae936a49775114fb3748bef9c`.
+  Checked cases: `mail.read` (mail_read_pass), `mail.delete` (mail_delete_pass).
+
+### mail_collection
+
+Five native water items and exactly 12,345 copper collected from separate disposable letters, with native/public agreement and original mail/inventory/money/pose restored.
+
+Remaining limits: Take-all, COD, gems and limit/error variants remain open.
+
+- [442_interactions_20261003_17.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_17.tar.gz.dvc), member `evidence/client_interactions_20261003_ui16/mail_collect_item_01/episode.json`, SHA-256 `afb9567c379b9c10f3ede392eccaa6ff17b951526462ff2d161b4c847cf9f0df`.
+  Checked cases: `mail.collect_item` (mail_collect_pass).
+- [442_interactions_20261003_17.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_17.tar.gz.dvc), member `evidence/client_interactions_20261003_ui16/mail_collect_money_01/episode.json`, SHA-256 `e014dec9f844490b678e5d663711563244e0aebf89314f419e42ef80f270efad`.
+  Checked cases: `mail.collect_money` (mail_collect_pass).
+
+### player_mail
+
+Real two-account plain sends, return and reply; one-copper attachment returned/collected and exact 30-copper postage charges agree. Rendered bodies reviewed; all native mail/resources and both poses restored.
+
+Remaining limits: Item attachment via player compose, COD, invoices and delay/error paths remain open.
+
+- [442_interactions_20261003_18.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc), member `evidence/client_interactions_20261003_ui17/mail_return_04/primary/episode.json`, SHA-256 `0dd24b5f7972a506ed16e1ded97c75798fcb0db1442e2262ef1d737f3a64b58a`.
+  Checked cases: `mail.compose` (mail_compose_open_pass), `mail.recipient` (ui_edit_pass), `mail.attach_money` (ui_edit_pass), `mail.send` (mail_send_pass), `mail.take_returned_money` (mail_collect_pass).
+- [442_interactions_20261003_18.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc), member `evidence/client_interactions_20261003_ui17/mail_return_04/scout/episode.json`, SHA-256 `7a19c6913a61ae9d2ec5a0b6918a8d3949bf34260e93acb8bdf524747fde4219`.
+  Checked cases: `mail.return` (mail_return_pass).
+- [442_interactions_20261003_18.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc), member `evidence/client_interactions_20261003_ui17/mail_reply_01/scout/episode.json`, SHA-256 `0a846b0d02a1482b2bdc7c1d417885ffb044296ec9b226ad9ef77061c6cdcb8f`.
+  Checked cases: `mail.reply` (mail_reply_open_pass), `mail.send` (mail_send_pass).
+
+### auction_read
+
+Stock AuctionHouse opens/closes, complete empty browse search for an absent name agrees with native/public response and event.
+
+Remaining limits: Populated browse, categories, filters, sorting/paging and bids remain open.
+
+- [442_interactions_20261003_20.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc), member `evidence/client_interactions_20261003_ui19/auction_browse_02/episode.json`, SHA-256 `6e908ce3302245a4327ff8298166a4f918629d9b7820a6196059ccc419e34889`.
+  Checked cases: `auction.gossip` (auction_open_pass), `auction.search_name` (ui_edit_pass), `auction.search` (auction_catalog_pass), `auction.close` (auction_close_pass).
+
+### auction_roundtrip
+
+One uninterrupted 14-input run posts plain one-gold pants, displays/selects the populated owned row, cancels through Accept and collects the original GUID into its original slot. Zero quote/native deposit/charge agree for one-copper one-day pants. Complete two-character mail/resources/poses restored without refund.
+
+Remaining limits: Bids/buyouts, stacks/commodities, other fees, suffixes, paging and negative variants remain open.
+
+- [442_interactions_20261003_23.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_23.tar.gz.dvc), member `evidence/client_interactions_20261003_ui22/auction_roundtrip_01/episode.json`, SHA-256 `463c910eb290963fcf7f05c9703982720e151fd836fd9f7ef0cf1a6797a24083`.
+  Checked cases: `auction.post` (auction_post_pass), `auction.show_owned` (auction_owned_populated_pass), `auction.select_owned_item_end` (auction_select_owned_pass), `auction.confirm_cancel` (auction_cancel_pass), `auction.collect_return` (auction_return_collect_pass), `auction.restore_slot` (inventory_move_pass).
+
+### archaeology_loop
+
+Historical accepted loop 89 performs six finds at two fresh Outland sites (351 and 363), awards 44 fragments and replaces both sites without manual gameplay interventions or teacher click annotations. Survey instrument bearing/lantern observations drive approaches.
+
+Remaining limits: Bounded two-site proof, using historical Laya identities. Indefinite operation, other races/terrain, solve/keystones, caps and reconnect persistence remain open. New runs use code under current AGENTS.md.
+
+- [442_archaeology_loop_proof_20261002.tar.gz.dvc](../../artifacts/client_harness/442_archaeology_loop_proof_20261002.tar.gz.dvc), member `evidence/laya_archaeology_travel_loop_89/episode.json`, SHA-256 `2b3ce1bc3d87851b49c052a734eeec411af1ff04a8a2692fc45398d1b5187968`.

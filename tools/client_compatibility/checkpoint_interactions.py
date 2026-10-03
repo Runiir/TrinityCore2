@@ -110,6 +110,7 @@ def checkpoint(directory,name):
     if not episodes:raise RuntimeError('no closed interaction episodes')
     since=min(r['started_at'] for _,r in episodes)
     cases=[c for _,r in episodes for c in r['cases']]
+    plan=json.loads((lab.REPO/'experiments/configs/client_harness/442_interactions_v1.json').read_text())
     counts=Counter(c['status'] for c in cases)
     native=lab.owned_process('worldserver');before=json.loads((directory/'native_server_before.json').read_text())
     if (native['pid'],native['start_ticks'])!=(before['pid'],before['start_ticks']):
@@ -126,7 +127,9 @@ def checkpoint(directory,name):
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
             'Historical Laya trials used bounded candidates; new trials use the code controller and do not measure learned autonomy.',
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
-            'The 891-operation plan and 275-binding catalog remain broader than the completed trials.'],
+            f"The {len(plan['cases'])}-operation plan and 275-binding catalog remain broader than the completed trials."],
+        'interaction_plan_operations':len(plan['cases']),
+        'qualified_fixture_operations':plan.get('qualified_operations',0),
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
     paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',
         lab.ROOT/'reference/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2',lab.ROOT/'reference/ui-442',

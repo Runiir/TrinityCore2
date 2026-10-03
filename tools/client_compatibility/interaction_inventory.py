@@ -6,6 +6,7 @@ import time
 from collections import Counter
 from . import lab_runtime as lab, owned_input, actors
 from .observation.interactions import decode_image
+from .interaction_qualifications import reconcile,load,render_evidence
 
 MANIFEST=lab.REPO/'experiments/configs/client_harness/442_interactions_v1.json'
 # Operations are contracts, not passes. Class/content variants use the content census.
@@ -21,7 +22,7 @@ FAMILIES={
  'bags':('inventory_items','open_all close_all backpack bag_one bag_two bag_three bag_four combined_bags_toggle sort search quality_filter item_tooltip compare_tooltip item_link move_item swap_item split_stack merge_stack use_item equip_item unequip_item destroy_confirm destroy_cancel bag_replace keyring_if_available cooldown_display full_bag_error locked_item_error persist'),
  'bank':('banker_inventory','open close deposit withdraw swap split buy_slot equip_bank_bag bank_bag_open reagent_bank_if_available guild_bank_link persist'),
  'merchant':('merchant_inventory','open close browse_page buy_one buy_stack sell buyback repair_one repair_all insufficient_money unavailable_stock currency_cost reputation_discount persist'),
- 'trainer':('trainer_skills','open close filter_available filter_unavailable skill_tooltip learn_skill learn_rank insufficient_money prerequisite_error profession_limit persist'),
+ 'trainer':('trainer_skills','open close filter_available filter_unavailable filter_known skill_tooltip learn_skill learn_rank insufficient_money prerequisite_error profession_limit persist'),
  'quests':('quest_variants','open_log close_log select expand_zone collapse_zone details track untrack abandon_cancel abandon_confirm share accept decline progress complete choose_reward reward_item reward_money escort timed daily repeatable auto_accept auto_complete unavailable_prerequisite persist'),
  'map':('map_variants','open close continent zone subzone zoom_in zoom_out pan quest_pin quest_details quest_route digsite_overlay taxi_overlay dungeon_floor coordinates player_position tracking_menu world_map_binding minimap_zoom minimap_tracking minimap_calendar minimap_clock minimap_mail minimap_battleground'),
  'achievements':('achievement_variants','open close category achievement search tooltip track untrack compare criteria_progress earned_notification statistics persist'),
@@ -29,13 +30,13 @@ FAMILIES={
  'journal':('encounter_variants','open close expansion instance difficulty boss overview ability loot role_filter class_filter slot_filter search map_link model_preview'),
  'friends':('owned_second_actor','open close list add_friend online_presence offline_presence note_edit note_persist remove_friend add_ignore ignored_chat remove_ignore who_open who_search whisper self_friend_error nonexistent_friend_error duplicate_friend_error friend_limit'),
  'chat':('owned_second_actor','say yell whisper reply party raid raid_warning guild officer channel_join channel_leave channel_list channel_password channel_owner emote language_switch combat_log chat_settings chat_tab_create chat_tab_rename chat_tab_close font_size timestamps chat_links scroll_history copy_if_available mute_voice report_ui_cancel'),
- 'party':('owned_second_actor','invite accept decline cancel_pending duplicate_invite full_group_error cross_map_invite leader_promote role_assign loot_method loot_threshold master_looter target_marker ready_check ready_accept ready_decline party_chat leave kick disband disconnect_rejoin persist'),
- 'raid':('owned_group','convert_from_party convert_to_party raid_panel roster subgroup_move assistant_promote assistant_demote main_tank main_assist ready_check raid_target world_marker clear_marker raid_warning loot_method leave kick disband raid_info lockout_extend reset_instance difficulty_normal difficulty_heroic raid_size_10 raid_size_25'),
+ 'party':('owned_second_actor','invite accept decline cancel_pending duplicate_invite full_group_error cross_map_invite leader_promote role_poll role_assign loot_method loot_threshold master_looter target_marker ready_check ready_accept ready_decline party_chat leave kick disband disconnect_rejoin persist'),
+ 'raid':('owned_group','convert_from_party convert_to_party raid_panel roster roster_health_bars subgroup_move assistant_promote assistant_demote everyone_assistant frame_lock frame_unlock frame_show frame_hide main_tank main_assist ready_check ready_timeout raid_target world_marker clear_marker raid_warning loot_method leave kick disband raid_info lockout_extend reset_instance difficulty_normal difficulty_heroic raid_size_10 raid_size_25'),
  'guild':('disposable_guild','open close roster online_filter member_detail note officer_note invite accept decline rank_promote rank_demote remove_member leadership_transfer motd information chat permissions news achievements reputation rewards recruitment charter_buy charter_sign charter_turn_in leave disband persist'),
  'guild_bank':('disposable_guild_bank','open close tab_select view_item deposit withdraw split_stack deposit_money withdraw_money buy_tab tab_name tab_icon tab_text log_view permissions_error persist'),
  'trade':('owned_second_actor','request accept cancel offer_item remove_item offer_stack offer_money nontraded_item enchant_nontraded confirm changed_offer_reconfirm out_of_range reject full_bag_error persist'),
  'mail':('owned_second_actor_mailbox','open close inbox read attachment_money take_item take_all return delete reply compose add_recipient attach_item attach_money cod_send cod_accept send postage insufficient_money full_bag_error expired_mail persist'),
- 'auction':('disposable_auction','open close browse search category filter sort select inspect bid buyout sell_stack duration deposit auction_cancel owned_auctions bids_outbid mail_delivery persist'),
+ 'auction':('disposable_auction','open close browse search category filter sort select inspect bid buyout sell_item sell_stack duration deposit auction_cancel owned_auctions bids_outbid mail_delivery persist'),
  'calendar':('disposable_calendar','open close previous_month next_month event_view event_create event_edit event_delete invite rsvp_accept rsvp_decline rsvp_tentative moderator recurring_event server_time persist'),
  'keybindings':('saved_local_bindings','open close category_search select_action assign_key assign_second_key modifier_chord conflict_replace conflict_cancel clear_binding per_character_toggle defaults_cancel defaults_apply save cancel persistence restore_original'),
  'macros':('saved_local_macros','open close account_tab character_tab create name icon select edit_body save rename drag_to_actionbar execute delete_confirm delete_cancel macro_limit persistence restore_original'),
@@ -65,25 +66,31 @@ def checklist():
             cases.append({'id':family+'.'+operation,'family':family,'operation':operation,
                 'fixture':fixture,'oracle':'Visible UI outcome and attributable native state; mutations must persist or be restored.',
                 'availability':'verify_in_installed_build','automation':'pending_adapter'})
-    return {'schema':'client442_interactions_v1','client_build':60895,
+    data={'schema':'client442_interactions_v1','client_build':60895,
         'scope':'Player interaction families and every installed binding. Per-spell/item/quest/encounter variants are expanded by the native content census.',
         'limits':['An inventory entry never constitutes a pass.',
             'Account services and later-expansion UI need explicit unsupported/not-applicable contracts, not fabricated successes.',
             'Opening a panel does not qualify the actions or data inside it.',
             'New live bindings and UI controls must be reconciled; this is a versioned checklist, not a claim of proven exhaustive game compatibility.'],
         'families':dict(Counter(c['family'] for c in cases)),'cases':cases}
+    return reconcile(data,load(lab.REPO),lab.REPO)
 
 
 def render(data):
-    lines=['# 4.4.2 player interaction checklist','',f"{len(data['cases'])} operation contracts across {len(data['families'])} families. Each is pending qualification until a run supplies evidence.",'',data['scope'],'',
+    lines=['# 4.4.2 player interaction checklist','',f"{len(data['cases'])} operation contracts across {len(data['families'])} families. {data.get('qualified_operations',0)} have a qualified fixture variant; the rest remain pending.",'',
+        'A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.','',data['scope'],'',
         'New trials use code-controlled ordinary keyboard/mouse inputs under the current AGENTS.md. Screenshots and normal addon-visible state are retained. Historical Laya receipts preserve their actual identities. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.','',
         'Each successful mutation needs its native or local saved-state oracle and cleanup. Variants include class, race, faction, account versus character, solo versus group, combat versus idle, dead versus alive, zones, permissions and failure paths. Content IDs come from the existing content census.','']
     for family in data['families']:
         rows=[c for c in data['cases'] if c['family']==family]
         lines.extend(['## '+family.replace('_',' '),'','Fixture: `'+rows[0]['fixture']+'`.',''])
-        lines.extend('- [ ] `'+c['id']+'`' for c in rows);lines.append('')
+        for case in rows:
+            key=case.get('qualification')
+            lines.append('- ['+('x' if key else ' ')+'] `'+case['id']+'`'+(' (qualified variant; [evidence](#'+key+'))' if key else ''))
+        lines.append('')
     lines.extend(['## Installed bindings','',
         'Run `pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_inventory capture-bindings --output <owned-evidence-directory>`. This reads all binding names, categories and current keys from build 60895. Every command is an additional parametrized test contract; headers are classified rather than counted as actions. The generated catalog and screenshots belong in DVC.',''])
+    lines.extend(render_evidence(data.get('qualification_records',[])))
     return '\n'.join(lines)
 
 

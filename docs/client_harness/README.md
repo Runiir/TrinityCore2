@@ -184,6 +184,17 @@ changes, reloads and restarts while concurrent actors produce attributable evide
 
 ## Feature, protocol and content coverage
 
+The [interaction checklist](interaction_checklist_442.md) now preserves completed
+fixture variants as checked boxes with explicit evidence and remaining limits.
+Its reviewed mappings live in
+`experiments/configs/client_harness/442_interaction_qualifications_v1.json`;
+`interaction_inventory write` reconciles them when regenerating the human checklist
+and machine inventory. Unmapped operations stay pending. Current reconciled evidence
+qualifies 183 operations out of 901 across 45 families. This is a count of qualified
+fixture variants, not a percentage of complete game compatibility. Eight raid/party
+controls, the known-trainer filter and plain-item auction posting were added to the
+original 891-operation plan because they were missing individual contracts.
+
 `442_coverage_manifest_v1.json` lists feature scenarios and their acceptance oracles.
 `coverage.py` inventories pinned modern/native opcode definitions and source
 references. A referenced opcode is not an implemented or live-qualified handler.

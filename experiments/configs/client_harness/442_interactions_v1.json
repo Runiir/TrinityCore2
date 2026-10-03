@@ -20,7 +20,7 @@
     "bags": 29,
     "bank": 12,
     "merchant": 14,
-    "trainer": 11,
+    "trainer": 12,
     "quests": 26,
     "map": 24,
     "achievements": 13,
@@ -28,13 +28,13 @@
     "journal": 15,
     "friends": 19,
     "chat": 28,
-    "party": 22,
-    "raid": 25,
+    "party": 23,
+    "raid": 32,
     "guild": 29,
     "guild_bank": 16,
     "trade": 15,
     "mail": 22,
-    "auction": 19,
+    "auction": 20,
     "calendar": 16,
     "keybindings": 17,
     "macros": 18,
@@ -117,7 +117,8 @@
       "fixture": "disposable_account",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "logout_reentry"
     },
     {
       "id": "lifecycle.logout_cancel",
@@ -126,7 +127,8 @@
       "fixture": "disposable_account",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "logout_reentry"
     },
     {
       "id": "lifecycle.logout_confirm",
@@ -135,7 +137,8 @@
       "fixture": "disposable_account",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "logout_reentry"
     },
     {
       "id": "lifecycle.reconnect",
@@ -198,7 +201,8 @@
       "fixture": "equipped_character",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "character.close",
@@ -207,7 +211,8 @@
       "fixture": "equipped_character",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "character.stats",
@@ -216,7 +221,8 @@
       "fixture": "equipped_character",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "equipment"
     },
     {
       "id": "character.equipment_tooltips",
@@ -243,7 +249,8 @@
       "fixture": "equipped_character",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "equipment"
     },
     {
       "id": "character.unequip",
@@ -252,7 +259,8 @@
       "fixture": "equipped_character",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "equipment"
     },
     {
       "id": "character.weapon_swap",
@@ -342,7 +350,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "reputation.close",
@@ -351,7 +360,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "reputation.expand",
@@ -540,7 +550,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "spellbook.close",
@@ -549,7 +560,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "spellbook.general_tab",
@@ -675,7 +687,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "talents.close",
@@ -684,7 +697,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "talents.specialization_preview",
@@ -810,7 +824,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "professions.close",
@@ -819,7 +834,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "professions.primary_one",
@@ -828,7 +844,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "professions.primary_two",
@@ -837,7 +854,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "professions.cooking",
@@ -846,7 +864,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "professions.first_aid",
@@ -855,7 +874,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "professions.fishing",
@@ -873,7 +893,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "professions.recipe_list",
@@ -882,7 +903,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.recipe_search",
@@ -891,7 +913,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.recipe_filter",
@@ -918,7 +941,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.reagent_tooltip",
@@ -936,7 +960,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.craft_multiple",
@@ -945,7 +970,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.cancel_craft",
@@ -963,7 +989,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "crafting"
     },
     {
       "id": "professions.skill_gain",
@@ -1062,7 +1089,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "profession_catalogs"
     },
     {
       "id": "archaeology.close",
@@ -1107,7 +1135,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.cast_bar",
@@ -1125,7 +1154,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.distance_lantern",
@@ -1134,7 +1164,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.approach_find",
@@ -1143,7 +1174,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.loot_find",
@@ -1152,7 +1184,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.solve_project",
@@ -1188,7 +1221,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.site_rotation",
@@ -1197,7 +1231,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_loop"
     },
     {
       "id": "archaeology.continent_map",
@@ -1233,7 +1268,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.close_all",
@@ -1242,7 +1278,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.backpack",
@@ -1251,7 +1288,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.bag_one",
@@ -1260,7 +1298,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.bag_two",
@@ -1269,7 +1308,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.bag_three",
@@ -1278,7 +1318,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.bag_four",
@@ -1287,7 +1328,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "bags.combined_bags_toggle",
@@ -1359,7 +1401,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "inventory_movement"
     },
     {
       "id": "bags.swap_item",
@@ -1377,7 +1420,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stack_split_merge"
     },
     {
       "id": "bags.merge_stack",
@@ -1386,7 +1430,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stack_split_merge"
     },
     {
       "id": "bags.use_item",
@@ -1404,7 +1449,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "equipment"
     },
     {
       "id": "bags.unequip_item",
@@ -1413,7 +1459,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "equipment"
     },
     {
       "id": "bags.destroy_confirm",
@@ -1494,7 +1541,8 @@
       "fixture": "banker_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "bank"
     },
     {
       "id": "bank.close",
@@ -1503,7 +1551,8 @@
       "fixture": "banker_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "bank"
     },
     {
       "id": "bank.deposit",
@@ -1512,7 +1561,8 @@
       "fixture": "banker_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "bank"
     },
     {
       "id": "bank.withdraw",
@@ -1521,7 +1571,8 @@
       "fixture": "banker_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "bank"
     },
     {
       "id": "bank.swap",
@@ -1602,7 +1653,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "merchant"
     },
     {
       "id": "merchant.close",
@@ -1611,7 +1663,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "merchant"
     },
     {
       "id": "merchant.browse_page",
@@ -1638,7 +1691,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "purchase"
     },
     {
       "id": "merchant.sell",
@@ -1647,7 +1701,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "merchant"
     },
     {
       "id": "merchant.buyback",
@@ -1656,7 +1711,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "merchant"
     },
     {
       "id": "merchant.repair_one",
@@ -1674,7 +1730,8 @@
       "fixture": "merchant_inventory",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "repair_all"
     },
     {
       "id": "merchant.insufficient_money",
@@ -1728,7 +1785,8 @@
       "fixture": "trainer_skills",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trainer"
     },
     {
       "id": "trainer.close",
@@ -1737,7 +1795,8 @@
       "fixture": "trainer_skills",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trainer"
     },
     {
       "id": "trainer.filter_available",
@@ -1758,6 +1817,16 @@
       "automation": "pending_adapter"
     },
     {
+      "id": "trainer.filter_known",
+      "family": "trainer",
+      "operation": "filter_known",
+      "fixture": "trainer_skills",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "trainer_known_filter"
+    },
+    {
       "id": "trainer.skill_tooltip",
       "family": "trainer",
       "operation": "skill_tooltip",
@@ -1773,7 +1842,8 @@
       "fixture": "trainer_skills",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trainer"
     },
     {
       "id": "trainer.learn_rank",
@@ -1827,7 +1897,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "quests.close_log",
@@ -1836,7 +1907,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "quests.select",
@@ -1845,7 +1917,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "quest_log"
     },
     {
       "id": "quests.expand_zone",
@@ -1854,7 +1927,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "quest_log"
     },
     {
       "id": "quests.collapse_zone",
@@ -1872,7 +1946,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "quest_log"
     },
     {
       "id": "quests.track",
@@ -1908,7 +1983,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "quest_log"
     },
     {
       "id": "quests.share",
@@ -2061,7 +2137,8 @@
       "fixture": "map_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "map.close",
@@ -2070,7 +2147,8 @@
       "fixture": "map_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "map.continent",
@@ -2277,7 +2355,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "achievements.close",
@@ -2286,7 +2365,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "achievements.category",
@@ -2376,7 +2456,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "achievements.persist",
@@ -2394,7 +2475,8 @@
       "fixture": "mount_pet_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "collections.close",
@@ -2403,7 +2485,8 @@
       "fixture": "mount_pet_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "collections.mount_tab",
@@ -2592,7 +2675,8 @@
       "fixture": "encounter_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "journal.close",
@@ -2601,7 +2685,8 @@
       "fixture": "encounter_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "journal.expansion",
@@ -2727,7 +2812,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "friends.close",
@@ -2736,7 +2822,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "friends.list",
@@ -2754,7 +2841,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "party_invitation"
     },
     {
       "id": "friends.online_presence",
@@ -2898,7 +2986,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.yell",
@@ -2907,7 +2996,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.whisper",
@@ -2916,7 +3006,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.reply",
@@ -2943,7 +3034,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.raid_warning",
@@ -2952,7 +3044,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.guild",
@@ -2961,7 +3054,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "chat.officer",
@@ -2970,7 +3064,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "chat.channel_join",
@@ -3024,7 +3119,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "chat.language_switch",
@@ -3150,7 +3246,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "party_invitation"
     },
     {
       "id": "party.accept",
@@ -3159,7 +3256,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "party_invitation"
     },
     {
       "id": "party.decline",
@@ -3216,13 +3314,24 @@
       "automation": "pending_adapter"
     },
     {
+      "id": "party.role_poll",
+      "family": "party",
+      "operation": "role_poll",
+      "fixture": "owned_second_actor",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "roles"
+    },
+    {
       "id": "party.role_assign",
       "family": "party",
       "operation": "role_assign",
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "roles"
     },
     {
       "id": "party.loot_method",
@@ -3348,7 +3457,8 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "group_conversion"
     },
     {
       "id": "raid.convert_to_party",
@@ -3357,7 +3467,8 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "group_conversion"
     },
     {
       "id": "raid.raid_panel",
@@ -3375,7 +3486,18 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "group_roster"
+    },
+    {
+      "id": "raid.roster_health_bars",
+      "family": "raid",
+      "operation": "roster_health_bars",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "group_roster"
     },
     {
       "id": "raid.subgroup_move",
@@ -3405,6 +3527,56 @@
       "automation": "pending_adapter"
     },
     {
+      "id": "raid.everyone_assistant",
+      "family": "raid",
+      "operation": "everyone_assistant",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "raid_profiles"
+    },
+    {
+      "id": "raid.frame_lock",
+      "family": "raid",
+      "operation": "frame_lock",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "raid_profiles"
+    },
+    {
+      "id": "raid.frame_unlock",
+      "family": "raid",
+      "operation": "frame_unlock",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "raid_profiles"
+    },
+    {
+      "id": "raid.frame_show",
+      "family": "raid",
+      "operation": "frame_show",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "raid_profiles"
+    },
+    {
+      "id": "raid.frame_hide",
+      "family": "raid",
+      "operation": "frame_hide",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "raid_profiles"
+    },
+    {
       "id": "raid.main_tank",
       "family": "raid",
       "operation": "main_tank",
@@ -3429,7 +3601,18 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "ready_check"
+    },
+    {
+      "id": "raid.ready_timeout",
+      "family": "raid",
+      "operation": "ready_timeout",
+      "fixture": "owned_group",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "ready_timeout"
     },
     {
       "id": "raid.raid_target",
@@ -3447,7 +3630,8 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "world_markers"
     },
     {
       "id": "raid.clear_marker",
@@ -3456,7 +3640,8 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "world_markers"
     },
     {
       "id": "raid.raid_warning",
@@ -3465,7 +3650,8 @@
       "fixture": "owned_group",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "chat"
     },
     {
       "id": "raid.loot_method",
@@ -3573,7 +3759,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_open"
     },
     {
       "id": "guild.close",
@@ -3591,7 +3778,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.online_filter",
@@ -3609,7 +3797,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "guild.note",
@@ -3618,7 +3807,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "guild.officer_note",
@@ -3627,7 +3817,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "guild.invite",
@@ -3636,7 +3827,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.accept",
@@ -3645,7 +3837,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.decline",
@@ -3654,7 +3847,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.rank_promote",
@@ -3663,7 +3857,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_ranks"
     },
     {
       "id": "guild.rank_demote",
@@ -3672,7 +3867,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_ranks"
     },
     {
       "id": "guild.remove_member",
@@ -3681,7 +3877,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_ranks"
     },
     {
       "id": "guild.leadership_transfer",
@@ -3699,7 +3896,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.information",
@@ -3708,7 +3906,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "guild.chat",
@@ -3717,7 +3916,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_notes"
     },
     {
       "id": "guild.permissions",
@@ -3807,7 +4007,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_membership"
     },
     {
       "id": "guild.disband",
@@ -3816,7 +4017,8 @@
       "fixture": "disposable_guild",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "guild_disband"
     },
     {
       "id": "guild.persist",
@@ -3978,7 +4180,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_roundtrip"
     },
     {
       "id": "trade.accept",
@@ -3987,7 +4190,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_roundtrip"
     },
     {
       "id": "trade.cancel",
@@ -3996,7 +4200,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_cancel"
     },
     {
       "id": "trade.offer_item",
@@ -4005,7 +4210,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_roundtrip"
     },
     {
       "id": "trade.remove_item",
@@ -4023,7 +4229,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_roundtrip"
     },
     {
       "id": "trade.offer_money",
@@ -4059,7 +4266,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "trade_roundtrip"
     },
     {
       "id": "trade.changed_offer_reconfirm",
@@ -4113,7 +4321,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_read"
     },
     {
       "id": "mail.close",
@@ -4122,7 +4331,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_read"
     },
     {
       "id": "mail.inbox",
@@ -4131,7 +4341,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_read"
     },
     {
       "id": "mail.read",
@@ -4140,7 +4351,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_read"
     },
     {
       "id": "mail.attachment_money",
@@ -4149,7 +4361,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_collection"
     },
     {
       "id": "mail.take_item",
@@ -4158,7 +4371,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_collection"
     },
     {
       "id": "mail.take_all",
@@ -4176,7 +4390,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.delete",
@@ -4185,7 +4400,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "mail_read"
     },
     {
       "id": "mail.reply",
@@ -4194,7 +4410,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.compose",
@@ -4203,7 +4420,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.add_recipient",
@@ -4212,7 +4430,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.attach_item",
@@ -4230,7 +4449,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.cod_send",
@@ -4257,7 +4477,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.postage",
@@ -4266,7 +4487,8 @@
       "fixture": "owned_second_actor_mailbox",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "player_mail"
     },
     {
       "id": "mail.insufficient_money",
@@ -4311,7 +4533,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_read"
     },
     {
       "id": "auction.close",
@@ -4320,7 +4543,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_read"
     },
     {
       "id": "auction.browse",
@@ -4329,7 +4553,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_read"
     },
     {
       "id": "auction.search",
@@ -4338,7 +4563,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_read"
     },
     {
       "id": "auction.category",
@@ -4374,7 +4600,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
     },
     {
       "id": "auction.inspect",
@@ -4404,6 +4631,16 @@
       "automation": "pending_adapter"
     },
     {
+      "id": "auction.sell_item",
+      "family": "auction",
+      "operation": "sell_item",
+      "fixture": "disposable_auction",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
+    },
+    {
       "id": "auction.sell_stack",
       "family": "auction",
       "operation": "sell_stack",
@@ -4428,7 +4665,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
     },
     {
       "id": "auction.auction_cancel",
@@ -4437,7 +4675,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
     },
     {
       "id": "auction.owned_auctions",
@@ -4446,7 +4685,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
     },
     {
       "id": "auction.bids_outbid",
@@ -4464,7 +4704,8 @@
       "fixture": "disposable_auction",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "auction_roundtrip"
     },
     {
       "id": "auction.persist",
@@ -4482,7 +4723,8 @@
       "fixture": "disposable_calendar",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "calendar.close",
@@ -4491,7 +4733,8 @@
       "fixture": "disposable_calendar",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "calendar.previous_month",
@@ -4644,7 +4887,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.select_action",
@@ -4653,7 +4897,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.assign_key",
@@ -4671,7 +4916,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.modifier_chord",
@@ -4680,7 +4926,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.conflict_replace",
@@ -4743,7 +4990,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.cancel",
@@ -4761,7 +5009,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "keybindings.restore_original",
@@ -4770,7 +5019,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "keybinding_mutation"
     },
     {
       "id": "macros.open",
@@ -4779,7 +5029,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "macros.close",
@@ -4788,7 +5039,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "macros.account_tab",
@@ -4815,7 +5067,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.name",
@@ -4824,7 +5077,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.icon",
@@ -4851,7 +5105,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.save",
@@ -4860,7 +5115,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.rename",
@@ -4878,7 +5134,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.execute",
@@ -4887,7 +5144,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.delete_confirm",
@@ -4896,7 +5154,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.delete_cancel",
@@ -4923,7 +5182,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "macros.restore_original",
@@ -4932,7 +5192,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "actionbars.drag_spell",
@@ -4959,7 +5220,8 @@
       "fixture": "saved_local_bars",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "actionbars.clear_slot",
@@ -5121,7 +5383,8 @@
       "fixture": "saved_local_bars",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "macro_mutation"
     },
     {
       "id": "settings.open",
@@ -5364,7 +5627,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "menu.close",
@@ -5373,7 +5637,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "menu.options",
@@ -5562,7 +5827,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "follow"
     },
     {
       "id": "movement.mouse_turn",
@@ -5859,7 +6125,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "follow"
     },
     {
       "id": "movement.interact_with_target",
@@ -5904,7 +6171,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "nearby_target"
     },
     {
       "id": "targeting.clear_target",
@@ -6021,7 +6289,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "inspect"
     },
     {
       "id": "targeting.trade_context",
@@ -7137,7 +7406,8 @@
       "fixture": "owned_group_and_queue",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "pve_group_finder.close",
@@ -7146,7 +7416,8 @@
       "fixture": "owned_group_and_queue",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "pve_group_finder.role_choose",
@@ -7317,7 +7588,8 @@
       "fixture": "owned_pvp_fixture",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "pvp.close",
@@ -7326,7 +7598,8 @@
       "fixture": "owned_pvp_fixture",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "panel_visibility"
     },
     {
       "id": "pvp.battleground_select",
@@ -8075,5 +8348,1184 @@
       "availability": "verify_in_installed_build",
       "automation": "pending_adapter"
     }
-  ]
+  ],
+  "qualification_records": [
+    {
+      "id": "panel_visibility",
+      "operations": [
+        "bags.backpack",
+        "bags.bag_one",
+        "bags.bag_two",
+        "bags.bag_three",
+        "bags.bag_four",
+        "bags.open_all",
+        "bags.close_all",
+        "character.open",
+        "character.close",
+        "reputation.open",
+        "reputation.close",
+        "professions.open",
+        "professions.close",
+        "spellbook.open",
+        "spellbook.close",
+        "talents.open",
+        "talents.close",
+        "quests.open_log",
+        "quests.close_log",
+        "map.open",
+        "map.close",
+        "collections.open",
+        "collections.close",
+        "journal.open",
+        "journal.close",
+        "achievements.open",
+        "achievements.close",
+        "achievements.statistics",
+        "friends.open",
+        "friends.close",
+        "pve_group_finder.open",
+        "pve_group_finder.close",
+        "pvp.open",
+        "pvp.close",
+        "menu.open",
+        "menu.close",
+        "macros.open",
+        "macros.close",
+        "calendar.open",
+        "calendar.close"
+      ],
+      "scope": "Ordinary installed bindings and visible controls open and close the listed panels on build 60895. All four equipped bags open individually.",
+      "limits": "Panel contents, mutations and unsampled variants remain open; bags with other sizes and layouts are unqualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_followup/panel_diagnostic_01/episode.json",
+          "sha256": "1712c3bcfe29754345b5c8ff03afb6831957fd235a44263fa61fbf017a89c77f",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "bags.backpack": "panel_open_pass",
+            "bags.bag_one": "panel_open_pass",
+            "bags.bag_two": "panel_open_pass",
+            "bags.bag_three": "panel_open_pass",
+            "bags.bag_four": "panel_open_pass",
+            "bags.open_all": "panel_open_pass",
+            "bags.open_all.close": "panel_close_pass",
+            "character.open": "panel_open_pass",
+            "character.open.close": "panel_close_pass",
+            "reputation.open": "panel_open_pass",
+            "reputation.open.close": "panel_close_pass",
+            "professions.open": "panel_open_pass",
+            "professions.open.close": "panel_close_pass",
+            "spellbook.open": "panel_open_pass",
+            "spellbook.open.close": "panel_close_pass",
+            "talents.open": "panel_open_pass",
+            "talents.open.close": "panel_close_pass",
+            "quests.open_log": "panel_open_pass",
+            "quests.open_log.close": "panel_close_pass",
+            "map.open": "panel_open_pass",
+            "map.open.close": "panel_close_pass",
+            "collections.open": "panel_open_pass",
+            "collections.open.close": "panel_close_pass",
+            "journal.open": "panel_open_pass",
+            "journal.open.close": "panel_close_pass",
+            "achievements.open": "panel_open_pass",
+            "achievements.open.close": "panel_close_pass",
+            "achievements.statistics": "panel_open_pass",
+            "friends.open": "panel_open_pass",
+            "friends.open.close": "panel_close_pass",
+            "pve_group_finder.open": "panel_open_pass",
+            "pve_group_finder.open.close": "panel_close_pass",
+            "pvp.open": "panel_open_pass",
+            "pvp.open.close": "panel_close_pass",
+            "menu.open": "panel_open_pass",
+            "menu.open.close": "panel_close_pass",
+            "macros.open": "panel_open_pass",
+            "macros.open.close": "panel_close_pass",
+            "calendar.open": "panel_open_pass",
+            "calendar.open.close": "panel_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "world_markers",
+      "operations": [
+        "raid.world_marker",
+        "raid.clear_marker"
+      ],
+      "scope": "Eight outdoor Northshire world markers placed through ordinary ground clicks, observed on both clients, individually removed and cleared together. Native five spells and three modern-only annotations are attributed.",
+      "limits": "Other maps/phases, transport-ground coordinates, range boundaries and relog/restart persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002/world_markers_trial_02/episode.json",
+          "sha256": "2a9498b60cc74f87bf97f1f58cef25542a0102becd25381fc24ccbc5b614db71",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "raid.world_marker.place.1": "world_marker_visible_pass",
+            "raid.world_marker.place.2": "world_marker_visible_pass",
+            "raid.world_marker.place.3": "world_marker_visible_pass",
+            "raid.world_marker.place.4": "world_marker_visible_pass",
+            "raid.world_marker.place.5": "world_marker_visible_pass",
+            "raid.world_marker.place.6": "world_marker_visible_pass",
+            "raid.world_marker.place.7": "world_marker_visible_pass",
+            "raid.world_marker.place.8": "world_marker_visible_pass",
+            "raid.world_marker.clear.individual": "world_marker_clear_pass",
+            "raid.world_marker.clear.all": "world_marker_clear_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "group_roster",
+      "operations": [
+        "raid.roster",
+        "raid.roster_health_bars"
+      ],
+      "scope": "Both owned characters show valid native member contents and visible health bars on the main screen.",
+      "limits": "Two clients on map 0, in different zones; larger rosters, pets and cross-map variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002/group_display_02/cohort.json",
+          "sha256": "599f24ddb05fbe55b00640662cd5824c8a5e376788b65939ae2d84d1950c6558",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        }
+      ]
+    },
+    {
+      "id": "roles",
+      "operations": [
+        "party.role_poll",
+        "party.role_assign"
+      ],
+      "scope": "Ordinary role poll completes with Tank and Damage; both clients agree on both assignments.",
+      "limits": "Healer, rejection permissions and larger groups remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002/roles_trial_02/cohort.json",
+          "sha256": "d135d79783e9b533bced976c919c81a502ebe5af10d4c3063c03c787139cd6fd",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        }
+      ]
+    },
+    {
+      "id": "raid_profiles",
+      "operations": [
+        "raid.everyone_assistant",
+        "raid.frame_lock",
+        "raid.frame_unlock",
+        "raid.frame_show",
+        "raid.frame_hide"
+      ],
+      "scope": "Everyone-assistant changed both ways with peer flags; raid frame lock/unlock and show/hide controls change the saved profile and restore it.",
+      "limits": "Individual assistant promotion/demotion, reconnect persistence and combat variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/raid_controls_01/episode.json",
+          "sha256": "542b14fc867f1b1dbde6d9c7c221f0dff21600350ef9235216a4644c119215d1",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "raid.everyone_assistant.false": "assistant_change_pass",
+            "raid.everyone_assistant.true": "assistant_change_pass",
+            "raid.profile.locked.false": "raid_profile_change_pass",
+            "raid.profile.locked.true": "raid_profile_change_pass",
+            "raid.profile.shown.false": "raid_profile_change_pass",
+            "raid.profile.shown.true": "raid_profile_change_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "group_conversion",
+      "operations": [
+        "raid.convert_from_party",
+        "raid.convert_to_party"
+      ],
+      "scope": "Both party-to-raid and raid-to-party conversions agree with native group state and the peer client.",
+      "limits": "Larger groups, permission rejections and conversion during combat remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/group_conversions_02/episode.json",
+          "sha256": "df30e5321a720951bef6855caf1c6420e89448194a375defe2a94ebbd45db3c0",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "raid.convert_to_party": "group_conversion_pass",
+            "raid.convert_from_party": "group_conversion_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ready_check",
+      "operations": [
+        "raid.ready_check"
+      ],
+      "scope": "Raid ready checks initiated and answered Ready and Not Ready by the two owned accounts, with native completion and both dialogs closed.",
+      "limits": "Party-only mode, larger rosters and permissions remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/ready_checks_04/ready/cohort.json",
+          "sha256": "a399814abf99954035833bc5cb4849f9668356a1b2fa0739d458ac026ec4e2fb",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/ready_checks_04/not_ready/cohort.json",
+          "sha256": "b92f1ac5093161793970d590516199267cc6bf87501b60b11ab441726b228c05",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        }
+      ]
+    },
+    {
+      "id": "ready_timeout",
+      "operations": [
+        "raid.ready_timeout"
+      ],
+      "scope": "No client answer; native timer completion is observed on both sessions and both dialogs close.",
+      "limits": "Other group sizes and disconnect timing remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/ready_timeout_01/cohort.json",
+          "sha256": "e514a36cd465fad32d51a8433b60ec1c809482d3281f34835358da250e22d71a",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        }
+      ]
+    },
+    {
+      "id": "party_invitation",
+      "operations": [
+        "party.invite",
+        "party.accept",
+        "friends.add_friend"
+      ],
+      "scope": "Native friend addition, normal party invitation and acceptance by the second account are attributed.",
+      "limits": "Decline, duplicate/full-group errors, remove/notes/ignore and cross-map variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002/social_trial_07/primary/episode.json",
+          "sha256": "084cf3964ca335ec4668efab6045bf9dd93909062d9dc9e51fe09bda7b1833d1",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "friends.add_friend": "friend_add_pass",
+            "party.invite": "invitation_submitted"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_01.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002/social_trial_07/scout/episode.json",
+          "sha256": "c79fd90b076f648676771d586b875bdf0d19f4166fe75f30e606e89c687dd29e",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "party.accept": "party_accept_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keybinding_mutation",
+      "operations": [
+        "keybindings.category_search",
+        "keybindings.select_action",
+        "keybindings.assign_second_key",
+        "keybindings.modifier_chord",
+        "keybindings.save",
+        "keybindings.persistence",
+        "keybindings.restore_original"
+      ],
+      "scope": "Secondary Ctrl-Shift-F12 FPS binding searched, selected, assigned, saved, reloaded, executed twice and restored.",
+      "limits": "First-slot replacement, conflicts, defaults and full client reconnect persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_followup/keybindings_trial_03/episode.json",
+          "sha256": "edd3f452aa1faa1590c03477d5209c2a38e8b3f90946ddcfcc4e9467e6586ed2",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "keybindings.search": "ui_edit_pass",
+            "keybindings.listen": "binding_listener_pass",
+            "keybindings.assign": "binding_assign_pass",
+            "keybindings.save": "binding_save_pass",
+            "keybindings.reload": "binding_reload_pass",
+            "keybindings.execute": "binding_execute_pass",
+            "keybindings.toggle_back": "binding_execute_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "macro_mutation",
+      "operations": [
+        "macros.create",
+        "macros.name",
+        "macros.edit_body",
+        "macros.save",
+        "macros.drag_to_actionbar",
+        "macros.execute",
+        "macros.delete_confirm",
+        "macros.persistence",
+        "macros.restore_original",
+        "actionbars.drag_macro",
+        "actionbars.restore_original"
+      ],
+      "scope": "Temporary account macro created, saved, physically dragged to an action slot, reloaded and executed with native Battle Shout completion. Ordinary code cleanup confirms deletion and empty original macro/action slot state.",
+      "limits": "Character macro variants, rename/icon selection, cancellation/limits and full reconnect persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_02.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_followup/macro_trial_01/episode.json",
+          "sha256": "dab77c3fa1773db6f19d94f3e7ea7c565a3e883f963d2d9beead65353b2f23f7",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "macros.create": "macro_create_pass",
+            "macros.name": "ui_edit_pass",
+            "macros.body": "ui_edit_pass",
+            "macros.save": "macro_save_pass",
+            "macros.drag_to_bar": "macro_bar_pass",
+            "macros.reload": "macro_reload_pass",
+            "macros.execute": "macro_execute_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "profession_catalogs",
+      "operations": [
+        "professions.primary_one",
+        "professions.primary_two",
+        "professions.cooking",
+        "professions.first_aid",
+        "professions.archaeology",
+        "archaeology.open"
+      ],
+      "scope": "Alchemy, Tailoring, Cooking and First Aid recipe catalogs and the Archaeology panel display through ordinary controls.",
+      "limits": "Other professions, filters, recipe metadata and archaeology panel mutations remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/profession_trial_01/episode.json",
+          "sha256": "72892c1026504b1f96b5174831c892775cfc5e20e79da95967851d5310414ad9",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "professions.primary_one": "profession_recipe_pass",
+            "professions.primary_two": "profession_recipe_pass",
+            "professions.cooking": "profession_recipe_pass",
+            "professions.first_aid": "profession_recipe_pass",
+            "professions.archaeology": "panel_open_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "crafting",
+      "operations": [
+        "professions.recipe_list",
+        "professions.recipe_search",
+        "professions.recipe_select",
+        "professions.craft_one",
+        "professions.craft_multiple",
+        "professions.craft_result"
+      ],
+      "scope": "Alchemy recipe searched/selected; one and two crafts complete with exact native/client reagent and product accounting and restored resources.",
+      "limits": "Other recipes/professions, cancellation, skill gains and cooldowns remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui03/crafting_04/episode.json",
+          "sha256": "9b89a460135227b0f5dc80f44e40dd4348c31b2d8b811996281c4fc66ea37d61",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "professions.alchemy": "recipe_list_pass",
+            "professions.recipe_search": "ui_edit_pass",
+            "professions.recipe_select": "recipe_select_pass",
+            "professions.craft_one": "craft_result_pass",
+            "professions.craft_multiple": "craft_result_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "operations": [
+        "character.stats",
+        "character.unequip",
+        "character.equip",
+        "bags.unequip_item",
+        "bags.equip_item"
+      ],
+      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored.",
+      "limits": "Unsampled gear slots, weapon swaps, sets and item comparison/tooltips remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui03/equipment_02/episode.json",
+          "sha256": "44214da3f31946df95c34cedc4a2ef828f8d15adbe3dc98fd39ca9797abe3a0c",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.unequip": "equipment_change_pass",
+            "character.equip": "equipment_change_pass",
+            "character.stats.unequipped": "character_stats_pass",
+            "character.stats.equipped_after": "character_stats_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inventory_movement",
+      "operations": [
+        "bags.move_item"
+      ],
+      "scope": "Hearthstone moved and restored, then an existing stack moved to an equipped bag and back with exact native identity/count, UI and complete resource agreement.",
+      "limits": "Other bag types, persistence and error paths remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/inventory_moves_03/episode.json",
+          "sha256": "3aa66e8d3128c998d7c32269d5b3cd56f4b65b1e205508cb98f17dab11ccf02a",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "bags.move_item": "inventory_move_pass",
+            "bags.move_item_restore": "inventory_move_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/cross_bag_01/episode.json",
+          "sha256": "5253326841cc1e7f56a5abf91fb0ec0c50e53b9878b7f8993f1d5d8efe1263f0",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "bags.move_to_equipped_bag": "inventory_move_pass",
+            "bags.move_from_equipped_bag": "inventory_move_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stack_split_merge",
+      "operations": [
+        "bags.split_stack",
+        "bags.merge_stack"
+      ],
+      "scope": "One keystone split from a five-item stack, placed and merged; original identity/count and full resources restored.",
+      "limits": "Other quantities, full bags and persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_03.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui02/stack_split_01/episode.json",
+          "sha256": "8ebc84f1af3dc985124f3a63e5f44fedf507873da73ab46f1bdfb4f05b4e4a9e",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "bags.split_stack": "inventory_split_pass",
+            "bags.merge_stack": "inventory_merge_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "operations": [
+        "chat.say",
+        "chat.yell",
+        "chat.emote",
+        "chat.raid",
+        "chat.raid_warning",
+        "chat.whisper",
+        "raid.raid_warning"
+      ],
+      "scope": "Six normal chat sends reach native handlers; raid, raid-warning and whisper are independently received by the peer.",
+      "limits": "Say/yell/emote peer delivery, other languages/channels and failure variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui03/chat_03/primary/episode.json",
+          "sha256": "b8c8ae5b0c7720b781bb374924f45d764ff4f93d121c7da395355b6eca553809",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "chat.say": "chat_send_pass",
+            "chat.yell": "chat_send_pass",
+            "chat.emote": "chat_send_pass",
+            "chat.raid": "chat_send_pass",
+            "chat.raid_warning": "chat_send_pass",
+            "chat.whisper": "chat_send_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui03/chat_03/scout/episode.json",
+          "sha256": "2c667f6d1f464d89398de4619c954ae2739835a334f477ff56174ede5a2180d4",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "chat.receive.raid": "chat_receive_pass",
+            "chat.receive.raid_warning": "chat_receive_pass",
+            "chat.receive.whisper": "chat_receive_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "logout_reentry",
+      "operations": [
+        "lifecycle.logout_cancel",
+        "lifecycle.logout_confirm",
+        "lifecycle.enter_world"
+      ],
+      "scope": "Scout logout countdown cancelled, later completed and reentered through the visible selected character; primary sees offline/online and original resources/equipment/group/profile restored.",
+      "limits": "Character creation/deletion and other lifecycle failure variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui03/lifecycle_06/scout/episode.json",
+          "sha256": "188949c5d63e88ea9b8c39d08adac51dfef9eb1a10916d85c083ba09d5cf8325",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "lifecycle.logout_cancel": "logout_cancel_pass",
+            "lifecycle.logout_complete": "logout_complete_pass",
+            "lifecycle.reenter": "reenter_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guild_membership",
+      "operations": [
+        "guild.invite",
+        "guild.accept",
+        "guild.decline",
+        "guild.roster",
+        "guild.motd",
+        "guild.leave"
+      ],
+      "scope": "Disposable guild invitations declined and accepted, both rosters shown, MOTD delivered to peer, then ordinary leave and native fixture restoration.",
+      "limits": "Guild bank/rank permissions, recruitment and larger rosters remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui04/guild_membership_02/primary/episode.json",
+          "sha256": "558fc277b3219275dace71dfded918f0924649a037dcdcec185508abdfb3c2e3",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.invite": "guild_invite_submitted",
+            "guild.open_roster": "guild_roster_pass",
+            "guild.motd": "guild_motd_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui04/guild_membership_02/scout/episode.json",
+          "sha256": "f220f0ef7c03496d229fc6309d98e2a711b93148bd1900985b40fb912acc9d81",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.decline": "guild_decline_pass",
+            "guild.accept": "guild_accept_pass",
+            "guild.open_roster": "guild_roster_pass",
+            "guild.leave": "guild_leave_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guild_open",
+      "operations": [
+        "guild.open"
+      ],
+      "scope": "Classic guild preference enabled through ordinary controls and populated native roster rendered.",
+      "limits": "The stock six-tab/eight-tab Lua mismatch still affects Guild Control; this qualifies opening and roster display only.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui04/guild_open_03/episode.json",
+          "sha256": "e7c1d62ec684cb7ad81ec3cb904a129a0c619439b5f226a07cfdb6017f788c41",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.classic_open": "panel_open_pass",
+            "guild.roster_contents": "guild_roster_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guild_notes",
+      "operations": [
+        "guild.member_detail",
+        "guild.note",
+        "guild.officer_note",
+        "guild.information",
+        "guild.chat",
+        "chat.guild",
+        "chat.officer"
+      ],
+      "scope": "Public/officer notes use separate native columns; nonempty information saved/refreshed and guild/officer messages reach native.",
+      "limits": "Empty information emits no request. Guild Control permission mutations remain blocked by stock XML/Lua mismatch.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_05.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui04/guild_notes_02/episode.json",
+          "sha256": "7faeeb192614a10f72a2b7656447fe1e6cd3634bce9cc4ea2d2ff62a0fa45a1b",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.member_details": "guild_details_pass",
+            "guild.public_note_save": "guild_note_pass",
+            "guild.officer_note_save": "guild_note_pass",
+            "guild.information_save": "guild_info_native_pass",
+            "guild.information_refresh": "guild_info_visible_pass",
+            "guild.chat.guild": "guild_chat_pass",
+            "guild.chat.officer": "guild_chat_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guild_ranks",
+      "operations": [
+        "guild.rank_promote",
+        "guild.rank_demote",
+        "guild.remove_member"
+      ],
+      "scope": "Visible promotion/demotion controls change native rank and peer roster; removal reaches native and peer.",
+      "limits": "These episodes retain Guild Control Lua errors (ui_clean=false). Bare-name promotion slash command emits no request. Wider rank/permission variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui05/guild_commands_06/primary/episode.json",
+          "sha256": "f1a22d34a37f82e37e3423fe0e38d6ee3d9229dc617269015838831fcb3d3450",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.rank_promote": "guild_rank_pass",
+            "guild.rank_demote": "guild_rank_pass",
+            "guild.remove_member": "guild_remove_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui05/guild_commands_06/scout/episode.json",
+          "sha256": "8031711a326e8e885acbaaa16581e31977070f20362bee83035e3530f12fb380",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.rank_promote_peer": "guild_rank_peer_pass",
+            "guild.rank_demote_peer": "guild_rank_peer_pass",
+            "guild.remove_member_peer": "guild_remove_peer_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guild_disband",
+      "operations": [
+        "guild.disband"
+      ],
+      "scope": "Ordinary disband confirmation removes the disposable native guild and shows an unguilded leader.",
+      "limits": "Other leadership/rank constraints remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_06.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui05/guild_disband_01/episode.json",
+          "sha256": "276600bec3147d04c8da60ac7f0c62a4ba32302d8d0fbeb57655599f044865a7",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "guild.disband": "guild_disband_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "nearby_target",
+      "operations": [
+        "targeting.friendly_target"
+      ],
+      "scope": "Both owned clients create the native nearby geared player and target the peer by normal exact-name chat input.",
+      "limits": "Mouse/tab targeting, enemies and larger groups remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui06/nearby_players_02/primary/episode.json",
+          "sha256": "a9a1e006090de63c3b9fcbafac9e6994c83b99fd53a5788617af800899b4b452",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "player.target_nearby": "nearby_target_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui06/nearby_players_02/scout/episode.json",
+          "sha256": "cf6f74c4d86c4e7edc44a77623b71b0112cac370eab695671d7ec279fdfb8cef",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "player.target_nearby": "nearby_target_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow",
+      "operations": [
+        "movement.strafe_right",
+        "movement.follow"
+      ],
+      "scope": "Ordinary strafe/follow/stop with peer position agreement and 11 attributed native/modern movement pairs; both original poses restored.",
+      "limits": "Other directions, combat, transports and cross-map follow remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_07.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui06/public_follow_02/primary/episode.json",
+          "sha256": "b6ebf7c4eaa59b4ac295335bd9c7b72ab6f953708ad4a4f0480640ed7cfc660b",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "movement.strafe_public": "movement_pass",
+            "movement.follow_nearby": "follow_pass",
+            "movement.stop_follow": "stop_follow_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inspect",
+      "operations": [
+        "targeting.inspect_player"
+      ],
+      "scope": "Both clients inspect the visible peer and sampled equipment agrees with native identity.",
+      "limits": "Unsampled slots, PvP/item-level/customizations remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui07/peer_services_03/primary/episode.json",
+          "sha256": "aa447b9803de659c4c8ee74a8219654e5f198d6273fd5045792c4f01fbfc9000",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "player.inspect_nearby": "inspect_equipment_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui07/peer_services_03/scout/episode.json",
+          "sha256": "68ab2e352bf1c8e70bcaf9a526ccafb160831aa9647b97bee38d7ec254c381b6",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "player.inspect_nearby": "inspect_equipment_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trade_cancel",
+      "operations": [
+        "trade.cancel"
+      ],
+      "scope": "Ordinary cancel closes both owned trade windows.",
+      "limits": "Range, permission, inventory and gold error paths remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui07/peer_services_03/primary/episode.json",
+          "sha256": "aa447b9803de659c4c8ee74a8219654e5f198d6273fd5045792c4f01fbfc9000",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "trade.cancel": "trade_cancel_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trade_roundtrip",
+      "operations": [
+        "trade.request",
+        "trade.accept",
+        "trade.offer_item",
+        "trade.offer_stack",
+        "trade.confirm"
+      ],
+      "scope": "Five-item stack offered, both parties confirm, then the exact stack returns in another normal trade; full native inventories/money and poses restored.",
+      "limits": "Gold, enchantment, unaccept, changed offers and bag errors remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui07/trade_roundtrip_02/primary/episode.json",
+          "sha256": "38901a2ebc037620ae9e167aebbede479c631631528e020b67f93270d0b84eac",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "trade.outbound.open": "trade_open_pass",
+            "trade.outbound.offer": "trade_offer_pass",
+            "trade.outbound.accept_sender": "trade_accept_pass",
+            "trade.return.accept_recipient": "trade_complete_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_08.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui07/trade_roundtrip_02/scout/episode.json",
+          "sha256": "0679d6c5bd514499823ca6a33a7f5902048991deb616333ca2236a10bc85caf7",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "trade.outbound.accept_recipient": "trade_complete_pass",
+            "trade.return.open": "trade_open_pass",
+            "trade.return.offer": "trade_offer_pass",
+            "trade.return.accept_sender": "trade_accept_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bank",
+      "operations": [
+        "bank.open",
+        "bank.close",
+        "bank.deposit",
+        "bank.withdraw"
+      ],
+      "scope": "Stock 28-slot base bank opens; existing stack deposited/withdrawn with exact identity/count and UI agreement; full fixture and pose restored.",
+      "limits": "Bank bags/slots, split variants, reconnect persistence and negative paths remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_09.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui08/bank_roundtrip_01/episode.json",
+          "sha256": "c2cdbe04b1a9594afe8604243a1be23c2ba442628386e74374aa79ff07789145",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "bank.gossip": "bank_open_pass",
+            "bank.deposit_existing_stack": "bank_transfer_pass",
+            "bank.withdraw_existing_stack": "bank_transfer_pass",
+            "bank.close": "bank_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "merchant",
+      "operations": [
+        "merchant.open",
+        "merchant.close",
+        "merchant.sell",
+        "merchant.buyback"
+      ],
+      "scope": "All nine native vendor rows display; existing pants sold, bought back and moved to original slot with exact identity/money and pose restoration.",
+      "limits": "Individual repair, discounts, stock and negative variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261002_10.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261002_ui09/merchant_sale_02/episode.json",
+          "sha256": "a811157d5743bf82ecf7151f7781579b603a71ac211c8535cf731d82b6d651ea",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "merchant.gossip": "service_open_pass",
+            "merchant.sell_existing_pants": "sale_pass",
+            "merchant.buyback.item": "buyback_pass",
+            "merchant.close": "service_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "purchase",
+      "operations": [
+        "merchant.buy_stack"
+      ],
+      "scope": "One five-item water bundle purchased with exact native/public quantity, price and received-item chat; fixture restored.",
+      "limits": "Single-item purchase, stock/currency/discount and error paths remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_11.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui10/merchant_purchase_04/episode.json",
+          "sha256": "3df30263483070cfe021582b94f7adbd66bb544a419df5029e0518c12207cc07",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "merchant.buy_bundle": "purchase_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repair_all",
+      "operations": [
+        "merchant.repair_all"
+      ],
+      "scope": "Repair-all quote and native/visible charge agree after isolated opt-in rounding correction; damaged fixture restored.",
+      "limits": "Individual/guild repairs, other prices and discounts remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_13.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui12/repair_all_03/episode.json",
+          "sha256": "1b0f33d31ac0439f1a55fda0f152c64910789133d164c74930468ab42a3d0070",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "merchant.repair_all": "repair_all_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trainer",
+      "operations": [
+        "trainer.open",
+        "trainer.close",
+        "trainer.learn_skill"
+      ],
+      "scope": "Warrior learns Parry through stock trainer with native/public learned spell, price and notification agreement, then fixture restored.",
+      "limits": "Profession learning/unlearning, rank upgrades and errors remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_13.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui12/trainer_learn_02/episode.json",
+          "sha256": "088bf9d0b8d920841efa3109439c8e275a86d6c2d85263d5bc33f1c0cbf74672",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "trainer.gossip": "service_open_pass",
+            "trainer.learn": "trainer_learning_pass",
+            "trainer.close": "service_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trainer_known_filter",
+      "operations": [
+        "trainer.filter_known"
+      ],
+      "scope": "Already Known filter shows and hides all 141 native known Alchemy recipes.",
+      "limits": "Available/unavailable filters and new profession learning remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_15.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui14/profession_trainer_filters_02/episode.json",
+          "sha256": "42c34504bbbb94817481a3ab0a1141e0a68cd1a7594010658e6749d3f5de7219",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "trainer.known_filter.show": "trainer_filter_change_pass",
+            "trainer.known_filter.hide": "trainer_filter_change_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_log",
+      "operations": [
+        "quests.expand_zone",
+        "quests.select",
+        "quests.details",
+        "quests.abandon_confirm"
+      ],
+      "scope": "Auto-accepted kill quest displayed with native 0/6 objective; log zone expanded, selected and abandoned with exact quest/inventory/money restoration.",
+      "limits": "Manual acceptance, progress/rewards, sharing, POIs and other objective types remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_14.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui13/quest_details_04/episode.json",
+          "sha256": "151fd23a865d052d623486b6ad04eac8dcc5d3d784dc36bf402302f1b1b61eeb",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "quests.select_giver_quest": "quest_details_open_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_14.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui13/quest_log_02/episode.json",
+          "sha256": "6e3116e8ab34f4b47dfd12bd82d953eae3b9f39ab3716d1ddac7c4dee58d4360",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "quests.expand_zone": "quest_zone_expand_pass",
+            "quests.select_log_entry": "quest_log_details_pass",
+            "quests.confirm_abandon": "quest_abandon_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail_read",
+      "operations": [
+        "mail.open",
+        "mail.close",
+        "mail.inbox",
+        "mail.read",
+        "mail.delete"
+      ],
+      "scope": "Existing native reward catalog displays correct senders, subjects and attachment counts. Disposable plain letter body visually reviewed, read-marked natively and deleted; original mailbox/resources/pose restored.",
+      "limits": "COD, HTML/invoices, text-copy, attachment limits and delay/error variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_15.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui14/mailbox_open_02/episode.json",
+          "sha256": "8d0178529d61c9ff391d60e5682977665b23d838c0d2bfa07b31910147c6161f",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.open": "mailbox_open_pass",
+            "mail.close": "mailbox_close_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_16.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui15/mail_read_delete_01/episode.json",
+          "sha256": "ab9bafe8c343252db2d20da5a6d8bbb8dc3647bae936a49775114fb3748bef9c",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.read": "mail_read_pass",
+            "mail.delete": "mail_delete_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail_collection",
+      "operations": [
+        "mail.take_item",
+        "mail.attachment_money"
+      ],
+      "scope": "Five native water items and exactly 12,345 copper collected from separate disposable letters, with native/public agreement and original mail/inventory/money/pose restored.",
+      "limits": "Take-all, COD, gems and limit/error variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_17.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui16/mail_collect_item_01/episode.json",
+          "sha256": "afb9567c379b9c10f3ede392eccaa6ff17b951526462ff2d161b4c847cf9f0df",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.collect_item": "mail_collect_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_17.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui16/mail_collect_money_01/episode.json",
+          "sha256": "e014dec9f844490b678e5d663711563244e0aebf89314f419e42ef80f270efad",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.collect_money": "mail_collect_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "player_mail",
+      "operations": [
+        "mail.compose",
+        "mail.add_recipient",
+        "mail.attach_money",
+        "mail.send",
+        "mail.postage",
+        "mail.return",
+        "mail.reply"
+      ],
+      "scope": "Real two-account plain sends, return and reply; one-copper attachment returned/collected and exact 30-copper postage charges agree. Rendered bodies reviewed; all native mail/resources and both poses restored.",
+      "limits": "Item attachment via player compose, COD, invoices and delay/error paths remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui17/mail_return_04/primary/episode.json",
+          "sha256": "0dd24b5f7972a506ed16e1ded97c75798fcb0db1442e2262ef1d737f3a64b58a",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.compose": "mail_compose_open_pass",
+            "mail.recipient": "ui_edit_pass",
+            "mail.attach_money": "ui_edit_pass",
+            "mail.send": "mail_send_pass",
+            "mail.take_returned_money": "mail_collect_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui17/mail_return_04/scout/episode.json",
+          "sha256": "7a19c6913a61ae9d2ec5a0b6918a8d3949bf34260e93acb8bdf524747fde4219",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.return": "mail_return_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_18.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui17/mail_reply_01/scout/episode.json",
+          "sha256": "0a846b0d02a1482b2bdc7c1d417885ffb044296ec9b226ad9ef77061c6cdcb8f",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "mail.reply": "mail_reply_open_pass",
+            "mail.send": "mail_send_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "auction_read",
+      "operations": [
+        "auction.open",
+        "auction.close",
+        "auction.browse",
+        "auction.search"
+      ],
+      "scope": "Stock AuctionHouse opens/closes, complete empty browse search for an absent name agrees with native/public response and event.",
+      "limits": "Populated browse, categories, filters, sorting/paging and bids remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_20.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui19/auction_browse_02/episode.json",
+          "sha256": "6e908ce3302245a4327ff8298166a4f918629d9b7820a6196059ccc419e34889",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "auction.gossip": "auction_open_pass",
+            "auction.search_name": "ui_edit_pass",
+            "auction.search": "auction_catalog_pass",
+            "auction.close": "auction_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "auction_roundtrip",
+      "operations": [
+        "auction.sell_item",
+        "auction.select",
+        "auction.deposit",
+        "auction.auction_cancel",
+        "auction.owned_auctions",
+        "auction.mail_delivery"
+      ],
+      "scope": "One uninterrupted 14-input run posts plain one-gold pants, displays/selects the populated owned row, cancels through Accept and collects the original GUID into its original slot. Zero quote/native deposit/charge agree for one-copper one-day pants. Complete two-character mail/resources/poses restored without refund.",
+      "limits": "Bids/buyouts, stacks/commodities, other fees, suffixes, paging and negative variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_23.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui22/auction_roundtrip_01/episode.json",
+          "sha256": "463c910eb290963fcf7f05c9703982720e151fd836fd9f7ef0cf1a6797a24083",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "auction.post": "auction_post_pass",
+            "auction.show_owned": "auction_owned_populated_pass",
+            "auction.select_owned_item_end": "auction_select_owned_pass",
+            "auction.confirm_cancel": "auction_cancel_pass",
+            "auction.collect_return": "auction_return_collect_pass",
+            "auction.restore_slot": "inventory_move_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "archaeology_loop",
+      "operations": [
+        "archaeology.survey",
+        "archaeology.telescope_direction",
+        "archaeology.distance_lantern",
+        "archaeology.approach_find",
+        "archaeology.loot_find",
+        "archaeology.site_completion",
+        "archaeology.site_rotation"
+      ],
+      "scope": "Historical accepted loop 89 performs six finds at two fresh Outland sites (351 and 363), awards 44 fragments and replaces both sites without manual gameplay interventions or teacher click annotations. Survey instrument bearing/lantern observations drive approaches.",
+      "limits": "Bounded two-site proof, using historical Laya identities. Indefinite operation, other races/terrain, solve/keystones, caps and reconnect persistence remain open. New runs use code under current AGENTS.md.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_archaeology_loop_proof_20261002.tar.gz.dvc",
+          "member": "evidence/laya_archaeology_travel_loop_89/episode.json",
+          "sha256": "2b3ce1bc3d87851b49c052a734eeec411af1ff04a8a2692fc45398d1b5187968",
+          "archived_receipt_digest_verified": false,
+          "cases": {}
+        }
+      ]
+    }
+  ],
+  "qualified_operations": 183,
+  "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
