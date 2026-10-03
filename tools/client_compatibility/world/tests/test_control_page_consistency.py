@@ -16,10 +16,14 @@ def test_changed_control_catalog_discards_old_pages(tmp_path,monkeypatch,changes
     samples=[sample(1,1,old)]
     if changes_count:samples.append(sample(1,2,first,12))
     else:samples.extend([sample(2,2,second),sample(1,2,first)])
-    states=iter(samples);t=SimpleNamespace(out=tmp_path,guid='Player-1-00000001',receipt={},persist=lambda:None)
+    states=iter(samples);latest={}
+    def decode(image,**offset):
+        if not offset:latest['state']=next(states)
+        return latest['state']
+    t=SimpleNamespace(out=tmp_path,guid='Player-1-00000001',receipt={},persist=lambda:None)
     monkeypatch.setattr(module.time,'sleep',lambda _:None)
-    monkeypatch.setattr(ctl,'shot',lambda path:Image.new('RGB',(1,1)).save(path))
-    monkeypatch.setattr(interactions,'decode_image',lambda _:next(states))
+    monkeypatch.setattr(ctl,'shot',lambda path:Image.new('RGB',(1280,720)).save(path))
+    monkeypatch.setattr(interactions,'decode_image',decode)
     assert module.controls(t)==first+([] if changes_count else second)
 
 
@@ -29,8 +33,8 @@ def test_reuse_requires_an_observed_matching_complete_catalog_and_retains_curren
         'control_count':12,'control_snapshot':9,'controls':rows,'sequence':1}
     t=SimpleNamespace(out=tmp_path,guid=state['guid'],receipt={},persist=lambda:None)
     monkeypatch.setattr(module.time,'sleep',lambda _:None)
-    monkeypatch.setattr(ctl,'shot',lambda path:Image.new('RGB',(1,1)).save(path))
-    monkeypatch.setattr(interactions,'decode_image',lambda _:state)
+    monkeypatch.setattr(ctl,'shot',lambda path:Image.new('RGB',(1280,720)).save(path))
+    monkeypatch.setattr(interactions,'decode_image',lambda _,**offset:state)
     assert module.controls(t)==rows
     state['sequence']=2
     assert module.controls(t)==rows

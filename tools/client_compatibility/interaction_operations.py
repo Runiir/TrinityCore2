@@ -22,6 +22,24 @@ def command(trial,text):
     trial.io.type(text);time.sleep(.2);trial.io.key('Return',hold=.4);time.sleep(.65)
 
 
+def retain_control_pixels(path,target,state):
+    # Only catalog plumbing uses this lossless region. Action/cleanup frames
+    # retain the complete game image for rendering and coordinate review.
+    from PIL import Image
+    from .observation.interactions import decode_image
+    box=(281,15,642,63)
+    with Image.open(path) as full:
+        if full.size!=(1280,720):raise RuntimeError('control capture viewport changed')
+        pixels=full.crop(box)
+        if decode_image(pixels,x=.25,y=0)!=state:
+            raise RuntimeError('retained control pixels differ from the full capture')
+        pixels.save(target,compress_level=9)
+    path.unlink()
+    return {'file':target.name,'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
+        'capture_box':list(box),'capture_dimensions':[1280,720],
+        'content':'lossless public control-observation pixels; action frames retain full game rendering'}
+
+
 def controls(trial):
     from PIL import Image
     from tools.second_client import ctl
@@ -41,8 +59,9 @@ def controls(trial):
             # Reuse only an exact list from this Trial/actor, retaining the new
             # frame that establishes the matching current fingerprint.
             reused=trial.receipt.setdefault('control_catalog_reuse',[])
-            target=trial.out/('controls_reuse_'+str(len(reused))+'.png');path.replace(target)
-            reused.append({'frame':{'file':target.name,'sha256':__import__('hashlib').sha256(target.read_bytes()).hexdigest()},
+            target=trial.out/('controls_reuse_'+str(len(reused))+'.png')
+            frame=retain_control_pixels(path,target,state)
+            reused.append({'frame':frame,
                 'sequence':state['sequence'],'control_snapshot':state['control_snapshot'],
                 'control_count':state['control_count'],'source_catalog':cached['source']});trial.persist()
             return cached['rows']
@@ -62,9 +81,10 @@ def controls(trial):
                 'control_snapshot':state.get('control_snapshot')}
             digest=hashlib.sha256(json.dumps(observed,sort_keys=True).encode()).hexdigest()
             target=trial.out/('controls_'+digest+'.png')
-            if target.exists():path.unlink()
-            else:path.replace(target)
-            trial.receipt.setdefault('control_frames',{})[digest]={'file':target.name,'observed':observed}
+            if target.exists():
+                path.unlink();frame=trial.receipt['control_frames'][digest]
+            else:frame=retain_control_pixels(path,target,state)
+            trial.receipt.setdefault('control_frames',{})[digest]={**frame,'observed':observed}
             trial.persist()
         if total is not None and len(pages)==__import__('math').ceil(total/state.get('page_size',18)):
             rows=[c for p in sorted(pages) for c in pages[p]]
