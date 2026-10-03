@@ -101,7 +101,7 @@ if __name__=='__main__':
     parser.add_argument('--point',type=int,nargs=2,required=True);parser.add_argument('--resource',choices=['item','money'],required=True)
     args=parser.parse_args()
     if any(not 0<=v<bound for v,bound in zip(args.point,[1280,720])):parser.error('mailbox point is outside the owned window')
-    t=Trial(args.output)
+    t=Trial(args.output,controller='code')
     try:suite(t,args.point,args.resource);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
