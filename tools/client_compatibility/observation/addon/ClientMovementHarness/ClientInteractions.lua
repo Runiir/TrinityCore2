@@ -120,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=26,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=27,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -157,7 +157,7 @@ local function snapshot(viewMode,viewPage)
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
                 local parent=f:GetParent()
                 if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
-                    local row=call(f.GetElementData,f)
+                    local row=call(f.GetRowData,f)
                     if type(row)=='table' and type(row.auctionID)=='number' then
                         data.controls[#data.controls].auction_id=row.auctionID
                     end
@@ -320,7 +320,8 @@ local function snapshot(viewMode,viewPage)
             local bid,buyout=call(sell.GetPrice,sell)
             data.auction.sell={id=item and call(C_Item.GetItemID,item),
                 quantity=call(sell.GetQuantity,sell),duration=call(sell.GetDuration,sell),
-                bid=tonumber(bid),buyout=tonumber(buyout),post_enabled=call(sell.PostButton.IsEnabled,sell.PostButton)}
+                bid=tonumber(bid),buyout=tonumber(buyout),deposit=call(sell.GetDepositAmount,sell),
+                post_enabled=call(sell.PostButton.IsEnabled,sell.PostButton)}
             if item then
                 local bag,slot=call(item.GetBagAndSlot,item)
                 local key=call(api.GetItemKeyFromItem,item)

@@ -6,6 +6,8 @@ from .interaction_trial import Trial
 from .interaction_macros import require,edit_case
 from .interaction_operations import controls,click_case
 from .interaction_auction import auction_state,query_packets
+from .interaction_auction import open_auction
+from .npc_fixture import NpcFixture
 from .interaction_auction_sell import suite as sell_suite
 from .interaction_mail import mailbox_state
 from .interaction_mail_actions import open_mailbox,letter
@@ -118,13 +120,42 @@ def recover_mail(t,point,baseline,deposit):
 def suite(t,auction_point,mail_point):
     baseline=mailbox_state();t.receipt['mailbox_baseline']=baseline;t.persist()
     def transaction(t,auction_baseline,fixture):
-        row=post(t,auction_baseline)
-        cancel(t,row);t.clean_panels();fixture.restore();fixture.rows=[]
-        recover_mail(t,mail_point,baseline,row[9])
+        try:
+            row=post(t,auction_baseline)
+            cancel(t,row);t.clean_panels();fixture.restore();fixture.rows=[]
+            recover_mail(t,mail_point,baseline,row[9])
+        except Exception as error:
+            t.receipt['transaction_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     try:sell_suite(t,auction_point,catalog=True,transaction=transaction)
     finally:
         after=mailbox_state();t.receipt['roundtrip_restoration']={'mail_inventory_money_restored':after==baseline,'after':after};t.persist()
         if after!=baseline:raise RuntimeError('auction roundtrip requires cleanup; preserve native return/listing for recovery')
+
+
+def recover(t,source,auction_point,mail_point):
+    previous=json.loads((source/'episode.json').read_text())
+    if not previous.get('finished_at') or previous['actor']!=t.receipt['actor']:
+        raise RuntimeError('recovery requires a closed receipt for the same owned actor')
+    old=previous['runtime']['worldserver'];current=lab.owned_process('worldserver')
+    if (old['pid'],old['start_ticks'])!=(current['pid'],current['start_ticks']):
+        raise RuntimeError('recovery requires the same owned native server')
+    row=tuple(previous['posted_auction']);baseline=previous['mailbox_baseline']
+    if auction_state()['auctions']!=((row),):raise RuntimeError('recovery listing differs from the exact posted auction')
+    t.receipt['recovery_source']=str(source);t.receipt['posted_auction']=row;t.receipt['mailbox_baseline']=baseline;t.persist()
+    fixture=NpcFixture(t.out,t.fixture,8719,2097152)
+    try:
+        t.clean_panels();fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
+        open_auction(t,auction_point,fixture.npc[2]);cancel(t,row)
+        t.clean_panels();fixture.restore();fixture.rows=[]
+        recover_mail(t,mail_point,baseline,row[9])
+    except Exception as error:
+        t.receipt['transaction_failure']=f'{type(error).__name__}: {error}';t.persist();raise
+    finally:
+        t.clean_panels();fixture.restore();after=mailbox_state()
+        # Persisted baseline arrays are normalized before comparing SQL tuples.
+        restored=json.loads(json.dumps(after))==baseline
+        t.receipt['roundtrip_restoration']={'mail_inventory_money_restored':restored,'after':after};t.persist()
+        if not restored or auction_state()['auctions']:raise RuntimeError('posted auction recovery still requires cleanup')
 
 
 def stage(t):
@@ -137,12 +168,17 @@ def stage(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--recover-from',type=Path)
     p.add_argument('--stage-mail',action='store_true');p.add_argument('--auction-point',type=int,nargs=2);p.add_argument('--mail-point',type=int,nargs=2)
     a=p.parse_args()
     if not a.stage_mail and (not a.auction_point or not a.mail_point):p.error('requires separately reviewed auction and mailbox points')
     if any(not 0<=v<bound for point in [a.auction_point,a.mail_point] if point for v,bound in zip(point,[1280,720])):
         p.error('fixture points must be within the owned 1280x720 client')
     t=Trial(a.output,controller='code')
-    try:stage(t) if a.stage_mail else suite(t,a.auction_point,a.mail_point);t.receipt['completed']=True
+    try:
+        if a.stage_mail:stage(t)
+        elif a.recover_from:recover(t,a.recover_from,a.auction_point,a.mail_point)
+        else:suite(t,a.auction_point,a.mail_point)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
