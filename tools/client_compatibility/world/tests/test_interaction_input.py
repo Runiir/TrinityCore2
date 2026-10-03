@@ -29,3 +29,24 @@ def test_chat_recovery_does_not_submit_changed_text(monkeypatch,text,settled):
         receipt=trial.execute(action);assert len(receipt)==1
         assert events.count(('key','Return'))==3
     assert events.count(('type','/invite Harnesstwo'))==1
+
+
+@pytest.mark.parametrize('hold',[.01,2.01,float('nan')])
+def test_mouse_hold_outside_bound_never_reaches_input(monkeypatch,hold):
+    trial=module.Trial.__new__(module.Trial);events=[]
+    from types import SimpleNamespace
+    trial.io=SimpleNamespace(click=lambda *args,**kwargs:events.append((args,kwargs)))
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    with pytest.raises(ValueError,match='click hold'):
+        trial.execute({'kind':'click','value':[10,20],'hold':hold})
+    assert events==[]
+
+
+def test_bounded_stock_rotation_hold_reaches_only_selected_control(monkeypatch):
+    trial=module.Trial.__new__(module.Trial);events=[]
+    from types import SimpleNamespace
+    trial.io=SimpleNamespace(click=lambda *args,**kwargs:events.append((args,kwargs)))
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    assert trial.execute({'kind':'click','value':[10,20],'hold':.6})==[]
+    assert events==[((10,20),{'button':1,'modifiers':(),'hold':.6})]
