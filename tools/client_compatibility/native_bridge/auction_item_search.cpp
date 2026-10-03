@@ -73,7 +73,10 @@ Reply auction_item_result(State &s,AuctionItems const &items,unsigned delay)
     });
     auto start=std::min<std::uint64_t>(integer(get(q,"offset")),rows.size()),end=std::min<std::uint64_t>(start+500,rows.size());
     Writer w;w.pack("3I",{end-start,0,delay});for(auto i=start;i<end;++i)w.raw(unhex(str(get(*rows[i],"encoded"))));
-    w.bits(2,2).bits(end<rows.size(),1).flush().bits(id,20).bits(0,1).bits(level,11).bits(0,1).flush()
+    // Correlate with the request key. Item-ID queries intentionally cover all
+    // levels and therefore use level zero, while a bucket query echoes its key.
+    auto response_level=truth(get(q,"bucket"))?integer(get(q,"level")):0;
+    w.bits(2,2).bits(end<rows.size(),1).flush().bits(id,20).bits(0,1).bits(response_level,11).bits(0,1).flush()
         .put<std::uint32_t>(rows.size());
     s.auction_browse=nullptr;return Packet{"SMSG_AUCTION_LIST_ITEMS_RESULT",w.finish()};
 }

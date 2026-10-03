@@ -58,7 +58,7 @@ def test_captured_sale_query_routes_to_native_and_returns_complete_empty_item_re
         actions=[action('auction_response','MSG_AUCTION_HELLO',struct.pack('<QIB',guid,2,1)),query(CAPTURE),response()])
     expected=struct.pack('<QI',guid,0)+b"Recruit's Pants\0"+struct.pack('<BB4IBBBB',0,0,*([0xffffffff]*4),0,0,0,0)
     assert replies[1]==['CMSG_AUCTION_LIST_ITEMS',expected.hex()]
-    assert read_result(replies[2])==(300,0,(39,1),0,[])
+    assert read_result(replies[2])==(300,0,(39,0),0,[])
 
 
 @pytest.mark.parametrize('bucket',[False,True])
@@ -66,7 +66,7 @@ def test_native_pages_are_completed_then_filtered_sorted_and_keyed(codec,bucket)
     replies=calls(codec,[OPEN,query(bucket=bucket),response([row(id_=9,buyout=600)],total=3),
         response([row(id_=10,buyout=400),row(id_=11,entry=40)],total=3)])
     assert replies[2][0]=='CMSG_AUCTION_LIST_ITEMS';assert replies[3] is None
-    delay,more,key,total,rows=read_result(replies[4]);assert (delay,more,key,total)==(300,0,(39,1),2)
+    delay,more,key,total,rows=read_result(replies[4]);assert (delay,more,key,total)==(300,0,(39,1 if bucket else 0),2)
     assert [r[0] for r in rows]==[10,9] and [r[3] for r in rows]==[400,600]
 
 
@@ -96,7 +96,7 @@ def test_large_filtered_item_results_preserve_real_has_more_and_total(codec):
     rows=[row(id_=i,buyout=i) for i in range(1,502)]
     reply=calls(codec,[OPEN,query(),response(rows)])[-1]
     delay,more,key,total,shown=read_result(reply)
-    assert (delay,more,key,total,len(shown))==(300,1,(39,1),501,500)
+    assert (delay,more,key,total,len(shown))==(300,1,(39,0),501,500)
     assert shown[0][0]==1 and shown[-1][0]==500
 
 
