@@ -19,7 +19,9 @@ function Client442ObserveArchaeology(page)
         summary_visible=summary and not not call(summary.IsVisible,summary) or false,
         summary_page=summary and summary.currentPage,
         completed_visible=completed and not not call(completed.IsVisible,completed) or false,
-        completed_buttons={},
+        completed_buttons={},keystone_buttons={},tooltip_lines={},
+        completion_format=ARCHAEOLOGY_COMPLETION,timestamp_caption=ARCHAEOLOGY_TIMESTAMP,
+        tooltip_visible=GameTooltip and not not call(GameTooltip.IsVisible,GameTooltip) or false,
         artifact_visible=artifact and not not call(artifact.IsVisible,artifact) or false,
         selected_race=artifact and artifact.raceID,rendered_artifact=text(artifact and artifact.artifactName),
         rendered_progress=text(solve and solve.statusBar and solve.statusBar.text),
@@ -31,10 +33,10 @@ function Client442ObserveArchaeology(page)
     local base,adjust,cost=call(GetArtifactProgress)
     data.progress={base=base,adjust=adjust,cost=cost,can_solve=call(CanSolveArtifact)}
     for index=(page-1)*4+1,math.min(page*4,count) do
-        local race,texture,keystone,quantity,required=call(GetArchaeologyRaceInfo,index,false)
+        local race,texture,keystone,quantity,required,maximum=call(GetArchaeologyRaceInfo,index,false)
         local projects=call(GetNumArtifactsByRace,index) or 0
         local row={index=index,name=race,keystone=keystone,quantity=quantity,required=required,
-            projects=projects,completed={},artifact_values={}}
+            projects=projects,completed={},artifact_values={},maximum=maximum}
         for project=1,math.min(projects,200) do
             local title,_,rare,_,_,_,_,projectSpell,first,times,extra1,extra2=call(GetArtifactInfoByRace,index,project)
             if project<=6 then row.artifact_values[#row.artifact_values+1]={index=project,name=title,
@@ -59,6 +61,19 @@ function Client442ObserveArchaeology(page)
                 rendered=text(button.artifactName),race=button.raceIndex,project=button.projectIndex,
                 first_completed=button.firstCompletionTime,count=button.completionCount,
                 enabled=not not call(button.IsEnabled,button)}
+        end
+    end
+    for index=1,4 do
+        local button=solve and solve['keystone'..index]
+        if button then data.keystone_buttons[#data.keystone_buttons+1]={index=index,name=button:GetName(),
+            visible=not not call(button.IsVisible,button),enabled=not not call(button.IsEnabled,button),
+            added=not not call(ItemAddedToArtifact,index),tooltip=tostring(button.tooltip or ''):sub(1,180),
+            icon_visible=button.icon and not not call(button.icon.IsVisible,button.icon) or false} end
+    end
+    if data.tooltip_visible then
+        for index=1,math.min(call(GameTooltip.NumLines,GameTooltip) or 0,8) do
+            local line=text(_G['GameTooltipTextLeft'..index])
+            if line then data.tooltip_lines[#data.tooltip_lines+1]=line:sub(1,260) end
         end
     end
     return data

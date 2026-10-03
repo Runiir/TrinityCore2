@@ -170,6 +170,11 @@ class Trial:
                 if action['value']:self.io.type(action['value'])
                 else:self.io.key('BackSpace')
             elif action['kind']=='drag':self.io.drag(action['start'],action['end'])
+            elif action['kind']=='hover':
+                value=action['value']
+                if len(value)!=2 or not 0<=value[0]<1280 or not 0<=value[1]<720:
+                    raise ValueError('hover exceeds the owned client input bounds')
+                self.io.move(*value)
             else:raise ValueError('unsupported physical action')
         time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
         transport=[]

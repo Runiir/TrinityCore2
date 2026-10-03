@@ -123,7 +123,11 @@ def completed_panel(t,label,expected):
         diagnostic_action='close'),'archaeology_close_pass')
 
 
-def solve(t,contract,baseline):
+def solve(t,contract,baseline,keystones=0):
+    fragment_cost=contract['cost']-12*keystones
+    stone=next((r for r in baseline['inventory']['items'] if r[0]==t.fixture['guid'] and r[4]==contract['keystone']),None)
+    if keystones and (not stone or stone[5]<=keystones or not 0<fragment_cost<=contract['quantity']):
+        raise RuntimeError('requires an affordable weighted solve and a keystone stack with a remainder')
     def outcome(b,a,s):
         deadline=time.monotonic()+18;samples=[]
         while True:
@@ -133,9 +137,10 @@ def solve(t,contract,baseline):
             samples.append({'time':time.time(),'completed':completed})
             if completed or time.monotonic()>deadline:break
             time.sleep(.5)
-        expected=[tuple([r[0],r[1]-contract['cost'],*r[2:]]) if r[0]==contract['currency'] else r
+        expected=[tuple([r[0],r[1]-fragment_cost,*r[2:]]) if r[0]==contract['currency'] else r
             for r in baseline['currencies']]
         old={r[3]:r for r in baseline['inventory']['items']};new={r[3]:r for r in after['inventory']['items']}
+        if keystones:old[stone[3]]=(*stone[:5],stone[5]-keystones,*stone[6:])
         added=[r for id,r in new.items() if id not in old]
         public=catalog(t,'after_solve');race=next(r for r in public['races'] if r['name']==contract['name'])
         checks={'ordinary_solve':s,'native_completion':completed,'exact_fragment_spend':after['currencies']==tuple(expected),
@@ -143,13 +148,14 @@ def solve(t,contract,baseline):
             'artifact_created':len(added)==1 and added[0][0]==t.fixture['guid'] and
                 added[0][4]==contract['item'] and added[0][5]==1 and added[0][6]==t.fixture['guid'],
             'money_preserved':after['inventory']['money']==baseline['inventory']['money'],
-            'public_fragments':race['quantity']==contract['quantity']-contract['cost'],
+            'public_fragments':race['quantity']==contract['quantity']-fragment_cost,
+            'keystones_consumed':not keystones or new.get(stone[3])==old[stone[3]],
             'public_history':any(r['spell']==contract['spell'] and r['count']==history[2] for r in race['completed'])
                 if history else False}
         t.receipt['solve_outcome']={'checks':checks,'native':after,'public':public,'samples':samples};t.persist()
         return {'status':'archaeology_solve_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':t.receipt['solve_outcome']}
-    require(click_case(t,'archaeology.solve_project','Solve this project with earned fragments and no keystones.',
+    require(click_case(t,'archaeology.solve_project',f'Solve this project with earned fragments and {keystones} keystones.',
         lambda c:c['name']=='ArchaeologyFrameArtifactPageSolveFrameSolveButton',outcome),'archaeology_solve_pass')
     require(t.step('archaeology.artifact_bag','Open the backpack and inspect the crafted artifact.',
         {'bag':{'kind':'key','value':'b','description':'Press B to open the backpack.'}},
@@ -173,7 +179,7 @@ def suite(t,do_solve=False,persist=False):
                 t.clean_panels()
                 require(t.step('archaeology.reload_persistence','Reload the interface and retain earned archaeology progress.',
                     {'reload':{'kind':'chat','value':'/reload','description':'Enter /reload.'}},
-                    lambda b,a,s:{'status':'archaeology_reload_pass' if a.get('observer_version')==41 and
+                    lambda b,a,s:{'status':'archaeology_reload_pass' if a.get('observer_version')==b.get('observer_version') and
                         not a.get('lua_errors') and not a.get('blocked_actions') and native()==earned else
                         'client_or_protocol_failure'},diagnostic_action='reload'),'archaeology_reload_pass')
                 t.clean_panels();completed_panel(t,'after_reload_history',earned)
