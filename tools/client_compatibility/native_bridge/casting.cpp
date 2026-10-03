@@ -34,6 +34,9 @@ Packet Protocol::cast_request(State &owner, View body) const
     auto unit = r.guid(), item = r.guid();
     bool extra_marker=spell>=171555 && spell<=171557 && target_flags==64;
     bool marker=((spell>=84996 && spell<=85000) || extra_marker) && target_flags==64;
+    bool glyph=target_flags==0x08000000u;
+    if(glyph && (misc0<0 || misc0>=9 || unit!=Array{0,0}))
+        throw std::runtime_error("invalid glyph socket cast target");
     Array destination;
     if(marker)
     {
@@ -62,7 +65,7 @@ Packet Protocol::cast_request(State &owner, View body) const
         if (!finds.contains((target >> 32) & 0xfffff))
             throw std::runtime_error("gather target is not an archaeology find");
     }
-    else if (!marker && ((unit != Array{0, 0} && unit != Array{owner.guid(), player_high()}) || (target_flags & ~2u)))
+    else if (!marker && !glyph && ((unit != Array{0, 0} && unit != Array{owner.guid(), player_high()}) || (target_flags & ~2u)))
         throw std::runtime_error("unsupported or foreign cast target");
     if (moving)
     {
@@ -81,13 +84,16 @@ Packet Protocol::cast_request(State &owner, View body) const
                                              {"server_guid", Array{++owner.cast_serial, high}},
                                              {"spell", spell},
                                              {"visual", visual},
+                                             {"glyph_target", glyph},
                                              {"native_target", target}};
     if(extra_marker)owner.casts[owner.cast_counter].as_object()["extra_marker"]=Object{
         {"slot",spell-171550},{"map",owner.map()},{"position",destination}};
     Writer w;
     // 4.4.2 sets bit 3 for these ground clicks with zero weights. In 4.3.4
     // the same bit requires a trailing weight count and would truncate parsing.
-    w.pack("BiiBI", {owner.cast_counter, spell, misc0, marker ? flags&~8u : flags, target_flags});
+    // Modern's glyph-slot flag moved from bit 17 to bit 27. Misc remains the
+    // zero-based socket index. Native known-spell/reagent/slot checks still run.
+    w.pack("BiiBI", {owner.cast_counter, spell, misc0, marker ? flags&~8u : flags, glyph ? 0x20000u : target_flags});
     if (target_flags & (2 | 2048))
         packed(w, target);
     if(marker)w.put<std::uint8_t>(0).pack("3f",destination);
@@ -190,7 +196,8 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
         dest = r.unpack("3f");
     }
     std::unordered_set<std::uint64_t> allowed = {0, unit, integer(get(cast, "native_target"))};
-    if ((target_flags & ~(98u | 2048u)) || !allowed.contains(target))
+    auto supported=98u | 2048u | (truth(get(cast,"glyph_target")) ? 0x20000u : 0u);
+    if ((target_flags & ~supported) || !allowed.contains(target))
         throw std::runtime_error("unexpected self-cast result targets");
     for (auto hit : hits)
         if (!allowed.contains(hit))
@@ -215,7 +222,8 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
         .bits(0, 16)
         .bits(0, 2)
         .flush();
-    w.bits(target_flags, 28)
+    auto modern_targets=(target_flags&~0x20000u) | ((target_flags&0x20000u) ? 0x08000000u : 0u);
+    w.bits(modern_targets, 28)
         .bits(!source.is_null(), 1)
         .bits(!dest.is_null(), 1)
         .bits(0, 2)

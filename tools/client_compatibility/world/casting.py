@@ -25,6 +25,9 @@ def request(owner, body):
     target_flags = r.bits(28)
     source, dest, orientation, map_id, name_len = r.bits(1), r.bits(1), r.bits(1), r.bits(1), r.bits(7)
     unit, item = r.guid(), r.guid()
+    glyph = target_flags == 0x08000000
+    if glyph and (not 0 <= misc0 < 9 or unit != (0, 0)):
+        raise ValueError('invalid glyph socket cast target')
     if any([source, dest, orientation, map_id, name_len, weights, order]) or item != (0, 0):
         raise ValueError("unsupported cast target")
     native_target = owner.character["guid"] if target_flags & 2 else 0
@@ -34,7 +37,7 @@ def request(owner, body):
         from ..observation.archaeology import FINDS
         if native_target >> 32 & 0xFFFFF not in FINDS:
             raise ValueError("gather target is not an archaeology find")
-    elif unit not in {(0, 0), (owner.character["guid"], player_high())} or target_flags & ~2:
+    elif not glyph and (unit not in {(0, 0), (owner.character["guid"], player_high())} or target_flags & ~2):
         raise ValueError("unsupported or foreign cast target")
     if moving:
         state = movement.parse(r.raw(len(r.data) - r.pos), owner.character["guid"])
@@ -50,8 +53,8 @@ def request(owner, body):
     owner.cast_serial = serial
     server = (serial, (47 << 58) | (1 << 42) | (owner.character.get("map", 0) << 29) | (spell << 6) | 3)
     owner.casts[count] = {"guid": cast, "server_guid": server, "spell": spell,
-                          "visual": visual, "native_target": native_target}
-    w = Writer().pack("BiiBI", count, spell, misc0, flags, target_flags)
+                          "visual": visual, "native_target": native_target, "glyph_target": glyph}
+    w = Writer().pack("BiiBI", count, spell, misc0, flags, 0x20000 if glyph else target_flags)
     if target_flags & (2 | 2048): packed(w, native_target)
     return w.finish(), spell
 
@@ -100,7 +103,8 @@ def response(owner, name, body):
         if native_guid(r): raise ValueError("transport destination is unsupported")
         dest = r.unpack("3f")
     permitted = {0, caster, cast.get("native_target", caster)}
-    if target_flags & ~(98 | 2048) or any(g not in permitted for g in hits) or target not in permitted:
+    supported = 98 | 2048 | (0x20000 if cast.get('glyph_target') else 0)
+    if target_flags & ~supported or any(g not in permitted for g in hits) or target not in permitted:
         raise ValueError("unexpected self-cast result targets")
     remaining = r.unpack("I")[0] if flags & 0x800 else None
     dest_index = r.unpack("B")[0] if dest and name == "SMSG_SPELL_GO" else 0
@@ -113,7 +117,8 @@ def response(owner, name, body):
     w.pack("IfBii", 0, 0, dest_index, *immunity)
     w.pack("iB", 0, 0).guid()  # no heal prediction
     w.bits(len(hits), 16).bits(0, 16).bits(0, 16).bits(remaining is not None, 9).bits(0, 1).bits(0, 16).bits(0, 2).flush()
-    w.bits(target_flags, 28).bits(source is not None, 1).bits(dest is not None, 1).bits(0, 2).bits(0, 7)
+    modern_targets = target_flags & ~0x20000 | (0x08000000 if target_flags & 0x20000 else 0)
+    w.bits(modern_targets, 28).bits(source is not None, 1).bits(dest is not None, 1).bits(0, 2).bits(0, 7)
     from .gameobjects import modern_guid
     w.guid(*modern_guid(target, owner.character.get("map", 0))).guid()
     for location in [source, dest]:

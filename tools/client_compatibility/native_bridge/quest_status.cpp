@@ -39,7 +39,17 @@ Reply quest_status_request(Protocol const &protocol,State const &owner,std::stri
         for(auto const &[guid,record]:*objects)
             if(identity==Protocol::modern_guid(guid,integer(get(record,"map"))) && giver(protocol,owner,guid))
                 return Packet{name,Writer().put(guid).finish()};
-    throw std::runtime_error("quest status requires a native visible questgiver");
+    // Cached NPC status reads can precede creation or arrive after destruction.
+    // Clear only a well-formed identity on the owned map. No native request or
+    // visibility grant is produced, and hello/accept/reward keep their guards.
+    auto low=integer(identity[0]),high=integer(identity[1]);auto type=high>>58;
+    auto entry=(high>>6)&0x7fffffu;
+    if((type!=8 && type!=11) || !low || low>0xffffffffu || !entry || entry>0xfffffu)
+        throw std::runtime_error("invalid cached questgiver identity");
+    auto native=((type==8 ? 0xf13ull : 0xf11ull)<<52) | (entry<<32) | low;
+    if(identity!=Protocol::modern_guid(native,owner.map()))
+        throw std::runtime_error("cached questgiver targets another realm or map");
+    return Packet{"SMSG_QUEST_GIVER_STATUS",Writer().guid(identity).put<std::uint64_t>(0).finish()};
 }
 Reply quest_status_response(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {

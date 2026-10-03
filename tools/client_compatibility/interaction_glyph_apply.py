@@ -66,6 +66,14 @@ def suite(t, remove_source=None):
                 lambda b,a,s: {'status': 'glyph_pending_pass' if a.get('pending_glyph') else 'client_or_protocol_failure',
                     'oracle': {'pending_glyph': a.get('pending_glyph')}},
                 diagnostic_action='select', await_state=lambda s: bool(s.get('pending_glyph'))), 'glyph_pending_pass')
+            pending = detail(t, 'pending_minor_socket')
+            matching = [r['index'] for r in pending['glyphs'] if r.get('matches_pending')]
+            t.receipt['socket_semantics_oracle'] = {'public_types': [r['type'] for r in pending['glyphs']],
+                'pending_name': pending.get('pending_glyph'), 'matching_sockets': matching,
+                'passed': matching == [2,3,5] and [r['type'] for r in pending['glyphs']] == [1,2,2,1,2,1,3,3,3]}
+            t.persist()
+            if not t.receipt['socket_semantics_oracle']['passed']:
+                raise RuntimeError('the learned Minor glyph does not match exactly the three stock Minor sockets')
         candidates = [c for c in controls(t) if c['enabled'] and c['name'] == 'GlyphFrameGlyph'+str(SOCKET)]
         if len(candidates) != 1:
             raise RuntimeError('the observed Minor socket is absent or ambiguous')

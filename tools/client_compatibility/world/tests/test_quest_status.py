@@ -26,7 +26,8 @@ def test_status_requests_validate_native_visible_creature_and_object(codec):
         body=Writer().guid(*modern_guid(guid,0)).finish()
         assert call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,fn='quest_request')==[
             'CMSG_QUEST_GIVER_STATUS_QUERY',struct.pack('<Q',guid).hex()]
-        assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,[],[],fn='quest_request')
+        assert call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,[],[],fn='quest_request')==[
+            'SMSG_QUEST_GIVER_STATUS',(body+struct.pack('<Q',0)).hex()]
         for n in range(len(body)):
             assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body[:n],fn='quest_request')
         assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body+b'x',fn='quest_request')
@@ -58,8 +59,21 @@ def test_multiple_filters_retired_givers_and_rewrites_the_count(codec):
 def test_status_rejects_foreign_flags_unknown_bits_duplicate_and_excessive_rows(codec):
     body=Writer().guid(*modern_guid(GUID,0)).finish()
     invalid={**GIVER,'fields':{str(INDEX['UNIT_NPC_FLAGS']):1}}
-    assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,[invalid],fn='quest_request')
+    assert call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,[invalid],fn='quest_request')==[
+        'SMSG_QUEST_GIVER_STATUS',(body+struct.pack('<Q',0)).hex()]
     for status in [0x800,0xffffffff]:
         assert 'error' in call(codec,'SMSG_QUEST_GIVER_STATUS',struct.pack('<QI',GUID,status))
     for body in [struct.pack('<I',1001),struct.pack('<I',2)+struct.pack('<QI',GUID,4)*2]:
         assert 'error' in call(codec,'SMSG_QUEST_GIVER_STATUS_MULTIPLE',body)
+
+
+def test_cached_status_clears_without_granting_unseen_npc_interaction(codec):
+    low,high=modern_guid(GUID,0)
+    body=Writer().guid(low,high).finish()
+    assert call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',body,[],[],fn='quest_request')[0]=='SMSG_QUEST_GIVER_STATUS'
+    for name in ['CMSG_QUEST_GIVER_HELLO','CMSG_QUEST_GIVER_ACCEPT_QUEST']:
+        request=body if name.endswith('HELLO') else body+struct.pack('<IB',52,0)
+        assert 'error' in call(codec,name,request,[],[],fn='quest_request')
+    for identity in [(0,high),(0x100000000,high),(low,high+(1<<29)),(low,high+(1<<42)),
+        (1,7<<58),(low,high|1),(0,0)]:
+        assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_QUERY',Writer().guid(*identity).finish(),[],[],fn='quest_request')
