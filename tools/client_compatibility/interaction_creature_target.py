@@ -4,7 +4,6 @@ from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_trial import Trial
 from .observation.transport import Observer
-from .world.objects import INDEX
 
 NAME='TC442BearTargetProbe'
 
@@ -28,21 +27,21 @@ def suite(t):
                 'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(start+i,));rows.append(q.fetchone())
     t.receipt['fixture']={'source':'native_console_staging_only','spawn':spawn,'before':before,'teleports':rows};t.persist()
     try:
-        lab.server_command('reload game_tele');time.sleep(.5);lab.server_command('tele name Harnessone '+NAME);time.sleep(4)
-        t.observe('bear_probe_staged');observer=Observer(guid=1);facts=observer.poll()
-        t.receipt['native_bears']=[{'guid':g,'position':u.get('movement',{}).get('position'),'fields':u['fields']}
-            for g,u in observer.units.items() if g>>32&0xfffff==822];t.persist()
-        actions=[{'kind':'chat','value':'/targetexact Young Forest Bear'}]+[{'kind':'key','value':'Tab'}]*6
-        t.receipt['target_observations']=[]
-        for i,action in enumerate(actions):
-            t.execute(action);state,frame=t.observe('target_probe_'+str(i));facts=observer.poll()
-            t.receipt['target_observations'].append({'input':action,'public':state.get('target'),'frame':frame,'native':facts});t.persist()
-            unit=facts.get('selected_unit')
-            if unit and unit['guid']>>32&0xfffff==822:
-                t.receipt['bear_targeted']={'public':state.get('target'),'native':unit};t.persist();return
+        with t.bounded_combat_observation(60):
+            lab.server_command('reload game_tele');time.sleep(.5);lab.server_command('tele name Harnessone '+NAME);time.sleep(4)
+            t.observe('bear_probe_staged');observer=Observer(guid=1);facts=observer.poll()
+            t.receipt['native_bears']=[{'guid':g,'position':u.get('movement',{}).get('position'),'fields':u['fields']}
+                for g,u in observer.units.items() if g>>32&0xfffff==822];t.persist()
+            actions=[{'kind':'chat','value':'/targetexact Young Forest Bear'}]+[{'kind':'key','value':'Tab'}]*6
+            t.receipt['target_observations']=[]
+            for i,action in enumerate(actions):
+                t.execute(action);state,frame=t.observe('target_probe_'+str(i));facts=observer.poll()
+                t.receipt['target_observations'].append({'input':action,'public':state.get('target'),'frame':frame,'native':facts});t.persist()
+                unit=facts.get('selected_unit')
+                if unit and unit['guid']>>32&0xfffff==822:
+                    t.receipt['bear_targeted']={'public':state.get('target'),'native':unit};t.persist();return
         raise RuntimeError('neither exact-name targeting nor six ordinary Tab selections reached the visible native bear')
     finally:
-        t.execute({'kind':'chat','value':'/cleartarget'})
         lab.server_command('tele name Harnessone '+rows[0][-1]);time.sleep(4);lab.server_command('saveall');time.sleep(1)
         with lab.connection() as c,c.cursor() as q:
             q.execute('SELECT position_x,position_y,position_z,orientation,map FROM client442_characters.characters WHERE guid=1')
@@ -54,6 +53,7 @@ def suite(t):
                 if q.fetchone()!=row:raise RuntimeError('bear probe teleport changed; refusing deletion')
                 q.execute('DELETE FROM client442_world.game_tele WHERE id=%s AND name=%s',(row[0],row[-1]))
         lab.server_command('reload game_tele');t.receipt['restoration']={'position':after,'teleports_removed':True};t.persist()
+        t.execute({'kind':'chat','value':'/cleartarget'})
 
 
 if __name__=='__main__':
