@@ -279,3 +279,19 @@ this closed failed episode, actor/client/server lifetimes, exact native
 item GUID and both fixtures. After the corrected bridge reconnect, ordinary
 UI equip must restore every original resource before any new acceptance
 trial. This recovery contributes no feature qualification.
+
+The source-bound UI40 helmet restoration passes through the ordinary
+backpack right-click on the corrected bridge. Native and public head/bag
+slots agree; the complete original inventory/money/archaeology/talent/
+glyph/spell fixture is restored, and the reviewed stock model wears the
+helmet again. Both fresh clients run on private displays with HDMI-1
+verified, and the native worldserver remains the original process. The
+new whole combat trial starts from that restored baseline.
+
+A read-only follow-up diagnostic pins additional omitted fields: native
+melee/ranged/regen haste multipliers0.968829632, mastery19.54618, main/offhand
+expertise27/24, block30, dodge5% and parry13.75155%. Native combat
+ratings have26 slots while the modern array has32, with several deprecated
+slots repurposed. Those values must not be copied into modern corruption,
+speed, avoidance or similar fields. Item level has no direct native update
+field; it requires separate item/slot attribution. These remain open.
