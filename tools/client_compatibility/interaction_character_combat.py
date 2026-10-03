@@ -1,5 +1,5 @@
 """Check public crit/ranged stats and stock rows, optionally across a helmet swap."""
-import argparse,json,math,re,struct,time
+import argparse,hashlib,json,math,re,struct,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -81,7 +81,7 @@ def suite(t,roundtrip):
     for row in Cursor(lab.ROOT/'evidence/world_packets.jsonl').poll():
         if row.get('session')==session and row.get('direction')=='from_native' and row.get('name')=='SMSG_UPDATE_OBJECT':
             if snapshot:=find_self(bytes.fromhex(row['body']),1):
-                create={'time':row['time'],'session':session,'body_sha256':row['sha256'],
+                create={'time':row['time'],'session':session,'body_sha256':hashlib.sha256(bytes.fromhex(row['body'])).hexdigest(),
                     'self_guid':snapshot['guid'],'zero_fields':'Native full self creation omits zero words.'}
     if not create:raise RuntimeError('native full self creation is not attributable')
     t.receipt['native_creation']=create;t.persist();collapsed=None;item=None;destination=None
@@ -117,7 +117,7 @@ def suite(t,roundtrip):
                 for record in records(bytes.fromhex(row['body'])):
                     changed={str(i):v for i,v in record.get('fields',{}).items() if 1024<=i<=1035}
                     if record['guid']==1 and record['update_type']==0 and changed:
-                        updates.append({'time':row['time'],'sha256':row['sha256'],'fields':changed})
+                        updates.append({'time':row['time'],'sha256':hashlib.sha256(bytes.fromhex(row['body'])).hexdigest(),'fields':changed})
             if not updates:raise RuntimeError('native sparse crit update is not attributable')
             t.receipt['native_sparse_crit_updates']=updates;t.persist()
     finally:
