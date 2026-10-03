@@ -118,6 +118,19 @@ catalog. The first catalog trial falsely rejected the stock SEARCH placeholder
 after focus loss; its failed receipt and restored native baseline are retained.
 Login persistence and glyph learning/application/removal remain open.
 
+The installed 60895 GlyphSlot.db2 uses different IDs for type/tier pairs than
+native GlyphSlot.dbc. Reusing IDs preserved three of each type but put them in
+the wrong sockets. `442_glyph_slots_60895_v1.json` pins both table hashes, rows
+and the semantic translation. The bridge maps slots during both player creation
+and incremental updates, preserving glyph values, socket indexes and unlocks.
+UI26 `glyph_slot_positions_10` passes all nine ordered socket types
+`2,3,3,2,3,2,1,1,1`, the complete catalog, Battle search/clear and closure, with
+native talents/glyphs/inventory/money unchanged. The screenshot also shows the
+stock frame cropped correctly. Earlier retries and the stale catalog-page
+failure are retained; requesting the exact diagnostic page now waits for that
+page instead of accepting the previous one. This still does not qualify learning,
+placement or removal.
+
 `glyph_learn_01` right-clicked one staged Glyph of Battle book. The client opened
 its glyph placement UI and did not yet send an item-use request or learn a spell.
 Escape then sent a valid local cancellation for spell 483, which had no native
@@ -146,6 +159,8 @@ worker lifetimes overlap. Across 593 read-only desktop samples, host focus and
 pointer stayed unchanged and both game windows remained in the background.
 Resources, equipment and groups were unchanged, and panels were closed afterward.
 This proves the bounded two-client input case; long-running roaming remains open.
+The subsequent [C++ sender trial](isolated_clients_20261003.md) passes the same
+six actions with 2,158 unchanged desktop samples and per-actor libei devices.
 
 ## Validation and deployment
 

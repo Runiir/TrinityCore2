@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Validate GlyphSlot type/tier translation against the installed client, then finish reward collection and pending glyph placement/book use; test remaining markers, auction bid/buyout/negative paths and every other open UI family. Both clients use private displays without host activation.",
+  "current": "Finish ordinary glyph book use/application/removal and quest reward collection, then remaining quest markers, auction bid/buyout/negative paths and every other open UI family. Ordered GlyphSlot translation and two concurrent native-input Laya panel jobs pass. Both clients remain on HDMI-1 without host activation.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -87,7 +87,9 @@
     "ui25/talent_glyph_catalog_02: Arms/Fury/Protection totals 1/0/0, nine typed sockets, 34 glyph IDs/types verified against native GlyphProperties plus three headers; Battle search and stock-placeholder clearing pass; original native state unchanged.",
     "ui25/isolated_laya_ui_01: latest user explicitly requested Laya on two clients. Both concurrent workers pass bags/character/friends with private displays :2/:3 and separate actor locks. Across 593 samples both host windows remain background and host focus/pointer are unchanged. No native server restart.",
     "ui25/local_cast_cancel_deployment_01: v36 and safe local glyph cursor cancellation deployed; both actors reconnect concurrently on private displays with native worldserver unchanged. Actual glyph placement/item use remains pending. The failed unused book fixture was fully restored by a saved-state verification; initial stale DB cleanup assertion retained.",
-    "ui25/bear_target_probe_02: clear initial staging offset, ordinary exact-name selection matches native bear GUID/health/pose; fixture fully restored"
+    "ui25/bear_target_probe_02: clear initial staging offset, ordinary exact-name selection matches native bear GUID/health/pose; fixture fully restored",
+    "ui26/native_isolated_laya_ui_02: both concurrent Laya workers pass six ordinary panel actions with the independent C++ libei sender. All 2,158 samples preserve host focus/pointer and background client windows. Native resources/equipment/groups/profiles restored; native worldserver unchanged. Failed cleanup trial 01 retained and no-replay settling repaired.",
+    "ui26/glyph_slot_positions_10: installed DB2/native DBC semantic mapping produces nine correctly ordered socket types 2/3/3/2/3/2/1/1/1. Full 37-row catalog, Battle search/clear and close pass with native talents/glyphs/inventory/money unchanged. Earlier delayed observations, disabled selected tab and stale page failures retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
