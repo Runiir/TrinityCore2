@@ -7,8 +7,8 @@ local function text(frame,limit)
     local value=frame and call(frame.GetText,frame)
     return type(value)=='string' and value:sub(1,limit) or nil
 end
-function Client442ObserveTooltip()
-    local tip=GameTooltip;local visible=tip and not not call(tip.IsVisible,tip) or false
+local function observe(tip,prefix)
+    local visible=tip and not not call(tip.IsVisible,tip) or false
     local owner=tip and call(tip.GetOwner,tip)
     local name,link=tip and call(tip.GetItem,tip)
     if tip then name,link=call(tip.GetItem,tip) end
@@ -19,9 +19,16 @@ function Client442ObserveTooltip()
     if visible then
         data.line_count=call(tip.NumLines,tip) or 0
         for i=1,math.min(data.line_count,16) do
-            data.lines[#data.lines+1]={left=text(_G['GameTooltipTextLeft'..i],160),
-                right=text(_G['GameTooltipTextRight'..i],60)}
+            data.lines[#data.lines+1]={left=text(_G[prefix..'TextLeft'..i],160),
+                right=text(_G[prefix..'TextRight'..i],60)}
         end
     end
+    return data
+end
+function Client442ObserveTooltip()
+    local data=observe(GameTooltip,'GameTooltip')
+    data.comparisons={observe(ShoppingTooltip1,'ShoppingTooltip1'),observe(ShoppingTooltip2,'ShoppingTooltip2')}
+    data.shift_down=not not call(IsShiftKeyDown)
+    data.always_compare=call(GetCVarBool,'alwaysCompareItems')
     return data
 end

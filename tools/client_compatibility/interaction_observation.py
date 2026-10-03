@@ -7,7 +7,13 @@ from .observation.interactions import decode_image
 
 
 def read_page(t,label,mode,text,ready=None):
-    command(t,text);deadline=time.monotonic()+12;pending=[];path=t.out/(label+'.png')
+    command(t,text)
+    return read_current_page(t,label,mode,ready)
+
+
+def read_current_page(t,label,mode,ready=None):
+    """Read an already selected page, including while a normal key is held."""
+    deadline=time.monotonic()+12;pending=[];path=t.out/(label+'.png')
     while True:
         frame=shot(path)
         with Image.open(path) as image:state=decode_image(image)

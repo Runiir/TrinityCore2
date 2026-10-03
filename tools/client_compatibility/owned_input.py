@@ -94,6 +94,20 @@ class Inputs:
     def move(self,*args,**kwargs):return self.invoke('move',*args,**kwargs)
     def type(self,*args,**kwargs):return self.invoke('type',*args,**kwargs)
 
+    @contextmanager
+    def hold_modifier(self,name):
+        """Keep one private modifier down for a bounded screenshot observation."""
+        if name not in ['shift','ctrl','alt']:raise ValueError('unsupported held modifier')
+        with lease():
+            self.prepare();code=self.raw._keycode(self.raw.XK.string_to_keysym(self.raw.MODIFIERS[name]))[0]
+            keys=self.raw.display.query_keymap()
+            if keys[code//8]&(1<<(code%8)):raise RuntimeError('private modifier is already held')
+            started=time.monotonic();self.raw._send(self.raw.X.KeyPress,code)
+            try:
+                time.sleep(.15);yield
+            finally:self.raw._send(self.raw.X.KeyRelease,code)
+            if time.monotonic()-started>20:raise RuntimeError('held modifier exceeded its bounded observation')
+
     def drag(self,start,end,button=1,duration=.5):
         if button not in [1,3] or not .2<=duration<=2 or any(
             not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
