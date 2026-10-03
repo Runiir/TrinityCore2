@@ -84,6 +84,9 @@ def field_values(snapshot, character):
     active["InvSlots"] = inventory_slots(native)
     active["BuybackPrice"] = array("PLAYER_FIELD_BUYBACK_PRICE_1",12)
     active["BuybackTimestamp"] = array("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12)
+    active['GlyphSlots']=array('PLAYER_FIELD_GLYPH_SLOTS_1',9)
+    active['Glyphs']=array('PLAYER_FIELD_GLYPHS_1',9)
+    active['GlyphsEnabled']=value('PLAYER_GLYPHS_ENABLED')
     skill = {}
     for modern, old in {"SkillLineID": "PLAYER_SKILL_LINEID_0", "SkillStep": "PLAYER_SKILL_STEP_0",
                         "SkillRank": "PLAYER_SKILL_RANK_0", "SkillMaxRank": "PLAYER_SKILL_MAX_RANK_0",
