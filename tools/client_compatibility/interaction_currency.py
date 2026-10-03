@@ -88,13 +88,22 @@ def open_panel(t):
 
 
 def inspect(t,row,native,label='currency.inspect_currency'):
+    initial=detail(t,label+'_initial')
+    target=lambda c:c['text']==row['name'] and c['name'].startswith('TokenFrameContainerButton')
+    if (initial.get('selected') or {}).get('id')==row['id'] and visible(initial,'TokenFramePopup'):
+        def closed(b,a,s):
+            probe=detail(t,label+'_closed')
+            return {'status':'currency_detail_close_pass' if s and not visible(probe,'TokenFramePopup')
+                else 'client_or_protocol_failure','oracle':probe}
+        require(click_case(t,label+'.close_existing','Close the already-selected currency options.',target,closed),
+            'currency_detail_close_pass')
     def oracle(b,a,s):
         probe=detail(t,label+'_selected');selected=probe.get('selected') or {}
         passed=s and selected.get('id')==row['id'] and visible(probe,'TokenFramePopup')
         if passed:content_oracle({'rows':[selected]},native)
         return {'status':'currency_inspect_pass' if passed else 'client_or_protocol_failure','oracle':probe}
     require(click_case(t,label,'Inspect '+row['name']+' currency options.',
-        lambda c:c['text']==row['name'] and c['name'].startswith('TokenFrameContainerButton'),oracle),
+        target,oracle),
         'currency_inspect_pass')
 
 
