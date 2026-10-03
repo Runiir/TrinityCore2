@@ -100,7 +100,8 @@ def reward(t,giver,point_file):
         plain(probe.get('choices',[]))==plain(offered['choices']) and plain(probe.get('fixed',[]))==plain(offered['fixed']))
     t.receipt['offer_oracle']={'native':offered,'public':probe,'packets':offers,'passed':agrees,
         'public_xp_available':xp_available,'xp_gain_qualification':False};t.persist()
-    if not agrees or len(offered['choices'])!=2:raise RuntimeError('stock reward display disagrees with the native two-choice offer')
+    if not agrees or not 2<=len(offered['choices'])<=6:
+        raise RuntimeError('stock reward display disagrees with the native multiple-choice offer')
     chosen=offered['choices'][0];t.receipt['reward_choice_controls']=controls(t);t.persist()
     require(click_case(t,'quests.reward_choice','Choose the first displayed reward.',
         lambda c:c['name']=='QuestInfoItem1' or c['name'].endswith('QuestInfoItem1'),
