@@ -50,3 +50,19 @@ def test_delayed_partial_chat_observation_does_not_resubmit_or_fail(monkeypatch)
     transport=t.execute({'kind':'chat','value':'/cleartarget'})
     assert events==[('key','Return'),('text','/cleartarget'),('key','Return')]
     assert transport[0]['input_replayed'] is False
+
+
+@pytest.mark.parametrize('opens',[True,False])
+def test_panel_open_wait_uses_one_input_and_keeps_timeout_failed(monkeypatch,opens):
+    states=[state(1,False),state(2,False)]
+    if opens:states += [state(3,False),state(4,True)]
+    t,_=trial(states,monkeypatch);t.receipt['cases']=[];t.controller='code'
+    inputs=[];t.execute=lambda action:inputs.append(action) or []
+    ticks=iter([0,1,2] if opens else [0,13])
+    monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    result=t.step('panel.open','Open friends.',{'open':{'kind':'key','value':'o'}},
+        lambda b,a,s:{'status':'panel_open_pass' if 'FriendsFrame' in a['panels'] else 'client_or_protocol_failure'},
+        diagnostic_action='open',await_state=lambda s:'FriendsFrame' in s['panels'])
+    assert inputs==[{'kind':'key','value':'o'}]
+    assert result['input_replayed_while_settling'] is False
+    assert result['status']==('panel_open_pass' if opens else 'client_or_protocol_failure')
