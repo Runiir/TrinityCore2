@@ -43,7 +43,7 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
-adapter and subsequent quest work pass 470 regression tests. The quest batch
+adapter and subsequent quest/mail work pass 499 regression tests. The quest batch
 passes 101 selected ASan/UBSan tests; the later self-target correction passes
 26 selected sanitizer checks and the login-read followup passes 32. This counts
 protocol checks. A live seven-choice trial sells an existing item, buys it back,
@@ -53,7 +53,12 @@ price/quantity and received-item chat agreement, then restores the fixture. Indi
 and broader purchase variants remain open. Repair-all is qualified with exact
 quote/charge agreement after the opt-in native rounding fix. A four-choice warrior
 trainer trial learns Parry with native/client spell, price and notification
-agreement. Profession trainers and broader training variants remain open.
+agreement. The alchemy trainer's Already Known filter is qualified against all
+141 native known recipes; new profession learning and broader training variants
+remain open. Mailbox opening and closure now display all three existing reward
+letters with correct sender names, subjects and attachment counts. The mail and
+login followup passes 35 selected sanitizer checks. Reading, sending, taking,
+returning and deleting mail remain separate pending cases.
 Questgiver details and the native 0/6 kill objective display correctly in the
 latest trial. Its initial cleanup exposes a dropped self-selection request,
 which is fixed. A five-choice quest-log trial expands the zone, reads the

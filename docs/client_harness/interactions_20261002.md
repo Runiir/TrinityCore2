@@ -886,3 +886,56 @@ checkpointed as `442_journal_rotations_20261003_03.tar.gz.dvc`. The remote-verif
 6,648,223-byte archive is synchronized before those rotations and both local
 archive/cache copies are removed. Active journals, recent records and the two
 newest rotations per journal remain available.
+
+UI14 qualifies Lilyssia Nightbreeze's alchemy trainer catalog and its Already
+Known checkbox. The first catalog appears empty because the stock filter hides
+known recipes and this primary already knows every offered spell. The corrected
+native GUID entry mask and v17 observer allow an exact comparison: 141 native
+known rows become 141 visible used services, plus two UI section headers. Seven
+Laya choices open training, enable and disable Already Known, and close it.
+Filters, spells, money, inventory and original pose are restored. This proves
+filtering and catalog display; it does not prove new profession learning.
+
+Staging trials retain their failures. Roof occlusion requires a temporary
+ordinary wheel zoom and camera drag to see the trainer. Whole wheel steps cannot
+reach every decimal zoom exactly, so setup chooses the nearest step within 0.51;
+restoration still requires the original zoom within 0.1. The reciprocal physical
+camera drag is recorded without claiming an exact pitch oracle. A fixture guard
+rejects overlapping staging before movement. Physical input trials run serially.
+
+The mailbox bridge translates native catalog, next-mail timing, notification and
+open replies against pinned modern MailPackets. Early timing reads wait for
+authoritative player creation; mutations cannot use that queue. Requests require
+a visible native mailbox. Catalog parsing validates lengths, identities,
+attachment positions and native item/enchantment fields. The native entry-size
+formula undercounts four bytes, so validation accepts that documented native
+form as well as the actual size. Native socket enchantments do not identify modern
+gem item instances; gem-mail variants remain pending.
+
+The first live mailbox trial opens and closes normally but has blank sender
+names. Native reward letters name remote creature templates, so the ordinary
+visible-creature query guard rejects their cache reads. A fully validated native
+mail catalog now grants only its creature-sender entries for template queries.
+Malformed catalogs cannot replace that provenance and logout clears it. The
+second trial displays Rhonin and Mei Francis correctly. Its strict oracle
+matches all three subjects, sender names, read flags, money/COD and attachment
+counts against native mail. Both Laya choices and full mail/inventory/money/pose
+restoration pass. Reading and mail mutations are still pending.
+
+The initial focused mail run has 25 passes and one failure from using a
+success-only test helper for an expected parser rejection. Its corrected suite
+passes 496 checks and 26 selected sanitizer checks. The sender followup passes
+499 regression checks and 35 mail/login ASan/UBSan checks. Both clients reconnect
+with v18 on HDMI-1. Only the standalone bridge restarts; native worldserver PID
+3123698/start ticks 13177436 remains unchanged throughout UI14.
+
+Additional cleanup checkpoints are remotely verified before local removal:
+`442_journal_rotations_20261003_04.tar.gz.dvc` contains three closed rotations
+(25,166,051 raw bytes); `442_scratch_frames_20261003_01.tar.gz.dvc` contains 42
+old scratch screenshots (78,114,771 raw bytes); and
+`442_closed_archaeology_frames_20261003_01.tar.gz.dvc` contains 76 frames from
+three explicitly closed archaeology episodes (91,976,216 raw bytes). The last
+checkpoint also preserves the episode and legacy interruption receipts. Small
+receipts stay local; active runs, necessary binaries and model/client assets are
+preserved. The archive workspace and exact cache copies are also evicted after
+remote verification, without global DVC cache collection.
