@@ -24,6 +24,29 @@ def spells():
         return q.fetchall()
 
 
+def cleanup(t,source):
+    previous=json.loads(source.read_text());baseline=previous['baseline']
+    normalize=lambda x:json.loads(json.dumps(x))
+    if (not previous.get('finished_at') or previous.get('completed') or
+            previous['actor']!=t.fixture or not previous.get('book_fixture')):
+        raise RuntimeError('glyph cleanup requires a closed failed owned book-use episode')
+    session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,1).poll()
+    native=previous['book_fixture']['native'];public=previous['book_fixture']['public']
+    if (oracle.count(BOOK)!=1 or oracle.slot(public['bag'],public['slot'])!=native or
+            normalize(spells())!=baseline['spells'] or normalize(native_state())!=baseline['talents']):
+        raise RuntimeError('unused glyph book or unrelated player baseline changed')
+    t.receipt['cleanup_source']={'file':str(source),'sha256':lab.sha256(source)};t.persist()
+    t.clean_panels()
+    with item_fixture_permission(t):
+        fixture_command(t,'/cleartarget','remove only the unused owned glyph book fixture')
+        fixture_command(t,f'.additem {BOOK} -1','restore the exact unused glyph book from the failed probe')
+    t.receipt['restoration']={'inventory_money_restored':normalize(inventory())==baseline['inventory_money'],
+        'native_spells_restored':normalize(spells())==baseline['spells'],
+        'talents_glyphs_restored':normalize(native_state())==baseline['talents'],'book_absent':oracle.poll().count(BOOK)==0}
+    t.persist()
+    if not all(t.receipt['restoration'].values()):raise RuntimeError('failed glyph book fixture cleanup differs from baseline')
+
+
 def suite(t):
     session=actors.session_entry(t.fixture)['session'];t.clean_panels()
     oracle=Inventory(lab.ROOT,session,1).poll();items=inventory();known=spells();talents=native_state()
@@ -87,9 +110,12 @@ def suite(t):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--cleanup-episode',type=Path);a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:suite(t);t.receipt['completed']=True
+    try:
+        cleanup(t,a.cleanup_episode) if a.cleanup_episode else suite(t)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
         t.receipt['finished_at']=time.time();t.persist()
