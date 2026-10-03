@@ -55,9 +55,13 @@ def suite(t):
             'native_map_rectangle':matches[0],'native_normalized_position':expected,
             'limits':'Public UnitPosition Z is not qualified by the planar coordinate check.'};t.persist()
         if not all(checks.values()):raise RuntimeError('public map planar coordinates differ from native/player zone')
-        require(click_case(t,'map.continent_zoom_out','Zoom out to the continent.',
-            lambda c:c['name']=='WorldMapZoomOutButton',
-            lambda b,a,s:nav_oracle(t,'continent_open',parent)),'map_navigation_pass')
+        rect=probe.get('canvas') or {}
+        point=[round((rect['left']+rect['width']/2)*1280),round((rect['top']+rect['height']/2)*720)]
+        if not 0<=point[0]<1280 or not 0<=point[1]<720:raise RuntimeError('owned map canvas is outside input bounds')
+        require(t.step('map.continent_zoom_out','Navigate out to the continent.',
+            {'parent':{'kind':'click','value':point,'button':3,
+                'description':'Right-click the observed stock map canvas to navigate to its parent.'}},
+            lambda b,a,s:nav_oracle(t,'continent_open',parent),diagnostic_action='parent'),'map_navigation_pass')
         continent=detail(t,'continent_digsites');ids=[r['id'] for r in continent['sites']]
         if not ids or len(ids)!=len(set(ids)):
             raise RuntimeError('public continent has no unique owned digsites')
