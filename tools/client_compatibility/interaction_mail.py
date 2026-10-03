@@ -1,5 +1,6 @@
 """Open an existing mailbox with ordinary inputs while preserving its reward mail."""
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 import time
@@ -23,6 +24,26 @@ def mailbox_state():
         return {'mails':mails, 'attachments':cursor.fetchall(), 'inventory':inventory()}
 
 
+def verify_catalog(t, state, frame, baseline):
+    mails=baseline['mails']; attachments=Counter(row[0] for row in baseline['attachments'])
+    if len(mails)>3 or any(row[1]!=3 for row in mails):
+        raise RuntimeError('catalog trial requires at most three existing creature-sender reward letters')
+    with lab.connection() as connection,connection.cursor() as cursor:
+        names={}
+        for sender in {row[2] for row in mails}:
+            cursor.execute('SELECT name FROM client442_world.creature_template WHERE entry=%s',(sender,))
+            row=cursor.fetchone()
+            if not row:raise RuntimeError('native mail sender template is absent')
+            names[sender]=row[0]
+    expected=Counter((row[4],names[row[2]],row[5],row[6],attachments[row[0]],bool(row[7]&1)) for row in mails)
+    mail=state.get('mail',{})
+    visible=Counter((row['subject'],row['sender'],row['money'],row['cod'],row['items'],row['read']) for row in mail.get('inbox',[]))
+    passed=expected==visible and mail.get('count')==len(mails) and mail.get('total')==len(mails)
+    t.receipt['mail_catalog_oracle']={'expected':list(expected.elements()),'visible':list(visible.elements()),
+                                    'frame':frame,'matches':passed};t.persist()
+    if not passed:raise RuntimeError('visible subjects, sender names, money or attachments disagree with native mail')
+
+
 def suite(t, point, stage_only):
     actors.session_entry(t.fixture); t.clean_panels(); fixture = MailboxFixture(t.out,t.fixture)
     baseline = mailbox_state(); t.receipt['mailbox_baseline'] = baseline; t.persist()
@@ -40,6 +61,7 @@ def suite(t, point, stage_only):
             diagnostic_action='mailbox'),'mailbox_open_pass')
         state,frame = t.observe('mailbox_open')
         t.receipt['mailbox_open'] = {'state':state,'frame':frame,'controls':controls(t)}; t.persist()
+        verify_catalog(t,state,frame,baseline)
         require(t.step('mail.close','Close the mailbox.',{
             'close':{'kind':'key','value':'Escape','description':'Press Escape to close the mailbox.'},
             'map':{'kind':'key','value':'m','description':'Open the world map.'},
