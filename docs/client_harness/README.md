@@ -43,7 +43,7 @@ The later bank batch passes 411 regression tests, including nine bank packet tes
 deposit, withdrawal and close have live evidence. Inspect gear samples and a real
 item trade round trip are also qualified; broader variants remain in the workqueue.
 The merchant catalog displays all nine native fixture items. The merchant transaction
-adapter and subsequent quest/mail work pass 526 regression tests (509 world and
+adapter and subsequent quest/mail work pass 578 regression tests (561 world and
 17 authentication checks). The quest batch
 passes 101 selected ASan/UBSan tests; the later self-target correction passes
 26 selected sanitizer checks and the login-read followup passes 32. This counts
@@ -220,6 +220,11 @@ standalone trial outputs underneath it. Mail examples use the existing visible
 mailbox at the verified 1280x720 point `(640,248)`; review staging after camera or
 UI layout changes. Run physical-input trials one at a time across both actors.
 
+New mail and auction runners use the code controller under the current
+AGENTS.md retirement of Laya and Jev. Historical receipts retain their actual
+model identities. Code checks qualify client behavior through ordinary inputs;
+they do not evaluate a decision model.
+
 ```bash
 pixi run python -m tools.client_compatibility.checkpoint_interactions --initialize --directory ~/.local/share/trinity-client442-lab/evidence/<new-batch>
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_mail_actions --point 640 248 --output ~/.local/share/trinity-client442-lab/evidence/<new-batch>/mail_read_delete_01
@@ -227,7 +232,7 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 ```
 
 Use `--resource money` for the separate money trial. These runners create a
-uniquely tagged native console letter, use Laya for ordinary UI choices and verify
+uniquely tagged native console letter, use ordinary UI inputs and verify
 restoration. Temporary item/money command permissions are revoked afterward.
 They require clean fixtures and preserve failures; resolve a leftover disposable
 letter before creating another. They do not qualify player-to-player send/return,
