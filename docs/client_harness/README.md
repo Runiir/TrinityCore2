@@ -16,11 +16,10 @@ The existing Laya archaeology and travel heads consume structured observations.
 The harness also records screenshots and decodes normal addon-visible state. These
 heads do not perform general screenshot reasoning or supply a questing policy.
 The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
-historical receipts remain on disk. New cohort runs use diagnostic tasks until a
-current controller adapter is attached. The user's explicit October 2 interaction
-test request uses the retained base Laya endpoint at `127.0.0.1:8000` for bounded
-normal-input choices. That exception is recorded in each run; it does not change
-the standing controller policy for other experiments.
+historical receipts remain on disk. New UI trials use the code controller with
+ordinary keyboard and mouse inputs. Earlier October 2–3 interaction receipts
+retain their actual Laya identities; they do not authorize new model calls under
+the updated instructions. Code checks qualify client behavior, not model autonomy.
 Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A code-driven native-bridge
 trial completed one such flight and then recovered a Dwarf artifact for eight
@@ -62,8 +61,13 @@ login followup passes 35 selected sanitizer checks. A later disposable-letter
 trial qualifies reading its displayed body, native read marking and deletion;
 its 52 selected mail/login sanitizer checks pass. Two subsequent trials qualify
 collecting five water items and 12,345 copper, each with full fixture restoration;
-62 selected sanitizer checks pass. Sending, returning, COD, text-copy and invoice
-variants remain separate pending cases.
+62 selected sanitizer checks pass. Later player send/return and send/reply trials
+pass 14 and 17 code-controlled choices with exact postage, native delivery,
+rendered-body agreement and complete two-character fixture restoration. The final
+mail suite passes 114 selected sanitizer checks. COD, text-copy, invoices,
+attachment limits and broader variants remain pending. See the
+[player mail report](interactions_20261003_mail.md) for retained failures,
+qualification boundaries and reproduction commands.
 Questgiver details and the native 0/6 kill objective display correctly in the
 latest trial. Its initial cleanup exposes a dropped self-selection request,
 which is fixed. A five-choice quest-log trial expands the zone, reads the
@@ -235,8 +239,9 @@ Use `--resource money` for the separate money trial. These runners create a
 uniquely tagged native console letter, use ordinary UI inputs and verify
 restoration. Temporary item/money command permissions are revoked afterward.
 They require clean fixtures and preserve failures; resolve a leftover disposable
-letter before creating another. They do not qualify player-to-player send/return,
-COD, copied text, invoices or every attachment variant.
+letter before creating another. Player-to-player send, return and reply use the
+separate `interaction_mail_roundtrip` runner documented in the player mail report.
+COD, copied text, invoices and broader attachment variants remain open.
 
 After every run in a batch is closed, commit its code/configuration, checkpoint,
 prune only verified frames, and evict only the named remote-verified archive:
