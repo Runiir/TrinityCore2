@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Checkpoint and qualify closed UI28 rewards and glyph/minimap filter controls, then implement the captured missing tracked-quest-status request and retry trivial marker rendering. Continue every other open UI family; native worldserver unchanged.",
+  "current": "UI29 tracked quest-status adapter is deployed and trivial marker visual/packet checks pass. Continue reputation catalog/control trials, checkpoint and qualify the closed evidence, then every remaining UI family. Both clients use isolated input; native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -103,7 +103,8 @@
     "ui28/quest_reward_06: resumed earned completion passes stock reward choice and turn-in; item 57523 x1, fixed 858 x2 and exactly 640 copper agree in native inventory, public bag/money and native/modern completion. Earned quest/items/money retained, fixture pose restored. Tuple-versus-JSON baseline failure 05 retained.",
     "ui28/glyph_filters_02: Already Known and Unavailable stock checkboxes pass one learned, 33 unlearned and restored 34-glyph catalogs. Full filters/native spells/talents/glyphs/inventory/money restored. Wrong Used-caption failure 01 and successful separate cleanup retained.",
     "ui28/glyph_type_filters_01: ordinary Prime/Major/Minor collapse and reverse expansion produce 25/8/0/8/25/34 exact glyph identities; complete original filters/catalog and native character state restored.",
-    "ui28/quest_tracking_01: stock minimap menu and Low Level Quests on/off pass public tracking and exact restoration. Overhead trivial marker still absent despite matching native/modern status GUID and 4-to-64 category; both actual two-GUID CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY requests are unmapped. Marker remains open."
+    "ui28/quest_tracking_01: stock minimap menu and Low Level Quests on/off pass public tracking and exact restoration. Overhead trivial marker still absent despite matching native/modern status GUID and 4-to-64 category; both actual two-GUID CMSG_QUEST_GIVER_STATUS_TRACKED_QUERY requests are unmapped. Marker remains open.",
+    "ui29/quest_tracking_02: actual two-GUID tracked reads refresh native visible questgivers. Native Guard Thomas status 4 and modern 64 match its exact visible GUID on both toggles. Reviewed overhead exclamation appears enabled and disappears disabled; exact quest/inventory/money/tracking/pose restoration. No unmatched request or invented eligibility."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -121,6 +122,6 @@
     "Mail COD, text-copy, invoice/HTML, gems, native 12 versus modern 16 attachments, delayed delivery and negative gameplay paths remain pending; player send/return/reply with plain text and exact postage are qualified alongside catalog/read/delete/item/money collection.",
     "Auction empty browse/bid/owned and Sell wildcard catalogs, price entry and one uninterrupted plain buyout-only posting/populated owned row/cancellation/original-GUID return have live evidence. UI22 verifies zero quote, native deposit and charge for cheap one-day pants after isolated native deployment. Populated bids, sorting/paging, bidding/buyout, commodity semantics, other fees/invoices, random suffixes, tainted metadata and negative paths remain pending.",
     "Public city vehicle/passenger create transport is parsed and serialized with captured-packet/targetability regressions. The successful auction retry has no repeated matching live vehicle create; player vehicle control and public boat/elevator travel remain unqualified.",
-    "Trivial NPC marker: stock low-level tracking controls pass, but UI28 records no marker while enabled. The actual tracked-status query is unmapped; implement that adapter and repeat the fresh visual/packet trial before qualification."
+    "Trivial marker UI29 passes for one eligible creature on the level-85 warrior. Retired cached single reads, other eligibility categories, game-object questgivers and minimap icon variants remain unqualified. Tracked requests use the native all-visible refresh because 4.3.4 has no subset request."
   ]
 }
