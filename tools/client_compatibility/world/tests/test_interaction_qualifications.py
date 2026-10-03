@@ -9,9 +9,13 @@ def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidenc
     data=checklist();by_id={case['id']:case for case in data['cases']}
     for key in ['raid.world_marker','raid.clear_marker','raid.roster_health_bars',
             'party.role_poll','party.role_assign','archaeology.survey','archaeology.site_rotation',
-            'quests.accept','quests.decline','quests.collapse_zone','quests.abandon_cancel']:
+            'quests.accept','quests.decline','quests.collapse_zone','quests.abandon_cancel',
+            'quests.choose_reward','quests.reward_item','quests.reward_money',
+            'talents.glyph_filter_known','talents.glyph_filter_unknown','talents.glyph_filter_prime',
+            'talents.glyph_filter_major','talents.glyph_filter_minor','map.minimap_tracking']:
         assert by_id[key]['qualification'] and '- [x] `'+key+'`' in render(data)
-    for key in ['raid.assistant_promote','party.full_group_error','archaeology.solve_project','quests.reward_item']:
+    for key in ['raid.assistant_promote','party.full_group_error','archaeology.solve_project',
+            'quests.giver_trivial_marker','quests.persist','talents.glyph_replace']:
         assert 'qualification' not in by_id[key] and '- [ ] `'+key+'`' in render(data)
     assert data['qualified_operations']==sum('qualification' in case for case in data['cases'])
     assert all(record['scope'] and record['limits'] and record['evidence'] for record in data['qualification_records'])
