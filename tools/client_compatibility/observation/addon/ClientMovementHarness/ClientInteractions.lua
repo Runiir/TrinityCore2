@@ -28,6 +28,8 @@ local blockedActions={}
 local following={active=false}
 local inspectionReady,tradeEvents,lastLoot={},{},nil
 local auctionEvents={}
+local auctionRowInputs={}
+local auctionInputHooks=setmetatable({},{__mode='k'})
 local observerSkips,skipKeys={},{}
 local priorErrorHandler=geterrorhandler()
 seterrorhandler(function(message)
@@ -120,7 +122,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=27,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=28,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -160,6 +162,17 @@ local function snapshot(viewMode,viewPage)
                     local row=call(f.GetRowData,f)
                     if type(row)=='table' and type(row.auctionID)=='number' then
                         data.controls[#data.controls].auction_id=row.auctionID
+                        if not auctionInputHooks[f] then
+                            auctionInputHooks[f]=true
+                            for _,event in ipairs({'OnMouseDown','OnMouseUp','OnClick'}) do
+                                f:HookScript(event,function(button,key)
+                                    local entry=call(button.GetRowData,button)
+                                    auctionRowInputs[#auctionRowInputs+1]={event=event,key=key,
+                                        id=entry and entry.auctionID,time=GetTime()}
+                                    if #auctionRowInputs>3 then table.remove(auctionRowInputs,1) end
+                                end)
+                            end
+                        end
                     end
                 end
                 local bag=call(f.GetBagID,f)
@@ -313,6 +326,11 @@ local function snapshot(viewMode,viewPage)
         if auctions and auctions:IsVisible() then
             data.auction.selected_id=auctions.selectedAuctionID
             data.auction.cancel_enabled=auctions.CancelAuctionButton and call(auctions.CancelAuctionButton.IsEnabled,auctions.CancelAuctionButton)
+            data.auction.input_probe={rows=auctionRowInputs,control=call(IsControlKeyDown),
+                shift=call(IsShiftKeyDown),alt=call(IsAltKeyDown),dressup=call(IsModifiedClick,'DRESSUP'),
+                chatlink=call(IsModifiedClick,'CHATLINK')}
+            local selected=auctions.AllAuctionsList and call(auctions.AllAuctionsList.GetSelectedEntry,auctions.AllAuctionsList)
+            data.auction.list_selected_id=selected and selected.auctionID
         end
         local sell=AuctionHouseFrame.ItemSellFrame
         if sell and sell:IsVisible() then
