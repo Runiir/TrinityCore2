@@ -49,6 +49,7 @@ class Inputs:
         from .native_input_adapter import Input
         self.raw=Input()
         self.initialization=self.raw.initialization
+        self.pointer_prepared=False
 
     def validate(self):
         current=lab.owned_process('client')
@@ -57,7 +58,14 @@ class Inputs:
             raise RuntimeError('input adapter belongs to a different actor or client lifetime')
 
     def prepare(self):
-        self.validate();return focus()
+        self.validate();monitor=focus()
+        if not self.pointer_prepared:
+            pointer=self.raw.display.screen().root.query_pointer()
+            self.raw._send(self.raw.X.MotionNotify,x=pointer.root_x,y=pointer.root_y)
+            time.sleep(.25)
+            self.pointer_prepared=True
+            self.initialization['neutral_pointer_displacement']=0
+        return monitor
 
     def invoke(self,name,*args,**kwargs):
         with lease():
