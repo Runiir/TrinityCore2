@@ -5,8 +5,8 @@ from . import lab_runtime as lab
 
 class NpcFixture:
     def __init__(self,out,player,entry,flag):
-        if (player['guid'],player['account_id'],player['character_name'])!=(1,1,'Harnessone'):
-            raise ValueError('NPC fixture requires the registered primary actor')
+        if (player['guid'],player['account_id'],player['character_name']) not in [(1,1,'Harnessone'),(2,2,'Harnesstwo')]:
+            raise ValueError('NPC fixture requires one of the two registered actors')
         self.out,self.player,self.entry,self.flag=out,player,entry,flag
         self.rows=[];self.before=None;self.npc=None
 
@@ -14,8 +14,9 @@ class NpcFixture:
         lab.server_command('saveall');time.sleep(1)
         with lab.connection() as c,c.cursor() as q:
             q.execute('SELECT guid,account,name,position_x,position_y,position_z,orientation,map '
-                'FROM client442_characters.characters WHERE guid=1');self.before=q.fetchone()
-            if self.before[:3]!=(1,1,'Harnessone'):raise RuntimeError('owned character binding changed')
+                'FROM client442_characters.characters WHERE guid=%s',(self.player['guid'],));self.before=q.fetchone()
+            if self.before[:3]!=(self.player['guid'],self.player['account_id'],self.player['character_name']):
+                raise RuntimeError('owned character binding changed')
             q.execute('SELECT c.guid,c.id,t.name,c.map,c.position_x,c.position_y,c.position_z,c.orientation,'
                 'COALESCE(c.npcflag,t.npcflag),c.MovementType FROM client442_world.creature c '
                 'JOIN client442_world.creature_template t ON c.id=t.entry WHERE c.id=%s AND c.map=0 ORDER BY c.guid',(self.entry,))
@@ -46,7 +47,7 @@ class NpcFixture:
         lab.private_write(self.out/'npc_fixture.json',json.dumps({'source':'code_fixture_native_console',
             'before':self.before,'npc':self.npc,'temporary_teleports':self.rows},indent=2)+'\n')
         lab.server_command('reload game_tele');time.sleep(.5)
-        lab.server_command('tele name Harnessone TC442NpcService');time.sleep(4)
+        lab.server_command('tele name '+self.player['character_name']+' TC442NpcService');time.sleep(4)
 
     def restore(self):
         if not self.rows:return
