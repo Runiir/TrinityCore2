@@ -11,6 +11,7 @@ from .observation.transport import Observer
 from .observation.journal import entries
 from .travel_inputs import face
 from .world.buffer import Reader
+from .world.objects import INDEX
 
 
 def standing_packets(session,started):
@@ -59,11 +60,17 @@ def suite(t):
                 nonlocal earned
                 deadline=time.monotonic()+12;samples=[]
                 while True:
-                    earned=native_state();now=native_catalog(earned);after=observer.poll().get('selected_unit')
+                    earned=native_state();now=native_catalog(earned);observer.poll()
+                    # The stock client clears selection on this death. Keep
+                    # following the previously observed exact native identity.
+                    corpse=observer.units.get(unit['guid']);fields=corpse.get('fields',{}) if corpse else {}
+                    after={'guid':unit['guid'],'health':fields.get(INDEX['UNIT_FIELD_HEALTH']),
+                        'max_health':fields.get(INDEX['UNIT_FIELD_MAXHEALTH'])} if corpse else None
                     target=a.get('target',{});samples.append({'target':target,'native_target':after,
                         'gain':now[21]['value']-native_before[21]['value'],'loss':now[87]['value']-native_before[87]['value']})
                     done=now[21]['value']>native_before[21]['value'] and now[87]['value']<native_before[87]['value']
-                    dead=after and after['guid']==unit['guid'] and after['health']==0 and target.get('health')==0
+                    public_dead=not target.get('exists') or target.get('guid')==b.get('target',{}).get('guid') and target.get('health')==0
+                    dead=after and after['health']==0 and public_dead
                     if done and dead or time.monotonic()>deadline:break
                     time.sleep(.3);a,frame=t.observe('reputation_combat_settling_'+str(len(samples)))
                 packets=standing_packets(session,started)
