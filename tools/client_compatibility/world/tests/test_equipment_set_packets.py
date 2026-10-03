@@ -87,3 +87,34 @@ def test_native_empty_list_and_invalid_count_or_tail(codec):
     assert execute(codec,[('equipment_response','SMSG_EQUIPMENT_SET_LIST',bytes(4))])[0]==['SMSG_LOAD_EQUIPMENT_SET','00000000']
     for body in [struct.pack('<I',11),native_list()+b'x',native_list()[:-1]]:
         assert 'error' in execute(codec,[('equipment_response','SMSG_EQUIPMENT_SET_LIST',body)])[0]
+
+
+def two_sets():
+    second=packed(11)+struct.pack('<I',1)+b'Second\0' + b'134400\0'+packed(NATIVE_ITEM)+packed(0)*18
+    return struct.pack('<I',2)+native_list()[4:]+second
+
+
+def test_multi_record_list_resets_string_bits_and_preserves_distinct_native_guids(codec):
+    name,body=execute(codec,[('equipment_response','SMSG_EQUIPMENT_SET_LIST',two_sets())])[0]
+    r=Reader(bytes.fromhex(body));assert name=='SMSG_LOAD_EQUIPMENT_SET';assert r.unpack('I')==(2,)
+    for guid,index,ignore,label in [(9,0,2,b'Fixture'),(11,1,0,b'Second')]:
+        assert r.unpack('iQII')==(0,guid,index,ignore)
+        for i in range(19):
+            assert r.guid()==((10,ITEM_HIGH) if i==0 else (0,0));assert r.unpack('i')==(0,)
+        assert r.unpack('6i')==(0,0,0,0,0,0)
+        r.align();assert r.bits(1)==0;length,icon=r.bits(8),r.bits(9);r.align()
+        assert r.raw(length)==label;assert r.raw(icon)==b'134400'
+    r.end()
+
+
+def test_overlapping_use_queue_preserves_native_result_order_and_is_bounded(codec):
+    first=modern_use();second=first[:-8]+struct.pack('<Q',11)
+    actions=[('equipment_response','SMSG_EQUIPMENT_SET_LIST',two_sets()),
+        ('equipment_request','CMSG_USE_EQUIPMENT_SET',first),
+        ('equipment_request','CMSG_USE_EQUIPMENT_SET',second),
+        ('equipment_response','SMSG_EQUIPMENT_SET_USE_RESULT',b'\0'),
+        ('equipment_response','SMSG_EQUIPMENT_SET_USE_RESULT',b'\0')]
+    replies=execute(codec,actions)
+    assert replies[-2:]==[['SMSG_USE_EQUIPMENT_SET_RESULT',struct.pack('<iQ',0,guid).hex()] for guid in [9,11]]
+    actions=actions[:1]+[('equipment_request','CMSG_USE_EQUIPMENT_SET',first)]*17
+    assert execute(codec,actions)[-1]=={'error':'too many outstanding equipment-set uses'}
