@@ -242,3 +242,21 @@ UI39 is remotely verified in DVC40: 26 selected JSON receipts and 157
 attributed frames pass archive review. Stock item comparison adds two qualified
 operations, bringing the checklist to 264/916. Normal visibility persistence
 augments its existing record; rear selection cloak rendering stays open.
+
+UI40's corrected pre-fix protocol run has ten real failures. The first red run
+also contained two test-helper argument errors; both receipts are retained.
+The first full post-fix run has four Python reference failures caused by a
+loop variable shadowing the native field dictionary. After correcting that
+oracle, all 879 checks pass, as do 46 focused address/undefined-behavior
+sanitizer checks. The compiled bridge and reference creation serializer now
+map four scalar crit percentages, seven school crit percentages and the
+separate ranged attack time, while retaining the valid three-entry array.
+Sparse owner updates preserve zero resets and school field interleaving.
+The pinned WPP school parent is bit281; the old test mirrored the wrong
+bit288, which is a school crit child. Earlier live creation/DPS receipts
+remain valid; they did not prove incremental school modifier updates.
+
+Observer57 reads public crit and ranged-damage APIs without setters. The
+whole pre-fix live combat trial is being closed before bridge deployment;
+rendered melee crit is0.00% and ranged DPS0.0 despite native positive
+values. Haste, ratings, item level and unsampled character stats remain open.
