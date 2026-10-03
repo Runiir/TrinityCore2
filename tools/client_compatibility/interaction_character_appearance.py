@@ -129,9 +129,14 @@ if __name__=='__main__':
     p.add_argument('--scout-diagnostic',action='store_true',help='Owned unarmored scout request/flag probe; does not qualify geared rendering')
     p.add_argument('--recover-source',type=Path,help='Restore exact failed scout stock settings through closure/reload, without repeating a visibility toggle')
     p.add_argument('--recover-deployment',type=Path,help='Completed owned bridge deployment binding the exact failed native helm mutation')
+    p.add_argument('--close-source',type=Path,help='Close only the source-bound failed scout settings, preserving its pending native mutation')
     a=p.parse_args();t=Trial(a.output,controller='code')
     try:
-        if a.recover_deployment:
+        if a.close_source:
+            if a.recover_source or a.recover_deployment:raise ValueError('choose panel closure or visibility restoration')
+            from .interaction_appearance_recovery import close_source
+            close_source(t,a.close_source)
+        elif a.recover_deployment:
             if not a.recover_source:raise ValueError('deployment recovery requires its failed source episode')
             from .interaction_appearance_recovery import recover as recover_mutation
             recover_mutation(t,a.recover_source,a.recover_deployment)

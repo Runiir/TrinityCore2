@@ -14,6 +14,30 @@ def owned_json(path):
     return json.loads(path.read_text()),{'file':str(path),'sha256':lab.sha256(path)}
 
 
+def close_source(t,source):
+    old,ref=owned_json(source);session=actors.session_entry(t.fixture)['session']
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
+    changed=[c['oracle']['native'] for c in old['cases'] if c.get('oracle',{}).get('native')]
+    before=flags(t,oracle)
+    if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or
+        t.fixture['guid']!=2 or old['runtime']!=t.receipt['runtime'] or not changed or before!=changed[-1] or
+        resources(oracle)!=old['baseline']):raise RuntimeError('require the exact failed scout and unchanged mutation')
+    t.receipt.update(source=ref,baseline=old['baseline'],native_before=before,
+        qualified_scope='Source-bound settings search and panel closure; native hidden state remains pending');t.persist()
+    try:
+        field=old['search_field'];predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
+        require(edit_case(t,'appearance.close_restore_search','Restore the original stock search.',predicate,field['text']),'ui_edit_pass')
+        require(click_case(t,'appearance.close_pending_settings','Close the visible stock settings window.',lambda c:c['text']=='Close',
+            lambda b,a,s:{'status':'panel_closed_pass' if s and 'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'},
+            await_state=lambda a:'SettingsPanel' not in a['panels']),'panel_closed_pass')
+        t.clean_panels()
+    finally:
+        t.receipt['native_after']=resources(oracle);t.receipt['native_visibility_after']=flags(t,oracle)
+        t.receipt['native_resources_preserved']=t.receipt['native_after']==old['baseline'];t.persist()
+    if not t.receipt['native_resources_preserved'] or t.receipt['native_visibility_after']!=before:
+        raise RuntimeError('panel closure changed the attributable native fixture')
+
+
 def recover(t,source,deployment):
     old,source_ref=owned_json(source);deploy,deploy_ref=owned_json(deployment/'deployment.json')
     before,_=owned_json(deployment/'scout_before/episode.json')
