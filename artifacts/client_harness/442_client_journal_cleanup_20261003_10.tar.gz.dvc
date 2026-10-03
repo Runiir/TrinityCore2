@@ -1,0 +1,5 @@
+outs:
+- md5: ce1f5e486a0301a293850c59dafdf0c3
+  size: 6520881
+  hash: md5
+  path: 442_client_journal_cleanup_20261003_10.tar.gz
