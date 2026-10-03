@@ -946,3 +946,37 @@ After remote verification, 276 raw frames (438,473,773 bytes) and the local
 archive/cache copies are removed. Failed staging and initial test outcomes remain
 in the checkpoint alongside the accepted trials. DVC status/push confirm the
 intentional local eviction and synchronized remote.
+
+UI15 adds native-authoritative read marking and deletion. Modern deletion has
+no mailbox field, so it uses the visible mailbox granted by a fully validated
+native catalog; closing or logout revokes that grant. Both actions require an
+owned native mail ID without narrowing a foreign 64-bit value. Native result
+packets retain success/failure and use the existing inventory-error mapping.
+The sender GUID for native console mail is empty, allowing the stock GM
+stationery UI to label it Customer Support. v19 reads the visible open subject
+and labels inbox controls with their visible subject rather than hidden COD
+text. It does not call GetInboxText from the observer to cause read marking.
+
+`mail_read_delete_01` completes four Laya choices: open, read the disposable
+console letter, delete it and close. Native mail ID 4 changes only its read flag
+before deletion. Packet evidence pairs 16-to-12-byte read marking, 12-to-16-byte
+deletion and a native 12-byte success result with the modern 32-byte result.
+Human screenshot review confirms the exact plain body renders on GM stationery.
+All three original reward letters, attachments, inventory/money and original
+pose are restored; no fixture letter or temporary teleport remains. Both clients
+have v19 on HDMI-1 and the native worldserver identity remains unchanged.
+
+The first focused run has 29 passes and 17 failures from a missing empty `units`
+array in the new test helper. The next has 45 passes and one incorrect fixture
+expectation: native inventory result 50 correctly maps to modern 51. After those
+fixture fixes, all 499 world tests and 17 authentication tests pass. The first
+sanitizer selection names a nonexistent test file and runs no tests; the
+corrected selection passes 52 ASan/UBSan checks. Original failed logs remain.
+
+Cleanup also offloads 203 historical frames (367,364,895 raw bytes) through
+`442_historical_frames_20261003_01.tar.gz.dvc`, with a remotely verified
+358,209,564-byte archive. Five more closed journal rotations (41,944,395 raw
+bytes) are stored in `442_journal_rotations_20261003_05.tar.gz.dvc`. Their
+4,749,960-byte archive is verified before pruning. Active UI evidence, recent
+journals and the two newest rotations per journal are preserved. Small receipts
+remain local and exact archive/cache copies are evicted after remote verification.
