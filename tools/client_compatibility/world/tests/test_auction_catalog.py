@@ -79,8 +79,16 @@ def test_invalid_counts_rows_truncation_and_trailing_bytes_are_rejected(codec):
     valid=struct.pack('<I',1)+native_row()+struct.pack('<II',1,300)
     for body in [valid[:-1],valid+b'x',struct.pack('<III',4097,0,0),
                  struct.pack('<I',1)+native_row(id_=0)+struct.pack('<II',1,300),
-                 struct.pack('<I',2)+native_row()+native_row()+struct.pack('<II',2,300),
+                 struct.pack('<I',2)+native_row()+native_row(entry=40)+struct.pack('<II',2,300),
                  struct.pack('<I',1)+native_row()+struct.pack('<II',0,300)]:
         assert 'error' in calls(codec,[OPEN,action('auction_response','SMSG_AUCTION_BIDDER_LIST_RESULT',body)])[1]
     for body in [request()[:-1],request()+b'x',request(tainted=True),request(ids=[0]),request(ids=[9,9])]:
         assert 'error' in calls(codec,[OPEN,action('auction_request','CMSG_AUCTION_LIST_BIDDED_ITEMS',body)])[1]
+
+
+def test_native_requested_current_bid_overlap_keeps_one_complete_auction(codec):
+    body=struct.pack('<I',2)+native_row()+native_row()+struct.pack('<II',2,300)
+    reply=calls(codec,[OPEN,action('auction_response','SMSG_AUCTION_BIDDER_LIST_RESULT',body)])[1]
+    single=calls(codec,[OPEN,action('auction_response','SMSG_AUCTION_BIDDER_LIST_RESULT',
+        struct.pack('<I',1)+native_row()+struct.pack('<II',1,300))])[1]
+    assert reply==single
