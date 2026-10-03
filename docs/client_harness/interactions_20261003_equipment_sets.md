@@ -114,9 +114,29 @@ public damage percentage is zero while the native school modifier is nonzero.
 Two positive wire regressions fail against the retained running bridge. The next
 bridge build translates all seven native school damage modifiers in both full
 creation and sparse updates. All 824 protocol/authentication tests and 23 focused
-ASan/UBSan tests pass. This build is not yet deployed or live-qualified; the
-equipment trial continues on its retained earlier bridge. Item-level display
-remains a separate open check. Neither build changes the native worldserver.
+ASan/UBSan tests pass. A fresh UI37 full equipment roundtrip subsequently passes
+save, reload, helmet displacement, stock set equip, delete and reload, with all
+native resources and the collapsed sidebar restored. A separate source-bound
+inspection confirms the empty stock manager. Immediate equip screenshots can
+precede rendering: the following delete-dialog frame shows the restored helmet.
+These operations await the UI37 DVC checkpoint and archive review before checklist
+qualification. Earlier failed roots remain recorded.
+
+The scout also reproduces a stock visibility failure: `CMSG_SHOWING_HELM` is
+unmapped, so native flags do not change. Exact search closure and normal reload
+restore its original checkbox and native fixture. The new independent bridge
+adds one-byte helm/cloak request translation and sparse PlayerData flag bit 9,
+preserving unrelated flags for both the owner and nearby players. Six positive
+regressions fail before this repair; all 841 protocol/authentication checks and
+28 focused ASan/UBSan checks pass afterwards. No native worldserver rebuild is
+needed. Both actors reconnect to this bridge for fresh damage and visibility
+checks; live qualification remains pending.
+
+Observer v55 tags the stock model controls and reads the camera yaw. Geared
+appearance trials open the stock character view, use ordinary rotation buttons
+for cloak back views, and restore the camera and settings. The observer performs
+no visibility or camera mutations. Item-level and other unsampled stats remain
+separate open checks.
 
 Reproduction uses new owned output directories:
 
