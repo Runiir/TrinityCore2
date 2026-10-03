@@ -159,6 +159,18 @@ def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False
             lambda b,a,s:{'status':'quest_abandon_pass' if s and quest_state(1)==baseline and inventory()==items else
                 'client_or_protocol_failure'}),'quest_abandon_pass')
     finally:
+        # A reward may have reached the native server before a later visual or
+        # packet oracle fails. Preserve earned history and items on that path as
+        # well; a failed observation does not authorize removing player rewards.
+        if retain_reward and not retained:
+            now=quest_state(1)
+            rewarded=[q for q in now['rewarded'] if q['quest']==QUEST]
+            remaining={**now,'rewarded':[q for q in now['rewarded'] if q['quest']!=QUEST]}
+            if len(rewarded)==1 and remaining==baseline:
+                baseline=now;items=inventory();retained=True
+                t.receipt['retained_reward']={'source':'ordinary player quest reward',
+                    'quest':QUEST,'quest_state':baseline,'inventory_money':items,
+                    'fixture_position_will_be_restored':True,'validation_failed_after_reward':True};t.persist()
         try:t.clean_panels();restore_autoaccepted(t,baseline,quest=QUEST)
         finally:fixture.restore()
         t.receipt['restoration']=({'earned_quest_history_preserved':quest_state(1)==baseline,
