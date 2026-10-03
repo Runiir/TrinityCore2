@@ -26,7 +26,7 @@ def controls(trial):
     from PIL import Image
     from tools.second_client import ctl
     from .observation.interactions import decode_image
-    pages={};total=None;deadline=time.monotonic()+40;panels=None
+    pages={};total=None;deadline=time.monotonic()+40;panels=None;revision=None
     while time.monotonic()<deadline:
         path=trial.out/'controls_latest.png'
         with redirect_stdout(StringIO()):ctl.shot(str(path))
@@ -34,16 +34,21 @@ def controls(trial):
         if state['guid']!=trial.guid:raise RuntimeError('control page identity mismatch')
         if state['mode']!='controls':continue
         current=state.get('panels') or []
+        current_revision=(tuple(current),state['control_count'],state.get('control_snapshot'))
+        if current_revision!=revision:
+            pages={};revision=current_revision
         if panels is None:panels=current
         if current!=panels:
             trial.receipt.setdefault('control_observation_transitions',[]).append({'time':time.time(),'before':panels,'after':current})
             trial.persist();pages={};panels=current
         total=state['control_count'];page=state['page']
+        if not 1<=page<=__import__('math').ceil(total/state.get('page_size',18)):continue
         if page not in pages:
             pages[page]=state.get('controls') or []
             # Retain one screenshot for identical control pages within this
             # episode. Sequence pixels change even when every control is equal.
-            observed={'guid':state['guid'],'panels':current,'page':page,'total':total,'controls':pages[page]}
+            observed={'guid':state['guid'],'panels':current,'page':page,'total':total,'controls':pages[page],
+                'control_snapshot':state.get('control_snapshot')}
             digest=hashlib.sha256(json.dumps(observed,sort_keys=True).encode()).hexdigest()
             target=trial.out/('controls_'+digest+'.png')
             if target.exists():path.unlink()

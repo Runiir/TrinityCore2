@@ -84,7 +84,8 @@ def restore_display(t,collapsed):
             lambda c:c['name']=='CharacterFrameExpandButton',
             lambda b,a,s:{'status':'character_display_restore_pass' if s and
                 (not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)))==collapsed else
-                'client_or_protocol_failure'}),'character_display_restore_pass')
+                'client_or_protocol_failure'},await_state=lambda a:a.get('character_expanded')==(not collapsed)),
+                'character_display_restore_pass')
     t.receipt['display_restoration']={'target_collapsed':collapsed,'verified':
         (not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)))==collapsed};t.persist()
     if not t.receipt['display_restoration']['verified']:raise RuntimeError('original character-sidebar layout remains unrestored')

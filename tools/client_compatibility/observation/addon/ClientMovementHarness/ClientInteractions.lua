@@ -126,7 +126,8 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=50,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=51,observer_skips=observerSkips,
+        character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
     data.player_cast={active=cast~=nil,name=cast,started_ms=started,finished_ms=finished,
@@ -439,13 +440,20 @@ local function snapshot(viewMode,viewPage)
         local f=_G[name];if f then scan(f,0) end
     end
     data.control_count=#data.controls
+    -- Identify the complete current control list, before paging it. A panel can
+    -- keep its name while changing layout; pages from those layouts cannot mix.
+    local controlSnapshot=0
+    for byte in json(data.controls):gmatch('.') do
+        controlSnapshot=(controlSnapshot*33+byte:byte())%4294967291
+    end
     local controls={};local first=mode=='controls' and (page-1)*12+1 or 1
     for _,control in ipairs(data.controls) do if control.name=='GameTimeFrame' then data.calendar_button=control end end
     for i=first,math.min(#data.controls,first+(mode=='controls' and 11 or 1)) do controls[#controls+1]=data.controls[i] end
     data.controls=controls
     if mode=='controls' then
         return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
-            panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12}
+            panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12,
+            control_snapshot=controlSnapshot}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.recipe_selection=call(GetTradeSkillSelectionIndex)
