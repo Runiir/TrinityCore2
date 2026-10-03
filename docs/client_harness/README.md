@@ -19,7 +19,10 @@ The current checkout's AGENTS.md retires Jev/Laya from new runs. Their code and
 historical receipts remain on disk. New UI trials use the code controller with
 ordinary keyboard and mouse inputs. Earlier October 2–3 interaction receipts
 retain their actual Laya identities; they do not authorize new model calls under
-the updated instructions. Code checks qualify client behavior, not model autonomy.
+the updated instructions. The user's October 3 desktop-isolation request explicitly
+authorizes a new bounded two-client Laya UI trial. It requires the separate
+`--use-laya` cohort flag; other new regression trials continue using the code
+controller. Code checks qualify client behavior, not model autonomy.
 Green lantern approaches stay on foot; short recovery flights require exhausted
 terrain recovery and the bounded clearance checks. A code-driven native-bridge
 trial completed one such flight and then recovered a Dwarf artifact for eight
@@ -163,13 +166,32 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort status --output /home/runiir/.local/share/trinity-client442-lab/evidence/two_actor_probe_01
 ```
 
-One task owns each actor. Task processes observe concurrently; future model adapters
-must preserve this ownership contract. Physical keyboard/mouse actions take a shared process lock, focus the
-verified owned window, execute and release it. `cohort stop` interrupts its owned
+One task owns each actor. Each actor has its own Gamescope X display and input
+lock. Keyboard/mouse input goes directly to the owned game window on that private
+display. Monitor checks only read the host window's position; task inputs never
+activate or reposition it. The user can work in another desktop application while
+both actors run. Cohort preflight rejects shared character GUIDs, client processes
+or private displays. `cohort stop` interrupts its owned
 workers, leaving clients and servers running. This first probe observes the primary
 and briefly moves the scout; it is explicitly a code-driven diagnostic, not a
 two-model autonomy claim. Fleet restart/recovery and long-duration scheduling need
 additional validation.
+
+The user-requested two-client Laya UI check uses the existing local model endpoint
+and opens bags, equipment and friends separately on each actor. It preserves
+resources, equipment and group state. Run the committed config with a fresh output:
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort start --use-laya --config experiments/configs/client_harness/442_two_actor_isolated_ui_v1.json --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.host_desktop_watch --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.cohort status --output ~/.local/share/trinity-client442-lab/evidence/<batch>/isolated_laya_ui
+```
+
+The optional read-only desktop watcher records opaque focus handles and pointer
+coordinates while the workers run. It captures no desktop screenshots or keys.
+An actor's focused nested window is verified through the Wine process's parent
+chain to its owned Gamescope supervisor. Input adapters reject actor changes and
+client PID reuse. Both visible Gamescope windows must remain on HDMI-1.
 
 ## Faster repairs
 

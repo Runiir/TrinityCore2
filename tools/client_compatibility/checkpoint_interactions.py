@@ -133,7 +133,7 @@ def checkpoint(directory,name):
         'runs':[{'path':str(p.relative_to(lab.ROOT)),'completed':r['completed'],'failure':r['failure'],
             'controller':r['controller'],'model':r['model'],'revision':r['revision']} for p,r in episodes],
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
-            'Historical Laya trials used bounded candidates; new trials use the code controller and do not measure learned autonomy.',
+            'Controller/model/revision identities are recorded per episode. Bounded UI choices do not qualify general learned autonomy.',
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
             f"The {len(plan['cases'])}-operation plan and 275-binding catalog remain broader than the completed trials."],
         'interaction_plan_operations':len(plan['cases']),

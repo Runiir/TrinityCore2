@@ -73,6 +73,8 @@ def start(path,out,allow_laya=False):
             raise ValueError('cohort actors cannot share a character')
         if len({monitor['pid'] for _,_,monitor,_,_ in prepared})!=len(prepared):
             raise ValueError('cohort actors cannot share an owned client process')
+        if len({monitor['input_isolation']['display'] for _,_,monitor,_,_ in prepared})!=len(prepared):
+            raise ValueError('cohort actors cannot share a private input display')
         out.mkdir(parents=True,mode=0o700)
         receipt={'schema':'client442_cohort_run_v1','started_at':time.time(),
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
