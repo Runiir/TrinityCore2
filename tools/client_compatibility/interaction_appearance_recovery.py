@@ -14,13 +14,19 @@ def owned_json(path):
     return json.loads(path.read_text()),{'file':str(path),'sha256':lab.sha256(path)}
 
 
+def comparable_flags(value):
+    # Ordinary client input clears idle AFK. It is not a saved appearance bit.
+    return {**value,'native_player_flags':value['native_player_flags']&~2}
+
+
 def close_source(t,source):
     old,ref=owned_json(source);session=actors.session_entry(t.fixture)['session']
     oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     changed=[c['oracle']['native'] for c in old['cases'] if c.get('oracle',{}).get('native')]
     before=flags(t,oracle)
     if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or
-        t.fixture['guid']!=2 or old['runtime']!=t.receipt['runtime'] or not changed or before!=changed[-1] or
+        t.fixture['guid']!=2 or old['runtime']!=t.receipt['runtime'] or not changed or
+        comparable_flags(before)!=comparable_flags(changed[-1]) or
         resources(oracle)!=old['baseline']):raise RuntimeError('require the exact failed scout and unchanged mutation')
     t.receipt.update(source=ref,baseline=old['baseline'],native_before=before,
         qualified_scope='Source-bound settings search and panel closure; native hidden state remains pending');t.persist()
@@ -34,7 +40,7 @@ def close_source(t,source):
     finally:
         t.receipt['native_after']=resources(oracle);t.receipt['native_visibility_after']=flags(t,oracle)
         t.receipt['native_resources_preserved']=t.receipt['native_after']==old['baseline'];t.persist()
-    if not t.receipt['native_resources_preserved'] or t.receipt['native_visibility_after']!=before:
+    if not t.receipt['native_resources_preserved'] or comparable_flags(t.receipt['native_visibility_after'])!=comparable_flags(before):
         raise RuntimeError('panel closure changed the attributable native fixture')
 
 
@@ -52,8 +58,8 @@ def recover(t,source,deployment):
         deploy['native']!=old['runtime']['worldserver'] or deploy['native']!=t.receipt['runtime']['worldserver'] or
         deploy['before']!=old['runtime']['modern_world'] or deploy['after']!=t.receipt['runtime']['modern_world'] or
         before['runtime']['client']!=old['runtime']['client'] or after['runtime']['client']!=t.receipt['runtime']['client'] or
-        not changed or current!=changed[-1] or resources(oracle)!=old['baseline'] or
-        any((current[k]^original['native'][k])!=0x400 for k in current) or
+        not changed or comparable_flags(current)!=comparable_flags(changed[-1]) or resources(oracle)!=old['baseline'] or
+        any((comparable_flags(current)[k]^comparable_flags(original['native'])[k])!=0x400 for k in current) or
         oracle.equipment(1)['guid'] or oracle.equipment(15)['guid']):
         raise RuntimeError('recovery requires the exact failed scout helm mutation and completed owned deployment')
     t.receipt.update(source=source_ref,deployment_source=deploy_ref,baseline=old['baseline'],
