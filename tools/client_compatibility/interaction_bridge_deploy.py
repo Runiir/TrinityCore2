@@ -28,7 +28,7 @@ def shot(path):
     return {'file':path.name,'sha256':lab.sha256(path),'monitor':monitor}
 
 
-def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None):
+def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None,combat_source=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
     baselines={}
@@ -36,7 +36,10 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
         with actor(name):
             t=Trial(out/(name+'_before'),controller='code')
             try:
-                if unavailable_deployment_source:
+                if name=='primary' and combat_source:
+                    from .interaction_character_combat_recovery import unavailable
+                    baselines[name]=unavailable(t,combat_source,native,before)
+                elif unavailable_deployment_source:
                     from .interaction_deployment_baseline import unavailable_deployment
                     baselines[name]=unavailable_deployment(t,unavailable_deployment_source,native,before)
                 elif name=='primary' and unavailable_primary_source:
@@ -58,6 +61,7 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
     report={'schema':'client442_bridge_deployment_v1','started_at':time.time(),'native':native,'before':before,
             'observer_version':version,'baselines':baselines,'reconnected':{}}
     if unavailable_primary_source:report['primary_public_precheck_deferred']=True
+    if combat_source:report.update(primary_public_precheck_deferred=True,combat_source=str(combat_source))
     if unavailable_scout_source:report['scout_public_precheck_deferred']=True
     if unavailable_deployment_source:
         report.update(primary_public_precheck_deferred=True,scout_public_precheck_deferred=True,
@@ -188,11 +192,12 @@ if __name__=='__main__':
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
     parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
     parser.add_argument('--client-restart-source',type=Path,help='Owned restart receipt binding a failed trial to the new client lifetime')
+    parser.add_argument('--combat-source',type=Path,help='Closed failed combat episode with the exact pending native helmet relocation')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
-        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source)
+        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source,args.combat_source)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source)
