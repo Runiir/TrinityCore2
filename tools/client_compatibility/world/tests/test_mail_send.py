@@ -61,6 +61,13 @@ def test_owned_attachments_and_maximum_native_strings(codec):
     assert len(parsed['target'])==127 and len(parsed['subject'])==511 and len(parsed['body'])==2047
 
 
+def test_modern_attachment_limit_reaches_native_gameplay_validation(codec):
+    native_items=[(0x4000<<48)|i for i in range(1,17)]
+    row=request(codec,send(items=[(i,i+1,ITEM_HIGH) for i in range(16)]),native_items)
+    assert len(legacy_send(bytes.fromhex(row[1]))['attachments'])==16
+    assert 'error' in request(codec,send(items=[(i,i+1,ITEM_HIGH) for i in range(17)]),native_items)
+
+
 @pytest.mark.parametrize('changes',[{'target':b''},{'target':b'T'*128},{'money':-1},{'cod':-1},
     {'stationery':-1},{'body':b'A\0B'},{'subject':b'A\0B'},{'target':b'A\0B'},
     {'items':[(0,17,ITEM_HIGH)]},{'items':[(0,ITEM&0xffffffff,player_high())]},

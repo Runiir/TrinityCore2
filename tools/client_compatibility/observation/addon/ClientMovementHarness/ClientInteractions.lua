@@ -206,7 +206,7 @@ local function snapshot(viewMode,viewPage)
         if SendMailFrame and SendMailFrame:IsVisible() then
             data.mail.compose={recipient=trim(call(SendMailNameEditBox.GetText,SendMailNameEditBox),80),
                 subject=trim(call(SendMailSubjectEditBox.GetText,SendMailSubjectEditBox),80),
-                body=trim(call(SendMailBodyEditBox.GetText,SendMailBodyEditBox),384)}
+                body=trim(call(MailEditBox.GetInputText,MailEditBox),384)}
         end
         for index=1,math.min(count or 0,3) do
             local _,_,sender,subject,money,cod,_,items,read=call(GetInboxHeaderInfo,index)

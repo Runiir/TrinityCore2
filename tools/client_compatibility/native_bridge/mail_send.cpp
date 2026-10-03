@@ -13,7 +13,7 @@ Reply mail_send(Protocol const &protocol,State const &owner,std::string const &n
         throw std::runtime_error("sending mail requires a native mailbox catalog");
     auto stationery=r.take<std::int32_t>();auto money=r.take<std::int64_t>(),cod=r.take<std::int64_t>();
     auto target_length=r.bits(9),subject_length=r.bits(9),body_length=r.bits(11),count=r.bits(5);r.align();
-    if(stationery<0 || money<0 || cod<0 || !target_length || target_length>127 || count>12)
+    if(stationery<0 || money<0 || cod<0 || !target_length || target_length>127 || count>16)
         throw std::runtime_error("mail send metadata exceeds native bounds");
     auto receiver=r.raw(target_length),subject=r.raw(subject_length),message=r.raw(body_length);
     for(auto text:{receiver,subject,message})
@@ -45,6 +45,8 @@ Reply mail_send(Protocol const &protocol,State const &owner,std::string const &n
     }
     octets(mailbox,{7,3,6,5});w.raw(subject).raw(receiver);octets(mailbox,{2,0});
     w.raw(message);octets(mailbox,{1});
+    // The modern UI offers 16 slots. Native's 12-attachment limit is a native
+    // gameplay error, not a reason to disconnect an otherwise valid client.
     // Native owns name resolution, self/team/level checks, postage, delivery,
     // capacity, inventory eligibility, balances and COD semantics.
     return Packet{name,w.finish()};
