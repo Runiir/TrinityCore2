@@ -47,6 +47,7 @@ def verify(t,oracle,label):
             'public_ranged_haste':close(public.get('ranged_haste'),expected['ranged_haste']),
             'public_mastery':close(public.get('mastery'),expected['mastery']),
             'public_main_expertise':bool(expertise) and close(expertise[0],expected['expertise'][0]),
+            'public_offhand_expertise':len(expertise)>=2 and close(expertise[1],expected['expertise'][1]),
             'public_ratings':public.get('ratings')==expected['ratings'],
             'public_dodge':close(public.get('dodge'),expected['dodge']),
             'public_parry':close(public.get('parry'),expected['parry']),
@@ -59,7 +60,7 @@ def verify(t,oracle,label):
         return {'status':'character_ratings_display_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'native':expected,'public':public,
                 'rendered':{'melee_haste':haste_text,'mastery':mastery_text,'expertise':expertise_text},
-                'offhand_expertise_if_reported':len(expertise)==2 and close(expertise[1],expected['expertise'][1])}}
+                'offhand_expertise_if_reported':len(expertise)>=2 and close(expertise[1],expected['expertise'][1])}}
     row=t.step('character.stats.ratings.'+label,'Inspect native ratings, haste, expertise, mastery and defense.',
         {'inspect':{'kind':'hover','value':[1110,580],'description':'Move the pointer away from stat rows.'}},
         outcome,diagnostic_action='inspect');require(row,'character_ratings_display_pass');return row['oracle']['native']

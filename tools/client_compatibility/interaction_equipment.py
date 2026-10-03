@@ -40,7 +40,9 @@ def change(trial,oracle,item,destination,equip=False,equipment_slot=1,equipment_
         expected=actual==item and stored['guid']==0 if equip else actual['guid']==0 and stored==item
         visible=visible_outcome(a)
         return {'status':'equipment_change_pass' if expected and visible else ('controller_failure' if s!='change' else 'client_or_protocol_failure'),
-            'oracle':{'native_head':actual,'native_bag':stored,'native_matches':expected,'visible_matches':visible}}
+            'oracle':{'native_equipment':actual,'equipment_slot':equipment_slot,'equipment_control':equipment_control,
+                **({'native_head':actual} if equipment_slot==1 else {}),
+                'native_bag':stored,'native_matches':expected,'visible_matches':visible}}
     return trial.step(('character.equip' if equip else 'character.unequip')+case_suffix,
         'Equip the item from the backpack.' if equip else 'Unequip the item into the empty backpack slot.',
         actions,outcome,diagnostic_action='change',await_state=visible_outcome)
