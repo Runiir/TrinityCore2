@@ -29,12 +29,18 @@ def detail(t,label):
 def suite(t,phase):
     actors.session_entry(t.fixture);t.clean_panels();original=baseline();saved=sets()
     if saved['rows']:raise RuntimeError('requires an owned primary actor with no equipment sets')
-    t.receipt['baseline']={'native':original,'sets':saved};t.persist()
+    t.receipt['baseline']={'native':original,'sets':saved};t.persist();expanded=False
     try:
         require(t.step('character.set_open','Open character equipment.',
             {'open':{'kind':'key','value':'c','description':'Press C for character equipment.'}},
             lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
                 'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
+        if not any(c['name']=='PaperDollSidebarTab3' for c in controls(t)):
+            require(click_case(t,'character.set_expand','Expand the character sidebar.',
+                lambda c:c['name']=='CharacterFrameExpandButton',
+                lambda b,a,s:{'status':'character_expand_pass' if s and
+                    any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
+                    'client_or_protocol_failure'}),'character_expand_pass');expanded=True
         require(click_case(t,'character.set_manager','Open the stock equipment manager.',
             lambda c:c['name']=='PaperDollSidebarTab3',
             lambda b,a,s:{'status':'equipment_manager_pass' if s and detail(t,'manager_open')['manager_visible'] else
@@ -63,6 +69,17 @@ def suite(t,phase):
             require(click_case(t,'character.equipment_set_create','Save the new equipment set.',
                 lambda c:c['text']=='Okay',outcome),'equipment_set_create_pass')
     finally:
+        if expanded:
+            state,_=t.observe('before_display_restore')
+            if 'GearManagerPopupFrame' in state['panels']:
+                t.execute({'kind':'key','value':'Escape'})
+                state,_=t.observe('popup_cancelled')
+                if 'GearManagerPopupFrame' in state['panels']:raise RuntimeError('new-set popup did not close')
+            require(click_case(t,'character.set_collapse_restore','Restore the collapsed character sidebar.',
+                lambda c:c['name']=='CharacterFrameExpandButton',
+                lambda b,a,s:{'status':'character_display_restore_pass' if s and not
+                    any(c['name']=='PaperDollSidebarTab3' for c in controls(t)) else
+                    'client_or_protocol_failure'}),'character_display_restore_pass')
         t.clean_panels();t.receipt['native_after']={'native':baseline(),'sets':sets()}
         t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
         if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment manager changed native resources')
