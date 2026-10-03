@@ -1,13 +1,12 @@
 // Native-authoritative mail reads, using pinned 60895 MailPackets schemas.
 #include "mail.hpp"
+#include "mail_actions.hpp"
 #include <cmath>
 #include <unordered_set>
 
 namespace bridge
 {
-namespace
-{
-std::uint64_t mailbox(Protocol const &protocol,State const &owner,Array const &identity)
+std::uint64_t visible_mailbox(Protocol const &protocol,State const &owner,Array const &identity)
 {
     for(auto const &[guid,record]:owner.visible_gameobjects)
         if(identity==Protocol::modern_guid(guid,integer(get(record,"map"))) &&
@@ -17,6 +16,8 @@ std::uint64_t mailbox(Protocol const &protocol,State const &owner,Array const &i
            integer(get(record,"kind"))==3 && (protocol.field(record,"UNIT_NPC_FLAGS")&0x04000000))return guid;
     throw std::runtime_error("mail read requires a native visible mailbox");
 }
+namespace
+{
 Bytes text(Reader &r,unsigned maximum)
 {
     Bytes output;
@@ -82,30 +83,37 @@ Bytes list(State &owner,View body)
         if(declared!=actual && static_cast<unsigned>(declared)+4!=actual)
             throw std::runtime_error("native mail entry size disagrees with parsed fields");
         w.pack("QIQIQIfII",{id,type,cod,stationery,money,flags,days,template_id,items});
-        if(type==0)w.guid(sender,player_high());else w.put<std::uint32_t>(sender);
+        if(type==0)w.guid(sender,sender?player_high():0);else w.put<std::uint32_t>(sender);
         w.bits(subject.size(),8).bits(message.size(),13).flush();
         for(auto const &item:attachments)w.raw(item);
         w.raw(subject).raw(message);
     }
-    r.end();owner.mail_creatures=std::move(senders);return w.finish();
+    r.end();owner.mail_creatures=std::move(senders);owner.mail_ids=std::move(seen);
+    if(owner.pending_mailbox)
+    {
+        owner.mail_target=owner.pending_mailbox;owner.pending_mailbox=0;
+    }
+    return w.finish();
 }
 }
-Reply mail_request(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply mail_request(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
     if(name=="CMSG_QUERY_NEXT_MAIL_TIME")
     {Reader r(body);r.end();return Packet{"MSG_QUERY_NEXT_MAIL_TIME",{}};}
+    if(auto action=mail_action(protocol,owner,name,body))return action;
     if(name!="CMSG_MAIL_GET_LIST")return {};
-    Reader r(body);auto guid=mailbox(protocol,owner,r.guid());r.end();
+    Reader r(body);auto guid=visible_mailbox(protocol,owner,r.guid());r.end();owner.pending_mailbox=guid;
     return Packet{"CMSG_GET_MAIL_LIST",Writer().put(guid).finish()};
 }
 Reply mail_response(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
     if(name=="SMSG_MAIL_LIST_RESULT")return Packet{name,list(owner,body)};
+    if(name=="SMSG_SEND_MAIL_RESULT")return mail_command_result(protocol,owner,body);
     Reader r(body);
     if(name=="SMSG_SHOW_MAILBOX")
     {
         auto guid=r.take<std::uint64_t>();r.end();auto identity=Protocol::modern_guid(guid,owner.map());
-        mailbox(protocol,owner,identity);
+        visible_mailbox(protocol,owner,identity);
         return Packet{"SMSG_NPC_INTERACTION_OPEN_RESULT",Writer().guid(identity).put<std::int32_t>(17).bits(1,1).finish()};
     }
     if(name=="SMSG_RECEIVED_MAIL")

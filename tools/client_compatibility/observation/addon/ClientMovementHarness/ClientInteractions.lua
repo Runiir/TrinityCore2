@@ -61,12 +61,15 @@ local function json(value)
 end
 local function trim(s,n)return tostring(s or ''):sub(1,n or 60) end
 local function caption(f)
+    local mailRow=(f:GetName() or ''):match('^(MailItem%d+)Button$')
+    local subject=mailRow and _G[mailRow..'Subject']
+    if subject and subject:IsVisible() then return trim(call(subject.GetText,subject),80) end
     if f.GetText then local s=call(f.GetText,f);if s and s~='' then return trim(s) end end
     for _,field in ipairs({'Label','Text'}) do local r=f[field]
         if r and r.GetText then local s=call(r.GetText,r);if s and s~='' then return trim(s) end end
     end
     for _,r in ipairs({f:GetRegions()}) do
-        if r.GetText then local s=call(r.GetText,r);if s and s~='' then return trim(s) end end
+        if r.GetText and r:IsVisible() then local s=call(r.GetText,r);if s and s~='' then return trim(s) end end
     end
     return ''
 end
@@ -116,7 +119,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=18,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=19,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -204,6 +207,10 @@ local function snapshot(viewMode,viewPage)
             local _,_,sender,subject,money,cod,_,items,read=call(GetInboxHeaderInfo,index)
             data.mail.inbox[#data.mail.inbox+1]={index=index,sender=trim(sender,48),subject=trim(subject,80),
                 money=money,cod=cod,items=items,read=not not read}
+        end
+        if OpenMailFrame and OpenMailFrame:IsVisible() then
+            data.mail.open={index=InboxFrame.openMailID,
+                subject=trim(call(OpenMailSubject.GetText,OpenMailSubject),80)}
         end
     end
     data.last_loot=lastLoot
