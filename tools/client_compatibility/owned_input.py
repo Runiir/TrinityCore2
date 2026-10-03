@@ -46,8 +46,9 @@ class Inputs:
         ctl._launcher_env=lab.client_environment
         self.actor=lab.actor_name()
         self.runtime=lab.owned_process('client')
-        self.raw=ctl.Input()
-        self.initialization=None
+        from .native_input_adapter import Input
+        self.raw=Input()
+        self.initialization=self.raw.initialization
 
     def validate(self):
         current=lab.owned_process('client')
@@ -56,27 +57,7 @@ class Inputs:
             raise RuntimeError('input adapter belongs to a different actor or client lifetime')
 
     def prepare(self):
-        self.validate();monitor=focus()
-        if self.initialization is None:
-            # A new XTEST sender can lose its first event while Xwayland and
-            # Gamescope create/resume its libei virtual device. Warm that
-            # connection with zero pointer displacement, never a gameplay key
-            # or click. Keep this once-per-connection setup inside the actor
-            # lease and on the already verified private display.
-            pointer=self.raw.display.screen().root.query_pointer()
-            self.raw._send(self.raw.X.MotionNotify,x=pointer.root_x,y=pointer.root_y)
-            # Xwayland initializes keyboard emulation independently of pointer
-            # emulation. Release an already-up key without ever pressing it.
-            code=self.raw._keycode(self.raw.XK.string_to_keysym('F12'))[0]
-            if self.raw.display.query_keymap()[code//8]>>(code%8)&1:
-                raise RuntimeError('private input initialization requires F12 to be released')
-            self.raw._send(self.raw.X.KeyRelease,code)
-            time.sleep(1)
-            self.initialization={'time':time.time(),'actor':self.actor,
-                'display':monitor['input_isolation']['display'],'events':['MotionNotify','KeyRelease'],
-                'released_key':'already-up F12','key_pressed':False,
-                'pointer_displacement':0,'settle_seconds':1,'gameplay_input_replayed':False}
-        return monitor
+        self.validate();return focus()
 
     def invoke(self,name,*args,**kwargs):
         with lease():
