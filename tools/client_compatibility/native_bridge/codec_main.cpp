@@ -435,7 +435,7 @@ int main(int argc, char **argv)
                             else if (fn == "creature_query")
                             {
                                 if (auto encoded = Protocol::creature_query(state, body))
-                                    reply = Packet{name, *encoded};
+                                    reply = Packet{"CMSG_CREATURE_QUERY", *encoded};
                             }
                             else if (fn == "creature_reply")
                                 reply = Protocol::creature_reply(state, body);
