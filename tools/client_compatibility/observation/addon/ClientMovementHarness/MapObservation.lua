@@ -28,6 +28,10 @@ local function pins(map,template)
     end
     return rows
 end
+local function button(frame)
+    if not frame then return end
+    return {visible=not not call(frame.IsVisible,frame),enabled=not not call(frame.IsEnabled,frame),rect=rect(frame)}
+end
 function Client442ObserveMap()
     local map=WorldMapFrame;local id=map and call(map.GetMapID,map)
     local best=call(C_Map and C_Map.GetBestMapForUnit,'player')
@@ -50,5 +54,6 @@ function Client442ObserveMap()
         digsites_enabled=not not call(GetCVarBool,'digSites'),digsite_checkbox=check and not not call(check.GetChecked,check),
         sites=sites,icon_pins=pins(map,'DigSitePinTemplate'),blob_pins=pins(map,'DigSiteBlobPinTemplate'),
         minimap_zoom=Minimap and call(Minimap.GetZoom,Minimap),
-        minimap_zoom_levels=Minimap and call(Minimap.GetZoomLevels,Minimap)}
+        minimap_zoom_levels=Minimap and call(Minimap.GetZoomLevels,Minimap),
+        minimap_buttons={zoom_in=button(MinimapZoomIn),zoom_out=button(MinimapZoomOut)}}
 end
