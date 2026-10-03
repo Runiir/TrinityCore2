@@ -5,13 +5,13 @@ from . import lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_operations import click_case
 from .interaction_macros import require
-from .interaction_archaeology_projects import native,open_panel,catalog
+from .interaction_archaeology_projects import native,open_panel,catalog,history_checks
 
 
 def normalized(value):return json.loads(json.dumps(value))
 
 
-def inspect(t,source):
+def inspect(t,source,require_history=False):
     original=json.loads(source.read_text());baseline=native()
     checks=original.get('solve_outcome',{}).get('checks',{})
     if original.get('completed') or not checks.get('native_completion'):
@@ -32,8 +32,10 @@ def inspect(t,source):
         t.clean_panels();open_panel(t)
         def outcome(b,a,s):
             public=catalog(t,'completed_history');t.receipt['history']=public;t.persist()
-            return {'status':'archaeology_history_inspected' if s and public['completed_visible'] else
-                'client_or_protocol_failure','oracle':public}
+            checks=history_checks(public,baseline);t.receipt['history_checks']=checks;t.persist()
+            passed=all(checks.values()) if require_history else public['completed_visible']
+            return {'status':'archaeology_history_inspected' if s and passed else
+                'client_or_protocol_failure','oracle':{'public':public,'checks':checks}}
         require(click_case(t,'archaeology.completed_tab','Inspect completed archaeology projects.',
             lambda c:c['name']=='ArchaeologyFrameCompletedButton',outcome),'archaeology_history_inspected')
     finally:
@@ -43,8 +45,9 @@ def inspect(t,source):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--source',type=Path,required=True);a=p.parse_args();t=Trial(a.output,controller='code')
-    try:inspect(t,a.source);t.receipt['completed']=True
+    p.add_argument('--source',type=Path,required=True);p.add_argument('--require-history',action='store_true')
+    a=p.parse_args();t=Trial(a.output,controller='code')
+    try:inspect(t,a.source,a.require_history);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
         t.receipt['finished_at']=time.time();t.persist()

@@ -98,6 +98,31 @@ def select(t,contract,public):
         lambda c:c['name']==button['name'],outcome),'archaeology_project_pass')
 
 
+def history_checks(public,state):
+    rows,text=dbc('ResearchProject',9);projects={r[0]:(text(r[1]),r[5]) for r in rows}
+    expected=sorted((projects[id][1],first,count) for id,first,count in state['completed'])
+    observed=sorted((p['spell'],p['first_completed'],p['count']) for r in public['races'] for p in r['completed'])
+    rendered=sorted((p['rendered'],p['first_completed'],p['count']) for p in public['completed_buttons'])
+    labels=sorted((projects[id][0],first,count) for id,first,count in state['completed'])
+    return {'stock_completed_tab':public['completed_visible'],'complete_public_history':observed==expected,
+        'rendered_completed_projects':rendered==labels,'history_available':public['history_available']}
+
+
+def completed_panel(t,label,expected):
+    open_panel(t)
+    def outcome(b,a,s):
+        public=catalog(t,label);checks=history_checks(public,expected)
+        return {'status':'archaeology_history_pass' if s and all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'public':public,'native_completed':expected['completed']}}
+    require(click_case(t,'archaeology.completed_history.'+label,'Inspect the completed artifact history.',
+        lambda c:c['name']=='ArchaeologyFrameCompletedButton',outcome),'archaeology_history_pass')
+    require(t.step('archaeology.close.'+label,'Close the archaeology window.',
+        {'close':{'kind':'key','value':'Escape','description':'Press Escape to close archaeology.'}},
+        lambda b,a,s:{'status':'archaeology_close_pass' if 'ArchaeologyFrame' in b['panels'] and
+            'ArchaeologyFrame' not in a['panels'] else 'client_or_protocol_failure'},
+        diagnostic_action='close'),'archaeology_close_pass')
+
+
 def solve(t,contract,baseline):
     def outcome(b,a,s):
         deadline=time.monotonic()+18;samples=[]
@@ -134,7 +159,7 @@ def solve(t,contract,baseline):
         diagnostic_action='bag'),'archaeology_artifact_visible_pass')
 
 
-def suite(t,do_solve=False):
+def suite(t,do_solve=False,persist=False):
     actors.session_entry(t.fixture);t.clean_panels();baseline=native();t.receipt['baseline']=baseline;t.persist()
     try:
         available=contracts(baseline);t.receipt['project_contracts']=available;t.persist()
@@ -142,7 +167,16 @@ def suite(t,do_solve=False):
         if chosen is None:raise RuntimeError('earned Draenei fragment fixture unavailable')
         open_panel(t);public=catalog(t,'race_catalog');t.receipt['public_baseline']=public;t.persist()
         select(t,chosen,public)
-        if do_solve:solve(t,chosen,baseline)
+        if do_solve:
+            solve(t,chosen,baseline);earned=native();t.clean_panels();completed_panel(t,'after_solve_history',earned)
+            if persist:
+                t.clean_panels()
+                require(t.step('archaeology.reload_persistence','Reload the interface and retain earned archaeology progress.',
+                    {'reload':{'kind':'chat','value':'/reload','description':'Enter /reload.'}},
+                    lambda b,a,s:{'status':'archaeology_reload_pass' if a.get('observer_version')==41 and
+                        not a.get('lua_errors') and not a.get('blocked_actions') and native()==earned else
+                        'client_or_protocol_failure'},diagnostic_action='reload'),'archaeology_reload_pass')
+                t.clean_panels();completed_panel(t,'after_reload_history',earned)
     finally:
         t.clean_panels();after=native();t.receipt['native_after']=after
         t.receipt['native_unchanged']=after==baseline;t.persist()
@@ -151,8 +185,10 @@ def suite(t,do_solve=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--solve',action='store_true');a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t,a.solve);t.receipt['completed']=True
+    p.add_argument('--solve',action='store_true');p.add_argument('--persist',action='store_true');a=p.parse_args()
+    if a.persist and not a.solve:p.error('persistence requires an earned solve')
+    t=Trial(a.output,controller='code')
+    try:suite(t,a.solve,a.persist);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
         t.receipt['finished_at']=time.time();t.persist()
