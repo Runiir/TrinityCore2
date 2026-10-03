@@ -152,7 +152,7 @@ def test_mail_sender_queries_require_native_catalog_provenance_and_clear_on_logo
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
     assert rows[0] is None
-    assert rows[2]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',16128,0).hex()]
+    assert rows[2]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
     assert rows[3:] == [None,None,None]
 
 
@@ -165,7 +165,7 @@ def test_malformed_mail_catalog_cannot_replace_sender_query_provenance(codec):
     rows=result(codec,op='stateful',character={'guid':1,'map':0},snapshot={'guid':1,'kind':4,'fields':{}},
                 gameobjects=[],units=[],actions=actions)
     assert 'error' in rows[1] and rows[2] is None
-    assert rows[3]==['CMSG_CREATURE_QUERY',struct.pack('<IQ',16128,0).hex()]
+    assert rows[3]==['CMSG_QUERY_CREATURE',struct.pack('<IQ',16128,0).hex()]
 
 
 def test_actual_three_reward_letters_keep_attachment_identity_and_subjects(codec):
