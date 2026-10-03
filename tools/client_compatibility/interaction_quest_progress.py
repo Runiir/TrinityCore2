@@ -6,8 +6,9 @@ from .interaction_trial import Trial
 from .interaction_quest_accept import suite as accept_suite,QUEST
 from .interaction_quest_fixture import quest_state
 from .interaction_macros import require
+from .observation.transport import Observer
 
-SPAWN=281458
+SPAWN=280953
 NAME='TC442QuestCombat'
 
 
@@ -46,6 +47,22 @@ def progress(t,giver):
                     a['target'].get('visible') and a['target'].get('health',0)>0 else 'client_or_protocol_failure',
                     'oracle':{'target':a.get('target'),'native_counts_before':before}},diagnostic_action='target'),'quest_target_pass')
             target=t.receipt['cases'][-1]['after']['target'];t.receipt['combat_target']=target;t.persist()
+            # Random-movement creatures may be far from their stored spawn.
+            # Stage beside the actual visible target, never assume its DB pose
+            # is its current pose. This remains fixture setup, not movement proof.
+            facts=Observer(guid=1).poll();unit=facts.get('selected_unit')
+            if (not unit or unit['guid']>>32&0xFFFFF!=118 or unit['health']!=unit['max_health'] or
+                    math.dist(facts['position'][:3],unit['position'][:3])>60):
+                raise RuntimeError('requires a nearby undamaged observed Prowler')
+            x,y,z,o=unit['position'];dx,dy=2*math.cos(o),2*math.sin(o)
+            with lab.connection() as c,c.cursor() as q:
+                q.execute('UPDATE client442_world.game_tele SET position_x=%s,position_y=%s,position_z=%s,orientation=%s '
+                    'WHERE id=%s AND name=%s',(x+dx,y+dy,z,math.atan2(-dy,-dx)%(2*math.pi),row[0],NAME))
+                q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
+                    'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(row[0],));row=q.fetchone()
+            t.receipt['combat_fixture']['observed_target_staging']={'facts':facts,'teleport':row};t.persist()
+            lab.server_command('reload game_tele');time.sleep(.5)
+            lab.server_command('tele name Harnessone '+NAME);time.sleep(1)
             def killed(b,a,s):
                 samples=[];deadline=time.monotonic()+15
                 while time.monotonic()<deadline:
