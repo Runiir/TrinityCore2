@@ -26,7 +26,10 @@ def restore_autoaccepted(trial,baseline,quest=QUEST):
     if before==baseline:return
     extra=[row for row in before['active'] if row['quest']==quest]
     remaining={**before,'active':[row for row in before['active'] if row['quest']!=quest]}
-    if len(extra)!=1 or extra[0]['status']!=3 or remaining!=baseline:
+    # Quest 52 has no source items. A failed full-objective trial may already
+    # be complete but unrewarded; removing it is fixture cleanup, never proof.
+    allowed=[3,1] if quest==52 else [3]
+    if len(extra)!=1 or extra[0]['status'] not in allowed or remaining!=baseline:
         raise RuntimeError('unexpected quest mutation; preserving state for diagnosis')
     with lab.connection() as c,c.cursor() as q:
         q.execute('SELECT StartItem FROM client442_world.quest_template WHERE ID=%s',(quest,))

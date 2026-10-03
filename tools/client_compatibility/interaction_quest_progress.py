@@ -10,6 +10,7 @@ from .observation.transport import Observer
 from .observation.journal import entries
 from .world.buffer import Reader
 from .world.gameobjects import modern_guid
+from .travel_inputs import face
 
 SPAWN=280953
 NAME='TC442QuestCombat'
@@ -69,6 +70,19 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
             t.receipt['combat_fixture']['observed_target_staging']={'facts':facts,'teleport':row};t.persist()
             lab.server_command('reload game_tele');time.sleep(.5)
             lab.server_command('tele name Harnessone '+NAME);time.sleep(1)
+            observer=Observer(guid=1);approaches=[]
+            def approach():
+                current=observer.poll();near=current.get('selected_unit')
+                if not near or near['guid']!=unit['guid']:raise RuntimeError('combat approach target changed')
+                distance=math.dist(current['position'][:3],near['position'][:3])
+                if distance>15 or abs(current['position'][2]-near['position'][2])>3:
+                    raise RuntimeError('moving target escaped the bounded ground approach')
+                keys=face(t.io,observer,near['position'])
+                if distance>3:
+                    hold=min(1.5,(distance-2.5)/7);t.io.key('w',hold=hold);keys.append({'key':'w','hold':hold})
+                approaches.append({'time':time.time(),'facts':current,'physical_keys':keys})
+                record['ordinary_approaches']=approaches;t.persist()
+            approach()
             started=time.time()
             def killed(b,a,s):
                 samples=[];deadline=time.monotonic()+15
@@ -76,6 +90,7 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
                     native=native_counts();probe=a.get('manual_quest_probe',{})
                     samples.append({'native':native,'public':probe,'target':a.get('target')})
                     if native.get(counter)==before.get(counter,0)+1:break
+                    if len(approaches)<4:approach()
                     time.sleep(.5);a,frame=t.observe('combat_progress_'+str(len(samples)))
                 matched=any(o.get('required')==required and o.get('fulfilled')==before.get(counter,0)+1
                     for o in probe.get('objectives',[]))

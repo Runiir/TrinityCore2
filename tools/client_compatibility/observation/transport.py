@@ -1,5 +1,5 @@
 """Fresh owned-session player, taxi and transfer facts from ordinary packets."""
-import json
+import json,time
 from .. import lab_runtime as lab
 from ..world import movement
 from ..world.buffer import Reader
@@ -17,7 +17,7 @@ class Observer:
         self.position=entry['position'];self.map=entry['map'];self.seen_at=entry['time']
         self.taxi=None;self.transferring=False;self.transfer_events=[];self.taxi_replies=[]
         self.gossip=None;self.selected=None;self.attackers=set();self.player_attack_target=None
-        self.units={};self.names={};self.player_level=85;self.player_faction=1
+        self.units={};self.unit_splines={};self.names={};self.player_level=85;self.player_faction=1
         self.cursor=Cursor(root/'evidence/world_packets.jsonl')
 
     def poll(self):
@@ -39,7 +39,7 @@ class Observer:
                 elif name=='SMSG_TRANSFER_PENDING':self.transferring=True
                 elif name=='SMSG_NEW_WORLD':
                     self.map,x,y,z,o=r.unpack('i4f');self.position=[x,y,z,o];self.seen_at=p['time'];self.taxi=None
-                    self.units={};self.attackers=set()
+                    self.units={};self.unit_splines={};self.attackers=set()
                 elif name=='SMSG_RESUME_TOKEN':self.transferring=False
                 if any(s in name for s in ['TRANSFER','NEW_WORLD','SUSPEND_TOKEN','RESUME_TOKEN']):
                     self.transfer_events.append({'name':name,'time':p['time']})
@@ -54,10 +54,11 @@ class Observer:
                     self.attackers.discard(attacker)
                     if attacker==self.guid:self.player_attack_target=None
                 elif name=='SMSG_ON_MONSTER_MOVE':
-                    from ..world.native_objects import guid as native_guid
-                    guid=native_guid(r);r.unpack('B');position=list(r.unpack('3f'))
-                    if guid in self.units:
-                        self.units[guid]['movement']['position']=position+[self.units[guid]['movement']['position'][3]]
+                    from ..world.creature_movement import parse
+                    spline=parse(body)
+                    if spline and spline['guid'] in self.units:
+                        guid=spline['guid'];spline['observed_at']=p['time'];self.unit_splines[guid]=spline
+                        self.units[guid]['movement']['position']=spline['position']+[self.units[guid]['movement']['position'][3]]
                 elif name=='SMSG_SHOWTAXINODES':
                     _,vendor,source,count=r.unpack('IQII');mask=r.raw(count);r.end()
                     self.taxi={'source':source,'vendor':vendor,'seen_at':p['time'],
@@ -75,7 +76,7 @@ class Observer:
                 elif name=='SMSG_UPDATE_OBJECT':
                     for record in records(body):
                         if record['update_type']==3:
-                            for guid in record['removed']:self.units.pop(guid,None)
+                            for guid in record['removed']:self.units.pop(guid,None);self.unit_splines.pop(guid,None)
                         elif record.get('kind')==3 and record['guid']>>52==0xF13:
                             self.units[record['guid']]=record
                         elif record['update_type']==0 and record['guid'] in self.units:
@@ -84,13 +85,20 @@ class Observer:
                             self.map=record['map'];self.position=list(record['movement']['position']);self.seen_at=p['time']
                             self.player_level=record['fields'].get(INDEX['UNIT_FIELD_LEVEL'],85)
                             self.player_faction=record['fields'].get(INDEX['UNIT_FIELD_FACTIONTEMPLATE'],1)
-                elif name=='SMSG_DESTROY_OBJECT':self.units.pop(r.unpack('Q')[0],None)
+                elif name=='SMSG_DESTROY_OBJECT':
+                    guid=r.unpack('Q')[0];self.units.pop(guid,None);self.unit_splines.pop(guid,None)
         from ..hostile_avoidance import visible_hostiles
         from ..world.gameobjects import modern_guid
         selected=next(({'guid':g,'position':list(u['movement']['position']),
             'health':u['fields'].get(INDEX['UNIT_FIELD_HEALTH'],0),
             'max_health':u['fields'].get(INDEX['UNIT_FIELD_MAXHEALTH'],0)}
             for g,u in self.units.items() if modern_guid(g,u['map'])==self.selected),None)
+        if selected and selected['guid'] in self.unit_splines:
+            from .spline_pose import estimate
+            spline=self.unit_splines[selected['guid']]
+            selected.update(observed_position=selected['position'],position_source='estimated_native_ground_spline',
+                spline_observed_at=spline['observed_at'],
+                position=estimate(spline,time.time())+[selected['position'][3]])
         return {'session':self.session,'map':self.map,'position':self.position,'seen_at':self.seen_at,
             'taxi_menu':self.taxi,'transferring':self.transferring,'taxi_replies':self.taxi_replies,
             'gossip_menu':self.gossip,'selected_unit':selected,'attacking_units':sorted(self.attackers),
