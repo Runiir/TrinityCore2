@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI36 stock equipment-set creation is closed and archive/frame reviewed: 58 JSON receipts and 1150 attributed PNGs verified. One scoped operation brings the checklist to 256/916. Save/reload and native equip successes in failed later roots remain unqualified. Exact source-bound recovery restores gear, original set name and sidebar. UI37 runs a new full save/equip/delete lifecycle, then live damage-modifier and stock appearance checks. One shared native worldserver remains unchanged; new trials use ordinary code-controlled inputs.",
+  "current": "UI37 is closed: full equipment save/equip/delete lifecycle, reload persistence, exact resource/layout restoration and empty stock manager rendering pass. Bridge visibility requests/player flag updates and native damage modifiers pass 841 protocol/auth and 28 sanitizer checks. Two initial reconnect roots failed before world entry; fresh launcher lifetimes and separate reviewed realm/character selection recover both private HDMI-1 actors with observer v55. Native worldserver unchanged. UI37 awaits DVC archive review; UI38 runs fresh live damage and visibility checks. Checklist remains 256/916 until evidence qualification.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
