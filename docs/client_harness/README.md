@@ -148,6 +148,13 @@ directory and PID receipt. Server processes and DB schemas remain shared within 
 isolated lab. Actor names have a strict allowlist; observations must match both the
 native character GUID and its authenticated bridge session.
 
+Future isolated launches pin `gxApi` to `D3D11` and pass `-d3d11` to the
+game in both login modes. UI30's primary recovered from a loading stall after
+that client-only change, with D3D11 loaded and D3D12 absent from its process.
+Its native inventory, money, reputation, talents and spells were preserved;
+neither the bridge nor worldserver restarted for this recovery. This is a
+measured recovery, not a diagnosis of every loading failure.
+
 ```bash
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.actors register --guid 1
 CLIENT442_ACTOR=scout pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.actors provision --character Harnesstwo

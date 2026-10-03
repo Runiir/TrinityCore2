@@ -153,3 +153,53 @@ PID 3428101, start ticks 15075252 and binary SHA-256
 `2882faddd8df9214e634643e821b35c56d464f0470b0fdaaeed1b5b7d3a2ab5a`
 remain unchanged. Other reputation mutations, persistence and remaining player
 interaction families still need their own evidence.
+
+## UI30 persistence, earned standings and At War
+
+`reputation_persist_01` passes watched Stormwind across an ordinary `/reload`,
+then restores the original no-watch sentinel. Native/public total 4165 and
+bar progress 1165/6000 agree. Full session persistence remains a separate scope.
+
+`reputation_combat_01` earns +5 Booty Bay, -22 Bloodsail and +2 for each other
+goblin faction through ordinary melee on an existing Bloodsail Raider. Its
+initial death oracle fails because the stock client deselects the dead victim;
+native exact-victim health zero and death/deselection packets are retained in
+`reputation_combat_oracle_review.json`. The corrected runner follows that exact
+victim after deselection. The failed receipt remains failed. Its next retry
+stalls on a zone-loading screen before sending target or attack inputs; native
+pose and all starting resources are restored. Earned standings are retained.
+
+A primary-only restart then stalls before sending player login. Process
+diagnostics include a waiting VKD3D graphics queue; the DirectX 11 retry enters
+successfully. `d3d11_recovery_review.json` verifies D3D11 loaded, D3D12 absent,
+the complete native baseline preserved and unchanged bridge/worldserver
+lifetimes. This supports the recorded recovery, without establishing that all
+loading stalls share that cause.
+
+`earned_reputation_read_01` verifies all public/native standings, including
+Booty Bay 505 and Bloodsail -6522, but fails inspecting Stormwind because the
+newly visible factions push it below the viewport. The harness now identifies
+the ordered visible catalog slice, uses normal scrollbar buttons to reveal
+the selected row, and restores its original viewport. The failure is retained.
+
+`reputation_atwar_01` finds eligible Booty Bay, but its ordinary At War click
+disconnects with bridge error `truncated value`. Native flags remain 65.
+`reputation_atwar_recovery_01` restores its source public catalog through the
+stock Alliance header and verifies exact native reputation and inventory/money.
+The pinned [CharacterPackets.h](https://github.com/TrinityCore/TrinityCore/blob/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/CharacterPackets.h#L703)
+declares uint16 At War indexes, while inactive and watch requests use uint32.
+The bridge now widens those two-byte indexes to native uint32 and retains their
+bounded public request traces. Watch and inactive formats remain separate.
+The test formerly constructed the same incorrect four-byte input; its corrected
+source-bound case rejects truncation, extra bytes and out-of-range indexes.
+
+The corrected optimized and sanitizer builds share source digest
+`2ebb4ac72d18bc0ba5defe5218d1d9bbf6f0c349c6081bb0b39083c3dd97beec`.
+Optimized binary SHA-256 is
+`043b0f3dcec4a3d55e91c3f1d945a605a86675dd57b5c6c159429b1a26718b62`.
+The full suite passes 731 checks and 19 focused ASan/UBSan checks pass. The
+first commands failed collection (112/2 import errors) because direct `pytest`
+omitted the repository import path; both failed XML results are retained.
+The corrected commands use `python -m pytest` and run the same requested suites.
+Live corrected At War, earned-kill qualification and UI30 checkpointing remain
+open until their own receipts and archived frame reviews pass.
