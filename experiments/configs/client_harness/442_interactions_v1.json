@@ -460,7 +460,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_stock_catalog"
     },
     {
       "id": "currency.close",
@@ -469,7 +470,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_stock_catalog"
     },
     {
       "id": "currency.expand",
@@ -478,7 +480,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_stock_catalog"
     },
     {
       "id": "currency.collapse",
@@ -487,7 +490,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_stock_catalog"
     },
     {
       "id": "currency.inspect_currency",
@@ -496,7 +500,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_stock_catalog"
     },
     {
       "id": "currency.backpack_toggle",
@@ -505,7 +510,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_honor_backpack_roundtrip"
     },
     {
       "id": "currency.unused_toggle",
@@ -514,7 +520,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_honor_unused_roundtrip"
     },
     {
       "id": "currency.gain_currency",
@@ -550,7 +557,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "currency_honor_watch_reload"
     },
     {
       "id": "spellbook.open",
@@ -10205,8 +10213,129 @@
           "action_frame_digests_verified": true
         }
       ]
+    },
+    {
+      "id": "currency_stock_catalog",
+      "operations": [
+        "currency.open",
+        "currency.close",
+        "currency.expand",
+        "currency.collapse",
+        "currency.inspect_currency"
+      ],
+      "scope": "Stock Currencies tab opens and closes on the owned level-85 Human warrior. Public Justice, Conquest and active Honor IDs, names and zero quantities agree with native saved balances. Justice options open; Dungeon and Raid collapse hides Justice and expand restores the complete semantic catalog. Native currency rows, inventory and money are unchanged.",
+      "limits": "Only these zero-balance stock rows, Justice inspection and this category. Other currencies, nonzero amounts, caps, earning/spending and other UI variants remain open. Original Honor-ID and header-oracle failures are retained.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_read_03/episode.json",
+          "sha256": "ddc2b7f123b8814c2b9be5274d4d24bbf3188d7a518e13387c4440f35316dfaa",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "currency.open": "currency_open_pass",
+            "currency.inspect_currency": "currency_inspect_pass",
+            "currency.collapse": "currency_header_pass",
+            "currency.expand": "currency_header_pass",
+            "currency.close": "currency_close_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json",
+          "sha256": "4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "currency_honor_backpack_roundtrip",
+      "operations": [
+        "currency.backpack_toggle"
+      ],
+      "scope": "On the owned level-1 scout, stock Honor Points Show on Backpack enables and renders the watched zero amount in the backpack, then disables. Captured modern uint32 ID/flags and native reversed uint32 flags/ID agree for active Honor 1901 versus native 392. Exact saved flags 0/4/0, complete public/native catalogs, inventory and money restore.",
+      "limits": "One zero-balance Honor watch with an initially empty watched list. Three-watch capacity, shift-click, nonzero amounts and other currency variants remain open. The first request-width disconnect and source-bound reentry are preserved.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_scout_backpack_02/episode.json",
+          "sha256": "ebe6fd02ba5c86b387cd77c01b89f9ed78e81bce49258d60da011a39e1592cdb",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "currency.backpack.change": "currency_flag_pass",
+            "currency.backpack.visible": "currency_backpack_visible_pass",
+            "currency.backpack.restore": "currency_flag_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json",
+          "sha256": "4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "currency_honor_watch_reload",
+      "operations": [
+        "currency.persist"
+      ],
+      "scope": "Ordinary /reload on the owned level-1 scout retains watched Honor Points, exact native flag 4, identity, equipment, money and group/profile state without Lua errors or blocked actions. Stock disable then restores the complete native/public catalog and inventory/money baseline.",
+      "limits": "Watched Honor addon-reload persistence only. Full-session reconnect, other currency mutations and other persistence variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_scout_backpack_02/episode.json",
+          "sha256": "ebe6fd02ba5c86b387cd77c01b89f9ed78e81bce49258d60da011a39e1592cdb",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "currency.persist_reload": "currency_persistence_pass",
+            "currency.backpack.restore": "currency_flag_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json",
+          "sha256": "4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "currency_honor_unused_roundtrip",
+      "operations": [
+        "currency.unused_toggle"
+      ],
+      "scope": "Stock Honor Points Unused checkbox moves the owned level-85 warrior's zero-balance row into Unused, permits ordinary reselection, then restores Player vs. Player placement. Captured modern/native requests agree; exact saved flags 0/8/0, complete native/public catalogs, inventory and money restore.",
+      "limits": "One eligible zero-balance Honor currency on this actor. Other currencies, collapsed destination-category reveal, earning/spending, caps and persistence remain open. The original request-width failure is retained.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_unused_02/episode.json",
+          "sha256": "17127ed939badb0641d7fd8f7cab8d7af4e17d827295857616d309d6c52e3950",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "currency.unused.change": "currency_flag_pass",
+            "currency.unused.reselect": "currency_inspect_pass",
+            "currency.unused.restore": "currency_flag_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json",
+          "sha256": "4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
     }
   ],
-  "qualified_operations": 224,
+  "qualified_operations": 232,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

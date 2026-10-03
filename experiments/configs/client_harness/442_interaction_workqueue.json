@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI30 is closed and DVC archive/frame verified. Four new reputation operations bring the checklist to 224/916; eight qualification/inventory guards pass. Continue UI31 currency panel, exact native/public contents, reversible backpack/unused flags and persistence, then all remaining UI families. Both clients use isolated displays with D3D11; native worldserver unchanged.",
+  "current": "UI31 currency controls are closed and DVC archive/frame verified. Eight new operations bring the checklist to 232/916. Captured installed eight-byte requests replace a mismatched newer five-byte reference; all initial failures remain evidence. Continue UI32 archaeology project solving, earned-fragment spending and completed history, then all remaining UI families. Both clients use isolated D3D11 displays; native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -112,7 +112,11 @@
     "ui30/atwar_deployment_01: bridge-only protocol correction, both v38 clients reenter with intact baselines and unchanged native worldserver",
     "ui30/reputation_atwar_02: modern uint16/native uint32-plus-byte requests and exact Booty Bay flags 65/67/65 agree; native/public/resource baseline restored",
     "ui30/reputation_combat_03: ordinary existing Raider kill earns positive/negative standing, exact native death after stock deselection, public/native packets and standing agree; pose/resources restored and earned standings retained",
-    "ui30/earned_reputation_read_02: public/native standing inspection with ordinary scroll reveal and exact viewport restoration"
+    "ui30/earned_reputation_read_02: public/native standing inspection with ordinary scroll reveal and exact viewport restoration",
+    "ui31/currency_read_03: stock tab open, exact zero-balance names/IDs/quantities, Justice inspection, header collapse/expand and close; native inventory/currency/money unchanged",
+    "ui31/currency_scout_backpack_02: Honor watch enable, rendered backpack count, ordinary reload persistence and disable; full baseline restored",
+    "ui31/currency_unused_02: Honor Unused destination/reselection and restore; modern/native requests and exact saved flags agree",
+    "ui31/currency_corrected_bridge_deployment_01: bridge-only captured uint32/uint32 correction, both v39 reentries preserve baselines; 779 full and 32 focused sanitizer checks pass, original reference-width failures preserved"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

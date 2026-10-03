@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 224 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 232 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -71,17 +71,17 @@ Fixture: `known_factions`.
 
 Fixture: `known_currencies`.
 
-- [ ] `currency.open`
-- [ ] `currency.close`
-- [ ] `currency.expand`
-- [ ] `currency.collapse`
-- [ ] `currency.inspect_currency`
-- [ ] `currency.backpack_toggle`
-- [ ] `currency.unused_toggle`
+- [x] `currency.open` (qualified variant; [evidence](#currency_stock_catalog))
+- [x] `currency.close` (qualified variant; [evidence](#currency_stock_catalog))
+- [x] `currency.expand` (qualified variant; [evidence](#currency_stock_catalog))
+- [x] `currency.collapse` (qualified variant; [evidence](#currency_stock_catalog))
+- [x] `currency.inspect_currency` (qualified variant; [evidence](#currency_stock_catalog))
+- [x] `currency.backpack_toggle` (qualified variant; [evidence](#currency_honor_backpack_roundtrip))
+- [x] `currency.unused_toggle` (qualified variant; [evidence](#currency_honor_unused_roundtrip))
 - [ ] `currency.gain_currency`
 - [ ] `currency.spend_currency`
 - [ ] `currency.weekly_cap`
-- [ ] `currency.persist`
+- [x] `currency.persist` (qualified variant; [evidence](#currency_honor_watch_reload))
 
 ## spellbook
 
@@ -1736,3 +1736,43 @@ Remaining limits: Only this ordinary kill and owned Human warrior. Fixture pose 
 - [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_combat_03/episode.json`, SHA-256 `4d14717d628b84d97d81e92a9c5e1b753e74708eae19bc9f9ade1515169047b3`.
   Checked cases: `reputation.combat_target` (reputation_target_pass), `reputation.combat_kill` (reputation_kill_pass).
 - [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_outcome_visual_review.json`, SHA-256 `2dcd8468b4c4be843faa462aa710d227d9c13c08d9b985760304ff674df48413`.
+
+### currency_stock_catalog
+
+Stock Currencies tab opens and closes on the owned level-85 Human warrior. Public Justice, Conquest and active Honor IDs, names and zero quantities agree with native saved balances. Justice options open; Dungeon and Raid collapse hides Justice and expand restores the complete semantic catalog. Native currency rows, inventory and money are unchanged.
+
+Remaining limits: Only these zero-balance stock rows, Justice inspection and this category. Other currencies, nonzero amounts, caps, earning/spending and other UI variants remain open. Original Honor-ID and header-oracle failures are retained.
+
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_read_03/episode.json`, SHA-256 `ddc2b7f123b8814c2b9be5274d4d24bbf3188d7a518e13387c4440f35316dfaa`.
+  Checked cases: `currency.open` (currency_open_pass), `currency.inspect_currency` (currency_inspect_pass), `currency.collapse` (currency_header_pass), `currency.expand` (currency_header_pass), `currency.close` (currency_close_pass).
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json`, SHA-256 `4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02`.
+
+### currency_honor_backpack_roundtrip
+
+On the owned level-1 scout, stock Honor Points Show on Backpack enables and renders the watched zero amount in the backpack, then disables. Captured modern uint32 ID/flags and native reversed uint32 flags/ID agree for active Honor 1901 versus native 392. Exact saved flags 0/4/0, complete public/native catalogs, inventory and money restore.
+
+Remaining limits: One zero-balance Honor watch with an initially empty watched list. Three-watch capacity, shift-click, nonzero amounts and other currency variants remain open. The first request-width disconnect and source-bound reentry are preserved.
+
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_scout_backpack_02/episode.json`, SHA-256 `ebe6fd02ba5c86b387cd77c01b89f9ed78e81bce49258d60da011a39e1592cdb`.
+  Checked cases: `currency.backpack.change` (currency_flag_pass), `currency.backpack.visible` (currency_backpack_visible_pass), `currency.backpack.restore` (currency_flag_pass).
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json`, SHA-256 `4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02`.
+
+### currency_honor_watch_reload
+
+Ordinary /reload on the owned level-1 scout retains watched Honor Points, exact native flag 4, identity, equipment, money and group/profile state without Lua errors or blocked actions. Stock disable then restores the complete native/public catalog and inventory/money baseline.
+
+Remaining limits: Watched Honor addon-reload persistence only. Full-session reconnect, other currency mutations and other persistence variants remain open.
+
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_scout_backpack_02/episode.json`, SHA-256 `ebe6fd02ba5c86b387cd77c01b89f9ed78e81bce49258d60da011a39e1592cdb`.
+  Checked cases: `currency.persist_reload` (currency_persistence_pass), `currency.backpack.restore` (currency_flag_pass).
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json`, SHA-256 `4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02`.
+
+### currency_honor_unused_roundtrip
+
+Stock Honor Points Unused checkbox moves the owned level-85 warrior's zero-balance row into Unused, permits ordinary reselection, then restores Player vs. Player placement. Captured modern/native requests agree; exact saved flags 0/8/0, complete native/public catalogs, inventory and money restore.
+
+Remaining limits: One eligible zero-balance Honor currency on this actor. Other currencies, collapsed destination-category reveal, earning/spending, caps and persistence remain open. The original request-width failure is retained.
+
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_unused_02/episode.json`, SHA-256 `17127ed939badb0641d7fd8f7cab8d7af4e17d827295857616d309d6c52e3950`.
+  Checked cases: `currency.unused.change` (currency_flag_pass), `currency.unused.reselect` (currency_inspect_pass), `currency.unused.restore` (currency_flag_pass).
+- [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json`, SHA-256 `4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02`.

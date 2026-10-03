@@ -58,13 +58,12 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_currency_flags --output <new-owned-directory> --kind unused
 ```
 
-Only `currency_bridge_deployment_01` replaces the bridge. Observer v39 uses
+The two currency bridge deployments replace only the bridge. Observer v39 uses
 ordinary reload and public API reads without gameplay mutations. Currency
 oracles compare complete saved rows and original inventory/money. Stock inputs
 must restore changed flags, headers and the visible catalog; successful checkbox
 rendering alone is insufficient. Earning/spending, nonzero caps, PvP, other
-currencies and full-session persistence remain separate requirements. Closed
-results and DVC-qualified scopes will be added after their live trials.
+currencies and full-session persistence remain separate requirements.
 
 The first deployment's flag adapter was corrected in
 `currency_corrected_bridge_deployment_01`. Source revision is
@@ -91,3 +90,10 @@ restored. Screenshots of inspection, collapsed/expanded headers, watched bag,
 unused destination and restored checkboxes are reviewed. These are bounded
 zero-balance stock controls; earning, spending, nonzero caps and full-session
 persistence remain open.
+
+The closed UI31 batch is remote-verified in
+[442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc),
+archive SHA-256 `e58360fb8aeeecab68debc0e2f6e72e73e96740af884c44d41dceb36128bc15a`.
+Eight JSON receipts/reviews and 54 action/visual frame hashes were checked by
+streaming the archive. Four scoped records qualify eight new operations,
+bringing the checklist to 232/916. All other currency variants remain open.

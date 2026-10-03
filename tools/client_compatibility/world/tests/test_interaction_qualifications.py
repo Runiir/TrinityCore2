@@ -16,10 +16,13 @@ def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidenc
             'quests.giver_trivial_marker','reputation.inspect_standing','reputation.watched_faction',
             'reputation.collapse','reputation.expand','reputation.inactive_toggle',
             'reputation.persist','reputation.at_war_toggle',
-            'reputation.gain_standing','reputation.lose_standing']:
+            'reputation.gain_standing','reputation.lose_standing',
+            'currency.open','currency.close','currency.expand','currency.collapse',
+            'currency.inspect_currency','currency.backpack_toggle','currency.unused_toggle','currency.persist']:
         assert by_id[key]['qualification'] and '- [x] `'+key+'`' in render(data)
     for key in ['raid.assistant_promote','party.full_group_error','archaeology.solve_project',
-            'quests.persist','talents.glyph_replace']:
+            'quests.persist','talents.glyph_replace','currency.gain_currency',
+            'currency.spend_currency','currency.weekly_cap']:
         assert 'qualification' not in by_id[key] and '- [ ] `'+key+'`' in render(data)
     assert data['qualified_operations']==sum('qualification' in case for case in data['cases'])
     assert all(record['scope'] and record['limits'] and record['evidence'] for record in data['qualification_records'])
