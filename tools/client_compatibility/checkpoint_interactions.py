@@ -128,7 +128,8 @@ def checkpoint(directory,name):
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
     paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',lab.ROOT/'reference/ui-442',
         lab.ROOT/'build/native_bridge/build_receipt.json',lab.ROOT/'build/native_bridge_asan/build_receipt.json',
-        lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec']
+        lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec',
+        lab.ROOT/'bin/worldserver']
     manifest=[]
     for path in paths:
         for file in sorted(path.rglob('*')) if path.is_dir() else [path]:
