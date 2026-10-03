@@ -199,16 +199,16 @@ def restore_failed(out,source,points):
         report['finished_at']=time.time();lab.private_write(out/'cohort.json',json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
 
 
-def suite(out,mode,points):
+def suite(out,mode,points,controller='code'):
     out.mkdir(exist_ok=False,parents=True,mode=0o700);trials={};baseline={}
-    cohort={'schema':'client442_owned_mail_roundtrip_v1','started_at':time.time(),'mode':mode,'completed':False,'failure':None}
+    cohort={'schema':'client442_owned_mail_roundtrip_v1','started_at':time.time(),'mode':mode,'controller':controller,'completed':False,'failure':None}
     subject='442 UI '+mode+' '+uuid.uuid4().hex[:8];reply_subject='RE: '+subject
     body='Owned compatibility letter. '+mode.capitalize()+' trial.';reply_body='Owned reply received. Mail controls verified.'
     cohort.update(subject=subject,reply_subject=reply_subject,body=body,reply_body=reply_body)
     try:
         for name in ['primary','scout']:
             with actor(name):
-                t=trials[name]=Trial(out/name);actors.session_entry(t.fixture);t.clean_panels()
+                t=trials[name]=Trial(out/name,controller=controller);actors.session_entry(t.fixture);t.clean_panels()
                 baseline[name]=mailbox_state(t.fixture['guid']);t.receipt['mailbox_baseline']=baseline[name];t.persist()
         with lab.connection() as c,c.cursor() as q:
             q.execute("SELECT id FROM client442_characters.mail WHERE receiver IN (1,2) AND subject LIKE '%%442 UI %%'")
@@ -277,6 +277,7 @@ def suite(out,mode,points):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--mode',choices=['return','reply']);p.add_argument('--restore-source',type=Path)
+    p.add_argument('--controller',choices=['code','laya'],default='code')
     p.add_argument('--primary-point',type=int,nargs=2,required=True);p.add_argument('--scout-point',type=int,nargs=2,required=True);a=p.parse_args()
     points={'primary':a.primary_point,'scout':a.scout_point}
     if any(not 0<=v<bound for point in points.values() for v,bound in zip(point,[1280,720])):p.error('mailbox point is outside the owned window')
@@ -285,4 +286,4 @@ if __name__=='__main__':
         restore_failed(a.output,a.restore_source,points)
     else:
         if not a.mode:p.error('new trial requires a mode')
-        suite(a.output,a.mode,points)
+        suite(a.output,a.mode,points,a.controller)

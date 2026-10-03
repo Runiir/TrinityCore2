@@ -68,7 +68,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--point',type=int,nargs=2);p.add_argument('--stage-only',action='store_true');a=p.parse_args()
     if not a.stage_only and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):p.error('requires a bounded observed auctioneer point')
-    t=Trial(a.output,controller='code' if a.stage_only else 'laya')
+    t=Trial(a.output,controller='code')
     try:suite(t,a.point,a.stage_only);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}))
