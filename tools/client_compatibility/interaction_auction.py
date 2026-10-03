@@ -107,13 +107,12 @@ def suite(t,point,stage_only,query=None):
                 lambda b,a,s:query_result(t,a,since,'browse') if s else {'status':'controller_failure'}),'auction_catalog_pass')
         if search_control:
             restore_search(t,search_control,search_before);search_control=None
-        require(t.step('auction.close','Close the auction house.',{
-            'close':{'kind':'key','value':'Escape','description':'Close the auction house with Escape.'},
-            'map':{'kind':'key','value':'m','description':'Open the world map.'},
-            'character':{'kind':'key','value':'c','description':'Open equipment.'}},
-            lambda b,a,s:{'status':'auction_close_pass' if s=='close' and not any(p in a['panels'] for p in ['AuctionFrame','AuctionHouseFrame']) else
-                        ('controller_failure' if s!='close' else 'client_or_protocol_failure')},
-            diagnostic_action='close'),'auction_close_pass')
+        # Escape first clears EditBox focus after search restoration. Exercise
+        # the visible stock close button so field focus cannot mask this check.
+        require(click_case(t,'auction.close','Close the auction house.',
+            lambda c:c['name'] in ['AuctionHouseFrameCloseButton','AuctionFrameCloseButton'],
+            lambda b,a,s:{'status':'auction_close_pass' if s and not any(p in a['panels'] for p in ['AuctionFrame','AuctionHouseFrame']) else
+                        ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_close_pass')
     finally:
         cleanup_errors=[]
         try:
