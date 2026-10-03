@@ -34,6 +34,7 @@ Array Protocol::modern_guid(std::uint64_t native, unsigned map)
         return {native, player_high()};
     auto type = high == 0xf11   ? 11ull
                 : high == 0xf13 ? 8ull
+                : high == 0xf15 ? 9ull
                                 : throw std::runtime_error("unsupported visible-object identity");
     auto entry = (native >> 32) & 0xfffff;
     return {native & 0xffffffff,

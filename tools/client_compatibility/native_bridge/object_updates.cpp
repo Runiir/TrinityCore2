@@ -107,7 +107,7 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
             blocks.push_back(gameobject_block(record));
             owner.visible_gameobjects[guid] = record;
         }
-        else if (kind == 3 && guid >> 52 == 0xf13)
+        else if (kind == 3 && (guid >> 52 == 0xf13 || guid >> 52 == 0xf15))
         {
             blocks.push_back(unit_block(record, owner.character));
             owner.visible_units[guid] = record;

@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "native_transport.hpp"
 #include "guild_fields.hpp"
 
 namespace bridge
@@ -296,17 +297,21 @@ Bytes Protocol::unit_block(Value const &s, Value const &character) const
 {
     auto const &m = get(s, "movement");
     auto identity = modern_guid(integer(get(s, "guid")), integer(get(s, "map")));
+    auto const &transport=get(m,"transport"), &vehicle=get(m,"vehicle");
     Writer w;
     w.pack("B", {1}).guid(identity).pack("B", {5});
     for (unsigned i = 0; i < 19; ++i)
-        w.bits(i == 0 || i == 4, 1);
+        w.bits(i == 0 || i == 4 || (i==9 && vehicle.is_object()), 1);
     w.guid(identity).pack("IIII",
                           {get(m, "flags"), modern_flags2(integer(get(m, "flags2"))), 0, get(m, "time")});
-    w.pack("4f", get(m, "position").as_array()).pack("ffII", {get(m, "pitch"), 0, 0, 0}).bits(0, 8);
+    w.pack("4f", get(m, "position").as_array()).pack("ffII", {get(m, "pitch"), 0, 0, 0})
+        .bits(0,1).bits(transport.is_object(),1).bits(0,6).flush();
+    if(transport.is_object())transport_info(w,transport,integer(get(s,"map")));
     w.pack("9f", get(m, "speeds").as_array())
         .pack("If17f", {0, 1, 2, 65, 1, 3, 10, 100, 90, 140, 180, 360, 90, 270, 30, 80, 2.75, 7, .4})
         .bits(0, 1)
         .pack("I", {0});
+    if(vehicle.is_object())w.pack("If",{get(vehicle,"id"),get(vehicle,"facing")});
     Writer data;
     data.pack("B", {0}).raw(Bytes{0, 5, 255, 1});
     auto values = field_values(s, character);

@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "native_transport.hpp"
 
 namespace bridge
 {
@@ -15,7 +16,10 @@ Bytes Protocol::public_player_block(Value const &snapshot,Value const &character
     w.pack("B",{1}).guid(guid,player_high()).pack("B",{6});
     for(unsigned i=0;i<19;++i)w.bits(i==0 || i==4,1);
     w.guid(guid,player_high()).pack("IIII",{get(move,"flags"),modern_flags2(integer(get(move,"flags2"))),0,get(move,"time")});
-    w.pack("4f",get(move,"position").as_array()).pack("ffII",{get(move,"pitch"),0,0,0}).bits(0,8);
+    auto const &transport=get(move,"transport");
+    w.pack("4f",get(move,"position").as_array()).pack("ffII",{get(move,"pitch"),0,0,0})
+        .bits(0,1).bits(transport.is_object(),1).bits(0,6).flush();
+    if(transport.is_object())transport_info(w,transport,integer(get(snapshot,"map")));
     w.pack("9f",get(move,"speeds").as_array())
         .pack("If17f",{0,1,2,65,1,3,10,100,90,140,180,360,90,270,30,80,2.75,7,.4})
         .bits(0,1).pack("I",{0});

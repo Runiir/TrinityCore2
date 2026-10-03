@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "native_transport.hpp"
 #include <array>
 
 namespace bridge
@@ -47,8 +48,7 @@ std::pair<Value, Value> movement(Reader &r)
     for (auto n : {"birth", "transport", "stationary", "area", "portals", "time"})
         flags[n] = r.bits(1);
     auto f = [&](auto name) { return truth(flags.at(name)); };
-    if (f("transport"))
-        throw std::runtime_error("unsupported native object transport");
+    NativeTransport unit_transport,go_transport;bool transported=false;
     Object m{{"flags", 0}, {"flags2", 0}, {"position", Array{0, 0, 0, 0}}, {"pitch", 0}, {"time", 0}};
     std::array<bool, 8> present{};
     std::array<bool, 8> victim{};
@@ -71,10 +71,9 @@ std::pair<Value, Value> movement(Reader &r)
         fall = r.bits(1);
         no_elevation = r.bits(1);
         present[5] = r.bits(1);
-        auto transport = r.bits(1);
+        transported = r.bits(1);
         no_time = r.bits(1);
-        if (transport)
-            throw std::runtime_error("unsupported native object transport");
+        if (transported)unit_transport.bits(r);
         present[4] = r.bits(1);
         if (spline)
         {
@@ -102,6 +101,7 @@ std::pair<Value, Value> movement(Reader &r)
         if (!r.bits(1))
             m["flags2"] = r.bits(12);
     }
+    if(f("transport"))go_transport.bits(r,true);
     if (f("victim"))
         for (auto &v : victim)
             v = r.bits(1);
@@ -153,6 +153,7 @@ std::pair<Value, Value> movement(Reader &r)
         }
         auto z = r.take<float>();
         octet(5);
+        if(transported)m["transport"]=unit_transport.read(r);
         auto x = r.take<float>();
         auto pitch_rate = r.take<float>();
         octet(3);
@@ -177,7 +178,11 @@ std::pair<Value, Value> movement(Reader &r)
         m["speeds"] = Array{walk, run, run_back, swim, swim_back, flight, flight_back, turn, pitch_rate};
     }
     if (f("vehicle"))
-        r.raw(8);
+    {
+        auto facing=r.take<float>();auto id=r.take<std::uint32_t>();
+        m["vehicle"]=Object{{"id",id},{"facing",facing}};
+    }
+    if(f("transport"))m["transport"]=go_transport.read(r,true);
     if (f("rotation"))
         m["rotation"] = r.take<std::uint64_t>();
     if (f("area"))
