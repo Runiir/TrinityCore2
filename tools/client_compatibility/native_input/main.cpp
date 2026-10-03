@@ -16,6 +16,18 @@
 using namespace bridge;
 namespace
 {
+std::int64_t input_integer(Value const &request,char const *name)
+{
+    auto const &value=get(request,name);
+    if(!value.is_int64() && !value.is_uint64())throw std::runtime_error("input field requires an integer");
+    return signed_integer(value);
+}
+bool input_pressed(Value const &request)
+{
+    auto const &value=get(request,"pressed");
+    if(!value.is_bool())throw std::runtime_error("input pressed field requires a boolean");
+    return value.as_bool();
+}
 std::string start_ticks(pid_t pid)
 {
     std::ifstream f("/proc/"+std::to_string(pid)+"/stat");std::string line,word;
@@ -117,13 +129,13 @@ struct Sender
         auto kind=str(get(request,"kind"));
         if(kind=="move")
         {
-            auto x=signed_integer(get(request,"x")),y=signed_integer(get(request,"y"));
+            auto x=input_integer(request,"x"),y=input_integer(request,"y");
             if(x<0 || x>=1280 || y<0 || y>=720)throw std::runtime_error("pointer is outside the owned client");
             ei_device_pointer_motion_absolute(device,x,y);
         }
         else if(kind=="key")
         {
-            auto code=integer(get(request,"code"));bool pressed=truth(get(request,"pressed"));
+            auto code=input_integer(request,"code");bool pressed=input_pressed(request);
             if(code<8 || code>255)throw std::runtime_error("invalid XKB keycode");
             unsigned key=code-8;
             if(pressed){if(keys.insert(key).second)ei_device_keyboard_key(device,key,true);}
@@ -131,7 +143,7 @@ struct Sender
         }
         else if(kind=="button")
         {
-            auto code=integer(get(request,"code"));bool pressed=truth(get(request,"pressed"));
+            auto code=input_integer(request,"code");bool pressed=input_pressed(request);
             if(code<1 || code>5)throw std::runtime_error("unsupported mouse button");
             if(code>=4)
             {
