@@ -49,3 +49,16 @@ def test_modern_talent_learning_widens_rank_without_adding_a_spec_or_allocation(
         body=struct.pack('<i',tree)
         assert call(codec,'CMSG_SET_PRIMARY_TALENT_TREE',body,'talent_request')==['CMSG_SET_PRIMARY_TALENT_TREE',body.hex()]
     for tree in [-1,3]:assert 'error' in call(codec,'CMSG_SET_PRIMARY_TALENT_TREE',struct.pack('<i',tree),'talent_request')
+
+
+def test_modern_talent_preview_reorders_header_and_preserves_all_rank_widths(codec):
+    for tree in [-1,0,1,2]:
+        for rows in [[],[122,4],[122,2,124,0]]:
+            body=struct.pack('<Ii',len(rows)//2,tree)+struct.pack('<'+'I'*len(rows),*rows)
+            expected=struct.pack('<iI',tree,len(rows)//2)+body[8:]
+            assert call(codec,'CMSG_LEARN_PREVIEW_TALENTS',body,'talent_request')==['CMSG_LEARN_PREVIEW_TALENTS',expected.hex()]
+            for size in range(len(body)):assert 'error' in call(codec,'CMSG_LEARN_PREVIEW_TALENTS',body[:size],'talent_request')
+            assert 'error' in call(codec,'CMSG_LEARN_PREVIEW_TALENTS',body+b'x','talent_request')
+    for values in [(71,0),(0,3),(0,-2),(1,0,0,0),(1,0,122,5),(2,0,122,0,122,1)]:
+        body=struct.pack('<Ii',*values[:2])+struct.pack('<'+'I'*(len(values)-2),*values[2:])
+        assert 'error' in call(codec,'CMSG_LEARN_PREVIEW_TALENTS',body,'talent_request')

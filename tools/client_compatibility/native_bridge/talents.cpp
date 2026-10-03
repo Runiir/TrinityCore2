@@ -41,6 +41,22 @@ Reply talent_response(std::string const &name,View body)
 }
 Reply talent_request(std::string const &name,View body)
 {
+    if(name=="CMSG_LEARN_PREVIEW_TALENTS")
+    {
+        // Modern reverses the count/tab header. Preview ranks remain uint32;
+        // only the separate LearnTalent opcode uses a modern uint16 rank.
+        Reader r(body);auto count=r.take<std::uint32_t>();auto tree=r.take<std::int32_t>();
+        if(count>70 || tree< -1 || tree>2)throw std::runtime_error("invalid Classic talent preview header");
+        Array rows;std::set<std::uint32_t> seen;
+        for(unsigned i=0;i<count;++i)
+        {
+            auto id=r.take<std::uint32_t>(),rank=r.take<std::uint32_t>();
+            if(!id || id>0x7fffffff || rank>4 || !seen.insert(id).second)
+                throw std::runtime_error("invalid Classic talent preview allocation");
+            rows.push_back(id);rows.push_back(rank);
+        }
+        r.end();return Packet{name,Writer().pack("iI",{tree,count}).pack(std::string(count*2,'I'),rows).finish()};
+    }
     if(name=="CMSG_LEARN_TALENT")
     {
         Reader r(body);auto id=r.take<std::uint32_t>();auto rank=r.take<std::uint16_t>();r.end();
