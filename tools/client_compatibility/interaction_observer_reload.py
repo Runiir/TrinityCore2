@@ -10,7 +10,7 @@ from .interaction_social import actor
 from .interaction_macros import require
 
 
-def suite(out,version):
+def reload(out,version):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=lab.owned_process('worldserver');bridge=lab.owned_process('modern_world')
     identity=lambda p:{key:p[key] for key in ['pid','start_ticks']}
@@ -54,4 +54,4 @@ def suite(out,version):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--version',type=int,required=True);a=p.parse_args();suite(a.output,a.version)
+    p.add_argument('--version',type=int,required=True);a=p.parse_args();reload(a.output,a.version)
