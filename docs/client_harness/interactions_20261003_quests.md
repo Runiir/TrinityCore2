@@ -19,11 +19,17 @@ restarted; the observer also has a reload-only deployment.
 
 Native questgiver status uses a 64-bit GUID and 32-bit Classic status flags.
 Modern Classic uses its packed 128-bit GUID and 64-bit flags. The adapter keeps
-the Classic flag meanings, translates single/multiple responses and requires
+the Classic flag meanings in this historical batch, translates single/multiple responses and requires
 visible questgiver identity. It rejects unknown bits, duplicates and malformed
 lengths. Tracked-query semantics remain unimplemented. The native greeting list
 also receives a separate modern-layout adapter, including explicit repeatable
 and title-length fields.
+
+**UI24 corrects the status meanings above.** Keeping the old numeric bits was
+wrong: native available `0x100` renders a blue repeatable marker in 60895, and
+native trivial `0x4` addresses an unrelated modern category. The newer bridge
+translates semantic categories into the modern 64-bit mask. Acceptance and
+abandonment receipts from UI23 remain valid; they do not qualify marker rendering.
 
 The enabled Accept click in `manual_quest_accept_06` reaches native opcode 27447,
 but raises a ByteBufferException. The bridge sends 13 bytes while the native

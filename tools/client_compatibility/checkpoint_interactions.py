@@ -137,7 +137,7 @@ def checkpoint(directory,name):
         'qualified_fixture_operations':plan.get('qualified_operations',0),
         'excluded':['credentials','authentication bodies','account-cache bodies','DB contents','Wine/CASC caches']}
     paths=[directory,lab.ROOT/'reference/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2',
-        lab.ROOT/'reference/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2',lab.ROOT/'reference/ui-442',
+        lab.ROOT/'reference/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2',lab.ROOT/'reference/ui-442',lab.ROOT/'reference/local-60895',
         lab.ROOT/'build/native_bridge/build_receipt.json',lab.ROOT/'build/native_bridge_asan/build_receipt.json',
         lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec',
         lab.ROOT/'bin/worldserver']
