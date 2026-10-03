@@ -47,6 +47,35 @@ character-selection frame before Enter. Its first reentry preserves both native
 and public state, including the set, but the packet observer was primed after
 login and discarded the captured login events. That harness failure is retained;
 the observer is corrected to prime before input and a fresh whole trial is run.
+`equipment_set_reenter_02` passes every public/native baseline, ordinary login,
+native list and translated modern list check. Its reviewed stock manager shows
+the preserved set after the complete logout and reentry.
+
+The shipped edit button opens a context menu before the name/icon dialog. Its
+builder calls the absent `GetNumSpecializations` API and passes the edit button
+where the popup expects its owning set row. A read-only probe finds no legacy
+count/info API before or after ordinary talent-window loading. Observer v48
+records those capabilities; v49 records the compatibility menu's status.
+`Client442Compatibility/EquipmentMenu.lua` repairs the basic name/icon entry for
+this exact client build and API absence. It keeps the stock dialog and gameplay
+API. Specialization assignment stays unavailable and unqualified.
+
+`equipment_set_roundtrip_02` saves the normal edited name HarnessSaved, preserves
+set identity and every slot, survives interface reload, then equips the saved set
+to restore a normally unequipped helmet. The delete click does not open its
+confirmation in the first observation, so the episode remains failed. Recovery
+attempts also retain early panel-check failures and one diagnostic command whose
+missing leading slash sent `tcui equipment` as ordinary chat. They do not qualify
+new operations. The corrected runner waits for requested panels without replaying
+inputs, settles the hover-only buttons, matches diagnostic chat to the normal
+background transport timing, and explicitly verifies the original sidebar layout.
+The later recovery proves one Character click appears after three pending
+snapshots without another click; this does not classify every earlier miss.
+
+Two additional optimized equipment guards and the same two ASan/UBSan guards
+pass for multi-record catalog bit boundaries and bounded FIFO use attribution.
+Eight existing input/cleanup guards pass. These are protocol and harness checks;
+they do not replace the remaining live set deletion and complete roundtrip.
 
 Reproduction uses new owned output directories:
 
