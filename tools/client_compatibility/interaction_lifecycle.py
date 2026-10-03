@@ -43,7 +43,8 @@ def request_logout(trial, packets, label, cancel):
         'menu': {'kind': 'key', 'value': 'Escape', 'description': 'Press Escape to open the game menu.'},
         'map': {'kind': 'key', 'value': 'm', 'description': 'Open the world map.'},
         'bags': {'kind': 'key', 'value': 'b', 'description': 'Open the backpack.'}},
-        lambda b, a, s: {'status': 'panel_open_pass' if 'GameMenuFrame' in a['panels'] else 'controller_failure'}),
+        lambda b, a, s: {'status': 'panel_open_pass' if 'GameMenuFrame' in a['panels'] else 'controller_failure'},
+        diagnostic_action='menu'),
         'panel_open_pass')
     started = time.time()
 
@@ -73,7 +74,8 @@ def request_logout(trial, packets, label, cancel):
     require(trial.step('lifecycle.logout_cancel', 'Cancel the logout countdown and stay on this character.', {
         'cancel': {'kind': 'key', 'value': 'Escape', 'description': 'Press Escape to cancel the logout countdown.'},
         'map': {'kind': 'key', 'value': 'm', 'description': 'Open the world map.'},
-        'bags': {'kind': 'key', 'value': 'b', 'description': 'Open the backpack.'}}, cancelled), 'logout_cancel_pass')
+        'bags': {'kind': 'key', 'value': 'b', 'description': 'Open the backpack.'}}, cancelled,
+        diagnostic_action='cancel'), 'logout_cancel_pass')
     trial.clean_panels()
     return started
 
