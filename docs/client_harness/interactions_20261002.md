@@ -1011,3 +1011,9 @@ worldserver PID 3123698/start ticks 13177436 remains unchanged. Player-to-player
 send, reply/return, COD, text-copy, invoices, gems and other attachment variants
 remain open. Successful console fixtures do not qualify sender postage or
 delivery semantics.
+
+UI16 is closed as `442_interactions_20261003_17.tar.gz.dvc`: 234,721,648 bytes,
+SHA-256 `dd2e2278896534af9e69c82a88646231edf51606355f09ea400683cd94aec9c2`.
+After remote verification, 122 raw frames (236,942,986 bytes) and the archive's
+local workspace/cache copies are removed. The small receipts remain available
+without retaining the raw recordings locally.
