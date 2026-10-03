@@ -2,6 +2,7 @@
 #include "fields.hpp"
 #include "party_state.hpp"
 #include "raid_markers.hpp"
+#include "equipment_sets.hpp"
 #include <deque>
 #include <array>
 #include <functional>
@@ -35,6 +36,7 @@ struct State
     unsigned party_flags=0, party_member_flags=0;
     std::array<std::uint32_t,17> account_times{};
     Array action_buttons;
+    EquipmentSets equipment_sets;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;

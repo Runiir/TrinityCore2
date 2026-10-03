@@ -137,6 +137,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     }
     if((reply=research_history(state,name,body)))
     {send(*reply);co_return;}
+    if((reply=equipment_response(state,name,body)))
+    {send(*reply);co_return;}
     if((reply=protocol.inventory_response(name,body)))
     {send(*reply);co_return;}
     if((reply=protocol.inspect_response(state,name,body)))

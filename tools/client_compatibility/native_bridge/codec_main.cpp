@@ -339,6 +339,10 @@ int main(int argc, char **argv)
                                 reply = Protocol::social_response(name, body);
                             else if (fn == "party_request")
                                 reply = Protocol::party_request(name, body);
+                            else if(fn=="equipment_request")
+                                reply=equipment_request(state,name,body);
+                            else if(fn=="equipment_response")
+                                reply=equipment_response(state,name,body);
                             else if(fn=="inventory_request")
                                 reply=Protocol::inventory_request(state,name,body);
                             else if(fn=="bank_request")

@@ -148,6 +148,10 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     {
         service.events.event("late_party_query_ignored",{{"session",owner.id},{"name",name}});return;
     }
+    if(auto request=equipment_request(state,name,body))
+    {
+        require_world();native_send(*request);return;
+    }
     if(auto request=Protocol::inventory_request(state,name,body))
     {
         require_world();native_send(*request);return;
