@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-907 operation contracts across 45 families. 187 have a qualified fixture variant; the rest remain pending.
+907 operation contracts across 45 families. 190 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -116,7 +116,7 @@ Fixture: `class_variants`.
 - [ ] `talents.dual_spec`
 - [ ] `talents.switch_spec`
 - [ ] `talents.inspect_talents`
-- [ ] `talents.glyph_open`
+- [x] `talents.glyph_open` (qualified variant; [evidence](#glyph_socket_panel))
 - [ ] `talents.glyph_learn`
 - [ ] `talents.glyph_apply`
 - [ ] `talents.glyph_remove`
@@ -284,7 +284,7 @@ Fixture: `quest_variants`.
 - [ ] `quests.share`
 - [x] `quests.accept` (qualified variant; [evidence](#manual_quest_controls))
 - [x] `quests.decline` (qualified variant; [evidence](#manual_quest_controls))
-- [ ] `quests.progress`
+- [x] `quests.progress` (qualified variant; [evidence](#ordinary_quest_kill_progress))
 - [ ] `quests.complete`
 - [ ] `quests.choose_reward`
 - [ ] `quests.reward_item`
@@ -297,7 +297,7 @@ Fixture: `quest_variants`.
 - [ ] `quests.auto_complete`
 - [ ] `quests.unavailable_prerequisite`
 - [ ] `quests.persist`
-- [ ] `quests.giver_available_marker`
+- [x] `quests.giver_available_marker` (qualified variant; [evidence](#available_quest_marker))
 - [ ] `quests.giver_trivial_marker`
 - [ ] `quests.giver_incomplete_marker`
 - [ ] `quests.giver_complete_marker`
@@ -1551,3 +1551,29 @@ Remaining limits: Code-controlled fixture inputs qualify client behavior. Object
   Checked cases: `quests.manual_accept` (quest_manual_accept_pass), `quests.manual_collapse` (quest_zone_collapse_pass), `quests.manual_abandon_cancel` (quest_abandon_cancel_pass), `quests.manual_read_log` (quest_log_details_pass), `quests.manual_abandon_confirm` (quest_abandon_pass).
 - [442_interactions_20261003_24.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_24.tar.gz.dvc), member `evidence/client_interactions_20261003_ui23/manual_quest_decline_12/episode.json`, SHA-256 `56635a814a344dd1d2f7d3d53b2f9d78edfc482b749a7138df0b67781b33b23e`.
   Checked cases: `quests.manual_decline` (quest_manual_decline_pass).
+
+### glyph_socket_panel
+
+Stock glyph panel opens with nine correctly cropped enabled Prime/Major/Minor sockets; native talent/glyph state and inventory/money remain unchanged.
+
+Remaining limits: Application, removal, learning, tooltips, other classes and level/locked variants remain open.
+
+- [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json`, SHA-256 `b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58`.
+  Checked cases: `talents.glyph_open_repaired` (glyph_panel_pass).
+
+### available_quest_marker
+
+The level-one scout sees Marshal McBride with a yellow available quest marker after native status 256 is semantically translated to modern 0x400000; reviewed before/after screenshots and captured packets identify the same giver.
+
+Remaining limits: Trivial, incomplete, completed, repeatable, unavailable, tracked and other giver variants remain open.
+
+- [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/marker_visual_review.json`, SHA-256 `066daa557f0e7c6fe4c851e0d30188ffca115150e37ebea8031388f1d69d51f1`.
+
+### ordinary_quest_kill_progress
+
+Ordinary melee kills one existing Prowler after manual quest 52 acceptance; native and addon-visible wolf objective counts both advance from 0/8 to 1/8. Normal abandonment restores native quest, inventory, money and pose baselines.
+
+Remaining limits: Fixture teleports do not qualify navigation. This checks one kill objective counter, not progress notification, complete objectives, rewards, other objective types or learned autonomy.
+
+- [442_interactions_20261003_25.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc), member `evidence/client_interactions_20261003_ui24/quest_progress_04/episode.json`, SHA-256 `487b5b1539e8acdc484e97b6b732f3528051dd5ae245984615ae1973a8fc9a02`.
+  Checked cases: `quests.progress_kill` (quest_progress_pass).

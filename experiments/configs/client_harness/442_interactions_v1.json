@@ -770,7 +770,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "glyph_socket_panel"
     },
     {
       "id": "talents.glyph_learn",
@@ -2024,7 +2025,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "ordinary_quest_kill_progress"
     },
     {
       "id": "quests.complete",
@@ -2141,7 +2143,8 @@
       "fixture": "quest_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "available_quest_marker"
     },
     {
       "id": "quests.giver_trivial_marker",
@@ -9617,8 +9620,63 @@
           }
         }
       ]
+    },
+    {
+      "id": "glyph_socket_panel",
+      "operations": [
+        "talents.glyph_open"
+      ],
+      "scope": "Stock glyph panel opens with nine correctly cropped enabled Prime/Major/Minor sockets; native talent/glyph state and inventory/money remain unchanged.",
+      "limits": "Application, removal, learning, tooltips, other classes and level/locked variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui24/talent_glyph_panels_02/episode.json",
+          "sha256": "b237358829981a0f17ea853cdd503c3add2f03b64ead9c04f5b0875bd2688a58",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "talents.glyph_open_repaired": "glyph_panel_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "available_quest_marker",
+      "operations": [
+        "quests.giver_available_marker"
+      ],
+      "scope": "The level-one scout sees Marshal McBride with a yellow available quest marker after native status 256 is semantically translated to modern 0x400000; reviewed before/after screenshots and captured packets identify the same giver.",
+      "limits": "Trivial, incomplete, completed, repeatable, unavailable, tracked and other giver variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui24/marker_visual_review.json",
+          "sha256": "066daa557f0e7c6fe4c851e0d30188ffca115150e37ebea8031388f1d69d51f1",
+          "archived_receipt_digest_verified": true,
+          "cases": {}
+        }
+      ]
+    },
+    {
+      "id": "ordinary_quest_kill_progress",
+      "operations": [
+        "quests.progress"
+      ],
+      "scope": "Ordinary melee kills one existing Prowler after manual quest 52 acceptance; native and addon-visible wolf objective counts both advance from 0/8 to 1/8. Normal abandonment restores native quest, inventory, money and pose baselines.",
+      "limits": "Fixture teleports do not qualify navigation. This checks one kill objective counter, not progress notification, complete objectives, rewards, other objective types or learned autonomy.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_25.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui24/quest_progress_04/episode.json",
+          "sha256": "487b5b1539e8acdc484e97b6b732f3528051dd5ae245984615ae1973a8fc9a02",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "quests.progress_kill": "quest_progress_pass"
+          }
+        }
+      ]
     }
   ],
-  "qualified_operations": 187,
+  "qualified_operations": 190,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

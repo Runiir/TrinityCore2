@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "Quest objective progress/completion/rewards and auction bid/buyout/negative paths; retain every other open UI family",
+  "current": "Quest completion/rewards and credit notifications, talent allocation/glyph mutations, remaining marker categories and auction bid/buyout/negative paths; retain every other open UI family",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -76,7 +76,10 @@
     "ui20/auction_sell_post_probe_03: complete empty stock Sell catalog and one-gold price entry pass with observer v25; posting captures an unmapped modern request, overall verdict failed; full native auction/inventory/money/pose restored",
     "ui21/auction_roundtrip_01 plus recoveries: plain one-gold posting, populated owned row and native cancellation; original GUID returned and both inventory/money/mail/pose/permissions restored in separate episodes. Center-click, localized-subject and auto-delete runner failures retained. Full uninterrupted round trip and fee agreement pending native deployment; 659 full regression checks and 77 selected transaction sanitizer checks pass.",
     "ui22/auction_roundtrip_01: 14 code-controlled ordinary inputs complete one uninterrupted plain auction posting/cancellation/original-GUID return and slot restoration. Zero quote/native deposit/charge agree for one-copper pants over one day; both inventory/money/mail/poses restored without a refund. Isolated native restarted once, C++ bridge retained, both clients reconnected on HDMI-1. Other fee values and transactions remain open.",
-    "ui23/manual_quest_accept_11 and manual_quest_decline_12: 12 plus 3 code-controlled stock inputs qualify manual acceptance, decline, zone collapse and cancelled abandonment; named wolf 0/8 and unseen Young Forest Bear 0/5 objectives display correctly. Quest/inventory/money/pose baselines restored without fallback cleanup. Quest status/list/accept widths and public creature template queries repaired in independent C++ modules; native worldserver unchanged. Both v31 clients reconnect on HDMI-1. 673 full regression tests and 41 selected public-template/mail/quest sanitizer checks pass. Earlier runner/protocol failures retained."
+    "ui23/manual_quest_accept_11 and manual_quest_decline_12: 12 plus 3 code-controlled stock inputs qualify manual acceptance, decline, zone collapse and cancelled abandonment; named wolf 0/8 and unseen Young Forest Bear 0/5 objectives display correctly. Quest/inventory/money/pose baselines restored without fallback cleanup. Quest status/list/accept widths and public creature template queries repaired in independent C++ modules; native worldserver unchanged. Both v31 clients reconnect on HDMI-1. 673 full regression tests and 41 selected public-template/mail/quest sanitizer checks pass. Earlier runner/protocol failures retained.",
+    "ui24/talent_glyph_panels_02: correctly named three warrior talent catalogs, nine properly cropped enabled glyph sockets, native talent/glyph/inventory/money unchanged",
+    "ui24/marker_visual_review: scout Marshal McBride available marker changes from incorrect blue to yellow with semantic native/modern status mapping; other categories open",
+    "ui24/quest_progress_04: ordinary Prowler melee kill advances native/public quest 52 wolf counts from 0/8 to 1/8; stock abandonment and quest/inventory/money/pose restoration; credit notification adapter pending"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
