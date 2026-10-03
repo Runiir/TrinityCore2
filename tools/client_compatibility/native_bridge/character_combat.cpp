@@ -1,4 +1,5 @@
 #include "character_combat.hpp"
+#include "character_ratings.hpp"
 #include <algorithm>
 
 namespace bridge
@@ -23,17 +24,22 @@ void combat_creation(Protocol const &p, Value const &s, Object &active)
 }
 bool CombatChanges::empty() const
 {
-    return percentages.empty() && std::all_of(schools.begin(), schools.end(), [](auto n) { return !n; });
+    return scalars.empty() && ratings.empty() && std::all_of(schools.begin(), schools.end(), [](auto n) { return !n; });
 }
 void CombatChanges::mask(std::array<std::uint32_t, 46> &mask) const
 {
     auto set = [&](unsigned bit) { mask.at(bit / 32) |= 1u << (bit % 32); };
-    for (auto const &[bit, value] : percentages)
+    for (auto const &[bit, value] : scalars)
     {
         // Scalar combat fields50..54 are gated by38. Bit32 is the
         // AccountBankCoinage child, not the parent of this group.
         set(38);
         set(bit);
+    }
+    for (auto const &[index, value] : ratings)
+    {
+        set(345);
+        set(346 + index);
     }
     for (unsigned i = 0; i < 7; ++i)
         if (auto parts = schools[i])
@@ -47,9 +53,14 @@ void CombatChanges::mask(std::array<std::uint32_t, 46> &mask) const
             if (parts & 4) set(303 + i);
         }
 }
-void CombatChanges::write_percentages(Writer &w) const
+void CombatChanges::write_scalars(Writer &w) const
 {
-    for (auto const &[bit, value] : percentages) w.put<float>(value);
+    for (auto const &[bit, scalar] : scalars)
+        w.pack(std::string(1, scalar.format), {scalar.value});
+}
+void CombatChanges::write_ratings(Writer &w) const
+{
+    for (auto const &[index, value] : ratings) w.put<std::int32_t>(value);
 }
 void CombatChanges::write_schools(Writer &w, Protocol const &p, Value const &s) const
 {
@@ -69,7 +80,8 @@ CombatChanges combat_changes(Protocol const &p, Value const &s, Value const &cha
     auto has = [&](char const *name, unsigned i = 0)
     { return changed.as_object().contains(std::to_string(p.field_index(name) + i)); };
     for (auto const &spec : percentages)
-        if (has(spec.native)) result.percentages[spec.bit] = p.float_field(s, spec.native);
+        if (has(spec.native)) result.scalars[spec.bit] = {'f', p.float_field(s, spec.native)};
+    rating_changes(p,s,changed,result);
     for (unsigned i = 0; i < 7; ++i)
         result.schools[i] = (has("PLAYER_FIELD_MOD_DAMAGE_DONE_POS", i) ? 1 : 0) |
             (has("PLAYER_FIELD_MOD_DAMAGE_DONE_NEG", i) ? 2 : 0) |

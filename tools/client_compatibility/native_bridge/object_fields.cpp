@@ -5,6 +5,7 @@
 #include "reputation_fields.hpp"
 #include "appearance.hpp"
 #include "character_combat.hpp"
+#include "character_ratings.hpp"
 
 namespace bridge
 {
@@ -120,6 +121,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     active["InvSlots"] = slots;
     active["ModDamageDonePos"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_POS",7,false,true);
     combat_creation(*this,s,active);
+    rating_creation(*this,s,unit,active);
     active["ModDamageDoneNeg"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_NEG",7,false,true);
     active["ModDamageDonePercent"] = arr("PLAYER_FIELD_MOD_DAMAGE_DONE_PCT",7,true);
     active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);

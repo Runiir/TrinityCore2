@@ -70,7 +70,7 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
         write_mask(data,mask,46);data.flush();
         if(coinage)data.put<std::uint64_t>(static_cast<std::uint64_t>(field(snapshot,"PLAYER_FIELD_COINAGE"))|
             (static_cast<std::uint64_t>(field(snapshot,"PLAYER_FIELD_COINAGE",1))<<32));
-        combat.write_percentages(data);
+        combat.write_scalars(data);
         for(auto const &[i,guid]:slots)data.guid(guid);
         // The pinned update contract interleaves positive, negative and percent
         // within each school, rather than sorting all child mask indices.
@@ -80,6 +80,7 @@ Bytes Protocol::inventory_block(Value const &snapshot,Value const &changed,unsig
             if(changed.first)data.put(field(snapshot,"PLAYER_FIELD_BUYBACK_PRICE_1",i));
             if(changed.second)data.put<std::int64_t>(field(snapshot,"PLAYER_FIELD_BUYBACK_TIMESTAMP_1",i));
         }
+        combat.write_ratings(data);
     }
     return block({integer(get(snapshot,"guid")),player_high()},data);
 }

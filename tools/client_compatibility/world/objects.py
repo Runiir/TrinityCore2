@@ -5,6 +5,7 @@ import struct
 
 from .buffer import Writer, player_high
 from .fields import serialize
+from .ratings import creation as rating_creation
 
 INDEX = json.loads(Path(__file__).with_name("native_fields.json").read_text())
 
@@ -87,6 +88,7 @@ def field_values(snapshot, character):
         'OffhandCritPercentage':'PLAYER_OFFHAND_CRIT_PERCENTAGE','ShieldBlockCritPercentage':'PLAYER_SHIELD_BLOCK_CRIT_PERCENTAGE'}.items():
         active[modern]=float_value(native_name)
     active['SpellCritPercentage']=array('PLAYER_SPELL_CRIT_PERCENTAGE1',7,True)
+    rating_creation(native,INDEX,unit,active)
     active["RestInfo"] = [{"Threshold": value("PLAYER_REST_STATE_EXPERIENCE"),
                            "StateID": value("PLAYER_BYTES_2") >> 24},
                           {"Threshold": 0, "StateID": 2}]
