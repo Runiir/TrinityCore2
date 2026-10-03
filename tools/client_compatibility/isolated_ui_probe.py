@@ -26,7 +26,9 @@ def suite(t):
                 lambda b,a,s,panel=panel:{'status':'isolated_ui_pass' if
                     (panel in a.get('panels',[]) if panel else 0 in a.get('bags',[])) else 'controller_or_client_failure',
                     'oracle':{'panels':a.get('panels'),'bags':a.get('bags'),'private_display':True}},
-                diagnostic_action=selected),'isolated_ui_pass')
+                diagnostic_action=selected,
+                await_state=lambda s,panel=panel:panel in s.get('panels',[]) if panel else 0 in s.get('bags',[])),
+                'isolated_ui_pass')
     finally:
         t.clean_panels();after,frame=t.observe('isolated_restored')
         t.receipt['restoration']={'resources_equipment_group_unchanged':all(after.get(k)==v for k,v in baseline.items()),

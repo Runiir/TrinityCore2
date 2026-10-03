@@ -51,10 +51,11 @@ def suite(t,learned_arms=False):
     t.receipt['baseline']={'talents':before,'inventory_money':items};t.persist()
     try:
         require(t.step('talents.open_repaired','Open the talents and glyph window.',
-            {'open':{'kind':'key','value':'n','hold':.4,'description':'Press the installed N binding.'}},
+            {'open':{'kind':'key','value':'n','description':'Press the installed N binding.'}},
             lambda b,a,s:{'status':'talents_open_pass' if 'PlayerTalentFrame' in a['panels'] and
                 a.get('talent_probe',{}).get('groups')==1 and a['talent_probe'].get('unspent')==41-int(learned_arms) and not a.get('lua_errors') else
-                'client_or_protocol_failure','oracle':{'public':a.get('talent_probe'),'native':before}},diagnostic_action='open'),'talents_open_pass')
+                'client_or_protocol_failure','oracle':{'public':a.get('talent_probe'),'native':before}},diagnostic_action='open',
+            await_state=lambda s:'PlayerTalentFrame' in s['panels']),'talents_open_pass')
         require(click_case(t,'talents.select_talent_panel','View the three warrior specializations.',
             lambda c:c['name']=='PlayerTalentFrameTab1' and c['text']=='Talents',
             lambda b,a,s:{'status':'talent_panel_pass' if s and a.get('talent_probe',{}).get('selected')==1 else

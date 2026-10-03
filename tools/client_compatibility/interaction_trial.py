@@ -182,7 +182,7 @@ class Trial:
                 if state.get('chat_edit_open'):raise RuntimeError('bounded chat submission retry did not settle')
         return transport
 
-    def step(self,case_id,goal,actions,oracle,diagnostic_action=None):
+    def step(self,case_id,goal,actions,oracle,diagnostic_action=None,await_state=None):
         index=len(self.receipt['cases']);row={'id':case_id,'goal':goal,'time':time.time(),'status':'started'}
         self.receipt['cases'].append(row);self.persist()
         try:
@@ -194,6 +194,14 @@ class Trial:
             row.update(before=before,before_frame=bframe,request=request,response=response,selected=selected,
                 selection_source=self.controller,input=actions[selected]);self.persist()
             row['input_transport']=self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
+            if await_state is not None:
+                deadline=time.monotonic()+12;samples=[]
+                while not await_state(after) and time.monotonic()<deadline:
+                    samples.append({'sequence':after['sequence'],'panels':after.get('panels'),
+                        'bags':after.get('bags'),'frame':aframe})
+                    time.sleep(.2);after,aframe=self.observe(f'{index:03}_settle_{len(samples):02}')
+                row['settling_samples']=samples
+                row['input_replayed_while_settling']=False
             row.update(after=after,after_frame=aframe)
             if actions[selected]['kind']=='chat' and after.get('chat_edit_open'):
                 raise RuntimeError('selected chat command remained in the edit box')
