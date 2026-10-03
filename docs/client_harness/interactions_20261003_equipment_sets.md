@@ -260,3 +260,22 @@ Observer57 reads public crit and ranged-damage APIs without setters. The
 whole pre-fix live combat trial is being closed before bridge deployment;
 rendered melee crit is0.00% and ranged DPS0.0 despite native positive
 values. Haste, ratings, item level and unsampled character stats remain open.
+
+The first live UI40 whole combat trial fails during the ordinary helmet
+removal. Its initial creation check renders10.80% melee crit and1075.9
+ranged DPS correctly, but sparse scalar crit uses parent32 instead of38.
+Both pinned WPP and Trinity writers require38. The new test had repeated
+that mistake; its earlier879-check pass is retained but does not prove
+this update gate. Correcting the regression's expected gate gives one
+red check before the repair. The corrected bridge passes879 full checks
+and46 focused sanitizer checks. A separate sanitizer collection attempt
+ran no tests because of a mistyped file name; the corrected run is recorded.
+
+The native helmet moved into backpack slot16 while client slots stayed stale.
+The attempted ordinary restore did not send a valid equip, leaving that one
+item pending. Exact comparison of the complete original/native-after
+fixtures proves only the helmet relocation differs. The recovery binds
+this closed failed episode, actor/client/server lifetimes, exact native
+item GUID and both fixtures. After the corrected bridge reconnect, ordinary
+UI equip must restore every original resource before any new acceptance
+trial. This recovery contributes no feature qualification.
