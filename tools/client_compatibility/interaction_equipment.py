@@ -30,15 +30,17 @@ def change(trial,oracle,item,destination,equip=False):
         {'kind':'drag','start':point(head),'end':point(bag),'description':'Drag the equipped helmet into the indicated empty backpack slot.'}),
         'escape':{'kind':'key','value':'Escape','description':'Close the equipment window.'},
         'map':{'kind':'key','value':'m','description':'Open the world map.'}}
+    def visible_outcome(a):
+        equipped=(a.get('equipment') or [None])[0]==(item['id'] if equip else 0)
+        shown=next((x for x in a.get('bag_items',[]) if (x['bag'],x['slot'])==destination),None)
+        return equipped and (shown is None if equip else shown is not None and shown['id']==item['id'] and shown['count']==item['count'])
     def outcome(b,a,s):
         oracle.poll();actual=oracle.equipment(1);stored=oracle.slot(*destination)
         expected=actual==item and stored['guid']==0 if equip else actual['guid']==0 and stored==item
-        equipped=(a.get('equipment') or [None])[0]==(item['id'] if equip else 0)
-        shown=next((x for x in a.get('bag_items',[]) if (x['bag'],x['slot'])==destination),None)
-        visible=equipped and (shown is None if equip else shown is not None and shown['id']==item['id'] and shown['count']==item['count'])
+        visible=visible_outcome(a)
         return {'status':'equipment_change_pass' if expected and visible else ('controller_failure' if s!='change' else 'client_or_protocol_failure'),
             'oracle':{'native_head':actual,'native_bag':stored,'native_matches':expected,'visible_matches':visible}}
-    return trial.step('character.equip' if equip else 'character.unequip','Equip the helmet from the backpack.' if equip else 'Unequip the helmet into the empty backpack slot.',actions,outcome,diagnostic_action='change')
+    return trial.step('character.equip' if equip else 'character.unequip','Equip the helmet from the backpack.' if equip else 'Unequip the helmet into the empty backpack slot.',actions,outcome,diagnostic_action='change',await_state=visible_outcome)
 
 
 def open_panels(trial):
