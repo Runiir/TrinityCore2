@@ -85,6 +85,7 @@ struct Protocol
     Bytes guild_block(Value const &snapshot,Value const &character,Value const &changed,unsigned visibility=1) const;
     Array quest_fields(Value const &snapshot) const;
     Bytes quest_block(Value const &snapshot,Value const &changed) const;
+    Bytes glyph_block(Value const &snapshot,Value const &changed) const;
     static Reply inventory_request(State const &owner,std::string const &name,View body);
     Reply inventory_response(std::string const &name,View body) const;
     static Reply bank_request(State const &owner,std::string const &name,View body);

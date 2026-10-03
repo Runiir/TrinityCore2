@@ -115,6 +115,9 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     active["BuybackPrice"] = arr("PLAYER_FIELD_BUYBACK_PRICE_1",12);
     // Both pinned cores use seconds relative to login plus thirty hours.
     active["BuybackTimestamp"] = arr("PLAYER_FIELD_BUYBACK_TIMESTAMP_1",12);
+    active["GlyphSlots"]=arr("PLAYER_FIELD_GLYPH_SLOTS_1",9);
+    active["Glyphs"]=arr("PLAYER_FIELD_GLYPHS_1",9);
+    active["GlyphsEnabled"]=val("PLAYER_GLYPHS_ENABLED");
     Object skill;
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"SkillLineID", "PLAYER_SKILL_LINEID_0"},
