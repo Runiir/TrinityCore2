@@ -55,10 +55,10 @@ def history(rows):
 
 
 def decode_history(body):
-    r=Reader(body);assert r.unpack('HI')==(0,1) and r.bits(1)==0;r.align()
-    assert r.unpack('I')[0]==r.remaining()
+    r=Reader(body);assert r.unpack('HI')==(0,1) and r.bits(1)==1 and r.bits(1)==0;r.align()
+    assert r.unpack('I')[0]==len(r.data)-r.pos
     assert r.unpack('B')==(0,) and r.guid()==(1,player_high())
-    assert r.unpack('I')[0]==r.remaining() and r.unpack('BBBI')==(1,0,3,1<<7)
+    assert r.unpack('I')[0]==len(r.data)-r.pos and r.unpack('BBBI')==(1,0,3,1<<7)
     assert mask(r,46,first32=True)=={102,122};r.align()
     assert r.bits(1)==0 # Required optional PetStable presence for gate 102.
     assert r.bits(2)==3
