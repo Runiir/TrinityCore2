@@ -54,10 +54,13 @@ def compose(t,recipient,subject,body,amount=0,reply=False):
                         ('controller_failure' if not s else 'client_or_protocol_failure')}),'mail_compose_open_pass')
     # The stock tab opens every bag. Hide those unrelated panels through their
     # observed ordinary close buttons to keep subsequent observer pages small.
-    for c in controls(t):
-        if c['enabled'] and c['name'].startswith('ContainerFrame') and c['name'].endswith('CloseButton'):
-            t.receipt['cleanup'].append({'source':'code_fixture_panel_cleanup','control':c,'input':'click'})
-            t.execute({'kind':'click','value':point(c)});t.persist()
+    for _ in range(6):
+        rows=controls(t)
+        c=next((c for c in rows if c['enabled'] and c['name'].startswith('ContainerFrame') and c['name'].endswith('CloseButton')),None)
+        if c is None:break
+        t.receipt['cleanup'].append({'source':'code_fixture_panel_cleanup','control':c,'input':'click'})
+        t.execute({'kind':'click','value':point(c)});t.persist()
+    else:raise RuntimeError('compose bag cleanup did not settle')
     if not reply:
         require(edit_case(t,'mail.recipient','Address this letter to '+recipient+'.',
             lambda c:c['name']=='SendMailNameEditBox',recipient),'ui_edit_pass')
