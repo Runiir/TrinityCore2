@@ -18,6 +18,7 @@
 #include "talents.hpp"
 #include "mail.hpp"
 #include "auctions.hpp"
+#include "appearance.hpp"
 #include <iostream>
 #include <memory>
 
@@ -319,6 +320,8 @@ int main(int argc, char **argv)
                                 reply = Protocol::currency_response(name, body);
                             else if (fn == "currency_request")
                                 reply = currency_request(name, body);
+                            else if (fn == "appearance_request")
+                                reply = appearance_request(name, body);
                             else if (fn == "research_history")
                                 reply = research_history(state,name,body);
                             else if (fn == "research_complete")

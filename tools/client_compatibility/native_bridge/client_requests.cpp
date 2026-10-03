@@ -9,6 +9,7 @@
 #include "mail.hpp"
 #include "auctions.hpp"
 #include "currency.hpp"
+#include "appearance.hpp"
 
 namespace bridge
 {
@@ -65,6 +66,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         return;
     }
     if(Protocol::bank_close(state,name,body))return;
+    if(auto request=appearance_request(name,body))
+    {require_world();native_send(*request);return;}
     if(auto request=talent_request(name,body))
     {require_world();native_send(*request);return;}
     if(auto request=currency_request(name,body))
