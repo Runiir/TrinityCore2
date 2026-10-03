@@ -126,7 +126,7 @@ Reply auction_browse_request(Protocol const &p,State &s,std::string const &name,
     if(s.auction_browse.is_object())return {}; // Legacy results have no request ID. Do not supersede an in-flight query.
     Writer w;w.put(guid).put<std::uint32_t>(0).raw(search).put<std::uint8_t>(0)
         .pack("BB4IBBBB",{0,0,0xffffffffu,0xffffffffu,0xffffffffu,0xffffffffu,(filter&4)!=0,0,0,0});
-    auto native=w.finish();s.auction_browse=Object{{"offset",offset},{"min",min},{"max",max},{"filters",filter},
+    auto native=w.finish();s.auction_browse=Object{{"kind","browse"},{"offset",offset},{"min",min},{"max",max},{"filters",filter},
         {"classes",classes},{"sorts",sorts},{"native_body",hex(native)},{"native_offset",0},{"total",nullptr},
         {"rows",Array{}},{"ids",Object{}}};
     return Packet{"CMSG_AUCTION_LIST_ITEMS",native};
@@ -140,10 +140,10 @@ Reply auction_browse_response(Protocol const &p,State &s,std::string const &name
     auto &q=s.auction_browse.as_object();auto &rows=q["rows"].as_array();auto &ids=q["ids"].as_object();
     for(unsigned i=0;i<count;++i)
     {
-        auto row=read_auction_item(r);auto id=std::to_string(row.id);
+        auto row=read_auction_item(r,items);auto id=std::to_string(row.id);
         if(ids.contains(id))throw std::runtime_error("native browse repeated an auction across pages");
         ids[id]=true;rows.push_back(Object{{"id",row.id},{"entry",row.entry},{"count",row.count},{"owner",row.owner},
-            {"buyout",row.buyout},{"bid",row.bid},{"property",row.property}});
+            {"buyout",row.buyout},{"bid",row.bid},{"minimum",row.minimum},{"property",row.property},{"encoded",hex(row.encoded)}});
     }
     auto total=r.take<std::uint32_t>(),delay=r.take<std::uint32_t>();r.end();auto offset=integer(q["native_offset"]);
     if(total>4096 || offset+count>total || (offset+count<total && !count) ||
@@ -156,6 +156,7 @@ Reply auction_browse_response(Protocol const &p,State &s,std::string const &name
         if(!s.native_send)throw std::runtime_error("native browse page sender is absent");
         s.native_send("CMSG_AUCTION_LIST_ITEMS",request);return {};
     }
+    if(str(get(q,"kind"))=="items")return auction_item_result(s,items,delay);
     return buckets(s,items,delay);
 }
 }

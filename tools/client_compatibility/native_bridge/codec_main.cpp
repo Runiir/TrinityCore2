@@ -329,7 +329,7 @@ int main(int argc, char **argv)
                             else if(fn=="merchant_response")
                                 reply=merchant_response(protocol,state,name,body);
                             else if(fn=="auction_request")
-                                reply=auction_request(protocol,state,name,body);
+                                reply=auction_request(protocol,state,name,body,auction_items);
                             else if(fn=="auction_response")
                                 reply=auction_response(protocol,state,name,body,auction_items);
                             else if(fn=="item_notification")

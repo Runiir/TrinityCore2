@@ -52,7 +52,7 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     {require_world();native_send(*request);return;}
     if(auto request=merchant_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}
-    if(auto request=auction_request(protocol,state,name,body))
+    if(auto request=auction_request(protocol,state,name,body,service.data.auction_items))
     {require_world();native_send(*request);return;}
     if(auto request=repair_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}

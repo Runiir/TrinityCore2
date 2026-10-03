@@ -4,7 +4,7 @@
 
 namespace bridge
 {
-NativeAuctionRow read_auction_item(Reader &r)
+NativeAuctionRow read_auction_item(Reader &r,AuctionItems const &items)
 {
     auto id=r.take<std::uint32_t>(),entry=r.take<std::uint32_t>();std::vector<Array> enchants;
     for(unsigned slot=0;slot<10;++slot)
@@ -20,8 +20,11 @@ NativeAuctionRow read_auction_item(Reader &r)
     if(!id || id>0x7fffffff || !entry || entry>0x7fffffff || !count || count>0x7fffffff ||
        flags || owner>0xffffffff || bidder>0xffffffff || (bidder==0)!=(bid==0))
         throw std::runtime_error("invalid native auction row");
+    auto metadata=items.find(entry);bool key=metadata!=items.end() && !property;
+    auto level=key?integer(get(metadata->second,"level")):0;
+    if(key && (entry>0xfffff || level>2047))throw std::runtime_error("native auction bucket key exceeds modern bounds");
     Writer w;w.bits(1,1).bits(enchants.size(),4).bits(0,2).bits(1,1).bits(1,1)
-        .bits(buyout!=0,1).bits(0,1).bits(1,1).bits(0,1).bits(0,1).bits(0,1)
+        .bits(buyout!=0,1).bits(0,1).bits(1,1).bits(0,1).bits(key,1).bits(0,1)
         .bits(bidder!=0,1).bits(bid!=0,1).flush();
     // Native socket enchant IDs lack underlying gem item IDs. Preserve native
     // enchant data; gem instances and unavailable server-only identities stay absent.
@@ -32,9 +35,10 @@ NativeAuctionRow read_auction_item(Reader &r)
     w.put(minimum).put(increment);if(buyout)w.put(buyout);
     if(bidder)w.guid(bidder,player_high());
     if(bid)w.put(bid);
+    if(key)w.bits(entry,20).bits(0,1).bits(level,11).bits(0,1).flush();
     return {id,entry,count,owner,minimum,increment,buyout,bid,property,w.finish()};
 }
-Reply auction_catalog(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply auction_catalog(Protocol const &protocol,State const &owner,std::string const &name,View body,AuctionItems const &items)
 {
     if(name!="SMSG_AUCTION_BIDDER_LIST_RESULT" && name!="SMSG_AUCTION_OWNER_LIST_RESULT")return {};
     auto found=owner.visible_units.find(owner.auction_target);
@@ -45,7 +49,7 @@ Reply auction_catalog(Protocol const &protocol,State const &owner,std::string co
     std::vector<Bytes> rows;std::unordered_map<unsigned,Bytes> seen;
     for(unsigned i=0;i<count;++i)
     {
-        auto parsed=read_auction_item(r);auto id=parsed.id;auto row=std::move(parsed.encoded);auto found=seen.find(id);
+        auto parsed=read_auction_item(r,items);auto id=parsed.id;auto row=std::move(parsed.encoded);auto found=seen.find(id);
         if(found!=seen.end())
         {
             // Native bidder reads append requested IDs and then all current

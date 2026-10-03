@@ -11,8 +11,10 @@ bool auctioneer(Protocol const &protocol,Value const &unit)
     return integer(get(unit,"kind"))==3 && (protocol.field(unit,"UNIT_NPC_FLAGS")&2097152);
 }
 }
-Reply auction_request(Protocol const &protocol,State &owner,std::string const &name,View body)
+Reply auction_request(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items)
 {
+    if(name=="CMSG_AUCTION_LIST_ITEMS_BY_ITEM_ID" || name=="CMSG_AUCTION_LIST_ITEMS_BY_BUCKET_KEY")
+        return auction_item_request(protocol,owner,name,body,items);
     if(name=="CMSG_AUCTION_BROWSE_QUERY")return auction_browse_request(protocol,owner,name,body);
     if(name!="CMSG_AUCTION_HELLO_REQUEST" && name!="CMSG_AUCTION_LIST_BIDDED_ITEMS" &&
        name!="CMSG_AUCTION_LIST_OWNED_ITEMS")return {};
@@ -45,7 +47,7 @@ Reply auction_request(Protocol const &protocol,State &owner,std::string const &n
 Reply auction_response(Protocol const &protocol,State &owner,std::string const &name,View body,AuctionItems const &items)
 {
     if(name=="SMSG_AUCTION_LIST_RESULT")return auction_browse_response(protocol,owner,name,body,items);
-    if(name!="MSG_AUCTION_HELLO")return auction_catalog(protocol,owner,name,body);
+    if(name!="MSG_AUCTION_HELLO")return auction_catalog(protocol,owner,name,body,items);
     Reader r(body);auto guid=r.take<std::uint64_t>();auto house=r.take<std::uint32_t>();
     auto enabled=r.take<std::uint8_t>();r.end();
     if(!house || house>0x7fffffff || enabled>1)throw std::runtime_error("invalid native auction opening");
