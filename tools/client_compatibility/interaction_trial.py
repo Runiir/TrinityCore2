@@ -114,8 +114,14 @@ class Trial:
         monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+28
         while True:
             with redirect_stdout(StringIO()):ctl.shot(str(path))
-            with Image.open(path) as image:
-                state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
+            try:
+                with Image.open(path) as image:
+                    state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
+            except ValueError as error:
+                # Normal reloads can expose a partially redrawn observation
+                # strip. Retry the screenshot; never accept a missing identity.
+                if time.monotonic()>deadline:raise RuntimeError('UI observation did not become decodable') from error
+                time.sleep(.1);continue
             if state['mode']=='state':break
             if time.monotonic()>deadline:raise RuntimeError('UI state observation deadline exceeded')
             time.sleep(.1)
