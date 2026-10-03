@@ -79,7 +79,13 @@ def suite(t):
         'item_catalog_sha256':digest,'book':BOOK,'learned_spell':LEARNED};t.persist()
     try:
         book_fixture(t,oracle,1,'one disposable glyph book, not learned-spell credit')
-        t.execute({'kind':'key','value':'b'});state,frame=t.observe('glyph_book_prepared')
+        require(t.step('glyphs.open_book_bags','Open the bags containing the observed glyph book.',
+            {'open':{'kind':'key','value':'b','description':'Open the equipped bags with B.'}},
+            lambda b,a,s:{'status':'glyph_book_visible_pass' if len([r for r in a.get('bag_items',[]) if
+                r['id']==BOOK and r['count']==1])==1 else 'client_or_protocol_failure'},diagnostic_action='open',
+            await_state=lambda s:any(r['id']==BOOK and r['count']==1 for r in s.get('bag_items',[]))),
+            'glyph_book_visible_pass')
+        state,frame=t.observe('glyph_book_prepared')
         shown=[r for r in state.get('bag_items',[]) if r['id']==BOOK and r['count']==1]
         if len(shown)!=1:raise RuntimeError('glyph book is absent or ambiguous in the public bags')
         row=shown[0];control=slot_control(t,row['bag'],row['slot']);native=oracle.slot(row['bag'],row['slot'])
@@ -114,10 +120,17 @@ def suite(t):
                     'unrelated_spells_unchanged':unchanged,'packets':packets,'public_errors':a.get('errors')}}
         require(click_case(t,'glyphs.learn_book','Place the pending glyph into an observed matching empty Minor socket.',
             lambda c:c['name']=='GlyphFrameGlyph'+str(socket),outcome),'glyph_learn_pass')
-        t.clean_panels();t.execute({'kind':'key','value':'n'})
-        require(click_case(t,'glyphs.learned_open','Open glyphs.',lambda c:c['name']=='PlayerTalentFrameTab3',
-            lambda b,a,s:{'status':'glyph_panel_pass' if s and a.get('talent_probe',{}).get('selected')==3 else
-                'client_or_protocol_failure'}),'glyph_panel_pass')
+        t.clean_panels()
+        require(t.step('glyphs.learned_talents_open','Open the talents window after learning.',
+            {'open':{'kind':'key','value':'n','description':'Open talents with N.'}},
+            lambda b,a,s:{'status':'talents_open_pass' if 'PlayerTalentFrame' in a['panels'] else
+                'client_or_protocol_failure'},diagnostic_action='open',
+            await_state=lambda s:'PlayerTalentFrame' in s['panels']),'talents_open_pass')
+        state,_=t.observe('learned_selected_tab')
+        if state.get('talent_probe',{}).get('selected')!=3:
+            require(click_case(t,'glyphs.learned_open','Open glyphs.',lambda c:c['name']=='PlayerTalentFrameTab3',
+                lambda b,a,s:{'status':'glyph_panel_pass' if s and a.get('talent_probe',{}).get('selected')==3 else
+                    'client_or_protocol_failure'}),'glyph_panel_pass')
         data=glyph_detail(t,'learned_catalog');rows=list(data['rows'])
         for page in range(2,(data['total']+11)//12+1):rows.extend(glyph_detail(t,'learned_catalog_'+str(page),page)['rows'])
         battle=[r for r in rows if r.get('name')=='Battle' and r.get('id')==483]
