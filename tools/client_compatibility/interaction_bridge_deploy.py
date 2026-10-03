@@ -125,16 +125,28 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
-def recovery(source,out,name):
+def recovery(source,out,name,client_restart_source=None):
     """Prepare a new lobby receipt after a failed input on the same deployment."""
     previous=json.loads((source/'deployment.json').read_text())
     if identity('worldserver')!=previous['native'] or identity('modern_world')!=previous['after']:
         raise RuntimeError('recovery requires the same verified deployment processes')
-    if not previous['reconnected'].get(name,{}).get('completed'):
+    if client_restart_source:
+        restart_path=client_restart_source.resolve()
+        if not restart_path.is_relative_to(lab.ROOT/'evidence'):raise ValueError('require an owned client restart receipt')
+        restart=json.loads(restart_path.read_text())
+        old=json.loads((source/(name+'_after')/'episode.json').read_text())
+        lifetime=lambda row:{key:row[key] for key in ['pid','start_ticks']}
+        if (not restart.get('finished_at') or not restart.get('launched') or restart['actor']!=name or
+            restart['native']!=previous['native'] or restart['bridge']!=previous['after'] or
+            lifetime(restart['before_client'])!=lifetime(old['runtime']['client']) or
+            lifetime(restart['after_client'])!=lifetime(lab.owned_process('client')) or not old.get('finished_at')):
+            raise RuntimeError('owned client restart does not bind the prior trial and current runtime')
+    elif not previous['reconnected'].get(name,{}).get('completed'):
         raise RuntimeError('recovery requires a previously verified actor entry')
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     report={key:previous[key] for key in ['schema','native','after','observer_version','baselines']}
     report.update(started_at=time.time(),reconnected={},recovery_source=str(source),native_unchanged=True)
+    if client_restart_source:report['client_restart_source']={'file':str(restart_path),'sha256':lab.sha256(restart_path)}
     with actor(name):report['lobby_frames']={name:shot(out/(name+'_disconnected.png'))}
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
     print(json.dumps({'lobby_frames':report['lobby_frames'],'requires_separate_visual_review':True}),flush=True)
@@ -150,6 +162,7 @@ if __name__=='__main__':
     parser.add_argument('--unavailable-deployment-source',type=Path,help='Failed deployment on the same verified actor/server lifetimes')
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
     parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
+    parser.add_argument('--client-restart-source',type=Path,help='Owned restart receipt binding a failed trial to the new client lifetime')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
@@ -157,7 +170,7 @@ if __name__=='__main__':
         restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
-        recovery(args.source,args.output,args.actor)
+        with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source)
     else:
         if args.actor is None:parser.error('reconnect requires an actor')
         reconnect(args.output,args.actor,args.keyboard_modal,args.character_selection,args.realm_selection)
