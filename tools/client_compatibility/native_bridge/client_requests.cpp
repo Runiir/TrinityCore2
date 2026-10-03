@@ -6,6 +6,7 @@
 #include "trainers.hpp"
 #include "quests.hpp"
 #include "mail.hpp"
+#include "auctions.hpp"
 
 namespace bridge
 {
@@ -50,6 +51,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if(auto request=Protocol::bank_request(state,name,body))
     {require_world();native_send(*request);return;}
     if(auto request=merchant_request(protocol,state,name,body))
+    {require_world();native_send(*request);return;}
+    if(auto request=auction_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}
     if(auto request=repair_request(protocol,state,name,body))
     {require_world();native_send(*request);return;}

@@ -13,6 +13,7 @@
 #include "trainers.hpp"
 #include "quests.hpp"
 #include "mail.hpp"
+#include "auctions.hpp"
 #include <iostream>
 #include <memory>
 
@@ -312,6 +313,10 @@ int main(int argc, char **argv)
                                 reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")
                                 reply=merchant_response(protocol,state,name,body);
+                            else if(fn=="auction_request")
+                                reply=auction_request(protocol,state,name,body);
+                            else if(fn=="auction_response")
+                                reply=auction_response(protocol,state,name,body);
                             else if(fn=="item_notification")
                                 reply=item_notification(name,body);
                             else if(fn=="repair_request")

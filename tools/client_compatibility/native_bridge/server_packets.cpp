@@ -5,6 +5,7 @@
 #include "item_notifications.hpp"
 #include "trainers.hpp"
 #include "mail.hpp"
+#include "auctions.hpp"
 #include "quests.hpp"
 #include <ctime>
 
@@ -210,6 +211,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     if ((reply = protocol.bank_response(state, name, body)))
     {send(*reply);co_return;}
     if ((reply = merchant_response(protocol,state,name,body)))
+    {send(*reply);co_return;}
+    if ((reply = auction_response(protocol,state,name,body)))
     {send(*reply);co_return;}
     if ((reply = item_notification(name,body)))
     {send(*reply);co_return;}
