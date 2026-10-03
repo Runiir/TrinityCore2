@@ -28,7 +28,7 @@ def shot(path):
     return {'file':path.name,'sha256':lab.sha256(path),'monitor':monitor}
 
 
-def restart(out,version):
+def restart(out,version,unavailable_primary_source=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
     baselines={}
@@ -36,14 +36,19 @@ def restart(out,version):
         with actor(name):
             t=Trial(out/(name+'_before'),controller='code')
             try:
-                actors.session_entry(t.fixture);t.clean_panels();state,frame=t.observe('before_deploy')
-                baselines[name]={key:state.get(key) for key in ['guid','money','equipment','group','raid_profile']}
-                t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
+                if name=='primary' and unavailable_primary_source:
+                    from .interaction_deployment_baseline import unavailable_primary
+                    baselines[name]=unavailable_primary(t,unavailable_primary_source,native,before)
+                else:
+                    actors.session_entry(t.fixture);t.clean_panels();state,frame=t.observe('before_deploy')
+                    baselines[name]={key:state.get(key) for key in ['guid','money','equipment','group','raid_profile']}
+                    t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
                 shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
                     lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
             finally: t.receipt['finished_at']=time.time();t.persist()
     report={'schema':'client442_bridge_deployment_v1','started_at':time.time(),'native':native,'before':before,
             'observer_version':version,'baselines':baselines,'reconnected':{}}
+    if unavailable_primary_source:report['primary_public_precheck_deferred']=True
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
     lab.stop('modern_world');control.start();report['after']=identity('modern_world')
     if identity('worldserver')!=native: raise RuntimeError('native worldserver changed during bridge deployment')
@@ -120,11 +125,12 @@ if __name__=='__main__':
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
     parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
+    parser.add_argument('--unavailable-primary-source',type=Path,help='Closed failed reentry baseline for a disconnected primary')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
-        restart(args.output,args.version)
+        restart(args.output,args.version,args.unavailable_primary_source)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         recovery(args.source,args.output,args.actor)
