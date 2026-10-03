@@ -38,6 +38,11 @@ def post(t,baseline):
         command=any(p['name']=='SMSG_AUCTION_COMMAND_RESULT' and p['direction']=='from_native'
             and int.from_bytes(bytes.fromhex(p['body'])[8:12],'little')==0 for p in packets)
         gone=not any(r['bag']==0 and r['slot']==8 for r in a.get('bag_items',[]))
+        old_money=next(r[1] for r in baseline['inventory']['money'] if r[0]==1)
+        new_money=next(r[1] for r in native['inventory']['money'] if r[0]==1)
+        t.receipt['cheap_item_fee']={'quoted':b.get('auction',{}).get('sell',{}).get('deposit'),
+            'native_deposit':row[9] if row else None,'charged':old_money-new_money,
+            'qualified_scope':'one-copper Recruit\'s Pants, one-day listing only'}
         return {'status':'auction_post_pass' if selected and expected and command and gone and not a.get('lua_errors') else
             ('controller_failure' if not selected else 'client_or_protocol_failure'),
             'oracle':{'native_after':native,'packets':packets,'expected_native_listing':bool(expected),
@@ -94,7 +99,8 @@ def restore_return(t,baseline,deposit):
     t.clean_panels();native.poll()
     before=next(r[1] for r in baseline['inventory']['money'] if r[0]==1);delta=before-native.money()
     if delta not in [0,deposit]:raise RuntimeError('auction money delta differs from its native deposit')
-    t.receipt['deposit']={'native_deposit':deposit,'native_charge':delta,'stock_quote':'zero in the reviewed cheap-item UI; fee discrepancy remains open'};t.persist()
+    t.receipt['deposit']={'native_deposit':deposit,'native_charge':delta,
+        'qualified_scope':'zero-deposit cheap item only' if deposit==0 else 'recorded legacy deposit refund is fixture cleanup; fee discrepancy remains open'};t.persist()
     if delta:
         fixture_command(t,'/cleartarget','restore auction deposit only on the owned actor')
         with money_fixture_permission(t):fixture_command(t,f'.modify money {delta}','restore only the recorded auction deposit charge')
