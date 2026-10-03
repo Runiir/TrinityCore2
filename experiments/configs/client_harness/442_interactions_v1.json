@@ -14,7 +14,7 @@
     "reputation": 11,
     "currency": 11,
     "spellbook": 15,
-    "talents": 15,
+    "talents": 24,
     "professions": 28,
     "archaeology": 19,
     "bags": 29,
@@ -774,6 +774,78 @@
       "qualification": "glyph_socket_panel"
     },
     {
+      "id": "talents.glyph_catalog",
+      "family": "talents",
+      "operation": "glyph_catalog",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_search",
+      "family": "talents",
+      "operation": "glyph_search",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_clear_search",
+      "family": "talents",
+      "operation": "glyph_clear_search",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_filter_known",
+      "family": "talents",
+      "operation": "glyph_filter_known",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_filter_unknown",
+      "family": "talents",
+      "operation": "glyph_filter_unknown",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_filter_prime",
+      "family": "talents",
+      "operation": "glyph_filter_prime",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_filter_major",
+      "family": "talents",
+      "operation": "glyph_filter_major",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_filter_minor",
+      "family": "talents",
+      "operation": "glyph_filter_minor",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
       "id": "talents.glyph_learn",
       "family": "talents",
       "operation": "glyph_learn",
@@ -786,6 +858,15 @@
       "id": "talents.glyph_apply",
       "family": "talents",
       "operation": "glyph_apply",
+      "fixture": "class_variants",
+      "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
+      "availability": "verify_in_installed_build",
+      "automation": "pending_adapter"
+    },
+    {
+      "id": "talents.glyph_replace",
+      "family": "talents",
+      "operation": "glyph_replace",
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",

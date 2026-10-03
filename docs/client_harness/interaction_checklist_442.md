@@ -1,12 +1,12 @@
 # 4.4.2 player interaction checklist
 
-907 operation contracts across 45 families. 190 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 190 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
 Player interaction families and every installed binding. Per-spell/item/quest/encounter variants are expanded by the native content census.
 
-New trials use code-controlled ordinary keyboard/mouse inputs under the current AGENTS.md. Screenshots and normal addon-visible state are retained. Historical Laya receipts preserve their actual identities. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.
+Regression trials use code-controlled ordinary keyboard/mouse inputs. The October 3 user-requested desktop-isolation probe explicitly uses Laya on two private client displays. Controller/model identities are recorded per episode. Screenshots and normal addon-visible state are retained. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.
 
 Each successful mutation needs its native or local saved-state oracle and cleanup. Variants include class, race, faction, account versus character, solo versus group, combat versus idle, dead versus alive, zones, permissions and failure paths. Content IDs come from the existing content census.
 
@@ -117,8 +117,17 @@ Fixture: `class_variants`.
 - [ ] `talents.switch_spec`
 - [ ] `talents.inspect_talents`
 - [x] `talents.glyph_open` (qualified variant; [evidence](#glyph_socket_panel))
+- [ ] `talents.glyph_catalog`
+- [ ] `talents.glyph_search`
+- [ ] `talents.glyph_clear_search`
+- [ ] `talents.glyph_filter_known`
+- [ ] `talents.glyph_filter_unknown`
+- [ ] `talents.glyph_filter_prime`
+- [ ] `talents.glyph_filter_major`
+- [ ] `talents.glyph_filter_minor`
 - [ ] `talents.glyph_learn`
 - [ ] `talents.glyph_apply`
+- [ ] `talents.glyph_replace`
 - [ ] `talents.glyph_remove`
 - [ ] `talents.glyph_tooltip`
 - [ ] `talents.persist`
