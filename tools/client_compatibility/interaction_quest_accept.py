@@ -1,4 +1,4 @@
-"""Manually accept a native kill quest, read it and abandon it through stock UI."""
+"""Accept/read/abandon or decline a native kill quest through stock UI."""
 import argparse,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
@@ -13,7 +13,8 @@ QUEST=52
 TITLE='Protect the Frontier'
 
 
-def suite(t,point,stage_only):
+def suite(t,point,stage_only,action='accept'):
+    if action not in ['accept','decline']:raise ValueError('unsupported manual quest action')
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=quest_state(1);items=inventory();fixture=NpcFixture(t.out,t.fixture,261,2)
     if any(q['quest']==QUEST for group in baseline.values() for q in group):
@@ -60,6 +61,14 @@ def suite(t,point,stage_only):
             require(click_case(t,'quests.manual_select','Read the offered '+TITLE+' quest.',lambda c:TITLE in c['text'],
                 details_ready),'quest_details_open_pass')
         if quest_state(1)!=baseline:raise RuntimeError('quest became active before the manual Accept input')
+        if action=='decline':
+            require(click_case(t,'quests.manual_decline','Decline '+TITLE+' without accepting it.',
+                lambda c:c['name']=='QuestFrameDeclineButton' and c['text']=='Decline',
+                lambda b,a,s:{'status':'quest_manual_decline_pass' if s and 'QuestFrame' not in a['panels'] and
+                    not a.get('manual_quest_probe',{}).get('active') and quest_state(1)==baseline and inventory()==items else
+                    'client_or_protocol_failure','oracle':{'panels':a['panels'],'public_active_quest':a.get('manual_quest_probe')}}),
+                'quest_manual_decline_pass')
+            return
         # The stock scrolling quest text disables Accept until its normal
         # animation finishes. Observe readiness without bypassing that control.
         deadline=time.monotonic()+40;t.receipt['accept_readiness']=[]
@@ -111,12 +120,13 @@ def suite(t,point,stage_only):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--action',choices=['accept','decline'],default='accept')
     group=p.add_mutually_exclusive_group();group.add_argument('--point',type=int,nargs=2)
     group.add_argument('--review-point-file',type=Path);p.add_argument('--stage-only',action='store_true');a=p.parse_args()
     if not a.stage_only and not a.review_point_file and (not a.point or any(not 0<=v<bound for v,bound in zip(a.point,[1280,720]))):
         p.error('requires the separately reviewed bounded questgiver point')
     if a.review_point_file and a.review_point_file.exists():p.error('point review must be fresh for this staged frame')
     t=Trial(a.output,controller='code')
-    try:suite(t,a.review_point_file or a.point,a.stage_only);t.receipt['completed']=True
+    try:suite(t,a.review_point_file or a.point,a.stage_only,a.action);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
