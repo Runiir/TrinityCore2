@@ -85,24 +85,28 @@ def open_panel(t):
         'client_or_protocol_failure'},diagnostic_action='open'),'reputation_open_pass')
 
 
-def inspect_stormwind(t,public,native,label='reputation.inspect_stormwind'):
-    row=next(r for r in public['rows'] if r.get('id')==72 and not r['header'])
+def inspect_faction(t,public,native,faction_id,label):
+    row=next(r for r in public['rows'] if r.get('id')==faction_id and not r['header'])
     target=lambda c:c['text']==row['name'] and c['name'].startswith('ReputationBar')
     visible=lambda p:any(c['name']=='ReputationDetailFrame' and c['visible'] for c in p['controls'])
     # Stock ReputationBar_OnClick hides an already-open selected detail. Test
     # that ordinary close explicitly before clicking again to inspect it.
-    if public.get('selected',{}).get('id')==72 and visible(public):
+    if public.get('selected',{}).get('id')==faction_id and visible(public):
         def closed(b,a,s):
-            probe=detail(t,'stormwind_detail_closed')
+            probe=detail(t,label+'_detail_closed')
             return {'status':'reputation_detail_close_pass' if s and not visible(probe) else
                 'client_or_protocol_failure','oracle':probe}
-        require(click_case(t,label+'.close_existing','Close the already-selected Stormwind detail.',target,closed),
+        require(click_case(t,label+'.close_existing','Close the already-selected '+row['name']+' detail.',target,closed),
             'reputation_detail_close_pass')
     def selected(b,a,s):
-        probe=detail(t,'stormwind_selected');chosen=probe.get('selected',{})
-        passed=s and chosen.get('id')==72 and chosen['value']==native[72]['value'] and visible(probe)
+        probe=detail(t,label+'_selected');chosen=probe.get('selected',{})
+        passed=s and chosen.get('id')==faction_id and chosen['value']==native[faction_id]['value'] and visible(probe)
         return {'status':'reputation_standing_pass' if passed else 'client_or_protocol_failure','oracle':probe}
-    require(click_case(t,label,'Inspect the Stormwind reputation standing.',target,selected),'reputation_standing_pass')
+    require(click_case(t,label,'Inspect the '+row['name']+' reputation standing.',target,selected),'reputation_standing_pass')
+
+
+def inspect_stormwind(t,public,native,label='reputation.inspect_stormwind'):
+    inspect_faction(t,public,native,72,label)
 
 
 def suite(t,controls=False):
