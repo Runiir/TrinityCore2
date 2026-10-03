@@ -99,7 +99,6 @@ def select(t,contract,public):
 
 
 def solve(t,contract,baseline):
-    started=time.time()
     def outcome(b,a,s):
         deadline=time.monotonic()+18;samples=[]
         while True:
@@ -127,6 +126,12 @@ def solve(t,contract,baseline):
             'oracle':t.receipt['solve_outcome']}
     require(click_case(t,'archaeology.solve_project','Solve this project with earned fragments and no keystones.',
         lambda c:c['name']=='ArchaeologyFrameArtifactPageSolveFrameSolveButton',outcome),'archaeology_solve_pass')
+    require(t.step('archaeology.artifact_bag','Open the backpack and inspect the crafted artifact.',
+        {'bag':{'kind':'key','value':'b','description':'Press B to open the backpack.'}},
+        lambda b,a,s:{'status':'archaeology_artifact_visible_pass' if s=='bag' and 0 in a.get('bags',[]) and
+            any(r['id']==contract['item'] and r['count']==1 for r in a.get('bag_items',[])) else
+            'client_or_protocol_failure','oracle':{'expected_item':contract['item'],'bag_items':a.get('bag_items')}},
+        diagnostic_action='bag'),'archaeology_artifact_visible_pass')
 
 
 def suite(t,do_solve=False):
