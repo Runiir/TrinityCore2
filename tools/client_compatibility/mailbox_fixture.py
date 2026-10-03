@@ -8,23 +8,33 @@ from .npc_fixture import NpcFixture
 
 class MailboxFixture(NpcFixture):
     def __init__(self, out, player):
-        super().__init__(out, player, 197135, 0)
+        identity=(player['guid'],player['account_id'],player['character_name'])
+        if identity==(1,1,'Harnessone'):
+            super().__init__(out,player,197135,0)
+            self.restore_name,self.service_name='TC442NpcRestore','TC442NpcService'
+        elif identity==(2,2,'Harnesstwo'):
+            # Explicit second owned actor; the ordinary NPC fixtures still
+            # require the primary and do not inherit this mailbox exception.
+            self.out,self.player,self.entry,self.flag=out,player,197135,0
+            self.rows=[];self.before=None;self.npc=None
+            self.restore_name,self.service_name='TC442MailScoutRestore','TC442MailScoutService'
+        else:raise ValueError('mailbox fixture requires one of the two registered owned actors')
 
     def prepare(self):
         lab.server_command('saveall'); time.sleep(1)
         with lab.connection() as connection, connection.cursor() as cursor:
             cursor.execute('SELECT guid,account,name,position_x,position_y,position_z,orientation,map '
-                           'FROM client442_characters.characters WHERE guid=1')
+                           'FROM client442_characters.characters WHERE guid=%s',(self.player['guid'],))
             self.before = cursor.fetchone()
-            if self.before[:3] != (1, 1, 'Harnessone'):
-                raise RuntimeError('owned primary identity changed')
+            if self.before[:3] != (self.player['guid'],self.player['account_id'],self.player['character_name']):
+                raise RuntimeError('owned mailbox actor identity changed')
             cursor.execute('SELECT g.guid,g.id,t.name,g.map,g.position_x,g.position_y,g.position_z,g.orientation,t.type '
                            'FROM client442_world.gameobject g JOIN client442_world.gameobject_template t ON t.entry=g.id '
                            'WHERE g.guid=220045 AND g.id=197135 AND g.map=0 AND t.type=19')
             self.npc = cursor.fetchone()
             if not self.npc or self.npc[2] != 'Mailbox':
                 raise RuntimeError('existing mailbox fixture changed')
-            names = ['TC442NpcRestore', 'TC442NpcService']
+            names = [self.restore_name,self.service_name]
             cursor.execute('SELECT id FROM client442_world.game_tele WHERE name IN (%s,%s)', names)
             if cursor.fetchone(): raise RuntimeError('an earlier service fixture needs cleanup')
             cursor.execute('SELECT MAX(id) FROM client442_world.game_tele'); start = cursor.fetchone()[0] + 1
@@ -40,4 +50,4 @@ class MailboxFixture(NpcFixture):
         lab.private_write(self.out/'mailbox_fixture.json', json.dumps({'source':'code_fixture_native_console',
             'before':self.before, 'mailbox':self.npc, 'temporary_teleports':self.rows}, indent=2)+'\n')
         lab.server_command('reload game_tele'); time.sleep(.5)
-        lab.server_command('tele name Harnessone TC442NpcService'); time.sleep(4)
+        lab.server_command(f'tele name {self.player["character_name"]} {self.service_name}'); time.sleep(4)

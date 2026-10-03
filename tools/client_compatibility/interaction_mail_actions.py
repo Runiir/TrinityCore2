@@ -12,11 +12,12 @@ from .interaction_mail import mailbox_state
 from .mailbox_fixture import MailboxFixture
 
 
-def letter(subject):
+def letter(subject,receiver=1):
+    if receiver not in [1,2]:raise ValueError('letter oracle requires a registered owned receiver')
     lab.server_command('saveall');time.sleep(1)
     with lab.connection() as connection,connection.cursor() as cursor:
         cursor.execute('SELECT id,messageType,sender,receiver,subject,body,money,cod,checked,has_items,mailTemplateId '
-                       'FROM client442_characters.mail WHERE receiver=1 AND subject=%s',(subject,))
+                       'FROM client442_characters.mail WHERE receiver=%s AND subject=%s',(receiver,subject))
         rows=cursor.fetchall()
         if len(rows)>1:raise RuntimeError('disposable mail subject is not unique')
         return rows[0] if rows else None

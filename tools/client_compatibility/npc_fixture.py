@@ -50,11 +50,11 @@ class NpcFixture:
 
     def restore(self):
         if not self.rows:return
-        lab.server_command('tele name Harnessone TC442NpcRestore');time.sleep(4)
+        lab.server_command(f'tele name {self.player["character_name"]} {self.rows[0][-1]}');time.sleep(4)
         lab.server_command('saveall');time.sleep(1)
         with lab.connection() as c,c.cursor() as q:
             q.execute('SELECT position_x,position_y,position_z,orientation,map '
-                'FROM client442_characters.characters WHERE guid=1');position=q.fetchone()
+                'FROM client442_characters.characters WHERE guid=%s',(self.player['guid'],));position=q.fetchone()
             if any(abs(a-b)>.01 for a,b in zip(position,self.before[3:])):
                 raise RuntimeError('NPC fixture position restoration failed; preserving restore teleport')
             for row in self.rows:

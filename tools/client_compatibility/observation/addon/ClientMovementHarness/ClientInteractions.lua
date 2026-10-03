@@ -119,7 +119,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=20,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=21,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -203,6 +203,11 @@ local function snapshot(viewMode,viewPage)
     if MailFrame and MailFrame:IsVisible() then
         local count,total=call(GetInboxNumItems)
         data.mail={count=count,total=total,tab=MailFrame.selectedTab,inbox={}}
+        if SendMailFrame and SendMailFrame:IsVisible() then
+            data.mail.compose={recipient=trim(call(SendMailNameEditBox.GetText,SendMailNameEditBox),80),
+                subject=trim(call(SendMailSubjectEditBox.GetText,SendMailSubjectEditBox),80),
+                body=trim(call(SendMailBodyEditBox.GetText,SendMailBodyEditBox),384)}
+        end
         for index=1,math.min(count or 0,3) do
             local _,_,sender,subject,money,cod,_,items,read=call(GetInboxHeaderInfo,index)
             data.mail.inbox[#data.mail.inbox+1]={index=index,sender=trim(sender,48),subject=trim(subject,80),

@@ -12,15 +12,16 @@ from .mailbox_fixture import MailboxFixture
 from .interaction_trade import inventory
 
 
-def mailbox_state():
+def mailbox_state(receiver=1):
+    if receiver not in [1,2]:raise ValueError('mail oracle requires a registered owned receiver')
     lab.server_command('saveall'); time.sleep(1)
     with lab.connection() as connection,connection.cursor() as cursor:
         cursor.execute('SELECT id,messageType,sender,receiver,subject,money,cod,checked,has_items,mailTemplateId '
-                       'FROM client442_characters.mail WHERE receiver=1 ORDER BY id')
+                       'FROM client442_characters.mail WHERE receiver=%s ORDER BY id',(receiver,))
         mails = cursor.fetchall()
         cursor.execute('SELECT mi.mail_id,mi.item_guid,ii.itemEntry,ii.count FROM client442_characters.mail_items mi '
                        'JOIN client442_characters.item_instance ii ON ii.guid=mi.item_guid '
-                       'JOIN client442_characters.mail m ON m.id=mi.mail_id WHERE m.receiver=1 ORDER BY mi.mail_id,mi.item_guid')
+                       'JOIN client442_characters.mail m ON m.id=mi.mail_id WHERE m.receiver=%s ORDER BY mi.mail_id,mi.item_guid',(receiver,))
         return {'mails':mails, 'attachments':cursor.fetchall(), 'inventory':inventory()}
 
 
@@ -46,7 +47,7 @@ def verify_catalog(t, state, frame, baseline):
 
 def suite(t, point, stage_only):
     actors.session_entry(t.fixture); t.clean_panels(); fixture = MailboxFixture(t.out,t.fixture)
-    baseline = mailbox_state(); t.receipt['mailbox_baseline'] = baseline; t.persist()
+    baseline = mailbox_state(t.fixture['guid']); t.receipt['mailbox_baseline'] = baseline; t.persist()
     try:
         fixture.prepare(); state,frame = t.observe('mailbox_staged')
         t.receipt['staging'] = {'frame':frame,'world_position':state['world_position']}; t.persist()
@@ -71,7 +72,7 @@ def suite(t, point, stage_only):
     finally:
         try: t.clean_panels()
         finally: fixture.restore()
-        after = mailbox_state(); restored = after == baseline
+        after = mailbox_state(t.fixture['guid']); restored = after == baseline
         state,frame = t.observe('mailbox_restored')
         t.receipt['mailbox_restoration'] = {'mail_inventory_money_unchanged':restored,'after':after,'frame':frame}
         t.persist()
