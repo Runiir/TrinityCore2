@@ -11,10 +11,10 @@ from .interaction_tooltips import baseline
 def suite(t,source):
     source=source.resolve()
     if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':raise ValueError('require owned closed deletion episode')
-    old=json.loads(source.read_text());original=stable(baseline());saved=sets()
+    old=json.loads(source.read_text());original=stable(baseline());saved=stable(sets())
     if (not old.get('completed') or old.get('failure') or not old.get('finished_at') or
         old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or
-        old['native_after']!=original or saved['rows']):raise RuntimeError('source deletion and current empty native fixture differ')
+        old['native_after']!={'native':original,'sets':saved} or saved['rows']):raise RuntimeError('source deletion and current empty native fixture differ')
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},baseline=original,
         qualified_scope='empty manager rendering after source deletion; no new deletion input');t.persist();collapsed=None
     try:
@@ -26,7 +26,7 @@ def suite(t,source):
     finally:
         try:restore_display(t,collapsed)
         finally:
-            t.receipt.update(native_after=stable(baseline()),native_sets_after=sets());t.persist()
+            t.receipt.update(native_after=stable(baseline()),native_sets_after=stable(sets()));t.persist()
     if t.receipt['native_after']!=original or t.receipt['native_sets_after']!=saved:raise RuntimeError('empty inspection changed native resources or set catalog')
     t.receipt['native_resources_preserved']=True
 
