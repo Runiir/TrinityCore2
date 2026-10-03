@@ -58,9 +58,11 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
             # Stage beside the actual visible target, never assume its DB pose
             # is its current pose. This remains fixture setup, not movement proof.
             facts=Observer(guid=1).poll();unit=facts.get('selected_unit')
-            if (not unit or unit['guid']>>32&0xFFFFF!=entry or unit['health']!=unit['max_health'] or
-                    math.dist(facts['position'][:3],unit['position'][:3])>60):
-                raise RuntimeError('requires a nearby undamaged observed '+name)
+            record['observed_target_before_staging']=facts;t.persist()
+            if not unit or unit['guid']>>32&0xFFFFF!=entry or unit['health']!=unit['max_health']:
+                raise RuntimeError('requires an undamaged observed '+name)
+            distance=math.dist(facts['position'][:3],unit['position'][:3])
+            if distance>100:raise RuntimeError(f'observed combat staging target is {distance:.1f} yards away')
             x,y,z,o=unit['position'];dx,dy=2*math.cos(o),2*math.sin(o)
             with lab.connection() as c,c.cursor() as q:
                 q.execute('UPDATE client442_world.game_tele SET position_x=%s,position_y=%s,position_z=%s,orientation=%s '
