@@ -295,3 +295,25 @@ ratings have26 slots while the modern array has32, with several deprecated
 slots repurposed. Those values must not be copied into modern corruption,
 speed, avoidance or similar fields. Item level has no direct native update
 field; it requires separate item/slot attribution. These remain open.
+
+The fresh complete `character_combat_after_02` trial passes creation, ordinary
+helmet removal and re-equip, all public combat API checks, native sparse
+crit attribution, and full fixture/sidebar/panel restoration. Reviewed
+stock rows show melee crit10.80%/8.96%/10.80% and ranged DPS1075.9
+throughout. Native melee crit is10.801665/8.955392/10.801665, and native
+ranged damage1757.6947–2619.1934 at2.034 seconds gives1075.931185 DPS.
+Seven public school crit values agree in all phases. The failed first
+whole trial and source-restoration episode remain separate. Haste, ratings,
+expertise, mastery, item level, offscreen rows and other classes are open.
+This new proof will augment the existing character.stats qualification
+after DVC41 remote/archive verification; the unique operation count stays264.
+
+Reproduction uses `interaction_character_combat --helmet-roundtrip --output
+<new-owned-directory>` under the authentication Pixi manifest. For a trace-
+bound pending helmet failure, `interaction_bridge_deploy restart --version57
+--combat-source <failed-episode.json>` carries only its exact native pending
+fixture across deployment. Fresh launcher/realm/character screens must be
+reviewed before world entry. `interaction_character_combat_recovery --source
+<failed-episode.json> --deployment <corrected-deployment.json> --output
+<new-owned-directory>` restores the source fixture through normal input;
+it contributes no feature qualification.
