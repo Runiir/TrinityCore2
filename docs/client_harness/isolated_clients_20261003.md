@@ -53,3 +53,35 @@ The current regression suite passes 694 tests. The wrong-peer and reused-process
 tests verify rejection before any input traffic. Those guards also passed with
 the sanitizer build. The live success uses the optimized C++ sender whose build
 receipt pins its source, executable and libei header hashes.
+
+Later book probes exposed stale partial chat observations and a pending glyph
+that Escape cancels before closing its panel. Chat submission now waits before
+checking the text or completing normal name entry. Observer v37 records pending
+glyphs while their panel is visible and interleaves normal state between control
+pages. Background text entry uses longer key holds and gaps. The first full
+rerun had four chat-test failures because their fixtures assumed immediate
+completion; the tests now distinguish delayed observation from deadline-expired
+name completion, and the next full rerun passed 696 checks. Failed live book and
+reload receipts remain failed; cleanup of the exact unused book passed separately.
+
+## Cold login query burst
+
+The fresh primary login sent 316 unique public creature queries in 44 ms. Native
+had answered 59 when the 256-outstanding-query guard closed the connection. This
+was an actual bridge failure, independent of desktop focus.
+
+The bridge now forwards at most 64 creature queries at once, queues at most 4,096
+distinct pending entries, coalesces duplicates and releases the next queued entry
+after an authoritative native reply. Queued reads receive no invented missing
+template response. Logout resets the active and waiting state. Regression cases
+cover a 400-entry burst, duplicate and unsolicited replies, the pending bound and
+release of capacity. The first full rerun retained two mail-test failures caused
+by the corrected native opcode name and duplicate coalescing; their expectations
+are updated without weakening the malformed-mail checks.
+
+If a disconnected primary cannot pass a deployment's normal UI precheck,
+`interaction_bridge_deploy restart --unavailable-primary-source <recovery.json>`
+can use a closed failed owned-reentry receipt. It checks client/server lifetimes
+and the exact native inventory, money, spells and talents before carrying the
+previous public baseline forward. The initial public precheck stays deferred and
+failed in its receipt. Both actors must pass fresh public checks after reconnect.
