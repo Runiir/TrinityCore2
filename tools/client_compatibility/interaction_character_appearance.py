@@ -128,9 +128,14 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--scout-diagnostic',action='store_true',help='Owned unarmored scout request/flag probe; does not qualify geared rendering')
     p.add_argument('--recover-source',type=Path,help='Restore exact failed scout stock settings through closure/reload, without repeating a visibility toggle')
+    p.add_argument('--recover-deployment',type=Path,help='Completed owned bridge deployment binding the exact failed native helm mutation')
     a=p.parse_args();t=Trial(a.output,controller='code')
     try:
-        if a.recover_source:recover(t,a.recover_source)
+        if a.recover_deployment:
+            if not a.recover_source:raise ValueError('deployment recovery requires its failed source episode')
+            from .interaction_appearance_recovery import recover as recover_mutation
+            recover_mutation(t,a.recover_source,a.recover_deployment)
+        elif a.recover_source:recover(t,a.recover_source)
         else:suite(t,a.scout_diagnostic)
         t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
