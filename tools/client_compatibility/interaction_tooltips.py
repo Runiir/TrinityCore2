@@ -3,7 +3,7 @@ import argparse,json,re,struct,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
-from .interaction_operations import command,controls,point
+from .interaction_operations import command,controls,point,click_case
 from .interaction_observation import read_page
 from .interaction_macros import require,edit_case
 from .interaction_archaeology_projects import native,dbc
@@ -60,6 +60,28 @@ def hover(t,case_id,control,title,item=None):
         outcome,diagnostic_action='hover'),'stock_tooltip_pass')
 
 
+def close_glyphs(t):
+    require(click_case(t,'glyphs.tooltip_close','Close glyphs with the stock window button.',
+        lambda c:c['name']=='PlayerTalentFrameCloseButton',
+        lambda b,a,s:{'status':'glyph_panel_closed' if s and 'PlayerTalentFrame' not in a['panels'] else
+            'client_or_protocol_failure'}),'glyph_panel_closed')
+
+
+def recover(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('require an owned failed glyph-tooltip episode')
+    old=json.loads(source.read_text());saved=json.loads(json.dumps(baseline()))
+    if (not old.get('finished_at') or old.get('completed') or old['actor']!=t.fixture or
+        old['runtime']!=t.receipt['runtime'] or old.get('failure')!=
+        'RuntimeError: panel cleanup did not change state; refusing to replay Escape' or saved!=old['baseline']):
+        raise RuntimeError('cleanup recovery requires the exact failed episode and unchanged native/client state')
+    t.receipt['cleanup_source']={'file':str(source),'sha256':lab.sha256(source)};t.receipt['baseline']=saved;t.persist()
+    close_glyphs(t);t.clean_panels();after=json.loads(json.dumps(baseline()))
+    t.receipt['native_after']=after;t.receipt['native_preserved']=after==saved;t.persist()
+    if after!=saved:raise RuntimeError('glyph cleanup changed native state')
+
+
 def suite(t,family):
     if t.fixture['guid']!=1:raise RuntimeError('requires the owned primary warrior')
     actors.session_entry(t.fixture);t.clean_panels();t.tooltip_baseline=baseline()
@@ -98,13 +120,24 @@ def suite(t,family):
         if original_search is not None:
             require(edit_case(t,'glyphs.tooltip_search_restore','Restore the original glyph search.',
                 lambda c:c['name']=='GlyphFrameSearchBox',original_search),'ui_edit_pass')
+            # The stock edit box consumes Escape to clear keyboard focus.
+            # Close its window through the observed button instead of relying
+            # on repeated Escape with an unchanged panel signature.
+            close_glyphs(t)
         t.clean_panels();t.receipt['native_after']=baseline();t.receipt['native_preserved']=t.receipt['native_after']==t.tooltip_baseline;t.persist()
         if not t.receipt['native_preserved']:raise RuntimeError('read-only tooltips changed native state')
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--family',choices=['equipment','glyph'],required=True);a=p.parse_args();t=Trial(a.output,controller='code')
-    try:suite(t,a.family);t.receipt['completed']=True
+    p.add_argument('--family',choices=['equipment','glyph'],required=True)
+    p.add_argument('--recover-source',type=Path,help='Close only the exact failed glyph-tooltip panel after native/source validation')
+    a=p.parse_args()
+    if a.recover_source and a.family!='glyph':p.error('cleanup recovery applies only to glyph tooltips')
+    t=Trial(a.output,controller='code')
+    try:
+        if a.recover_source:recover(t,a.recover_source)
+        else:suite(t,a.family)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
