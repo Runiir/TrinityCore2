@@ -13,7 +13,7 @@ QUEST=52
 TITLE='Protect the Frontier'
 
 
-def suite(t,point,stage_only,action='accept',after_read=None):
+def suite(t,point,stage_only,action='accept',after_read=None,retain_reward=False):
     if action not in ['accept','decline']:raise ValueError('unsupported manual quest action')
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=quest_state(1);items=inventory();fixture=NpcFixture(t.out,t.fixture,261,2)
@@ -27,6 +27,7 @@ def suite(t,point,stage_only,action='accept',after_read=None):
             (row[4] and not row[4]&1) or (row[5] and not row[5]&1)):
         raise RuntimeError('manual kill-quest contract changed')
     t.receipt['baseline']={'quests':baseline,'inventory_money':items,'quest':QUEST,'native_eligibility':row};t.persist()
+    retained=False
     try:
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
         state,frame=t.observe('manual_giver_staged');t.receipt['staging']={'state':state,'frame':frame};t.persist()
@@ -116,7 +117,16 @@ def suite(t,point,stage_only,action='accept',after_read=None):
         require(click_case(t,'quests.manual_read_log','Read '+TITLE+' and both named kill objectives in the quest log.',
             lambda c:c['text'].strip()==TITLE,read_log),'quest_log_details_pass')
         if after_read:
-            after_read(t,fixture)
+            result=after_read(t,fixture)
+            if retain_reward:
+                now=quest_state(1);rewarded=[q for q in now['rewarded'] if q['quest']==QUEST]
+                remaining={**now,'rewarded':[q for q in now['rewarded'] if q['quest']!=QUEST]}
+                if result!='reward_retained' or len(rewarded)!=1 or remaining!=baseline:
+                    raise RuntimeError('retained ordinary reward changed an unrelated quest or lacks native history')
+                baseline=now;items=inventory();retained=True
+                t.receipt['retained_reward']={'source':'ordinary player quest reward','quest':QUEST,
+                    'quest_state':baseline,'inventory_money':items,'fixture_position_will_be_restored':True};t.persist()
+                return
             t.clean_panels();t.execute({'kind':'key','value':binding_key(state['quest_log_keys'][0])})
             state,_=t.observe('progress_log_reopened')
             if any(h.get('title')=='Elwynn Forest' and h.get('collapsed') for h in state.get('quest_headers',[])):
@@ -151,7 +161,9 @@ def suite(t,point,stage_only,action='accept',after_read=None):
     finally:
         try:t.clean_panels();restore_autoaccepted(t,baseline,quest=QUEST)
         finally:fixture.restore()
-        t.receipt['restoration']={'quests_restored':quest_state(1)==baseline,'inventory_money_restored':inventory()==items};t.persist()
+        t.receipt['restoration']=({'earned_quest_history_preserved':quest_state(1)==baseline,
+            'earned_inventory_money_preserved':inventory()==items} if retained else
+            {'quests_restored':quest_state(1)==baseline,'inventory_money_restored':inventory()==items});t.persist()
         if not all(t.receipt['restoration'].values()):raise RuntimeError('manual quest trial requires restoration')
 
 
