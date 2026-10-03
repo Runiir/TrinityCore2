@@ -223,6 +223,11 @@ The notification screenshot is reviewed separately from corpse or loot behavior.
 `earned_reputation_read_02` passes inspection of below-viewport Stormwind after
 one ordinary scroll down, then scrolls up to restore exact visible indexes 1–15.
 All public/native standings and the original inventory/money remain unchanged.
-Together with the earlier watched-reload pass, the new results are ready for
-UI30 DVC checkpoint and archived-frame qualification. Currency controls are next;
-remaining player interaction families stay open.
+Together with the earlier watched-reload pass, these results are checkpointed in
+`artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc` (587,711,542 bytes,
+SHA-256 `f2ea3e55f870d5aaa2a7f48650679c0796e0d7e16692f6383eacbfc5712dc6d7`).
+DVC status/push and cloud verification passed. Streaming archive review verifies
+six receipt/review digests and all 40 action-frame digests in the four selected
+closed runs. Four new reputation operation scopes raise the checklist to 224/916;
+eight qualification/inventory guards pass. Currency controls are next; remaining
+player interaction families stay open. Historical failures remain in the archive.

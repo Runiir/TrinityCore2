@@ -14,7 +14,9 @@ def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidenc
             'talents.glyph_filter_known','talents.glyph_filter_unknown','talents.glyph_filter_prime',
             'talents.glyph_filter_major','talents.glyph_filter_minor','map.minimap_tracking',
             'quests.giver_trivial_marker','reputation.inspect_standing','reputation.watched_faction',
-            'reputation.collapse','reputation.expand','reputation.inactive_toggle']:
+            'reputation.collapse','reputation.expand','reputation.inactive_toggle',
+            'reputation.persist','reputation.at_war_toggle',
+            'reputation.gain_standing','reputation.lose_standing']:
         assert by_id[key]['qualification'] and '- [x] `'+key+'`' in render(data)
     for key in ['raid.assistant_promote','party.full_group_error','archaeology.solve_project',
             'quests.persist','talents.glyph_replace']:

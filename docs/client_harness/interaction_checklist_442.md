@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 220 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 224 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -60,12 +60,12 @@ Fixture: `known_factions`.
 - [x] `reputation.expand` (qualified variant; [evidence](#reputation_standing_watch_headers))
 - [x] `reputation.collapse` (qualified variant; [evidence](#reputation_standing_watch_headers))
 - [x] `reputation.inspect_standing` (qualified variant; [evidence](#reputation_standing_watch_headers))
-- [ ] `reputation.at_war_toggle`
+- [x] `reputation.at_war_toggle` (qualified variant; [evidence](#reputation_atwar_neutral_roundtrip))
 - [x] `reputation.inactive_toggle` (qualified variant; [evidence](#reputation_inactive_roundtrip))
 - [x] `reputation.watched_faction` (qualified variant; [evidence](#reputation_standing_watch_headers))
-- [ ] `reputation.gain_standing`
-- [ ] `reputation.lose_standing`
-- [ ] `reputation.persist`
+- [x] `reputation.gain_standing` (qualified variant; [evidence](#reputation_earned_positive_negative))
+- [x] `reputation.lose_standing` (qualified variant; [evidence](#reputation_earned_positive_negative))
+- [x] `reputation.persist` (qualified variant; [evidence](#reputation_watched_reload))
 
 ## currency
 
@@ -1706,3 +1706,33 @@ Remaining limits: Only Stormwind on the owned level-85 human warrior and the tes
 
 - [442_interactions_20261003_30.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_30.tar.gz.dvc), member `evidence/client_interactions_20261003_ui29/reputation_inactive_03/episode.json`, SHA-256 `0a4735def3d903bfe29e651f20f050ad0a594d85ddab180c79e9f6e4c0700dff`.
   Checked cases: `reputation.inactive.move` (reputation_inactive_pass), `reputation.inactive_reselect.move` (reputation_standing_pass), `reputation.inactive.restore` (reputation_inactive_pass).
+
+### reputation_watched_reload
+
+Ordinary Stormwind watch survives /reload with native index 19, total 4165 and visible green progress 1165/6000 preserved. Stock hide restores no-watch, all native faction rows, inventory and money.
+
+Remaining limits: Only watched-faction addon reload persistence on the owned level-85 Human warrior. Full-session reconnect and other reputation persistence variants remain open.
+
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_persist_01/episode.json`, SHA-256 `24c1aa0696e469c0ffb262169c378ee786b05e77a390292636a66bbb2c61d275`.
+  Checked cases: `reputation.persist_reload` (reputation_persistence_pass).
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_outcome_visual_review.json`, SHA-256 `2dcd8468b4c4be843faa462aa710d227d9c13c08d9b985760304ff674df48413`.
+
+### reputation_atwar_neutral_roundtrip
+
+Stock eligible Neutral Booty Bay At War checkbox changes and restores flags 65/67/65. Captured modern uint16 index 1 and native uint32-plus-byte requests agree. Complete native reputation, public catalog, inventory and money are restored; checked/unchecked frames are reviewed.
+
+Remaining limits: Only this eligible faction on the owned Human warrior. Hostile peace restrictions, other reactions and persistence remain open. The original protocol disconnection and source-bound recovery are retained.
+
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_atwar_02/episode.json`, SHA-256 `997f4016f66f0a54dda5cc3b60e7e27d0fd2c3cd5d27189de374bbe914fedc45`.
+  Checked cases: `reputation.at_war.change` (reputation_atwar_pass), `reputation.at_war.restore` (reputation_atwar_pass).
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_atwar_visual_review.json`, SHA-256 `894814f9a55b7c29dd18155a3d53ac4c50002f76dd1797135a79de6bb249ab05`.
+
+### reputation_earned_positive_negative
+
+Ordinary melee kills an existing Bloodsail Raider. Exact native victim health reaches zero after stock deselection. Native/public standing and packets agree on +5 Booty Bay, -22 Bloodsail and +2 to each other goblin faction. Pose, inventory and money are restored; earned reputation is retained.
+
+Remaining limits: Only this ordinary kill and owned Human warrior. Fixture pose staging does not qualify navigation; corpse loot, other sources/ranks and learned-model autonomy remain open. Earlier death-oracle and loading failures are retained.
+
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_combat_03/episode.json`, SHA-256 `4d14717d628b84d97d81e92a9c5e1b753e74708eae19bc9f9ade1515169047b3`.
+  Checked cases: `reputation.combat_target` (reputation_target_pass), `reputation.combat_kill` (reputation_kill_pass).
+- [442_interactions_20261003_31.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc), member `evidence/client_interactions_20261003_ui30/reputation_outcome_visual_review.json`, SHA-256 `2dcd8468b4c4be843faa462aa710d227d9c13c08d9b985760304ff674df48413`.

@@ -400,7 +400,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "reputation_atwar_neutral_roundtrip"
     },
     {
       "id": "reputation.inactive_toggle",
@@ -429,7 +430,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "reputation_earned_positive_negative"
     },
     {
       "id": "reputation.lose_standing",
@@ -438,7 +440,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "reputation_earned_positive_negative"
     },
     {
       "id": "reputation.persist",
@@ -447,7 +450,8 @@
       "fixture": "known_factions",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "reputation_watched_reload"
     },
     {
       "id": "currency.open",
@@ -10117,8 +10121,92 @@
           }
         }
       ]
+    },
+    {
+      "id": "reputation_watched_reload",
+      "operations": [
+        "reputation.persist"
+      ],
+      "scope": "Ordinary Stormwind watch survives /reload with native index 19, total 4165 and visible green progress 1165/6000 preserved. Stock hide restores no-watch, all native faction rows, inventory and money.",
+      "limits": "Only watched-faction addon reload persistence on the owned level-85 Human warrior. Full-session reconnect and other reputation persistence variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_persist_01/episode.json",
+          "sha256": "24c1aa0696e469c0ffb262169c378ee786b05e77a390292636a66bbb2c61d275",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "reputation.persist_reload": "reputation_persistence_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_outcome_visual_review.json",
+          "sha256": "2dcd8468b4c4be843faa462aa710d227d9c13c08d9b985760304ff674df48413",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "reputation_atwar_neutral_roundtrip",
+      "operations": [
+        "reputation.at_war_toggle"
+      ],
+      "scope": "Stock eligible Neutral Booty Bay At War checkbox changes and restores flags 65/67/65. Captured modern uint16 index 1 and native uint32-plus-byte requests agree. Complete native reputation, public catalog, inventory and money are restored; checked/unchecked frames are reviewed.",
+      "limits": "Only this eligible faction on the owned Human warrior. Hostile peace restrictions, other reactions and persistence remain open. The original protocol disconnection and source-bound recovery are retained.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_atwar_02/episode.json",
+          "sha256": "997f4016f66f0a54dda5cc3b60e7e27d0fd2c3cd5d27189de374bbe914fedc45",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "reputation.at_war.change": "reputation_atwar_pass",
+            "reputation.at_war.restore": "reputation_atwar_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_atwar_visual_review.json",
+          "sha256": "894814f9a55b7c29dd18155a3d53ac4c50002f76dd1797135a79de6bb249ab05",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "reputation_earned_positive_negative",
+      "operations": [
+        "reputation.gain_standing",
+        "reputation.lose_standing"
+      ],
+      "scope": "Ordinary melee kills an existing Bloodsail Raider. Exact native victim health reaches zero after stock deselection. Native/public standing and packets agree on +5 Booty Bay, -22 Bloodsail and +2 to each other goblin faction. Pose, inventory and money are restored; earned reputation is retained.",
+      "limits": "Only this ordinary kill and owned Human warrior. Fixture pose staging does not qualify navigation; corpse loot, other sources/ranks and learned-model autonomy remain open. Earlier death-oracle and loading failures are retained.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_combat_03/episode.json",
+          "sha256": "4d14717d628b84d97d81e92a9c5e1b753e74708eae19bc9f9ade1515169047b3",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "reputation.combat_target": "reputation_target_pass",
+            "reputation.combat_kill": "reputation_kill_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_31.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui30/reputation_outcome_visual_review.json",
+          "sha256": "2dcd8468b4c4be843faa462aa710d227d9c13c08d9b985760304ff674df48413",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
     }
   ],
-  "qualified_operations": 220,
+  "qualified_operations": 224,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI30 watched reload persistence, ordinary At War change/restore, positive/negative earned standing and below-viewport inspection/restoration are closed passes. Primary and scout D3D11 entries recover recorded loading failures; the independent uint16 At War bridge repair passes 731 full and 19 sanitizer checks and both clients reenter with baselines intact. Checkpoint and qualify reviewed UI30 scopes, prune remote-verified data, then continue currency controls and all remaining UI families. Native worldserver unchanged.",
+  "current": "UI30 is closed and DVC archive/frame verified. Four new reputation operations bring the checklist to 224/916; eight qualification/inventory guards pass. Continue UI31 currency panel, exact native/public contents, reversible backpack/unused flags and persistence, then all remaining UI families. Both clients use isolated displays with D3D11; native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -20,7 +20,7 @@
     "second_monitor": "HDMI-1",
     "isolated_databases": true,
     "native_worldserver_restart_only_when_required": true,
-    "decision_models": "Code-controlled ordinary-input compatibility checks by default. The latest explicit user request authorizes the bounded two-client Laya isolation probe; cohort UI jobs require --use-laya and retain actual model identity. Historical receipts are unchanged."
+    "decision_models": "New compatibility trials use code-controlled ordinary keyboard/mouse inputs. Jev and Laya are retired by the latest AGENTS.md; no new step calls either. Historical receipts retain their actual controller/model identities, including the completed two-client Laya isolation probe."
   },
   "last_closed_batches": [
     "followup/panel_trial_01: 22 opens, 10 closes, 13 controller failures, 1 guild failure",
