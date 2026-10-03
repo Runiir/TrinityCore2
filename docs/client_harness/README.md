@@ -105,7 +105,7 @@ persistence and travel remain open.
 | Modern authentication TLS / REST | `127.0.0.1:1119` / `18081` |
 | Modern world bridge | `127.0.0.1:18087` |
 | Historical archaeology / travel heads; unused in new runs | `127.0.0.1:8002` / `8003` |
-| Explicit October 2 interaction trial, base Laya | `127.0.0.1:8000` |
+| Explicit October 2 interactions and October 3 isolation probe, base Laya | `127.0.0.1:8000` |
 
 Inspect ownership before starting services. Start only missing owned components.
 Run Python commands with Pixi from this checkout:
@@ -167,8 +167,11 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m too
 ```
 
 One task owns each actor. Each actor has its own Gamescope X display and input
-lock. Keyboard/mouse input goes directly to the owned game window on that private
-display. Monitor checks only read the host window's position; task inputs never
+lock. Keyboard/mouse input uses an independent C++ libei sender connected to that
+actor's Gamescope socket. It verifies the socket peer's PID, UID and start ticks,
+and waits for the virtual device's resumed event before accepting inputs.
+Read-only XKB lookup provides key codes. Monitor checks only read the host
+window's position; task inputs never
 activate or reposition it. The user can work in another desktop application while
 both actors run. Cohort preflight rejects shared character GUIDs, client processes
 or private displays. `cohort stop` interrupts its owned
@@ -176,6 +179,23 @@ workers, leaving clients and servers running. This first probe observes the prim
 and briefly moves the scout; it is explicitly a code-driven diagnostic, not a
 two-model autonomy claim. Fleet restart/recovery and long-duration scheduling need
 additional validation.
+
+Build the small input sender separately. This does not rebuild or restart either
+server. Install matching `libei-dev` headers in the lab's
+`tools/libei-dev/usr/include/libei-1.0` directory; this lab uses the headers from
+Ubuntu's `libei-dev=1.5.0-3` package, extracted without installing host packages.
+The runtime library is the host's existing `libei.so.1`.
+
+```bash
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.native_input.control
+```
+
+Input build receipts pin source, executable and header hashes. Cohort preflight
+rejects a missing or stale sender. Panel and diagnostic checks wait for the
+requested observation, with a bounded timeout; they do not replay game actions
+while waiting. The
+[libei device protocol](https://libinput.pages.freedesktop.org/libei/interfaces/ei_device/index.html)
+requires a resumed device before emulation.
 
 The user-requested two-client Laya UI check uses the existing local model endpoint
 and opens bags, equipment and friends separately on each actor. It preserves
@@ -273,7 +293,8 @@ status/push checks verify this lab's checkpoints without downloading those datas
 Start each interaction batch with the owned native server identity, then place
 standalone trial outputs underneath it. Mail examples use the existing visible
 mailbox at the verified 1280x720 point `(640,248)`; review staging after camera or
-UI layout changes. Run physical-input trials one at a time across both actors.
+UI layout changes. Run one physical-input task per actor; different actors can run
+concurrently through the cohort.
 
 New mail and auction runners use the code controller under the current
 AGENTS.md retirement of Laya and Jev. Historical receipts retain their actual

@@ -8,6 +8,7 @@ import subprocess
 import time
 from . import lab_runtime as lab,actors,owned_input
 from . import archaeology_inputs
+from .native_input.control import verified as verified_input
 
 MANIFEST=lab.REPO/'tools/client_compatibility/auth/pixi.toml'
 
@@ -40,6 +41,7 @@ def start(path,out,allow_laya=False):
     if subprocess.check_output(['git','status','--porcelain'],cwd=lab.REPO,text=True):
         raise RuntimeError('commit experiment code/configs before starting a client cohort')
     if out.exists():raise ValueError('cohort output exists; use a fresh directory')
+    verified_input()
     if not path.is_relative_to(lab.REPO/'experiments/configs/client_harness') or subprocess.run(
         ['git','ls-files','--error-unmatch',str(path.relative_to(lab.REPO))],cwd=lab.REPO,
         stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:

@@ -33,7 +33,8 @@ def detail(t,label):
 
 def glyph_detail(t,label,page=1):
     try:
-        state,frame=read_page(t,label,'glyphs','/tcui glyphs '+str(page))
+        state,frame=read_page(t,label,'glyphs','/tcui glyphs '+str(page),
+            ready=lambda s:s.get('glyph_probe',{}).get('page')==page)
         t.receipt.setdefault('glyph_detail',{})[label]={'state':state,'frame':frame};t.persist()
         return state['glyph_probe']
     finally:command(t,'/tcui state')
