@@ -3,7 +3,7 @@
 
 namespace bridge
 {
-Bytes quest_rewards(Reader &r)
+Bytes quest_rewards(Reader &r,Value *offered_choices)
 {
     auto choiceCount=r.take<std::uint32_t>();auto choices=r.unpack("6I"),choiceQty=r.unpack("6I");r.unpack("6I");
     auto itemCount=r.take<std::uint32_t>();auto items=r.unpack("4I"),itemQty=r.unpack("4I");r.unpack("4I");
@@ -21,6 +21,16 @@ Bytes quest_rewards(Reader &r)
                 throw std::runtime_error("invalid native quest reward item");
     };
     validate(choices,choiceQty);validate(items,itemQty);validate(currencies,currencyQty);
+    if(offered_choices)
+    {
+        Array offered;
+        for(unsigned i=0;i<choiceCount;++i)
+        {
+            if(!integer(choices[i]) || !integer(choiceQty[i]))throw std::runtime_error("missing native quest choice item");
+            offered.push_back(Object{{"index",i},{"id",choices[i]},{"quantity",choiceQty[i]}});
+        }
+        *offered_choices=offered;
+    }
     Writer w;
     for(unsigned i=0;i<4;++i)w.pack("2i",{items[i],itemQty[i]});
     for(unsigned i=0;i<4;++i)w.pack("3i",{currencies[i],currencyQty[i],0});

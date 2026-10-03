@@ -4,8 +4,9 @@
 
 namespace bridge
 {
-Reply quest_request(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply quest_request(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
+    if(auto reply=quest_turnin_request(protocol,owner,name,body))return reply;
     if(auto reply=quest_status_request(protocol,owner,name,body))return reply;
     if(name=="CMSG_QUERY_QUEST_INFO")
     {
@@ -36,8 +37,9 @@ Reply quest_request(Protocol const &protocol,State const &owner,std::string cons
     }
     r.end();return Packet{name,w.finish()};
 }
-Reply quest_response(Protocol const &protocol,State const &owner,std::string const &name,View body)
+Reply quest_response(Protocol const &protocol,State &owner,std::string const &name,View body)
 {
+    if(auto reply=quest_turnin_response(protocol,owner,name,body))return reply;
     if(auto reply=quest_progress_response(protocol,owner,name,body))return reply;
     if(auto reply=quest_status_response(protocol,owner,name,body))return reply;
     if(auto reply=quest_list_response(protocol,owner,name,body))return reply;

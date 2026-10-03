@@ -25,6 +25,7 @@ struct State
     std::unordered_set<unsigned> mail_ids;
     std::uint64_t pending_mailbox=0,mail_target=0; // Granted by a validated native catalog, cleared on close/logout.
     Value loot, taxi_menu, gossip_menu, pending_near, pending_far;
+    Value quest_reward_offer; // Native offer binds modern item ID to its native reward index.
     Array party_guid{0,0};
     std::unordered_map<std::uint64_t, PartyState> party_states;
     std::unordered_set<std::uint64_t> party_members;
