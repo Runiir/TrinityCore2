@@ -1,4 +1,4 @@
-"""Classic 4.x status semantics with the pinned 4.4.2 GUID and uint64 layout."""
+"""Native quest eligibility translated to modern semantic marker categories."""
 import struct
 from tools.client_compatibility.world.buffer import Reader,Writer
 from tools.client_compatibility.world.gameobjects import modern_guid
@@ -8,6 +8,11 @@ from tools.client_compatibility.world.tests.test_quest_requests import GIVER,GUI
 
 OBJECT_GUID=(0xf11<<52)|(35<<32)|53
 OBJECT={'guid':OBJECT_GUID,'kind':5,'map':0,'fields':{str(INDEX['GAMEOBJECT_BYTES_1']):2<<8}}
+STATUS=[0,2,0x40,0x20,0x100,0x2000,0x4000,0x1000000,0x400000,0x200000000,0x400000000]
+
+
+def translated(status):
+    return sum(value for i,value in enumerate(STATUS) if status&(1<<i))
 
 
 def call(codec,name,body,units=None,objects=None,fn='quest_response'):
@@ -30,12 +35,12 @@ def test_status_requests_validate_native_visible_creature_and_object(codec):
     assert 'error' in call(codec,'CMSG_QUEST_GIVER_STATUS_MULTIPLE_QUERY',b'x',fn='quest_request')
 
 
-def test_all_native_classic_status_bits_are_preserved_as_uint64(codec):
+def test_all_native_status_categories_translate_semantics_as_uint64(codec):
     for guid in [GUID,OBJECT_GUID]:
         for status in [0,1,2,4,8,16,32,64,128,256,512,1024,0x600,0x7ff]:
             reply=call(codec,'SMSG_QUEST_GIVER_STATUS',struct.pack('<QI',guid,status))
             r=Reader(bytes.fromhex(reply[1]));assert r.guid()==modern_guid(guid,0)
-            assert r.unpack('Q')==(status,);r.end()
+            assert r.unpack('Q')==(translated(status),);r.end()
 
 
 def test_multiple_filters_retired_givers_and_rewrites_the_count(codec):
@@ -43,8 +48,8 @@ def test_multiple_filters_retired_givers_and_rewrites_the_count(codec):
         [(GUID,4),(OBJECT_GUID,1024),(GUID+1,256)])
     reply=call(codec,'SMSG_QUEST_GIVER_STATUS_MULTIPLE',body)
     r=Reader(bytes.fromhex(reply[1]));assert r.unpack('I')==(2,)
-    assert r.guid()==modern_guid(GUID,0) and r.unpack('Q')==(4,)
-    assert r.guid()==modern_guid(OBJECT_GUID,0) and r.unpack('Q')==(1024,);r.end()
+    assert r.guid()==modern_guid(GUID,0) and r.unpack('Q')==(0x40,)
+    assert r.guid()==modern_guid(OBJECT_GUID,0) and r.unpack('Q')==(0x400000000,);r.end()
     for n in range(len(body)):assert 'error' in call(codec,'SMSG_QUEST_GIVER_STATUS_MULTIPLE',body[:n])
     assert 'error' in call(codec,'SMSG_QUEST_GIVER_STATUS_MULTIPLE',body+b'x')
     assert call(codec,'SMSG_QUEST_GIVER_STATUS',struct.pack('<QI',GUID+1,256)) is None

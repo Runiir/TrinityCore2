@@ -1,10 +1,21 @@
-// Classic 4.4.2 retains native 4.x status bits, but uses packed GUID128 and uint64.
+// Native 4.3.4 status semantics -> modern 64-bit questgiver categories.
 #include "quests.hpp"
 
 namespace bridge
 {
 namespace
 {
+std::uint64_t modern_status(unsigned native)
+{
+    // Pinned QuestDef.h categories. The legacy WPP 4x enum annotation is
+    // contradicted by UI24: native Available=0x100 renders a blue repeatable !.
+    // Retain native eligibility while translating the semantic category.
+    static constexpr std::array<std::uint64_t,11> values={0,0x2,0x40,0x20,0x100,0x2000,
+        0x4000,0x1000000,0x400000,0x200000000,0x400000000};
+    std::uint64_t status=0;
+    for(unsigned i=0;i<values.size();++i)if(native&(1u<<i))status|=values[i];
+    return status;
+}
 Value const *giver(Protocol const &protocol,State const &owner,std::uint64_t guid)
 {
     auto unit=owner.visible_units.find(guid);
@@ -44,7 +55,7 @@ Reply quest_status_response(Protocol const &protocol,State const &owner,std::str
             throw std::runtime_error("invalid native Classic quest status");
         if(auto record=giver(protocol,owner,guid))
         {
-            rows.guid(Protocol::modern_guid(guid,integer(get(*record,"map")))).put<std::uint64_t>(status);
+            rows.guid(Protocol::modern_guid(guid,integer(get(*record,"map")))).put<std::uint64_t>(modern_status(status));
             ++accepted;
         }
     }
