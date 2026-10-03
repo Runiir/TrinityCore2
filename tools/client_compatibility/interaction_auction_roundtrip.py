@@ -94,11 +94,16 @@ def recover_mail(t,point,baseline,deposit):
     try:
         fixture.prepare();staged,frame=t.observe('mailbox_staged');t.receipt['mailbox_staging']={'state':staged,'frame':frame};t.persist()
         open_mailbox(t,point);shown,_=t.observe('return_inbox')
-        letter_row=next((r for r in shown.get('mail',{}).get('inbox',[]) if r['subject']==mail[4]),None)
-        if not letter_row:raise RuntimeError('the exact auction return is outside the observed inbox')
+        # The public header localizes the encoded auction subject. Native state
+        # above pins the sole return's original item GUID and auction sender.
+        candidates=[r for r in shown.get('mail',{}).get('inbox',[]) if r['sender']=='Alliance Auction House'
+            and r['items']==1 and not r['money'] and not r['cod']]
+        if len(candidates)!=1:raise RuntimeError('the unique native auction return is outside the observed inbox')
+        letter_row=candidates[0];display_subject=letter_row['subject']
+        t.receipt['return_subject']={'native_encoded':mail[4],'public_localized':display_subject};t.persist()
         require(click_case(t,'auction.read_return','Read the auction cancellation return.',
             lambda c:c['name']=='MailItem'+str(letter_row['index'])+'Button',
-            lambda b,a,s:{'status':'auction_return_read_pass' if s and a.get('mail',{}).get('open',{}).get('subject')==mail[4]
+            lambda b,a,s:{'status':'auction_return_read_pass' if s and a.get('mail',{}).get('open',{}).get('subject')==display_subject
                 else ('controller_failure' if not s else 'client_or_protocol_failure')}),'auction_return_read_pass')
         require(click_case(t,'auction.collect_return','Take the returned Recruit\'s Pants.',lambda c:c['name']=='OpenMailAttachmentButton1',
             lambda b,a,s:{'status':'auction_return_collect_pass' if s and any(r['id']==39 and r['count']==1 for r in a.get('bag_items',[]))
@@ -150,13 +155,17 @@ def recover(t,source,auction_point,mail_point):
     if (old['pid'],old['start_ticks'])!=(current['pid'],current['start_ticks']):
         raise RuntimeError('recovery requires the same owned native server')
     row=tuple(previous['posted_auction']);baseline=previous['mailbox_baseline']
-    if auction_state()['auctions']!=((row),):raise RuntimeError('recovery listing differs from the exact posted auction')
+    listing=auction_state()['auctions']
+    if listing and listing!=((row),):raise RuntimeError('recovery listing differs from the exact posted auction')
     t.receipt['recovery_source']=str(source);t.receipt['posted_auction']=row;t.receipt['mailbox_baseline']=baseline;t.persist()
     fixture=NpcFixture(t.out,t.fixture,8719,2097152)
     try:
-        t.clean_panels();fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
-        open_auction(t,auction_point,fixture.npc[2]);cancel(t,row)
-        t.clean_panels();fixture.restore();fixture.rows=[]
+        if listing:
+            t.clean_panels();fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
+            open_auction(t,auction_point,fixture.npc[2]);cancel(t,row)
+            t.clean_panels();fixture.restore();fixture.rows=[]
+        else:
+            t.receipt['recovery_stage']='already canceled; recover only the uniquely pinned native return';t.persist()
         recover_mail(t,mail_point,baseline,row[9])
     except Exception as error:
         t.receipt['transaction_failure']=f'{type(error).__name__}: {error}';t.persist();raise
