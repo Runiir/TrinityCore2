@@ -25,10 +25,14 @@ def toggle(t,inactive,label,baseline):
         checked=next((r['checked'] for r in probe['controls'] if r['name']=='ReputationDetailInactiveCheckbox'),None)
         hidden=not next(r['visible'] for r in probe['controls'] if r['name']=='ReputationDetailFrame')
         expected=expected_native(baseline,inactive)
-        # SetFactionInactive/Active rebuilds the list, clears selected faction
-        # and hides its detail. Reselect from the new catalog separately.
-        passed=s and probe.get('selected_index')==0 and hidden and checked==inactive and native==expected
-        oracle={'public':probe,'native':native,'expected_native':expected,'selection_cleared':hidden,'passed':bool(passed)}
+        # When the destination header is expanded the engine updates the
+        # selected index. A collapsed destination clears it and hides detail.
+        selected=probe.get('selected') or {}
+        retained=selected.get('id')==72 and selected.get('inactive')==inactive and not hidden
+        cleared=probe.get('selected_index')==0 and hidden
+        passed=s and (retained or cleared) and checked==inactive and native==expected
+        oracle={'public':probe,'native':native,'expected_native':expected,'selection_cleared':cleared,
+            'selection_updated':retained,'passed':bool(passed)}
         t.receipt.setdefault('inactive_oracles',{})[label]=oracle;t.persist()
         return {'status':'reputation_inactive_pass' if passed else 'client_or_protocol_failure','oracle':oracle}
     require(click_case(t,'reputation.inactive.'+label,('Move Stormwind to inactive' if inactive else 'Restore Stormwind to active')+'.',
