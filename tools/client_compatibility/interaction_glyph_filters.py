@@ -8,9 +8,10 @@ from .interaction_talents import native_state,glyph_detail
 from .interaction_trade import inventory
 from .interaction_operations import click_case
 from .interaction_macros import require
+from . import lab_runtime as lab
 
 FLAGS={'known':8,'unknown':16}
-LABELS={'known':'Used','unknown':'Unavailable'}
+LABELS={'known':'Already Known','unknown':'Unavailable'}
 
 
 def catalog(t,label):
@@ -27,7 +28,7 @@ def menu(t,label):
     state,_=t.observe('menu_precheck_'+label)
     if 'ContextMenu' in state['panels']:return
     require(click_case(t,'glyphs.filter_menu.'+label,'Open the glyph filter menu.',
-        lambda c:c['text'] in ['All Glyphs','Used','Unavailable','None'],
+        lambda c:c['text'] in ['All Glyphs','Already Known','Unavailable','None'],
         lambda b,a,s:{'status':'glyph_filter_menu_pass' if s and 'ContextMenu' in a['panels'] else
             'client_or_protocol_failure'}),'glyph_filter_menu_pass')
 
@@ -87,10 +88,39 @@ def suite(t):
         if not all(t.receipt['restoration'].values()):raise RuntimeError('glyph filters mutated unrelated character state')
 
 
+def restore_from(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('require an owned closed filter episode')
+    previous=json.loads(source.read_text())
+    if not previous.get('finished_at') or previous['actor']!=t.fixture or not previous.get('filter_baseline'):
+        raise RuntimeError('filter restoration requires an attributable closed owned catalog')
+    baseline=previous['filter_baseline'];baseline={**baseline,'flags':{int(k):v for k,v in baseline['flags'].items()}}
+    expected=previous['baseline'];actual={'inventory_money':inventory(),'spells':spells(),'talents':native_state()}
+    if json.loads(json.dumps(actual))!=expected:raise RuntimeError('native filter baseline changed before restoration')
+    t.receipt['restoration_source']={'file':str(source),'sha256':lab.sha256(source)};t.persist()
+    t.clean_panels();open_glyphs(t);current=catalog(t,'failed_filter_current')
+    for kind,flag in FLAGS.items():
+        if current['flags'][flag]!=baseline['flags'][flag]:
+            change(t,kind,baseline['flags'][flag],'restoration_'+kind,baseline)
+            current=catalog(t,'restored_check_'+kind)
+    t.clean_panels()
+    checks={'catalog_flags_restored':current==baseline,
+        'inventory_money_unchanged':json.loads(json.dumps(inventory()))==expected['inventory_money'],
+        'learned_spells_unchanged':json.loads(json.dumps(spells()))==expected['spells'],
+        'talents_glyphs_unchanged':json.loads(json.dumps(native_state()))==expected['talents']}
+    t.receipt['restoration']=checks;t.persist()
+    if not all(checks.values()):raise RuntimeError('failed filter baseline was not fully restored')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--restore-source',type=Path);a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:suite(t);t.receipt['completed']=True
+    try:
+        if a.restore_source:restore_from(t,a.restore_source)
+        else:suite(t)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:
         t.receipt['finished_at']=time.time();t.persist()
