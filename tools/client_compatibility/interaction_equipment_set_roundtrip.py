@@ -26,12 +26,19 @@ def public_named(t,label,name):
     return probe,probe['count']==len(rows)==1 and rows[0]['name']==name
 
 
-def open_manager(t,label):
+def open_character(t,label):
     t.clean_panels()
-    require(t.step(label+'.open','Open character equipment.',
-        {'open':{'kind':'key','value':'c','hold':.4,'description':'Press C for character equipment.'}},
-        lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
-            'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
+    buttons=[c for c in controls(t) if c['name']=='CharacterMicroButton']
+    if len(buttons)!=1:raise RuntimeError('stock character microbutton is absent')
+    t.execute({'kind':'hover','value':point(buttons[0])})
+    require(click_case(t,label+'.open','Open character equipment with the stock microbutton.',
+        lambda c:c['name']=='CharacterMicroButton',
+        lambda b,a,s:{'status':'character_open_pass' if s and 'CharacterFrame' in a['panels'] else
+            'client_or_protocol_failure'}),'character_open_pass')
+
+
+def open_manager(t,label):
+    open_character(t,label)
     collapsed=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
     if collapsed:
         require(click_case(t,label+'.expand','Expand the character sidebar.',
@@ -70,11 +77,7 @@ def hover_button(t,kind,id,label):
 
 def restore_display(t,collapsed):
     if collapsed is None:return
-    t.clean_panels()
-    require(t.step('sets.display.open','Open character equipment for display restoration.',
-        {'open':{'kind':'key','value':'c','hold':.4,'description':'Press C for character equipment.'}},
-        lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
-            'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
+    open_character(t,'sets.display')
     current=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
     if current!=collapsed:
         require(click_case(t,'sets.display.restore','Restore the original character-sidebar layout.',
