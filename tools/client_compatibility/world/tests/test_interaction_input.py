@@ -14,6 +14,9 @@ def test_chat_recovery_does_not_submit_changed_text(monkeypatch,text,settled):
     states=iter([{'chat_edit_open':True,'chat_edit_text':text},{'chat_edit_open':not settled}])
     trial.observe=lambda label:(next(states),{'file':label})
     monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    # These cases exercise the name-completion fallback after the normal
+    # submission wait expires. Delayed partial observations have a separate test.
+    ticks=iter([0,13]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
     monkeypatch.setattr(module.owned_input,'lease',nullcontext)
     action={'kind':'chat','value':'/invite Harnesstwo'}
     if text=='/quit':
