@@ -77,3 +77,10 @@ Keystones, completion repeats, rare artifacts, other races, fragment caps, Surve
 cast-bar verification, continent maps and full-session persistence remain separate
 requirements. These code-controlled UI checks do not qualify learned autonomy or
 whole-game compatibility.
+
+The closed batch is remote-verified in
+[442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc),
+archive SHA-256 `63a5dde90a6e370b6fb421b0466e1b63398ba4da1e2a1172a78b53a9722bc3a6`.
+Eight JSON receipts/reviews and 104 attributed frame hashes were verified by
+streaming the archive. Three scoped records qualify seven new operations,
+bringing the checklist to 239/916. Remaining variants stay open.

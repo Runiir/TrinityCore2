@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI31 currency controls are closed and DVC archive/frame verified. Eight new operations bring the checklist to 232/916. Captured installed eight-byte requests replace a mismatched newer five-byte reference; all initial failures remain evidence. Continue UI32 archaeology project solving, earned-fragment spending and completed history, then all remaining UI families. Both clients use isolated D3D11 displays; native worldserver unchanged.",
+  "current": "UI32 archaeology project solving is closed, remote-verified and archive/frame reviewed. Seven new scoped operations bring the checklist to 239/916. Fragment-only Solve, crafted backpack items, canonical rendered completion history and ordinary reload pass. Original rejected weights, missing-history earned solve and four independent-reader pre-fix failures remain evidence. Continue UI33 keystone socket/remove/solve and project tooltips, then all remaining UI families; native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -116,7 +116,12 @@
     "ui31/currency_read_03: stock tab open, exact zero-balance names/IDs/quantities, Justice inspection, header collapse/expand and close; native inventory/currency/money unchanged",
     "ui31/currency_scout_backpack_02: Honor watch enable, rendered backpack count, ordinary reload persistence and disable; full baseline restored",
     "ui31/currency_unused_02: Honor Unused destination/reselection and restore; modern/native requests and exact saved flags agree",
-    "ui31/currency_corrected_bridge_deployment_01: bridge-only captured uint32/uint32 correction, both v39 reentries preserve baselines; 779 full and 32 focused sanitizer checks pass, original reference-width failures preserved"
+    "ui31/currency_corrected_bridge_deployment_01: bridge-only captured uint32/uint32 correction, both v39 reentries preserve baselines; 779 full and 32 focused sanitizer checks pass, original reference-width failures preserved",
+    "ui32/archaeology_project_read_01: stock K/profession/race navigation and exact native/current Draenei project contract; native state unchanged",
+    "ui32/archaeology_project_solve_01: unsupported captured fragment-weight tail rejected before native submission; full native state unchanged",
+    "ui32/archaeology_project_solve_02: exact earned 45-fragment spend and crafted artifact, but stock history empty; original failure and earned state preserved",
+    "ui32/archaeology_history_bridge_deployment_01 plus earned_history_inspection_02: pinned 4.4.2 nested alignment repair; both v41 reentries, exact earned native/API/rendered history and unchanged worldserver; four pre-fix failures retained, corrected 808 full and 39 sanitizer checks pass",
+    "ui32/archaeology_project_solve_03: 14 ordinary choices, earned 46-fragment Paperweight solve, backpack item, exact full native/API/rendered history and interface reload persistence; legitimate items/completions retained"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

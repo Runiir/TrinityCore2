@@ -1,12 +1,12 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 232 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 239 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
 Player interaction families and every installed binding. Per-spell/item/quest/encounter variants are expanded by the native content census.
 
-Regression trials use code-controlled ordinary keyboard/mouse inputs. The October 3 user-requested desktop-isolation probe explicitly uses Laya on two private client displays. Controller/model identities are recorded per episode. Screenshots and normal addon-visible state are retained. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.
+New regression trials use code-controlled ordinary keyboard/mouse inputs under the current AGENTS.md. Historical desktop-isolation evidence retains its actual Laya identity. Controller/model identities are recorded per episode. Screenshots and normal addon-visible state are retained. Fixture setup, cleanup and outcome checks are recorded separately. Input, observer and protocol failures have distinct evidence.
 
 Each successful mutation needs its native or local saved-state oracle and cleanup. Variants include class, race, faction, account versus character, solo versus group, combat versus idle, dead versus alive, zones, permissions and failure paths. Content IDs come from the existing content census.
 
@@ -79,7 +79,7 @@ Fixture: `known_currencies`.
 - [x] `currency.backpack_toggle` (qualified variant; [evidence](#currency_honor_backpack_roundtrip))
 - [x] `currency.unused_toggle` (qualified variant; [evidence](#currency_honor_unused_roundtrip))
 - [ ] `currency.gain_currency`
-- [ ] `currency.spend_currency`
+- [x] `currency.spend_currency` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
 - [ ] `currency.weekly_cap`
 - [x] `currency.persist` (qualified variant; [evidence](#currency_honor_watch_reload))
 
@@ -170,9 +170,9 @@ Fixture: `profession_variants`.
 Fixture: `digsite_variants`.
 
 - [x] `archaeology.open` (qualified variant; [evidence](#profession_catalogs))
-- [ ] `archaeology.close`
-- [ ] `archaeology.race_select`
-- [ ] `archaeology.project_select`
+- [x] `archaeology.close` (qualified variant; [evidence](#archaeology_current_draenei_project))
+- [x] `archaeology.race_select` (qualified variant; [evidence](#archaeology_current_draenei_project))
+- [x] `archaeology.project_select` (qualified variant; [evidence](#archaeology_current_draenei_project))
 - [ ] `archaeology.project_tooltip`
 - [x] `archaeology.survey` (qualified variant; [evidence](#archaeology_loop))
 - [ ] `archaeology.cast_bar`
@@ -180,14 +180,14 @@ Fixture: `digsite_variants`.
 - [x] `archaeology.distance_lantern` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.approach_find` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.loot_find` (qualified variant; [evidence](#archaeology_loop))
-- [ ] `archaeology.solve_project`
+- [x] `archaeology.solve_project` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
 - [ ] `archaeology.use_keystone`
-- [ ] `archaeology.project_completion`
+- [x] `archaeology.project_completion` (qualified variant; [evidence](#archaeology_earned_fragment_solve))
 - [x] `archaeology.site_completion` (qualified variant; [evidence](#archaeology_loop))
 - [x] `archaeology.site_rotation` (qualified variant; [evidence](#archaeology_loop))
 - [ ] `archaeology.continent_map`
 - [ ] `archaeology.fragments_cap`
-- [ ] `archaeology.persist`
+- [x] `archaeology.persist` (qualified variant; [evidence](#archaeology_earned_reload_persistence))
 
 ## bags
 
@@ -1776,3 +1776,33 @@ Remaining limits: One eligible zero-balance Honor currency on this actor. Other 
 - [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_unused_02/episode.json`, SHA-256 `17127ed939badb0641d7fd8f7cab8d7af4e17d827295857616d309d6c52e3950`.
   Checked cases: `currency.unused.change` (currency_flag_pass), `currency.unused.reselect` (currency_inspect_pass), `currency.unused.restore` (currency_flag_pass).
 - [442_interactions_20261003_32.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_32.tar.gz.dvc), member `evidence/client_interactions_20261003_ui31/currency_outcome_visual_review.json`, SHA-256 `4f67e1f6a5551214bac604794a6a77719ebf9af42146fbb5310ae29fe8f29d02`.
+
+### archaeology_current_draenei_project
+
+Stock Draenei race button selects the owned level-85 warrior current project. Native DBC project/spell/name, fragment quantity, cost, zero keystone adjustment and Solve enablement agree with public APIs and the rendered page. Ordinary Escape closes archaeology.
+
+Remaining limits: Current common Draenei project through its race button only. Other races, rare historical-project selection, tooltips and pagination remain open.
+
+- [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json`, SHA-256 `e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8`.
+  Checked cases: `archaeology.select_race` (archaeology_project_pass), `archaeology.close.after_solve_history` (archaeology_close_pass).
+
+### archaeology_earned_fragment_solve
+
+One uninterrupted stationary fragment-only Solve of Strange Silver Paperweight, native project 243 and spell 90861, spends exactly 46 earned Draenei fragments (93 to 47), creates item 64443 x1 visible in the ordinary backpack and records exact native/public completion count and timestamp. All old items, other currencies and money are preserved; both completed artifacts render in the stock Completed tab.
+
+Remaining limits: One common Draenei project and archaeology-currency spend. Moving solves, keystones, repeats, rare artifacts, other races/currencies and caps remain open. Both original protocol failures and earned-state recovery remain evidence; this does not qualify learned autonomy.
+
+- [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json`, SHA-256 `e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8`.
+  Checked cases: `archaeology.solve_project` (archaeology_solve_pass), `archaeology.artifact_bag` (archaeology_artifact_visible_pass), `archaeology.completed_history.after_solve_history` (archaeology_history_pass).
+- [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_earned_history_inspection_02/episode.json`, SHA-256 `fa36ee2039a9c9c5eb4ed0c3435daecd7c17a4eae70ddf251d35ee9df0e7e9e6`.
+  Checked cases: `archaeology.completed_tab` (archaeology_history_inspected).
+- [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_history_alignment_review.json`, SHA-256 `36fab4ac35d78ff942e1ca2a41e1bb516f149413a925cec1bfffd7be00c1b338`.
+
+### archaeology_earned_reload_persistence
+
+Ordinary /reload retains the earned Draenei fragment balance, current project, both crafted items, all native completion counts/first timestamps and complete rendered stock history without Lua errors or blocked actions.
+
+Remaining limits: Interface-reload persistence on this owned actor only. Full-session logout/reconnect, other races and other completion variants remain open.
+
+- [442_interactions_20261003_33.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc), member `evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json`, SHA-256 `e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8`.
+  Checked cases: `archaeology.reload_persistence` (archaeology_reload_pass), `archaeology.completed_history.after_reload_history` (archaeology_history_pass).

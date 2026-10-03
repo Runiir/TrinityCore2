@@ -539,7 +539,8 @@
       "fixture": "known_currencies",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_earned_fragment_solve"
     },
     {
       "id": "currency.weekly_cap",
@@ -1213,7 +1214,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_current_draenei_project"
     },
     {
       "id": "archaeology.race_select",
@@ -1222,7 +1224,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_current_draenei_project"
     },
     {
       "id": "archaeology.project_select",
@@ -1231,7 +1234,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_current_draenei_project"
     },
     {
       "id": "archaeology.project_tooltip",
@@ -1308,7 +1312,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_earned_fragment_solve"
     },
     {
       "id": "archaeology.use_keystone",
@@ -1326,7 +1331,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_earned_fragment_solve"
     },
     {
       "id": "archaeology.site_completion",
@@ -1373,7 +1379,8 @@
       "fixture": "digsite_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "archaeology_earned_reload_persistence"
     },
     {
       "id": "bags.open_all",
@@ -10334,8 +10341,93 @@
           "action_frame_digests_verified": true
         }
       ]
+    },
+    {
+      "id": "archaeology_current_draenei_project",
+      "operations": [
+        "archaeology.race_select",
+        "archaeology.project_select",
+        "archaeology.close"
+      ],
+      "scope": "Stock Draenei race button selects the owned level-85 warrior current project. Native DBC project/spell/name, fragment quantity, cost, zero keystone adjustment and Solve enablement agree with public APIs and the rendered page. Ordinary Escape closes archaeology.",
+      "limits": "Current common Draenei project through its race button only. Other races, rare historical-project selection, tooltips and pagination remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json",
+          "sha256": "e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.select_race": "archaeology_project_pass",
+            "archaeology.close.after_solve_history": "archaeology_close_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "archaeology_earned_fragment_solve",
+      "operations": [
+        "archaeology.solve_project",
+        "archaeology.project_completion",
+        "currency.spend_currency"
+      ],
+      "scope": "One uninterrupted stationary fragment-only Solve of Strange Silver Paperweight, native project 243 and spell 90861, spends exactly 46 earned Draenei fragments (93 to 47), creates item 64443 x1 visible in the ordinary backpack and records exact native/public completion count and timestamp. All old items, other currencies and money are preserved; both completed artifacts render in the stock Completed tab.",
+      "limits": "One common Draenei project and archaeology-currency spend. Moving solves, keystones, repeats, rare artifacts, other races/currencies and caps remain open. Both original protocol failures and earned-state recovery remain evidence; this does not qualify learned autonomy.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json",
+          "sha256": "e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.solve_project": "archaeology_solve_pass",
+            "archaeology.artifact_bag": "archaeology_artifact_visible_pass",
+            "archaeology.completed_history.after_solve_history": "archaeology_history_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui32/archaeology_earned_history_inspection_02/episode.json",
+          "sha256": "fa36ee2039a9c9c5eb4ed0c3435daecd7c17a4eae70ddf251d35ee9df0e7e9e6",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.completed_tab": "archaeology_history_inspected"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui32/archaeology_history_alignment_review.json",
+          "sha256": "36fab4ac35d78ff942e1ca2a41e1bb516f149413a925cec1bfffd7be00c1b338",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true
+        }
+      ]
+    },
+    {
+      "id": "archaeology_earned_reload_persistence",
+      "operations": [
+        "archaeology.persist"
+      ],
+      "scope": "Ordinary /reload retains the earned Draenei fragment balance, current project, both crafted items, all native completion counts/first timestamps and complete rendered stock history without Lua errors or blocked actions.",
+      "limits": "Interface-reload persistence on this owned actor only. Full-session logout/reconnect, other races and other completion variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_33.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui32/archaeology_project_solve_03/episode.json",
+          "sha256": "e4fccf89f8609bc0882fdb2fa768110bfc68e8005e3dedb50b225d45a9ee28a8",
+          "archived_receipt_digest_verified": true,
+          "action_frame_digests_verified": true,
+          "cases": {
+            "archaeology.reload_persistence": "archaeology_reload_pass",
+            "archaeology.completed_history.after_reload_history": "archaeology_history_pass"
+          }
+        }
+      ]
     }
   ],
-  "qualified_operations": 232,
+  "qualified_operations": 239,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
