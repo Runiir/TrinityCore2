@@ -939,3 +939,10 @@ checkpoint also preserves the episode and legacy interruption receipts. Small
 receipts stay local; active runs, necessary binaries and model/client assets are
 preserved. The archive workspace and exact cache copies are also evicted after
 remote verification, without global DVC cache collection.
+
+UI14 is closed as `442_interactions_20261003_15.tar.gz.dvc`: 432,620,366 bytes,
+SHA-256 `d175d55f9d8d4048be02c1b5cab3f30a8ee801188f6c3ee2ea1a1839b1bff1a3`.
+After remote verification, 276 raw frames (438,473,773 bytes) and the local
+archive/cache copies are removed. Failed staging and initial test outcomes remain
+in the checkpoint alongside the accepted trials. DVC status/push confirm the
+intentional local eviction and synchronized remote.
