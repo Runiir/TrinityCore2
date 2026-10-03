@@ -34,7 +34,10 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
         q.execute('SELECT id FROM client442_world.game_tele WHERE name=%s',(NAME,))
         if q.fetchone():raise RuntimeError('earlier combat fixture requires restoration')
         q.execute('SELECT MAX(id) FROM client442_world.game_tele');tele_id=q.fetchone()[0]+1
-        x,y,z,o=spawn[4:];dx,dy=2*math.cos(o),2*math.sin(o)
+        x,y,z,o=spawn[4:]
+        # This registered bear spawn overlaps a large client tree. The farther
+        # initial observation point passed the ordinary exact-name probe.
+        dx,dy=(8,0) if entry==822 else (2*math.cos(o),2*math.sin(o))
         row=(tele_id,x+dx,y+dy,z,math.atan2(-dy,-dx)%(2*math.pi),0,NAME)
         q.execute('INSERT INTO client442_world.game_tele '
             '(id,position_x,position_y,position_z,orientation,map,name) VALUES (%s,%s,%s,%s,%s,%s,%s)',row)
@@ -129,11 +132,13 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
 
 
 def complete(t,giver):
-    for i,spawn in enumerate([280953,280958,280966,281013,281017,281018,281019,281020],1):
-        progress(t,giver,spawn_id=spawn,prefix='quests.complete_wolf_'+str(i))
+    # Validate the newly exercised bear targets before repeating the qualified
+    # wolf objective. Credits still come from one uninterrupted ordinary run.
     for i,spawn in enumerate([280196,280203,280228,280233,280276],1):
         progress(t,giver,spawn_id=spawn,entry=822,name='Young Forest Bear',counter='mobcount2',required=5,
             prefix='quests.complete_bear_'+str(i))
+    for i,spawn in enumerate([280953,280958,280966,281013,281017,281018,281019,281020],1):
+        progress(t,giver,spawn_id=spawn,prefix='quests.complete_wolf_'+str(i))
     state,frame=t.observe('quest_objectives_complete');native=native_counts()
     objectives=state.get('manual_quest_probe',{}).get('objectives',[])
     passed=native.get('status')==1 and native.get('mobcount1')==8 and native.get('mobcount2')==5 and len(objectives)==2 and all(
