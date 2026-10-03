@@ -164,7 +164,10 @@ class Trial:
             elif action['kind']=='chat':
                 self.io.key('Return',hold=.4);time.sleep(.2)
                 self.io.type(action['value']);time.sleep(.2);self.io.key('Return',hold=.4)
-            elif action['kind']=='click':self.io.click(*action['value'],button=action.get('button',1),modifiers=action.get('modifiers',()))
+            elif action['kind']=='click':
+                hold=action.get('hold',.15)
+                if not .05<=hold<=2:raise ValueError('interaction click hold exceeds its bounded duration')
+                self.io.click(*action['value'],button=action.get('button',1),modifiers=action.get('modifiers',()),hold=hold)
             elif action['kind']=='edit':
                 self.io.click(*action['point'])
                 deadline=time.monotonic()+12;samples=[]

@@ -31,6 +31,8 @@ function Client442ObserveEquipment()
         end
     end
     local sheet={}
+    local scene=CharacterModelScene
+    local camera=scene and read(scene.GetActiveCamera,scene)
     for category=1,8 do
         local parent=_G['CharacterStatsPaneCategory'..category]
         if parent and read(parent.IsVisible,parent) then
@@ -45,6 +47,8 @@ function Client442ObserveEquipment()
         end
     end
     return {count=read(api.GetNumEquipmentSets),sets=rows,
+        model={visible=scene and not not read(scene.IsVisible,scene) or false,
+            yaw=camera and read(camera.GetYaw,camera)},
         stats={damage={read(UnitDamage,'player')},attack_speed={read(UnitAttackSpeed,'player')},
             attack_power={read(UnitAttackPower,'player')},item_level={read(GetAverageItemLevel)},sheet=sheet},
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,

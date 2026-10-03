@@ -10,6 +10,7 @@ from .interaction_tooltips import baseline
 from .interaction_equipment_set_roundtrip import stable
 from .observation.inventory import Inventory
 from .world.objects import INDEX
+from .interaction_character_render import render
 
 BITS={'helm':0x400,'cloak':0x800}
 
@@ -85,7 +86,7 @@ def suite(t,scout_diagnostic=False):
         raise RuntimeError('scout diagnostic requires its unchanged level-one fixture without helm/cloak')
     snapshot=(lambda:resources(oracle)) if scout_diagnostic else baseline
     t.clean_panels();state,frame=t.observe('appearance_before')
-    if state.get('observer_version',0)<54:raise RuntimeError('require committed read-only appearance observer v54')
+    if state.get('observer_version',0)<55:raise RuntimeError('require committed read-only appearance observer v55')
     original=stable(snapshot());initial=flags(t,oracle);visibility=state['appearance'];search=None;active=None
     t.receipt.update(baseline=original,appearance_baseline={'state':visibility,'native':initial,'frame':frame},native_session=session,
         qualified_scope='scout request/flag diagnostic only; geared rendering unqualified' if scout_diagnostic else 'geared primary stock visibility toggles');t.persist()
@@ -95,7 +96,13 @@ def suite(t,scout_diagnostic=False):
             active=kind
             require(edit_case(t,'appearance.search.'+kind,'Find the stock '+kind+' setting.',predicate,kind),'ui_edit_pass')
             require(toggle(t,oracle,kind,not visibility[kind],'character.display_'+kind),'character_appearance_pass')
+            if not scout_diagnostic:
+                render(t,kind,not visibility[kind]);field=open_search(t)
+                predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
             require(toggle(t,oracle,kind,visibility[kind],'appearance.restore.'+kind),'character_appearance_pass')
+            if not scout_diagnostic:
+                render(t,kind,visibility[kind]);field=open_search(t)
+                predicate=lambda c:c['kind']=='EditBox' and point(c)==point(field)
             active=None
     finally:
         try:

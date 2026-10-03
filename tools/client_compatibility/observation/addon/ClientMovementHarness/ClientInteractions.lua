@@ -126,7 +126,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=54,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=55,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -184,6 +184,12 @@ local function snapshot(viewMode,viewPage)
                         x=control.x,y=control.y,focused=not not call(f.HasFocus,f)}
                 end
                 local parent=f:GetParent()
+                local modelControls=CharacterModelScene and CharacterModelScene.ControlFrame
+                if parent==modelControls and modelControls then
+                    for _,key in ipairs({'zoomInButton','zoomOutButton','rotateLeftButton','rotateRightButton','resetButton'}) do
+                        if f==modelControls[key] then data.controls[#data.controls].model_control=key end
+                    end
+                end
                 if parent and type(parent.setID)=='number' then
                     if f==parent.DeleteButton then data.controls[#data.controls].equipment_set_button='delete'
                     elseif f==parent.EditButton then data.controls[#data.controls].equipment_set_button='edit' end
