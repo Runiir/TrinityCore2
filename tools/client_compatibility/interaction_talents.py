@@ -113,7 +113,7 @@ def suite(t,learned_arms=False):
         require(t.step('talents.close_repaired','Close the talents and glyph panel.',
             {'close':{'kind':'key','value':'Escape','description':'Close the stock talent window with Escape.'}},
             lambda b,a,s:{'status':'talents_close_pass' if 'PlayerTalentFrame' not in a['panels'] else 'client_or_protocol_failure'},
-            diagnostic_action='close'),'talents_close_pass')
+            diagnostic_action='close',await_state=lambda s:'PlayerTalentFrame' not in s['panels']),'talents_close_pass')
     finally:
         t.clean_panels();t.receipt['restoration']={'talents_unchanged':native_state()==before,'inventory_money_unchanged':inventory()==items};t.persist()
         if not all(t.receipt['restoration'].values()):raise RuntimeError('talent read fixture mutated native player state')

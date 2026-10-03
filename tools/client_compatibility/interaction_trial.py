@@ -218,12 +218,28 @@ class Trial:
 
     def clean_panels(self):
         # Fixture cleanup uses code, never counts as a model action or pass.
+        state,frame=self.observe('cleanup_latest')
+        def signature(s):return (tuple(sorted(s.get('panels') or [])),tuple(sorted(s.get('bags') or [])),
+            bool(s.get('chat_edit_open')),bool(s.get('spell_targeting')))
         for i in range(6):
-            state,frame=self.observe('cleanup_latest')
-            if not state.get('panels') and not state.get('bags') and not state.get('chat_edit_open'):return
-            self.io.key('Escape');time.sleep(.3)
-            self.receipt['cleanup'].append({'time':time.time(),'input':'Escape','source':'code_fixture_cleanup',
-                'before_panels':state.get('panels'),'before_bags':state.get('bags')})
+            previous=signature(state)
+            if previous==((),(),False,False):
+                if i==0:return
+                # Confirm the empty observation through another update cycle.
+                time.sleep(.2);state,frame=self.observe('cleanup_empty_confirm')
+                if signature(state)==previous:return
+                continue
+            row={'time':time.time(),'input':'Escape','source':'code_fixture_cleanup',
+                'before_panels':state.get('panels'),'before_bags':state.get('bags'),'settling':[]}
+            self.receipt['cleanup'].append(row);self.persist();self.io.key('Escape')
+            deadline=time.monotonic()+12
+            while True:
+                time.sleep(.2);state,frame=self.observe('cleanup_settled_'+str(i))
+                row['settling'].append({'sequence':state['sequence'],'panels':state.get('panels'),
+                    'bags':state.get('bags'),'frame':frame});self.persist()
+                if signature(state)!=previous:break
+                if time.monotonic()>deadline:
+                    raise RuntimeError('panel cleanup did not change state; refusing to replay Escape')
         raise RuntimeError('panel cleanup did not settle')
 
 
