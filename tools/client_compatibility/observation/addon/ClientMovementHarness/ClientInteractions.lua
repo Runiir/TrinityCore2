@@ -126,7 +126,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=46,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=47,observer_skips=observerSkips}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
     data.player_cast={active=cast~=nil,name=cast,started_ms=started,finished_ms=finished,
@@ -177,6 +177,11 @@ local function snapshot(viewMode,viewPage)
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
                 local parent=f:GetParent()
+                if parent and type(parent.setID)=='number' then
+                    if f==parent.DeleteButton then data.controls[#data.controls].equipment_set_button='delete'
+                    elseif f==parent.EditButton then data.controls[#data.controls].equipment_set_button='edit' end
+                    data.controls[#data.controls].equipment_set_id=parent.setID
+                end
                 if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
                     local row=call(f.GetRowData,f)
                     if type(row)=='table' and type(row.auctionID)=='number' then
