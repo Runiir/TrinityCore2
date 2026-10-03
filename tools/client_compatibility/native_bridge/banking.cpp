@@ -31,6 +31,7 @@ bool Protocol::bank_close(State &owner,std::string const &name,View body)
     if(owner.bank_target && identity==modern_guid(owner.bank_target,owner.map()))owner.bank_target=0;
     if(owner.mail_target && identity==modern_guid(owner.mail_target,owner.map()))owner.mail_target=0;
     if(owner.pending_mailbox && identity==modern_guid(owner.pending_mailbox,owner.map()))owner.pending_mailbox=0;
+    if(owner.auction_target && identity==modern_guid(owner.auction_target,owner.map()))owner.auction_target=0;
     // The legacy server has no matching close message. This modern notification
     // grants no authority and may arrive after logout or an NPC leaves visibility.
     return true;

@@ -38,6 +38,7 @@ struct State
     std::uint64_t last_logout_guid = 0; // Final character-cache writes, never gameplay authority.
     std::uint64_t inspect_target = 0;
     std::uint64_t bank_target = 0; // Granted only by native SMSG_SHOW_BANK.
+    std::uint64_t auction_target = 0; // Granted only by native MSG_AUCTION_HELLO.
     Array latest_movement;
     std::function<void(std::string const &, View)> native_send;
     std::uint64_t guid() const

@@ -59,3 +59,11 @@ def test_both_opening_formats_reject_every_truncated_prefix_and_trailing_data(co
 def test_unrelated_packets_are_untouched(codec):
     assert call(codec,'auction_request','CMSG_SEND_MAIL',b'') is None
     assert call(codec,'auction_response','SMSG_SEND_MAIL_RESULT',b'') is None
+
+
+def test_live_fitch_opening_matches_captured_modern_packet(codec):
+    native=bytes.fromhex('3a7600000f2230f10200000001')
+    guid=struct.unpack_from('<Q',native)[0]
+    unit={**UNIT,'guid':guid}
+    assert call(codec,'auction_response','MSG_AUCTION_HELLO',native,[unit])==[
+        'SMSG_AUCTION_HELLO_RESPONSE','03a73a76c08308042000000000000000000200000080']
