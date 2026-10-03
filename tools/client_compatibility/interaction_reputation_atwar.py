@@ -86,10 +86,44 @@ def suite(t):
         if not all(checks.values()):raise RuntimeError('At War trial failed exact native/public restoration')
 
 
+def restore_from(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('require an owned closed At War trial')
+    run=json.loads(source.read_text());identity=lambda r:{k:r[k] for k in ['pid','start_ticks']}
+    case=next((c for c in run['cases'] if c['id']=='reputation.at_war.change'),{})
+    if (not run.get('finished_at') or run.get('completed') or run['actor']!=t.fixture or
+            case.get('input',{}).get('kind')!='click' or not run.get('public_baseline') or
+            any(identity(run['runtime'][kind])!=identity(lab.owned_process(kind)) for kind in ['worldserver','client'])):
+        raise RuntimeError('At War recovery does not bind the failed input and current actor lifetimes')
+    baseline=run['baseline']['native'];baseline={'character':tuple(baseline['character']),
+        'rows':tuple(tuple(r) for r in baseline['rows'])}
+    current=native_state();items=inventory();initial=bool(native_catalog(baseline)[FACTION]['flags']&2)
+    normalized=lambda r:json.loads(json.dumps(r))
+    if current not in [baseline,expected_native(baseline,not initial)] or normalized(items)!=run['baseline']['inventory_money']:
+        raise RuntimeError('current reputation is not the failed trial baseline or its sole At War mutation')
+    session=actors.session_entry(t.fixture)['session'];t.clean_panels()
+    t.receipt.update(recovery_source={'file':str(source),'sha256':lab.sha256(source)},restoration_target=baseline);t.persist()
+    open_panel(t)
+    if bool(native_catalog(current)[FACTION]['flags']&2)!=initial:
+        public=catalog(t,'atwar_recovery_select')
+        inspect_faction(t,public,native_catalog(baseline),FACTION,'reputation.at_war.recovery_select')
+        toggle(t,initial,'recovery_restore',baseline,session,native_catalog(baseline)[FACTION])
+    restored=restore_headers(t,run['public_baseline'],'atwar_recovery');t.clean_panels()
+    checks={'source_native_reputation_restored':native_state()==baseline,
+        'public_catalog_restored':restored['rows']==run['public_baseline']['rows'],'inventory_money_unchanged':inventory()==items}
+    t.receipt['restoration']=checks;t.persist()
+    if not all(checks.values()):raise RuntimeError('source At War baseline remains unrestored')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--restore-source',type=Path);a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:suite(t);t.receipt['completed']=True
+    try:
+        if a.restore_source:restore_from(t,a.restore_source)
+        else:suite(t)
+        t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:
         t.receipt['finished_at']=time.time();t.persist()
