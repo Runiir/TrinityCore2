@@ -95,7 +95,10 @@ def suite(t,learned_arms=False):
             require(edit_case(t,'glyphs.clear_search','Clear the glyph search.',
                 lambda c:c['name']=='GlyphFrameSearchBox',''),'ui_edit_pass')
             cleared=glyph_detail(t,'glyph_search_cleared')
-            if cleared['total']!=total or cleared.get('search')!='':raise RuntimeError('glyph search did not restore the catalog')
+            # Stock OnEditFocusLost restores the localized SEARCH placeholder.
+            # Reading diagnostics through chat causes that normal focus change.
+            if (cleared['total']!=total or cleared.get('search') not in ['',initial.get('search')] or
+                    cleared['rows']!=initial['rows']):raise RuntimeError('glyph search did not restore the catalog')
         require(t.step('talents.close_repaired','Close the talents and glyph panel.',
             {'close':{'kind':'key','value':'Escape','description':'Close the stock talent window with Escape.'}},
             lambda b,a,s:{'status':'talents_close_pass' if 'PlayerTalentFrame' not in a['panels'] else 'client_or_protocol_failure'},

@@ -69,7 +69,7 @@ def suite(t):
                 'client_or_protocol_failure'}),'glyph_panel_pass')
         data=glyph_detail(t,'learned_catalog');rows=list(data['rows'])
         for page in range(2,(data['total']+11)//12+1):rows.extend(glyph_detail(t,'learned_catalog_'+str(page),page)['rows'])
-        battle=[r for r in rows if r.get('name')=='Glyph of Battle']
+        battle=[r for r in rows if r.get('name')=='Battle' and r.get('id')==483]
         passed=len(battle)==1 and battle[0].get('known') is True
         t.receipt['public_learned_oracle']={'rows':battle,'passed':passed};t.persist()
         if not passed:raise RuntimeError('learned native glyph is absent from the public known catalog')
