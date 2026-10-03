@@ -233,6 +233,7 @@ and restore the complete original fixture in the world. Selection flags are
 3072 then zero; all 19 equipment slots and native resources stay unchanged.
 Rear cloak selection rendering remains unsampled. These new receipts await
 DVC40. The next read-only diagnostic pins native crit 10.801665% and ranged
-attack time 2034ms: the bridge omits active-player crit fields and puts ranged
-time into a third melee-array element instead of its separate field. Haste,
+attack time 2034ms: the bridge omits active-player crit fields and the separate ranged-time
+field. The pinned native schema has both a valid three-entry attack-time array
+and that separate ranged field; the existing array will be retained. Haste,
 item level and other unsampled stats remain open.
