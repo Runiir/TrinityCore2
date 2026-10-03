@@ -237,3 +237,8 @@ attack time 2034ms: the bridge omits active-player crit fields and the separate 
 field. The pinned native schema has both a valid three-entry attack-time array
 and that separate ranged field; the existing array will be retained. Haste,
 item level and other unsampled stats remain open.
+
+UI39 is remotely verified in DVC40: 26 selected JSON receipts and 157
+attributed frames pass archive review. Stock item comparison adds two qualified
+operations, bringing the checklist to 264/916. Normal visibility persistence
+augments its existing record; rear selection cloak rendering stays open.

@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791052817.1646776,
+  "reviewed_at": 1791053941.5687194,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -2369,8 +2369,8 @@
         "character.display_helm",
         "character.display_cloak"
       ],
-      "scope": "Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored.",
-      "limits": "One geared human warrior and exact stock controls. Sword partly occludes rear cloak; visible fabric changes are reviewed. Other races/models, full logout persistence, character-selection visibility and arbitrary bindings remain open. Earlier failed roots and source-bound recovery do not qualify behavior.",
+      "scope": "Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored. Three normal logout/reentry phases preserve hidden world/API settings and restore both original flags/resources. Paired character-selection bare-head/helmet models reviewed; selection0xc00/0 masks and all19 gear slots match native state.",
+      "limits": "One geared human warrior and stock controls. Sword partially occludes rear world cloak. Rear selection cloak rendering, other models/customizations, unrelated login flags and arbitrary bindings remain open. Failed roots and source-bound recovery do not qualify normal behavior.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
@@ -2388,6 +2388,66 @@
           "pointer": "artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui38/character_visibility_review.json",
           "sha256": "a6cda1075d07c550bd0eae4c91213f25e15778608f831e782abc3c4672198e3d",
+          "archived_receipt_digest_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/visibility_session_01/cohort.json",
+          "sha256": "c2b3468af214d693016baa2fdbbef2c5cd5eb10b35f02f8462933ca310941ae3",
+          "archived_receipt_digest_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/visibility_session_hidden_logout_01/episode.json",
+          "sha256": "d1bf3075230c94aebc5877575be1387dbee6412461c68d6f8462b527d126a7c4",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.selection_visibility.hidden": "character_selection_wire_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/visibility_session_restored_logout_01/episode.json",
+          "sha256": "e8b5ffe091c032e4413c0ff70171c957bfa11ef6dda9bd2886d839abe216765b",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.visibility_reentry.hidden": "appearance_session_pass",
+            "character.selection_visibility.restored": "character_selection_wire_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/visibility_session_finished_01/episode.json",
+          "sha256": "01e1866f446f3009c3943815d645f47e827334cbcef7c0c2642e8a3e480b2047",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.visibility_reentry.restored": "appearance_session_pass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stock_owned_sword_comparison",
+      "operations": [
+        "character.compare_items",
+        "ui_misc.tooltip_compare"
+      ],
+      "scope": "Ordinary private Shift-hover on owned backpack Worn Greatsword renders its tooltip and Currently Equipped Gurthalak tooltip with exact native item IDs/names. Whole trial preserves all native resources and panels. Shift release is verified and hides the comparison; full frame reviewed.",
+      "limits": "One human warrior, two two-hand swords, empty offhand and original automatic comparison false. Numeric comparison deltas, all tooltip lines, offhand/two-comparison variants and CVar mutation remain open. Observer captures16 of20 comparison lines.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/item_comparison_01/episode.json",
+          "sha256": "4bfa967fc815afb8811aa5270b9cd93f92a5dfdf9c2dd6510dd2a760bc83cacb",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.compare_items": "stock_item_comparison_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui39/item_comparison_review.json",
+          "sha256": "8011e47e02f64f675301ffe7b304cb595e0447d67d6e26206440a45358991f95",
           "archived_receipt_digest_verified": true
         }
       ]

@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 262 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 264 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -38,7 +38,7 @@ Fixture: `equipped_character`.
 - [x] `character.close` (qualified variant; [evidence](#panel_visibility))
 - [x] `character.stats` (qualified variant; [evidence](#equipment))
 - [x] `character.equipment_tooltips` (qualified variant; [evidence](#stock_equipped_item_tooltip_identity))
-- [ ] `character.compare_items`
+- [x] `character.compare_items` (qualified variant; [evidence](#stock_owned_sword_comparison))
 - [x] `character.equip` (qualified variant; [evidence](#equipment))
 - [x] `character.unequip` (qualified variant; [evidence](#equipment))
 - [x] `character.weapon_swap` (qualified variant; [evidence](#stock_twohand_weapon_swap))
@@ -1112,7 +1112,7 @@ Fixture: `in_world`.
 - [ ] `ui_misc.item_text_open`
 - [ ] `ui_misc.item_text_page`
 - [ ] `ui_misc.item_text_close`
-- [ ] `ui_misc.tooltip_compare`
+- [x] `ui_misc.tooltip_compare` (qualified variant; [evidence](#stock_owned_sword_comparison))
 - [ ] `ui_misc.achievement_link`
 - [ ] `ui_misc.quest_link`
 - [ ] `ui_misc.item_link`
@@ -1955,10 +1955,27 @@ Remaining limits: One owned human warrior and two two-hand swords with empty off
 
 ### stock_geared_visibility_roundtrip
 
-Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored.
+Fresh whole stock Show Helm/Show Cloak trial hides and shows both equipped items. All four paired stock character/world renders reviewed; exact requests00->00 and80->01, native flags1024/0/2048/0 and Classic PlayerFlagsEx128/0/256/0 match. Full native resources, original visibility, search, panels and model camera restored. Three normal logout/reentry phases preserve hidden world/API settings and restore both original flags/resources. Paired character-selection bare-head/helmet models reviewed; selection0xc00/0 masks and all19 gear slots match native state.
 
-Remaining limits: One geared human warrior and exact stock controls. Sword partly occludes rear cloak; visible fabric changes are reviewed. Other races/models, full logout persistence, character-selection visibility and arbitrary bindings remain open. Earlier failed roots and source-bound recovery do not qualify behavior.
+Remaining limits: One geared human warrior and stock controls. Sword partially occludes rear world cloak. Rear selection cloak rendering, other models/customizations, unrelated login flags and arbitrary bindings remain open. Failed roots and source-bound recovery do not qualify normal behavior.
 
 - [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_visibility_02/episode.json`, SHA-256 `d78beb105316f8728dd5246cf742cfad4f12362177c7bad65ee3b82c363ef7f5`.
   Checked cases: `character.display_helm` (character_appearance_pass), `appearance.restore.helm` (character_appearance_pass), `character.display_cloak` (character_appearance_pass), `appearance.restore.cloak` (character_appearance_pass).
 - [442_interactions_20261003_39.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_39.tar.gz.dvc), member `evidence/client_interactions_20261003_ui38/character_visibility_review.json`, SHA-256 `a6cda1075d07c550bd0eae4c91213f25e15778608f831e782abc3c4672198e3d`.
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/visibility_session_01/cohort.json`, SHA-256 `c2b3468af214d693016baa2fdbbef2c5cd5eb10b35f02f8462933ca310941ae3`.
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/visibility_session_hidden_logout_01/episode.json`, SHA-256 `d1bf3075230c94aebc5877575be1387dbee6412461c68d6f8462b527d126a7c4`.
+  Checked cases: `character.selection_visibility.hidden` (character_selection_wire_pass).
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/visibility_session_restored_logout_01/episode.json`, SHA-256 `e8b5ffe091c032e4413c0ff70171c957bfa11ef6dda9bd2886d839abe216765b`.
+  Checked cases: `character.visibility_reentry.hidden` (appearance_session_pass), `character.selection_visibility.restored` (character_selection_wire_pass).
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/visibility_session_finished_01/episode.json`, SHA-256 `01e1866f446f3009c3943815d645f47e827334cbcef7c0c2642e8a3e480b2047`.
+  Checked cases: `character.visibility_reentry.restored` (appearance_session_pass).
+
+### stock_owned_sword_comparison
+
+Ordinary private Shift-hover on owned backpack Worn Greatsword renders its tooltip and Currently Equipped Gurthalak tooltip with exact native item IDs/names. Whole trial preserves all native resources and panels. Shift release is verified and hides the comparison; full frame reviewed.
+
+Remaining limits: One human warrior, two two-hand swords, empty offhand and original automatic comparison false. Numeric comparison deltas, all tooltip lines, offhand/two-comparison variants and CVar mutation remain open. Observer captures16 of20 comparison lines.
+
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/item_comparison_01/episode.json`, SHA-256 `4bfa967fc815afb8811aa5270b9cd93f92a5dfdf9c2dd6510dd2a760bc83cacb`.
+  Checked cases: `character.compare_items` (stock_item_comparison_pass).
+- [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/item_comparison_review.json`, SHA-256 `8011e47e02f64f675301ffe7b304cb595e0447d67d6e26206440a45358991f95`.
