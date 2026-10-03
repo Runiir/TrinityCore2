@@ -16,7 +16,10 @@ def point(control):
 
 def command(trial,text):
     # Observer plumbing only; never invokes a Blizzard gameplay API.
-    trial.io.key('Return');trial.io.type(text);trial.io.key('Return');time.sleep(.65)
+    # Match the normal trial chat transport. Immediate typing after the shorter
+    # Return tap can lose the slash while the background chat box opens.
+    trial.io.key('Return',hold=.4);time.sleep(.2)
+    trial.io.type(text);time.sleep(.2);trial.io.key('Return',hold=.4);time.sleep(.65)
 
 
 def controls(trial):

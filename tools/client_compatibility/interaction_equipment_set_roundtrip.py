@@ -180,10 +180,11 @@ def suite(t,source):
             t.clean_panels()
             for key in ['c','b']:t.execute({'kind':'key','value':key})
             require(change(t,oracle,item,destination,True),'equipment_change_pass')
-        restore_display(t,collapsed)
-        t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
-        t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
-        if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set roundtrip did not restore native resources')
+        try:restore_display(t,collapsed)
+        finally:
+            t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
+            t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
+            if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set roundtrip did not restore native resources')
 
 
 if __name__=='__main__':

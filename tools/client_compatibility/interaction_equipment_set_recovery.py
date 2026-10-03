@@ -34,10 +34,11 @@ def suite(t,source,display_source):
         if not valid:raise RuntimeError('owned renamed set is absent')
         delete_set(t,probe['sets'][0]['id'],original)
     finally:
-        restore_display(t,True)
-        t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
-        t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
-        if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set recovery changed native resources')
+        try:restore_display(t,True)
+        finally:
+            t.receipt['native_after']={'native':stable(baseline()),'sets':stable(sets())}
+            t.receipt['native_resources_preserved']=t.receipt['native_after']['native']==original;t.persist()
+            if not t.receipt['native_resources_preserved']:raise RuntimeError('equipment-set recovery changed native resources')
 
 
 if __name__=='__main__':
