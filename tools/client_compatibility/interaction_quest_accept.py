@@ -22,9 +22,10 @@ def suite(t,point,stage_only):
         q.execute('SELECT q.Flags,q.StartItem,a.RequiredMoney,a.MaxLevel,a.AllowableClasses,a.AllowableRaces '
             'FROM client442_world.quest_template q JOIN client442_world.quest_template_addon a ON q.ID=a.ID WHERE q.ID=%s',(QUEST,))
         row=q.fetchone()
-    if not row or row[0]&0x80000 or row[1] or row[2] or row[3] or row[4] or row[5]:
+    if (not row or row[0]&0x80000 or row[1] or row[2] or row[3] or
+            (row[4] and not row[4]&1) or (row[5] and not row[5]&1)):
         raise RuntimeError('manual kill-quest contract changed')
-    t.receipt['baseline']={'quests':baseline,'inventory_money':items,'quest':QUEST};t.persist()
+    t.receipt['baseline']={'quests':baseline,'inventory_money':items,'quest':QUEST,'native_eligibility':row};t.persist()
     try:
         fixture.prepare();t.execute({'kind':'chat','value':'/targetexact '+fixture.npc[2]})
         state,frame=t.observe('manual_giver_staged');t.receipt['staging']={'state':state,'frame':frame};t.persist()
