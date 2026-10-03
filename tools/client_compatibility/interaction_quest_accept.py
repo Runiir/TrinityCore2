@@ -13,7 +13,7 @@ QUEST=52
 TITLE='Protect the Frontier'
 
 
-def suite(t,point,stage_only,action='accept'):
+def suite(t,point,stage_only,action='accept',after_read=None):
     if action not in ['accept','decline']:raise ValueError('unsupported manual quest action')
     actors.session_entry(t.fixture);t.clean_panels()
     baseline=quest_state(1);items=inventory();fixture=NpcFixture(t.out,t.fixture,261,2)
@@ -115,6 +115,17 @@ def suite(t,point,stage_only,action='accept'):
                     'unseen_bear_name_displayed':named_bear,'wolf_objective_displayed':wolf}}
         require(click_case(t,'quests.manual_read_log','Read '+TITLE+' and both named kill objectives in the quest log.',
             lambda c:c['text'].strip()==TITLE,read_log),'quest_log_details_pass')
+        if after_read:
+            after_read(t,fixture)
+            t.clean_panels();t.execute({'kind':'key','value':binding_key(state['quest_log_keys'][0])})
+            state,_=t.observe('progress_log_reopened')
+            if any(h.get('title')=='Elwynn Forest' and h.get('collapsed') for h in state.get('quest_headers',[])):
+                require(click_case(t,'quests.progress_expand','Expand the trial quest zone.',lambda c:c['text'].strip()=='Elwynn Forest',
+                    lambda b,a,s:{'status':'quest_zone_expand_pass' if s and any(q.get('id')==QUEST for q in a.get('quests',[])) else
+                        'client_or_protocol_failure'}),'quest_zone_expand_pass')
+            require(click_case(t,'quests.progress_select','Select only the trial quest for abandonment.',lambda c:c['text'].strip()==TITLE,
+                lambda b,a,s:{'status':'quest_selection_pass' if s and a.get('quest_log_selection',{}).get('id')==QUEST else
+                    'client_or_protocol_failure'}),'quest_selection_pass')
         state,_=t.observe('manual_abandon_guard')
         if state.get('quest_log_selection',{}).get('abandon_name')!=TITLE:raise RuntimeError('manual quest abandonment is not correctly selected')
         def abandon_prompt(case):

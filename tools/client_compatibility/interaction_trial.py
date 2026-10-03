@@ -12,6 +12,7 @@ import subprocess
 import time
 import urllib.request
 from contextlib import redirect_stdout
+from contextlib import contextmanager
 from io import StringIO
 from . import actors,lab_runtime as lab,owned_input
 from .archaeology_controller import MODEL,REVISION,ENDPOINT
@@ -80,6 +81,7 @@ class Trial:
     def __init__(self,out,controller='laya'):
         if controller not in ['laya','code']:raise ValueError('unknown interaction controller')
         self.controller=controller
+        self.combat_observation_deadline=None
         self.out=out;out.mkdir(parents=True,exist_ok=False,mode=0o700)
         self.fixture=actors.load();self.guid=f"Player-1-{self.fixture['guid']:08X}"
         self.io=owned_input.Inputs();self.rng=random.Random(44260895)
@@ -119,9 +121,26 @@ class Trial:
             time.sleep(.1)
         if state['guid']!=self.guid or state['build']!=60895 or not movement['in_world']:
             raise RuntimeError('observation is not the owned active character')
-        if movement['dead'] or movement['in_combat'] or movement['on_taxi'] or movement['health_percent']<50:
+        combat_allowed=(self.combat_observation_deadline is not None and
+            time.monotonic()<self.combat_observation_deadline)
+        if movement['dead'] or (movement['in_combat'] and not combat_allowed) or movement['on_taxi'] or movement['health_percent']<50:
             raise RuntimeError('interaction fixture is unsafe')
         return state,{'file':path.name,'sha256':lab.sha256(path),'monitor':monitor,'movement':movement}
+
+    @contextmanager
+    def bounded_combat_observation(self,seconds):
+        """Permit combat observations only inside an explicit bounded fixture.
+
+        Owned identity, monitor, life, health and taxi guards remain active.
+        This changes observation permission, never character state or inputs.
+        """
+        if not 1<=seconds<=60 or self.combat_observation_deadline is not None:
+            raise ValueError('combat observation requires one bounded 1-60 second window')
+        self.combat_observation_deadline=time.monotonic()+seconds
+        self.receipt.setdefault('combat_observation_windows',[]).append({'started_at':time.time(),'seconds':seconds})
+        self.persist()
+        try:yield
+        finally:self.combat_observation_deadline=None
 
     def execute(self,action):
         with owned_input.lease():
