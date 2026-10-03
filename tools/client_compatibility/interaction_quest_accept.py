@@ -60,6 +60,15 @@ def suite(t,point,stage_only):
             require(click_case(t,'quests.manual_select','Read the offered '+TITLE+' quest.',lambda c:TITLE in c['text'],
                 details_ready),'quest_details_open_pass')
         if quest_state(1)!=baseline:raise RuntimeError('quest became active before the manual Accept input')
+        # The stock scrolling quest text disables Accept until its normal
+        # animation finishes. Observe readiness without bypassing that control.
+        deadline=time.monotonic()+40;t.receipt['accept_readiness']=[]
+        while True:
+            rows=controls(t);button=next((c for c in rows if c['name']=='QuestFrameAcceptButton' and c['text']=='Accept'),None)
+            t.receipt['accept_readiness'].append({'time':time.time(),'button':button});t.persist()
+            if button and button['enabled']:break
+            if time.monotonic()>deadline:raise RuntimeError('stock quest Accept button did not become enabled')
+            time.sleep(.5)
         def accepted(b,a,s):
             native=quest_state(1);added=[q for q in native['active'] if q['quest']==QUEST]
             passed=s and len(added)==1 and added[0]['status']==3 and any(q.get('id')==QUEST for q in a.get('quests',[]))
