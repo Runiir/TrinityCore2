@@ -71,9 +71,11 @@ def suite(t,point,stage_only):
             time.sleep(.5)
         def accepted(b,a,s):
             native=quest_state(1);added=[q for q in native['active'] if q['quest']==QUEST]
-            passed=s and len(added)==1 and added[0]['status']==3 and any(q.get('id')==QUEST for q in a.get('quests',[]))
+            probe=a.get('manual_quest_probe',{})
+            passed=s and len(added)==1 and added[0]['status']==3 and probe.get('id')==QUEST and probe.get('active') is True
             return {'status':'quest_manual_accept_pass' if passed else 'client_or_protocol_failure',
-                'oracle':{'native':native,'native_was_absent_before_accept':True,'quests':a.get('quests')}}
+                'oracle':{'native':native,'native_was_absent_before_accept':True,'public_active_quest':probe,
+                    'visible_quests':a.get('quests'),'zone_headers':a.get('quest_headers')}}
         require(click_case(t,'quests.manual_accept','Accept '+TITLE+'.',
             lambda c:c['name']=='QuestFrameAcceptButton' and c['text']=='Accept',accepted),'quest_manual_accept_pass')
         t.clean_panels();state,_=t.observe('accepted_log_binding')
