@@ -90,6 +90,25 @@ waits for the selected field to have focus before sending text, then waits for t
 requested value without repeating the input. All 13 selected input, cleanup and
 control-catalog guards pass. A fresh complete roundtrip remains required.
 
+`equipment_set_roundtrip_04` passes the name edit, native save and reload checks.
+Its helmet drag succeeds natively, but the first rendered state still shows the
+old equipped slot. Cleanup then tries to use a panel that has not appeared yet;
+that original episode has no final native capture. A separate recovery restores
+the helmet through the stock saved-set Equip button, but stops before editing
+because the hover-only edit button has not appeared. It verifies restored native
+resources and sidebar layout. The source-bound name-only recovery then restores
+the exact original set name, identity, slots, resources and collapsed layout.
+Both failed roots remain immutable. The runner now waits for equipment relocation,
+cleanup panels and hover-only controls without replaying gameplay input. All 16
+selected input, cleanup, control-catalog and hover-control regressions pass.
+
+While the primary works on equipment, the scout independently searches stock
+settings for helm and cloak. Its reviewed frames contain the corresponding
+checked Show Helm and Show Cloak controls. It restores the search and closes
+settings with unchanged native money and equipment. No visibility toggle is
+qualified by this read-only inspection. Both actors use private displays and
+verified HDMI-1 windows without host activation.
+
 A reviewed expanded stats panel also shows a nonnumeric melee DPS value. The
 public damage percentage is zero while the native school modifier is nonzero.
 Two positive wire regressions fail against the retained running bridge. The next
