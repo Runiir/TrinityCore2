@@ -60,7 +60,7 @@ Screenshots of the crafted item and both history displays are reviewed.
 Use fresh owned output directories and the already-running lab:
 
 ```sh
-pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_observer_deploy --output <new-owned-directory> --version 41
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_observer_deploy --output <new-owned-directory> --version 42
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_archaeology_projects --output <new-owned-directory>
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python -m tools.client_compatibility.interaction_archaeology_projects --output <new-owned-directory> --solve --persist
 ```
@@ -73,7 +73,7 @@ matches; `--require-history` checks both API and rendered history. It does not
 replay the original Solve click. All original failed episodes and four failing
 pre-fix regression cases remain in the evidence batch.
 
-Keystones, completion repeats, rare artifacts, other races, fragment caps, Survey
+Completion repeats, rare artifacts, other races, fragment caps, Survey
 cast-bar verification, continent maps and full-session persistence remain separate
 requirements. These code-controlled UI checks do not qualify learned autonomy or
 whole-game compatibility.
@@ -84,3 +84,31 @@ archive SHA-256 `63a5dde90a6e370b6fb421b0466e1b63398ba4da1e2a1172a78b53a9722bc3a
 Eight JSON receipts/reviews and 104 attributed frame hashes were verified by
 streaming the archive. Three scoped records qualify seven new operations,
 bringing the checklist to 239/916. Remaining variants stay open.
+
+UI33 passes a fresh, ordinary-input keystone trial with observer v42. Adding an
+existing Draenei Tome shows its socket icon and exactly 12 extra fragments;
+removing it restores the unadjusted display. Neither toggle changes native state.
+Adding it again and clicking Solve creates Scepter of the Nathrezim, native
+project 245, spell 90864 and item 64444. The captured native request contains
+weights `(currency 398, 34)` and `(keystone 64394, 1)`. Earned fragments decrease
+from 47 to 13, the existing Tome stack decreases from five to four, and one new
+artifact appears in the backpack. Every other item, currency row and money stays
+unchanged. The next project is Anklet with Golden Bells at 13/45 fragments.
+
+The original Solve frame captures public spell 90864, matching stock bar text and
+a visible three-second cast bar. This qualifies a stationary Solve cast, while
+Survey remains open. The source episode ran revision
+`899bd592f230a0d61e8bd1f490321e9ab8da80ee`; its original `case.after.player_cast`
+provides this proof, rather than the later helper added at `2a3ac7e5f7`.
+All three earned artifacts appear in the stock Completed tab. Physical hovering
+over the disabled common-artifact button shows the exact title, first completion
+date and completion count one. The observer uses public reads and the stock
+button's existing mouse-motion scripts.
+
+Eleven private-input/cohort guards pass. An earlier command selected a nonexistent
+test file and collected no tests; that selection error is retained in the batch.
+The native worldserver and bridge lifetimes remain unchanged throughout UI33.
+The weighted solve, frames and source-bound review are checkpointed separately in
+`442_interactions_20261003_34.tar.gz.dvc`. One-keystone, common Draenei Solve and
+its completed tooltip are the tested variants. Additional socket counts, rare
+artifacts, repeats, other races and Survey casts remain pending.
