@@ -1,6 +1,7 @@
 // Native-authoritative mail reads, using pinned 60895 MailPackets schemas.
 #include "mail.hpp"
 #include "mail_actions.hpp"
+#include "mail_send.hpp"
 #include <cmath>
 #include <unordered_set>
 
@@ -100,6 +101,7 @@ Reply mail_request(Protocol const &protocol,State &owner,std::string const &name
 {
     if(name=="CMSG_QUERY_NEXT_MAIL_TIME")
     {Reader r(body);r.end();return Packet{"MSG_QUERY_NEXT_MAIL_TIME",{}};}
+    if(auto sending=mail_send(protocol,owner,name,body))return sending;
     if(auto action=mail_action(protocol,owner,name,body))return action;
     if(name!="CMSG_MAIL_GET_LIST")return {};
     Reader r(body);auto guid=visible_mailbox(protocol,owner,r.guid());r.end();owner.pending_mailbox=guid;

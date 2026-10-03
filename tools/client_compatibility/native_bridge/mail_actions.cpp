@@ -22,8 +22,15 @@ std::uint64_t active_mailbox(Protocol const &protocol,State const &owner)
 Reply mail_action(Protocol const &protocol,State const &owner,std::string const &name,View body)
 {
     if(name!="CMSG_MAIL_MARK_AS_READ" && name!="CMSG_MAIL_DELETE" &&
-       name!="CMSG_MAIL_TAKE_ITEM" && name!="CMSG_MAIL_TAKE_MONEY")return {};
+       name!="CMSG_MAIL_TAKE_ITEM" && name!="CMSG_MAIL_TAKE_MONEY" && name!="CMSG_MAIL_RETURN_TO_SENDER")return {};
     Reader r(body);auto target=active_mailbox(protocol,owner);Writer w;
+    if(name=="CMSG_MAIL_RETURN_TO_SENDER")
+    {
+        auto id=owned_mail(owner,r.take<std::uint64_t>());auto sender=r.guid();r.end();
+        auto low=integer(sender[0]),high=integer(sender[1]);
+        if(low>0xffffffff || high!=(low?player_high():0))throw std::runtime_error("invalid mail return player sender");
+        return Packet{name,w.pack("QIQ",{target,id,low}).finish()};
+    }
     if(name=="CMSG_MAIL_DELETE")
     {
         auto id=owned_mail(owner,r.take<std::uint64_t>());auto reason=r.take<std::int32_t>();r.end();
@@ -64,7 +71,7 @@ Reply mail_command_result(Protocol const &protocol,State &owner,View body)
             throw std::runtime_error("native mail attachment quantity exceeds modern bound");
     }
     r.end();
-    if(command==4 && !error)owner.mail_ids.erase(id);
+    if((command==3 || command==4) && !error)owner.mail_ids.erase(id);
     return Packet{"SMSG_MAIL_COMMAND_RESULT",Writer().pack("QiiiQi",{id,command,error,bag,attachment,quantity}).finish()};
 }
 }

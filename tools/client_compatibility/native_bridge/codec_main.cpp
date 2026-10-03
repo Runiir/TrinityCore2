@@ -239,6 +239,8 @@ int main(int argc, char **argv)
                     state.created = !state.self_snapshot.is_null();
                     state.last_logout_guid = integer(get(request,"last_logout_guid"));
                     state.gossip_menu = get(request, "gossip_menu");
+                    if(auto const &items=get(request,"inventory_items");items.is_array())
+                        for(auto const &record:items.as_array())state.inventory_items[integer(get(record,"guid"))]=record;
                     for (auto const &record : get(request, "gameobjects").as_array())
                         state.visible_gameobjects[integer(get(record, "guid"))] = record;
                     for (auto const &record : get(request, "units").as_array())
