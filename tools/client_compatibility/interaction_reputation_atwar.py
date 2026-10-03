@@ -26,7 +26,7 @@ def request_packets(session,started):
         if packet.get('session')!=session or packet.get('time',0)<started:continue
         name,direction=packet.get('name'),packet.get('direction')
         if direction=='from_client' and name in ['CMSG_SET_FACTION_AT_WAR','CMSG_SET_FACTION_NOT_AT_WAR']:
-            r=Reader(bytes.fromhex(packet['body']));index=r.unpack('i')[0];r.end()
+            r=Reader(bytes.fromhex(packet['body']));index=r.unpack('H')[0];r.end()
             result.append({'direction':direction,'name':name,'time':packet['time'],'index':index,
                 'enabled':name=='CMSG_SET_FACTION_AT_WAR'})
         elif direction=='to_native' and name=='CMSG_SET_FACTION_ATWAR':

@@ -148,7 +148,10 @@ def test_account_cache_global_identity_and_all_17_times(codec):
 
 def test_reputation_mutations_and_visibility_use_index(codec):
     for name,flag in [('CMSG_SET_FACTION_AT_WAR',1),('CMSG_SET_FACTION_NOT_AT_WAR',0)]:
-        assert call(codec,'reputation_request',name,struct.pack('<i',4))==['CMSG_SET_FACTION_ATWAR',struct.pack('<IB',4,flag).hex()]
+        # Pinned CharacterPackets.h declares the modern At War index uint16.
+        assert call(codec,'reputation_request',name,struct.pack('<H',4))==['CMSG_SET_FACTION_ATWAR',struct.pack('<IB',4,flag).hex()]
+        for invalid in [b'',b'\x04',struct.pack('<I',4),struct.pack('<H',256)]:
+            assert 'error' in call(codec,'reputation_request',name,invalid)
     assert call(codec,'reputation_request','CMSG_SET_WATCHED_FACTION',struct.pack('<i',-1))==['CMSG_SET_WATCHED_FACTION','ffffffff']
     assert 'error' in call(codec,'reputation_request','CMSG_SET_FACTION_INACTIVE',struct.pack('<iB',256,128))
     assert call(codec,'reputation','SMSG_SET_FACTION_VISIBLE',struct.pack('<I',4),factions=[{'index':4,'id':72}])==['SMSG_SET_FACTION_VISIBLE','04000000']

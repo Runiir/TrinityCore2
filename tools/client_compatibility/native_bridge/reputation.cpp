@@ -7,7 +7,12 @@ Reply Protocol::reputation_request(std::string const &name, View body)
 {
     if(name!="CMSG_SET_FACTION_AT_WAR" && name!="CMSG_SET_FACTION_NOT_AT_WAR" &&
        name!="CMSG_SET_FACTION_INACTIVE" && name!="CMSG_SET_WATCHED_FACTION")return {};
-    Reader r(body);auto index=r.take<std::int32_t>();Writer w;w.put(index);
+    Reader r(body);
+    // CharacterPackets.h at 6426c2b: the two At War requests use uint16,
+    // unlike the uint32 inactive/watch requests. Native always uses uint32.
+    bool at_war=name=="CMSG_SET_FACTION_AT_WAR" || name=="CMSG_SET_FACTION_NOT_AT_WAR";
+    std::int32_t index=at_war ? r.take<std::uint16_t>() : r.take<std::int32_t>();
+    Writer w;w.put(index);
     if(name=="CMSG_SET_WATCHED_FACTION")
     {
         if(index < -1 || index >= 256)throw std::runtime_error("invalid watched reputation index");
