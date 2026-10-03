@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "UI29 tracked quest markers, reputation standing/watch/header controls and inactive round trip are closed passes with exact restoration. Checkpoint and qualify the reviewed receipts, prune remote-verified data, then test watched reload persistence and ordinary earned positive/negative standing in UI30 before continuing every remaining UI family. Both clients use isolated input; native worldserver unchanged.",
+  "current": "UI29 is checkpointed and qualified (220/916). UI30 watched reload passes; initial earned kill has a corrected deselection oracle, and subsequent loading/viewport failures remain retained. Primary D3D11 reentry preserves all native state. At War exposed a uint16/uint32 bridge mismatch, corrected in an independent build with 731 full and 19 sanitizer checks; failed source baseline is restored. Finish scout D3D11 reentry, deploy only the bridge, retry ordinary At War and earned kill, then checkpoint/qualify reviewed passes and continue all remaining UI families. Native worldserver unchanged.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
