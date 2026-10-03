@@ -25,10 +25,13 @@ def native_catalog(state):
     if magic!=b'WDBC' or (fields,width)!=(26,104) or len(data)!=20+count*width+strings:
         raise RuntimeError('unexpected native faction DBC layout')
     text=data[20+count*width:];race,cls=state['character'][:2];race_mask,class_mask=1<<(race-1),1<<(cls-1)
-    saved={row[0]:row[1:] for row in state['rows']};catalog={}
-    for i in range(count):
-        row=struct.unpack_from('<26I',data,20+i*width)
-        if row[1]>=256:continue
+    saved={row[0]:row[1:] for row in state['rows']};catalog={};by_index={}
+    # ReputationMgr initializes by ascending faction ID and overwrites duplicate
+    # reputation-list indexes. Superseded test/placeholder DBC IDs are not state.
+    rows=sorted((struct.unpack_from('<26I',data,20+i*width) for i in range(count)),key=lambda row:row[0])
+    for row in rows:
+        if row[1]<256:by_index[row[1]]=row
+    for row in by_index.values():
         base=0
         for j in range(4):
             value=struct.unpack('<i',struct.pack('<I',row[10+j]))[0]
