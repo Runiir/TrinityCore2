@@ -17,6 +17,22 @@ BOOK=43395
 LEARNED=58276
 
 
+def book_fixture(t,oracle,delta,reason):
+    expected=oracle.poll().count(BOOK)+delta
+    if expected not in [0,1]:raise RuntimeError('glyph fixture exceeds one disposable book')
+    with item_fixture_permission(t):
+        fixture_command(t,'/cleartarget','book fixture must target only the owned actor')
+        fixture_command(t,f'.additem {BOOK} {delta}',reason)
+        deadline=time.monotonic()+12
+        while oracle.poll().count(BOOK)!=expected:
+            if time.monotonic()>deadline:raise RuntimeError('native glyph book fixture did not settle')
+            time.sleep(.2)
+        # Keep permission until the command's native outcome is observed. Input
+        # acknowledgement alone does not mean the game processed the command.
+        t.receipt.setdefault('book_fixture_settling',[]).append({'delta':delta,'count':expected,'no_replay':True})
+        t.persist()
+
+
 def spells():
     lab.server_command('saveall');time.sleep(1)
     with lab.connection() as c,c.cursor() as q:
@@ -39,9 +55,7 @@ def cleanup(t,source):
     t.receipt['cleanup_source']={'file':str(source),'sha256':lab.sha256(source)};t.persist()
     t.clean_panels()
     if remaining:
-        with item_fixture_permission(t):
-            fixture_command(t,'/cleartarget','remove only the unused owned glyph book fixture')
-            fixture_command(t,f'.additem {BOOK} -1','restore the exact unused glyph book from the failed probe')
+        book_fixture(t,oracle,-1,'restore the exact unused glyph book from the failed probe')
     # Flush native state before reading persisted inventory; packet removal can
     # precede the normal DB save and is not evidence of a failed cleanup.
     now_spells=normalize(spells());now_talents=normalize(native_state())
@@ -64,10 +78,7 @@ def suite(t):
     t.receipt['baseline']={'inventory_money':items,'spells':known,'talents':talents,
         'item_catalog_sha256':digest,'book':BOOK,'learned_spell':LEARNED};t.persist()
     try:
-        with item_fixture_permission(t):
-            fixture_command(t,'/cleartarget','stage the book only on the owned actor')
-            fixture_command(t,f'.additem {BOOK} 1','one disposable glyph book, not learned-spell credit')
-        if oracle.poll().count(BOOK)!=1:raise RuntimeError('native glyph book fixture did not appear')
+        book_fixture(t,oracle,1,'one disposable glyph book, not learned-spell credit')
         t.execute({'kind':'key','value':'b'});state,frame=t.observe('glyph_book_prepared')
         shown=[r for r in state.get('bag_items',[]) if r['id']==BOOK and r['count']==1]
         if len(shown)!=1:raise RuntimeError('glyph book is absent or ambiguous in the public bags')
@@ -117,9 +128,7 @@ def suite(t):
         t.clean_panels();remaining=oracle.poll().count(BOOK)
         if remaining:
             if remaining!=1:raise RuntimeError('glyph book fixture has an unexpected quantity')
-            with item_fixture_permission(t):
-                fixture_command(t,'/cleartarget','remove only the unused owned glyph book fixture')
-                fixture_command(t,f'.additem {BOOK} -1','remove only the unused disposable glyph book')
+            book_fixture(t,oracle,-1,'remove only the unused disposable glyph book')
         now=spells();preserved=[r for r in now if r[0]!=LEARNED]==list(known)
         t.receipt['restoration']={'inventory_money_restored':inventory()==items,'talents_glyphs_unchanged':native_state()==talents,
             'unrelated_spells_unchanged':preserved,'earned_learning_preserved':True};t.persist()
