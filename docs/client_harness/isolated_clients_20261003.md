@@ -49,7 +49,7 @@ delayed observation for that trace. It does not prove that every earlier failure
 had the same cause. Panel actions and read-only diagnostic pages now wait for
 their requested state or page with a bounded timeout.
 
-The current regression suite passes 694 tests. The wrong-peer and reused-process
+The initial regression suite passed 694 tests. The wrong-peer and reused-process
 tests verify rejection before any input traffic. Those guards also passed with
 the sanitizer build. The live success uses the optimized C++ sender whose build
 receipt pins its source, executable and libei header hashes.
@@ -85,3 +85,40 @@ can use a closed failed owned-reentry receipt. It checks client/server lifetimes
 and the exact native inventory, money, spells and talents before carrying the
 previous public baseline forward. The initial public precheck stays deferred and
 failed in its receipt. Both actors must pass fresh public checks after reconnect.
+
+## Cached template reads during login
+
+The next primary reconnect exposed a second race. Its cached game-object query
+arrived after continued authentication but before native player creation. The
+active-world guard disconnected it. Static creature and game-object reads now
+wait in a bounded, coalesced queue until player creation. A cached game-object
+identity receives public native template data without being added to the visible
+object set. Using an unseen object remains rejected.
+
+The full bridge suite passed 704 checks, and 17 focused cases passed under
+ASan/UBSan. Earlier failures remain in the checkpoint: the first test invocation
+used a nonexistent codec path (14 setup errors); two selected reruns each had two
+fixture/oracle failures before the final full pass. The earlier 699-test creature
+queue pass and its 41 sanitizer checks are also retained.
+
+Both clients subsequently entered the world with observer v37 and passed their
+public resource, equipment, group and profile baselines. The primary's 343 unique
+creature queries and the scout's 32 all received authoritative native replies;
+their peak outstanding counts were 58 and 24 and both finished at zero. Their
+one and 25 game-object reads also received native replies. Neither successful
+session has a connection-close event in the captured recovery window.
+
+An intervening primary login entered the world but failed the public check because
+one observation texture was transparent. Its checksum failures remain failed.
+Refreshing that owned client resolved it. The scout was also restarted after a
+loading screen remained stuck. Neither restart changed the server lifetimes;
+the cold-login recovery receipt links the final public observations to both
+client lifetimes. This does not establish the cause of the texture or loading
+failure, or qualify unattended recovery.
+
+`interaction_client_restart --actor <primary|scout> --output <private-evidence-dir>
+--reason <reason>` refreshes exactly one client and records its before/after
+lifetimes and HDMI-1 placement. Review the resulting lobby before sending inputs.
+`interaction_bridge_deploy reconnect --realm-selection --keyboard-modal` starts
+from an already-reviewed realm selector. A fresh recovery can bind its baseline
+to the restart receipt using `recovery --client-restart-source <restart.json>`.
