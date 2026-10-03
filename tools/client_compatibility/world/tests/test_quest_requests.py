@@ -43,9 +43,29 @@ def test_public_quest_info_query_retains_id_and_drops_modern_only_giver(codec):
     for id in [0,-1]:assert 'error' in call(codec,'CMSG_QUERY_QUEST_INFO',Writer().pack('i',id).guid(0,0).finish())
 
 
-def test_accept_preserves_native_identity_and_cheat_bool(codec):
-    body=Writer().guid(*modern_guid(GUID,0)).pack('i',26389).bits(0,1).finish()
-    assert call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body)==['CMSG_QUEST_GIVER_ACCEPT_QUEST',struct.pack('<QIB',GUID,26389,0).hex()]
+def test_accept_widens_modern_cheat_bit_to_native_uint32(codec):
+    for cheat in [0,1]:
+        body=Writer().guid(*modern_guid(GUID,0)).pack('i',26389).bits(cheat,1).finish()
+        assert call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body)==['CMSG_QUEST_GIVER_ACCEPT_QUEST',struct.pack('<QII',GUID,26389,cheat).hex()]
+        for n in range(len(body)):assert 'error' in call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body[:n])
+        assert 'error' in call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body+b'x')
+        for units in [[],[UNIT],[{**GIVER,'kind':4}]]:
+            assert 'error' in call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body,units)
+    for id in [0,-1]:
+        body=Writer().guid(*modern_guid(GUID,0)).pack('i',id).bits(0,1).finish()
+        assert 'error' in call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body)
+
+
+def test_captured_guard_thomas_accept_has_complete_native_reader_fields(codec):
+    # UI23 trial 06 reached enabled Accept. Its 13-byte native request raised a
+    # ByteBufferException: QuestPackets.h declares StartCheat as uint32, not bool.
+    body=bytes.fromhex('03a3e325404104203400000000')
+    guid=int.from_bytes(bytes.fromhex('e3250000050130f1'),'little')
+    response=call(codec,'CMSG_QUEST_GIVER_ACCEPT_QUEST',body,[{**GIVER,'guid':guid}])
+    assert response[0]=='CMSG_QUEST_GIVER_ACCEPT_QUEST'
+    native=bytes.fromhex(response[1])
+    assert len(native)==16
+    assert struct.unpack('<QII',native)==(guid,52,0)
 
 
 def test_abandon_requires_an_active_owned_native_slot_and_exact_byte(codec):

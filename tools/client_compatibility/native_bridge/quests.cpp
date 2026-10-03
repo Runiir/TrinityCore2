@@ -30,7 +30,9 @@ Reply quest_request(Protocol const &protocol,State const &owner,std::string cons
     {
         auto id=r.take<std::int32_t>();auto respond=r.bits(1);r.align();
         if(id<=0)throw std::runtime_error("invalid questgiver quest identity");
-        w.pack("IB",{id,respond});
+        // Native QueryQuest reads a bool, but AcceptQuest::StartCheat is uint32.
+        // Both are a single bit in the modern request.
+        w.pack(name=="CMSG_QUEST_GIVER_ACCEPT_QUEST"?"II":"IB",{id,respond});
     }
     r.end();return Packet{name,w.finish()};
 }
