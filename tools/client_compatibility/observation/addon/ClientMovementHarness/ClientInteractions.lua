@@ -120,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=23,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=24,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -303,6 +303,24 @@ local function snapshot(viewMode,viewPage)
             end
         end
         sample(api.GetBrowseResults,'browse');sample(api.GetOwnedAuctions,'owned');sample(api.GetBids,'bids')
+        local sell=AuctionHouseFrame.ItemSellFrame
+        if sell and sell:IsVisible() then
+            local item=call(sell.GetItem,sell)
+            local bid,buyout=call(sell.GetPrice,sell)
+            data.auction.sell={id=item and call(C_Item.GetItemID,item),
+                quantity=call(sell.GetQuantity,sell),duration=call(sell.GetDuration,sell),
+                bid=tonumber(bid),buyout=tonumber(buyout),post_enabled=call(sell.PostButton.IsEnabled,sell.PostButton)}
+            if item then
+                local bag,slot=call(item.GetBagAndSlot,item)
+                local key=call(api.GetItemKeyFromItem,item)
+                data.auction.sell.bag=bag;data.auction.sell.slot=slot
+                if key then
+                    data.auction.sell.item_key=key
+                    data.auction.sell.search_count=call(api.GetNumItemSearchResults,key)
+                    data.auction.sell.full_search=call(api.HasFullItemSearchResults,key)
+                end
+            end
+        end
     end
     data.spell_tabs=call(GetNumSpellTabs);data.macros={GetNumMacros()};data.binding_set=call(GetCurrentBindingSet)
     data.test_macro={call(GetMacroInfo,'TC442Test')}
@@ -548,12 +566,13 @@ frame:RegisterEvent('CHAT_MSG_LOOT')
 for _,event in ipairs({'TRADE_SHOW','TRADE_CLOSED','TRADE_REQUEST_CANCEL','TRADE_ACCEPT_UPDATE'}) do frame:RegisterEvent(event) end
 for _,event in ipairs({'AUCTION_HOUSE_SHOW','AUCTION_HOUSE_CLOSED','AUCTION_HOUSE_BROWSE_RESULTS_UPDATED',
     'AUCTION_HOUSE_BROWSE_RESULTS_ADDED','OWNED_AUCTIONS_UPDATED','BIDS_UPDATED',
+    'ITEM_SEARCH_RESULTS_UPDATED','ITEM_SEARCH_RESULTS_ADDED','AUCTION_MULTISELL_START','AUCTION_MULTISELL_UPDATE','AUCTION_MULTISELL_FAILURE',
     'AUCTION_HOUSE_THROTTLED_MESSAGE_RESPONSE_RECEIVED'}) do frame:RegisterEvent(event) end
 for _,event in ipairs({'CHAT_MSG_SYSTEM','CHAT_MSG_SAY','CHAT_MSG_YELL','CHAT_MSG_PARTY','CHAT_MSG_PARTY_LEADER',
     'CHAT_MSG_RAID','CHAT_MSG_RAID_LEADER','CHAT_MSG_RAID_WARNING','CHAT_MSG_WHISPER','CHAT_MSG_WHISPER_INFORM',
     'CHAT_MSG_EMOTE','CHAT_MSG_CHANNEL','CHAT_MSG_GUILD','CHAT_MSG_OFFICER'}) do frame:RegisterEvent(event) end
 frame:SetScript('OnEvent',function(_,event,code,text)
-    if event:match('^AUCTION_HOUSE_') or event=='OWNED_AUCTIONS_UPDATED' or event=='BIDS_UPDATED' then
+    if event:match('^AUCTION_HOUSE_') or event:match('^AUCTION_MULTISELL_') or event:match('^ITEM_SEARCH_RESULTS_') or event=='OWNED_AUCTIONS_UPDATED' or event=='BIDS_UPDATED' then
         auctionEvents[#auctionEvents+1]={event=event,time=GetTime()}
         if #auctionEvents>4 then table.remove(auctionEvents,1) end
     elseif event=='AUTOFOLLOW_BEGIN' then following={active=true,name=trim(code,64)}
