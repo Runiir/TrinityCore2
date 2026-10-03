@@ -29,7 +29,7 @@ def public_named(t,label,name):
 def open_manager(t,label):
     t.clean_panels()
     require(t.step(label+'.open','Open character equipment.',
-        {'open':{'kind':'key','value':'c','description':'Press C for character equipment.'}},
+        {'open':{'kind':'key','value':'c','hold':.4,'description':'Press C for character equipment.'}},
         lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
             'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
     collapsed=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
@@ -72,7 +72,7 @@ def restore_display(t,collapsed):
     if collapsed is None:return
     t.clean_panels()
     require(t.step('sets.display.open','Open character equipment for display restoration.',
-        {'open':{'kind':'key','value':'c','description':'Press C for character equipment.'}},
+        {'open':{'kind':'key','value':'c','hold':.4,'description':'Press C for character equipment.'}},
         lambda b,a,s:{'status':'character_open_pass' if 'CharacterFrame' in a['panels'] else
             'client_or_protocol_failure'},diagnostic_action='open'),'character_open_pass')
     current=not any(c['name']=='PaperDollSidebarTab3' for c in controls(t))
