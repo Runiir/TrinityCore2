@@ -167,7 +167,7 @@ def suite(out,mode,points):
         with actor('primary'):
             t=trials['primary']
             with at_mailbox(t,points['primary']):
-                compose(t,'Harnesstwo',subject,body,amount=1 if mode=='return' else 0)
+                compose(t,'Harnesstwo-Client442Lab',subject,body,amount=1 if mode=='return' else 0)
                 send(t,2,subject,body,amount=1 if mode=='return' else 0)
         with actor('scout'):
             t=trials['scout']
