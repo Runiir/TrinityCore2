@@ -111,17 +111,15 @@ def progress(t,giver,spawn_id=SPAWN,entry=118,name='Prowler',counter='mobcount1'
                 {'attack':{'kind':'chat','value':'/startattack','description':'Start ordinary melee attacks on the targeted '+name+'.'}},
                 killed,diagnostic_action='attack'),'quest_progress_pass')
             t.execute({'kind':'chat','value':'/stopattack'})
-            deadline=time.monotonic()+8
-            while True:
-                state,frame=t.observe('combat_settled')
-                if not frame['movement']['in_combat']:break
-                if time.monotonic()>deadline:raise RuntimeError('combat did not settle after bounded ordinary attack')
-                time.sleep(.5)
     finally:
         # Returning to the existing giver restores staging and ends any failed
         # out-of-range engagement. It is cleanup, never a gameplay pass.
         lab.server_command('tele name Harnessone '+giver.rows[1][-1]);time.sleep(4)
         t.execute({'kind':'chat','value':'/stopattack'});t.execute({'kind':'chat','value':'/cleartarget'})
+        # Nearby wolves can assist their killed pack member. Fixture departure
+        # ends that surrounding combat; do not demand peace while still there.
+        state,frame=t.observe(prefix+'_settled_at_giver')
+        record['settled_at_giver']=frame;t.persist()
         with lab.connection() as c,c.cursor() as q:
             q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
                 'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(row[0],))
