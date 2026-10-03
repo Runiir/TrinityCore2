@@ -120,7 +120,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=22,observer_skips=observerSkips}
+        blocked_actions=blockedActions,observer_version=23,observer_skips=observerSkips}
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -288,6 +288,8 @@ local function snapshot(viewMode,viewPage)
             api_available=type(api.GetBrowseResults)=='function',browse={},owned={},bids={},
             full_browse=call(api.HasFullBrowseResults),full_owned=call(api.HasFullOwnedAuctionResults),
             full_bids=call(api.HasFullBidResults),throttle_ready=call(api.IsThrottledMessageSystemReady)}
+        local search=AuctionHouseFrame.SearchBar and AuctionHouseFrame.SearchBar.SearchBox
+        if search then data.auction.search_text=trim(call(search.GetText,search),80) end
         local function sample(getter,kind)
             local rows=call(getter)
             if type(rows)~='table' then return end
