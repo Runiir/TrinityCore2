@@ -17,11 +17,14 @@ function Client442ObserveEquipment()
     end
     local pane=PaperDollFrame and PaperDollFrame.EquipmentManagerPane
     local spec=C_SpecializationInfo or {}
+    local compat=Client442CompatibilityStatus or {}
     return {count=read(api.GetNumEquipmentSets),sets=rows,
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,
         selected=pane and pane.selectedSetID,
         popup_visible=GearManagerPopupFrame and not not read(GearManagerPopupFrame.IsVisible,GearManagerPopupFrame) or false,
         helm=read(IsHelmShowing),cloak=read(IsCloakShowing),
+        compatibility={menu_version=compat.equipment_menu_version,menu_repaired=compat.equipment_menu_repaired,
+            assignment_available=compat.equipment_assignment_available},
         specialization_apis={legacy_count=type(GetNumSpecializations),legacy_info=type(GetSpecializationInfo),
             legacy_by_id=type(GetSpecializationInfoByID),namespace_count=type(spec.GetNumSpecializations),
             namespace_info=type(spec.GetSpecializationInfo),namespace_by_id=type(spec.GetSpecializationInfoByID),

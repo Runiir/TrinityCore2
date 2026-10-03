@@ -80,7 +80,13 @@ def suite(t,source):
         id=probe['sets'][0]['id']
         require(click_case(t,'sets.save.edit','Edit the owned equipment set.',
             lambda c:c.get('equipment_set_button')=='edit' and c.get('equipment_set_id')==id,
-            lambda b,a,s:{'status':'equipment_set_dialog_pass' if s and 'GearManagerPopupFrame' in a['panels'] else
+            lambda b,a,s:{'status':'equipment_set_edit_menu_pass' if s and 'ContextMenu' in a['panels'] and not
+                a.get('lua_errors') and not a.get('blocked_actions') else
+                'client_or_protocol_failure'}),'equipment_set_edit_menu_pass')
+        require(click_case(t,'sets.save.name_icon','Open the stock name and icon dialog.',
+            lambda c:c['text']=='Change Name/Icon',
+            lambda b,a,s:{'status':'equipment_set_dialog_pass' if s and 'GearManagerPopupFrame' in a['panels'] and not
+                a.get('lua_errors') and not a.get('blocked_actions') else
                 'client_or_protocol_failure'}),'equipment_set_dialog_pass')
         require(edit_case(t,'sets.save.name','Rename the disposable set.',lambda c:c['kind']=='EditBox',RENAMED),'ui_edit_pass')
         def save_outcome(b,a,s):

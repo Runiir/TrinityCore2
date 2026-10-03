@@ -3,3 +3,4 @@
 ## Notes: Client resource diagnostics for the private 60895 compatibility lab.
 ## Version: 2.0.0
 GuildTabs.lua
+EquipmentMenu.lua
