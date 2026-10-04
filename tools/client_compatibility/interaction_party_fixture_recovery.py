@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial,binding_key
 from .interaction_social import actor
-from .interaction_ground_movement import position,native_group
+from .interaction_ground_movement import position,native_group,restore_party
 from .interaction_actionbar_pages import detail
 from .interaction_extra_bar import signature
 from .interaction_spellbook_recon import resources
@@ -38,10 +38,7 @@ def recover(out,source):
             t=trials['scout'];state,frame=t.observe('before_party_leave')
             if state['group']['members']!=2 or native_group()['members']!=[1,2]:
                 raise RuntimeError('expected exact leftover owned two-member party')
-            t.execute({'kind':'chat','value':'/leave'});time.sleep(2)
-            state,frame=t.observe('party_left')
-            if state['group']['members']!=0 or native_group() is not None:
-                raise RuntimeError('ordinary owned party leave did not disband the fixture')
+            t.receipt['party_restoration']=restore_party(t);t.persist()
         for a,t in trials.items():
             with actor(a):
                 old=originals[a];base=old['ground_baseline'];session=actors.session_entry(t.fixture)['session']
