@@ -17,4 +17,5 @@ ProfessionObservation.lua
 DressUpObservation.lua
 AchievementObservation.lua
 ActionBarObservation.lua
+SettingsObservation.lua
 ClientInteractions.lua

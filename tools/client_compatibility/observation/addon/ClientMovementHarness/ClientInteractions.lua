@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=69,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=70,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -149,6 +149,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='dressup' then data.dressup_probe=Client442ObserveDressUp();return data end
     if mode=='achievements' then data.achievement_probe=Client442ObserveAchievements();return data end
     if mode=='actionbars' then data.actionbar_probe=Client442ObserveActionBars();return data end
+    if mode=='settings' then data.settings_probe=Client442ObserveSettings();return data end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -189,6 +190,20 @@ local function snapshot(viewMode,viewPage)
                         x=control.x,y=control.y,focused=not not call(f.HasFocus,f)}
                 end
                 local parent=f:GetParent()
+                if SettingsPanel and SettingsPanel:IsVisible() then
+                    local row=parent
+                    for level=1,3 do
+                        local setting=row and row.data and row.data.setting
+                        if setting then
+                            local control=data.controls[#data.controls]
+                            control.setting_variable=call(setting.GetVariable,setting)
+                            control.setting_value=call(setting.GetValue,setting)
+                            control.setting_name=trim(row.data.name,72)
+                            break
+                        end
+                        row=row and row:GetParent()
+                    end
+                end
                 local modelControls=CharacterModelScene and CharacterModelScene.ControlFrame
                 if parent==modelControls and modelControls then
                     for _,key in ipairs({'zoomInButton','zoomOutButton','rotateLeftButton','rotateRightButton','resetButton'}) do
@@ -646,6 +661,7 @@ local function update()
     elseif mode=='state' and autoPage==-4 then viewMode,viewPage='dressup',1
     elseif mode=='state' and autoPage==-5 then viewMode,viewPage='achievements',1
     elseif mode=='state' and autoPage==-6 then viewMode,viewPage='actionbars',1
+    elseif mode=='state' and autoPage==-8 then viewMode,viewPage='settings',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -657,12 +673,13 @@ local function update()
             equipmentTick=equipmentTick+1
             if equipmentTick%3==0 and #data.panels==0 and #data.bags==0 then autoPage=-6 end
             if equipmentTick%2==0 then
-                if DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
+                if SettingsPanel and SettingsPanel:IsVisible() then autoPage=-8
+                elseif DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
                 elseif AchievementFrame and AchievementFrame:IsVisible() then autoPage=-5
                 elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
                 elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
             end
-        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' then
+        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0

@@ -1,7 +1,7 @@
 -- Read the stock tooltip after ordinary mouse movement. No tooltip setters.
 local function call(f,...)
     if type(f)~='function' then return end
-    local ok,a,b=pcall(f,...);if ok then return a,b end
+    local ok,a,b,c,d=pcall(f,...);if ok then return a,b,c,d end
 end
 local function text(frame,limit)
     local value=frame and call(frame.GetText,frame)
