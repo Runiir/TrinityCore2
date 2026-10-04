@@ -7,7 +7,7 @@ from .interaction_social import actor
 from .interaction_actionbar_pages import detail
 from .interaction_operations import point
 from .interaction_macros import require
-from .interaction_spellbook_navigation import known
+from .interaction_spellbook_navigation import known,wire_known
 from .interaction_spellbook_actions import saved_actions
 from .interaction_spellbook_recon import resources
 from .interaction_archaeology_projects import dbc
@@ -79,17 +79,21 @@ def suite(t):
     if state.get('observer_version',0)<72:raise RuntimeError('requires passive stance observer72')
     original=resources(oracle);spells=known(t.fixture['guid']);layout=detail(t,'stance_layout')
     native=native_state(oracle);t.native_actions=saved_actions(t.fixture['guid'])
+    t.receipt.update(baseline=original,native_persisted_spells=spells,
+        native_state_baseline=native,native_actions=t.native_actions,layout_baseline=layout);t.persist()
     if layout['page']!=1 or layout['power_type']!=1 or layout['power']!=0 or native['power']!=0:
         raise RuntimeError('requires page1 and an idle zero-rage warrior')
     if [(r['index'],r['spell']) for r in layout['forms']]!=[(1,2457),(2,71),(3,2458)]:
         raise RuntimeError('requires all three installed warrior stance buttons')
-    learned={r[0] for r in spells if r[1:]==[1,0]};effects,_=dbc('SpellEffect',27)
+    learned=wire_known(t,t.session);saved_learned={r[0] for r in spells if r[1:]==[1,0]}
+    effects,_=dbc('SpellEffect',27)
     t.contracts={r[24]:{'effect_id':r[0],'aura':r[3],'form':r[12]} for r in effects
         if r[24] in [2457,71,2458] and r[24] in learned and r[1]==6 and r[3]==36}
     if set(t.contracts)!={2457,71,2458} or native['form']!=t.contracts[layout['forms'][layout['form']-1]['spell']]['form']:
         raise RuntimeError('public stance lacks its exact native learned shapeshift contract')
     companions={r['id'] for r in layout['actions'] if r.get('kind')=='companion'}
-    t.native_mounts={r[24] for r in effects if r[24] in companions and r[24] in learned and r[1]==6 and r[3]==78}
+    t.native_mounts={r[24] for r in effects if r[24] in companions and r[24] in learned and
+        r[24] in saved_learned and r[1]==6 and r[3]==78}
     if companions!=t.native_mounts or not slot_matches(t,layout):raise RuntimeError('initial bar does not match native action rows')
     t.receipt.update(baseline=original,native_persisted_spells=spells,native_actions=t.native_actions,
         native_state_baseline=native,layout_baseline=layout,native_stance_contracts=t.contracts,
