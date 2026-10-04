@@ -12,8 +12,9 @@ from .interaction_spellbook_recon import resources
 from .interaction_spellbook_navigation import known
 from .interaction_spellbook_actions import saved_actions
 from .interaction_macros import require
-from .interaction_operations import click_case
+from .interaction_operations import click_case,controls
 from .interaction_groups import native_group
+from .interaction_group_menu import open_menu
 from .nearby_fixture import NearbyFixture
 from .observation.inventory import Inventory
 from .observation.journal import entries
@@ -37,6 +38,26 @@ def position(guid):
 
 
 def angle(a,b):return (b-a+math.pi)%(2*math.pi)-math.pi
+
+
+def restore_party(t):
+    group=native_group()
+    if group is None:
+        state,frame=t.observe('party_already_absent')
+        if state['group']['members']:raise RuntimeError('native and visible group disagree during cleanup')
+        return {'native_absent':True,'visible_solo':True,'frame':frame,'qualification':False}
+    if group['members']!=[1,2] or group['leader']!=1 or group['type']!=0:
+        raise RuntimeError('temporary party identity changed; refusing cleanup')
+    t.clean_panels();player=next(c for c in controls(t) if c['name']=='PlayerFrame')
+    open_menu(t,player,'movement_fixture_cleanup')
+    require(click_case(t,'fixture.party_leave','Restore the original solo movement fixture.',
+        lambda c:c['text'].lower()=='leave party',
+        lambda b,a,s:{'status':'fixture_party_cleanup_pass' if s and a['group']['members']==0 and
+            native_group() is None else 'client_or_protocol_failure'},
+        await_state=lambda s:s['group']['members']==0),'fixture_party_cleanup_pass')
+    state,frame=t.observe('party_removed')
+    return {'native_absent':native_group() is None,'visible_solo':state['group']['members']==0,
+        'frame':frame,'qualification':False}
 
 
 def packets(since,session,guid,start,stop):
@@ -124,9 +145,6 @@ def suite(out):
         # ground01. Use an ordinary temporary owned party for the peer oracle.
         report['temporary_party']={'source':'ordinary_fixture_inputs','qualification':False}
         with actor('primary'):
-            state,_=trials['primary'].observe('party_setup_before')
-            if '/uninvite' not in state['input_aliases'].get('UNINVITE',[]):
-                raise RuntimeError('ordinary party cleanup alias is not observed')
             party_attempted=True;trials['primary'].execute({'kind':'chat','value':'/invite Harnesstwo'})
         with actor('scout'):
             require(click_case(trials['scout'],'fixture.party_accept','Accept the owned temporary movement fixture party.',
@@ -159,14 +177,7 @@ def suite(out):
         if party_attempted:
             try:
                 with actor('primary'):
-                    group=native_group()
-                    if group and any(guid not in [1,2] for guid in group['members']):
-                        raise RuntimeError('temporary party contains an unrelated member; refusing cleanup')
-                    trials['primary'].execute({'kind':'chat','value':'/uninvite Harnesstwo'})
-                    state,frame=trials['primary'].observe('party_removed')
-                    report['temporary_party']['restoration']={'native_absent':native_group() is None,
-                        'visible_solo':state['group']['members']==0,'frame':frame}
-                    if native_group() or state['group']['members']:raise RuntimeError('temporary party did not restore solo')
+                    report['temporary_party']['restoration']=restore_party(trials['primary'])
             except Exception as error:
                 report['completed']=False;report.setdefault('cleanup_failures',{})['party']=str(error)
         for name,t in trials.items():
