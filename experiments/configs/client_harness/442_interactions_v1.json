@@ -63,7 +63,8 @@
       "fixture": "disposable_account",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_lab_realm_reconnect"
     },
     {
       "id": "lifecycle.select_character",
@@ -147,7 +148,8 @@
       "fixture": "disposable_account",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_lab_realm_reconnect"
     },
     {
       "id": "lifecycle.launcher_login",
@@ -5506,7 +5508,8 @@
       "fixture": "saved_local_bars",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_extra_actionbar_native_toggle"
     },
     {
       "id": "actionbars.lock_toggle",
@@ -11502,8 +11505,74 @@
           "sha256": "9e53c91ccaf4fc5b4d72ff74ba936f937e207f434eeeb317548b62d0ba90898d"
         }
       ]
+    },
+    {
+      "id": "stock_extra_actionbar_native_toggle",
+      "operations": [
+        "actionbars.extra_bars_toggle"
+      ],
+      "scope": "Complete primary/scout UI53 trials enable the stock Action Bar2 checkbox through ordinary observed input, forward native one-byte toggles01 and00, verify native player mask1 then0, settled checked/unchecked paint, the rendered12-slot empty grid after closing Settings and unchanged main slots/saved actions. Both restore all17 observed settings, empty search/category, hidden extra bar and native inventory/money/saved spells/actions. Twelve exact frames receive visual review.",
+      "limits": "Only one initially disabled empty extra bar on two idle human warriors. Other bars, populated extra slots, bindings, combat and reconnect persistence remain open. UI52 failures remain unqualified. Early generic005_after frames show the prior paint; only the settled passive value frames qualify the changed checkbox.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/primary_extra_01/episode.json",
+          "sha256": "11b0348211da8b7fc5612121697e5bfa962f8ffcf726650bffc69e604d4a4795"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/scout_extra_01/episode.json",
+          "sha256": "8cca970d7b58ab2e2d9cf2f222e63a205d04dc77984146dc6cd639280faf8066"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/extra_bar_visual_review.json",
+          "sha256": "28adf6b20d7c665b7762461269284c951d95a61bf58f48846d863a269d8d7f7f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/build_validation.json",
+          "sha256": "5554d610d1c48b9763ed1ac41d8dde02350cb2be6409ee14f46593b38dfab6ce"
+        }
+      ]
+    },
+    {
+      "id": "stock_lab_realm_reconnect",
+      "operations": [
+        "lifecycle.select_realm",
+        "lifecycle.reconnect"
+      ],
+      "scope": "After a controlled owned bridge disconnect, both existing clients dismiss the separately reviewed Okay modal, activate Reconnect, select the single stock Client442 Lab realm row, confirm it and re-enter their default characters. Exact lobby/world frames are reviewed. Native worldserver and both client lifetimes remain unchanged on HDMI-1; both retain original native inventory/money/saved spell/action state against closed pre-disconnect evidence.",
+      "limits": "Single lab realm and one default character per client, idle fixtures, controlled bridge disconnect. Default character world entry does not qualify selecting among characters. The first two Reconnect inputs per actor are blocked by the modal and do not advance; their input-only completion flags do not qualify world reentry. Successful reentry follows the distinct modal-dismissal path. Primary passive7381 can reapply an extra damage boost on login; damage-stat persistence is unqualified. Other realms, credentials, character creation/deletion, combat and other disconnect causes remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/deployment/deployment.json",
+          "sha256": "fc5db92e668b71749b4daea86803d6207381b19f854c34c5d3f79e2e8ca83513"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/deployment/after_dismiss_settled.json",
+          "sha256": "7f11c8662497b04814e1f13834a02290bd40797c306fcbf7bbdd3e171fbe7c54"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/deployment/reconnect_after_dismiss_settled.json",
+          "sha256": "cad7c8cbc84ab444ebc3e1b92fb2f32159847186e4abd2070bedeb698be0fcf1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/deployment/character_selection_settled.json",
+          "sha256": "76dd5c44a1b4dfc698550e93ceb22c2deda9b6a84c844fb7faed82250f930a6f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui53/reconnect_native_review.json",
+          "sha256": "34d48890ceaa4099e528a1fb501715591528691017ad04e0b87beb6b97b264f9"
+        }
+      ]
     }
   ],
-  "qualified_operations": 306,
+  "qualified_operations": 309,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

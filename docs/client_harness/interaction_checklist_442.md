@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 306 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 309 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -14,7 +14,7 @@ Each successful mutation needs its native or local saved-state oracle and cleanu
 
 Fixture: `disposable_account`.
 
-- [ ] `lifecycle.select_realm`
+- [x] `lifecycle.select_realm` (qualified variant; [evidence](#stock_lab_realm_reconnect))
 - [ ] `lifecycle.select_character`
 - [ ] `lifecycle.create_character`
 - [ ] `lifecycle.appearance_preview`
@@ -23,7 +23,7 @@ Fixture: `disposable_account`.
 - [x] `lifecycle.enter_world` (qualified variant; [evidence](#logout_reentry))
 - [x] `lifecycle.logout_cancel` (qualified variant; [evidence](#logout_reentry))
 - [x] `lifecycle.logout_confirm` (qualified variant; [evidence](#logout_reentry))
-- [ ] `lifecycle.reconnect`
+- [x] `lifecycle.reconnect` (qualified variant; [evidence](#stock_lab_realm_reconnect))
 - [ ] `lifecycle.launcher_login`
 - [ ] `lifecycle.password_login`
 - [ ] `lifecycle.addon_enable`
@@ -734,7 +734,7 @@ Fixture: `saved_local_bars`.
 - [x] `actionbars.page_next` (qualified variant; [evidence](#stock_actionbar_paging))
 - [x] `actionbars.page_previous` (qualified variant; [evidence](#stock_actionbar_paging))
 - [x] `actionbars.direct_page` (qualified variant; [evidence](#stock_actionbar_paging))
-- [ ] `actionbars.extra_bars_toggle`
+- [x] `actionbars.extra_bars_toggle` (qualified variant; [evidence](#stock_extra_actionbar_native_toggle))
 - [x] `actionbars.lock_toggle` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `actionbars.cooldown`
 - [ ] `actionbars.charges`
@@ -2115,3 +2115,26 @@ Remaining limits: Only primary04 from its recorded Battle baseline qualifies. Pr
 - [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/primary_stance_04/episode.json`, SHA-256 `558e3874497a8541384ed5b596f6b627c443481dafe94bb4bd00cfff029135f8`.
 - [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/stance_visual_review.json`, SHA-256 `6a9f27147ff44d8939fef866db24c9f524a10e4c4f9cca569db08705261d3269`.
 - [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/stance_first_cycle_damage_change.json`, SHA-256 `9e53c91ccaf4fc5b4d72ff74ba936f937e207f434eeeb317548b62d0ba90898d`.
+
+### stock_extra_actionbar_native_toggle
+
+Complete primary/scout UI53 trials enable the stock Action Bar2 checkbox through ordinary observed input, forward native one-byte toggles01 and00, verify native player mask1 then0, settled checked/unchecked paint, the rendered12-slot empty grid after closing Settings and unchanged main slots/saved actions. Both restore all17 observed settings, empty search/category, hidden extra bar and native inventory/money/saved spells/actions. Twelve exact frames receive visual review.
+
+Remaining limits: Only one initially disabled empty extra bar on two idle human warriors. Other bars, populated extra slots, bindings, combat and reconnect persistence remain open. UI52 failures remain unqualified. Early generic005_after frames show the prior paint; only the settled passive value frames qualify the changed checkbox.
+
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/primary_extra_01/episode.json`, SHA-256 `11b0348211da8b7fc5612121697e5bfa962f8ffcf726650bffc69e604d4a4795`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/scout_extra_01/episode.json`, SHA-256 `8cca970d7b58ab2e2d9cf2f222e63a205d04dc77984146dc6cd639280faf8066`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/extra_bar_visual_review.json`, SHA-256 `28adf6b20d7c665b7762461269284c951d95a61bf58f48846d863a269d8d7f7f`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/build_validation.json`, SHA-256 `5554d610d1c48b9763ed1ac41d8dde02350cb2be6409ee14f46593b38dfab6ce`.
+
+### stock_lab_realm_reconnect
+
+After a controlled owned bridge disconnect, both existing clients dismiss the separately reviewed Okay modal, activate Reconnect, select the single stock Client442 Lab realm row, confirm it and re-enter their default characters. Exact lobby/world frames are reviewed. Native worldserver and both client lifetimes remain unchanged on HDMI-1; both retain original native inventory/money/saved spell/action state against closed pre-disconnect evidence.
+
+Remaining limits: Single lab realm and one default character per client, idle fixtures, controlled bridge disconnect. Default character world entry does not qualify selecting among characters. The first two Reconnect inputs per actor are blocked by the modal and do not advance; their input-only completion flags do not qualify world reentry. Successful reentry follows the distinct modal-dismissal path. Primary passive7381 can reapply an extra damage boost on login; damage-stat persistence is unqualified. Other realms, credentials, character creation/deletion, combat and other disconnect causes remain open.
+
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/deployment.json`, SHA-256 `fc5db92e668b71749b4daea86803d6207381b19f854c34c5d3f79e2e8ca83513`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/after_dismiss_settled.json`, SHA-256 `7f11c8662497b04814e1f13834a02290bd40797c306fcbf7bbdd3e171fbe7c54`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/reconnect_after_dismiss_settled.json`, SHA-256 `cad7c8cbc84ab444ebc3e1b92fb2f32159847186e4abd2070bedeb698be0fcf1`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/character_selection_settled.json`, SHA-256 `76dd5c44a1b4dfc698550e93ceb22c2deda9b6a84c844fb7faed82250f930a6f`.
+- [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/reconnect_native_review.json`, SHA-256 `34d48890ceaa4099e528a1fb501715591528691017ad04e0b87beb6b97b264f9`.
