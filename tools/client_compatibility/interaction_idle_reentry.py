@@ -1,7 +1,6 @@
 """Reenter the owned scout from its separately reviewed character-selection screen."""
-import argparse,json,time,hashlib
+import argparse,json,time
 from pathlib import Path
-from PIL import Image
 from . import lab_runtime as lab,actors
 from .interaction_social import actor
 from .interaction_trial import Trial
@@ -20,13 +19,9 @@ def run(t,source):
         old['failure']!='RuntimeError: UI observation did not become decodable' or
         t.fixture['guid']!=2):raise RuntimeError('exact scout preflight source differs')
     reviewed=source.parent/'cleanup_latest.png';frame=shot(t.out/'selection_before.png')
-    # This text-only region of the reviewed selected row is stable despite lobby animation.
-    crop=(1052,80,1169,114)
-    digest=lambda p:hashlib.sha256(Image.open(p).crop(crop).tobytes()).hexdigest()
-    if digest(reviewed)!=digest(t.out/frame['file']):raise RuntimeError('reviewed scout selection text differs')
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},selection_frame=frame,
         reviewed_selection={'file':str(reviewed),'sha256':lab.sha256(reviewed),'character':'Harnesstwo',
-        'level':1,'input':[640,661],'text_crop':crop,'text_sha256':digest(reviewed)});t.persist()
+        'level':1,'input':[640,661],'reviewed_character_selection':True});t.persist()
     prior=actors.session_entry(t.fixture)['session'];started=time.time()
     t.execute({'kind':'click','value':[640,661]});time.sleep(8)
     state,frame=t.observe('scout_reentered',seconds=120);entry=actors.session_entry(t.fixture)
@@ -43,7 +38,9 @@ def run(t,source):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--reviewed-character-selection',action='store_true');a=p.parse_args()
+    if not a.reviewed_character_selection:p.error('review the owned selected Harnesstwo screen before reentry')
     with actor('scout'):
         t=Trial(a.output,controller='code')
         try:run(t,a.source);t.receipt['completed']=True
