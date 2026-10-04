@@ -1,5 +1,6 @@
 """Ordinary owned-party targeting, local focus and unit-frame hover checks."""
 import argparse,struct,time
+from functools import partial
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
@@ -60,6 +61,11 @@ def focus(t,oracle,wanted,label):
 
 
 def hover(t,oracle,peer,frame):
+    # The prior party-frame click leaves the pointer at this same location.
+    # A distinct exit/entry is needed after the intervening chat commands.
+    setup={'kind':'hover','value':[1000,360]}
+    t.receipt['unit_hover_setup']={'input':setup,'qualification':False};t.persist()
+    t.execute(setup)
     current=selection(oracle)
     def outcome(before,after,selected):
         units=detail(t,'party_mouseover',lambda p:p['targeting']['units']['mouseover']==peer.guid)['targeting']['units']
@@ -80,7 +86,7 @@ def hover(t,oracle,peer,frame):
     t.execute({'kind':'hover','value':[1000,360]})
 
 
-def phase(t,peer,oracle,session,peer_session):
+def phase(t,peer,oracle,session,peer_session,part='both'):
     before,_=t.observe('targeting_phase');bar=detail(t,'targeting_bindings')
     observed=bar.get('targeting',{})
     if before.get('observer_version',0)<77 or observed.get('units',{}).get('focus'):
@@ -92,18 +98,20 @@ def phase(t,peer,oracle,session,peer_session):
     self_action={'kind':'key','value':binding_key(keys['TARGETSELF'][0]),'hold':.4}
     party_action={'kind':'key','value':binding_key(keys['TARGETPARTYMEMBER1'][0]),'hold':.4}
     t.receipt.update(targeting_fixture={'keys':keys,'party_frame':frames[0],'peer_guid':peer.guid},
+        targeting_part=part,
         qualified_scope='Owned idle party targeting via stock self/party bindings, clear/last-target commands, party-frame click, local focus and hover. Native selection fields/requests prove target changes. Focus and hover are client-local outcomes. Original empty focus, target, party, positions and native resources restore.');t.persist()
     try:
-        target(t,oracle,session,'targeting.target_self',self_action,t.fixture['guid'])
-        target(t,oracle,session,'targeting.clear_target',{'kind':'chat','value':'/cleartarget'},0)
-        target(t,oracle,session,'targeting.party_target',party_action,peer.fixture['guid'])
-        target(t,oracle,session,'fixture.target_self_before_click',self_action,t.fixture['guid'])
-        target(t,oracle,session,'targeting.click_target',{'kind':'click','value':point(frames[0])},peer.fixture['guid'])
-        target(t,oracle,session,'targeting.target_last',{'kind':'chat','value':'/targetlasttarget'},t.fixture['guid'])
-        target(t,oracle,session,'fixture.target_peer_for_focus',party_action,peer.fixture['guid'])
-        focus(t,oracle,peer.fixture['guid'],'targeting.focus')
-        focus(t,oracle,0,'targeting.clear_focus')
-        hover(t,oracle,peer,frames[0])
+        if part!='hover':
+            target(t,oracle,session,'targeting.target_self',self_action,t.fixture['guid'])
+            target(t,oracle,session,'targeting.clear_target',{'kind':'chat','value':'/cleartarget'},0)
+            target(t,oracle,session,'targeting.party_target',party_action,peer.fixture['guid'])
+            target(t,oracle,session,'fixture.target_self_before_click',self_action,t.fixture['guid'])
+            target(t,oracle,session,'targeting.click_target',{'kind':'click','value':point(frames[0])},peer.fixture['guid'])
+            target(t,oracle,session,'targeting.target_last',{'kind':'chat','value':'/targetlasttarget'},t.fixture['guid'])
+            target(t,oracle,session,'fixture.target_peer_for_focus',party_action,peer.fixture['guid'])
+            focus(t,oracle,peer.fixture['guid'],'targeting.focus')
+            focus(t,oracle,0,'targeting.clear_focus')
+        if part!='core':hover(t,oracle,peer,frames[0])
     finally:
         probe=detail(t,'targeting_cleanup')['targeting']
         if probe['units']['focus']:focus(t,oracle,0,'fixture.clear_focus')
@@ -114,4 +122,5 @@ def phase(t,peer,oracle,session,peer_session):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    suite(p.parse_args().output,work=phase,separated=True)
+    p.add_argument('--part',choices=['core','hover','both'],default='both');a=p.parse_args()
+    suite(a.output,work=partial(phase,part=a.part),separated=True)
