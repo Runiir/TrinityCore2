@@ -5,6 +5,10 @@ from . import actors,lab_runtime as lab
 from .interaction_bridge_deploy import identity
 from .interaction_social import actor
 from .interaction_trial import Trial
+from .interaction_trial import binding_key
+from .interaction_actionbar_pages import detail
+from .interaction_sit_stand import pose,afk
+from .observation.inventory import Inventory
 
 
 def deploy(out,version,with_compatibility=False,names=('primary','scout')):
@@ -20,6 +24,9 @@ def deploy(out,version,with_compatibility=False,names=('primary','scout')):
                 t=Trial(out/name,controller='code')
                 try:
                     entry=actors.session_entry(t.fixture);t.clean_panels();before,frame=t.observe('before_reload')
+                    oracle=Inventory(lab.ROOT,entry['session'],t.fixture['guid']).poll()
+                    native_pose,native_afk=pose(oracle),afk(oracle)
+                    t.receipt['native_pose_before']={'pose':native_pose,'afk':native_afk};t.persist()
                     baseline={k:before.get(k) for k in ['guid','money','equipment','group','raid_profile']}
                     t.receipt['baseline']={'state':before,'frame':frame,'session':entry['session']};t.persist()
                     shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
@@ -32,6 +39,15 @@ def deploy(out,version,with_compatibility=False,names=('primary','scout')):
                         t.receipt['compatibility_files_after']={f.name:lab.sha256(f) for f in target.iterdir() if f.is_file()}
                         t.persist()
                     t.execute({'kind':'chat','value':'/reload'})
+                    if afk(oracle)!=native_afk:t.execute({'kind':'chat','value':'/afk'})
+                    if pose(oracle)['stand']!=native_pose['stand']:
+                        if {pose(oracle)['stand'],native_pose['stand']}!={0,1}:
+                            raise RuntimeError('observer reload changed unsupported pose')
+                        bar=detail(t,'observer_restore_pose')
+                        t.execute({'kind':'key','value':binding_key(bar['keys']['SITORSTAND'][0]),'hold':.4})
+                        time.sleep(12)
+                    t.receipt['native_pose_restored']=pose(oracle)==native_pose and afk(oracle)==native_afk;t.persist()
+                    if not t.receipt['native_pose_restored']:raise RuntimeError('observer reload changed original pose/AFK')
                     after,frame=t.observe('reloaded',seconds=240);now=actors.session_entry(t.fixture)
                     unchanged=all(after.get(k)==v for k,v in baseline.items())
                     if (after.get('observer_version')!=version or after.get('lua_errors') or after.get('blocked_actions')
