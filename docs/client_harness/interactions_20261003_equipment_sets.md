@@ -389,3 +389,26 @@ percentages separately from rounded labels and compares all32 public bits
 of both saved collapse profiles. Order settings and the inactive profile's
 raw string must also remain unchanged. The first failed root is retained;
 all original native resources and visible category states were restored.
+
+The fresh observer60 pre-fix belt trial reaches actual removal and fails
+because native spell haste changes to1.51495% while the public API and
+visible row remain at3.21732%/3.22%. Defense APIs and their rounded labels
+agree. Complete native resources, gear,32-bit category values, order and
+panel state restore. This root remains unqualified.
+
+The independent C++ bridge now carries both public native cast multipliers
+in sparse Unit updates. Its full904 protocol/auth and71 sanitizer checks
+pass after six real pre-fix failures. Both clients use fresh launcher,
+reviewed realm/character screens and separately verified world entries on
+HDMI-1. The ordinary cached Reconnect attempts leave the disconnect dialog
+visible; those input-only receipts do not qualify reconnect. Native
+worldserver3428101 remains running throughout.
+
+The complete post-fix belt trial passes. Three reviewed stock spell/defense
+frames show haste3.22%/1.51%/3.22%, two native sparse updates are attributable,
+and every original native resource and saved display setting restores.
+Its22 equipment observations send zero chat/input commands. UI42 must pass
+DVC43 remote/archive review before this proof augments character.stats;
+unique qualified operations remain264/916. Item level, other stat rows,
+other classes and cached reconnect remain open. UI43 continues with stock
+spellbook controls, tabs, paging, tooltips and ordinary spell actions.
