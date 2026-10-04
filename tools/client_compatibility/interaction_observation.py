@@ -13,7 +13,7 @@ def read_page(t,label,mode,text,ready=None):
 
 def read_current_page(t,label,mode,ready=None):
     """Read a selected or automatically cycled page without sending any input."""
-    deadline=time.monotonic()+12;pending=[];path=t.out/(label+'.png')
+    deadline=time.monotonic()+28;pending=[];path=t.out/(label+'.png')
     suffix=1
     while path.exists():
         path=t.out/(label+'_'+str(suffix)+'.png');suffix+=1
@@ -27,5 +27,9 @@ def read_current_page(t,label,mode,ready=None):
                     'samples':pending,'input_replayed':False});t.persist()
             return state,frame
         pending.append({'sequence':state['sequence'],'mode':state.get('mode')})
-        if time.monotonic()>deadline:raise RuntimeError(mode+' diagnostic did not become visible')
-        time.sleep(.2)
+        if time.monotonic()>deadline:
+            t.receipt.setdefault('diagnostic_timeouts',[]).append({'label':label,'mode':mode,
+                'samples':pending[-64:],'last_frame':frame,'input_replayed':False})
+            t.persist();raise RuntimeError(mode+' diagnostic did not become visible')
+        # Avoid repeatedly sampling the same phase of the passive page cycle.
+        time.sleep(.13+(len(pending)%7)*.027)

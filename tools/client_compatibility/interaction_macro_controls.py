@@ -202,10 +202,42 @@ def operations(t):
         if not all(checks.values()):raise RuntimeError('macro baseline restoration differs')
 
 
+def recover(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('require a private closed macro trial receipt')
+    old=json.loads(source.read_text())
+    if old.get('completed') or not old.get('finished_at') or not old.get('failure') or old['actor']['guid']!=t.guid:
+        raise RuntimeError('recovery source is not a closed failed owned trial')
+    if old.get('macro_baseline',{}).get('macros')!=[0,0] or not any(c['id']=='fixture.create_TC442C' and
+            c['status']=='macro_fixture_created' for c in old['cases']):
+        raise RuntimeError('recovery source does not prove the owned character macro fixture')
+    if old['runtime']!=t.receipt['runtime']:raise RuntimeError('macro recovery runtime identity differs')
+    state,_=t.observe('macro_recovery_fixture')
+    if state.get('macros')!=[0,1] or state.get('action_probe',{}).get('kind'):
+        raise RuntimeError('requires exactly the remaining owned character macro')
+    t.targeted_controls=True;t.receipt['macro_recovery_source']={'file':str(source),'sha256':lab.sha256(source)};t.persist()
+    open_editor(t)
+    if detail(t,'macro_recovery_tab')['tab']!=2:tab(t,2,'fixture.recover_character_tab')
+    if detail(t,'macro_recovery_selected')['selected'].get('name')!=NAMES[2]:
+        raise RuntimeError('remaining character macro identity differs')
+    delete_selected(t,'fixture.recover_owned_character_macro')
+    tab(t,1,'fixture.recover_original_account_tab');close_editor(t)
+    t.execute({'kind':'chat','value':'/reload'});state,frame=t.observe('macro_recovery_restored',seconds=120)
+    checks={'zero_macros':state.get('macros')==[0,0],'empty_action_probe':not state.get('action_probe',{}).get('kind'),
+        'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+    t.receipt['macro_recovery_restoration']={'checks':checks,'frame':frame};t.persist()
+    if not all(checks.values()):raise RuntimeError('macro source baseline did not restore')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--recon',action='store_true');a=p.parse_args()
+    p.add_argument('--recon',action='store_true');p.add_argument('--targeted-controls',action='store_true')
+    p.add_argument('--recover-source',type=Path);a=p.parse_args()
+    if a.recon and a.recover_source:p.error('recon and recovery are distinct trials')
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=recon if a.recon else operations);t.receipt['completed']=True
+    t.targeted_controls=a.targeted_controls
+    selected=(lambda t:recover(t,a.recover_source)) if a.recover_source else recon if a.recon else operations
+    try:native_suite(t,operations=selected);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
