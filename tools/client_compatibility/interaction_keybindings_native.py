@@ -2,7 +2,7 @@
 import argparse,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
-from .interaction_trial import Trial
+from .interaction_trial import Trial,binding_key
 from . import interaction_keybindings as bindings
 from .interaction_operations import click_case,point
 from .interaction_macros import edit_case,require
@@ -15,6 +15,7 @@ from .interaction_spellbook_actions import saved_actions
 from .interaction_sit_stand import pose,afk
 from .observation.inventory import Inventory
 from .interaction_ground_movement import position
+from .interaction_actionbar_pages import detail as bar_detail
 
 
 def suite(t):
@@ -54,6 +55,12 @@ def suite(t):
             if not t.receipt['settings_restored']:raise RuntimeError('original settings differ after binding trial')
         t.clean_panels()
         if afk(oracle)!=native['afk']:t.execute({'kind':'chat','value':'/afk'})
+        if pose(oracle)['stand']!=native['pose']['stand']:
+            if {pose(oracle)['stand'],native['pose']['stand']}!={0,1}:
+                raise RuntimeError('unsupported original pose restoration')
+            bar=bar_detail(t,'restore_pose_binding')
+            t.execute({'kind':'key','value':binding_key(bar['keys']['SITORSTAND'][0]),'hold':.4})
+            time.sleep(12)
         after,frame=t.observe('native_bindings_restored')
         checks={'resources':resources(oracle)==native['resources'],'stats':restored_native_state(native['stats'],native_state(oracle)),
             'spells':known(t.fixture['guid'])==native['spells'],'actions':saved_actions(t.fixture['guid'])==native['actions'],
