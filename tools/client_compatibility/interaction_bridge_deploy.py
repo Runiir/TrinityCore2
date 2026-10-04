@@ -11,7 +11,6 @@ from . import actors,lab_runtime as lab,owned_input
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .world import control
-from . import interaction_bridge_restoration as native_restoration
 
 
 def identity(kind):
@@ -30,6 +29,7 @@ def shot(path):
 
 
 def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None,combat_source=None):
+    from . import interaction_bridge_restoration as native_restoration
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
     baselines={};native_baselines={}
@@ -83,6 +83,7 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
 
 
 def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_selection=False):
+    from . import interaction_bridge_restoration as native_restoration
     if not character_selection or realm_selection:
         raise ValueError('Review character selection first; select-realm performs only the reviewed realm inputs. Refusing timed login/cancel/world-entry guesses.')
     report=json.loads((out/'deployment.json').read_text())
