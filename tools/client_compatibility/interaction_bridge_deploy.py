@@ -190,7 +190,10 @@ def recovery(source,out,name,client_restart_source=None,observer_version=None):
         restart_path=client_restart_source.resolve()
         if not restart_path.is_relative_to(lab.ROOT/'evidence'):raise ValueError('require an owned client restart receipt')
         restart=json.loads(restart_path.read_text())
-        old=json.loads((source/(name+'_after')/'episode.json').read_text())
+        old_path=next((source/(name+suffix)/'episode.json' for suffix in ['_after','_login','_before']
+            if (source/(name+suffix)/'episode.json').is_file()),None)
+        if old_path is None:raise RuntimeError('owned deployment has no prior client lifetime receipt')
+        old=json.loads(old_path.read_text())
         lifetime=lambda row:{key:row[key] for key in ['pid','start_ticks']}
         if (not restart.get('finished_at') or not restart.get('launched') or restart['actor']!=name or
             restart['native']!=previous['native'] or restart['bridge']!=previous['after'] or
@@ -202,7 +205,9 @@ def recovery(source,out,name,client_restart_source=None,observer_version=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     report={key:previous[key] for key in ['schema','native','after','observer_version','baselines']}
     report.update(started_at=time.time(),reconnected={},recovery_source=str(source),native_unchanged=True)
-    if client_restart_source:report['client_restart_source']={'file':str(restart_path),'sha256':lab.sha256(restart_path)}
+    if client_restart_source:
+        report['client_restart_source']={'file':str(restart_path),'sha256':lab.sha256(restart_path)}
+        report['prior_client_lifetime_receipt']={'file':str(old_path),'sha256':lab.sha256(old_path)}
     with actor(name):
         if observer_version is not None:
             path=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness/ClientInteractions.lua'
