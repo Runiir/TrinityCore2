@@ -14,13 +14,15 @@ from .interaction_spellbook_navigation import known
 from .interaction_spellbook_actions import saved_actions
 from .interaction_sit_stand import pose,afk
 from .observation.inventory import Inventory
+from .interaction_ground_movement import position
 
 
 def suite(t):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();before,_=t.observe('native_binding_fixture')
     native={'resources':resources(oracle),'stats':native_state(oracle),'spells':known(t.fixture['guid']),
-        'actions':saved_actions(t.fixture['guid']),'pose':pose(oracle),'afk':afk(oracle)}
+        'actions':saved_actions(t.fixture['guid']),'pose':pose(oracle),'afk':afk(oracle),
+        'position':position(t.fixture['guid'])}
     layout=None;t.receipt['native_baseline']=native;t.persist()
     try:
         open_search(t);layout=detail(t,'original_settings')
@@ -39,7 +41,7 @@ def suite(t):
             if current.get('category')!=layout.get('category'):
                 category=layout['category']['name']
                 require(click_case(t,'fixture.restore_settings_category','Restore the original settings category.',
-                    lambda c:c['text']==category,lambda b,a,s:{'status':'settings_category_restored' if s and
+                    lambda c:c['text']==category[:64],lambda b,a,s:{'status':'settings_category_restored' if s and
                         detail(t,'settings_category')['category']==layout['category'] else 'client_or_protocol_failure'}),
                     'settings_category_restored')
             require(edit_case(t,'fixture.restore_settings_search','Restore the original settings search.',
@@ -56,7 +58,8 @@ def suite(t):
         checks={'resources':resources(oracle)==native['resources'],'stats':restored_native_state(native['stats'],native_state(oracle)),
             'spells':known(t.fixture['guid'])==native['spells'],'actions':saved_actions(t.fixture['guid'])==native['actions'],
             'pose':pose(oracle)==native['pose'],'afk':afk(oracle)==native['afk'],
-            'position':after['world_position']==before['world_position'],'group':after['group']==before['group'],
+            'position':after['world_position']==before['world_position'] and position(t.fixture['guid'])==native['position'],
+            'group':after['group']==before['group'],
             'no_lua_errors':not after.get('lua_errors'),'no_blocked_actions':not after.get('blocked_actions')}
         t.receipt['native_restoration']={'checks':checks,'frame':frame};t.persist()
         if not all(checks.values()):raise RuntimeError('native binding fixture restoration differs')
