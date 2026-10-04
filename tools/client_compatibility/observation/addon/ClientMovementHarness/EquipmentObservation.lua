@@ -30,7 +30,7 @@ function Client442ObserveEquipment()
             end
         end
     end
-    local sheet={}
+    local sheet,categories={},{}
     local spellCrit={}
     local ratings={}
     for school=1,7 do spellCrit[school]=read(GetSpellCritChance,school) end
@@ -40,6 +40,7 @@ function Client442ObserveEquipment()
     for category=1,8 do
         local parent=_G['CharacterStatsPaneCategory'..category]
         if parent and read(parent.IsVisible,parent) then
+            categories[#categories+1]={name=parent:GetName(),category=parent.Category,collapsed=not not parent.collapsed}
             for index=1,12 do
                 local name=parent:GetName()..'Stat'..index
                 local stat,label,text=_G[name],_G[name..'Label'],_G[name..'StatText']
@@ -56,11 +57,14 @@ function Client442ObserveEquipment()
         stats={damage={read(UnitDamage,'player')},attack_speed={read(UnitAttackSpeed,'player')},
             ranged_damage={read(UnitRangedDamage,'player')},crit=read(GetCritChance),
             ranged_crit=read(GetRangedCritChance),spell_crit=spellCrit,
-            melee_haste=read(GetMeleeHaste),ranged_haste=read(GetRangedHaste),
+            melee_haste=read(GetMeleeHaste),ranged_haste=read(GetRangedHaste),spell_haste=read(UnitSpellHaste,'player'),
             ratings=ratings,expertise={read(GetExpertise)},expertise_percent={read(GetExpertisePercent)},
             mastery=read(GetMastery),dodge=read(GetDodgeChance),parry=read(GetParryChance),
             block=read(GetBlockChance),shield_block=read(GetShieldBlock),
-            attack_power={read(UnitAttackPower,'player')},item_level={read(GetAverageItemLevel)},sheet=sheet},
+            attack_power={read(UnitAttackPower,'player')},item_level={read(GetAverageItemLevel)},sheet=sheet,
+            categories=categories,category_settings={order=read(GetCVar,'statCategoryOrder'),
+                collapsed=read(GetCVar,'statCategoriesCollapsed'),order_2=read(GetCVar,'statCategoryOrder_2'),
+                collapsed_2=read(GetCVar,'statCategoriesCollapsed_2')}},
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,
         selected=pane and pane.selectedSetID,
         popup_visible=GearManagerPopupFrame and not not read(GearManagerPopupFrame.IsVisible,GearManagerPopupFrame) or false,
