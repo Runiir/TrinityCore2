@@ -132,7 +132,8 @@ def suite(out):
             require(click_case(trials['scout'],'fixture.party_accept','Accept the owned temporary movement fixture party.',
                 lambda c:c['name']=='StaticPopup1Button1' and c['text']=='Accept',
                 lambda b,a,s:{'status':'fixture_party_pass' if s and a['group']['members']==2 and
-                    native_group() and native_group()['members']==[1,2] else 'client_or_protocol_failure'}),
+                    native_group() and native_group()['members']==[1,2] else 'client_or_protocol_failure'},
+                await_state=lambda s:s['group']['members']==2),
                 'fixture_party_pass')
         fixture=NearbyFixture(out,trials['primary'].fixture,trials['scout'].fixture,open_ground=True);fixture.prepare()
         for name,peer_name in [('primary','scout'),('scout','primary')]:
