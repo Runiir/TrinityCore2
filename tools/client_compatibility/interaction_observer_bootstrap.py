@@ -44,7 +44,7 @@ def prepare(out,source):
         baseline=capture(t);t.receipt.update(bootstrap_baseline=baseline,bootstrap_session=actors.session_entry(t.fixture)['session'],
             source={'file':str(source/'recovery.json'),'sha256':lab.sha256(source/'recovery.json')},before_frame=frame)
         src=lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness'
-        target=lab.CLIENT/'Interface/AddOns/ClientMovementHarness'
+        target=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness'
         shutil.copytree(src,target,dirs_exist_ok=True)
         t.receipt['installed_observer_sha256']=lab.sha256(target/'ClientInteractions.lua');t.persist()
         with owned_input.lease():
