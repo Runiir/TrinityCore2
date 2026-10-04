@@ -60,8 +60,9 @@ def restore_bar(t,session,slot,destination,baseline):
         writes=action_writes(session,since,slot-1,0)
         if not writes:raise RuntimeError('native action-slot clear packet is absent')
         t.receipt['native_action_clear']=writes
-        # Removing an action can leave its icon on the cursor. Escape cancels it.
-        t.execute({'kind':'key','value':'Escape'})
+        # Dropping into the world normally clears the spell cursor. Cancel only
+        # an observed pending cursor; an unconditional Escape closes the book.
+        if state.get('cursor_info'):t.execute({'kind':'key','value':'Escape'})
     lab.server_command('saveall');time.sleep(.5)
     t.receipt['native_actions_after']=saved_actions(t.fixture['guid'])
     t.receipt['native_actions_restored']=t.receipt['native_actions_after']==baseline;t.persist()

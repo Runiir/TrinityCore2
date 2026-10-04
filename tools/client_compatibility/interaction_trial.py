@@ -254,10 +254,10 @@ class Trial:
         # Fixture cleanup uses code, never counts as a model action or pass.
         state,frame=self.observe('cleanup_latest')
         def signature(s):return (tuple(sorted(s.get('panels') or [])),tuple(sorted(s.get('bags') or [])),
-            bool(s.get('chat_edit_open')),bool(s.get('spell_targeting')),bool(s.get('pending_glyph')))
+            bool(s.get('chat_edit_open')),bool(s.get('spell_targeting')),bool(s.get('pending_glyph')),bool(s.get('cursor_info')))
         for i in range(6):
             previous=signature(state)
-            if previous==((),(),False,False,False):
+            if previous==((),(),False,False,False,False):
                 if i==0:return
                 # Confirm the empty observation through another update cycle.
                 time.sleep(.2);state,frame=self.observe('cleanup_empty_confirm')

@@ -40,6 +40,20 @@ def test_pending_glyph_cancel_is_progress_even_when_the_panel_stays_open(monkeyp
     assert events==['Escape','Escape']
 
 
+def test_pending_spell_cursor_is_cancelled_when_all_panels_are_closed(monkeypatch):
+    pending=state(1,False);pending['cursor_info']=['spell',6603]
+    t,events=trial([pending,state(2,False),state(3,False)],monkeypatch)
+    t.clean_panels()
+    assert events==['Escape']
+
+
+def test_empty_cursor_and_closed_panels_send_no_cleanup_input(monkeypatch):
+    empty=state(1,False);empty['cursor_info']={}
+    t,events=trial([empty],monkeypatch)
+    t.clean_panels()
+    assert not events
+
+
 def test_delayed_partial_chat_observation_does_not_resubmit_or_fail(monkeypatch):
     partial={'chat_edit_open':True,'chat_edit_text':'/cleartar'}
     t,_=trial([partial,{'chat_edit_open':False}],monkeypatch)

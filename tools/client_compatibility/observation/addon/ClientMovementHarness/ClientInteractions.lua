@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=62,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=63,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -596,6 +596,7 @@ local function snapshot(viewMode,viewPage)
     data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
     data.chat_edit_text=data.chat_edit_open and trim(ChatFrame1EditBox:GetText(),255) or ''
     data.item_cursor=not not call(CursorHasItem)
+    data.cursor_info={call(GetCursorInfo)}
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
     data.input_aliases={}
     for _,name in ipairs({'LEAVEPARTY','PARTYLEAVE','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
