@@ -35,7 +35,7 @@ def preview(t,control,item,label):
         time.sleep(.2)
     def requested(model):
         match=re.search(r'item:(\d+)',(model.get('last_try_on') or {}).get('link',''))
-        return model.get('model_visible') and bool(match and int(match[1])==item['id'])
+        return model.get('model_visible') and model.get('geometry_ready') is True and bool(match and int(match[1])==item['id'])
     model,model_frame=detail(t,label+'_model',requested)
     event=model.get('last_try_on') or {};match=re.search(r'item:(\d+)',event.get('link',''))
     checks={'observed_control':bool(control),'ordinary_modified_click':bool(event.get('ctrl') and event.get('dressup')),
