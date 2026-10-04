@@ -82,6 +82,7 @@ def suite(t):
     except Exception as error:
         t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
+        cleanup_failures=[]
         try:
             if layout is not None:
                 state,_=t.observe('extra_bar_restore_panels')
@@ -89,7 +90,13 @@ def suite(t):
                 current=settings(t,'extra_bar_restore_before')
                 if current['values'].get(VARIABLE) is not False:
                     search(t,'Action Bar 2','extra_bar.restore_search')
-                    toggle_extra(t,oracle,False,'actionbars.extra_bars_toggle.restore')
+                    try:toggle_extra(t,oracle,False,'actionbars.extra_bars_toggle.restore')
+                    except Exception as error:
+                        cleanup_failures.append(f'{type(error).__name__}: {error}')
+                        t.receipt['cleanup_failures']=cleanup_failures;t.persist()
+                        # A failed native oracle must not strand unrelated grid,
+                        # search and panel settings. Re-observe before continuing.
+                        settings(t,'extra_bar_restore_public_after_failure')
                 current=settings(t,'extra_bar_grid_restore_before')
                 if current['cvars'].get('alwaysShowActionBars')!=layout['cvars']['alwaysShowActionBars']:
                     search(t,'Always Show Action Bars','extra_bar.grid.restore_search')
@@ -108,6 +115,8 @@ def suite(t):
             t.receipt['native_resources_preserved']=(t.receipt['native_after']==original and
                 t.receipt['native_mask_after']==t.mask_baseline and t.receipt['native_actions_after']==t.actions_baseline and
                 t.receipt['native_persisted_spells_after']==spells);t.persist()
+        if cleanup_failures and not t.receipt.get('execution_failure'):
+            raise RuntimeError('extra-bar native restoration failed: '+'; '.join(cleanup_failures))
     if not t.receipt['native_resources_preserved']:raise RuntimeError('extra bar trial changed native resources')
 
 
