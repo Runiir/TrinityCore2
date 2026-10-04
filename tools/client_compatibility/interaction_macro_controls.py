@@ -212,7 +212,7 @@ def recover(t,source):
     if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
         raise ValueError('require a private closed macro trial receipt')
     old=json.loads(source.read_text())
-    if old.get('completed') or not old.get('finished_at') or not old.get('failure') or old['actor']['guid']!=t.guid:
+    if old.get('completed') or not old.get('finished_at') or not old.get('failure') or old['actor']['guid']!=t.fixture['guid']:
         raise RuntimeError('recovery source is not a closed failed owned trial')
     if old.get('macro_baseline',{}).get('macros')!=[0,0] or not any(c['id']=='fixture.create_TC442C' and
             c['status']=='macro_fixture_created' for c in old['cases']):
