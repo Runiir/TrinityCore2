@@ -50,7 +50,8 @@ PANELS=[
 
 def binding_key(value):
     parts=value.split('-');name=parts[-1]
-    specials={'ESCAPE':'Escape','SPACE':'space','ENTER':'Return','TAB':'Tab'}
+    specials={'ESCAPE':'Escape','SPACE':'space','ENTER':'Return','TAB':'Tab','UP':'Up','DOWN':'Down',
+        'LEFT':'Left','RIGHT':'Right','HOME':'Home','END':'End','PAGEUP':'Prior','PAGEDOWN':'Next','PRINTSCREEN':'Print'}
     name=specials.get(name,name.lower() if len(name)==1 else name)
     return '+'.join([p.lower() for p in parts[:-1]]+[name])
 
