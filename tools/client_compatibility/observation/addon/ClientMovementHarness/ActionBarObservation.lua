@@ -5,6 +5,10 @@ local function call(fn,...)
 end
 function Client442ObserveActionBars()
     Client442HookPerformanceTooltip()
+    local rootScale=UIParent and call(UIParent.GetEffectiveScale,UIParent)
+    local screenWidth,screenHeight=call(GetScreenWidth),call(GetScreenHeight)
+    local width=rootScale and screenWidth and rootScale*screenWidth
+    local height=rootScale and screenHeight and rootScale*screenHeight
     local result={page=call(GetActionBarPage),bonus_offset=call(GetBonusBarOffset),
         toggles={call(GetActionBarToggles)},locked=call(GetCVarBool,'lockActionBars'),
         keys={},frames={},actions={},forms={},form=call(GetShapeshiftForm),
@@ -13,6 +17,7 @@ function Client442ObserveActionBars()
         frame_limit={max=call(GetCVar,'maxFPS'),background=call(GetCVar,'maxFPSBk')},
         camera_zoom=call(GetCameraZoom),network={call(GetNetStats)},
         power=call(UnitPower,'player'),power_type=call(UnitPowerType,'player'),
+        viewport={width=width,height=height,basis='scaled_game_ui_screen'},
         performance_event=Client442PerformanceTooltipEvent()}
     for index=1,6 do
         if VIEWABLE_ACTION_BAR_PAGES and VIEWABLE_ACTION_BAR_PAGES[index] then
@@ -48,7 +53,6 @@ function Client442ObserveActionBars()
             row.enabled=call(button.IsEnabled,button)
             local x,y=call(button.GetCenter,button)
             local scale=call(button.GetEffectiveScale,button)
-            local width,height=call(GetPhysicalScreenSize)
             if x and y and scale and width and height and width>0 and height>0 then
                 row.x=math.floor(x*scale/width*65535)
                 row.y=math.floor((1-y*scale/height)*65535)

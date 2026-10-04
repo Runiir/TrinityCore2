@@ -76,7 +76,7 @@ def select(t,oracle,index,label):
 def suite(t):
     t.session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,t.session,t.fixture['guid']).poll()
     t.clean_panels();state,_=t.observe('stance_fixture')
-    if state.get('observer_version',0)<72:raise RuntimeError('requires passive stance observer72')
+    if state.get('observer_version',0)<73:raise RuntimeError('requires corrected viewport stance observer73')
     original=resources(oracle);spells=known(t.fixture['guid']);layout=detail(t,'stance_layout')
     native=native_state(oracle);t.native_actions=saved_actions(t.fixture['guid'])
     t.receipt.update(baseline=original,native_persisted_spells=spells,

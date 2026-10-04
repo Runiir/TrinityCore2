@@ -14,7 +14,10 @@ function Client442HookPerformanceTooltip() end
 function Client442PerformanceTooltipEvent() return nil end
 function GetNumShapeshiftForms() return 2 end
 function GetShapeshiftFormInfo(i) return 'icon',i==1,true,i==1 and 2457 or 71 end
-function GetPhysicalScreenSize() return 1280,720 end
+function GetPhysicalScreenSize() return 1920,1080 end
+function GetScreenWidth() return 1600 end
+function GetScreenHeight() return 900 end
+UIParent={GetEffectiveScale=function() return .8 end}
 function UnitPower() return 0 end
 function UnitPowerType() return 1 end
 function CastShapeshiftForm() error('observer must not cast') end
@@ -24,6 +27,7 @@ StanceButton1={IsVisible=function() return true end,GetChecked=function() return
 dofile(arg[1])
 local result=Client442ObserveActionBars()
 assert(result.power==0 and result.power_type==1)
+assert(result.viewport.width==1280 and result.viewport.height==720)
 local row=result.forms[1]
 assert(row.spell==2457 and row.active and row.checked and row.visible and row.enabled)
 assert(row.x==math.floor(200/1280*65535) and row.y==math.floor((1-100/720)*65535))
