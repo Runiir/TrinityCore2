@@ -319,6 +319,10 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
             {{"session", id}, {"name", name}, {"guid", state.guid()}, {"position", get(move, "position")}});
         return;
     }
+    if (name == "CMSG_SET_SHEATHED")
+    {
+        require_world();native_send(sheath_request(body,in_world));return;
+    }
     if (name == "CMSG_STAND_STATE_CHANGE")
     {
         require_world();

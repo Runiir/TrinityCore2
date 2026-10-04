@@ -30,4 +30,15 @@ Packet stand_state_update(View body)
     // Native has no animation-kit field. Preserve its state with the neutral kit.
     return {"SMSG_STAND_STATE_UPDATE",Writer().pack("BI",{state,0}).finish()};
 }
+Packet sheath_request(View body, bool in_world)
+{
+    if (!in_world) throw std::runtime_error("sheath request outside owned active world");
+    Reader reader(body);auto state=reader.take<std::uint32_t>();
+    auto animation=reader.take<std::uint8_t>();reader.end();
+    if (state>2 || (animation&0x7f))
+        throw std::runtime_error("invalid player sheath request");
+    // The pinned modern packet adds one Animate bit. Native takes only the state;
+    // its authoritative UNIT_FIELD_BYTES_2 update drives the resulting weapon pose.
+    return {"CMSG_SET_SHEATHED",Writer().pack("I",{state}).finish()};
+}
 }

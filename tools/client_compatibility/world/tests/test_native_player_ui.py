@@ -43,3 +43,21 @@ def test_stand_update_preserves_native_state_and_adds_neutral_animation_kit(code
 @pytest.mark.parametrize('body',['','0100','ff'])
 def test_stand_update_rejects_invalid_native_records(codec,body):
     assert 'error' in codec(op='stand_state_update',body=body)
+
+
+@pytest.mark.parametrize('state',[0,1,2])
+@pytest.mark.parametrize('animate',[0,128])
+def test_sheath_request_preserves_native_state_without_modern_animation_bit(codec,state,animate):
+    body=(state.to_bytes(4,'little')+bytes([animate])).hex()
+    assert result(codec,op='sheath_request',body=body,in_world=True)==[
+        'CMSG_SET_SHEATHED',state.to_bytes(4,'little').hex()]
+
+
+@pytest.mark.parametrize('body',['','00','00000000','000000000000','0300000000',
+    'ffffffff80','0100000001','0100000081'])
+def test_sheath_request_rejects_bad_size_state_or_nonzero_padding(codec,body):
+    assert 'error' in codec(op='sheath_request',body=body,in_world=True)
+
+
+def test_sheath_request_requires_an_owned_world(codec):
+    assert 'error' in codec(op='sheath_request',body='0000000000',in_world=False)

@@ -48,6 +48,11 @@ int main(int argc, char **argv)
                     else
                         result = nullptr;
                 }
+                else if (op == "sheath_request")
+                {
+                    auto packet=sheath_request(data("body"),truth(get(request,"in_world")));
+                    result=Array{packet.first,hex(packet.second)};
+                }
                 else if (op == "stand_state_request" || op == "stand_state_update")
                 {
                     auto packet=op=="stand_state_request" ?
