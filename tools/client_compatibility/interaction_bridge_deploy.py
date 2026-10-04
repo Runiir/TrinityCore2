@@ -70,6 +70,8 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
     lab.stop('modern_world');control.start();report['after']=identity('modern_world')
     if identity('worldserver')!=native: raise RuntimeError('native worldserver changed during bridge deployment')
     report['native_unchanged']=True
+    report['read_only_disconnect_settling_seconds']=12
+    time.sleep(12)
     for name in ['primary','scout']:
         with actor(name): report.setdefault('lobby_frames',{})[name]=shot(out/(name+'_disconnected.png'))
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
@@ -169,7 +171,7 @@ def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False,key
             t.receipt['lobby_input']={'input':action,'before_frame':frame};t.persist()
             if action['kind']=='key':t.io.key(action['value'],hold=action['hold'])
             else:t.io.click(*action['value'],hold=action['hold'])
-            time.sleep(3)
+            t.receipt['read_only_lobby_settling_seconds']=12;t.persist();time.sleep(12)
             t.receipt.update(completed=True,next_screen=shot(t.out/'next_screen.png'),requires_lobby_review=True)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
@@ -192,7 +194,8 @@ def select_realm(out,name):
                                  ('realm_okay',{'kind':'key','value':'Return','hold':.4})]:
                 frame=shot(t.out/(label+'_before.png'));t.execute(action)
                 t.receipt['lobby_inputs'].append({'label':label,'input':action,'before_frame':frame});t.persist()
-            time.sleep(3);t.receipt['next_screen']=shot(t.out/'next_screen.png')
+            t.receipt['read_only_lobby_settling_seconds']=12;t.persist();time.sleep(12)
+            t.receipt['next_screen']=shot(t.out/'next_screen.png')
             t.receipt.update(completed=True,requires_character_selection_review=True)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
