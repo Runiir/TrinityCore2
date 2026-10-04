@@ -5196,7 +5196,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_character_binding_set_roundtrip"
     },
     {
       "id": "keybindings.defaults_cancel",
@@ -12273,8 +12274,38 @@
           "sha256": "2031dad99865d4eca1a2ac25aee697356dd61f0c796a5786e5f603661836a631"
         }
       ]
+    },
+    {
+      "id": "owned_character_binding_set_roundtrip",
+      "operations": [
+        "keybindings.per_character_toggle"
+      ],
+      "scope": "Owned primary account binding set1 switches to character set2 through the stock checkbox, saves and survives reload, then returns to account1 through the stock warning and survives reload again. Four actual frames reviewed. Original account bindings file bytes, FPS binding, unused test chord, original settings and all10 native/public restoration checks remain unchanged. No original character-specific bindings file existed; the generated file is absent afterward.",
+      "limits": "Disposable primary with no original character-specific bindings file. Existing custom character bindings, warning cancellation, conflicting assignments and other actors remain open. Earlier failed trial and batch-initialization recovery remain explicit.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui65/primary_binding_set02/episode.json",
+          "sha256": "8dd99254d76b7a616097a0344b4309339b4da581c366384f9deb44acded4118b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui65/binding_set_visual_review.json",
+          "sha256": "141daa2c961942a2d2b4b0a0526a1722fe1edc6a9f2ccd0be1acba27d42c83fc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui65/binding_set_failure_review.json",
+          "sha256": "a7fac846c52e0ba29d55868834acbe06f6776783dd627c7d096743b6fd79cede"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui65/batch.json",
+          "sha256": "6ca724a1d723363a840cf7d8d45068f5f8a532c59b15cc5a6706b52a4b879bf4"
+        }
+      ]
     }
   ],
-  "qualified_operations": 348,
+  "qualified_operations": 349,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

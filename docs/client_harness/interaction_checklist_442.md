@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 348 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 349 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -691,7 +691,7 @@ Fixture: `saved_local_bindings`.
 - [ ] `keybindings.conflict_replace`
 - [ ] `keybindings.conflict_cancel`
 - [x] `keybindings.clear_binding` (qualified variant; [evidence](#owned_binding_cancel_clear))
-- [ ] `keybindings.per_character_toggle`
+- [x] `keybindings.per_character_toggle` (qualified variant; [evidence](#owned_character_binding_set_roundtrip))
 - [x] `keybindings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
 - [ ] `keybindings.defaults_apply`
 - [x] `keybindings.save` (qualified variant; [evidence](#keybinding_mutation))
@@ -2346,3 +2346,14 @@ Remaining limits: Owned primary85/scout1 local two-player party on map0; observe
 - [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/scout/episode.json`, SHA-256 `5064aa61ae6eed79a24f05eea427a138fc87056af06cc68f44a8a487498b6cf2`.
 - [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
 - [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/party_chat_visual_review.json`, SHA-256 `2031dad99865d4eca1a2ac25aee697356dd61f0c796a5786e5f603661836a631`.
+
+### owned_character_binding_set_roundtrip
+
+Owned primary account binding set1 switches to character set2 through the stock checkbox, saves and survives reload, then returns to account1 through the stock warning and survives reload again. Four actual frames reviewed. Original account bindings file bytes, FPS binding, unused test chord, original settings and all10 native/public restoration checks remain unchanged. No original character-specific bindings file existed; the generated file is absent afterward.
+
+Remaining limits: Disposable primary with no original character-specific bindings file. Existing custom character bindings, warning cancellation, conflicting assignments and other actors remain open. Earlier failed trial and batch-initialization recovery remain explicit.
+
+- [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/primary_binding_set02/episode.json`, SHA-256 `8dd99254d76b7a616097a0344b4309339b4da581c366384f9deb44acded4118b`.
+- [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/binding_set_visual_review.json`, SHA-256 `141daa2c961942a2d2b4b0a0526a1722fe1edc6a9f2ccd0be1acba27d42c83fc`.
+- [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/binding_set_failure_review.json`, SHA-256 `a7fac846c52e0ba29d55868834acbe06f6776783dd627c7d096743b6fd79cede`.
+- [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/batch.json`, SHA-256 `6ca724a1d723363a840cf7d8d45068f5f8a532c59b15cc5a6706b52a4b879bf4`.
