@@ -86,7 +86,7 @@ def suite(t):
         rotate(t,'DressUpModelFrameRotateLeftButton','ui_misc.dressup_rotate.left')
         def reset_outcome(b,a,s):
             model,frame=detail(t,'dressup_reset_model',lambda model:
-                model.get('mainhand_appearance')==original.get('mainhand_appearance'))
+                model.get('mainhand_appearance')==original.get('mainhand_appearance') and model.get('geometry_ready') is True)
             return {'status':'stock_dressup_reset_pass' if s and not a.get('lua_errors') and
                 not a.get('blocked_actions') else 'client_or_protocol_failure',
                 'oracle':{'original_model':original,'reset_model':model,'frame':frame}}
