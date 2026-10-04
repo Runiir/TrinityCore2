@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=60,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=61,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -145,6 +145,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='map' then data.map_probe=Client442ObserveMap();return data end
     if mode=='tooltip' then data.tooltip_probe=Client442ObserveTooltip();return data end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
+    if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -630,6 +631,7 @@ local function update()
     local viewMode,viewPage=mode,page
     if mode=='state' and autoPage==-1 then viewMode,viewPage='group',groupPage
     elseif mode=='state' and autoPage==-2 then viewMode,viewPage='equipment',1
+    elseif mode=='state' and autoPage==-3 then viewMode,viewPage='spellbook',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -639,8 +641,11 @@ local function update()
             autoPages=math.ceil((data.control_count or 0)/12)
             autoPage=autoPhase=='controls' and autoPages>0 and math.min(controlPage,autoPages) or -1
             equipmentTick=equipmentTick+1
-            if equipmentTick%2==0 and PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2 end
-        elseif viewMode=='equipment' then
+            if equipmentTick%2==0 then
+                if PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
+                elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
+            end
+        elseif viewMode=='equipment' or viewMode=='spellbook' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0
@@ -677,7 +682,7 @@ SlashCmdList.CLIENTOBSERVERPANELS=function(text)
 end
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
-    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='equipment' then mode=command;page=math.max(1,tonumber(arg) or 1)
+    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='equipment' or command=='spellbook' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
     else mode='state';autoPage=0;autoPhase='group';controlPage=1;groupPage=1 end
     frame:Show();update()

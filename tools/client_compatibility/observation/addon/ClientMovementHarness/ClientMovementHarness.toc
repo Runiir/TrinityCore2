@@ -12,4 +12,5 @@ ArchaeologyObservation.lua
 MapObservation.lua
 TooltipObservation.lua
 EquipmentObservation.lua
+SpellBookObservation.lua
 ClientInteractions.lua
