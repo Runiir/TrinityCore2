@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 270 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 278 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -92,13 +92,13 @@ Fixture: `class_variants`.
 - [x] `spellbook.general_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.class_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [ ] `spellbook.pet_tab`
-- [ ] `spellbook.professions_tab`
+- [x] `spellbook.professions_tab` (qualified variant; [evidence](#stock_spellbook_profession_catalog))
 - [x] `spellbook.next_page` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.previous_page` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.spell_tooltip` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.passive_tooltip` (qualified variant; [evidence](#stock_spellbook_navigation))
-- [ ] `spellbook.drag_to_bar`
-- [ ] `spellbook.cast_spell`
+- [x] `spellbook.drag_to_bar` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
+- [x] `spellbook.cast_spell` (qualified variant; [evidence](#stock_spellbook_battle_shout_cast))
 - [ ] `spellbook.learn_spell`
 - [ ] `spellbook.unlearn_spell`
 - [ ] `spellbook.rank_resolution`
@@ -726,10 +726,10 @@ Fixture: `saved_local_macros`.
 
 Fixture: `saved_local_bars`.
 
-- [ ] `actionbars.drag_spell`
+- [x] `actionbars.drag_spell` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [ ] `actionbars.drag_item`
 - [x] `actionbars.drag_macro` (qualified variant; [evidence](#macro_mutation))
-- [ ] `actionbars.clear_slot`
+- [x] `actionbars.clear_slot` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [ ] `actionbars.swap_slots`
 - [ ] `actionbars.page_next`
 - [ ] `actionbars.page_previous`
@@ -745,7 +745,7 @@ Fixture: `saved_local_bars`.
 - [ ] `actionbars.pet_bar`
 - [ ] `actionbars.override_bar`
 - [ ] `actionbars.extra_action_button`
-- [ ] `actionbars.persist`
+- [x] `actionbars.persist` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [x] `actionbars.restore_original` (qualified variant; [evidence](#macro_mutation))
 
 ## settings
@@ -1124,8 +1124,8 @@ Fixture: `in_world`.
 - [ ] `ui_misc.camera_reset`
 - [ ] `ui_misc.cinematics_skip`
 - [ ] `ui_misc.movie_skip`
-- [ ] `ui_misc.cursor_pickup`
-- [ ] `ui_misc.cursor_cancel`
+- [x] `ui_misc.cursor_pickup` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
+- [x] `ui_misc.cursor_cancel` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [ ] `ui_misc.popup_confirm`
 - [ ] `ui_misc.popup_cancel`
 - [ ] `ui_misc.latency_display`
@@ -2000,3 +2000,35 @@ Remaining limits: Sampled warrior pages and two tooltip variants only. Other cla
 - [442_interactions_20261004_44.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc), member `evidence/client_interactions_20261004_ui43/scout_spellbook_navigation_02/episode.json`, SHA-256 `8e5db928c77186746e5b96504c3d8b2bfc6e4cdb71c46670e6c7da266a532293`.
   Checked cases: `spellbook.general_tab` (spellbook_navigation_pass), `spellbook.next_page` (spellbook_navigation_pass), `spellbook.previous_page` (spellbook_navigation_pass), `spellbook.spell_tooltip` (spellbook_tooltip_pass), `spellbook.passive_tooltip` (spellbook_tooltip_pass), `spellbook.class_tab.2` (spellbook_navigation_pass), `spellbook.class_tab.3` (spellbook_navigation_pass), `spellbook.class_tab.4` (spellbook_navigation_pass).
 - [442_interactions_20261004_44.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc), member `evidence/client_interactions_20261004_ui43/spellbook_navigation_after_review.json`, SHA-256 `dc8c2a18a6abea4e30f85cad139d8e04212fd09d3e2f4efaa992469bd4eeb661`.
+
+### stock_spellbook_profession_catalog
+
+Open the stock professions tab on the trained level85 and untrained level1 human warriors. The trained six profession names, rendered rank text and bars match native skill rows; the untrained actor shows six placeholders. Both complete trials restore the original book layout, native inventory, money, skills and saved spells.
+
+Remaining limits: These two profession catalogs only. Pet tabs, other classes and profession mutations remain open. Initial premature-tab verdicts remain failed.
+
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/primary_professions_02/episode.json`, SHA-256 `6f16d46d9251d61d90f5faaca6fd01cf97dfcee098209070008cb44af216e0fc`.
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/scout_professions_02/episode.json`, SHA-256 `3c372c8c54b801447066a1ef938b3bef2a49ed9cbb49b1725076e6c45e73d7c7`.
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/profession_visual_review.json`, SHA-256 `a1a90d5db4385a67d1423eec3c5061aced93ef1d411c225e4e831de5947ec3e6`.
+
+### stock_spellbook_action_roundtrip
+
+On the level85 and level1 human warriors, physically drag native-known Auto Attack from the observed stock book button to empty visible ActionButton12 (slot84/native83). Public action state, exact native action writes and saved character_action rows agree. Shift-drag removes the action into a carried cursor; an ordinary right-click cancels it. Both complete trials restore saved action rows, book layout, native inventory, money and saved spells.
+
+Remaining limits: One empty slot and one spell on two warrior fixtures; save-backed persistence does not qualify reconnect persistence, other bars or action types. Failed trials and their cleanup defects remain failed.
+
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/scout_spellbook_actions_03/episode.json`, SHA-256 `233c1e4fa90df0d8210b62d56e32a9945f50de97abef2eec55dff1d981bba03e`.
+  Checked cases: `spellbook.drag_to_bar` (spellbook_drag_pass).
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/primary_spellbook_actions_04/episode.json`, SHA-256 `e7286ab09f8a91490b3b828771d8ae9cdca6edbf586b200084b66608ecbe76f8`.
+  Checked cases: `spellbook.drag_to_bar` (spellbook_drag_pass).
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/spellbook_actions_visual_review.json`, SHA-256 `12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef`.
+
+### stock_spellbook_battle_shout_cast
+
+Right-click native-known Battle Shout (6673) on the primary level85 warrior Fury book page. Native SMSG_SPELL_GO identifies caster1 and spell6673, the public aura appears, no native cast failure or Lua error occurs, and normal /cancelaura restores the original buff set. The complete action trial also restores book layout, bars, inventory, money and saved spells.
+
+Remaining limits: One reversible instant self-cast on one warrior. Other spells, classes, targets, learning, unlearning and rank transitions remain open. Earlier partial action trials remain unqualified.
+
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/primary_spellbook_actions_04/episode.json`, SHA-256 `e7286ab09f8a91490b3b828771d8ae9cdca6edbf586b200084b66608ecbe76f8`.
+  Checked cases: `spellbook.cast_spell` (spellbook_cast_pass).
+- [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/spellbook_actions_visual_review.json`, SHA-256 `12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef`.

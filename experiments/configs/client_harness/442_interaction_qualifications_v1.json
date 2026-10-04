@@ -2554,6 +2554,90 @@
           "sha256": "dc8c2a18a6abea4e30f85cad139d8e04212fd09d3e2f4efaa992469bd4eeb661"
         }
       ]
+    },
+    {
+      "id": "stock_spellbook_profession_catalog",
+      "operations": [
+        "spellbook.professions_tab"
+      ],
+      "scope": "Open the stock professions tab on the trained level85 and untrained level1 human warriors. The trained six profession names, rendered rank text and bars match native skill rows; the untrained actor shows six placeholders. Both complete trials restore the original book layout, native inventory, money, skills and saved spells.",
+      "limits": "These two profession catalogs only. Pet tabs, other classes and profession mutations remain open. Initial premature-tab verdicts remain failed.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/primary_professions_02/episode.json",
+          "sha256": "6f16d46d9251d61d90f5faaca6fd01cf97dfcee098209070008cb44af216e0fc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/scout_professions_02/episode.json",
+          "sha256": "3c372c8c54b801447066a1ef938b3bef2a49ed9cbb49b1725076e6c45e73d7c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/profession_visual_review.json",
+          "sha256": "a1a90d5db4385a67d1423eec3c5061aced93ef1d411c225e4e831de5947ec3e6"
+        }
+      ]
+    },
+    {
+      "id": "stock_spellbook_action_roundtrip",
+      "operations": [
+        "spellbook.drag_to_bar",
+        "actionbars.drag_spell",
+        "actionbars.clear_slot",
+        "actionbars.persist",
+        "ui_misc.cursor_pickup",
+        "ui_misc.cursor_cancel"
+      ],
+      "scope": "On the level85 and level1 human warriors, physically drag native-known Auto Attack from the observed stock book button to empty visible ActionButton12 (slot84/native83). Public action state, exact native action writes and saved character_action rows agree. Shift-drag removes the action into a carried cursor; an ordinary right-click cancels it. Both complete trials restore saved action rows, book layout, native inventory, money and saved spells.",
+      "limits": "One empty slot and one spell on two warrior fixtures; save-backed persistence does not qualify reconnect persistence, other bars or action types. Failed trials and their cleanup defects remain failed.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/scout_spellbook_actions_03/episode.json",
+          "sha256": "233c1e4fa90df0d8210b62d56e32a9945f50de97abef2eec55dff1d981bba03e",
+          "cases": {
+            "spellbook.drag_to_bar": "spellbook_drag_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/primary_spellbook_actions_04/episode.json",
+          "sha256": "e7286ab09f8a91490b3b828771d8ae9cdca6edbf586b200084b66608ecbe76f8",
+          "cases": {
+            "spellbook.drag_to_bar": "spellbook_drag_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/spellbook_actions_visual_review.json",
+          "sha256": "12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef"
+        }
+      ]
+    },
+    {
+      "id": "stock_spellbook_battle_shout_cast",
+      "operations": [
+        "spellbook.cast_spell"
+      ],
+      "scope": "Right-click native-known Battle Shout (6673) on the primary level85 warrior Fury book page. Native SMSG_SPELL_GO identifies caster1 and spell6673, the public aura appears, no native cast failure or Lua error occurs, and normal /cancelaura restores the original buff set. The complete action trial also restores book layout, bars, inventory, money and saved spells.",
+      "limits": "One reversible instant self-cast on one warrior. Other spells, classes, targets, learning, unlearning and rank transitions remain open. Earlier partial action trials remain unqualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/primary_spellbook_actions_04/episode.json",
+          "sha256": "e7286ab09f8a91490b3b828771d8ae9cdca6edbf586b200084b66608ecbe76f8",
+          "cases": {
+            "spellbook.cast_spell": "spellbook_cast_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui45/spellbook_actions_visual_review.json",
+          "sha256": "12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef"
+        }
+      ]
     }
   ]
 }
