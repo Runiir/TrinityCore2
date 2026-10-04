@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=63,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=64,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -591,6 +591,8 @@ local function snapshot(viewMode,viewPage)
     end
     data.binding_probe=call(GetBindingAction,'CTRL-SHIFT-F12')
     data.fps_keys={call(GetBindingKey,'TOGGLEFPS')}
+    data.toggle_ui_keys={call(GetBindingKey,'TOGGLEUI')}
+    data.screenshot_keys={call(GetBindingKey,'SCREENSHOT')}
     data.keybind_listening=KeybindListener and KeybindListener.pending and
         {action=KeybindListener.pending.action,slot=KeybindListener.pending.slotIndex} or false
     data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
@@ -598,6 +600,8 @@ local function snapshot(viewMode,viewPage)
     data.item_cursor=not not call(CursorHasItem)
     data.cursor_info={call(GetCursorInfo)}
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
+    data.framerate_text=FramerateText and trim(call(FramerateText.GetText,FramerateText),64)
+    data.framerate=call(GetFramerate)
     data.input_aliases={}
     for _,name in ipairs({'LEAVEPARTY','PARTYLEAVE','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
         local aliases={}
