@@ -13,8 +13,12 @@ from .observation.journal import latest
 from .world.buffer import Reader
 
 
-def detail(t,label,book_type=None):
-    ready=None if book_type is None else lambda state:state.get('spellbook_probe',{}).get('book_type')==book_type
+def detail(t,label,book_type=None,line=None,page=None):
+    def matches(state):
+        probe=state.get('spellbook_probe',{})
+        return ((book_type is None or probe.get('book_type')==book_type) and
+            (line is None or probe.get('skill_line')==line) and (page is None or probe.get('page')==page))
+    ready=matches if any(v is not None for v in [book_type,line,page]) else None
     state,frame=read_current_page(t,label,'spellbook',ready=ready)
     if state.get('observer_version',0)<61:raise RuntimeError('requires passive spellbook observer61')
     t.receipt.setdefault('spellbook_details',{})[label]={'state':state,'frame':frame,'input_sent':False};t.persist()
@@ -59,7 +63,7 @@ def checks(probe,learned):
 
 def navigate(t,learned,case_id,target,line=None,page=None,check_content=True):
     def outcome(b,a,s):
-        probe=detail(t,case_id.replace('.','_'))
+        probe=detail(t,case_id.replace('.','_'),book_type='spell',line=line,page=page)
         valid=checks(probe,learned) if check_content else {'visible':probe['visible'],
             'spell_book':probe['book_type']==probe['book_types']['spell']}
         valid.update(selected=s,ui_clean=not a.get('lua_errors') and not a.get('blocked_actions'))
