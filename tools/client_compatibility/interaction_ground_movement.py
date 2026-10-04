@@ -78,7 +78,7 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
             'turn_position_preserved':math.hypot(dx,dy)<.2 if turn else True,
             'map_preserved':after[4]==before[4]==0,
             'native_public_position':math.dist(after[:2],public['world_position'][:2])<.2,
-            'native_public_facing':abs(angle(after[3],public['world_position'][3]))<.05,
+            'native_public_facing':abs(angle(after[3],frame['movement']['facing_radians']))<.05,
             'peer_position':len(seen)>=4 and math.dist(after[:2],seen[:2])<.2,
             'peer_movement_packet':bool(broadcast),
             'released_idle':bar['pose'].get('speed')==0,
@@ -87,6 +87,7 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
         return {'status':'ground_movement_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'native_before':before,'native_after':after,'projection':projection,
                 'facing_change':change,'public_frame':frame,'public_position':public['world_position'],
+                'public_position_basis':'UnitPosition x/y, height/map fields retained without reinterpretation',
                 'peer_frame':other_frame,'peer_position':seen,'request_pairs':pair,'peer_packets':broadcast}}
     require(t.step('movement.'+op,'Exercise the installed ground movement binding with native and peer agreement.',
         {'move':{'kind':'key','value':key,'hold':1.2 if not op.startswith('turn_') else .6,
