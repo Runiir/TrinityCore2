@@ -9,7 +9,7 @@ def trial(states,monkeypatch):
     t=module.Trial.__new__(module.Trial);events=[]
     t.receipt={'cleanup':[]};t.persist=lambda:None
     t.io=SimpleNamespace(key=events.append)
-    samples=iter(states);t.observe=lambda label:(next(samples),{'file':label+'.png'})
+    samples=iter(states);t.observe=lambda label,seconds=28:(next(samples),{'file':label+'.png'})
     monkeypatch.setattr(module.time,'sleep',lambda seconds:None)
     return t,events
 
@@ -65,6 +65,18 @@ def test_delayed_partial_chat_observation_does_not_resubmit_or_fail(monkeypatch)
     transport=t.execute({'kind':'chat','value':'/cleartarget'})
     assert events==[('key','Return'),('text','/cleartarget'),('key','Return')]
     assert transport[0]['input_replayed'] is False
+
+
+def test_reload_extends_only_the_read_wait_without_repeating_input(monkeypatch):
+    t,_=trial([],monkeypatch);t.receipt['cases']=[];events=[];waits=[]
+    t.io=SimpleNamespace(key=lambda key,**kwargs:events.append(('key',key)),
+        type=lambda text:events.append(('text',text)))
+    def observe(label,seconds=28):
+        waits.append(seconds);return {'chat_edit_open':False},{'file':label+'.png'}
+    t.observe=observe;monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    assert t.execute({'kind':'chat','value':'/reload'})==[]
+    assert waits==[60]
+    assert events==[('key','Return'),('text','/reload'),('key','Return')]
 
 
 @pytest.mark.parametrize('opens',[True,False])

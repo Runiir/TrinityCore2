@@ -197,7 +197,10 @@ class Trial:
         time.sleep(4 if action['kind']=='chat' and action['value']=='/reload' else .8)
         transport=[]
         if action['kind']=='chat':
-            state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check')
+            # Background reloads can take more than the ordinary 28-second
+            # state budget. Only extend the read wait; never resend /reload.
+            seconds=60 if action['value']=='/reload' else 28
+            state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check',seconds=seconds)
             deadline=time.monotonic()+12
             while state.get('chat_edit_open') and time.monotonic()<deadline:
                 transport.append({'reason':'wait for selected command submission','frame':frame,
