@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "270/916 reviewed scoped operations. UI43 DVC44 remotely synchronized and archive verified:11 selected JSON/167 attributed PNG. Two concurrent isolated HDMI-1 clients pass six stock spellbook operations, complete native resources/spells/layout restored. SQL-only default-spell oracle failures retained and unqualified. Native worldserver unchanged. Next: profession tab rendering/ranks and ordinary spellbook actions, then all remaining queued UI families.",
+  "current": "311/916 reviewed scoped operations. UI54 pose04 qualifies ordinary X sit/stand on both owned HDMI-1 clients, settled rendered poses, native packets/fields and full original pose/AFK/resources restoration. Earlier preflight and early-paint limitations retained. DVC54 remotely synchronized and archive verified. Next: ordinary ground movement with peer/native agreement, then remaining operation contracts.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",

@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 309 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 311 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -821,8 +821,8 @@ Fixture: `safe_terrain_variants`.
 - [ ] `movement.stop`
 - [ ] `movement.walk_toggle`
 - [ ] `movement.jump`
-- [ ] `movement.sit`
-- [ ] `movement.stand`
+- [x] `movement.sit` (qualified variant; [evidence](#stock_sit_stand_native_pose))
+- [x] `movement.stand` (qualified variant; [evidence](#stock_sit_stand_native_pose))
 - [ ] `movement.sheath`
 - [ ] `movement.swim`
 - [ ] `movement.dive`
@@ -2138,3 +2138,15 @@ Remaining limits: Single lab realm and one default character per client, idle fi
 - [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/reconnect_after_dismiss_settled.json`, SHA-256 `cad7c8cbc84ab444ebc3e1b92fb2f32159847186e4abd2070bedeb698be0fcf1`.
 - [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/deployment/character_selection_settled.json`, SHA-256 `76dd5c44a1b4dfc698550e93ceb22c2deda9b6a84c844fb7faed82250f930a6f`.
 - [442_interactions_20261004_53.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc), member `evidence/client_interactions_20261004_ui53/reconnect_native_review.json`, SHA-256 `34d48890ceaa4099e528a1fb501715591528691017ad04e0b87beb6b97b264f9`.
+
+### stock_sit_stand_native_pose
+
+Both complete UI54 pose04 trials use observed X binding to stand0 and sit1. Native requests00000000/01000000, replies00/01 and player stand fields agree. Eight exact settled frames show standing, seated and restored poses. Twelve-second passive waits replay no input. Both restore original AFK seated pose, sheath0, main bar, observed public position, health/power/stats, inventory/money and saved spell/action rows.
+
+Remaining limits: Two idle human warriors, levels85 and1, original AFK seated pose, installed observer74. Natural AFK packets and cleanup are not binding passes. Pose01 sparse-zero and pose02 initial-seated preflight failures remain unqualified. Pose03 passes native checks but its early stand frames still show seated paint, so it has no visual qualification. Other races, combat, chairs, emotes, movement and persistence remain open.
+
+- [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/primary_pose_04/episode.json`, SHA-256 `2bcb88718d4b070adf43141b44fc02842c11dd8c34c5c672564cde21356cf3b5`.
+- [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/scout_pose_04/episode.json`, SHA-256 `8a651249ceb06a85527d1603a634d5d0ad0468421fb98cdefe5a8553c262b969`.
+- [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/sit_stand_visual_review.json`, SHA-256 `c457211b55891b37ad2dd7d9557273636d467da1c0be536fd340541ba127debb`.
+- [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/stand_state_contract.json`, SHA-256 `cea1e28555cb0ce94168c2cda1cd0500e80306a35fdae51a9bed4f00738b8fc0`.
+- [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/automatic_afk_precondition_review.json`, SHA-256 `b032d879663a238c6ff36c56c62653eb185d81dbd6ba3ac01e29bba81670e564`.

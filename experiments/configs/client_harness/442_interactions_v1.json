@@ -6128,7 +6128,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_sit_stand_native_pose"
     },
     {
       "id": "movement.stand",
@@ -6137,7 +6138,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_sit_stand_native_pose"
     },
     {
       "id": "movement.sheath",
@@ -11571,8 +11573,44 @@
           "sha256": "34d48890ceaa4099e528a1fb501715591528691017ad04e0b87beb6b97b264f9"
         }
       ]
+    },
+    {
+      "id": "stock_sit_stand_native_pose",
+      "operations": [
+        "movement.sit",
+        "movement.stand"
+      ],
+      "scope": "Both complete UI54 pose04 trials use observed X binding to stand0 and sit1. Native requests00000000/01000000, replies00/01 and player stand fields agree. Eight exact settled frames show standing, seated and restored poses. Twelve-second passive waits replay no input. Both restore original AFK seated pose, sheath0, main bar, observed public position, health/power/stats, inventory/money and saved spell/action rows.",
+      "limits": "Two idle human warriors, levels85 and1, original AFK seated pose, installed observer74. Natural AFK packets and cleanup are not binding passes. Pose01 sparse-zero and pose02 initial-seated preflight failures remain unqualified. Pose03 passes native checks but its early stand frames still show seated paint, so it has no visual qualification. Other races, combat, chairs, emotes, movement and persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui54/primary_pose_04/episode.json",
+          "sha256": "2bcb88718d4b070adf43141b44fc02842c11dd8c34c5c672564cde21356cf3b5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui54/scout_pose_04/episode.json",
+          "sha256": "8a651249ceb06a85527d1603a634d5d0ad0468421fb98cdefe5a8553c262b969"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui54/sit_stand_visual_review.json",
+          "sha256": "c457211b55891b37ad2dd7d9557273636d467da1c0be536fd340541ba127debb"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui54/stand_state_contract.json",
+          "sha256": "cea1e28555cb0ce94168c2cda1cd0500e80306a35fdae51a9bed4f00738b8fc0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui54/automatic_afk_precondition_review.json",
+          "sha256": "b032d879663a238c6ff36c56c62653eb185d81dbd6ba3ac01e29bba81670e564"
+        }
+      ]
     }
   ],
-  "qualified_operations": 309,
+  "qualified_operations": 311,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
