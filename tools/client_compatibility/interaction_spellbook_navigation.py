@@ -1,5 +1,5 @@
 """Use stock spellbook tabs/pages/tooltips with passive and native checks."""
-import argparse,json,re,time
+import argparse,hashlib,json,re,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
@@ -9,6 +9,8 @@ from .interaction_observation import read_current_page
 from .interaction_macros import require
 from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
+from .observation.journal import latest
+from .world.buffer import Reader
 
 
 def detail(t,label):
@@ -24,13 +26,25 @@ def known(guid):
         return [list(row) for row in q.fetchall()]
 
 
+def wire_known(t,session):
+    row=latest(lab.ROOT/'evidence/world_packets.jsonl',lambda r:r.get('session')==session and
+        r.get('direction')=='from_native' and r.get('name')=='SMSG_SEND_KNOWN_SPELLS')
+    if row is None:raise RuntimeError('native known-spell login packet is absent')
+    body=bytes.fromhex(row['body']);reader=Reader(body);initial,count=reader.unpack('BH')
+    if initial>1 or not 0<count<=16000:raise RuntimeError('native known-spell count is invalid')
+    ids=[reader.unpack('Ih')[0] for _ in range(count)]
+    cooldowns,=reader.unpack('H');history=[reader.unpack('IIHii') for _ in range(cooldowns)];reader.end()
+    t.receipt['native_known_spell_packet']={'time':row['time'],'session':session,'name':row['name'],
+        'body_sha256':hashlib.sha256(body).hexdigest(),'initial_login':initial,'ids':ids,'cooldowns':history}
+    t.persist();return set(ids)
+
+
 def checks(probe,learned):
     clean=lambda s:re.sub(r'\|c[0-9a-fA-F]{8}|\|r','',s or '').strip()
     rows=[r for r in probe['rows'] if r.get('slot')]
     tab=next((r for r in probe['tabs'] if r['index']==probe['skill_line']),None)
     current=probe.get('page');count=tab['count'] if tab else None
     expected=min(12,max(0,count-(current-1)*12)) if count is not None and current else None
-    native={row[0] for row in learned if not row[2]}
     ordinary=[r for r in rows if r.get('kind')=='SPELL']
     return {'visible':probe['visible'],'spell_book':probe['book_type']==probe['book_types']['spell'],
         'selected_tab_checked':bool(tab and tab.get('checked')),
@@ -38,7 +52,7 @@ def checks(probe,learned):
         'page_slots':bool(tab and current and expected is not None) and sorted(r['slot'] for r in rows)==
             list(range(tab['offset']+(current-1)*12+1,tab['offset']+(current-1)*12+1+expected)),
         'rendered_names':all(clean(r.get('shown_name'))==clean(r.get('name')) and bool(r.get('name')) for r in rows),
-        'known_spell_identity':all(r.get('id') in native and r.get('known') is True for r in ordinary),
+        'known_spell_identity':all(r.get('id') in learned and r.get('known') is True for r in ordinary),
         'public_slot_kind':all(r.get('kind')==r.get('api_kind') for r in rows)}
 
 
@@ -58,8 +72,7 @@ def navigate(t,learned,case_id,target,line=None,page=None,check_content=True):
 
 def hover(t,learned,passive):
     probe=detail(t,'before_'+('passive' if passive else 'active')+'_tooltip')
-    native={r[0] for r in learned if not r[2]}
-    row=next((r for r in probe['rows'] if r.get('kind')=='SPELL' and r.get('id') in native and
+    row=next((r for r in probe['rows'] if r.get('kind')=='SPELL' and r.get('id') in learned and
         r.get('known') is True and r['passive']==passive),None)
     if row is None:raise RuntimeError('requires a native-known '+('passive' if passive else 'active')+' spell')
     control=next(c for c in controls(t) if c['name']==row['button'])
@@ -78,8 +91,8 @@ def hover(t,learned,passive):
 
 def suite(t):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
-    t.clean_panels();original=resources(oracle);learned=known(t.fixture['guid']);layout=None
-    t.receipt.update(native_session=session,baseline=original,native_known_spells=learned,
+    t.clean_panels();original=resources(oracle);persisted=known(t.fixture['guid']);learned=wire_known(t,session);layout=None
+    t.receipt.update(native_session=session,baseline=original,native_persisted_spells=persisted,
         qualified_scope='Owned human warrior stock General/class tabs, General next/previous page and active/passive tooltips only; casting, learning, professions and pet tabs remain open')
     t.persist()
     try:
@@ -123,8 +136,8 @@ def suite(t):
         finally:
             try:t.clean_panels()
             finally:
-                t.receipt.update(native_after=resources(oracle),native_known_spells_after=known(t.fixture['guid']))
-                t.receipt['native_resources_preserved']=t.receipt['native_after']==original and t.receipt['native_known_spells_after']==learned
+                t.receipt.update(native_after=resources(oracle),native_persisted_spells_after=known(t.fixture['guid']))
+                t.receipt['native_resources_preserved']=t.receipt['native_after']==original and t.receipt['native_persisted_spells_after']==persisted
                 t.persist()
                 if not t.receipt['native_resources_preserved']:raise RuntimeError('spellbook trial changed native inventory/money/spells')
 
