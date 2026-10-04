@@ -140,9 +140,9 @@ def suite(out,work=None,separated=False):
             with actor(name):
                 t=trials[name]=Trial(out/name,controller='code');t.clean_panels()
                 state,_=t.observe('ground_fixture');t.ground_bar=detail(t,'ground_layout')
-                if (state['observer_version']!=75 or state['target'].get('exists') or
+                if (state['observer_version']!=75 or state.get('framerate',0)<10 or state['target'].get('exists') or
                     state['follow'].get('active') or state['group']['members'] or native_group()):
-                    raise RuntimeError('requires observer75, no target/follow and two solo fixtures')
+                    raise RuntimeError('requires observer75, at least10 rendered FPS, no target/follow and two solo fixtures')
                 if any(not t.ground_bar['keys'].get(c) for _,c,*_ in OPERATIONS):
                     raise RuntimeError('required installed ground binding missing')
                 session=sessions[name]=actors.session_entry(t.fixture)['session']

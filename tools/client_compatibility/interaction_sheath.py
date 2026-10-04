@@ -55,10 +55,10 @@ def suite(t):
     keys=t.bar_baseline['keys'].get('TOGGLESHEATH')
     ranged=bool(oracle.equipment(18)['id'])
     sequence=cycle(t.pose_baseline['sheath'],ranged)
-    if (state.get('observer_version',0)<74 or not keys or
+    if (state.get('observer_version',0)<74 or state.get('framerate',0)<10 or not keys or
         t.pose_baseline['stand'] not in [0,1] or t.bar_baseline['pose'].get('speed')!=0 or
         t.bar_baseline['pose'].get('sheath')!=t.pose_baseline['sheath']+1):
-        raise RuntimeError('requires an idle owned normal weapon sheath fixture and observed binding')
+        raise RuntimeError('requires at least10 rendered FPS, an idle owned normal weapon sheath fixture and observed binding')
     t.sheath_key=binding_key(keys[0]);original=resources(oracle);stats=native_state(oracle)
     spells=known(t.fixture['guid']);actions=saved_actions(t.fixture['guid']);original_afk=afk(oracle)
     t.receipt.update(native_session=t.session,baseline=original,native_state_baseline=stats,
