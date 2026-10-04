@@ -1,4 +1,4 @@
-"""Verify selected immutable receipts and every attributed PNG in one archive pass."""
+"""Verify selected immutable receipts and attributed game images in one archive pass."""
 import argparse,hashlib,json,subprocess,tarfile,time
 from pathlib import Path,PurePosixPath
 from . import lab_runtime as lab
@@ -11,7 +11,7 @@ def frame_members(value,parent,batch,manifest):
             for row in item:visit(row)
         elif isinstance(item,dict):
             name=item.get('file')
-            if isinstance(name,str) and name.lower().endswith('.png'):
+            if isinstance(name,str) and name.lower().endswith(('.png','.jpg','.jpeg')):
                 path=Path(name);candidates=[]
                 if path.is_absolute():
                     try:candidates=[str(path.relative_to(lab.ROOT))]
