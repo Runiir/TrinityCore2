@@ -58,7 +58,8 @@ def phase(t,peer,oracle,session,peer_session):
         {'party':{'kind':'chat','value':'/p '+token,'description':'Send the fixture marker to the owned party.'}},
         sent,diagnostic_action='party'),'party_chat_pass')
     with actor(peer.fixture['actor']):
-        state,frame=peer.observe('owned_party_message_received')
+        peer.receipt['party_peer_observation_timeout']=60;peer.persist()
+        state,frame=peer.observe('owned_party_message_received',seconds=60)
         rows=packets(peer_session,started,token)
         checks={'native_delivery':any(r['direction']=='from_native' and r['name']=='SMSG_MESSAGECHAT' for r in rows),
             'public_message':any(r['text']==token and r['event'] in events for r in state.get('chat_probes',[])),

@@ -116,7 +116,7 @@ class Trial:
         from PIL import Image
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
-        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+seconds
+        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+seconds;pending_modes=[]
         # Multiple cleanup calls and settling samples may reuse a logical label.
         # A receipt's retained frame must never be overwritten by a later read.
         suffix=1
@@ -133,7 +133,12 @@ class Trial:
                 if time.monotonic()>deadline:raise RuntimeError('UI observation did not become decodable') from error
                 time.sleep(.1);continue
             if state['mode']=='state':break
-            if time.monotonic()>deadline:raise RuntimeError('UI state observation deadline exceeded')
+            if len(pending_modes)<32:pending_modes.append({'sequence':state.get('sequence'),'mode':state.get('mode')})
+            if time.monotonic()>deadline:
+                self.receipt.setdefault('observation_timeouts',[]).append({'label':label,'seconds':seconds,
+                    'modes':pending_modes,'last_frame':{'file':path.name,'sha256':lab.sha256(path),'monitor':monitor},
+                    'input_replayed':False});self.persist()
+                raise RuntimeError('UI state observation deadline exceeded')
             time.sleep(.1)
         if state['guid']!=self.guid or state['build']!=60895 or not movement['in_world']:
             raise RuntimeError('observation is not the owned active character')
