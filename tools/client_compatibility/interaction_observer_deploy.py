@@ -7,13 +7,15 @@ from .interaction_social import actor
 from .interaction_trial import Trial
 
 
-def deploy(out,version,with_compatibility=False):
+def deploy(out,version,with_compatibility=False,names=('primary','scout')):
+    if not names or len(set(names))!=len(names) or any(n not in ('primary','scout') for n in names):
+        raise ValueError('require unique owned actor names')
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     runtime={kind:identity(kind) for kind in ['worldserver','modern_world']}
     report={'schema':'client442_observer_deployment_v1','started_at':time.time(),
         'runtime':runtime,'observer_version':version,'completed':False,'actors':{}}
     try:
-        for name in ['primary','scout']:
+        for name in names:
             with actor(name):
                 t=Trial(out/name,controller='code')
                 try:
@@ -56,4 +58,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--version',type=int,required=True)
     p.add_argument('--with-compatibility',action='store_true',help='Deploy committed compatibility UI files and retain their per-actor hashes')
-    a=p.parse_args();deploy(a.output,a.version,a.with_compatibility)
+    p.add_argument('--actor',choices=['primary','scout'],action='append',help='Reload only these owned actors; default both')
+    a=p.parse_args();deploy(a.output,a.version,a.with_compatibility,a.actor or ('primary','scout'))
