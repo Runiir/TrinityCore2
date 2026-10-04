@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "264/916 reviewed scoped operations. UI40 DVC41 remotely verified:36 selected JSON/214 attributed PNG. Full fresh crit/ranged creation and helmet roundtrip pass, all original resources/layout restored; this augments existing character.stats without increasing unique count. Corrected parent38 candidate879 full/46 sanitizer checks pass. Prior helper/oracle/gate/live failure roots retained; source-bound restoration is separate. Both observer57 clients use private displays on HDMI-1, no host activation, same native worldserver. UI41 follows native haste/ratings/mastery/expertise/defense omissions and separately attributed item level; all other open actor requirements preserved.",
+  "current": "264/916 reviewed scoped operations. UI41 full fresh ratings/helmet/belt trial03 passes native/public/rendered haste, mastery, expertise, supported rating slots and public dodge/parry, four sparse updates, original resources/sidebar/panels restored. Previous fixture-assertion and packet-reader failures retained and unqualified. Candidate895 full/62 sanitizer checks pass. Both observer58 owned clients use private displays on HDMI-1, no host activation; same native worldserver. UI41 proof awaits DVC42 remote/archive verification. UI42 follows omitted public cast-speed/spell-haste deltas, rendered spell/defense rows and separate item-level attribution; six actual spell-update regression failures, three passing creation/unchanged checks.",
   "queued": [
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -138,7 +138,8 @@
     "ui39/character_list_bridge_deploy_01: both v56 owned private clients enter after reviewed realm/character screens; no host activation and HDMI-1 verified; native worldserver unchanged.",
     "ui39/visibility_session_01: three complete ordinary logout/reentry phases; saved/modern selection flags3072 then0, hidden world/API state persists, original full resources and visibility restored. Character selection bare-head/helmet paired renders reviewed; rear cloak selection rendering unqualified.",
     "ui39/DVC40:26 selected JSON and157 attributed PNGs archive verified; sword comparison qualifies two operations,264/916, and normal visibility session persistence augments existing qualification.",
-    "ui40/DVC41: full fresh combat trial, exact failed-fixture restoration, corrected parent38, both private reconnects,36 selected JSON/214 attributed PNG integrity verified. Native worldserver unchanged; stats proof augments existing qualification264/916."
+    "ui40/DVC41: full fresh combat trial, exact failed-fixture restoration, corrected parent38, both private reconnects,36 selected JSON/214 attributed PNG integrity verified. Native worldserver unchanged; stats proof augments existing qualification264/916.",
+    "ui41/character_ratings_after_03: fresh full five-phase helmet/belt stats trial, four native sparse updates, complete fixture/sidebar restore; two earlier failed roots retained, pending DVC42."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

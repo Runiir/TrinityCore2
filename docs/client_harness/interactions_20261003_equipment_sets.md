@@ -351,3 +351,15 @@ and equipped belt78416 for haste and mastery updates. Reproduction is
 requires the whole trial, native sparse packets, five reviewed stat phases,
 full cleanup and remote/archive verification. Spell-haste sparse updates,
 item level, offscreen stats and other classes remain open.
+
+The second post-fix trial passes all five actual stat phases but fails its
+post-trial packet reader on a native type3 object-removal record with no
+single GUID field. It restores all original resources and sidebar state.
+The reader now selects self value updates before inspecting fields. This
+failed root remains separate and unqualified. The third fresh full trial
+passes every phase, four native sparse updates and complete restoration.
+Five reviewed frames show expertise27/16/27/27/27, haste3.22/3.22/3.22/1.51/3.22%
+and mastery19.55/19.55/19.55/18.03/19.55. Public dodge/parry and both expertise
+values agree with native fields throughout. This proof awaits DVC42 remote
+and archive verification before augmenting character.stats; unique count
+remains264. Spell/defense rendered rows and item level remain open.
