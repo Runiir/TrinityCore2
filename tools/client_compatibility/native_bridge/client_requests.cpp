@@ -10,6 +10,7 @@
 #include "auctions.hpp"
 #include "currency.hpp"
 #include "appearance.hpp"
+#include "player_ui_state.hpp"
 
 namespace bridge
 {
@@ -316,6 +317,17 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         service.events.event(
             "movement_forwarded",
             {{"session", id}, {"name", name}, {"guid", state.guid()}, {"position", get(move, "position")}});
+        return;
+    }
+    if (name == "CMSG_SET_ACTION_BAR_TOGGLES")
+    {
+        if (auto packet = actionbar_toggle_request(body, in_world))
+        {
+            require_world();
+            native_send(*packet);
+        }
+        else
+            service.events.event("preworld_actionbar_zero_ignored", {{"session", id}});
         return;
     }
     if (name == "CMSG_SET_ACTION_BUTTON")

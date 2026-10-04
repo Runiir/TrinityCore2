@@ -20,6 +20,7 @@
 #include "auctions.hpp"
 #include "appearance.hpp"
 #include "character_list.hpp"
+#include "player_ui_state.hpp"
 #include <iostream>
 #include <memory>
 
@@ -40,7 +41,14 @@ int main(int argc, char **argv)
                 auto op = str(get(request, "op"));
                 Value result;
                 auto data = [&](std::string_view key) { return unhex(str(get(request, key))); };
-                if (op == "pack")
+                if (op == "actionbar_toggle_request")
+                {
+                    if (auto packet = actionbar_toggle_request(data("body"), truth(get(request, "in_world"))))
+                        result = Array{packet->first, hex(packet->second)};
+                    else
+                        result = nullptr;
+                }
+                else if (op == "pack")
                     result = hex(Writer()
                                      .pack(str(get(request, "format")), get(request, "values").as_array())
                                      .finish());

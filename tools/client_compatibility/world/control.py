@@ -30,14 +30,18 @@ def source_digest():
     return digest.hexdigest()
 
 
-def build():
+def build(jobs=1):
     """Build only the packet bridge, never Trinity's worldserver."""
+    if not 1<=jobs<=4:raise ValueError('bridge build jobs must be between1 and4')
+    available=next(int(line.split()[1]) for line in open('/proc/meminfo') if line.startswith('MemAvailable:'))
+    if available<6*1024*1024:raise RuntimeError('bridge build requires at least6GiB available memory')
     subprocess.run(['cmake', '-S', str(lab.REPO / 'tools/client_compatibility/native_bridge'),
         '-B', str(BUILD), '-DCMAKE_BUILD_TYPE=' + ('Debug' if SANITIZERS else 'Release'),
         '-DCMAKE_CXX_FLAGS=' + ('-fsanitize=address,undefined -fno-omit-frame-pointer' if SANITIZERS else '')], check=True)
-    subprocess.run(['cmake', '--build', str(BUILD), '-j', '4'], check=True)
+    subprocess.run(['cmake', '--build', str(BUILD), '-j', str(jobs)], check=True)
     receipt = {'schema': 'client442_native_bridge_build_v1', 'engine': 'cpp',
         'source_digest': source_digest(), 'binary_sha256': lab.sha256(BINARY), 'sanitizers': SANITIZERS,
+        'build_jobs':jobs,'available_memory_kib_before':available,
         'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()}
     lab.private_write(RECEIPT, json.dumps(receipt, indent=2) + '\n')
     print(json.dumps(receipt, indent=2))
@@ -98,6 +102,7 @@ def main():
     parser.add_argument("action", choices=["build", "start", "stop", "status"])
     parser.add_argument('--engine', choices=['cpp', 'python'], default='cpp')
     parser.add_argument('--workers', type=int, default=4)
+    parser.add_argument('--build-jobs', type=int, default=1, help='compile jobs; default1 to preserve client memory headroom')
     parser.add_argument('--maximum-connections', type=int, default=64)
     parser.add_argument('--sanitizers', action='store_true', help='use the independent ASan/UBSan debug target')
     args = parser.parse_args()
@@ -110,7 +115,7 @@ def main():
     if action == "start":
         start(args.engine, args.workers, args.maximum_connections)
     elif action == 'build':
-        build()
+        build(args.build_jobs)
     elif action == "stop":
         lab.stop("modern_world")
     else:
