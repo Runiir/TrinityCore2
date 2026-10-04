@@ -3,7 +3,7 @@ import argparse,json,time
 from pathlib import Path
 from .interaction_trial import Trial
 from .interaction_keybindings_native import suite as native_suite
-from .interaction_operations import click_case,controls
+from .interaction_operations import click_case,controls,point
 from .interaction_macros import require
 
 ROUTES={'macros':('Macros','MacroFrame'),'addons':('AddOns','AddonList'),
@@ -30,9 +30,18 @@ def suite(t,route):
             a.get('macros')==before.get('macros') and not a.get('lua_errors') else
             'client_or_protocol_failure','oracle':{'remaining_panel_controls':remaining,
             'macro_counts_preserved':a.get('macros')==before.get('macros')}}
-    require(t.step(route+'.close','Close this panel with Escape.',
-        {'close':{'kind':'key','value':'Escape','hold':.4,'description':'Close the inspected stock panel.'}},
-        closed,diagnostic_action='close'),'menu_route_close_pass')
+    if route=='help':
+        rows=controls(t);buttons=[c for c in rows if c['kind']=='Button' and c['enabled'] and
+            not c['name'] and not c['text']]
+        if len(buttons)!=1:raise RuntimeError('one observed stock Support close button is required')
+        button=buttons[0];t.receipt['support_close_control']=button;t.persist()
+        require(click_case(t,'help.close','Click the observed stock Support close button.',
+            lambda c:c['kind']=='Button' and not c['name'] and not c['text'] and point(c)==point(button),
+            closed,await_state=lambda s:panel not in s['panels']),'menu_route_close_pass')
+    else:
+        require(t.step(route+'.close','Close this panel with Escape.',
+            {'close':{'kind':'key','value':'Escape','hold':.4,'description':'Close the inspected stock panel.'}},
+            closed,diagnostic_action='close'),'menu_route_close_pass')
     t.clean_panels()
 
 
