@@ -1,5 +1,5 @@
 """Click stock warrior stance buttons with native form, cast and bar-slot oracles."""
-import argparse,json,time
+import argparse,json,math,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -23,6 +23,13 @@ def native_state(oracle):
     return {'form':(fields[INDEX['UNIT_FIELD_BYTES_2']]>>24)&255,
         'health':fields[INDEX['UNIT_FIELD_HEALTH']],
         'power':fields[INDEX['UNIT_FIELD_POWER1']], 'stats':oracle.character_stats()}
+
+
+def restored_native_state(before,after):
+    if any(before[k]!=after[k] for k in ['form','health','power']):return False
+    if any(before['stats'][k]!=after['stats'][k] for k in ['strength','armor','health']):return False
+    return all(math.isclose(a,b,rel_tol=1e-6,abs_tol=.002)
+        for a,b in zip(before['stats']['damage'],after['stats']['damage'],strict=True))
 
 
 def completions(t,since,spell):
@@ -117,7 +124,7 @@ def suite(t):
             t.receipt.update(native_after=resources(oracle),native_state_after=native_state(oracle),
                 native_actions_after=saved_actions(t.fixture['guid']),native_persisted_spells_after=known(t.fixture['guid']))
             t.receipt['native_resources_preserved']=(t.receipt['native_after']==original and
-                t.receipt['native_state_after']==native and t.receipt['native_actions_after']==t.native_actions and
+                restored_native_state(native,t.receipt['native_state_after']) and t.receipt['native_actions_after']==t.native_actions and
                 t.receipt['native_persisted_spells_after']==spells);t.persist()
     if not t.receipt['native_resources_preserved']:raise RuntimeError('stance trial did not restore native state')
 

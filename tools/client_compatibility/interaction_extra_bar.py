@@ -33,20 +33,17 @@ def toggle_extra(t,oracle,wanted,label):
     button=candidates[0];since=time.time();expected=t.mask_baseline|(1 if wanted else 0)
     def outcome(b,a,s):
         value=settings(t,label+'_value',lambda p:p['values'].get(VARIABLE) is wanted)
-        probe=bars(t,label+'_bar',lambda p:bool(p['toggles'][0]) is wanted)
         packets=[{'time':r['time'],'body':r['body']} for r in entries(lab.ROOT/'evidence/world_packets.jsonl')
             if r.get('session')==t.session and r.get('time',0)>=since and r.get('direction')=='to_native' and
             r.get('name') in ['CMSG_SET_ACTION_BAR_TOGGLES','CMSG_SET_ACTIONBAR_TOGGLES'] and
             bytes.fromhex(r.get('body',''))==bytes([expected])]
         actual=mask(oracle)
         checks={'ordinary_checkbox':bool(s),'public_setting':value['values'].get(VARIABLE) is wanted,
-            'stock_frame_visibility':probe['frames'].get('MultiBarBottomLeft') is wanted,
             'native_toggle_packet':bool(packets),'native_mask':actual==expected,
-            'main_slots_unchanged':signature(probe)==signature(t.bar_baseline),
             'saved_actions_unchanged':saved_actions(t.fixture['guid'])==t.actions_baseline,
             'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'stock_extra_bar_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'public':probe,'native_mask':actual,'native_packets':packets}}
+            'oracle':{'checks':checks,'public_setting':value,'native_mask':actual,'native_packets':packets}}
     require(click_case(t,label,'Toggle the observed stock Action Bar2 checkbox.',
         lambda c:c['kind']=='CheckButton' and c.get('setting_variable')==VARIABLE and point(c)==point(button),
         outcome),'stock_extra_bar_pass')
@@ -79,7 +76,8 @@ def suite(t):
         search(t,'Action Bar 2','actionbars.extra_bars_toggle.search')
         toggle_extra(t,oracle,True,'actionbars.extra_bars_toggle.enable')
         close(t,'extra_bar.inspect_close');visible=bars(t,'extra_bar_visible')
-        if not visible['frames']['MultiBarBottomLeft'] or mask(oracle)!=(t.mask_baseline|1):
+        if (not visible['frames']['MultiBarBottomLeft'] or mask(oracle)!=(t.mask_baseline|1) or
+            signature(visible)!=signature(t.bar_baseline) or not visible['toggles'][0]):
             raise RuntimeError('enabled extra bar does not survive panel close')
     except Exception as error:
         t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
@@ -113,11 +111,54 @@ def suite(t):
     if not t.receipt['native_resources_preserved']:raise RuntimeError('extra bar trial changed native resources')
 
 
+def recover(t,source):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('require an owned failed extra-bar episode')
+    old=json.loads(source.read_text());t.session=actors.session_entry(t.fixture)['session']
+    oracle=Inventory(lab.ROOT,t.session,t.fixture['guid']).poll();layout=old['layout_baseline']
+    if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or old['completed'] or
+        not old.get('finished_at') or old.get('native_resources_preserved') is not True or
+        old['failure']!='RuntimeError: RuntimeError: actionbars diagnostic did not become visible' or
+        old.get('native_mask_after')!=old['native_mask_baseline'] or mask(oracle)!=old['native_mask_baseline'] or
+        resources(oracle)!=old['baseline'] or known(t.fixture['guid'])!=old['native_persisted_spells'] or
+        saved_actions(t.fixture['guid'])!=old['native_actions']):
+        raise RuntimeError('failed source/runtime/native baseline differs')
+    current=settings(t,'cleanup_settings_before')
+    unchanged=lambda key: {k:v for k,v in current[key].items() if k!='alwaysShowActionBars'}=={
+        k:v for k,v in layout[key].items() if k!='alwaysShowActionBars'}
+    if (not current['visible'] or current['category']!=layout['category'] or
+        current['search']!='Action Bar 2' or current['values'].get(VARIABLE) is not False or
+        current['cvars'].get('alwaysShowActionBars')!='1' or not unchanged('cvars') or not unchanged('values')):
+        raise RuntimeError('cleanup is not the exact failed empty-grid state')
+    t.settings_search=old['search_field'];t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},
+        baseline=old['baseline'],native_persisted_spells=old['native_persisted_spells'],
+        qualified_scope='Cleanup only: restore the exact failed extra-bar trial empty-grid setting and search, then verify all settings, original bar visibility and native resources. No gameplay qualification.');t.persist()
+    search(t,'Always Show Action Bars','cleanup.grid.search')
+    toggle(t,'alwaysShowActionBars',layout['cvars']['alwaysShowActionBars'],'cleanup.grid.restore')
+    search(t,layout.get('search') or '','cleanup.restore_search')
+    after=settings(t,'settings_restored');t.receipt['layout_restored']=all(after.get(k)==layout.get(k)
+        for k in ['search','category','cvars','values']);t.persist()
+    if not t.receipt['layout_restored']:raise RuntimeError('cleanup settings did not restore')
+    close(t,'cleanup.close');final=bars(t,'extra_bar_restored');baseline=old['bar_baseline']
+    t.receipt['bar_restored']=(final['frames']==baseline['frames'] and final['toggles']==baseline['toggles'] and
+        signature(final)==signature(baseline));t.receipt.update(native_after=resources(oracle),native_mask_after=mask(oracle))
+    t.receipt['native_resources_preserved']=(t.receipt['native_after']==old['baseline'] and
+        t.receipt['native_mask_after']==old['native_mask_baseline'] and
+        known(t.fixture['guid'])==old['native_persisted_spells'] and saved_actions(t.fixture['guid'])==old['native_actions'])
+    t.persist()
+    if not t.receipt['bar_restored'] or not t.receipt['native_resources_preserved']:
+        raise RuntimeError('extra-bar cleanup did not restore original state')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--actor',choices=['primary','scout'],required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--recover-source',type=Path);a=p.parse_args()
     with actor(a.actor):
         t=Trial(a.output,controller='code')
-        try:suite(t);t.receipt['completed']=True
+        try:
+            if a.recover_source:recover(t,a.recover_source)
+            else:suite(t)
+            t.receipt['completed']=True
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
