@@ -7,7 +7,7 @@ from .interaction_keybindings_native import suite as native_suite
 from .interaction_operations import controls,click_case as catalog_click
 from .interaction_macros import require,edit_case as catalog_edit
 from .interaction_observation import read_current_page
-from .interaction_control_target import click as target_click,edit as target_edit
+from .interaction_control_target import click as target_click,edit as target_edit,target
 
 
 def click_case(t,label,goal,predicate,oracle):
@@ -80,6 +80,11 @@ def tab(t,index,label):
             'base':p['base']==(0 if index==1 else p['account_limit']),
             'limit':p['limit']==p['account_limit' if index==1 else 'character_limit'],
             'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+        if getattr(t,'empty_macro_guard_required',False) and p['counts'][index-1]==0:
+            delete=target(t,label+'_empty_delete',lambda c:c['name']=='MacroDeleteButton')
+            checks['empty_bank_no_selected_macro']=not p['selected'].get('name')
+            checks['empty_bank_body_hidden']=not any(c.get('name')=='MacroFrameText' for c in a.get('edit_fields') or [])
+            checks['empty_bank_delete_disabled']=delete['enabled'] is False
         return {'status':'macro_tab_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'public':p}}
     require(click_case(t,label,'Select the stock '+('General' if index==1 else 'Character Specific')+' Macros tab.',
@@ -233,10 +238,12 @@ def recover(t,source):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--recon',action='store_true');p.add_argument('--targeted-controls',action='store_true')
+    p.add_argument('--require-empty-guard',action='store_true')
     p.add_argument('--recover-source',type=Path);a=p.parse_args()
     if a.recon and a.recover_source:p.error('recon and recovery are distinct trials')
     t=Trial(a.output,controller='code')
     t.targeted_controls=a.targeted_controls
+    t.empty_macro_guard_required=a.require_empty_guard
     selected=(lambda t:recover(t,a.recover_source)) if a.recover_source else recon if a.recon else operations
     try:native_suite(t,operations=selected);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
