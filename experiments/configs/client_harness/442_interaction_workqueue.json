@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "321/916 reviewed scoped operations. UI59 qualifies scout owner/peer melee sheath rendering and both flat-ground jump/landing controls with full restorations. Seated standalone sheath and initial jump sign-check failures remain preserved. UI60 continues stock owned-party targeting, client-local focus and hover controls with observer76.",
+  "current": "328/916 reviewed scoped operations. UI60 qualifies seven owned-party selection/focus controls through both complete core04 trials and full restoration. Observer77 moves larger passive probes off the bounded normal-state page. Fresh hover05 fails and remains open. Next UI61 tests assist against native owned-peer target attribution, then repairs proven missing translation.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -149,7 +149,8 @@
     "ui56/sheath01: native/public sheath changes and full restoration; rendered draw/sheath unqualified, primary ranged-cycle readiness failure retained",
     "ui57/sheath_peer01: five complete native cycles; peer scout weapon rendering passes after settling, owner view remains unqualified; float-row cleanup failure recovered separately",
     "ui58/ground_modes03: both walk/run cadences and bounded autorun,20 restoration checks, native/public/peer agreement; layout repair and failed01/02 retained.",
-    "ui59/sheath_peer02 and ground_jump02: scout drawn/back sword rendering, both visible jumps and native/peer landing,40 full restoration checks; standalone seated and checker failures retained."
+    "ui59/sheath_peer02 and ground_jump02: scout drawn/back sword rendering, both visible jumps and native/peer landing,40 full restoration checks; standalone seated and checker failures retained.",
+    "ui60/core04: seven selection/focus controls, 94 qualifying checks and 20 restoration checks pass. DVC60 verifies 40 JSON and 260 attributed frames; observer overflow recovery, preflight and hover failures retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -176,6 +177,7 @@
     "UI56 weapons stay visually on the back in reviewed sheath states despite native/public agreement; primary requires melee/ranged/unarmed cycle handling.",
     "UI57 narrows the sheath defect to owner world-model rendering; scout peer view draws/sheaths. Precise heavy-primary peer rendering remains unclaimed.",
     "UI58 ground_modes01 rendered at~1FPS under completely overlapping presenters. Owned partial-visibility layout restores~15FPS and native2.5/7yd/s cadence; sheath owner rendering needs a fresh retest. Ground_modes02 failed after probe diagnostics delayed autorun stop; corrected stop-before-I/O adapter passes03.",
-    "UI59 standalone sheath02 inputs were ignored while seated/AFK; standing peer cohort passes. Jump01 failed a positive vertical-speed checker assumption; captured field is negative and peer height rises; corrected jump02 passes. First3 regression fixture errors and15 corrected passes retained."
+    "UI59 standalone sheath02 inputs were ignored while seated/AFK; standing peer cohort passes. Jump01 failed a positive vertical-speed checker assumption; captured field is negative and peer height rises; corrected jump02 passes. First3 regression fixture errors and15 corrected passes retained.",
+    "UI60 party-frame hover03 and fresh-entry hover05 never establish public mouseover/stock tooltip; no hover qualification. Normal observer76 exceeds 6144 bytes at 6193 after adding target probes. Exact recovery restores all 20 checks; observer77 separates the passive probe page and core04 passes. Earlier cleanup failures remain recorded."
   ]
 }

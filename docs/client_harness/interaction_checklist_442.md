@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 321 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 328 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -855,19 +855,19 @@ Fixture: `safe_terrain_variants`.
 
 Fixture: `owned_targets`.
 
-- [ ] `targeting.click_target`
+- [x] `targeting.click_target` (qualified variant; [evidence](#owned_party_targeting_focus))
 - [ ] `targeting.tab_enemy`
 - [ ] `targeting.previous_enemy`
 - [x] `targeting.friendly_target` (qualified variant; [evidence](#nearby_target))
-- [ ] `targeting.clear_target`
-- [ ] `targeting.target_self`
-- [ ] `targeting.party_target`
+- [x] `targeting.clear_target` (qualified variant; [evidence](#owned_party_targeting_focus))
+- [x] `targeting.target_self` (qualified variant; [evidence](#owned_party_targeting_focus))
+- [x] `targeting.party_target` (qualified variant; [evidence](#owned_party_targeting_focus))
 - [ ] `targeting.raid_target`
 - [ ] `targeting.assist`
-- [ ] `targeting.focus`
-- [ ] `targeting.clear_focus`
+- [x] `targeting.focus` (qualified variant; [evidence](#owned_party_targeting_focus))
+- [x] `targeting.clear_focus` (qualified variant; [evidence](#owned_party_targeting_focus))
 - [ ] `targeting.target_target`
-- [ ] `targeting.target_last`
+- [x] `targeting.target_last` (qualified variant; [evidence](#owned_party_targeting_focus))
 - [ ] `targeting.mouseover`
 - [ ] `targeting.tooltip`
 - [ ] `targeting.nameplate`
@@ -2210,3 +2210,19 @@ Remaining limits: Only flat Northshire ground at levels85/1. Moving jumps, terra
 - [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/jump_visual_acceptance_review.json`, SHA-256 `995b9ff9b25fd0f447a5993404bb7755eadc9ac5a95b93a1734fac858d028477`.
 - [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_failure_review.json`, SHA-256 `925e5723aa7b42dc4f43531038e2ac2bf5a0a74b1ac3b82e17d12217ec0775a1`.
 - [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/resource_review.json`, SHA-256 `d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24`.
+
+### owned_party_targeting_focus
+
+Both owned idle human warriors use stock F1/F2 bindings, party-frame click, clear/last-target slash commands and local focus commands. Native selection GUID fields and exact requests prove five target changes per actor; public GUIDs and rendered frames agree. Focus frames visibly appear and clear while native selection stays unchanged. All 94 qualifying checks, 20 complete character restoration checks, party/position/map/orientation restoration and four temporary teleport-row removals pass.
+
+Remaining limits: Owned party at levels 85/1 only. Focus qualifies client-local UI only. Observer pixels partly cover upper target names; exact identity uses public/native GUIDs. Combat, enemy/raid target categories and remaining targeting controls remain open. Original preflight, observer overflow, hover03 and fresh-entry hover05 failures are preserved and unqualified.
+
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/owned_targeting_core04/primary/episode.json`, SHA-256 `0e4780212177260c4a14f84ab06c8c98bbd23b1366223acf34bd66afe1de1484`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/owned_targeting_core04/scout/episode.json`, SHA-256 `a6ecf8b610867b572e0f4ec8b880e67eae4a7a45e19052c32a78b97a99e7ea26`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/owned_targeting_core04/cohort.json`, SHA-256 `ddf39caad06f9bb70966b0aebb65b223c21375329092b726b8fc50f3964cba01`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/owned_targeting_core04/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/core_visual_acceptance_review.json`, SHA-256 `0de2dc4e23587cae7f21111938de00f6f29b49c89b2258e9a29e403e29f705d3`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/hover05_failure_review.json`, SHA-256 `2e230ab26b2948689554d888223fe43e9de93312b4de4b4053e4935eb1659cc1`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/observer_overflow_review.json`, SHA-256 `285205af5858b4b9e3745e27c54b03475938c738662f43e0303cba4eb85c3e2f`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/recovery_visual_review.json`, SHA-256 `1fc6c9f48929c67748b3eec985de9d5eeffbe5cb33d9ce5356b3e4959b9a5fbe`.
+- [442_interactions_20261004_60.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc), member `evidence/client_interactions_20261004_ui60/resource_review.json`, SHA-256 `9fc9541a406e7d88de197f8f931841c020459b3b5eb0b76762711509b2232d35`.

@@ -6402,7 +6402,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.tab_enemy",
@@ -6439,7 +6440,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.target_self",
@@ -6448,7 +6450,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.party_target",
@@ -6457,7 +6460,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.raid_target",
@@ -6484,7 +6488,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.clear_focus",
@@ -6493,7 +6498,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.target_target",
@@ -6511,7 +6517,8 @@
       "fixture": "owned_targets",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_party_targeting_focus"
     },
     {
       "id": "targeting.mouseover",
@@ -11825,8 +11832,69 @@
           "sha256": "d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24"
         }
       ]
+    },
+    {
+      "id": "owned_party_targeting_focus",
+      "operations": [
+        "targeting.target_self",
+        "targeting.clear_target",
+        "targeting.party_target",
+        "targeting.click_target",
+        "targeting.target_last",
+        "targeting.focus",
+        "targeting.clear_focus"
+      ],
+      "scope": "Both owned idle human warriors use stock F1/F2 bindings, party-frame click, clear/last-target slash commands and local focus commands. Native selection GUID fields and exact requests prove five target changes per actor; public GUIDs and rendered frames agree. Focus frames visibly appear and clear while native selection stays unchanged. All 94 qualifying checks, 20 complete character restoration checks, party/position/map/orientation restoration and four temporary teleport-row removals pass.",
+      "limits": "Owned party at levels 85/1 only. Focus qualifies client-local UI only. Observer pixels partly cover upper target names; exact identity uses public/native GUIDs. Combat, enemy/raid target categories and remaining targeting controls remain open. Original preflight, observer overflow, hover03 and fresh-entry hover05 failures are preserved and unqualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/owned_targeting_core04/primary/episode.json",
+          "sha256": "0e4780212177260c4a14f84ab06c8c98bbd23b1366223acf34bd66afe1de1484"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/owned_targeting_core04/scout/episode.json",
+          "sha256": "a6ecf8b610867b572e0f4ec8b880e67eae4a7a45e19052c32a78b97a99e7ea26"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/owned_targeting_core04/cohort.json",
+          "sha256": "ddf39caad06f9bb70966b0aebb65b223c21375329092b726b8fc50f3964cba01"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/owned_targeting_core04/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/core_visual_acceptance_review.json",
+          "sha256": "0de2dc4e23587cae7f21111938de00f6f29b49c89b2258e9a29e403e29f705d3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/hover05_failure_review.json",
+          "sha256": "2e230ab26b2948689554d888223fe43e9de93312b4de4b4053e4935eb1659cc1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/observer_overflow_review.json",
+          "sha256": "285205af5858b4b9e3745e27c54b03475938c738662f43e0303cba4eb85c3e2f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/recovery_visual_review.json",
+          "sha256": "1fc6c9f48929c67748b3eec985de9d5eeffbe5cb33d9ce5356b3e4959b9a5fbe"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_60.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui60/resource_review.json",
+          "sha256": "9fc9541a406e7d88de197f8f931841c020459b3b5eb0b76762711509b2232d35"
+        }
+      ]
     }
   ],
-  "qualified_operations": 321,
+  "qualified_operations": 328,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
