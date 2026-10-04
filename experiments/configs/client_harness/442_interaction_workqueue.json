@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "317/916 reviewed scoped operations. UI55 ground05 passes12 observed ground movement cases, native/public/peer agreement, release-to-stop and full two-character restoration. Earlier setup/observer/cleanup failures retained. DVC55 remotely synchronized and archive verified. Next: native sheath forwarding and settled weapon rendering, then remaining operation contracts.",
+  "current": "317/916 reviewed scoped operations. UI56 forwards strict sheath requests and all81 selected checks pass, but rendered weapons remain on the back; no new qualification. Primary three-state cycle disproves the adapter two-state assumption. Both fixtures fully restore. Next: corrected sheath cycles with peer visual evidence, then remaining contracts.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -145,7 +145,8 @@
     "ui42/character_spell_after_01: whole pass, three reviewed stock phases, two attributable native sparse updates and complete native/display restoration; equipment reads22 with zero observation inputs; await DVC43 remote/archive review",
     "ui42/DVC43:47 selected JSON and399 attributed PNG verified; whole spell/defense proof augments existing character.stats only, unique264/916 unchanged. Interrupted checkpoint ended143 after DVC add; original archive fully reverified, pushed, cloud verified and receipt resumed without rerunning gameplay.",
     "ui43/primary+scout_spellbook_navigation_02: both whole trials pass with16 reviewed stock phases and complete original resources/layout; six intended new operations pending DVC44. Initial SQL-only oracle failures retained and classified from native default-spell login packets.",
-    "ui43/DVC44:11 selected JSON/167 attributed PNG verified; six stock spellbook operations qualified from both whole navigation02 trials and16 visually reviewed phases.270/916."
+    "ui43/DVC44:11 selected JSON/167 attributed PNG verified; six stock spellbook operations qualified from both whole navigation02 trials and16 visually reviewed phases.270/916.",
+    "ui56/sheath01: native/public sheath changes and full restoration; rendered draw/sheath unqualified, primary ranged-cycle readiness failure retained"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -168,6 +169,7 @@
     "Whole geared melee DPS, crit/ranged and supported haste/ratings/expertise/mastery plus public dodge/parry now have complete native/public/rendered trial evidence through DVC42. Item-level0/0, spell-haste sparse updates, rendered spell/defense rows and unsampled variants remain open.",
     "World Show Helm/Cloak repaired at the Classic extended visibility fields and one-byte boolean boundary. Source-bound original helmet restorations pass; fresh whole geared rendering and both cloak directions pass, qualified through DVC39. Earlier duplicate-flag tests, skipped/failed collection invocations, semantic mismatches, 0x80 restore failure and missing-search cleanup are retained.",
     "Character-selection0xc00 wire repair and paired helmet rendering pass through normal logout/reentry; rear selection cloak rendering, other races/customization and unrelated login flags remain open; paired helmet persistence is qualified through DVC40.",
-    "ui42/character_spell_bridge_deploy_01: both reviewed ordinary Reconnect attempts left disconnect dialog visible; input-only completion is not authentication/world-entry acceptance. Fresh owned launcher/realm/character/world entries pass separately; cached reconnect remains unqualified."
+    "ui42/character_spell_bridge_deploy_01: both reviewed ordinary Reconnect attempts left disconnect dialog visible; input-only completion is not authentication/world-entry acceptance. Fresh owned launcher/realm/character/world entries pass separately; cached reconnect remains unqualified.",
+    "UI56 weapons stay visually on the back in reviewed sheath states despite native/public agreement; primary requires melee/ranged/unarmed cycle handling."
   ]
 }
