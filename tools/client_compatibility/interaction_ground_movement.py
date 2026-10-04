@@ -79,7 +79,16 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
     before=position(t.fixture['guid']);since=time.time();key=binding_key(t.ground_bar['keys'][command][0])
     def outcome(b,a,selected):
         time.sleep(3);after=position(t.fixture['guid'])
-        public,frame=t.observe('ground_'+op+'_settled');bar=detail(t,'ground_'+op+'_bar')
+        deadline=time.monotonic()+12;samples=[]
+        while True:
+            public,frame=t.observe('ground_'+op+'_settled')
+            agrees=(math.dist(after[:2],public['world_position'][:2])<.2 and
+                abs(angle(after[3],frame['movement']['facing_radians']))<.05)
+            samples.append({'frame':frame,'position':public['world_position'],
+                'agrees':agrees,'input_replayed':False})
+            if agrees or time.monotonic()>deadline:break
+            time.sleep(.2)
+        bar=detail(t,'ground_'+op+'_bar')
         with actor(peer.fixture['actor']):
             other,other_frame=peer.observe('peer_'+t.fixture['actor']+'_'+op)
         seen=other.get('target',{}).get('position',[])
@@ -111,6 +120,7 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
             'oracle':{'checks':checks,'native_before':before,'native_after':after,'projection':projection,
                 'facing_change':change,'public_frame':frame,'public_position':public['world_position'],
                 'public_position_basis':'UnitPosition x/y, height/map fields retained without reinterpretation',
+                'public_settling':samples,
                 'peer_frame':other_frame,'peer_position':seen,'request_pairs':pair,'peer_packets':broadcast}}
     require(t.step('movement.'+op,'Exercise the installed ground movement binding with native and peer agreement.',
         {'move':{'kind':'key','value':key,'hold':1.2 if not op.startswith('turn_') else .6,
