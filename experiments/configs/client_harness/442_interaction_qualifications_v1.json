@@ -2504,6 +2504,56 @@
           "archived_receipt_digest_verified": true
         }
       ]
+    },
+    {
+      "id": "stock_spellbook_navigation",
+      "operations": [
+        "spellbook.general_tab",
+        "spellbook.class_tab",
+        "spellbook.next_page",
+        "spellbook.previous_page",
+        "spellbook.spell_tooltip",
+        "spellbook.passive_tooltip"
+      ],
+      "scope": "Both owned human warriors (levels85 and1) navigate General pages1->2->1 and the first Arms/Fury/Protection pages through ordinary stock controls. Rendered names and public slots agree; learned rows belong to the exact native login known-spell packet, including default spells. Active and passive tooltips show the native-known identity. Sixteen exact phase frames are reviewed. Full inventory, money, persisted spells and original book category/pages restore; the two private HDMI-1 sessions overlap by101.7 seconds and all spellbook observations send no input.",
+      "limits": "Sampled warrior pages and two tooltip variants only. Other classes, pet/profession tabs, unsampled pages/ranks, drag/cast/learn/unlearn and future guild-perk trainer labels remain open. Initial SQL-only oracle failures remain archived and unqualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui43/primary_spellbook_navigation_02/episode.json",
+          "sha256": "3f2520ecdf2bb811c3e4070ef4c2594e4cdbe074aee4f65c6b8baa5e00f18f5d",
+          "cases": {
+            "spellbook.general_tab": "spellbook_navigation_pass",
+            "spellbook.next_page": "spellbook_navigation_pass",
+            "spellbook.previous_page": "spellbook_navigation_pass",
+            "spellbook.spell_tooltip": "spellbook_tooltip_pass",
+            "spellbook.passive_tooltip": "spellbook_tooltip_pass",
+            "spellbook.class_tab.2": "spellbook_navigation_pass",
+            "spellbook.class_tab.3": "spellbook_navigation_pass",
+            "spellbook.class_tab.4": "spellbook_navigation_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui43/scout_spellbook_navigation_02/episode.json",
+          "sha256": "8e5db928c77186746e5b96504c3d8b2bfc6e4cdb71c46670e6c7da266a532293",
+          "cases": {
+            "spellbook.general_tab": "spellbook_navigation_pass",
+            "spellbook.next_page": "spellbook_navigation_pass",
+            "spellbook.previous_page": "spellbook_navigation_pass",
+            "spellbook.spell_tooltip": "spellbook_tooltip_pass",
+            "spellbook.passive_tooltip": "spellbook_tooltip_pass",
+            "spellbook.class_tab.2": "spellbook_navigation_pass",
+            "spellbook.class_tab.3": "spellbook_navigation_pass",
+            "spellbook.class_tab.4": "spellbook_navigation_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui43/spellbook_navigation_after_review.json",
+          "sha256": "dc8c2a18a6abea4e30f85cad139d8e04212fd09d3e2f4efaa992469bd4eeb661"
+        }
+      ]
     }
   ]
 }

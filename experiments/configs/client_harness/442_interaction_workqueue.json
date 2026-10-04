@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "264/916 reviewed scoped operations. UI42 DVC43 remotely verified and pruned:47 selected JSON/399 attributed PNG,433 local PNG removed, exact archive/cache evicted. Successful spell/defense proof augments existing character.stats only; candidate904 full/71 sanitizer checks pass, native worldserver unchanged. UI43 observer61 passive spellbook pages/tooltips on both isolated HDMI-1 clients. Complete fresh primary/scout navigation trials02 pass General1->2->1, active/passive tooltips and Arms/Fury/Protection first pages, native login/public/rendered identities and full inventory/money/persisted-spell/layout restoration;16 reviewed frames and101.7s concurrent overlap. Initial SQL-only default-spell oracle failures retained/unqualified. Six new operations await DVC44 remote/archive review; next professions tab and ordinary spell actions.",
+  "current": "270/916 reviewed scoped operations. UI43 DVC44 remotely synchronized and archive verified:11 selected JSON/167 attributed PNG. Two concurrent isolated HDMI-1 clients pass six stock spellbook operations, complete native resources/spells/layout restored. SQL-only default-spell oracle failures retained and unqualified. Native worldserver unchanged. Next: profession tab rendering/ranks and ordinary spellbook actions, then all remaining queued UI families.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -144,7 +144,8 @@
     "ui41/DVC42:26 selected receipts and223 attributed PNGs integrity verified; complete ratings trial augments existing character.stats,264/916.",
     "ui42/character_spell_after_01: whole pass, three reviewed stock phases, two attributable native sparse updates and complete native/display restoration; equipment reads22 with zero observation inputs; await DVC43 remote/archive review",
     "ui42/DVC43:47 selected JSON and399 attributed PNG verified; whole spell/defense proof augments existing character.stats only, unique264/916 unchanged. Interrupted checkpoint ended143 after DVC add; original archive fully reverified, pushed, cloud verified and receipt resumed without rerunning gameplay.",
-    "ui43/primary+scout_spellbook_navigation_02: both whole trials pass with16 reviewed stock phases and complete original resources/layout; six intended new operations pending DVC44. Initial SQL-only oracle failures retained and classified from native default-spell login packets."
+    "ui43/primary+scout_spellbook_navigation_02: both whole trials pass with16 reviewed stock phases and complete original resources/layout; six intended new operations pending DVC44. Initial SQL-only oracle failures retained and classified from native default-spell login packets.",
+    "ui43/DVC44:11 selected JSON/167 attributed PNG verified; six stock spellbook operations qualified from both whole navigation02 trials and16 visually reviewed phases.270/916."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

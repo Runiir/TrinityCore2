@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 264 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 270 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -89,14 +89,14 @@ Fixture: `class_variants`.
 
 - [x] `spellbook.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `spellbook.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `spellbook.general_tab`
-- [ ] `spellbook.class_tab`
+- [x] `spellbook.general_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
+- [x] `spellbook.class_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [ ] `spellbook.pet_tab`
 - [ ] `spellbook.professions_tab`
-- [ ] `spellbook.next_page`
-- [ ] `spellbook.previous_page`
-- [ ] `spellbook.spell_tooltip`
-- [ ] `spellbook.passive_tooltip`
+- [x] `spellbook.next_page` (qualified variant; [evidence](#stock_spellbook_navigation))
+- [x] `spellbook.previous_page` (qualified variant; [evidence](#stock_spellbook_navigation))
+- [x] `spellbook.spell_tooltip` (qualified variant; [evidence](#stock_spellbook_navigation))
+- [x] `spellbook.passive_tooltip` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [ ] `spellbook.drag_to_bar`
 - [ ] `spellbook.cast_spell`
 - [ ] `spellbook.learn_spell`
@@ -1988,3 +1988,15 @@ Remaining limits: One human warrior, two two-hand swords, empty offhand and orig
 - [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/item_comparison_01/episode.json`, SHA-256 `4bfa967fc815afb8811aa5270b9cd93f92a5dfdf9c2dd6510dd2a760bc83cacb`.
   Checked cases: `character.compare_items` (stock_item_comparison_pass).
 - [442_interactions_20261003_40.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_40.tar.gz.dvc), member `evidence/client_interactions_20261003_ui39/item_comparison_review.json`, SHA-256 `8011e47e02f64f675301ffe7b304cb595e0447d67d6e26206440a45358991f95`.
+
+### stock_spellbook_navigation
+
+Both owned human warriors (levels85 and1) navigate General pages1->2->1 and the first Arms/Fury/Protection pages through ordinary stock controls. Rendered names and public slots agree; learned rows belong to the exact native login known-spell packet, including default spells. Active and passive tooltips show the native-known identity. Sixteen exact phase frames are reviewed. Full inventory, money, persisted spells and original book category/pages restore; the two private HDMI-1 sessions overlap by101.7 seconds and all spellbook observations send no input.
+
+Remaining limits: Sampled warrior pages and two tooltip variants only. Other classes, pet/profession tabs, unsampled pages/ranks, drag/cast/learn/unlearn and future guild-perk trainer labels remain open. Initial SQL-only oracle failures remain archived and unqualified.
+
+- [442_interactions_20261004_44.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc), member `evidence/client_interactions_20261004_ui43/primary_spellbook_navigation_02/episode.json`, SHA-256 `3f2520ecdf2bb811c3e4070ef4c2594e4cdbe074aee4f65c6b8baa5e00f18f5d`.
+  Checked cases: `spellbook.general_tab` (spellbook_navigation_pass), `spellbook.next_page` (spellbook_navigation_pass), `spellbook.previous_page` (spellbook_navigation_pass), `spellbook.spell_tooltip` (spellbook_tooltip_pass), `spellbook.passive_tooltip` (spellbook_tooltip_pass), `spellbook.class_tab.2` (spellbook_navigation_pass), `spellbook.class_tab.3` (spellbook_navigation_pass), `spellbook.class_tab.4` (spellbook_navigation_pass).
+- [442_interactions_20261004_44.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc), member `evidence/client_interactions_20261004_ui43/scout_spellbook_navigation_02/episode.json`, SHA-256 `8e5db928c77186746e5b96504c3d8b2bfc6e4cdb71c46670e6c7da266a532293`.
+  Checked cases: `spellbook.general_tab` (spellbook_navigation_pass), `spellbook.next_page` (spellbook_navigation_pass), `spellbook.previous_page` (spellbook_navigation_pass), `spellbook.spell_tooltip` (spellbook_tooltip_pass), `spellbook.passive_tooltip` (spellbook_tooltip_pass), `spellbook.class_tab.2` (spellbook_navigation_pass), `spellbook.class_tab.3` (spellbook_navigation_pass), `spellbook.class_tab.4` (spellbook_navigation_pass).
+- [442_interactions_20261004_44.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_44.tar.gz.dvc), member `evidence/client_interactions_20261004_ui43/spellbook_navigation_after_review.json`, SHA-256 `dc8c2a18a6abea4e30f85cad139d8e04212fd09d3e2f4efaa992469bd4eeb661`.

@@ -38,3 +38,8 @@ Professions/pet tabs, spell drag/cast/learn/unlearn, rank resolution, other
 classes and unsampled pages remain open. Unlearned guild perk trainer labels
 and future spell levels are visible but are not qualified by this navigation
 trial. Broader game coverage remains in the exhaustive checklist.
+
+DVC44 is now remotely synchronized. Its archive review verifies11 selected JSON
+receipts and167 attributed PNGs. The two complete navigation02 episodes and
+their16 visually reviewed phase frames qualify exactly six new operations;
+the checklist is270/916. Initial failed oracle episodes remain unqualified.
