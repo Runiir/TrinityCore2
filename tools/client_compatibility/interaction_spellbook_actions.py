@@ -60,9 +60,18 @@ def restore_bar(t,session,slot,destination,baseline):
         writes=action_writes(session,since,slot-1,0)
         if not writes:raise RuntimeError('native action-slot clear packet is absent')
         t.receipt['native_action_clear']=writes
-        # Dropping into the world normally clears the spell cursor. Cancel only
-        # an observed pending cursor; an unconditional Escape closes the book.
-        if state.get('cursor_info'):t.execute({'kind':'key','value':'Escape'})
+    # Right-click cancels a carried action icon. Escape closes the stock book
+    # while leaving this cursor intact in build60895.
+    if state.get('cursor_info'):
+        t.receipt['cursor_cancel_input']={'kind':'click','value':[900,500],'button':3,'before_cursor':state['cursor_info']};t.persist()
+        t.execute({'kind':'click','value':[900,500],'button':3})
+        deadline=time.monotonic()+16
+        while True:
+            state,frame=t.observe('cursor_cancel_wait')
+            if not state.get('cursor_info'):break
+            if time.monotonic()>deadline:raise RuntimeError('carried spell cursor did not cancel')
+            time.sleep(.2)
+        t.receipt['cursor_cancel_frame']=frame;t.persist()
     lab.server_command('saveall');time.sleep(.5)
     t.receipt['native_actions_after']=saved_actions(t.fixture['guid'])
     t.receipt['native_actions_restored']=t.receipt['native_actions_after']==baseline;t.persist()

@@ -43,8 +43,9 @@ def test_pending_glyph_cancel_is_progress_even_when_the_panel_stays_open(monkeyp
 def test_pending_spell_cursor_is_cancelled_when_all_panels_are_closed(monkeypatch):
     pending=state(1,False);pending['cursor_info']=['spell',6603]
     t,events=trial([pending,state(2,False),state(3,False)],monkeypatch)
+    t.io.click=lambda x,y,**kw:events.append(('click',x,y,kw['button']))
     t.clean_panels()
-    assert events==['Escape']
+    assert events==[('click',900,500,3)]
 
 
 def test_empty_cursor_and_closed_panels_send_no_cleanup_input(monkeypatch):

@@ -263,9 +263,14 @@ class Trial:
                 time.sleep(.2);state,frame=self.observe('cleanup_empty_confirm')
                 if signature(state)==previous:return
                 continue
-            row={'time':time.time(),'input':'Escape','source':'code_fixture_cleanup',
+            cursor=bool(state.get('cursor_info'))
+            row={'time':time.time(),'input':'RightClick' if cursor else 'Escape','source':'code_fixture_cleanup',
                 'before_panels':state.get('panels'),'before_bags':state.get('bags'),'settling':[]}
-            self.receipt['cleanup'].append(row);self.persist();self.io.key('Escape')
+            self.receipt['cleanup'].append(row);self.persist()
+            if cursor:
+                row.update(point=[900,500],before_cursor=state['cursor_info'])
+                self.io.click(900,500,button=3)
+            else:self.io.key('Escape')
             deadline=time.monotonic()+12
             while True:
                 time.sleep(.2);state,frame=self.observe('cleanup_settled_'+str(i))
