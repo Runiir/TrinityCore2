@@ -2597,7 +2597,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_achievement_selection_tracking"
     },
     {
       "id": "achievements.achievement",
@@ -2606,7 +2607,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_achievement_selection_tracking"
     },
     {
       "id": "achievements.search",
@@ -2633,7 +2635,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_achievement_selection_tracking"
     },
     {
       "id": "achievements.untrack",
@@ -2642,7 +2645,8 @@
       "fixture": "achievement_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_achievement_selection_tracking"
     },
     {
       "id": "achievements.compare",
@@ -8222,7 +8226,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_dressup_sword_preview"
     },
     {
       "id": "ui_misc.dressup_item",
@@ -8231,7 +8236,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_dressup_sword_preview"
     },
     {
       "id": "ui_misc.dressup_rotate",
@@ -8240,7 +8246,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_dressup_sword_preview"
     },
     {
       "id": "ui_misc.dressup_close",
@@ -8249,7 +8256,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_dressup_sword_preview"
     },
     {
       "id": "ui_misc.item_text_open",
@@ -11245,8 +11253,68 @@
           "sha256": "0631938abb0051f077b138a09cedfd832380d72ffd8aefd6f040986b7b8966e9"
         }
       ]
+    },
+    {
+      "id": "stock_dressup_sword_preview",
+      "operations": [
+        "ui_misc.dressup_open",
+        "ui_misc.dressup_item",
+        "ui_misc.dressup_rotate",
+        "ui_misc.dressup_close"
+      ],
+      "scope": "On the geared primary human warrior, ordinary Ctrl-click previews equipped Gurthalak78478 and backpack Worn Greatsword49778 in the stock dressing room. Geometry-ready frames show the exact sword change. Stock right and left arrows change and restore public facing; Reset renders the original appearance again; Close removes the window. Native equipment, inventory, money, currencies, archaeology, talents, glyphs and saved spells remain unchanged.",
+      "limits": "Two swords on one idle warrior only. Other item types, model frames, races and classes remain open. Primary dressup01/02 failures remain unqualified; dressup03 is also unqualified because visual review rejected its blank reset frame despite machine completion. Only dressup04 receives qualification.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui47/primary_dressup_04/episode.json",
+          "sha256": "02f68849f2cdfa32978b4b3ecdd7d02b1ba0b236f56e85df83e1f439897e7391",
+          "cases": {
+            "ui_misc.dressup_open": "stock_dressup_preview_pass",
+            "ui_misc.dressup_item": "stock_dressup_preview_pass",
+            "ui_misc.dressup_rotate.right": "stock_dressup_rotation_pass",
+            "ui_misc.dressup_rotate.left": "stock_dressup_rotation_pass",
+            "dressup.reset": "stock_dressup_reset_pass",
+            "ui_misc.dressup_close": "stock_dressup_close_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui47/dressup_visual_review.json",
+          "sha256": "6013c53929f042b3669d534806f067d1e198e68728d52e49a4915d2fb4cf2c27"
+        }
+      ]
+    },
+    {
+      "id": "stock_achievement_selection_tracking",
+      "operations": [
+        "achievements.category",
+        "achievements.achievement",
+        "achievements.track",
+        "achievements.untrack"
+      ],
+      "scope": "On the owned level1 scout, select stock General category92 and compare six visible achievement names, point values and earned membership against the native Achievement DBC and character tables. Select unearned Level10 achievement6, check Track and observe its checked box, public tracked ID and Objectives row; uncheck it and observe their removal. Collapse selection, restore the original Summary layout, and close. Native earned/progress tables, inventory, money and saved spells remain unchanged.",
+      "limits": "Six General rows and one unearned tracked achievement on one scout only. Summary earned-row contents, search, achievement tooltips, comparison, progress mutation, earned notifications and reconnect persistence remain open. Earlier scout01 restoration failure and its cleanup-only episode do not qualify operations.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui47/scout_achievements_02/episode.json",
+          "sha256": "73f5e06267ac701b6bfe2e8c007b4f0811ea851014353f29649c5de188d61f7d",
+          "cases": {
+            "achievements.category": "stock_achievement_category_pass",
+            "achievements.achievement": "stock_achievement_selection_pass",
+            "achievements.track": "stock_achievement_tracking_pass",
+            "achievements.untrack": "stock_achievement_tracking_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui47/achievement_visual_review.json",
+          "sha256": "c794c3d66d74d6dd4192eb66dd6a293632fe508318645e8cb99e894d9066cf95"
+        }
+      ]
     }
   ],
-  "qualified_operations": 281,
+  "qualified_operations": 289,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

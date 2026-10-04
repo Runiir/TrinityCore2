@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 281 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 289 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -348,12 +348,12 @@ Fixture: `achievement_variants`.
 
 - [x] `achievements.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `achievements.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `achievements.category`
-- [ ] `achievements.achievement`
+- [x] `achievements.category` (qualified variant; [evidence](#stock_achievement_selection_tracking))
+- [x] `achievements.achievement` (qualified variant; [evidence](#stock_achievement_selection_tracking))
 - [ ] `achievements.search`
 - [ ] `achievements.tooltip`
-- [ ] `achievements.track`
-- [ ] `achievements.untrack`
+- [x] `achievements.track` (qualified variant; [evidence](#stock_achievement_selection_tracking))
+- [x] `achievements.untrack` (qualified variant; [evidence](#stock_achievement_selection_tracking))
 - [ ] `achievements.compare`
 - [ ] `achievements.criteria_progress`
 - [ ] `achievements.earned_notification`
@@ -1105,10 +1105,10 @@ Fixture: `object_variants`.
 
 Fixture: `in_world`.
 
-- [ ] `ui_misc.dressup_open`
-- [ ] `ui_misc.dressup_item`
-- [ ] `ui_misc.dressup_rotate`
-- [ ] `ui_misc.dressup_close`
+- [x] `ui_misc.dressup_open` (qualified variant; [evidence](#stock_dressup_sword_preview))
+- [x] `ui_misc.dressup_item` (qualified variant; [evidence](#stock_dressup_sword_preview))
+- [x] `ui_misc.dressup_rotate` (qualified variant; [evidence](#stock_dressup_sword_preview))
+- [x] `ui_misc.dressup_close` (qualified variant; [evidence](#stock_dressup_sword_preview))
 - [ ] `ui_misc.item_text_open`
 - [ ] `ui_misc.item_text_page`
 - [ ] `ui_misc.item_text_close`
@@ -2042,3 +2042,23 @@ Remaining limits: These stock bindings on two idle fixtures only. Other graphics
 - [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/primary_display_01/episode.json`, SHA-256 `bdb197bfa1f855bd12c972a58520f4c390ebc0dc822ee2b5a39304b1fd5192c0`.
 - [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/scout_display_01/episode.json`, SHA-256 `633689341f841dcd6559aac671573f4e33ad92eef86a0073afb221b7f8d928bd`.
 - [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/display_visual_review.json`, SHA-256 `0631938abb0051f077b138a09cedfd832380d72ffd8aefd6f040986b7b8966e9`.
+
+### stock_dressup_sword_preview
+
+On the geared primary human warrior, ordinary Ctrl-click previews equipped Gurthalak78478 and backpack Worn Greatsword49778 in the stock dressing room. Geometry-ready frames show the exact sword change. Stock right and left arrows change and restore public facing; Reset renders the original appearance again; Close removes the window. Native equipment, inventory, money, currencies, archaeology, talents, glyphs and saved spells remain unchanged.
+
+Remaining limits: Two swords on one idle warrior only. Other item types, model frames, races and classes remain open. Primary dressup01/02 failures remain unqualified; dressup03 is also unqualified because visual review rejected its blank reset frame despite machine completion. Only dressup04 receives qualification.
+
+- [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/primary_dressup_04/episode.json`, SHA-256 `02f68849f2cdfa32978b4b3ecdd7d02b1ba0b236f56e85df83e1f439897e7391`.
+  Checked cases: `ui_misc.dressup_open` (stock_dressup_preview_pass), `ui_misc.dressup_item` (stock_dressup_preview_pass), `ui_misc.dressup_rotate.right` (stock_dressup_rotation_pass), `ui_misc.dressup_rotate.left` (stock_dressup_rotation_pass), `dressup.reset` (stock_dressup_reset_pass), `ui_misc.dressup_close` (stock_dressup_close_pass).
+- [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/dressup_visual_review.json`, SHA-256 `6013c53929f042b3669d534806f067d1e198e68728d52e49a4915d2fb4cf2c27`.
+
+### stock_achievement_selection_tracking
+
+On the owned level1 scout, select stock General category92 and compare six visible achievement names, point values and earned membership against the native Achievement DBC and character tables. Select unearned Level10 achievement6, check Track and observe its checked box, public tracked ID and Objectives row; uncheck it and observe their removal. Collapse selection, restore the original Summary layout, and close. Native earned/progress tables, inventory, money and saved spells remain unchanged.
+
+Remaining limits: Six General rows and one unearned tracked achievement on one scout only. Summary earned-row contents, search, achievement tooltips, comparison, progress mutation, earned notifications and reconnect persistence remain open. Earlier scout01 restoration failure and its cleanup-only episode do not qualify operations.
+
+- [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/scout_achievements_02/episode.json`, SHA-256 `73f5e06267ac701b6bfe2e8c007b4f0811ea851014353f29649c5de188d61f7d`.
+  Checked cases: `achievements.category` (stock_achievement_category_pass), `achievements.achievement` (stock_achievement_selection_pass), `achievements.track` (stock_achievement_tracking_pass), `achievements.untrack` (stock_achievement_tracking_pass).
+- [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/achievement_visual_review.json`, SHA-256 `c794c3d66d74d6dd4192eb66dd6a293632fe508318645e8cb99e894d9066cf95`.
