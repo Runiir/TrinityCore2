@@ -128,7 +128,7 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
         diagnostic_action='move'),'ground_movement_pass')
 
 
-def suite(out):
+def suite(out,work=None,separated=False):
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     report={'schema':'client442_ground_movement_v1','started_at':time.time(),'completed':False,'failure':None}
     trials={};oracles={};baselines={};sessions={};fixture=None
@@ -163,7 +163,8 @@ def suite(out):
                     native_group() and native_group()['members']==[1,2] else 'client_or_protocol_failure'},
                 await_state=lambda s:s['group']['members']==2),
                 'fixture_party_pass')
-        fixture=NearbyFixture(out,trials['primary'].fixture,trials['scout'].fixture,open_ground=True);fixture.prepare()
+        fixture=NearbyFixture(out,trials['primary'].fixture,trials['scout'].fixture,
+            open_ground=True,separated=separated);fixture.prepare()
         for name,peer_name in [('primary','scout'),('scout','primary')]:
             with actor(peer_name):
                 trials[peer_name].execute({'kind':'chat','value':'/targetexact '+trials[name].fixture['character_name']})
@@ -176,8 +177,10 @@ def suite(out):
                 if pose(oracles[name])['stand']==1:
                     t.execute({'kind':'key','value':binding_key(t.ground_bar['keys']['SITORSTAND'][0]),'hold':.4})
                 time.sleep(3)
-                for op,command,start,stop,sign in OPERATIONS:
-                    move(t,trials[peer_name],sessions[name],sessions[peer_name],op,command,start,stop,sign)
+                if work:work(t,trials[peer_name],oracles[name],sessions[name],sessions[peer_name])
+                else:
+                    for op,command,start,stop,sign in OPERATIONS:
+                        move(t,trials[peer_name],sessions[name],sessions[peer_name],op,command,start,stop,sign)
         report['completed']=True
     except Exception as error:report['failure']=f'{type(error).__name__}: {error}'
     finally:

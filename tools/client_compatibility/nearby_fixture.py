@@ -4,11 +4,13 @@ from . import lab_runtime as lab
 
 
 class NearbyFixture:
-    def __init__(self,out,primary,peer,open_ground=False):
+    def __init__(self,out,primary,peer,open_ground=False,separated=False):
         if (primary['guid'],peer['guid'])!=(1,2):raise ValueError('requires the registered primary and scout')
         self.out,self.primary,self.peer=out,primary,peer
         self.rows=[];self.before=None
         self.open_ground=open_ground
+        if separated and not open_ground:raise ValueError('separated peer viewing requires the restored open-ground fixture')
+        self.separated=separated
 
     def prepare(self):
         lab.server_command('saveall');time.sleep(1)
@@ -24,6 +26,8 @@ class NearbyFixture:
             if self.open_ground:
                 names.append('TC442NearbyScoutRestore');sources.append(rows[1][3:])
                 sources[1]=(-8921.09,-119.135,82.195,0,0)
+            if self.separated:
+                names.append('TC442NearbyScoutPeer');sources.append((-8917.09,-119.135,82.195,3.14159265,0))
             cur.execute('SELECT id FROM client442_world.game_tele WHERE name IN ('+','.join(['%s']*len(names))+')',names)
             if cur.fetchone():raise RuntimeError('an earlier nearby fixture needs cleanup')
             cur.execute('SELECT MAX(id) FROM client442_world.game_tele');start=cur.fetchone()[0]+1
@@ -38,7 +42,8 @@ class NearbyFixture:
         lab.server_command('reload game_tele');time.sleep(.5)
         lab.server_command('tele name Harnessone TC442NearbyPeer');time.sleep(4)
         if self.open_ground:
-            lab.server_command('tele name Harnesstwo TC442NearbyPeer');time.sleep(4)
+            scout='TC442NearbyScoutPeer' if self.separated else 'TC442NearbyPeer'
+            lab.server_command('tele name Harnesstwo '+scout);time.sleep(4)
 
     def restore(self):
         if not self.rows:return

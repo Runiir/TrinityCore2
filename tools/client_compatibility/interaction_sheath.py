@@ -16,6 +16,12 @@ from .observation.inventory import Inventory
 from .observation.journal import entries
 
 
+def cycle(original,ranged):
+    states=3 if ranged else 2
+    if original not in range(states):raise ValueError('sheath state does not match the owned weapon fixture')
+    return [(original+i)%states for i in range(1,states+1)]
+
+
 def select(t,oracle,wanted,label):
     since=time.time()
     def outcome(b,a,selected):
@@ -47,7 +53,9 @@ def suite(t):
     t.clean_panels();state,_=t.observe('sheath_fixture');t.bar_baseline=detail(t,'sheath_layout')
     t.pose_baseline=pose(oracle);t.position_baseline=state['world_position']
     keys=t.bar_baseline['keys'].get('TOGGLESHEATH')
-    if (state.get('observer_version',0)<74 or not keys or t.pose_baseline['sheath'] not in [0,1] or
+    ranged=bool(oracle.equipment(18)['id'])
+    sequence=cycle(t.pose_baseline['sheath'],ranged)
+    if (state.get('observer_version',0)<74 or not keys or
         t.pose_baseline['stand'] not in [0,1] or t.bar_baseline['pose'].get('speed')!=0 or
         t.bar_baseline['pose'].get('sheath')!=t.pose_baseline['sheath']+1):
         raise RuntimeError('requires an idle owned normal weapon sheath fixture and observed binding')
@@ -56,14 +64,16 @@ def suite(t):
     t.receipt.update(native_session=t.session,baseline=original,native_state_baseline=stats,
         native_persisted_spells=spells,native_actions=actions,pose_baseline=t.pose_baseline,
         native_afk_baseline=original_afk,bar_baseline=t.bar_baseline,position_baseline=t.position_baseline,
-        observed_sheath_binding=keys,qualified_scope='Observed ordinary sheath binding on one idle owned warrior. Modern five-byte requests, native four-byte requests and native/public sheath states agree. Exact settled weapon frames require visual review. Original pose/AFK/main bar/position and native resources/stats/spells/actions restore. Other weapon modes, combat, races and persistence remain open.');t.persist()
+        observed_sheath_binding=keys,observed_weapon_cycle=sequence,
+        qualified_scope='Observed ordinary sheath binding on one idle owned warrior. Modern five-byte requests, native four-byte requests and native/public sheath states agree. Exact settled weapon frames require visual review. Original pose/AFK/main bar/position and native resources/stats/spells/actions restore. Other weapon modes, combat, races and persistence remain open.');t.persist()
     try:
-        select(t,oracle,1-t.pose_baseline['sheath'],'movement.sheath_toggle')
-        select(t,oracle,t.pose_baseline['sheath'],'movement.sheath_restore')
+        for wanted in sequence:select(t,oracle,wanted,'movement.sheath_state_'+str(wanted))
     finally:
         try:
             if pose(oracle)['sheath']!=t.pose_baseline['sheath']:
-                select(t,oracle,t.pose_baseline['sheath'],'movement.sheath_cleanup')
+                for wanted in cycle(pose(oracle)['sheath'],ranged):
+                    select(t,oracle,wanted,'movement.sheath_cleanup_'+str(wanted))
+                    if wanted==t.pose_baseline['sheath']:break
             if afk(oracle)!=original_afk:t.execute({'kind':'chat','value':'/afk'})
             if pose(oracle)['stand']!=t.pose_baseline['stand']:
                 t.execute({'kind':'key','value':binding_key(t.bar_baseline['keys']['SITORSTAND'][0]),'hold':.4})
