@@ -111,7 +111,7 @@ class Trial:
         lab.private_write(self.out/'episode.json',json.dumps(self.receipt,indent=2)+'\n')
 
     def observe(self,label,seconds=28):
-        if not 1<=seconds<=180:raise ValueError('observation timeout exceeds its bounded duration')
+        if not 1<=seconds<=240:raise ValueError('observation timeout exceeds its bounded duration')
         from PIL import Image
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
@@ -200,7 +200,7 @@ class Trial:
         if action['kind']=='chat':
             # Long idle background clients can exceed the ordinary state
             # budget while loading. Extend only the bounded read, never input.
-            seconds=180 if action['value']=='/reload' else 28
+            seconds=240 if action['value']=='/reload' else 28
             state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_check',seconds=seconds)
             deadline=time.monotonic()+12
             while state.get('chat_edit_open') and time.monotonic()<deadline:

@@ -32,7 +32,7 @@ def deploy(out,version,with_compatibility=False,names=('primary','scout')):
                         t.receipt['compatibility_files_after']={f.name:lab.sha256(f) for f in target.iterdir() if f.is_file()}
                         t.persist()
                     t.execute({'kind':'chat','value':'/reload'})
-                    after,frame=t.observe('reloaded',seconds=180);now=actors.session_entry(t.fixture)
+                    after,frame=t.observe('reloaded',seconds=240);now=actors.session_entry(t.fixture)
                     unchanged=all(after.get(k)==v for k,v in baseline.items())
                     if (after.get('observer_version')!=version or after.get('lua_errors') or after.get('blocked_actions')
                             or not unchanged or now['session']!=entry['session']):
