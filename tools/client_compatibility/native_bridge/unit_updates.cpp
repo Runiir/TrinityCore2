@@ -18,6 +18,8 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
         {"MinOffHandDamage",55,'f',"UNIT_FIELD_MINOFFHANDDAMAGE",true}, {"MaxOffHandDamage",56,'f',"UNIT_FIELD_MAXOFFHANDDAMAGE",true},
         {"StandState",57,'B',"UNIT_FIELD_BYTES_1"}, {"VisFlags",59,'B',"UNIT_FIELD_BYTES_1"},
         {"AnimTier",60,'B',"UNIT_FIELD_BYTES_1"},
+        {"ModCastingSpeed",66,'f',"UNIT_MOD_CAST_SPEED"},
+        {"ModSpellHaste",67,'f',"UNIT_MOD_CAST_HASTE"},
         {"ModHaste",68,'f',"PLAYER_FIELD_MOD_HASTE",true},
         {"ModRangedHaste",69,'f',"PLAYER_FIELD_MOD_RANGED_HASTE",true},
         {"ModHasteRegen",70,'f',"PLAYER_FIELD_MOD_HASTE_REGEN",true},
