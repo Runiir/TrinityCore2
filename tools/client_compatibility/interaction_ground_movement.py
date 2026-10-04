@@ -12,6 +12,8 @@ from .interaction_spellbook_recon import resources
 from .interaction_spellbook_navigation import known
 from .interaction_spellbook_actions import saved_actions
 from .interaction_macros import require
+from .interaction_operations import click_case
+from .interaction_groups import native_group
 from .nearby_fixture import NearbyFixture
 from .observation.inventory import Inventory
 from .observation.journal import entries
@@ -99,7 +101,7 @@ def suite(out):
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     report={'schema':'client442_ground_movement_v1','started_at':time.time(),'completed':False,'failure':None}
     trials={};oracles={};baselines={};sessions={};fixture=None
-    flag=lab.ROOT/'run/capture_public_movement';owns_flag=False
+    flag=lab.ROOT/'run/capture_public_movement';owns_flag=False;party_attempted=False
     try:
         if flag.exists():raise RuntimeError('another public movement capture is active')
         lab.private_write(flag,str(out)+'\n');owns_flag=True
@@ -107,8 +109,9 @@ def suite(out):
             with actor(name):
                 t=trials[name]=Trial(out/name,controller='code');t.clean_panels()
                 state,_=t.observe('ground_fixture');t.ground_bar=detail(t,'ground_layout')
-                if state['observer_version']!=75 or state['target'].get('exists') or state['follow'].get('active'):
-                    raise RuntimeError('requires observer75, no target and no follow')
+                if (state['observer_version']!=75 or state['target'].get('exists') or
+                    state['follow'].get('active') or state['group']['members'] or native_group()):
+                    raise RuntimeError('requires observer75, no target/follow and two solo fixtures')
                 if any(not t.ground_bar['keys'].get(c) for _,c,*_ in OPERATIONS):
                     raise RuntimeError('required installed ground binding missing')
                 session=sessions[name]=actors.session_entry(t.fixture)['session']
@@ -117,6 +120,20 @@ def suite(out):
                     'spells':known(t.fixture['guid']),'actions':saved_actions(t.fixture['guid']),
                     'pose':pose(oracle),'afk':afk(oracle)}
                 t.receipt['ground_baseline']=baselines[name];t.persist()
+        # UnitPosition returned no coordinates for the visible solo target in
+        # ground01. Use an ordinary temporary owned party for the peer oracle.
+        report['temporary_party']={'source':'ordinary_fixture_inputs','qualification':False}
+        with actor('primary'):
+            state,_=trials['primary'].observe('party_setup_before')
+            if '/uninvite' not in state['group_aliases'].get('SLASH_UNINVITE1',[]):
+                raise RuntimeError('ordinary party cleanup alias is not observed')
+            party_attempted=True;trials['primary'].execute({'kind':'chat','value':'/invite Harnesstwo'})
+        with actor('scout'):
+            require(click_case(trials['scout'],'fixture.party_accept','Accept the owned temporary movement fixture party.',
+                lambda c:c['name']=='StaticPopup1Button1' and c['text']=='Accept',
+                lambda b,a,s:{'status':'fixture_party_pass' if s and a['group']['members']==2 and
+                    native_group() and native_group()['members']==[1,2] else 'client_or_protocol_failure'}),
+                'fixture_party_pass')
         fixture=NearbyFixture(out,trials['primary'].fixture,trials['scout'].fixture,open_ground=True);fixture.prepare()
         for name,peer_name in [('primary','scout'),('scout','primary')]:
             with actor(peer_name):
@@ -138,6 +155,19 @@ def suite(out):
         if fixture:
             try:fixture.restore()
             except Exception as error:report.update(completed=False);report.setdefault('cleanup_failures',{})['positions']=str(error)
+        if party_attempted:
+            try:
+                with actor('primary'):
+                    group=native_group()
+                    if group and any(guid not in [1,2] for guid in group['members']):
+                        raise RuntimeError('temporary party contains an unrelated member; refusing cleanup')
+                    trials['primary'].execute({'kind':'chat','value':'/uninvite Harnesstwo'})
+                    state,frame=trials['primary'].observe('party_removed')
+                    report['temporary_party']['restoration']={'native_absent':native_group() is None,
+                        'visible_solo':state['group']['members']==0,'frame':frame}
+                    if native_group() or state['group']['members']:raise RuntimeError('temporary party did not restore solo')
+            except Exception as error:
+                report['completed']=False;report.setdefault('cleanup_failures',{})['party']=str(error)
         for name,t in trials.items():
             with actor(name):
                 try:
@@ -155,6 +185,7 @@ def suite(out):
                         'pose':pose(oracle)==baseline['pose'],'afk':afk(oracle)==baseline['afk'],
                         'main_bar':signature(bar)==signature(t.ground_bar),
                         'target_cleared':not state['target'].get('exists'),
+                        'solo_group_restored':state['group']['members']==0,
                         'idle':bar['pose'].get('speed')==0}
                     t.receipt['ground_restoration']={'checks':checks,'frame':frame}
                     if not all(checks.values()):raise RuntimeError('native/public ground fixture restoration differs')
