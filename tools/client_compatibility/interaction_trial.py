@@ -207,7 +207,7 @@ class Trial:
                 transport.append({'reason':'wait for selected command submission','frame':frame,
                     'observed_text':state.get('chat_edit_text'),'input_replayed':False})
                 time.sleep(.2)
-                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_settling')
+                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_settling',seconds=seconds)
             if state.get('chat_edit_open'):
                 if state.get('chat_edit_text','').rstrip(' ')!=action['value']:
                     raise RuntimeError('chat input differs from the selected command; refusing to submit it')
@@ -215,7 +215,7 @@ class Trial:
                     'observed_text':state['chat_edit_text'],'normalization':'ignore trailing spaces only',
                     'hold':.4,'before_frame':frame})
                 self.io.key('Return',hold=.4);time.sleep(.8)
-                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_retry')
+                state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_retry',seconds=seconds)
                 transport[-1]['after_frame']=frame
                 if state.get('chat_edit_open'):raise RuntimeError('bounded chat submission retry did not settle')
         return transport
