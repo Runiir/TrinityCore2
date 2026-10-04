@@ -27,7 +27,8 @@ function Client442ObserveActionBars()
     end
     for _,name in ipairs({'NEXTACTIONPAGE','PREVIOUSACTIONPAGE','ACTIONPAGE1','ACTIONPAGE2','ACTIONPAGE3',
         'ACTIONPAGE4','ACTIONPAGE5','ACTIONPAGE6','CAMERAZOOMIN','CAMERAZOOMOUT','NEXTVIEW','PREVVIEW',
-        'SITORSTAND','TOGGLESHEATH'}) do
+        'SITORSTAND','TOGGLESHEATH','MOVEFORWARD','MOVEBACKWARD','TURNLEFT','TURNRIGHT',
+        'STRAFELEFT','STRAFERIGHT','TOGGLEAUTORUN','TOGGLERUN','JUMP'}) do
         result.keys[name]={call(GetBindingKey,name)}
     end
     for _,name in ipairs({'MainMenuBar','MultiBarBottomLeft','MultiBarBottomRight','MultiBarLeft','MultiBarRight',
