@@ -134,7 +134,7 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
-def resume_login(out,name):
+def resume_login(out,name,attempt=1):
     """Click only the reviewed disconnect dialog's Reconnect button."""
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
@@ -144,12 +144,19 @@ def resume_login(out,name):
         lifetime=lambda row:{key:row[key] for key in ['pid','start_ticks']}
         if lifetime(identity('client'))!=lifetime(previous['runtime']['client']):
             raise RuntimeError('owned client lifetime differs from the reviewed disconnect screen')
-        t=Trial(out/(name+'_login'),controller='code')
+        if attempt not in [1,2]:raise ValueError('bounded login attempts are1 or2')
+        prior=out/(name+'_login')/'episode.json'
+        if attempt==2 and (not prior.is_file() or not json.loads(prior.read_text()).get('finished_at')):
+            raise RuntimeError('second reviewed input requires the closed first input receipt')
+        t=Trial(out/(name+'_login'+('' if attempt==1 else str(attempt))),controller='code')
         try:
             t.receipt['qualified_scope']='Reviewed disconnect Reconnect input only; next lobby screen requires separate visual review'
-            frame=shot(t.out/'before.png');action={'kind':'click','value':[640,418]}
+            frame=shot(t.out/'before.png');action={'kind':'click','value':[640,418],'hold':.4}
+            if attempt==2:
+                t.receipt['previous_input']={'file':str(prior),'sha256':lab.sha256(prior),
+                    'reason':'Separately reviewed unchanged disconnect dialog; first acknowledged short click did not advance.'}
             t.receipt['lobby_input']={'input':action,'before_frame':frame};t.persist()
-            t.execute(action);time.sleep(3)
+            t.io.click(*action['value'],hold=action['hold']);time.sleep(3)
             t.receipt.update(completed=True,next_screen=shot(t.out/'next_screen.png'),requires_lobby_review=True)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
@@ -231,6 +238,7 @@ if __name__=='__main__':
     parser.add_argument('--unavailable-deployment-source',type=Path,help='Failed deployment on the same verified actor/server lifetimes')
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
     parser.add_argument('--disconnect-screen',action='store_true',help='Reviewed owned disconnect dialog; only click Reconnect')
+    parser.add_argument('--login-attempt',type=int,choices=[1,2],default=1,help='Second attempt requires separate unchanged-dialog review')
     parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
     parser.add_argument('--client-restart-source',type=Path,help='Owned restart receipt binding a failed trial to the new client lifetime')
     parser.add_argument('--combat-source',type=Path,help='Closed failed combat episode with the exact pending native helmet relocation')
@@ -244,7 +252,7 @@ if __name__=='__main__':
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)
     elif args.action=='resume-login':
         if args.actor is None or not args.disconnect_screen:parser.error('login resumption requires actor and reviewed disconnect screen')
-        resume_login(args.output,args.actor)
+        resume_login(args.output,args.actor,args.login_attempt)
     elif args.action=='select-realm':
         if args.actor is None:parser.error('realm selection requires an actor')
         select_realm(args.output,args.actor)
