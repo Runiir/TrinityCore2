@@ -18,4 +18,5 @@ DressUpObservation.lua
 AchievementObservation.lua
 ActionBarObservation.lua
 SettingsObservation.lua
+MacroObservation.lua
 ClientInteractions.lua

@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=80,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=81,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -166,6 +166,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='tooltip' then data.tooltip_probe=Client442ObserveTooltip();return data end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end
+    if mode=='macros' then data.macro_probe=Client442ObserveMacros();return data end
     if mode=='dressup' then data.dressup_probe=Client442ObserveDressUp();return data end
     if mode=='achievements' then data.achievement_probe=Client442ObserveAchievements();return data end
     if mode=='actionbars' then
@@ -261,6 +262,15 @@ local function snapshot(viewMode,viewPage)
                     end
                 end
                 local bag=call(f.GetBagID,f)
+                if MacroFrame and MacroFrame:IsVisible() then
+                    if (type(f.Name)=='table' or type(f.Name)=='userdata') and f.Name.GetText then
+                        data.controls[#data.controls].macro_name=trim(call(f.Name.GetText,f.Name),32)
+                    end
+                    if MacroPopupFrame and MacroPopupFrame:IsVisible() and
+                        (type(f.Icon)=='table' or type(f.Icon)=='userdata') and f.Icon.GetTexture then
+                        data.controls[#data.controls].macro_icon_texture=call(f.Icon.GetTexture,f.Icon)
+                    end
+                end
                 if bag==nil and name:match('^ContainerFrame%d+Item%d+$') then bag=call(parent.GetID,parent) end
                 if bag~=nil and f.GetID then
                     data.controls[#data.controls].bag_id=bag
@@ -689,6 +699,7 @@ local function update()
     elseif mode=='state' and autoPage==-5 then viewMode,viewPage='achievements',1
     elseif mode=='state' and autoPage==-6 then viewMode,viewPage='actionbars',1
     elseif mode=='state' and autoPage==-8 then viewMode,viewPage='settings',1
+    elseif mode=='state' and autoPage==-9 then viewMode,viewPage='macros',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -700,13 +711,14 @@ local function update()
             equipmentTick=equipmentTick+1
             if equipmentTick%3==0 and #data.panels==0 and #data.bags==0 then autoPage=-6 end
             if equipmentTick%2==0 then
-                if SettingsPanel and SettingsPanel:IsVisible() then autoPage=-8
+                if MacroFrame and MacroFrame:IsVisible() then autoPage=-9
+                elseif SettingsPanel and SettingsPanel:IsVisible() then autoPage=-8
                 elseif DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
                 elseif AchievementFrame and AchievementFrame:IsVisible() then autoPage=-5
                 elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
                 elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
             end
-        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' then
+        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' or viewMode=='macros' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0
