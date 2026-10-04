@@ -57,7 +57,8 @@ def test_empty_cursor_and_closed_panels_send_no_cleanup_input(monkeypatch):
 
 def test_delayed_partial_chat_observation_does_not_resubmit_or_fail(monkeypatch):
     partial={'chat_edit_open':True,'chat_edit_text':'/cleartar'}
-    t,_=trial([partial,{'chat_edit_open':False}],monkeypatch)
+    t,_=trial([{'chat_edit_open':True,'chat_edit_text':''},
+        {'chat_edit_open':True,'chat_edit_text':'/cleartarget'},partial,{'chat_edit_open':False}],monkeypatch)
     t.receipt['cases']=[];events=[]
     t.io=SimpleNamespace(key=lambda key,**kwargs:events.append(('key',key)),
         type=lambda text:events.append(('text',text)))
@@ -71,11 +72,15 @@ def test_reload_extends_only_the_read_wait_without_repeating_input(monkeypatch):
     t,_=trial([],monkeypatch);t.receipt['cases']=[];events=[];waits=[]
     t.io=SimpleNamespace(key=lambda key,**kwargs:events.append(('key',key)),
         type=lambda text:events.append(('text',text)))
+    states=iter([{'chat_edit_open':True,'chat_edit_text':''},
+        {'chat_edit_open':True,'chat_edit_text':'/reload'},
+        {'chat_edit_open':True,'chat_edit_text':'/rel'},{'chat_edit_open':False}])
     def observe(label,seconds=28):
-        waits.append(seconds);return {'chat_edit_open':False},{'file':label+'.png'}
+        waits.append(seconds);return next(states),{'file':label+'.png'}
     t.observe=observe;monkeypatch.setattr(module.owned_input,'lease',nullcontext)
-    assert t.execute({'kind':'chat','value':'/reload'})==[]
-    assert waits==[240]
+    transport=t.execute({'kind':'chat','value':'/reload'})
+    assert transport[0]['input_replayed'] is False
+    assert waits==[28,28,240,240]
     assert events==[('key','Return'),('text','/reload'),('key','Return')]
 
 
