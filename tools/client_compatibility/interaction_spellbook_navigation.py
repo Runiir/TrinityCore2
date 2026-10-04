@@ -35,16 +35,18 @@ def checks(probe,learned):
     return {'visible':probe['visible'],'spell_book':probe['book_type']==probe['book_types']['spell'],
         'selected_tab_checked':bool(tab and tab.get('checked')),
         'page_row_count':expected is not None and len(rows)==expected,
-        'page_slots':bool(tab and current) and sorted(r['slot'] for r in rows)==
+        'page_slots':bool(tab and current and expected is not None) and sorted(r['slot'] for r in rows)==
             list(range(tab['offset']+(current-1)*12+1,tab['offset']+(current-1)*12+1+expected)),
         'rendered_names':all(clean(r.get('shown_name'))==clean(r.get('name')) and bool(r.get('name')) for r in rows),
         'known_spell_identity':all(r.get('id') in native and r.get('known') is True for r in ordinary),
         'public_slot_kind':all(r.get('kind')==r.get('api_kind') for r in rows)}
 
 
-def navigate(t,learned,case_id,target,line=None,page=None):
+def navigate(t,learned,case_id,target,line=None,page=None,check_content=True):
     def outcome(b,a,s):
-        probe=detail(t,case_id.replace('.','_'));valid=checks(probe,learned)
+        probe=detail(t,case_id.replace('.','_'))
+        valid=checks(probe,learned) if check_content else {'visible':probe['visible'],
+            'spell_book':probe['book_type']==probe['book_types']['spell']}
         valid.update(selected=s,ui_clean=not a.get('lua_errors') and not a.get('blocked_actions'))
         if line is not None:valid['expected_skill_line']=probe['skill_line']==line
         if page is not None:valid['expected_page']=probe['page']==page
@@ -99,8 +101,22 @@ def suite(t):
     finally:
         try:
             if layout:
-                require(navigate(t,learned,'spellbook.layout_restore','SpellBookSkillLineTab'+str(layout['skill_line']),
-                    line=layout['skill_line'],page=layout['page']),'spellbook_navigation_pass')
+                current=detail(t,'before_layout_restore')
+                for line in [1,layout['skill_line']]:
+                    if current['skill_line']!=line:
+                        require(navigate(t,learned,'spellbook.layout_restore.line'+str(line),'SpellBookSkillLineTab'+str(line),
+                            line=line,check_content=False),'spellbook_navigation_pass')
+                        current=detail(t,'restoring_line'+str(line))
+                    target=layout['pages'].get(str(line))
+                    for attempt in range(3):
+                        if current.get('page')==target:break
+                        if not target or not current.get('page'):raise RuntimeError('cannot restore an absent original page')
+                        step=-1 if current['page']>target else 1
+                        require(navigate(t,learned,'spellbook.layout_restore.page'+str(line)+'_'+str(attempt),
+                            'SpellBookPrevPageButton' if step<0 else 'SpellBookNextPageButton',line=line,
+                            page=current['page']+step,check_content=False),'spellbook_navigation_pass')
+                        current=detail(t,'restoring_page'+str(line)+'_'+str(attempt))
+                    if current.get('page')!=target:raise RuntimeError('original spellbook page exceeded restoration bound')
                 after=detail(t,'layout_restored')
                 t.receipt['book_layout_restored']=all(after.get(k)==layout.get(k) for k in ['book_type','skill_line','pages','page'])
                 if not t.receipt['book_layout_restored']:raise RuntimeError('original spellbook category/pages did not restore')
