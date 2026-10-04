@@ -2725,6 +2725,59 @@
           "sha256": "c794c3d66d74d6dd4192eb66dd6a293632fe508318645e8cb99e894d9066cf95"
         }
       ]
+    },
+    {
+      "id": "stock_actionbar_paging",
+      "operations": [
+        "actionbars.page_next",
+        "actionbars.page_previous",
+        "actionbars.direct_page"
+      ],
+      "scope": "On both idle human warrior fixtures, the installed next/previous and direct numbered-page bindings change the stock main bar between pages1 and2. All12 public slot assignments match native saved action rows for the active spec and effective stance page, including the primary learned mount32235 exposed as a companion action with its native mounted-aura contract. The original page, every slot assignment, native action rows, inventory, money and saved spells restore.",
+      "limits": "Pages1/2 on two idle warriors only. Other pages, classes, combat, extra bars, items, macros and vehicle/pet/override bars remain open. Both page01 missing-binding preflights and primary page02 companion-type oracle failure stay failed and unqualified. Only primary page03 and scout page02 qualify this mapping.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/primary_pages_03/episode.json",
+          "sha256": "8a1dae2fd4ea9cb2825e11e44c3a19ec5c862e4dc55afc739d8de0ee354df381"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/scout_pages_02/episode.json",
+          "sha256": "36cda97c02670cffa478df24642af78ad2414c210e73bd21916eeff075933ded"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/paging_visual_review.json",
+          "sha256": "efeedc53ce26bad78a8f31836db9032d908f327d95041e971f54450b6b92ce2b"
+        }
+      ]
+    },
+    {
+      "id": "stock_camera_zoom_latency",
+      "operations": [
+        "ui_misc.zoom_camera",
+        "ui_misc.latency_display"
+      ],
+      "scope": "On both idle owned warriors, one installed wheel-up camera step decreases public distance by1 and the inverse step returns it exactly to the baseline, without moving the character. Ordinary hover over the stock main-menu microbutton renders home/world0ms latency lines matching the fresh public GetNetStats event and exact stock format. Both complete trials restore camera distance, panels, native inventory, money and saved spells, and receive exact-frame visual review.",
+      "limits": "One unclamped zoom pair and stock latency format on two local fixtures only. Camera presets/reset, remote latency accuracy, performance thresholds and disconnection notifications remain open. Scout camera/latency01 stays failed because its observer helper discarded two latency return values; only primary01 and scout02 qualify this mapping. Observer reload timeouts stay failed with separate read-only installed-version/baseline verification.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/primary_camera_latency_01/episode.json",
+          "sha256": "428ea09ca445d48cd5d4eb35189b0ed7a19c4a706d4d4fb050b2ffacfac2f83a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/scout_camera_latency_02/episode.json",
+          "sha256": "ed958caa6382ac6ca5bba99445fb87149f9afa327d7c818ce8a6b7c75403bb61"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui48/camera_latency_visual_review.json",
+          "sha256": "965a731b6381edb0005ae65eb69b1471922aa0d9a80ce3cbe23081285cb94b82"
+        }
+      ]
     }
   ]
 }

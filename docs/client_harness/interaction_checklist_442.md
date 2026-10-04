@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 289 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 294 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -731,9 +731,9 @@ Fixture: `saved_local_bars`.
 - [x] `actionbars.drag_macro` (qualified variant; [evidence](#macro_mutation))
 - [x] `actionbars.clear_slot` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [ ] `actionbars.swap_slots`
-- [ ] `actionbars.page_next`
-- [ ] `actionbars.page_previous`
-- [ ] `actionbars.direct_page`
+- [x] `actionbars.page_next` (qualified variant; [evidence](#stock_actionbar_paging))
+- [x] `actionbars.page_previous` (qualified variant; [evidence](#stock_actionbar_paging))
+- [x] `actionbars.direct_page` (qualified variant; [evidence](#stock_actionbar_paging))
 - [ ] `actionbars.extra_bars_toggle`
 - [ ] `actionbars.lock_toggle`
 - [ ] `actionbars.cooldown`
@@ -1120,7 +1120,7 @@ Fixture: `in_world`.
 - [ ] `ui_misc.copy_name`
 - [x] `ui_misc.screenshot` (qualified variant; [evidence](#stock_display_controls))
 - [x] `ui_misc.toggle_ui` (qualified variant; [evidence](#stock_display_controls))
-- [ ] `ui_misc.zoom_camera`
+- [x] `ui_misc.zoom_camera` (qualified variant; [evidence](#stock_camera_zoom_latency))
 - [ ] `ui_misc.camera_reset`
 - [ ] `ui_misc.cinematics_skip`
 - [ ] `ui_misc.movie_skip`
@@ -1128,7 +1128,7 @@ Fixture: `in_world`.
 - [x] `ui_misc.cursor_cancel` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [ ] `ui_misc.popup_confirm`
 - [ ] `ui_misc.popup_cancel`
-- [ ] `ui_misc.latency_display`
+- [x] `ui_misc.latency_display` (qualified variant; [evidence](#stock_camera_zoom_latency))
 - [x] `ui_misc.fps_display` (qualified variant; [evidence](#stock_display_controls))
 - [ ] `ui_misc.network_disconnect_notification`
 
@@ -2062,3 +2062,23 @@ Remaining limits: Six General rows and one unearned tracked achievement on one s
 - [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/scout_achievements_02/episode.json`, SHA-256 `73f5e06267ac701b6bfe2e8c007b4f0811ea851014353f29649c5de188d61f7d`.
   Checked cases: `achievements.category` (stock_achievement_category_pass), `achievements.achievement` (stock_achievement_selection_pass), `achievements.track` (stock_achievement_tracking_pass), `achievements.untrack` (stock_achievement_tracking_pass).
 - [442_interactions_20261004_47.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_47.tar.gz.dvc), member `evidence/client_interactions_20261004_ui47/achievement_visual_review.json`, SHA-256 `c794c3d66d74d6dd4192eb66dd6a293632fe508318645e8cb99e894d9066cf95`.
+
+### stock_actionbar_paging
+
+On both idle human warrior fixtures, the installed next/previous and direct numbered-page bindings change the stock main bar between pages1 and2. All12 public slot assignments match native saved action rows for the active spec and effective stance page, including the primary learned mount32235 exposed as a companion action with its native mounted-aura contract. The original page, every slot assignment, native action rows, inventory, money and saved spells restore.
+
+Remaining limits: Pages1/2 on two idle warriors only. Other pages, classes, combat, extra bars, items, macros and vehicle/pet/override bars remain open. Both page01 missing-binding preflights and primary page02 companion-type oracle failure stay failed and unqualified. Only primary page03 and scout page02 qualify this mapping.
+
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/primary_pages_03/episode.json`, SHA-256 `8a1dae2fd4ea9cb2825e11e44c3a19ec5c862e4dc55afc739d8de0ee354df381`.
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/scout_pages_02/episode.json`, SHA-256 `36cda97c02670cffa478df24642af78ad2414c210e73bd21916eeff075933ded`.
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/paging_visual_review.json`, SHA-256 `efeedc53ce26bad78a8f31836db9032d908f327d95041e971f54450b6b92ce2b`.
+
+### stock_camera_zoom_latency
+
+On both idle owned warriors, one installed wheel-up camera step decreases public distance by1 and the inverse step returns it exactly to the baseline, without moving the character. Ordinary hover over the stock main-menu microbutton renders home/world0ms latency lines matching the fresh public GetNetStats event and exact stock format. Both complete trials restore camera distance, panels, native inventory, money and saved spells, and receive exact-frame visual review.
+
+Remaining limits: One unclamped zoom pair and stock latency format on two local fixtures only. Camera presets/reset, remote latency accuracy, performance thresholds and disconnection notifications remain open. Scout camera/latency01 stays failed because its observer helper discarded two latency return values; only primary01 and scout02 qualify this mapping. Observer reload timeouts stay failed with separate read-only installed-version/baseline verification.
+
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/primary_camera_latency_01/episode.json`, SHA-256 `428ea09ca445d48cd5d4eb35189b0ed7a19c4a706d4d4fb050b2ffacfac2f83a`.
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/scout_camera_latency_02/episode.json`, SHA-256 `ed958caa6382ac6ca5bba99445fb87149f9afa327d7c818ce8a6b7c75403bb61`.
+- [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/camera_latency_visual_review.json`, SHA-256 `965a731b6381edb0005ae65eb69b1471922aa0d9a80ce3cbe23081285cb94b82`.
