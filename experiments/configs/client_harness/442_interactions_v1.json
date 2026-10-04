@@ -5285,7 +5285,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_editor_controls"
     },
     {
       "id": "macros.character_tab",
@@ -5294,7 +5295,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_editor_controls"
     },
     {
       "id": "macros.create",
@@ -5323,7 +5325,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_editor_controls"
     },
     {
       "id": "macros.select",
@@ -5332,7 +5335,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_selection_after_reload"
     },
     {
       "id": "macros.edit_body",
@@ -5361,7 +5365,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_editor_controls"
     },
     {
       "id": "macros.drag_to_actionbar",
@@ -5400,7 +5405,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_editor_controls"
     },
     {
       "id": "macros.macro_limit",
@@ -8483,7 +8489,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_confirmation_controls"
     },
     {
       "id": "ui_misc.popup_cancel",
@@ -8492,7 +8499,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_macro_confirmation_controls"
     },
     {
       "id": "ui_misc.latency_display",
@@ -12304,8 +12312,88 @@
           "sha256": "6ca724a1d723363a840cf7d8d45068f5f8a532c59b15cc5a6706b52a4b879bf4"
         }
       ]
+    },
+    {
+      "id": "owned_macro_editor_controls",
+      "operations": [
+        "macros.account_tab",
+        "macros.character_tab",
+        "macros.icon",
+        "macros.rename",
+        "macros.delete_cancel"
+      ],
+      "scope": "Fresh whole-pass macro_controls02 creates two account macros and one character macro, switches stock banks, saves a changed name and observed icon, cancels deletion, verifies reload persistence and restores zero macros. Actual rendered frames reviewed. The installed empty-bank detail bug is repaired by a UI-only compatibility hook; the empty body field is hidden and deletion disabled before creation restores the normal editor. All10 native/public restoration checks pass.",
+      "limits": "Owned primary with originally empty macro banks and empty action probe. Bodies remain empty and no macro executes. Other actors, account capacity, existing custom macros and other dialogs remain open. Failed trials and exact fixture recovery remain explicit.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_controls02/episode.json",
+          "sha256": "eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json",
+          "sha256": "c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_failure_recovery_review.json",
+          "sha256": "d82661fcdc9cca89d4f2f7d21d89b4537f1dc9e4286c98709c47a3de93665820"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_guard_deploy01/deployment.json",
+          "sha256": "bf3a78a567df8f951e6375896ac40d5442eebbee3c7c5a3b1b12025b9eaf1ade"
+        }
+      ]
+    },
+    {
+      "id": "owned_macro_selection_after_reload",
+      "operations": [
+        "macros.select"
+      ],
+      "scope": "The fresh whole-pass macro_controls02 physically selects TC442Renamed after reload, changing the public selected name from TC442B and actual index1 to2. Both actual before/after frames reviewed; counts remain2/1, then both banks restore to0/0 and all10 native/public restoration checks pass.",
+      "limits": "Two owned account macros, empty bodies. The earlier macros.select click on an already-selected A is excluded from this proof. Other selection contexts remain open. Future harness selections require both name and index changes.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_controls02/episode.json",
+          "sha256": "eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_selection_review.json",
+          "sha256": "05a3079eb10370dfa4d23d28ec1f907b7ff612b8369686eeafacda3866b7b44f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json",
+          "sha256": "c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e"
+        }
+      ]
+    },
+    {
+      "id": "owned_macro_confirmation_controls",
+      "operations": [
+        "ui_misc.popup_confirm",
+        "ui_misc.popup_cancel"
+      ],
+      "scope": "Fresh whole-pass macro_controls02 opens the stock delete confirmation, cancels it with the selected macro and counts unchanged, then accepts stock Okay during owned cleanup and removes exactly one disposable macro. Actual dialog, cancellation and accepted outcome frames reviewed. Original zero macro banks and all10 native/public checks restore.",
+      "limits": "Stock macro deletion confirmation on the owned primary only. Other confirmation families and contexts remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_controls02/episode.json",
+          "sha256": "eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json",
+          "sha256": "c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e"
+        }
+      ]
     }
   ],
-  "qualified_operations": 349,
+  "qualified_operations": 357,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

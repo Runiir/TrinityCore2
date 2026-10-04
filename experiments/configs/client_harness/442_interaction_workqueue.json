@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "349/916 reviewed scoped operations. UI65 qualifies the primary character-specific binding-set save/reload/account restoration roundtrip, with byte-identical original account bindings and all10 native/public restoration checks passing. The failed first trial and recovered batch initialization are explicit. Next UI66 checks stock macro tabs/editor controls using already extracted sources, one owned input trial at a time.",
+  "current": "357/916 reviewed scoped operations. UI66 qualifies five stock macro editor controls, actual B-to-Renamed selection after reload, and stock macro confirmation accept/cancel. The empty-bank stale-detail display is repaired and tested; all temporary macros and all10 native/public checks restore. Earlier failures and exact recovery remain explicit. Next UI67 reaches the character macro cap through ordinary stock input, one owned trial at a time.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -155,7 +155,8 @@
     "ui62/primary_bindings02: five operations pass after separate recovery of the earlier pose-only failure. All ten restoration checks and exact original settings/bindings pass. DVC62 verifies 18 JSON and 196 attributed images; initial failure retained.",
     "ui63/DVC63: five operations qualify; three new whole trials pass30 full restoration checks. Exact AddOns recovery passes8 source checks plus10 restoration checks. Scout read-only reentry verification passes12 checks after late-reader failure. Earlier panel/deployment/text-crop/reader failures remain preserved. DVC63 verifies29 JSON and333 attributed images.",
     "ui64: +6 scoped operations (342->348), 69 JSON receipts and486 attributed archive images verified; failures retained; native worldserver and both client lifetimes preserved.",
-    "ui65: +1 scoped binding-set contract (348->349),15 JSON receipts and183 attributed archive frames verified; first failed trial retained with all10 restoration checks true."
+    "ui65: +1 scoped binding-set contract (348->349),15 JSON receipts and183 attributed archive frames verified; first failed trial retained with all10 restoration checks true.",
+    "ui66: +8 scoped macro/editor/confirmation contracts (349->357),18 JSON receipts and654 attributed archive frames verified; failed cleanup/observation/GUID-guard trials and whole-pass exact recovery retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

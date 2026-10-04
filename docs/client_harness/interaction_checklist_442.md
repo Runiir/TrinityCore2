@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 349 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 357 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -705,19 +705,19 @@ Fixture: `saved_local_macros`.
 
 - [x] `macros.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `macros.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `macros.account_tab`
-- [ ] `macros.character_tab`
+- [x] `macros.account_tab` (qualified variant; [evidence](#owned_macro_editor_controls))
+- [x] `macros.character_tab` (qualified variant; [evidence](#owned_macro_editor_controls))
 - [x] `macros.create` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.name` (qualified variant; [evidence](#macro_mutation))
-- [ ] `macros.icon`
-- [ ] `macros.select`
+- [x] `macros.icon` (qualified variant; [evidence](#owned_macro_editor_controls))
+- [x] `macros.select` (qualified variant; [evidence](#owned_macro_selection_after_reload))
 - [x] `macros.edit_body` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.save` (qualified variant; [evidence](#macro_mutation))
-- [ ] `macros.rename`
+- [x] `macros.rename` (qualified variant; [evidence](#owned_macro_editor_controls))
 - [x] `macros.drag_to_actionbar` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.execute` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.delete_confirm` (qualified variant; [evidence](#macro_mutation))
-- [ ] `macros.delete_cancel`
+- [x] `macros.delete_cancel` (qualified variant; [evidence](#owned_macro_editor_controls))
 - [ ] `macros.macro_limit`
 - [x] `macros.persistence` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.restore_original` (qualified variant; [evidence](#macro_mutation))
@@ -1126,8 +1126,8 @@ Fixture: `in_world`.
 - [ ] `ui_misc.movie_skip`
 - [x] `ui_misc.cursor_pickup` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
 - [x] `ui_misc.cursor_cancel` (qualified variant; [evidence](#stock_spellbook_action_roundtrip))
-- [ ] `ui_misc.popup_confirm`
-- [ ] `ui_misc.popup_cancel`
+- [x] `ui_misc.popup_confirm` (qualified variant; [evidence](#owned_macro_confirmation_controls))
+- [x] `ui_misc.popup_cancel` (qualified variant; [evidence](#owned_macro_confirmation_controls))
 - [x] `ui_misc.latency_display` (qualified variant; [evidence](#stock_camera_zoom_latency))
 - [x] `ui_misc.fps_display` (qualified variant; [evidence](#stock_display_controls))
 - [ ] `ui_misc.network_disconnect_notification`
@@ -2357,3 +2357,33 @@ Remaining limits: Disposable primary with no original character-specific binding
 - [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/binding_set_visual_review.json`, SHA-256 `141daa2c961942a2d2b4b0a0526a1722fe1edc6a9f2ccd0be1acba27d42c83fc`.
 - [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/binding_set_failure_review.json`, SHA-256 `a7fac846c52e0ba29d55868834acbe06f6776783dd627c7d096743b6fd79cede`.
 - [442_interactions_20261005_65.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_65.tar.gz.dvc), member `evidence/client_interactions_20261005_ui65/batch.json`, SHA-256 `6ca724a1d723363a840cf7d8d45068f5f8a532c59b15cc5a6706b52a4b879bf4`.
+
+### owned_macro_editor_controls
+
+Fresh whole-pass macro_controls02 creates two account macros and one character macro, switches stock banks, saves a changed name and observed icon, cancels deletion, verifies reload persistence and restores zero macros. Actual rendered frames reviewed. The installed empty-bank detail bug is repaired by a UI-only compatibility hook; the empty body field is hidden and deletion disabled before creation restores the normal editor. All10 native/public restoration checks pass.
+
+Remaining limits: Owned primary with originally empty macro banks and empty action probe. Bodies remain empty and no macro executes. Other actors, account capacity, existing custom macros and other dialogs remain open. Failed trials and exact fixture recovery remain explicit.
+
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_controls02/episode.json`, SHA-256 `eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json`, SHA-256 `c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_failure_recovery_review.json`, SHA-256 `d82661fcdc9cca89d4f2f7d21d89b4537f1dc9e4286c98709c47a3de93665820`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_guard_deploy01/deployment.json`, SHA-256 `bf3a78a567df8f951e6375896ac40d5442eebbee3c7c5a3b1b12025b9eaf1ade`.
+
+### owned_macro_selection_after_reload
+
+The fresh whole-pass macro_controls02 physically selects TC442Renamed after reload, changing the public selected name from TC442B and actual index1 to2. Both actual before/after frames reviewed; counts remain2/1, then both banks restore to0/0 and all10 native/public restoration checks pass.
+
+Remaining limits: Two owned account macros, empty bodies. The earlier macros.select click on an already-selected A is excluded from this proof. Other selection contexts remain open. Future harness selections require both name and index changes.
+
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_controls02/episode.json`, SHA-256 `eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_selection_review.json`, SHA-256 `05a3079eb10370dfa4d23d28ec1f907b7ff612b8369686eeafacda3866b7b44f`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json`, SHA-256 `c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e`.
+
+### owned_macro_confirmation_controls
+
+Fresh whole-pass macro_controls02 opens the stock delete confirmation, cancels it with the selected macro and counts unchanged, then accepts stock Okay during owned cleanup and removes exactly one disposable macro. Actual dialog, cancellation and accepted outcome frames reviewed. Original zero macro banks and all10 native/public checks restore.
+
+Remaining limits: Stock macro deletion confirmation on the owned primary only. Other confirmation families and contexts remain open.
+
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_controls02/episode.json`, SHA-256 `eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac`.
+- [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json`, SHA-256 `c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e`.
