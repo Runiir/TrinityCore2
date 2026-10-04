@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 278 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 281 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -1118,8 +1118,8 @@ Fixture: `in_world`.
 - [ ] `ui_misc.item_link`
 - [ ] `ui_misc.spell_link`
 - [ ] `ui_misc.copy_name`
-- [ ] `ui_misc.screenshot`
-- [ ] `ui_misc.toggle_ui`
+- [x] `ui_misc.screenshot` (qualified variant; [evidence](#stock_display_controls))
+- [x] `ui_misc.toggle_ui` (qualified variant; [evidence](#stock_display_controls))
 - [ ] `ui_misc.zoom_camera`
 - [ ] `ui_misc.camera_reset`
 - [ ] `ui_misc.cinematics_skip`
@@ -1129,7 +1129,7 @@ Fixture: `in_world`.
 - [ ] `ui_misc.popup_confirm`
 - [ ] `ui_misc.popup_cancel`
 - [ ] `ui_misc.latency_display`
-- [ ] `ui_misc.fps_display`
+- [x] `ui_misc.fps_display` (qualified variant; [evidence](#stock_display_controls))
 - [ ] `ui_misc.network_disconnect_notification`
 
 ## account services
@@ -2032,3 +2032,13 @@ Remaining limits: One reversible instant self-cast on one warrior. Other spells,
 - [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/primary_spellbook_actions_04/episode.json`, SHA-256 `e7286ab09f8a91490b3b828771d8ae9cdca6edbf586b200084b66608ecbe76f8`.
   Checked cases: `spellbook.cast_spell` (spellbook_cast_pass).
 - [442_interactions_20261004_45.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_45.tar.gz.dvc), member `evidence/client_interactions_20261004_ui45/spellbook_actions_visual_review.json`, SHA-256 `12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef`.
+
+### stock_display_controls
+
+On both idle human warrior fixtures, use the observed stock bindings to show a positive numeric FPS display and restore it, save one valid 1280x720 game-generated JPEG, and hide then restore the complete HUD while the world remains rendered. Complete trials preserve native inventory, money and saved spells. Exact PNG and JPEG frames receive visual and archive digest review.
+
+Remaining limits: These stock bindings on two idle fixtures only. Other graphics settings, performance thresholds, cinematics and movies remain open. Scout observer64 reload timeout remains failed; separate read-only verification establishes the installed version and preserved baseline.
+
+- [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/primary_display_01/episode.json`, SHA-256 `bdb197bfa1f855bd12c972a58520f4c390ebc0dc822ee2b5a39304b1fd5192c0`.
+- [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/scout_display_01/episode.json`, SHA-256 `633689341f841dcd6559aac671573f4e33ad92eef86a0073afb221b7f8d928bd`.
+- [442_interactions_20261004_46.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc), member `evidence/client_interactions_20261004_ui46/display_visual_review.json`, SHA-256 `0631938abb0051f077b138a09cedfd832380d72ffd8aefd6f040986b7b8966e9`.

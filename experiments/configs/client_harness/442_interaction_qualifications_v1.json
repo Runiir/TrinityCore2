@@ -2638,6 +2638,33 @@
           "sha256": "12b43d5d27a5c81599ecf8a676e145560f629af77e6ef45476e731368f5257ef"
         }
       ]
+    },
+    {
+      "id": "stock_display_controls",
+      "operations": [
+        "ui_misc.fps_display",
+        "ui_misc.screenshot",
+        "ui_misc.toggle_ui"
+      ],
+      "scope": "On both idle human warrior fixtures, use the observed stock bindings to show a positive numeric FPS display and restore it, save one valid 1280x720 game-generated JPEG, and hide then restore the complete HUD while the world remains rendered. Complete trials preserve native inventory, money and saved spells. Exact PNG and JPEG frames receive visual and archive digest review.",
+      "limits": "These stock bindings on two idle fixtures only. Other graphics settings, performance thresholds, cinematics and movies remain open. Scout observer64 reload timeout remains failed; separate read-only verification establishes the installed version and preserved baseline.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui46/primary_display_01/episode.json",
+          "sha256": "bdb197bfa1f855bd12c972a58520f4c390ebc0dc822ee2b5a39304b1fd5192c0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui46/scout_display_01/episode.json",
+          "sha256": "633689341f841dcd6559aac671573f4e33ad92eef86a0073afb221b7f8d928bd"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_46.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui46/display_visual_review.json",
+          "sha256": "0631938abb0051f077b138a09cedfd832380d72ffd8aefd6f040986b7b8966e9"
+        }
+      ]
     }
   ]
 }
