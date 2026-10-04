@@ -33,6 +33,10 @@ def field_values(snapshot, character):
              "BaseMana": "UNIT_FIELD_BASE_MANA", "BaseHealth": "UNIT_FIELD_BASE_HEALTH",
              "EmoteState": "UNIT_NPC_EMOTESTATE", "NpcFlags": "UNIT_NPC_FLAGS"}
     unit.update({modern: value(old) for modern, old in names.items()})
+    # Retired differential oracle mirrors the native bridge's public GUID.
+    from .gameobjects import modern_guid
+    target=value('UNIT_FIELD_TARGET') | value('UNIT_FIELD_TARGET',1)<<32
+    unit['Target']=modern_guid(target,snapshot.get('map',0))
     for modern,old in {'AttackPower':'UNIT_FIELD_ATTACK_POWER','AttackPowerModPos':'UNIT_FIELD_ATTACK_POWER_MOD_POS',
         'AttackPowerModNeg':'UNIT_FIELD_ATTACK_POWER_MOD_NEG','RangedAttackPower':'UNIT_FIELD_RANGED_ATTACK_POWER',
         'RangedAttackPowerModPos':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_POS','RangedAttackPowerModNeg':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_NEG'}.items():

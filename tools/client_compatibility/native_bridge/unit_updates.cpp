@@ -10,7 +10,8 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
     // not sorted by their mask indices. Zeroes and signed debuffs must be transmitted.
     static Scalar const scalars[] = {
         {"Health",5,'q',"UNIT_FIELD_HEALTH"}, {"MaxHealth",6,'q',"UNIT_FIELD_MAXHEALTH"},
-        {"DisplayID",7,'i',"UNIT_FIELD_DISPLAYID"}, {"Flags",41,'I',"UNIT_FIELD_FLAGS"},
+        {"DisplayID",7,'i',"UNIT_FIELD_DISPLAYID"},
+        {"Target",21,'g',"UNIT_FIELD_TARGET"}, {"Flags",41,'I',"UNIT_FIELD_FLAGS"},
         {"Flags2",42,'I',"UNIT_FIELD_FLAGS_2"},
         {"RangedAttackRoundBaseTime",46,'I',"UNIT_FIELD_RANGEDATTACKTIME"},
         {"MountDisplayID",52,'i',"UNIT_FIELD_MOUNTDISPLAYID"},
@@ -43,7 +44,8 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
     auto has=[&](char const *native,unsigned offset=0)
     {return changed.as_object().contains(std::to_string(field_index(native)+offset));};
     for(auto const &spec:scalars)
-        if((!spec.owner || (visibility&1)) && has(spec.native))
+        if((!spec.owner || (visibility&1)) &&
+           (has(spec.native) || (spec.fmt=='g' && has(spec.native,1))))
             append(spec.index,(spec.index/32)*32,spec.fmt,get(unit,spec.name));
     auto element=[&](char const *modern,char const *native,unsigned i,unsigned index,unsigned parent,char fmt='i')
     {
@@ -79,7 +81,9 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
     Writer data;data.pack("BBBI",{visibility,0,3,1u<<5});
     unsigned presence=0;for(unsigned i=0;i<8;++i)if(masks[i])presence|=1u<<i;
     data.bits(presence,8);for(auto mask:masks)if(mask)data.bits(mask,32);data.flush();
-    for(auto const &part:payload)data.pack(std::string(1,part.fmt),{part.value});
+    for(auto const &part:payload)
+        if(part.fmt=='g')data.guid(part.value.as_array());
+        else data.pack(std::string(1,part.fmt),{part.value});
     return Writer().pack("B",{0}).guid(modern_guid(integer(get(s,"guid")),integer(get(s,"map"))))
         .put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
 }

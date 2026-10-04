@@ -21,6 +21,8 @@ Value Protocol::field_values(Value const &s, Value const &c) const
         return a;
     };
     auto identity = val("UNIT_FIELD_BYTES_0");
+    auto target = static_cast<std::uint64_t>(val("UNIT_FIELD_TARGET")) |
+                  (static_cast<std::uint64_t>(val("UNIT_FIELD_TARGET", 1)) << 32);
     Object unit{{"Race", identity & 255},
                 {"ClassId", (identity >> 8) & 255},
                 {"PlayerClassId", (identity >> 8) & 255},
@@ -29,7 +31,8 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                 {"DisplayScale", 1.0},
                 {"NativeXDisplayScale", 1.0},
                 {"ModTimeRate", 1.0},
-                {"EffectiveLevel", val("UNIT_FIELD_LEVEL")}};
+                {"EffectiveLevel", val("UNIT_FIELD_LEVEL")},
+                {"Target", modern_guid(target, integer(get(s, "map")))}};
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"Health", "UNIT_FIELD_HEALTH"},
              {"MaxHealth", "UNIT_FIELD_MAXHEALTH"},
