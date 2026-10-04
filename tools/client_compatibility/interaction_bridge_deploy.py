@@ -134,6 +134,30 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
+def resume_login(out,name):
+    """Click only the reviewed disconnect dialog's Reconnect button."""
+    report=json.loads((out/'deployment.json').read_text())
+    if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
+        raise RuntimeError('login resumption requires the same deployment processes')
+    with actor(name):
+        previous=json.loads((out/(name+'_before')/'episode.json').read_text())
+        lifetime=lambda row:{key:row[key] for key in ['pid','start_ticks']}
+        if lifetime(identity('client'))!=lifetime(previous['runtime']['client']):
+            raise RuntimeError('owned client lifetime differs from the reviewed disconnect screen')
+        t=Trial(out/(name+'_login'),controller='code')
+        try:
+            t.receipt['qualified_scope']='Reviewed disconnect Reconnect input only; next lobby screen requires separate visual review'
+            frame=shot(t.out/'before.png');action={'kind':'click','value':[640,418]}
+            t.receipt['lobby_input']={'input':action,'before_frame':frame};t.persist()
+            t.execute(action);time.sleep(3)
+            t.receipt.update(completed=True,next_screen=shot(t.out/'next_screen.png'),requires_lobby_review=True)
+        except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({'actor':name,'input_completed':t.receipt['completed'],'failure':t.receipt['failure'],
+            'requires_separate_lobby_review':True}),flush=True)
+        if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
+
+
 def select_realm(out,name):
     """Emit only realm selection inputs, then retain the next screen for review."""
     report=json.loads((out/'deployment.json').read_text())
@@ -193,7 +217,7 @@ def recovery(source,out,name,client_restart_source=None,observer_version=None):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery','select-realm'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery','select-realm','resume-login'])
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
     parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
@@ -201,6 +225,7 @@ if __name__=='__main__':
     parser.add_argument('--unavailable-scout-source',type=Path,help='Closed failed scout reentry deployment')
     parser.add_argument('--unavailable-deployment-source',type=Path,help='Failed deployment on the same verified actor/server lifetimes')
     parser.add_argument('--character-selection',action='store_true',help='Reviewed actor is already at character selection; only enter')
+    parser.add_argument('--disconnect-screen',action='store_true',help='Reviewed owned disconnect dialog; only click Reconnect')
     parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
     parser.add_argument('--client-restart-source',type=Path,help='Owned restart receipt binding a failed trial to the new client lifetime')
     parser.add_argument('--combat-source',type=Path,help='Closed failed combat episode with the exact pending native helmet relocation')
@@ -212,6 +237,9 @@ if __name__=='__main__':
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)
+    elif args.action=='resume-login':
+        if args.actor is None or not args.disconnect_screen:parser.error('login resumption requires actor and reviewed disconnect screen')
+        resume_login(args.output,args.actor)
     elif args.action=='select-realm':
         if args.actor is None:parser.error('realm selection requires an actor')
         select_realm(args.output,args.actor)
