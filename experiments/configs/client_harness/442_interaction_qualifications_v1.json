@@ -3548,6 +3548,84 @@
           "sha256": "38f318b508514c52861f70bd9647abb61bf2680084eaec97d163bb2efa67f09c"
         }
       ]
+    },
+    {
+      "id": "owned_defaults_cancel",
+      "operations": [
+        "settings.defaults_cancel",
+        "keybindings.defaults_cancel"
+      ],
+      "scope": "Stock Controls and Keybindings Defaults confirmation cancellation in the owned primary. Both modal Cancel buttons return to the original settings. All275 installed binding rows, original settings and all10 native/public restoration checks are unchanged; five rendered frames reviewed.",
+      "limits": "Cancellation only. Defaults Apply, graphics/audio defaults and other actors remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/primary_defaults_cancel01/episode.json",
+          "sha256": "ae9040e065557515ea8cdcbeb06369deb8486e8dea809855890d30a1fb79e2d8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/defaults_cancel_visual_review.json",
+          "sha256": "f0b5aeae8ce99e74a2dc507ce30e03a745d0f4036a0309df5f40a3a4ec5f5970"
+        }
+      ]
+    },
+    {
+      "id": "owned_support_shell_navigation",
+      "operations": [
+        "menu.help",
+        "help.open",
+        "help.close"
+      ],
+      "scope": "Game Menu Support opens the stock Customer Support shell, and its observed close button closes it. Three rendered frames reviewed; original settings and all10 native/public restoration checks pass.",
+      "limits": "Shell navigation only. The observed spinner establishes neither functioning service content nor an unsupported service. Tickets, categories, reports and surveys remain open. Earlier Escape-close failure retained.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/menu_help02/episode.json",
+          "sha256": "b05e56b02dc504297421a6f21553645b0eb4f816a80664dc11e0bdbc7984c007"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/support_shell_visual_review.json",
+          "sha256": "36046af11eaa29669fc3dc55190d07c277c23a6bda1bc776f7109772c5b4aa5b"
+        }
+      ]
+    },
+    {
+      "id": "owned_party_chat",
+      "operations": [
+        "chat.party"
+      ],
+      "scope": "Fresh whole-pass owned_party_chat06 sends one exact owned marker from the leader and one from the member. Both ordinary requests, native deliveries and both public peer events pass. Six actual rendered send/receive/restoration frames reviewed; all20 restoration checks, original positions and removal of four temporary teleports pass. Native Party Leader51 translates to modern49; ordinary Party2 stays2.",
+      "limits": "Owned primary85/scout1 local two-player party on map0; observer80 retains the latest exact probe. Earlier guard, import, observation-capacity and cleanup/recovery failures remain failures in the archive. Other chat contexts and variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/owned_party_chat06/cohort.json",
+          "sha256": "a73a2b0b23b4ba69bcc881e96aad394de03fcd8a31589a757aba2b9922a07a4b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/owned_party_chat06/primary/episode.json",
+          "sha256": "eaae3bd8977243ecda25b369abef42c6b4eec33bdc5023bc24971767a07f7b70"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/owned_party_chat06/scout/episode.json",
+          "sha256": "5064aa61ae6eed79a24f05eea427a138fc87056af06cc68f44a8a487498b6cf2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/owned_party_chat06/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui64/party_chat_visual_review.json",
+          "sha256": "2031dad99865d4eca1a2ac25aee697356dd61f0c796a5786e5f603661836a631"
+        }
+      ]
     }
   ]
 }

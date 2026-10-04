@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 342 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 348 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -439,7 +439,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.yell` (qualified variant; [evidence](#chat))
 - [x] `chat.whisper` (qualified variant; [evidence](#chat))
 - [ ] `chat.reply`
-- [ ] `chat.party`
+- [x] `chat.party` (qualified variant; [evidence](#owned_party_chat))
 - [x] `chat.raid` (qualified variant; [evidence](#chat))
 - [x] `chat.raid_warning` (qualified variant; [evidence](#chat))
 - [x] `chat.guild` (qualified variant; [evidence](#guild_notes))
@@ -692,7 +692,7 @@ Fixture: `saved_local_bindings`.
 - [ ] `keybindings.conflict_cancel`
 - [x] `keybindings.clear_binding` (qualified variant; [evidence](#owned_binding_cancel_clear))
 - [ ] `keybindings.per_character_toggle`
-- [ ] `keybindings.defaults_cancel`
+- [x] `keybindings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
 - [ ] `keybindings.defaults_apply`
 - [x] `keybindings.save` (qualified variant; [evidence](#keybinding_mutation))
 - [x] `keybindings.cancel` (qualified variant; [evidence](#owned_binding_cancel_clear))
@@ -774,7 +774,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.addons`
 - [ ] `settings.apply`
 - [ ] `settings.cancel`
-- [ ] `settings.defaults_cancel`
+- [x] `settings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
 - [ ] `settings.defaults_apply`
 - [ ] `settings.persistence`
 - [x] `settings.restore_original` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
@@ -789,7 +789,7 @@ Fixture: `in_world`.
 - [x] `menu.keybindings` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
 - [x] `menu.macros` (qualified variant; [evidence](#owned_macro_menu_route))
 - [x] `menu.addons` (qualified variant; [evidence](#owned_addon_menu_route))
-- [ ] `menu.help`
+- [x] `menu.help` (qualified variant; [evidence](#owned_support_shell_navigation))
 - [x] `menu.logout` (qualified variant; [evidence](#owned_menu_logout_reused))
 - [ ] `menu.exit_cancel`
 
@@ -797,8 +797,8 @@ Fixture: `in_world`.
 
 Fixture: `offline_local_server`.
 
-- [ ] `help.open`
-- [ ] `help.close`
+- [x] `help.open` (qualified variant; [evidence](#owned_support_shell_navigation))
+- [x] `help.close` (qualified variant; [evidence](#owned_support_shell_navigation))
 - [ ] `help.unstuck`
 - [ ] `help.support_category`
 - [ ] `help.ticket_create_if_supported`
@@ -2316,3 +2316,33 @@ Remaining limits: Historical primary idle level85 fixture and its recorded runti
 - [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_reenter_01/episode.json`, SHA-256 `0492b5dc32c503c8219ee9aa986d1a1b56167a646d4b910c6acf5a476584ea4e`.
 - [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_persistence_review.json`, SHA-256 `67f497647a642d79688375b521527f1f5757d64fc5e2373466577b79d0721e13`.
 - [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_logout_reuse_review.json`, SHA-256 `38f318b508514c52861f70bd9647abb61bf2680084eaec97d163bb2efa67f09c`.
+
+### owned_defaults_cancel
+
+Stock Controls and Keybindings Defaults confirmation cancellation in the owned primary. Both modal Cancel buttons return to the original settings. All275 installed binding rows, original settings and all10 native/public restoration checks are unchanged; five rendered frames reviewed.
+
+Remaining limits: Cancellation only. Defaults Apply, graphics/audio defaults and other actors remain open.
+
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/primary_defaults_cancel01/episode.json`, SHA-256 `ae9040e065557515ea8cdcbeb06369deb8486e8dea809855890d30a1fb79e2d8`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/defaults_cancel_visual_review.json`, SHA-256 `f0b5aeae8ce99e74a2dc507ce30e03a745d0f4036a0309df5f40a3a4ec5f5970`.
+
+### owned_support_shell_navigation
+
+Game Menu Support opens the stock Customer Support shell, and its observed close button closes it. Three rendered frames reviewed; original settings and all10 native/public restoration checks pass.
+
+Remaining limits: Shell navigation only. The observed spinner establishes neither functioning service content nor an unsupported service. Tickets, categories, reports and surveys remain open. Earlier Escape-close failure retained.
+
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/menu_help02/episode.json`, SHA-256 `b05e56b02dc504297421a6f21553645b0eb4f816a80664dc11e0bdbc7984c007`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/support_shell_visual_review.json`, SHA-256 `36046af11eaa29669fc3dc55190d07c277c23a6bda1bc776f7109772c5b4aa5b`.
+
+### owned_party_chat
+
+Fresh whole-pass owned_party_chat06 sends one exact owned marker from the leader and one from the member. Both ordinary requests, native deliveries and both public peer events pass. Six actual rendered send/receive/restoration frames reviewed; all20 restoration checks, original positions and removal of four temporary teleports pass. Native Party Leader51 translates to modern49; ordinary Party2 stays2.
+
+Remaining limits: Owned primary85/scout1 local two-player party on map0; observer80 retains the latest exact probe. Earlier guard, import, observation-capacity and cleanup/recovery failures remain failures in the archive. Other chat contexts and variants remain open.
+
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/cohort.json`, SHA-256 `a73a2b0b23b4ba69bcc881e96aad394de03fcd8a31589a757aba2b9922a07a4b`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/primary/episode.json`, SHA-256 `eaae3bd8977243ecda25b369abef42c6b4eec33bdc5023bc24971767a07f7b70`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/scout/episode.json`, SHA-256 `5064aa61ae6eed79a24f05eea427a138fc87056af06cc68f44a8a487498b6cf2`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/owned_party_chat06/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
+- [442_interactions_20261004_64.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_64.tar.gz.dvc), member `evidence/client_interactions_20261004_ui64/party_chat_visual_review.json`, SHA-256 `2031dad99865d4eca1a2ac25aee697356dd61f0c796a5786e5f603661836a631`.
