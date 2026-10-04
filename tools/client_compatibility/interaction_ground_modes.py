@@ -48,6 +48,27 @@ def cadence(case,walking):
         'expected_yards_per_second':expected,'checks':checks}
 
 
+def autorun_inputs(t,key,row):
+    started=False
+    try:
+        t.io.key(key,hold=.4);started=True
+        row['input_transport']=[{'toggle':'start','time':time.time()}];t.persist()
+        time.sleep(1.2)
+    finally:
+        # Stop before reading journals or waiting for a screenshot. A normal
+        # start must never extend its movement duration with diagnostics.
+        if started:
+            t.io.key(key,hold=.4)
+            row.setdefault('input_transport',[]).append({'toggle':'stop','time':time.time()});t.persist()
+        else:
+            # A sender error may occur after a partial start. Holding and
+            # releasing the observed forward binding also cancels autorun.
+            forward=binding_key(t.ground_bar['keys']['MOVEFORWARD'][0])
+            t.io.key(forward,hold=.2)
+            row.setdefault('input_transport',[]).append({'cleanup':'forward override and release',
+                'time':time.time(),'qualification':False});t.persist()
+
+
 def autorun(t,peer,session,peer_session):
     before,frame=t.observe('autorun_before');native_before=position(t.fixture['guid'])
     key=binding_key(t.ground_bar['keys']['TOGGLEAUTORUN'][0]);since=time.time()
@@ -61,16 +82,7 @@ def autorun(t,peer,session,peer_session):
         'selection_source':'code','request':None,'response':None,
         'input':{'kind':'key','value':key,'hold':.4,'toggle_count':2,'between_seconds':1.2},
         'numlock_before':lock_before};t.receipt['cases'].append(row);t.persist()
-    started=False
-    try:
-        t.io.key(key,hold=.4);started=True;row['input_transport']=[{'toggle':'start','time':time.time()}];t.persist()
-        time.sleep(1.2)
-    finally:
-        submitted=any(p.get('time',0)>=since and p.get('session')==session and
-            p.get('name')=='CMSG_MOVE_START_FORWARD' and p.get('direction')=='from_client'
-            for p in entries(lab.ROOT/'evidence/world_packets.jsonl'))
-        if started or submitted:
-            t.io.key(key,hold=.4);row.setdefault('input_transport',[]).append({'toggle':'stop','time':time.time()});t.persist()
+    autorun_inputs(t,key,row)
     native_after=position(t.fixture['guid']);deadline=time.monotonic()+12;samples=[]
     while True:
         after,after_frame=t.observe('autorun_after')
