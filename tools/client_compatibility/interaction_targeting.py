@@ -24,7 +24,7 @@ def target(t,oracle,session,case,action,wanted):
             p.get('session')==session and p.get('name')=='CMSG_SET_SELECTION']
         expected=f'Player-1-{wanted:08X}' if wanted else ''
         checks={'ordinary_input':selected=='target',
-            'public_target':after.get('target_units',{}).get('target')==expected,
+            'public_target':(after.get('target',{}).get('guid') or '')==expected,
             'native_target':selection(oracle)==wanted,
             'native_request':any(p['direction']=='to_native' and p['body']==struct.pack('<Q',wanted).hex() for p in rows),
             'modern_request':any(p['direction']=='from_client' for p in rows),
@@ -35,7 +35,7 @@ def target(t,oracle,session,case,action,wanted):
     require(t.step(case,'Select the attributed owned target through ordinary input.',
         {'target':dict(action,description='Use the observed stock targeting control or command.')},
         outcome,diagnostic_action='target',
-        await_state=lambda s:s.get('target_units',{}).get('target')==(f'Player-1-{wanted:08X}' if wanted else '')),
+        await_state=lambda s:(s.get('target',{}).get('guid') or '')==(f'Player-1-{wanted:08X}' if wanted else '')),
         'native_owned_target_pass')
 
 
@@ -44,27 +44,29 @@ def focus(t,oracle,wanted,label):
     expected=f'Player-1-{wanted:08X}' if wanted else ''
     current=selection(oracle)
     def outcome(before,after,selected):
-        checks={'ordinary_command':selected=='focus','public_focus':after.get('target_units',{}).get('focus')==expected,
-            'target_preserved':after.get('target_units',{}).get('target')==before.get('target_units',{}).get('target'),
+        probe=detail(t,label+'_focus',lambda p:p['targeting']['units']['focus']==expected)['targeting']
+        checks={'ordinary_command':selected=='focus','public_focus':probe['units']['focus']==expected,
+            'target_preserved':after.get('target',{}).get('guid')==before.get('target',{}).get('guid'),
             'native_selection_preserved':selection(oracle)==current,
             'position':after['world_position']==before['world_position'],
             'ui_clean':not after.get('lua_errors') and not after.get('blocked_actions')}
         return {'status':'local_focus_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'expected_focus':expected,'native_selection':current,
+            'oracle':{'checks':checks,'expected_focus':expected,'native_selection':current,'public':probe,
                 'scope':'Client-local focus UI; no server focus field or packet acceptance claim.'}}
     require(t.step(label,'Change the stock client focus using its ordinary slash command.',
         {'focus':{'kind':'chat','value':value,'description':'Send '+value+' through the ordinary chat box.'}},
-        outcome,diagnostic_action='focus',await_state=lambda s:s.get('target_units',{}).get('focus')==expected),
+        outcome,diagnostic_action='focus'),
         'local_focus_pass')
 
 
 def hover(t,oracle,peer,frame):
     current=selection(oracle)
     def outcome(before,after,selected):
+        units=detail(t,'party_mouseover',lambda p:p['targeting']['units']['mouseover']==peer.guid)['targeting']['units']
         probe=tooltip(t,'party_target_tooltip')
         lines=[r.get('left','') for r in probe.get('lines') or []]
         checks={'ordinary_hover':selected=='hover',
-            'owned_mouseover':after.get('target_units',{}).get('mouseover')==peer.guid,
+            'owned_mouseover':units['mouseover']==peer.guid,
             'stock_tooltip_visible':probe.get('visible') is True,
             'owned_character_title':bool(lines) and lines[0]==peer.fixture['character_name'],
             'selection_preserved':selection(oracle)==current,
@@ -80,11 +82,12 @@ def hover(t,oracle,peer,frame):
 
 def phase(t,peer,oracle,session,peer_session):
     before,_=t.observe('targeting_phase');bar=detail(t,'targeting_bindings')
-    if before.get('observer_version',0)<76 or before.get('target_units',{}).get('focus'):
-        raise RuntimeError('requires observer76 and an empty original focus')
+    observed=bar.get('targeting',{})
+    if before.get('observer_version',0)<77 or observed.get('units',{}).get('focus'):
+        raise RuntimeError('requires observer77 and an empty original focus')
     keys={name:bar['keys'].get(name) for name in ['TARGETSELF','TARGETPARTYMEMBER1']}
-    frames=[f for f in before.get('party_target_frames',[]) if f['unit']=='party1']
-    if not all(keys.values()) or len(frames)!=1 or before['target_units'].get('party1')!=peer.guid:
+    frames=[f for f in observed.get('party_frames',[]) if f['unit']=='party1']
+    if not all(keys.values()) or len(frames)!=1 or observed['units'].get('party1')!=peer.guid:
         raise RuntimeError('requires unambiguous observed owned-party frames and targeting bindings')
     self_action={'kind':'key','value':binding_key(keys['TARGETSELF'][0]),'hold':.4}
     party_action={'kind':'key','value':binding_key(keys['TARGETPARTYMEMBER1'][0]),'hold':.4}
@@ -102,10 +105,10 @@ def phase(t,peer,oracle,session,peer_session):
         focus(t,oracle,0,'targeting.clear_focus')
         hover(t,oracle,peer,frames[0])
     finally:
-        state,_=t.observe('targeting_cleanup')
-        if state.get('target_units',{}).get('focus'):focus(t,oracle,0,'fixture.clear_focus')
+        probe=detail(t,'targeting_cleanup')['targeting']
+        if probe['units']['focus']:focus(t,oracle,0,'fixture.clear_focus')
         t.execute({'kind':'hover','value':[1000,360]})
-        t.receipt['focus_restored']=not t.observe('focus_restored')[0].get('target_units',{}).get('focus');t.persist()
+        t.receipt['focus_restored']=not detail(t,'focus_restored')['targeting']['units']['focus'];t.persist()
         if not t.receipt['focus_restored']:raise RuntimeError('original empty focus did not restore')
 
 
