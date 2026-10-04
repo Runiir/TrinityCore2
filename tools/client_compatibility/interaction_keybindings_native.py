@@ -50,7 +50,9 @@ def suite(t):
                 lambda b,a,s:{'status':'fixture_settings_closed' if s and 'SettingsPanel' not in a['panels'] else
                     'client_or_protocol_failure'}),'fixture_settings_closed')
             if not t.receipt['settings_restored']:raise RuntimeError('original settings differ after binding trial')
-        t.clean_panels();after,frame=t.observe('native_bindings_restored')
+        t.clean_panels()
+        if afk(oracle)!=native['afk']:t.execute({'kind':'chat','value':'/afk'})
+        after,frame=t.observe('native_bindings_restored')
         checks={'resources':resources(oracle)==native['resources'],'stats':restored_native_state(native['stats'],native_state(oracle)),
             'spells':known(t.fixture['guid'])==native['spells'],'actions':saved_actions(t.fixture['guid'])==native['actions'],
             'pose':pose(oracle)==native['pose'],'afk':afk(oracle)==native['afk'],
