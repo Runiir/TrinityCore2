@@ -104,8 +104,9 @@ def suite(t):
     if companions!=t.native_mounts or not slot_matches(t,layout):raise RuntimeError('initial bar does not match native action rows')
     t.receipt.update(baseline=original,native_persisted_spells=spells,native_actions=t.native_actions,
         native_state_baseline=native,layout_baseline=layout,native_stance_contracts=t.contracts,
+        native_damage_restoration_tolerance={'relative':1e-6,'absolute':.002},
         native_spell_effect_sha256=lab.sha256(lab.ROOT/'data/dbc/enUS/SpellEffect.dbc'),
-        qualified_scope='Three stock stance buttons on one idle zero-rage warrior, ordinary clicks, native spell completions and shapeshift fields, active checkbox and all12 native action slots, then exact original stance/bar/resources restoration. Other classes, combat and rage retention remain open.');t.persist()
+        qualified_scope='Three stock stance buttons on one idle zero-rage warrior, ordinary clicks, native spell completions and shapeshift fields, active checkbox and all12 native action slots, then original stance/bar/resources restoration. Integer stats restore exactly; native weapon-damage floats allow only recorded rounding tolerance. Other classes, combat and rage retention remain open.');t.persist()
     try:
         for index in [r['index'] for r in layout['forms'] if r['index']!=layout['form']]+[layout['form']]:
             select(t,oracle,index,'actionbars.stance_bar.'+str(index))
