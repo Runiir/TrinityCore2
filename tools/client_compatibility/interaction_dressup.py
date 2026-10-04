@@ -11,6 +11,7 @@ from .interaction_tooltips import baseline,items
 from .interaction_equipment_set_roundtrip import stable
 from .observation.inventory import Inventory
 from .interaction_observation import read_current_page
+from .interaction_bridge_deploy import shot
 
 
 def detail(t,label,ready=None):
@@ -105,9 +106,35 @@ def suite(t):
     if not t.receipt['native_resources_preserved']:raise RuntimeError('dress-up preview changed the native fixture')
 
 
+def recover(t,source):
+    """Close the visually reviewed stock model left by the exact overflow trial."""
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('require an owned failed dress-up episode')
+    old=json.loads(source.read_text());original=stable(baseline())
+    if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or old.get('completed') or
+        not old.get('finished_at') or old.get('failure')!='RuntimeError: UI observation did not become decodable' or
+        old.get('native_resources_preserved') is not True or old.get('native_after')!=original):
+        raise RuntimeError('exact overflow source and native/client baseline differ')
+    frame=shot(t.out/'overflow_recovery_before.png')
+    t.receipt.update(recovery_source={'file':str(source),'sha256':lab.sha256(source)},baseline=original,
+        qualified_scope='Cleanup only: close the separately visually reviewed stock dressing window; no gameplay qualification.',
+        cleanup_input={'kind':'key','value':'Escape','before_frame':frame});t.persist()
+    t.execute({'kind':'key','value':'Escape'})
+    state,frame=t.observe('model_closed',seconds=60)
+    if 'DressUpFrame' in state['panels']:raise RuntimeError('one Escape did not close the stock model')
+    t.receipt['model_closed']={'state':state,'frame':frame};t.persist();t.clean_panels()
+    t.receipt['native_after']=stable(baseline());t.receipt['native_resources_preserved']=t.receipt['native_after']==original;t.persist()
+    if not t.receipt['native_resources_preserved']:raise RuntimeError('overflow cleanup changed native resources')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--recover-overflow',type=Path);a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:suite(t);t.receipt['completed']=True
+    try:
+        if a.recover_overflow:recover(t,a.recover_overflow)
+        else:suite(t)
+        t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
