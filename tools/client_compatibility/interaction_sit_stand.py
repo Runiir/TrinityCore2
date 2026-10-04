@@ -29,6 +29,11 @@ def afk(oracle):
 def select(t,oracle,wanted,label):
     since=time.time()
     def outcome(b,a,s):
+        # Native state can update before a background client's pose animation.
+        # Retain the early frame, then read without replaying the binding.
+        t.receipt.setdefault('pose_settling',[]).append({'label':label,
+            'started_at':time.time(),'seconds':12,'input_replayed':False})
+        t.persist();time.sleep(12)
         public=detail(t,label+'_value',lambda p:pose(oracle)['stand']==wanted)
         native=pose(oracle)
         packets=[{k:r[k] for k in ['time','direction','name','body']} for r in
