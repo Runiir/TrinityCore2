@@ -16,4 +16,5 @@ SpellBookObservation.lua
 ProfessionObservation.lua
 DressUpObservation.lua
 AchievementObservation.lua
+ActionBarObservation.lua
 ClientInteractions.lua
