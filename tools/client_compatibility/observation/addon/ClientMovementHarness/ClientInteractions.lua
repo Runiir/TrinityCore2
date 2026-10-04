@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=65,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=66,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -146,6 +146,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='tooltip' then data.tooltip_probe=Client442ObserveTooltip();return data end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end
+    if mode=='dressup' then data.dressup_probe=Client442ObserveDressUp();return data end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -602,7 +603,9 @@ local function snapshot(viewMode,viewPage)
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false
     data.framerate_text=FramerateText and trim(call(FramerateText.GetText,FramerateText),64)
     data.framerate=call(GetFramerate)
-    data.dressup=Client442ObserveDressUp()
+    -- Model links belong on their own bounded page, not the dense state page.
+    local dressup=Client442ObserveDressUp()
+    data.dressup_visible=dressup and dressup.visible or false
     data.input_aliases={}
     for _,name in ipairs({'LEAVEPARTY','PARTYLEAVE','INVITE','UNINVITE','FRIENDS','REMOVEFRIEND','RAID','READY_CHECK'}) do
         local aliases={}
@@ -638,6 +641,7 @@ local function update()
     if mode=='state' and autoPage==-1 then viewMode,viewPage='group',groupPage
     elseif mode=='state' and autoPage==-2 then viewMode,viewPage='equipment',1
     elseif mode=='state' and autoPage==-3 then viewMode,viewPage='spellbook',1
+    elseif mode=='state' and autoPage==-4 then viewMode,viewPage='dressup',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -648,10 +652,11 @@ local function update()
             autoPage=autoPhase=='controls' and autoPages>0 and math.min(controlPage,autoPages) or -1
             equipmentTick=equipmentTick+1
             if equipmentTick%2==0 then
-                if PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
+                if DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
+                elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
                 elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
             end
-        elseif viewMode=='equipment' or viewMode=='spellbook' then
+        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0
