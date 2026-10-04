@@ -4,9 +4,20 @@ from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_keybindings_native import suite as native_suite
-from .interaction_operations import controls,click_case
-from .interaction_macros import require,edit_case
+from .interaction_operations import controls,click_case as catalog_click
+from .interaction_macros import require,edit_case as catalog_edit
 from .interaction_observation import read_current_page
+from .interaction_control_target import click as target_click,edit as target_edit
+
+
+def click_case(t,label,goal,predicate,oracle):
+    if getattr(t,'targeted_controls',False):return target_click(t,label,goal,predicate,oracle)
+    return catalog_click(t,label,goal,predicate,oracle)
+
+
+def edit_case(t,label,goal,predicate,value):
+    if getattr(t,'targeted_controls',False):return target_edit(t,label,goal,predicate,value)
+    return catalog_edit(t,label,goal,predicate,value)
 
 
 def detail(t,label,ready=None):
@@ -103,7 +114,7 @@ def select(t,name,label):
 
 def delete_selected(t,label):
     p=detail(t,label+'_before');name=p['selected'].get('name')
-    if name not in NAMES:raise RuntimeError('refusing to delete a macro outside the owned fixture')
+    if name not in getattr(t,'owned_macro_names',NAMES):raise RuntimeError('refusing to delete a macro outside the owned fixture')
     counts=list(p['counts']);counts[p['tab']-1]-=1
     require(click_case(t,label+'_dialog','Open deletion confirmation for the selected disposable macro.',
         lambda c:c['name']=='MacroDeleteButton',lambda b,a,s:{'status':'macro_delete_dialog_pass' if s and
