@@ -5755,7 +5755,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_interface_boolean_settings"
     },
     {
       "id": "settings.nameplates",
@@ -5764,7 +5765,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_interface_boolean_settings"
     },
     {
       "id": "settings.floating_combat_text",
@@ -5773,7 +5775,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_interface_boolean_settings"
     },
     {
       "id": "settings.auto_loot",
@@ -5792,7 +5795,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_interface_boolean_settings"
     },
     {
       "id": "settings.addons",
@@ -11437,8 +11441,41 @@
           "sha256": "320ac112fe054220c8a4177959db20d0cf20a6da2406541c75bd649e939ec1f9"
         }
       ]
+    },
+    {
+      "id": "stock_interface_boolean_settings",
+      "operations": [
+        "settings.camera",
+        "settings.tutorials",
+        "settings.nameplates",
+        "settings.floating_combat_text"
+      ],
+      "scope": "On both owned idle human warriors, ordinary Settings search finds Follow Terrain, Tutorials, Enemy Units and Enable Floating Combat Text. Each observed stock checkbox changes once and reverses, with matching public Settings value and CVar. Original empty search, Controls category and all17 observed settings restore, the panels close, and native inventory, money and saved spells remain unchanged. Twenty-two exact frames receive visual review.",
+      "limits": "Checkbox configuration on two idle fixtures only. Terrain-following motion, camera presets, tutorial popups/reset, rendered enemy nameplates, floating combat-text events, other settings and reconnect persistence remain open. This batch has no failed episodes.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui50/primary_booleans_01/episode.json",
+          "sha256": "28117623b60a0644a9fd56873db2a6db687fd286f2f7fd50fbbcb26f2dc56379"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui50/scout_booleans_01/episode.json",
+          "sha256": "4a84765e631f6b11fae8756501cb123cfa41876bdca316de00619c0f8ea3f342"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui50/primary_boolean_visual_review.json",
+          "sha256": "b373c1eaf6c49efb3f4aaeea89970ad67aa7271c0745efbb831b45f8cf021268"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui50/scout_boolean_visual_review.json",
+          "sha256": "311a258e82f4f19ef3a61ebfd03a7587d4dd836b440da8119d4aff7c66a3be36"
+        }
+      ]
     }
   ],
-  "qualified_operations": 300,
+  "qualified_operations": 304,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

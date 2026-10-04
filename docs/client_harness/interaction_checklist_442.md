@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 300 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 304 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -766,11 +766,11 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.mouse_sensitivity`
 - [ ] `settings.keyboard_controls`
 - [ ] `settings.accessibility`
-- [ ] `settings.camera`
-- [ ] `settings.nameplates`
-- [ ] `settings.floating_combat_text`
+- [x] `settings.camera` (qualified variant; [evidence](#stock_interface_boolean_settings))
+- [x] `settings.nameplates` (qualified variant; [evidence](#stock_interface_boolean_settings))
+- [x] `settings.floating_combat_text` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.auto_loot` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
-- [ ] `settings.tutorials`
+- [x] `settings.tutorials` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [ ] `settings.addons`
 - [ ] `settings.apply`
 - [ ] `settings.cancel`
@@ -2094,3 +2094,14 @@ Remaining limits: Three boolean settings on two fixtures only. Audio output and 
 - [442_interactions_20261004_49.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_49.tar.gz.dvc), member `evidence/client_interactions_20261004_ui49/scout_booleans_02/episode.json`, SHA-256 `087fd1fdcf8af1ff34e7482427db9d076e53e0b40bd348591aaab93f9ca0f079`.
   Checked cases: `settings.inspect_menu` (panel_open_pass), `settings.inspect_open` (panel_open_pass), `settings.auto_loot.search` (ui_edit_pass), `settings.auto_loot.change` (stock_boolean_setting_pass), `settings.auto_loot.restore` (stock_boolean_setting_pass), `actionbars.lock_toggle.search` (ui_edit_pass), `actionbars.lock_toggle.change` (stock_boolean_setting_pass), `actionbars.lock_toggle.restore` (stock_boolean_setting_pass), `settings.mute.search` (ui_edit_pass), `settings.mute.change` (stock_boolean_setting_pass), `settings.mute.restore` (stock_boolean_setting_pass), `settings.restore_search` (ui_edit_pass), `settings.trial_close` (stock_settings_close_pass).
 - [442_interactions_20261004_49.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_49.tar.gz.dvc), member `evidence/client_interactions_20261004_ui49/boolean_visual_review.json`, SHA-256 `320ac112fe054220c8a4177959db20d0cf20a6da2406541c75bd649e939ec1f9`.
+
+### stock_interface_boolean_settings
+
+On both owned idle human warriors, ordinary Settings search finds Follow Terrain, Tutorials, Enemy Units and Enable Floating Combat Text. Each observed stock checkbox changes once and reverses, with matching public Settings value and CVar. Original empty search, Controls category and all17 observed settings restore, the panels close, and native inventory, money and saved spells remain unchanged. Twenty-two exact frames receive visual review.
+
+Remaining limits: Checkbox configuration on two idle fixtures only. Terrain-following motion, camera presets, tutorial popups/reset, rendered enemy nameplates, floating combat-text events, other settings and reconnect persistence remain open. This batch has no failed episodes.
+
+- [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/primary_booleans_01/episode.json`, SHA-256 `28117623b60a0644a9fd56873db2a6db687fd286f2f7fd50fbbcb26f2dc56379`.
+- [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/scout_booleans_01/episode.json`, SHA-256 `4a84765e631f6b11fae8756501cb123cfa41876bdca316de00619c0f8ea3f342`.
+- [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/primary_boolean_visual_review.json`, SHA-256 `b373c1eaf6c49efb3f4aaeea89970ad67aa7271c0745efbb831b45f8cf021268`.
+- [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/scout_boolean_visual_review.json`, SHA-256 `311a258e82f4f19ef3a61ebfd03a7587d4dd836b440da8119d4aff7c66a3be36`.
