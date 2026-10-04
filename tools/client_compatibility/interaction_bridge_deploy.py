@@ -134,7 +134,7 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
-def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False):
+def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False,keyboard_modal=False):
     """Emit one reviewed lobby input, then require a new screen review."""
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
@@ -154,16 +154,22 @@ def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False):
             raise RuntimeError('reconnect after modal requires its closed dismissal receipt')
         suffix=('_disconnect_dismiss' if dismiss_dialog else '_login_after_dismiss' if after_dismiss else
             '_login'+('' if attempt==1 else str(attempt)))
+        if keyboard_modal:
+            if not dismiss_dialog:raise ValueError('keyboard modal input requires the reviewed Okay dialog')
+            suffix+='_key'
         t=Trial(out/(name+suffix),controller='code')
         try:
             t.receipt['qualified_scope']='Reviewed disconnect '+('Okay' if dismiss_dialog else 'Reconnect')+' input only; next lobby screen requires separate visual review'
             frame=shot(t.out/'before.png');action={'kind':'click','value':[640,380 if dismiss_dialog else 418],'hold':.4}
+            if keyboard_modal:action={'kind':'key','value':'Return','hold':.4}
             if after_dismiss:t.receipt['modal_dismissal']={'file':str(dismissed),'sha256':lab.sha256(dismissed)}
             if attempt==2:
                 t.receipt['previous_input']={'file':str(prior),'sha256':lab.sha256(prior),
                     'reason':'Separately reviewed unchanged disconnect dialog; first acknowledged short click did not advance.'}
             t.receipt['lobby_input']={'input':action,'before_frame':frame};t.persist()
-            t.io.click(*action['value'],hold=action['hold']);time.sleep(3)
+            if action['kind']=='key':t.io.key(action['value'],hold=action['hold'])
+            else:t.io.click(*action['value'],hold=action['hold'])
+            time.sleep(3)
             t.receipt.update(completed=True,next_screen=shot(t.out/'next_screen.png'),requires_lobby_review=True)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
@@ -259,7 +265,7 @@ if __name__=='__main__':
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)
     elif args.action in ['resume-login','dismiss-dialog','resume-after-dismiss']:
         if args.actor is None or not args.disconnect_screen:parser.error('login resumption requires actor and reviewed disconnect screen')
-        resume_login(args.output,args.actor,args.login_attempt,args.action=='dismiss-dialog',args.action=='resume-after-dismiss')
+        resume_login(args.output,args.actor,args.login_attempt,args.action=='dismiss-dialog',args.action=='resume-after-dismiss',args.keyboard_modal)
     elif args.action=='select-realm':
         if args.actor is None:parser.error('realm selection requires an actor')
         select_realm(args.output,args.actor)
