@@ -125,7 +125,7 @@ def suite(out):
         report['temporary_party']={'source':'ordinary_fixture_inputs','qualification':False}
         with actor('primary'):
             state,_=trials['primary'].observe('party_setup_before')
-            if '/uninvite' not in state['group_aliases'].get('SLASH_UNINVITE1',[]):
+            if '/uninvite' not in state['input_aliases'].get('UNINVITE',[]):
                 raise RuntimeError('ordinary party cleanup alias is not observed')
             party_attempted=True;trials['primary'].execute({'kind':'chat','value':'/invite Harnesstwo'})
         with actor('scout'):
