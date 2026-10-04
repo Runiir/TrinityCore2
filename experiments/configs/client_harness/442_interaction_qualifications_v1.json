@@ -3266,6 +3266,128 @@
           "sha256": "9fc9541a406e7d88de197f8f931841c020459b3b5eb0b76762711509b2232d35"
         }
       ]
+    },
+    {
+      "id": "owned_party_assist_target_target",
+      "operations": [
+        "targeting.assist",
+        "targeting.target_target"
+      ],
+      "scope": "Both owned idle human warriors use the observed stock F assist binding and ordinary targettarget command after exact native/public peer-target attribution. All 28 qualifying selection checks, six attribution checks and 20 full character restoration checks pass. Rendered owner-level target frames/selection circles agree with exact native requests and public GUIDs. Positions/map/orientation, party and four temporary teleport rows restore.",
+      "limits": "Owned party levels 85/1 only. Combat, enemy/raid variants and a separate rendered target-of-target frame remain open. Original missing-translation, autocomplete and redundant-selection failures remain unqualified.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/owned_assist04/primary/episode.json",
+          "sha256": "93efa68f8ac6688709d1df90321bfa86f6868f48253c98fcf698dad7a4f56a6a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/owned_assist04/scout/episode.json",
+          "sha256": "5fc45cb3b01d794faf7f0f7f4f3c677295632c8e47cb0e9e9eabfcb74bd0675a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/owned_assist04/cohort.json",
+          "sha256": "a1bba61b3ca72750e87674cdf91c3b8fd775462c7e70fbe02256ba940e414f3c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/owned_assist04/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/assist_visual_acceptance_review.json",
+          "sha256": "af9ee8fdbd905b04ef55f457021345f020619fb03c92828d754927fbc31b50a5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/assist_failure_review.json",
+          "sha256": "f885b603f17bffda16379e549e9751fcad3511361f4b266d2893b850dcb1f27b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/invite_autocomplete_review.json",
+          "sha256": "e5263a5dabb95c68537b87d4d7f772aeb49459a6e8d8aa4a061592957042504a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/redundant_selection_failure_review.json",
+          "sha256": "942e07beab24a25f13f2132f5b733a22e6764af943576069ec7bb6f0283866a9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/deployment_visual_review.json",
+          "sha256": "6ca6ea74294b2ff560140fd0d51dd3af23374e86f4a7158dec24d90e46771eff"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/resource_review.json",
+          "sha256": "4b483f625de6ecfc9fb84f45f0b78eb6453a75c27abf46c0ece4ee4231e7e25f"
+        }
+      ]
+    },
+    {
+      "id": "owned_world_player_hover",
+      "operations": [
+        "targeting.mouseover",
+        "targeting.tooltip"
+      ],
+      "scope": "Both actors hover the visually reviewed nearby owned world player at a point bound to that exact scene hash. Exact public mouseover GUID and rendered stock tooltip name, native level, human race and warrior class agree. All 14 hover checks and 20 full character restoration checks pass. Native selection and positions stay unchanged; the temporary party and four teleport rows restore.",
+      "limits": "Standing idle nearby owned party players at levels 85/1 only. Earlier party-frame hover failures remain unqualified with cause unproven. NPC/enemy/combat/raid frame and cross-realm variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/world_hover01/primary/episode.json",
+          "sha256": "a9bc586d1a9ec7917d72951aaac66784ae2360f7a0df451759285eb4613bd407"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/world_hover01/scout/episode.json",
+          "sha256": "33ddfa52b1b4814c17045e197107640eb04de3cc8a9ad4ae6c9f286f5a39927d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/world_hover01/cohort.json",
+          "sha256": "0f7cfe8cbaa7ec0f974ace8a4e30161bb9aa165946d2c29604c6fcb453626b09"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/world_hover01/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/world_hover_visual_acceptance_review.json",
+          "sha256": "1b8584e9ee923b3cb5f71cbbaebde5ffbef664e8301f71d91a1fb1710db6a3ba"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/assist_failure_review.json",
+          "sha256": "f885b603f17bffda16379e549e9751fcad3511361f4b266d2893b850dcb1f27b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/invite_autocomplete_review.json",
+          "sha256": "e5263a5dabb95c68537b87d4d7f772aeb49459a6e8d8aa4a061592957042504a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/redundant_selection_failure_review.json",
+          "sha256": "942e07beab24a25f13f2132f5b733a22e6764af943576069ec7bb6f0283866a9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/deployment_visual_review.json",
+          "sha256": "6ca6ea74294b2ff560140fd0d51dd3af23374e86f4a7158dec24d90e46771eff"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui61/resource_review.json",
+          "sha256": "4b483f625de6ecfc9fb84f45f0b78eb6453a75c27abf46c0ece4ee4231e7e25f"
+        }
+      ]
     }
   ]
 }
