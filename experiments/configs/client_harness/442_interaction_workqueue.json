@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "319/916 reviewed scoped operations. UI58 qualifies ordinary walk/run toggling and bounded autorun in both owned clients with native cadence/peer agreement and full restoration. Both presenters stay partly visible on HDMI-1 at~15FPS. Failed01/02 remain preserved. UI59 continues owner sheath rendering and flat-ground jump/landing.",
+  "current": "321/916 reviewed scoped operations. UI59 qualifies scout owner/peer melee sheath rendering and both flat-ground jump/landing controls with full restorations. Seated standalone sheath and initial jump sign-check failures remain preserved. UI60 continues stock owned-party targeting, client-local focus and hover controls with observer76.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -148,7 +148,8 @@
     "ui43/DVC44:11 selected JSON/167 attributed PNG verified; six stock spellbook operations qualified from both whole navigation02 trials and16 visually reviewed phases.270/916.",
     "ui56/sheath01: native/public sheath changes and full restoration; rendered draw/sheath unqualified, primary ranged-cycle readiness failure retained",
     "ui57/sheath_peer01: five complete native cycles; peer scout weapon rendering passes after settling, owner view remains unqualified; float-row cleanup failure recovered separately",
-    "ui58/ground_modes03: both walk/run cadences and bounded autorun,20 restoration checks, native/public/peer agreement; layout repair and failed01/02 retained."
+    "ui58/ground_modes03: both walk/run cadences and bounded autorun,20 restoration checks, native/public/peer agreement; layout repair and failed01/02 retained.",
+    "ui59/sheath_peer02 and ground_jump02: scout drawn/back sword rendering, both visible jumps and native/peer landing,40 full restoration checks; standalone seated and checker failures retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
@@ -174,6 +175,7 @@
     "ui42/character_spell_bridge_deploy_01: both reviewed ordinary Reconnect attempts left disconnect dialog visible; input-only completion is not authentication/world-entry acceptance. Fresh owned launcher/realm/character/world entries pass separately; cached reconnect remains unqualified.",
     "UI56 weapons stay visually on the back in reviewed sheath states despite native/public agreement; primary requires melee/ranged/unarmed cycle handling.",
     "UI57 narrows the sheath defect to owner world-model rendering; scout peer view draws/sheaths. Precise heavy-primary peer rendering remains unclaimed.",
-    "UI58 ground_modes01 rendered at~1FPS under completely overlapping presenters. Owned partial-visibility layout restores~15FPS and native2.5/7yd/s cadence; sheath owner rendering needs a fresh retest. Ground_modes02 failed after probe diagnostics delayed autorun stop; corrected stop-before-I/O adapter passes03."
+    "UI58 ground_modes01 rendered at~1FPS under completely overlapping presenters. Owned partial-visibility layout restores~15FPS and native2.5/7yd/s cadence; sheath owner rendering needs a fresh retest. Ground_modes02 failed after probe diagnostics delayed autorun stop; corrected stop-before-I/O adapter passes03.",
+    "UI59 standalone sheath02 inputs were ignored while seated/AFK; standing peer cohort passes. Jump01 failed a positive vertical-speed checker assumption; captured field is negative and peer height rises; corrected jump02 passes. First3 regression fixture errors and15 corrected passes retained."
   ]
 }

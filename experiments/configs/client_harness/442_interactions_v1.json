@@ -6127,7 +6127,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "flat_ground_jump_landing"
     },
     {
       "id": "movement.sit",
@@ -6156,7 +6157,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "standing_scout_weapon_cycle"
     },
     {
       "id": "movement.swim",
@@ -11733,8 +11735,98 @@
           "sha256": "40d4a32877902395f496fb3d898399835e2b7d4f8039d33c9621abb9f6b05ead"
         }
       ]
+    },
+    {
+      "id": "standing_scout_weapon_cycle",
+      "operations": [
+        "movement.sheath"
+      ],
+      "scope": "Standing level1 scout cycles native melee1 and unarmed0 through the installed Z binding. Native/modern requests, authoritative sheath states and owner/peer sword-in-hand versus back rendering agree. The primary also completes native1/2/0;55 cycle checks and20 full character restoration checks pass. Temporary party, both original native positions/map/orientations, pose/AFK, main bar, resources, stats, spells/actions and four teleport rows restore.",
+      "limits": "Exact heavy-primary/ranged weapon rendering remains unclaimed. Both presenters render~15FPS and stay on HDMI-1. Earlier1FPS owner-rendering and seated/AFK standalone failures remain unqualified. Other races, weapons, combat and persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_peer02/primary/episode.json",
+          "sha256": "7f75cff6514899d46330efb96dfc9492321e29f2c94e75010d1300927c4ae3e8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_peer02/scout/episode.json",
+          "sha256": "c900d9dae809fed3117629fa5c81c808baaed951212a1b08add9d8c0e1732378"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_peer02/cohort.json",
+          "sha256": "67d5f435ba4a76f7417144fbd07af93143741b91ce91dd6fb10d8542ff89e3ce"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_peer02/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_visual_acceptance_review.json",
+          "sha256": "9bef562a74eafc739e36abd5d9cf81259159085a3b08c9d7f20e150b98285e74"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_failure_review.json",
+          "sha256": "925e5723aa7b42dc4f43531038e2ac2bf5a0a74b1ac3b82e17d12217ec0775a1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/resource_review.json",
+          "sha256": "d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24"
+        }
+      ]
+    },
+    {
+      "id": "flat_ground_jump_landing",
+      "operations": [
+        "movement.jump"
+      ],
+      "scope": "Both owned standing idle human warriors jump once through the installed SPACE binding. Native byte-matched jump/landing requests, peer airborne height gain and final flags0 agree with visibly airborne owner/peer frames and grounded landing frames. All26 jump checks and20 full character restoration checks pass. Both positions/map/orientations, party, pose/AFK, main bar, native resources/stats/spells/actions and temporary teleport rows restore.",
+      "limits": "Only flat Northshire ground at levels85/1. Moving jumps, terrain, height falls, damage, water, mounts/transports, combat and persistence remain open. Jump01 failed the checker positive-speed assumption despite accepted native jump/landing; it remains unqualified. Captured negative-speed/observed-height regressions pass15 after correcting3 test-fixture tuple errors.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/ground_jump02/primary/episode.json",
+          "sha256": "0f11257d69f08adca2f4df7e8876e456b53b6b125ff5c2eb418ed3dea7746148"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/ground_jump02/scout/episode.json",
+          "sha256": "87f5ce53adba8c9a0fe165945c73cbebe969721c9c13b83208c690cda4026756"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/ground_jump02/cohort.json",
+          "sha256": "0a0d16aeea90560b3cb8ece9a27445ebd6c1d01c5fbbd5dfc440a35d9a5692d3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/ground_jump02/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/jump_visual_acceptance_review.json",
+          "sha256": "995b9ff9b25fd0f447a5993404bb7755eadc9ac5a95b93a1734fac858d028477"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/sheath_failure_review.json",
+          "sha256": "925e5723aa7b42dc4f43531038e2ac2bf5a0a74b1ac3b82e17d12217ec0775a1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui59/resource_review.json",
+          "sha256": "d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24"
+        }
+      ]
     }
   ],
-  "qualified_operations": 319,
+  "qualified_operations": 321,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

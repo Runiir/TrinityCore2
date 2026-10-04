@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 319 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 321 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -820,10 +820,10 @@ Fixture: `safe_terrain_variants`.
 - [x] `movement.autorun` (qualified variant; [evidence](#stock_walk_run_autorun))
 - [x] `movement.stop` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.walk_toggle` (qualified variant; [evidence](#stock_walk_run_autorun))
-- [ ] `movement.jump`
+- [x] `movement.jump` (qualified variant; [evidence](#flat_ground_jump_landing))
 - [x] `movement.sit` (qualified variant; [evidence](#stock_sit_stand_native_pose))
 - [x] `movement.stand` (qualified variant; [evidence](#stock_sit_stand_native_pose))
-- [ ] `movement.sheath`
+- [x] `movement.sheath` (qualified variant; [evidence](#standing_scout_weapon_cycle))
 - [ ] `movement.swim`
 - [ ] `movement.dive`
 - [ ] `movement.surface`
@@ -2182,3 +2182,31 @@ Remaining limits: Idle level85/1 human warriors on open Northshire ground with e
 - [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes_failure_review.json`, SHA-256 `8f5aebf77b78119a8f1e02661c1387b0fede40bb7b1818257e7352496571000c`.
 - [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/window_layout01/layout.json`, SHA-256 `21f5e676d5597c36b46d13e2e29815ff4db8469e3852aaaf6daa969fde506a40`.
 - [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/resource_review.json`, SHA-256 `40d4a32877902395f496fb3d898399835e2b7d4f8039d33c9621abb9f6b05ead`.
+
+### standing_scout_weapon_cycle
+
+Standing level1 scout cycles native melee1 and unarmed0 through the installed Z binding. Native/modern requests, authoritative sheath states and owner/peer sword-in-hand versus back rendering agree. The primary also completes native1/2/0;55 cycle checks and20 full character restoration checks pass. Temporary party, both original native positions/map/orientations, pose/AFK, main bar, resources, stats, spells/actions and four teleport rows restore.
+
+Remaining limits: Exact heavy-primary/ranged weapon rendering remains unclaimed. Both presenters render~15FPS and stay on HDMI-1. Earlier1FPS owner-rendering and seated/AFK standalone failures remain unqualified. Other races, weapons, combat and persistence remain open.
+
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_peer02/primary/episode.json`, SHA-256 `7f75cff6514899d46330efb96dfc9492321e29f2c94e75010d1300927c4ae3e8`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_peer02/scout/episode.json`, SHA-256 `c900d9dae809fed3117629fa5c81c808baaed951212a1b08add9d8c0e1732378`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_peer02/cohort.json`, SHA-256 `67d5f435ba4a76f7417144fbd07af93143741b91ce91dd6fb10d8542ff89e3ce`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_peer02/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_visual_acceptance_review.json`, SHA-256 `9bef562a74eafc739e36abd5d9cf81259159085a3b08c9d7f20e150b98285e74`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_failure_review.json`, SHA-256 `925e5723aa7b42dc4f43531038e2ac2bf5a0a74b1ac3b82e17d12217ec0775a1`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/resource_review.json`, SHA-256 `d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24`.
+
+### flat_ground_jump_landing
+
+Both owned standing idle human warriors jump once through the installed SPACE binding. Native byte-matched jump/landing requests, peer airborne height gain and final flags0 agree with visibly airborne owner/peer frames and grounded landing frames. All26 jump checks and20 full character restoration checks pass. Both positions/map/orientations, party, pose/AFK, main bar, native resources/stats/spells/actions and temporary teleport rows restore.
+
+Remaining limits: Only flat Northshire ground at levels85/1. Moving jumps, terrain, height falls, damage, water, mounts/transports, combat and persistence remain open. Jump01 failed the checker positive-speed assumption despite accepted native jump/landing; it remains unqualified. Captured negative-speed/observed-height regressions pass15 after correcting3 test-fixture tuple errors.
+
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/ground_jump02/primary/episode.json`, SHA-256 `0f11257d69f08adca2f4df7e8876e456b53b6b125ff5c2eb418ed3dea7746148`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/ground_jump02/scout/episode.json`, SHA-256 `87f5ce53adba8c9a0fe165945c73cbebe969721c9c13b83208c690cda4026756`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/ground_jump02/cohort.json`, SHA-256 `0a0d16aeea90560b3cb8ece9a27445ebd6c1d01c5fbbd5dfc440a35d9a5692d3`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/ground_jump02/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/jump_visual_acceptance_review.json`, SHA-256 `995b9ff9b25fd0f447a5993404bb7755eadc9ac5a95b93a1734fac858d028477`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/sheath_failure_review.json`, SHA-256 `925e5723aa7b42dc4f43531038e2ac2bf5a0a74b1ac3b82e17d12217ec0775a1`.
+- [442_interactions_20261004_59.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_59.tar.gz.dvc), member `evidence/client_interactions_20261004_ui59/resource_review.json`, SHA-256 `d95fde7e28e42f6b4f58799c6fcf7a3c873585ed0d2607a395a83dac3ddbae24`.
