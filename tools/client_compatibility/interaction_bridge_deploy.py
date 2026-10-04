@@ -103,7 +103,10 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
                 t.receipt['lobby_inputs'].append({'source':'code_fixture_reconnect','label':label,
                     'point':None if use_key else point,'key':'Return' if use_key else None,'before_frame':frame})
                 t.persist()
-            state,frame=t.observe('reconnected');entry=actors.session_entry(t.fixture)
+            # Two background clients can spend longer loading after a long idle.
+            # Extend only this read-only readiness wait, never replay login input.
+            t.receipt['reentry_observation_timeout']=120;t.persist()
+            state,frame=t.observe('reconnected',seconds=120);entry=actors.session_entry(t.fixture)
             restored=all(state.get(key)==value for key,value in report['baselines'][name].items())
             if (state.get('observer_version')!=report['observer_version'] or state.get('lua_errors') or
                     state.get('blocked_actions') or not restored):

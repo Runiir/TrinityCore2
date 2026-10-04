@@ -109,11 +109,12 @@ class Trial:
             self.receipt['input_initialization']=self.io.initialization
         lab.private_write(self.out/'episode.json',json.dumps(self.receipt,indent=2)+'\n')
 
-    def observe(self,label):
+    def observe(self,label,seconds=28):
+        if not 1<=seconds<=180:raise ValueError('observation timeout exceeds its bounded duration')
         from PIL import Image
         from tools.second_client import ctl
         ctl._launcher_env=lab.client_environment
-        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+28
+        monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+seconds
         # Multiple cleanup calls and settling samples may reuse a logical label.
         # A receipt's retained frame must never be overwritten by a later read.
         suffix=1
