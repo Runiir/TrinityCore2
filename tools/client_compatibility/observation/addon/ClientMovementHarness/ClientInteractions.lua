@@ -22,6 +22,7 @@ local panels={'CharacterFrame','PaperDollFrame','ReputationFrame','TokenFrame','
 local sequence,elapsed,mode,page=0,0,'state',1
 local autoPage,autoPages,groupPage=0,0,1
 local autoPhase,controlPage='group',1
+local equipmentTick=0
 local errors={}
 local chatProbes={}
 local luaErrors={}
@@ -126,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=59,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=60,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -628,6 +629,7 @@ local function update()
     sequence=(sequence+1)%4294967296
     local viewMode,viewPage=mode,page
     if mode=='state' and autoPage==-1 then viewMode,viewPage='group',groupPage
+    elseif mode=='state' and autoPage==-2 then viewMode,viewPage='equipment',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -636,6 +638,12 @@ local function update()
         if viewMode=='state' then
             autoPages=math.ceil((data.control_count or 0)/12)
             autoPage=autoPhase=='controls' and autoPages>0 and math.min(controlPage,autoPages) or -1
+            equipmentTick=equipmentTick+1
+            if equipmentTick%2==0 and PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2 end
+        elseif viewMode=='equipment' then
+            -- Passive equipment readings alternate with state. Group/control
+            -- progress is retained, so this cannot starve the normal pages.
+            autoPage=0
         elseif viewMode=='group' then
             if groupPage<math.ceil((data.group_count or 0)/6) then groupPage=groupPage+1
             else groupPage=1;autoPhase='controls';controlPage=1 end

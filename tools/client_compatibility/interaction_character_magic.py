@@ -51,7 +51,10 @@ def verify(t,oracle,label):
         dodge_text,dodge=text_value(sheet,'DEFENSE','Dodge');parry_text,parry=text_value(sheet,'DEFENSE','Parry')
         checks={'ordinary_hover':s=='inspect','public_spell_haste':close(public.get('spell_haste'),expected['spell_haste']),
             'rendered_spell_haste':close(haste,expected['spell_haste']),
-            'rendered_dodge':close(dodge,expected['dodge']),'rendered_parry':close(parry,expected['parry']),
+            'public_dodge':close(public.get('dodge'),expected['dodge']),
+            'public_parry':close(public.get('parry'),expected['parry']),
+            'rendered_dodge':dodge==math.floor(expected['dodge']+.5),
+            'rendered_parry':parry==math.floor(expected['parry']+.5),
             'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'character_spell_defense_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'native':expected,'public':public,
@@ -82,7 +85,8 @@ def suite(t,roundtrip):
             lambda b,a,s:{'status':'character_stats_sidebar_pass' if s and detail(t,'selected_stats')['stats']['sheet'] else
                 'client_or_protocol_failure'}),'character_stats_sidebar_pass')
         probe=detail(t,'layout_baseline')['stats'];layout={row['category']:row['collapsed'] for row in probe['categories']}
-        settings=probe['category_settings'];t.receipt['category_baseline']={'layout':layout,'settings':settings};t.persist()
+        if not probe.get('category_bits_valid'):raise RuntimeError('stock category bitfield API is unavailable')
+        settings=probe['category_settings'];t.receipt['category_baseline']={'layout':layout,'settings':settings,'bits':probe['category_bits']};t.persist()
         for category,want in [('GENERAL',True),('ATTRIBUTES',True),('MELEE',True),('RANGED',True),('SPELL',False),('DEFENSE',False)]:
             if layout[category]!=want:changed.append(category);toggle(t,category,want,'setup_'+category)
         equipped=verify(t,oracle,'equipped_before')
@@ -114,8 +118,12 @@ def suite(t,roundtrip):
             try:
                 for category in reversed(changed):toggle(t,category,layout[category],'restore_'+category)
                 if layout is not None:
-                    after=detail(t,'layout_restored')['stats'];t.receipt['category_restoration']={'layout':{row['category']:row['collapsed'] for row in after['categories']},'settings':after['category_settings']}
-                    if t.receipt['category_restoration']!=t.receipt['category_baseline']:raise RuntimeError('original category layout/settings did not restore')
+                    after=detail(t,'layout_restored')['stats'];t.receipt['category_restoration']={'layout':{row['category']:row['collapsed'] for row in after['categories']},'settings':after['category_settings'],'bits':after['category_bits']}
+                    restored=t.receipt['category_restoration'];before=t.receipt['category_baseline']
+                    unchanged=(after.get('category_bits_valid') and restored['layout']==layout and restored['bits']==before['bits'] and
+                        all(restored['settings'][k]==settings[k] for k in ['order','order_2','collapsed_2']))
+                    t.receipt['category_settings_preserved']=bool(unchanged)
+                    if not unchanged:raise RuntimeError('original category layout/settings did not restore')
             finally:
                 try:restore_display(t,collapsed)
                 finally:

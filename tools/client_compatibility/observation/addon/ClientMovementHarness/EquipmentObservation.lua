@@ -31,6 +31,16 @@ function Client442ObserveEquipment()
         end
     end
     local sheet,categories={},{}
+    local categoryBits,categoryBitsValid={},true
+    for _,name in ipairs({'statCategoriesCollapsed','statCategoriesCollapsed_2'}) do
+        local bits={}
+        for index=1,32 do
+            local value=read(GetCVarBitfield,name,index)
+            if type(value)~='boolean' then categoryBitsValid=false end
+            bits[index]=value==true
+        end
+        categoryBits[name]=bits
+    end
     local spellCrit={}
     local ratings={}
     for school=1,7 do spellCrit[school]=read(GetSpellCritChance,school) end
@@ -62,7 +72,8 @@ function Client442ObserveEquipment()
             mastery=read(GetMastery),dodge=read(GetDodgeChance),parry=read(GetParryChance),
             block=read(GetBlockChance),shield_block=read(GetShieldBlock),
             attack_power={read(UnitAttackPower,'player')},item_level={read(GetAverageItemLevel)},sheet=sheet,
-            categories=categories,category_settings={order=read(GetCVar,'statCategoryOrder'),
+            categories=categories,category_bits=categoryBits,category_bits_valid=categoryBitsValid,
+            category_settings={order=read(GetCVar,'statCategoryOrder'),
                 collapsed=read(GetCVar,'statCategoriesCollapsed'),order_2=read(GetCVar,'statCategoryOrder_2'),
                 collapsed_2=read(GetCVar,'statCategoriesCollapsed_2')}},
         manager_visible=pane and not not read(pane.IsVisible,pane) or false,

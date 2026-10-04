@@ -12,8 +12,11 @@ def read_page(t,label,mode,text,ready=None):
 
 
 def read_current_page(t,label,mode,ready=None):
-    """Read an already selected page, including while a normal key is held."""
+    """Read a selected or automatically cycled page without sending any input."""
     deadline=time.monotonic()+12;pending=[];path=t.out/(label+'.png')
+    suffix=1
+    while path.exists():
+        path=t.out/(label+'_'+str(suffix)+'.png');suffix+=1
     while True:
         frame=shot(path)
         with Image.open(path) as image:state=decode_image(image)

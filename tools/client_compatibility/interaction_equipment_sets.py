@@ -3,9 +3,9 @@ import argparse,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
-from .interaction_operations import controls,click_case,command
+from .interaction_operations import controls,click_case
 from .interaction_macros import require,edit_case
-from .interaction_observation import read_page
+from .interaction_observation import read_current_page
 from .interaction_tooltips import baseline
 
 NAME='HarnessUI36'
@@ -19,11 +19,10 @@ def sets():
 
 
 def detail(t,label):
-    try:
-        state,frame=read_page(t,label,'equipment','/tcui equipment')
-        t.receipt.setdefault('equipment_details',{})[label]={'state':state,'frame':frame};t.persist()
-        return state['equipment_probe']
-    finally:command(t,'/tcui state')
+    state,frame=read_current_page(t,label,'equipment')
+    if state.get('observer_version',0)<60:raise RuntimeError('passive equipment observations require observer 60')
+    t.receipt.setdefault('equipment_details',{})[label]={'state':state,'frame':frame,'input_sent':False};t.persist()
+    return state['equipment_probe']
 
 
 def suite(t,phase):

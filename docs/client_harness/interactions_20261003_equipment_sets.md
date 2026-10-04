@@ -370,3 +370,22 @@ augments character.stats; unique coverage stays264/916. Both failed
 post-fix roots retain their failures. The next batch pins six real missing
 public cast-speed/spell-haste sparse updates, with three creation/unchanged
 checks passing.
+
+Observer60 automatically emits equipment observations while the stock
+PaperDollFrame is visible. New equipment/stat trials need this version and
+read those pages without typing `/tcui equipment` or `/tcui state`. Normal
+state, group and control pages continue cycling. To reproduce the spell
+trial, run `interaction_character_magic --belt-roundtrip --output
+<new-owned-directory>` through the authentication Pixi manifest. The visible
+actions open character stats, collapse categories to expose Spell/Defense,
+drag the belt into a bag, right-click it to equip, and restore the layout.
+Passive observations are not player actions or additional coverage.
+
+UI42's first spell trial fails two test assertions before any belt change:
+the stock defense labels round percentages to whole numbers, and an ordinary
+category toggle can rewrite the CVar bitfield's string representation while
+preserving its value. The corrected trial checks precise public/native
+percentages separately from rounded labels and compares all32 public bits
+of both saved collapse profiles. Order settings and the inactive profile's
+raw string must also remain unchanged. The first failed root is retained;
+all original native resources and visible category states were restored.
