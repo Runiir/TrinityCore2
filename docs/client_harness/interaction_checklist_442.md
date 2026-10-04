@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 317 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 319 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -817,9 +817,9 @@ Fixture: `safe_terrain_variants`.
 - [x] `movement.strafe_left` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.strafe_right` (qualified variant; [evidence](#follow))
 - [ ] `movement.mouse_turn`
-- [ ] `movement.autorun`
+- [x] `movement.autorun` (qualified variant; [evidence](#stock_walk_run_autorun))
 - [x] `movement.stop` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
-- [ ] `movement.walk_toggle`
+- [x] `movement.walk_toggle` (qualified variant; [evidence](#stock_walk_run_autorun))
 - [ ] `movement.jump`
 - [x] `movement.sit` (qualified variant; [evidence](#stock_sit_stand_native_pose))
 - [x] `movement.stand` (qualified variant; [evidence](#stock_sit_stand_native_pose))
@@ -2166,3 +2166,19 @@ Remaining limits: Idle levels85/1 human warriors on open Northshire ground in a 
 - [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/scout_ground_visual_review.json`, SHA-256 `0334c8ff49781909bb8c1f980f204dd4cd13b62308da6f39c14278bbbd974165`.
 - [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_failure_review.json`, SHA-256 `b8b5f5ca1e1d93b638cbb84eb8a9e319247ac3b9b3984e3db0f482f9f9eecee3`.
 - [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/input_regression_review.json`, SHA-256 `581d5abfaf672e3e218e197321ad8cb7639af57f1623f0c240175c133186c401`.
+
+### stock_walk_run_autorun
+
+UI58 ground_modes03 toggles the observed NUMPADDIVIDE binding through walk and run on both owned human warriors. Native accepted flags, exact modern/native requests, peer broadcasts and public final positions agree. W movement matches native2.5yd/s walking and7yd/s running on both actors. Two NUMLOCK presses start and stop each actor within13yd; native/peer stop flags0, public speed0 and private NumLock state restore. Eight reviewed world/restoration frames retain normal action bars. All20 character checks, native position/orientation/map, temporary party and four teleport rows restore.
+
+Remaining limits: Idle level85/1 human warriors on open Northshire ground with each owned presenter partly visible on HDMI-1 and at least10 rendered FPS. Ordinary installed bindings only; other terrain, combat, follow, swim/fly and persistence variants remain open. Static frames do not measure cadence. Failed ground_modes01 at~1FPS and ground_modes02 with a delayed probe stop remain unqualified and preserved. Window layout repair changes no speed fields or game CVars and preserves host input focus.
+
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes03/primary/episode.json`, SHA-256 `8e5a104f5bf5d6c9b4d6b0e84bc6993370af4d45c2d0990df723673028eb3660`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes03/scout/episode.json`, SHA-256 `4ea1e0b8600cb0843f81082084012de3e60505cbc3043a19eac01d5325e193fd`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes03/cohort.json`, SHA-256 `1cb2694eab6a3bfd919ed238294e279a6c125163843537828d7f3f88f69472a7`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes03/nearby_restoration.json`, SHA-256 `41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes_visual_review.json`, SHA-256 `86804a404b6f4ecb6455aeafdc058fa74824d6753d8a493c228a3cebbeaf3b6e`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes_acceptance_review.json`, SHA-256 `5d63a9b9c9dd8826bc262efc5cfd13367ca8e08e0954c059a4898a646d6bb7ed`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/ground_modes_failure_review.json`, SHA-256 `8f5aebf77b78119a8f1e02661c1387b0fede40bb7b1818257e7352496571000c`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/window_layout01/layout.json`, SHA-256 `21f5e676d5597c36b46d13e2e29815ff4db8469e3852aaaf6daa969fde506a40`.
+- [442_interactions_20261004_58.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc), member `evidence/client_interactions_20261004_ui58/resource_review.json`, SHA-256 `40d4a32877902395f496fb3d898399835e2b7d4f8039d33c9621abb9f6b05ead`.

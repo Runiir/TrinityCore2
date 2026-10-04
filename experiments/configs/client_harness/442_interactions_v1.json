@@ -6097,7 +6097,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_walk_run_autorun"
     },
     {
       "id": "movement.stop",
@@ -6116,7 +6117,8 @@
       "fixture": "safe_terrain_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_walk_run_autorun"
     },
     {
       "id": "movement.jump",
@@ -11675,8 +11677,64 @@
           "sha256": "581d5abfaf672e3e218e197321ad8cb7639af57f1623f0c240175c133186c401"
         }
       ]
+    },
+    {
+      "id": "stock_walk_run_autorun",
+      "operations": [
+        "movement.walk_toggle",
+        "movement.autorun"
+      ],
+      "scope": "UI58 ground_modes03 toggles the observed NUMPADDIVIDE binding through walk and run on both owned human warriors. Native accepted flags, exact modern/native requests, peer broadcasts and public final positions agree. W movement matches native2.5yd/s walking and7yd/s running on both actors. Two NUMLOCK presses start and stop each actor within13yd; native/peer stop flags0, public speed0 and private NumLock state restore. Eight reviewed world/restoration frames retain normal action bars. All20 character checks, native position/orientation/map, temporary party and four teleport rows restore.",
+      "limits": "Idle level85/1 human warriors on open Northshire ground with each owned presenter partly visible on HDMI-1 and at least10 rendered FPS. Ordinary installed bindings only; other terrain, combat, follow, swim/fly and persistence variants remain open. Static frames do not measure cadence. Failed ground_modes01 at~1FPS and ground_modes02 with a delayed probe stop remain unqualified and preserved. Window layout repair changes no speed fields or game CVars and preserves host input focus.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes03/primary/episode.json",
+          "sha256": "8e5a104f5bf5d6c9b4d6b0e84bc6993370af4d45c2d0990df723673028eb3660"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes03/scout/episode.json",
+          "sha256": "4ea1e0b8600cb0843f81082084012de3e60505cbc3043a19eac01d5325e193fd"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes03/cohort.json",
+          "sha256": "1cb2694eab6a3bfd919ed238294e279a6c125163843537828d7f3f88f69472a7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes03/nearby_restoration.json",
+          "sha256": "41071135b2720713125018ffa0125b3d4921c8411b56333cf65e2cd9404721c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes_visual_review.json",
+          "sha256": "86804a404b6f4ecb6455aeafdc058fa74824d6753d8a493c228a3cebbeaf3b6e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes_acceptance_review.json",
+          "sha256": "5d63a9b9c9dd8826bc262efc5cfd13367ca8e08e0954c059a4898a646d6bb7ed"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/ground_modes_failure_review.json",
+          "sha256": "8f5aebf77b78119a8f1e02661c1387b0fede40bb7b1818257e7352496571000c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/window_layout01/layout.json",
+          "sha256": "21f5e676d5597c36b46d13e2e29815ff4db8469e3852aaaf6daa969fde506a40"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_58.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui58/resource_review.json",
+          "sha256": "40d4a32877902395f496fb3d898399835e2b7d4f8039d33c9621abb9f6b05ead"
+        }
+      ]
     }
   ],
-  "qualified_operations": 317,
+  "qualified_operations": 319,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
