@@ -60,7 +60,7 @@ def suite(t):
             await_state=lambda a:'SpellBookFrame' in a['panels']),'spellbook_open_pass')
         layout=detail(t,'profession_layout_baseline');t.receipt['book_layout_baseline']=layout;t.persist()
         def outcome(b,a,s):
-            probe=detail(t,'profession_tab');valid=checks(probe,native,learned)
+            probe=detail(t,'profession_tab',book_type=layout['book_types']['profession']);valid=checks(probe,native,learned)
             valid.update(selected=s,ui_clean=not a.get('lua_errors') and not a.get('blocked_actions'))
             return {'status':'profession_tab_pass' if all(valid.values()) else 'client_or_protocol_failure',
                 'oracle':{'checks':valid,'probe':probe}}
@@ -71,7 +71,7 @@ def suite(t):
             if layout:
                 require(click_case(t,'spellbook.professions.restore_book','Return to the original spellbook tab.',
                     lambda c:c['name']=='SpellBookFrameTabButton1',lambda b,a,s:{'status':'spellbook_restore_pass' if s and
-                        detail(t,'profession_restore_book')['book_type']==layout['book_type'] else 'client_or_protocol_failure'}),'spellbook_restore_pass')
+                        detail(t,'profession_restore_book',book_type=layout['book_type'])['book_type']==layout['book_type'] else 'client_or_protocol_failure'}),'spellbook_restore_pass')
                 current=detail(t,'profession_restore_category')
                 if current['skill_line']!=layout['skill_line']:
                     require(navigate(t,learned,'spellbook.professions.restore_line','SpellBookSkillLineTab'+str(layout['skill_line']),

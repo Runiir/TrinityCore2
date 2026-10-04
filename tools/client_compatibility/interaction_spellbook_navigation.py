@@ -13,8 +13,9 @@ from .observation.journal import latest
 from .world.buffer import Reader
 
 
-def detail(t,label):
-    state,frame=read_current_page(t,label,'spellbook')
+def detail(t,label,book_type=None):
+    ready=None if book_type is None else lambda state:state.get('spellbook_probe',{}).get('book_type')==book_type
+    state,frame=read_current_page(t,label,'spellbook',ready=ready)
     if state.get('observer_version',0)<61:raise RuntimeError('requires passive spellbook observer61')
     t.receipt.setdefault('spellbook_details',{})[label]={'state':state,'frame':frame,'input_sent':False};t.persist()
     return state['spellbook_probe']
