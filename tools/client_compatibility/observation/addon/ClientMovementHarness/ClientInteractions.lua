@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=79,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=80,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -780,7 +780,9 @@ frame:SetScript('OnEvent',function(_,event,code,text)
         if #blockedActions>3 then table.remove(blockedActions,1) end
     elseif type(code)=='string' and code:match('^TC442UI:[%w_-]+$') then
         chatProbes[#chatProbes+1]={event=event,text=code,sender=trim(text,64),time=GetTime()}
-        if #chatProbes>4 then table.remove(chatProbes,1) end
+        -- Each chat oracle checks its latest exact marker. Retaining older
+        -- markers overflowed the primary's 6144-byte state page in UI64.
+        if #chatProbes>1 then table.remove(chatProbes,1) end
     end
 end)
 frame:SetScript('OnUpdate',function(_,delta)elapsed=elapsed+delta;if elapsed>=.5 then elapsed=0;update() end end)
