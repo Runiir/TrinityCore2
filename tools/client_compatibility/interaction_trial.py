@@ -165,7 +165,25 @@ class Trial:
                 self.io.key(action['value'],hold=hold)
             elif action['kind']=='chat':
                 self.io.key('Return',hold=.4);time.sleep(.2)
-                self.io.type(action['value']);time.sleep(.2);self.io.key('Return',hold=.4)
+                opened,opened_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
+                if not opened.get('chat_edit_open'):
+                    raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
+                self.io.type(action['value']);time.sleep(.2)
+                deadline=time.monotonic()+12
+                while True:
+                    pending,pending_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_pre_submit')
+                    matches=(pending.get('chat_edit_open') and
+                        pending.get('chat_edit_text','').rstrip(' ')==action['value'])
+                    self.receipt.setdefault('chat_submission_checks',[]).append({'frame':pending_frame,
+                        'open_frame':opened_frame,'observed_text':pending.get('chat_edit_text'),
+                        'selected_text':action['value'],'matches':bool(matches),'submitted':False})
+                    self.persist()
+                    if matches:break
+                    if time.monotonic()>deadline:
+                        raise RuntimeError('chat edit differs from the selected command; refusing submission')
+                    time.sleep(.2)
+                self.io.key('Return',hold=.4)
+                self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
             elif action['kind']=='click':
                 hold=action.get('hold',.15)
                 if not .05<=hold<=2:raise ValueError('interaction click hold exceeds its bounded duration')
