@@ -165,9 +165,15 @@ class Trial:
                 self.io.key(action['value'],hold=hold)
             elif action['kind']=='chat':
                 self.io.key('Return',hold=.4);time.sleep(.2)
-                opened,opened_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
-                if not opened.get('chat_edit_open'):
-                    raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
+                deadline=time.monotonic()+12
+                while True:
+                    opened,opened_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
+                    self.receipt.setdefault('chat_open_checks',[]).append({'frame':opened_frame,
+                        'open':bool(opened.get('chat_edit_open')),'input_replayed':False});self.persist()
+                    if opened.get('chat_edit_open'):break
+                    if time.monotonic()>deadline:
+                        raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
+                    time.sleep(.2)
                 self.io.type(action['value']);time.sleep(.2)
                 deadline=time.monotonic()+12
                 while True:
