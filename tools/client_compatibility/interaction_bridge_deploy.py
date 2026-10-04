@@ -154,7 +154,7 @@ def select_realm(out,name):
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
-def recovery(source,out,name,client_restart_source=None):
+def recovery(source,out,name,client_restart_source=None,observer_version=None):
     """Prepare a new lobby receipt after a failed input on the same deployment."""
     previous=json.loads((source/'deployment.json').read_text())
     if identity('worldserver')!=previous['native'] or identity('modern_world')!=previous['after']:
@@ -176,7 +176,15 @@ def recovery(source,out,name,client_restart_source=None):
     report={key:previous[key] for key in ['schema','native','after','observer_version','baselines']}
     report.update(started_at=time.time(),reconnected={},recovery_source=str(source),native_unchanged=True)
     if client_restart_source:report['client_restart_source']={'file':str(restart_path),'sha256':lab.sha256(restart_path)}
-    with actor(name):report['lobby_frames']={name:shot(out/(name+'_disconnected.png'))}
+    with actor(name):
+        if observer_version is not None:
+            path=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness/ClientInteractions.lua'
+            import re
+            matches=re.findall(r'\bobserver_version=(\d+)\b',path.read_text())
+            if matches!=[str(observer_version)]:raise RuntimeError('requested observer version differs from the installed file')
+            report['observer_version']=observer_version
+            report['installed_observer_source']={'file':str(path),'sha256':lab.sha256(path)}
+        report['lobby_frames']={name:shot(out/(name+'_disconnected.png'))}
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
     print(json.dumps({'lobby_frames':report['lobby_frames'],'requires_separate_visual_review':True}),flush=True)
 
@@ -200,7 +208,7 @@ if __name__=='__main__':
         restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source,args.combat_source)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
-        with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source)
+        with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)
     elif args.action=='select-realm':
         if args.actor is None:parser.error('realm selection requires an actor')
         select_realm(args.output,args.actor)
