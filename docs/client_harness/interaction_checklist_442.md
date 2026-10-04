@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 294 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 300 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -735,7 +735,7 @@ Fixture: `saved_local_bars`.
 - [x] `actionbars.page_previous` (qualified variant; [evidence](#stock_actionbar_paging))
 - [x] `actionbars.direct_page` (qualified variant; [evidence](#stock_actionbar_paging))
 - [ ] `actionbars.extra_bars_toggle`
-- [ ] `actionbars.lock_toggle`
+- [x] `actionbars.lock_toggle` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `actionbars.cooldown`
 - [ ] `actionbars.charges`
 - [ ] `actionbars.range_indicator`
@@ -752,8 +752,8 @@ Fixture: `saved_local_bars`.
 
 Fixture: `saved_local_settings`.
 
-- [ ] `settings.open`
-- [ ] `settings.close`
+- [x] `settings.open` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
+- [x] `settings.close` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `settings.graphics`
 - [ ] `settings.resolution`
 - [ ] `settings.window_mode`
@@ -761,7 +761,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.render_scale`
 - [ ] `settings.quality`
 - [ ] `settings.sound_volume`
-- [ ] `settings.mute`
+- [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `settings.interface`
 - [ ] `settings.mouse_sensitivity`
 - [ ] `settings.keyboard_controls`
@@ -769,7 +769,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.camera`
 - [ ] `settings.nameplates`
 - [ ] `settings.floating_combat_text`
-- [ ] `settings.auto_loot`
+- [x] `settings.auto_loot` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `settings.tutorials`
 - [ ] `settings.addons`
 - [ ] `settings.apply`
@@ -777,7 +777,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.defaults_cancel`
 - [ ] `settings.defaults_apply`
 - [ ] `settings.persistence`
-- [ ] `settings.restore_original`
+- [x] `settings.restore_original` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 
 ## menu
 
@@ -2082,3 +2082,15 @@ Remaining limits: One unclamped zoom pair and stock latency format on two local 
 - [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/primary_camera_latency_01/episode.json`, SHA-256 `428ea09ca445d48cd5d4eb35189b0ed7a19c4a706d4d4fb050b2ffacfac2f83a`.
 - [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/scout_camera_latency_02/episode.json`, SHA-256 `ed958caa6382ac6ca5bba99445fb87149f9afa327d7c818ce8a6b7c75403bb61`.
 - [442_interactions_20261004_48.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_48.tar.gz.dvc), member `evidence/client_interactions_20261004_ui48/camera_latency_visual_review.json`, SHA-256 `965a731b6381edb0005ae65eb69b1471922aa0d9a80ce3cbe23081285cb94b82`.
+
+### stock_boolean_settings_roundtrip
+
+On both owned idle human warriors, open stock Settings, use its ordinary search field to find Auto Loot, Lock Action Bars and Enable Sound, click each observed checkbox once and reverse it. Exact public CVars and Settings values agree with each visible checkbox. Restore original empty search, Controls category and all17 observed settings, close Settings and the game menu, and preserve native inventory, money and saved spells. Eighteen exact frames receive visual review.
+
+Remaining limits: Three boolean settings on two fixtures only. Audio output and volumes, Apply/Cancel/defaults, other settings and reconnect persistence remain open. Both failed01 attempts, cleanup-only episodes and scout observer71 reload timeout stay unqualified; a separate read-only episode verifies the late installed observer without repeating reload.
+
+- [442_interactions_20261004_49.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_49.tar.gz.dvc), member `evidence/client_interactions_20261004_ui49/primary_booleans_02/episode.json`, SHA-256 `7fd2c6c32ab5b41c062370c0795e6b5e36832259011669be2e763ff0b54b54f6`.
+  Checked cases: `settings.inspect_menu` (panel_open_pass), `settings.inspect_open` (panel_open_pass), `settings.auto_loot.search` (ui_edit_pass), `settings.auto_loot.change` (stock_boolean_setting_pass), `settings.auto_loot.restore` (stock_boolean_setting_pass), `actionbars.lock_toggle.search` (ui_edit_pass), `actionbars.lock_toggle.change` (stock_boolean_setting_pass), `actionbars.lock_toggle.restore` (stock_boolean_setting_pass), `settings.mute.search` (ui_edit_pass), `settings.mute.change` (stock_boolean_setting_pass), `settings.mute.restore` (stock_boolean_setting_pass), `settings.restore_search` (ui_edit_pass), `settings.trial_close` (stock_settings_close_pass).
+- [442_interactions_20261004_49.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_49.tar.gz.dvc), member `evidence/client_interactions_20261004_ui49/scout_booleans_02/episode.json`, SHA-256 `087fd1fdcf8af1ff34e7482427db9d076e53e0b40bd348591aaab93f9ca0f079`.
+  Checked cases: `settings.inspect_menu` (panel_open_pass), `settings.inspect_open` (panel_open_pass), `settings.auto_loot.search` (ui_edit_pass), `settings.auto_loot.change` (stock_boolean_setting_pass), `settings.auto_loot.restore` (stock_boolean_setting_pass), `actionbars.lock_toggle.search` (ui_edit_pass), `actionbars.lock_toggle.change` (stock_boolean_setting_pass), `actionbars.lock_toggle.restore` (stock_boolean_setting_pass), `settings.mute.search` (ui_edit_pass), `settings.mute.change` (stock_boolean_setting_pass), `settings.mute.restore` (stock_boolean_setting_pass), `settings.restore_search` (ui_edit_pass), `settings.trial_close` (stock_settings_close_pass).
+- [442_interactions_20261004_49.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_49.tar.gz.dvc), member `evidence/client_interactions_20261004_ui49/boolean_visual_review.json`, SHA-256 `320ac112fe054220c8a4177959db20d0cf20a6da2406541c75bd649e939ec1f9`.
