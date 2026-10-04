@@ -57,7 +57,7 @@ def toggle(t,variable,wanted,label):
 def suite(t,variables):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();state,_=t.observe('settings_fixture')
-    if state.get('observer_version',0)<70:raise RuntimeError('requires read-only settings observer70')
+    if state.get('observer_version',0)<71:raise RuntimeError('requires read-only settings observer71')
     native=resources(oracle);spells=known(t.fixture['guid']);layout=None;original={};attempted=[]
     t.receipt.update(baseline=native,native_persisted_spells=spells,requested_settings=variables,
         qualified_scope='Requested stock boolean settings changed once through their observed search-result checkbox and reversed. Public Settings values, CVars, original search/category, native resources and saved spells restore. Other settings, defaults, Apply/Cancel and reconnect persistence remain open.');t.persist()
@@ -70,6 +70,8 @@ def suite(t,variables):
             term,operation=SPECS[variable];search(t,term,operation+'.search')
             attempted.append(variable);toggle(t,variable,'0' if original[variable]=='1' else '1',operation+'.change')
             toggle(t,variable,original[variable],operation+'.restore')
+    except Exception as error:
+        t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
         try:
             if layout is not None:
@@ -95,12 +97,43 @@ def suite(t,variables):
     if not t.receipt['native_resources_preserved']:raise RuntimeError('settings trial changed native resources')
 
 
+def recover(t,source):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('require an owned failed settings episode')
+    old=json.loads(source.read_text());session=actors.session_entry(t.fixture)['session']
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();native=resources(oracle);spells=known(t.fixture['guid'])
+    if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or old['completed'] or
+        not old.get('finished_at') or old.get('native_resources_preserved') is not True or
+        old['failure']!='RuntimeError: operation did not advance: settings.restore_search client_or_protocol_failure' or
+        native!=old['baseline'] or spells!=old['native_persisted_spells']):
+        raise RuntimeError('exact failed source and native/client baseline differ')
+    current=detail(t,'cleanup_settings_before')
+    if not current['visible'] or any(current.get(k)!=old['layout_baseline'].get(k) for k in ['search','category','cvars','values']):
+        raise RuntimeError('cleanup requires all original settings and actual search text already restored')
+    t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},baseline=native,
+        native_persisted_spells=spells,qualified_scope='Cleanup only: close the exact failed settings panel after original search/category/values and native resources are verified. No gameplay qualification.');t.persist()
+    require(click_case(t,'settings.cleanup_close','Close the verified unchanged stock settings panel.',
+        lambda c:c['kind']=='Button' and c['text']=='Close',
+        lambda b,a,s:{'status':'stock_settings_cleanup_pass' if s and 'SettingsPanel' not in a['panels'] else
+            'client_or_protocol_failure'},await_state=lambda s:'SettingsPanel' not in s['panels']),
+        'stock_settings_cleanup_pass')
+    t.clean_panels();t.receipt.update(native_after=resources(oracle),native_persisted_spells_after=known(t.fixture['guid']))
+    t.receipt['native_resources_preserved']=(t.receipt['native_after']==native and t.receipt['native_persisted_spells_after']==spells);t.persist()
+    if not t.receipt['native_resources_preserved']:raise RuntimeError('settings cleanup changed native resources')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--actor',choices=['primary','scout'],required=True)
-    p.add_argument('--setting',choices=list(SPECS),action='append',required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if len(set(a.setting))!=len(a.setting):p.error('each setting may be requested once')
+    p.add_argument('--setting',choices=list(SPECS),action='append');p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--recover-layout',type=Path);a=p.parse_args()
+    if bool(a.recover_layout)==bool(a.setting):p.error('require requested settings or one exact failed layout source')
+    if a.setting and len(set(a.setting))!=len(a.setting):p.error('each setting may be requested once')
     with actor(a.actor):
         t=Trial(a.output,controller='code')
-        try:suite(t,a.setting);t.receipt['completed']=True
+        try:
+            if a.recover_layout:recover(t,a.recover_layout)
+            else:suite(t,a.setting)
+            t.receipt['completed']=True
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

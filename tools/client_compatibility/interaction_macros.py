@@ -28,9 +28,11 @@ def edit_case(trial,case_id,goal,predicate,value):
         'escape':{'kind':'key','value':'Escape','description':'Close the dialog with Escape.'},
         'tab':{'kind':'key','value':'Tab','description':'Move focus to the next control with Tab.'}}
     def oracle(before,after,selected):
-        observed=controls(trial)
-        matches=[c for c in observed if c['kind']=='EditBox' and predicate(c)]
-        entered=any(c['text']==value for c in matches)
+        # Control captions can include placeholder text when an edit box is
+        # empty. The settled state reads the edit box's actual GetText value.
+        entered=any(c.get('text')==value and
+            [round(c['x']/65535*1280),round(c['y']/65535*720)]==point(field)
+            for c in after.get('edit_fields') or [])
         return {'status':'ui_edit_pass' if entered else ('controller_failure' if selected!='field' else 'client_or_protocol_failure'),
             'oracle':{'field_value_matches':entered,'qualified_scope':'visible edit field'}}
     return trial.step(case_id,goal,actions,oracle,diagnostic_action='field',

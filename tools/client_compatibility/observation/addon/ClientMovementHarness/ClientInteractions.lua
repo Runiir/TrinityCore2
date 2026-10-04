@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=70,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=71,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -194,11 +194,14 @@ local function snapshot(viewMode,viewPage)
                     local row=parent
                     for level=1,3 do
                         local setting=row and row.data and row.data.setting
+                        if row and row==parent and row.data and f==row.Checkbox then
+                            setting=row.data.cbSetting or setting
+                        end
                         if setting then
                             local control=data.controls[#data.controls]
                             control.setting_variable=call(setting.GetVariable,setting)
                             control.setting_value=call(setting.GetValue,setting)
-                            control.setting_name=trim(row.data.name,72)
+                            control.setting_name=trim(row.data.cbLabel or row.data.name,72)
                             break
                         end
                         row=row and row:GetParent()
