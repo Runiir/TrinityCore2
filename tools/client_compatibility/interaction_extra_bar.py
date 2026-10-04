@@ -119,7 +119,8 @@ def recover(t,source):
     oracle=Inventory(lab.ROOT,t.session,t.fixture['guid']).poll();layout=old['layout_baseline']
     if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or old['completed'] or
         not old.get('finished_at') or old.get('native_resources_preserved') is not True or
-        old['failure']!='RuntimeError: RuntimeError: actionbars diagnostic did not become visible' or
+        old['failure'] not in ['RuntimeError: RuntimeError: actionbars diagnostic did not become visible',
+            'RuntimeError: operation did not advance: actionbars.extra_bars_toggle.restore client_or_protocol_failure'] or
         old.get('native_mask_after')!=old['native_mask_baseline'] or mask(oracle)!=old['native_mask_baseline'] or
         resources(oracle)!=old['baseline'] or known(t.fixture['guid'])!=old['native_persisted_spells'] or
         saved_actions(t.fixture['guid'])!=old['native_actions']):
