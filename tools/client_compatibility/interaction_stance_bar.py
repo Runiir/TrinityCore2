@@ -20,9 +20,9 @@ from .world.native_objects import guid as native_guid
 
 def native_state(oracle):
     oracle.poll();fields=oracle.objects[oracle.guid]
-    return {'form':(fields[INDEX['UNIT_FIELD_BYTES_2']]>>24)&255,
+    return {'form':(fields.get(INDEX['UNIT_FIELD_BYTES_2'],0)>>24)&255,
         'health':fields[INDEX['UNIT_FIELD_HEALTH']],
-        'power':fields[INDEX['UNIT_FIELD_POWER1']], 'stats':oracle.character_stats()}
+        'power':fields.get(INDEX['UNIT_FIELD_POWER1'],0), 'stats':oracle.character_stats()}
 
 
 def restored_native_state(before,after):

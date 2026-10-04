@@ -18,8 +18,8 @@ from .world.objects import INDEX
 
 def pose(oracle):
     oracle.poll();fields=oracle.objects[oracle.guid]
-    return {'stand':fields[INDEX['UNIT_FIELD_BYTES_1']]&255,
-        'sheath':fields[INDEX['UNIT_FIELD_BYTES_2']]&255}
+    return {'stand':fields.get(INDEX['UNIT_FIELD_BYTES_1'],0)&255,
+        'sheath':fields.get(INDEX['UNIT_FIELD_BYTES_2'],0)&255}
 
 
 def select(t,oracle,wanted,label):
