@@ -12,6 +12,7 @@ function Client442ObserveActionBars()
         effective_page=MainMenuBarArtFrame and call(MainMenuBarArtFrame.GetAttribute,MainMenuBarArtFrame,'actionpage'),
         frame_limit={max=call(GetCVar,'maxFPS'),background=call(GetCVar,'maxFPSBk')},
         camera_zoom=call(GetCameraZoom),network={call(GetNetStats)},
+        power=call(UnitPower,'player'),power_type=call(UnitPowerType,'player'),
         performance_event=Client442PerformanceTooltipEvent()}
     for index=1,6 do
         if VIEWABLE_ACTION_BAR_PAGES and VIEWABLE_ACTION_BAR_PAGES[index] then
@@ -38,8 +39,22 @@ function Client442ObserveActionBars()
     end
     for index=1,math.min(tonumber(call(GetNumShapeshiftForms)) or 0,4) do
         local icon,active,castable,spell=call(GetShapeshiftFormInfo,index)
-        result.forms[#result.forms+1]={index=index,active=active,castable=castable,spell=spell,
-            button='StanceButton'..index}
+        local name='StanceButton'..index
+        local button=_G[name]
+        local row={index=index,active=active,castable=castable,spell=spell,button=name}
+        if button then
+            row.visible=call(button.IsVisible,button)
+            row.checked=call(button.GetChecked,button)
+            row.enabled=call(button.IsEnabled,button)
+            local x,y=call(button.GetCenter,button)
+            local scale=call(button.GetEffectiveScale,button)
+            local width,height=call(GetPhysicalScreenSize)
+            if x and y and scale and width and height and width>0 and height>0 then
+                row.x=math.floor(x*scale/width*65535)
+                row.y=math.floor((1-y*scale/height)*65535)
+            end
+        end
+        result.forms[#result.forms+1]=row
     end
     return result
 end
