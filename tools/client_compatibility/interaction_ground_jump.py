@@ -1,5 +1,5 @@
 """One flat-ground jump with early scene capture and native jump/landing proof."""
-import argparse,time
+import argparse,math,time
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
@@ -12,6 +12,16 @@ from .interaction_sit_stand import pose
 from .observation.journal import entries
 from .world.movement import parse
 from .world.buffer import Reader
+
+
+def airborne(jumps,broadcasts,ground_z):
+    # The captured 60895 jump uses negative FallVerticalSpeed. Its sign is
+    # not world-space ascent. Require actual peer height gain as well.
+    return bool(jumps) and all(p['movement']['fall'] and
+        p['movement']['flags']&2048 and math.isfinite(p['movement']['zspeed']) and
+        p['movement']['zspeed']!=0 for p in jumps) and any(
+            p['movement']['flags']&2048 and p['movement']['position'][2]>ground_z+.5
+            for p in broadcasts)
 
 
 def phase(t,peer,oracle,session,peer_session):
@@ -45,7 +55,7 @@ def phase(t,peer,oracle,session,peer_session):
         lands=[p for p in pair if p['modern']['name']=='CMSG_MOVE_FALL_LAND']
         checks={'observed_binding':key==binding_key(keys[0]),
             'native_jump_land':bool(jumps) and bool(lands) and all(p['native'] for p in pair),
-            'jump_fall_state':bool(jumps) and all(p['movement']['fall'] and p['movement']['zspeed']>0 for p in jumps),
+            'jump_fall_state':airborne(jumps,broadcasts,native_before[2]),
             'landing_idle':bool(lands) and lands[-1]['movement']['flags']==0,
             'peer_fall':any(p['movement']['fall'] for p in broadcasts),
             'peer_landing':bool(broadcasts) and broadcasts[-1]['movement']['flags']==0,

@@ -127,7 +127,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=75,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=76,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -518,6 +518,22 @@ local function snapshot(viewMode,viewPage)
         exists=not not call(UnitExists,'target'),visible=not not call(UnitIsVisible,'target'),
         player=not not call(UnitIsPlayer,'target'),health=call(UnitHealth,'target'),
         max_health=call(UnitHealthMax,'target'),position={call(UnitPosition,'target')}}
+    data.target_units={}
+    for _,unit in ipairs({'player','target','focus','targettarget','party1','mouseover'}) do
+        data.target_units[unit]=call(UnitGUID,unit) or ''
+    end
+    data.party_target_frames={}
+    for _,row in ipairs(groupFrames(groupUnits(1))) do
+        local f=_G[row.name]
+        if f then
+            local x,y=call(f.GetCenter,f)
+            local scale=call(f.GetEffectiveScale,f)
+            if x and y and scale and width>0 and height>0 then
+                data.party_target_frames[#data.party_target_frames+1]={name=row.name,unit=row.unit,
+                    x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535)}
+            end
+        end
+    end
     data.follow=following
     data.inspect={ready=inspectionReady,visible=InspectFrame and InspectFrame:IsVisible() or false}
     if data.inspect.visible then
