@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 311 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 317 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -810,15 +810,15 @@ Fixture: `offline_local_server`.
 
 Fixture: `safe_terrain_variants`.
 
-- [ ] `movement.forward`
-- [ ] `movement.backward`
-- [ ] `movement.turn_left`
-- [ ] `movement.turn_right`
-- [ ] `movement.strafe_left`
+- [x] `movement.forward` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
+- [x] `movement.backward` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
+- [x] `movement.turn_left` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
+- [x] `movement.turn_right` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
+- [x] `movement.strafe_left` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.strafe_right` (qualified variant; [evidence](#follow))
 - [ ] `movement.mouse_turn`
 - [ ] `movement.autorun`
-- [ ] `movement.stop`
+- [x] `movement.stop` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [ ] `movement.walk_toggle`
 - [ ] `movement.jump`
 - [x] `movement.sit` (qualified variant; [evidence](#stock_sit_stand_native_pose))
@@ -2150,3 +2150,19 @@ Remaining limits: Two idle human warriors, levels85 and1, original AFK seated po
 - [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/sit_stand_visual_review.json`, SHA-256 `c457211b55891b37ad2dd7d9557273636d467da1c0be536fd340541ba127debb`.
 - [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/stand_state_contract.json`, SHA-256 `cea1e28555cb0ce94168c2cda1cd0500e80306a35fdae51a9bed4f00738b8fc0`.
 - [442_interactions_20261004_54.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_54.tar.gz.dvc), member `evidence/client_interactions_20261004_ui54/automatic_afk_precondition_review.json`, SHA-256 `b032d879663a238c6ff36c56c62653eb185d81dbd6ba3ac01e29bba81670e564`.
+
+### stock_ground_bindings_native_peer
+
+Complete UI55 ground05 executes six observed bindings per owned human warrior: W/S/Q/E/A/D. All12 cases agree with native accepted XY/facing, byte-matched native start/stop requests, public owner/party-target coordinates and peer movement packets. Key release stops native and peer flags to0 and public speed to0 in all12 cases. Twelve exact scene frames and two original-world restoration frames receive review. Temporary party, native positions/orientations/map, pose/AFK, target absence, main bar, inventory/money/stats and saved spells/actions restore.
+
+Remaining limits: Idle levels85/1 human warriors on open Northshire ground in a temporary owned party. Solo target UnitPosition returns no coordinates. Already-qualified strafe-right receives a second fixture variant without another operation count. Stop means release of the held translation/turn bindings; autorun/follow stop remains open. Public height/instance values are not reinterpreted. Camera easing and partly occluded body pixels are not pixel-coordinate or animation proof. Speed parity, other races/terrain, combat, walk/jump and other movement remain open. Ground01-04 and first cleanup failure remain unqualified; separate second Leave Party cleanup passes. Earlier six input-test fixture failures remain recorded; corrected23 tests pass.
+
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_movement_05/primary/episode.json`, SHA-256 `18a6f340c60709a09bbdc055f0a03b0b1c87ee4ef395e776a7ebb91677d27656`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_movement_05/scout/episode.json`, SHA-256 `368d2d37a0ee3f31b844c92d748179724fec7144efba29e7a59822cdd783f513`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_movement_05/cohort.json`, SHA-256 `a2827adde0a168c4d017af8c169aecbe8db441ceb1c5eb665f759d13421e4770`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_movement_05/nearby_restoration.json`, SHA-256 `f6851033ec4bc17d7066b69f66ded33daef08a4d2bb0578f6a81e862e51e0033`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_acceptance_review.json`, SHA-256 `a200a6fd9ff852218b8876c9014df915c8d9d77f64561d542cb00c530c4e54d3`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/primary_ground_visual_review.json`, SHA-256 `1d8500b23cab713b5b8f46dbfd1ff1cd5b074b35178bb71a9507efb5a595d3fa`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/scout_ground_visual_review.json`, SHA-256 `0334c8ff49781909bb8c1f980f204dd4cd13b62308da6f39c14278bbbd974165`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/ground_failure_review.json`, SHA-256 `b8b5f5ca1e1d93b638cbb84eb8a9e319247ac3b9b3984e3db0f482f9f9eecee3`.
+- [442_interactions_20261004_55.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_55.tar.gz.dvc), member `evidence/client_interactions_20261004_ui55/input_regression_review.json`, SHA-256 `581d5abfaf672e3e218e197321ad8cb7639af57f1623f0c240175c133186c401`.
