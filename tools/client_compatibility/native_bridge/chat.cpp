@@ -4,6 +4,18 @@ namespace bridge
 {
 namespace
 {
+std::uint8_t modern_chat_kind(std::uint8_t native)
+{
+    // Native SharedDefines ChatMsg versus cata_classic 6426c2bd ChatMsg.
+    // Removed battleground slots shift later enums; 0x33 is a modern BN whisper.
+    if(native<=43)return native;
+    if(native==44)return 62; // BATTLEGROUND -> INSTANCE_CHAT
+    if(native==45)return 63; // BATTLEGROUND_LEADER -> INSTANCE_CHAT_LEADER
+    if(native>=46 && native<=54)return native-2;
+    if(native>=58 && native<=62)return native-5;
+    if(native==64)return 58; // CURRENCY
+    throw std::runtime_error("native chat type has no supported modern equivalent");
+}
 std::string text(Reader &r,unsigned size,unsigned maximum)
 {
     if(size>maximum)throw std::runtime_error("chat string exceeds protocol bound");
@@ -96,7 +108,7 @@ Reply chat_response(State const &owner,std::string const &name,View body)
     if(kind==48 || kind==49)achievement=r.take<std::uint32_t>();
     else if(kind==41 || kind==42){display=r.take<float>();hide=r.take<std::uint8_t>()!=0;}
     r.end();
-    w.pack("Bi",{kind,language}).guid(Protocol::modern_guid(sender,owner.map())).guid().guid()
+    w.pack("Bi",{modern_chat_kind(kind),language}).guid(Protocol::modern_guid(sender,owner.map())).guid().guid()
         .guid(Protocol::modern_guid(target,owner.map())).pack("IIiHfi",{0x01010001,0x01010001,achievement,flags,display,0});
     w.bits(sender_name.size(),11).bits(target_name.size(),11).bits(prefix.size(),5).bits(channel.size(),7).bits(message.size(),12)
         .bits(hide,1).bits(0,1).bits(0,1).bits(0,1).flush();

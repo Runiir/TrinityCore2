@@ -59,9 +59,29 @@ def test_native_chat_has_real_sender_target_text_flags_and_achievement(codec,kin
     if kind==48:w.pack('I',123)
     name,body=call(codec,'chat_response','SMSG_MESSAGECHAT',w.finish());assert name=='SMSG_CHAT'
     values=modern_chat(body)
-    assert values[:5]==(kind,7,(1,player_high()),(2,player_high()),(0x01010001,0x01010001))
+    assert values[:5]==(46 if kind==48 else kind,7,(1,player_high()),(2,player_high()),(0x01010001,0x01010001))
     assert values[5:9]==(123 if kind==48 else 0,3,0,[0,0,0,0])
     assert values[9]==['','','','TestLab' if kind==17 else '','message']
+
+
+@pytest.mark.parametrize('native,modern',[(44,62),(45,63),(46,44),(47,45),(48,46),(49,47),
+    (50,48),(51,49),(52,50),(53,51),(54,52),(58,53),(59,54),(60,55),(61,56),(62,57),(64,58)])
+def test_chat_types_translate_by_semantic_name_after_removed_native_slots(codec,native,modern):
+    body=Writer().pack('BiQI',native,7,1,0)
+    if native==47:body.pack('I',7).raw(b'Sender\0')
+    body.pack('QI',2,7).raw(b'marker\0').pack('B',0)
+    if native in {48,49}:body.pack('I',123)
+    name,encoded=call(codec,'chat_response','SMSG_MESSAGECHAT',body.finish())
+    values=modern_chat(encoded)
+    assert name=='SMSG_CHAT' and values[0]==modern and values[9][-1]=='marker'
+    assert values[5]==(123 if native in {48,49} else 0)
+
+
+@pytest.mark.parametrize('kind',[55,56,57,63,65,255])
+def test_removed_and_unknown_chat_types_are_rejected_instead_of_misrouted(codec,kind):
+    body=Writer().pack('BiQIQI',kind,7,1,0,2,7).raw(b'marker\0').pack('B',0).finish()
+    answer=stateful(codec,{'guid':1,'map':0},[action('chat_response','SMSG_MESSAGECHAT',body)])[0]
+    assert 'no supported modern equivalent' in answer['error']
 
 
 def test_npc_chat_retains_speaker_name_and_boss_display_bits(codec):

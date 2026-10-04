@@ -11,6 +11,7 @@ from . import actors,lab_runtime as lab,owned_input
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .world import control
+from . import interaction_bridge_restoration as native_restoration
 
 
 def identity(kind):
@@ -31,7 +32,7 @@ def shot(path):
 def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None,combat_source=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
-    baselines={}
+    baselines={};native_baselines={}
     for name in ['primary','scout']:
         with actor(name):
             t=Trial(out/(name+'_before'),controller='code')
@@ -52,6 +53,8 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
                 else:
                     actors.session_entry(t.fixture);t.clean_panels();state,frame=t.observe('before_deploy')
                     baselines[name]={key:state.get(key) for key in ['guid','money','equipment','group','raid_profile']}
+                    native_baselines[name]=native_restoration.capture(t)
+                    t.receipt['bridge_native_baseline']=native_baselines[name]
                     t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
                 shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
                     lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
@@ -66,6 +69,7 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
     if unavailable_deployment_source:
         report.update(primary_public_precheck_deferred=True,scout_public_precheck_deferred=True,
             unavailable_deployment_source=str(unavailable_deployment_source))
+    report['native_baselines']=native_baselines
     lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
     lab.stop('modern_world');control.start();report['after']=identity('modern_world')
     if identity('worldserver')!=native: raise RuntimeError('native worldserver changed during bridge deployment')
@@ -113,7 +117,11 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
             if (state.get('observer_version')!=report['observer_version'] or state.get('lua_errors') or
                     state.get('blocked_actions') or not restored):
                 raise RuntimeError('reconnected observer, resources, equipment or group baseline differs')
-            t.clean_panels();t.receipt.update(completed=True,observation={'state':state,'frame':frame,'session':entry['session']})
+            t.clean_panels()
+            if name in report.get('native_baselines',{}):
+                native_restoration.restore(t,report['native_baselines'][name])
+                state,frame=t.observe('reconnected_restored')
+            t.receipt.update(completed=True,observation={'state':state,'frame':frame,'session':entry['session']})
             report['reconnected'][name]={'session':entry['session'],'completed':True,'frame':frame}
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
