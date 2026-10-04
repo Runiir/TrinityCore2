@@ -22,6 +22,9 @@ failure. Observer71 reads the stock composite metadata, the edit oracle reads
 Separate cleanup-only episodes verify unchanged settings before closing the
 failed panels. They do not qualify gameplay. The placeholder and cleanup tests
 pass13/13. Earlier UI47's setup regression remains documented in its own batch.
+The qualification ledger tests pass3/3 with `python -m pytest`. An earlier
+direct pytest entry-point invocation fails collection because it cannot import
+the repository's `tools` package; that invocation provides no test result.
 
 Primary observer71 deployment passes. Scout deployment times out after a single
 reload and a bounded240-second read. Its separate read-only verification passes
