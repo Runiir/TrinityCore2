@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 304 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 306 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -741,7 +741,7 @@ Fixture: `saved_local_bars`.
 - [ ] `actionbars.range_indicator`
 - [ ] `actionbars.resource_indicator`
 - [ ] `actionbars.vehicle_bar`
-- [ ] `actionbars.stance_bar`
+- [x] `actionbars.stance_bar` (qualified variant; [evidence](#stock_warrior_stance_bar))
 - [ ] `actionbars.pet_bar`
 - [ ] `actionbars.override_bar`
 - [ ] `actionbars.extra_action_button`
@@ -909,7 +909,7 @@ Fixture: `class_variants`.
 - [ ] `combat.immunity`
 - [ ] `combat.crowd_control`
 - [ ] `combat.shapeshift`
-- [ ] `combat.stance`
+- [x] `combat.stance` (qualified variant; [evidence](#stock_warrior_stance_bar))
 - [ ] `combat.combo_points`
 - [ ] `combat.rune_resource`
 - [ ] `combat.holy_power`
@@ -2105,3 +2105,13 @@ Remaining limits: Checkbox configuration on two idle fixtures only. Terrain-foll
 - [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/scout_booleans_01/episode.json`, SHA-256 `4a84765e631f6b11fae8756501cb123cfa41876bdca316de00619c0f8ea3f342`.
 - [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/primary_boolean_visual_review.json`, SHA-256 `b373c1eaf6c49efb3f4aaeea89970ad67aa7271c0745efbb831b45f8cf021268`.
 - [442_interactions_20261004_50.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_50.tar.gz.dvc), member `evidence/client_interactions_20261004_ui50/scout_boolean_visual_review.json`, SHA-256 `311a258e82f4f19ef3a61ebfd03a7587d4dd836b440da8119d4aff7c66a3be36`.
+
+### stock_warrior_stance_bar
+
+In complete primary_stance_04, click the stock Defensive, Berserker and original Battle Stance buttons on one idle zero-rage human warrior. Public active/checked buttons, native completed cast spells71/2458/2457, native shapeshift byte18/19/17, effective pages8/9/7 and all12 main-bar assignments agree with native learned-spell/SpellEffect/action-row contracts. The original stance/bar, zero rage, health, integer stats, native weapon damage, inventory, money and saved spell/action rows restore. Five exact frames receive visual review.
+
+Remaining limits: Only primary04 from its recorded Battle baseline qualifies. Primary01 missing-starter-spell preflight and primary02 viewport-coordinate failure stay unqualified. Primary03 passes its clicks but fails full restoration: exiting Berserker removes an extra learned passive7381 and loses10% weapon damage. Its initial damage is not restored; the failed run and change remain explicit. Primary04 starts from the resulting baseline and restores weapon damage exactly; its guard permits only1e-6 relative/.002 absolute float rounding and still rejects primary03. Other classes, combat, nonzero-rage retention and reconnect persistence remain open.
+
+- [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/primary_stance_04/episode.json`, SHA-256 `558e3874497a8541384ed5b596f6b627c443481dafe94bb4bd00cfff029135f8`.
+- [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/stance_visual_review.json`, SHA-256 `6a9f27147ff44d8939fef866db24c9f524a10e4c4f9cca569db08705261d3269`.
+- [442_interactions_20261004_51.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_51.tar.gz.dvc), member `evidence/client_interactions_20261004_ui51/stance_first_cycle_damage_change.json`, SHA-256 `9e53c91ccaf4fc5b4d72ff74ba936f937e207f434eeeb317548b62d0ba90898d`.
