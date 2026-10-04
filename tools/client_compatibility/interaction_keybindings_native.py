@@ -18,7 +18,7 @@ from .interaction_ground_movement import position
 from .interaction_actionbar_pages import detail as bar_detail
 
 
-def suite(t,operations=bindings.suite):
+def suite(t,operations=bindings.suite,preserve_settings=True):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();before,_=t.observe('native_binding_fixture')
     native={'resources':resources(oracle),'stats':native_state(oracle),'spells':known(t.fixture['guid']),
@@ -26,11 +26,12 @@ def suite(t,operations=bindings.suite):
         'position':position(t.fixture['guid'])}
     layout=None;t.receipt['native_baseline']=native;t.persist()
     try:
-        open_search(t);layout=detail(t,'original_settings')
-        if layout.get('unapplied'):raise RuntimeError('original settings contain unapplied changes')
-        require(click_case(t,'fixture.close_original_settings','Close original settings before the binding trial.',
-            lambda c:c['text']=='Close',lambda b,a,s:{'status':'fixture_settings_closed' if s and
-                'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'}),'fixture_settings_closed')
+        if preserve_settings:
+            open_search(t);layout=detail(t,'original_settings')
+            if layout.get('unapplied'):raise RuntimeError('original settings contain unapplied changes')
+            require(click_case(t,'fixture.close_original_settings','Close original settings before the binding trial.',
+                lambda c:c['text']=='Close',lambda b,a,s:{'status':'fixture_settings_closed' if s and
+                    'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'}),'fixture_settings_closed')
         t.clean_panels();operations(t)
     finally:
         baseline=t.receipt.get('binding_baseline')

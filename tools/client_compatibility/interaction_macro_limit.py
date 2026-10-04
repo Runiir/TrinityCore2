@@ -69,6 +69,6 @@ def operations(t):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=operations);t.receipt['completed']=True
+    try:native_suite(t,operations=operations,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

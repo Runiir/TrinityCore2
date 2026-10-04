@@ -245,6 +245,6 @@ if __name__=='__main__':
     t.targeted_controls=a.targeted_controls
     t.empty_macro_guard_required=a.require_empty_guard
     selected=(lambda t:recover(t,a.recover_source)) if a.recover_source else recon if a.recon else operations
-    try:native_suite(t,operations=selected);t.receipt['completed']=True
+    try:native_suite(t,operations=selected,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
