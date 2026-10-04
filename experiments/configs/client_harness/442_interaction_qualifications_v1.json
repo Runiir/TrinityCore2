@@ -417,8 +417,8 @@
         "bags.unequip_item",
         "bags.equip_item"
       ],
-      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass. Native/public supported ratings, melee/ranged haste, mastery, both expertise values and dodge/parry agree in a complete ordinary helmet and haste-belt roundtrip. Five reviewed stock phases render the expected melee haste, mastery and expertise values; four native sparse updates and full original fixture/sidebar restoration pass.",
-      "limits": "Owned geared warrior and documented helmet/belt/damage/combat variants only. Item level, spell haste updates, offscreen ranged/spell/defense rows, actual dual-wield and shield-block gameplay, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage.",
+      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass. Native/public supported ratings, melee/ranged haste, mastery, both expertise values and dodge/parry agree in a complete ordinary helmet and haste-belt roundtrip. Five reviewed stock phases render the expected melee haste, mastery and expertise values; four native sparse updates and full original fixture/sidebar restoration pass. Public spell haste and visible spell/defense haste/dodge/parry rows agree throughout the complete ordinary haste-belt roundtrip. Three reviewed phases show3.22/1.51/3.22% haste, two sparse native cast-multiplier updates are attributable, and all original native resources plus32-bit category settings/order/sidebar/panels restore. All22 equipment observations are passive.",
+      "limits": "Owned geared warrior and documented helmet/belt/damage/combat variants only. Item level, other ranged/spell/defense rows, actual dual-wield and shield-block gameplay, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage. Cached reconnect stayed disconnected and remains unqualified; fresh launcher entries pass separately.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
@@ -481,6 +481,23 @@
           "pointer": "artifacts/client_harness/442_interactions_20261003_42.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui41/character_ratings_after_review.json",
           "sha256": "eef0402a3ea6a219ca8be101521023af7bc231e03d71192f6d0ae405e45a40bd",
+          "archived_receipt_digest_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_43.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui42/character_spell_after_01/episode.json",
+          "sha256": "14ea34d1cd625f11cc2c0627ae59ddea89c718f27c01a279ba96a776aa904dfb",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.stats.spell.equipped_before": "character_spell_defense_pass",
+            "character.stats.spell.waist_unequipped": "character_spell_defense_pass",
+            "character.stats.spell.waist_equipped_after": "character_spell_defense_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_43.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui42/character_spell_after_review.json",
+          "sha256": "c0c5b26290a08016b445fac96f064313bd046ec1163b2513764ece5ae3a73113",
           "archived_receipt_digest_verified": true
         }
       ]

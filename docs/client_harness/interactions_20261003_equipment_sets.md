@@ -412,3 +412,13 @@ DVC43 remote/archive review before this proof augments character.stats;
 unique qualified operations remain264/916. Item level, other stat rows,
 other classes and cached reconnect remain open. UI43 continues with stock
 spellbook controls, tabs, paging, tooltips and ordinary spell actions.
+
+UI42 is now remotely verified in DVC43. Archive review checks47 selected
+JSON receipts and399 attributed PNGs. The first checkpoint command ended
+with143 after DVC add; its original archive was preserved, pushed, fully
+verified against all918 manifest members and verified against the remote
+before the checkpoint receipt was resumed. No gameplay trial was replayed.
+The successful whole spell/defense trial augments character.stats; unique
+coverage stays264/916. Failed roots retain their actual outcomes. Both
+UI43 stock spellbooks open cleanly with native inventory/money unchanged;
+their contents and further actions are still unqualified.
