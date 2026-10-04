@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "332/916 reviewed scoped operations. UI61 qualifies both owned-party assist/target-of-target selection and world-player mouseover/tooltip with complete restoration. Missing native UnitData.Target translation is repaired and live verified in both clients. Next UI62 tests stock keybinding open/assignment/close/persistence and full native/settings restoration with code-only control.",
+  "current": "337/916 reviewed scoped operations. UI62 qualifies stock Options/Keybindings navigation, assignment and Close with reload execution and complete native/settings/binding restoration. Continue remaining keybinding and game-menu operations with code-only inputs and two owned clients.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -151,7 +151,8 @@
     "ui58/ground_modes03: both walk/run cadences and bounded autorun,20 restoration checks, native/public/peer agreement; layout repair and failed01/02 retained.",
     "ui59/sheath_peer02 and ground_jump02: scout drawn/back sword rendering, both visible jumps and native/peer landing,40 full restoration checks; standalone seated and checker failures retained.",
     "ui60/core04: seven selection/focus controls, 94 qualifying checks and 20 restoration checks pass. DVC60 verifies 40 JSON and 260 attributed frames; observer overflow recovery, preflight and hover failures retained.",
-    "ui61/assist04 and world_hover01: four operations pass, 42 qualifying checks and 40 complete character restoration checks. DVC61 verifies 46 JSON and 218 attributed images. Missing-target, invite autocomplete, redundant-selection and test-helper visibility failures are preserved; exact invite recovery passes 24 checks."
+    "ui61/assist04 and world_hover01: four operations pass, 42 qualifying checks and 40 complete character restoration checks. DVC61 verifies 46 JSON and 218 attributed images. Missing-target, invite autocomplete, redundant-selection and test-helper visibility failures are preserved; exact invite recovery passes 24 checks.",
+    "ui62/primary_bindings02: five operations pass after separate recovery of the earlier pose-only failure. All ten restoration checks and exact original settings/bindings pass. DVC62 verifies 18 JSON and 196 attributed images; initial failure retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

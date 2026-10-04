@@ -5097,7 +5097,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_keybinding_native_roundtrip"
     },
     {
       "id": "keybindings.close",
@@ -5106,7 +5107,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_keybinding_native_roundtrip"
     },
     {
       "id": "keybindings.category_search",
@@ -5135,7 +5137,8 @@
       "fixture": "saved_local_bindings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_keybinding_native_roundtrip"
     },
     {
       "id": "keybindings.assign_second_key",
@@ -5893,7 +5896,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_keybinding_native_roundtrip"
     },
     {
       "id": "menu.keybindings",
@@ -5902,7 +5906,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_keybinding_native_roundtrip"
     },
     {
       "id": "menu.macros",
@@ -12019,8 +12024,52 @@
           "sha256": "4b483f625de6ecfc9fb84f45f0b78eb6453a75c27abf46c0ece4ee4231e7e25f"
         }
       ]
+    },
+    {
+      "id": "owned_keybinding_native_roundtrip",
+      "operations": [
+        "menu.options",
+        "menu.keybindings",
+        "keybindings.open",
+        "keybindings.assign_key",
+        "keybindings.close"
+      ],
+      "scope": "Primary owned idle level85 client opens Options and the stock Keybindings category, assigns unused Ctrl+Shift+F12 to the second TOGGLEFPS slot, saves by Close, reloads and visibly toggles the counter. Original bindings, full settings and all ten native/public restoration checks pass; original seated pose is visibly restored.",
+      "limits": "Build60895 routes menu.keybindings through Options then Keybindings. One account binding set and harmless unused chord only. Initial pose failure remains unqualified with separate exact recovery. Conflicts, explicit clear-binding case, defaults, per-character and combat variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/primary_bindings02/episode.json",
+          "sha256": "2d550cca66d250619d97842cd5739c76cdd9565910ff68e057e2cf5ea4b50364"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/binding_visual_acceptance_review.json",
+          "sha256": "9f0700f2eee878f5b4912ffda531bee0d83d3d5dcf73599c27b323c2759eefd3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/primary_bindings01/episode.json",
+          "sha256": "356b99d81563d8c53bf8d15686c04e2cc1ade24ae2fab0aaa45a2fa87de24d5a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/binding_pose_recovery01/episode.json",
+          "sha256": "81d5cca516f32d6f0910c57b84d4519e8a6790d848b964d0aeddbb49f63a978f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/binding_pose_failure_review.json",
+          "sha256": "d6cea42e8f9b3b8c065ef7aa395d2316546442ee6dac8e48126ea52b19c4ca2c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui62/resource_review.json",
+          "sha256": "728c1cfcaaffbd33e56930c2bc99d8e4a2553634dcb8fe7bc25b68a83c1a1d5e"
+        }
+      ]
     }
   ],
-  "qualified_operations": 332,
+  "qualified_operations": 337,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 332 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 337 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -681,11 +681,11 @@ Fixture: `disposable_calendar`.
 
 Fixture: `saved_local_bindings`.
 
-- [ ] `keybindings.open`
-- [ ] `keybindings.close`
+- [x] `keybindings.open` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
+- [x] `keybindings.close` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
 - [x] `keybindings.category_search` (qualified variant; [evidence](#keybinding_mutation))
 - [x] `keybindings.select_action` (qualified variant; [evidence](#keybinding_mutation))
-- [ ] `keybindings.assign_key`
+- [x] `keybindings.assign_key` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
 - [x] `keybindings.assign_second_key` (qualified variant; [evidence](#keybinding_mutation))
 - [x] `keybindings.modifier_chord` (qualified variant; [evidence](#keybinding_mutation))
 - [ ] `keybindings.conflict_replace`
@@ -785,8 +785,8 @@ Fixture: `in_world`.
 
 - [x] `menu.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `menu.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `menu.options`
-- [ ] `menu.keybindings`
+- [x] `menu.options` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
+- [x] `menu.keybindings` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
 - [ ] `menu.macros`
 - [ ] `menu.addons`
 - [ ] `menu.help`
@@ -2260,3 +2260,16 @@ Remaining limits: Standing idle nearby owned party players at levels 85/1 only. 
 - [442_interactions_20261004_61.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc), member `evidence/client_interactions_20261004_ui61/redundant_selection_failure_review.json`, SHA-256 `942e07beab24a25f13f2132f5b733a22e6764af943576069ec7bb6f0283866a9`.
 - [442_interactions_20261004_61.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc), member `evidence/client_interactions_20261004_ui61/deployment_visual_review.json`, SHA-256 `6ca6ea74294b2ff560140fd0d51dd3af23374e86f4a7158dec24d90e46771eff`.
 - [442_interactions_20261004_61.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_61.tar.gz.dvc), member `evidence/client_interactions_20261004_ui61/resource_review.json`, SHA-256 `4b483f625de6ecfc9fb84f45f0b78eb6453a75c27abf46c0ece4ee4231e7e25f`.
+
+### owned_keybinding_native_roundtrip
+
+Primary owned idle level85 client opens Options and the stock Keybindings category, assigns unused Ctrl+Shift+F12 to the second TOGGLEFPS slot, saves by Close, reloads and visibly toggles the counter. Original bindings, full settings and all ten native/public restoration checks pass; original seated pose is visibly restored.
+
+Remaining limits: Build60895 routes menu.keybindings through Options then Keybindings. One account binding set and harmless unused chord only. Initial pose failure remains unqualified with separate exact recovery. Conflicts, explicit clear-binding case, defaults, per-character and combat variants remain open.
+
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/primary_bindings02/episode.json`, SHA-256 `2d550cca66d250619d97842cd5739c76cdd9565910ff68e057e2cf5ea4b50364`.
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/binding_visual_acceptance_review.json`, SHA-256 `9f0700f2eee878f5b4912ffda531bee0d83d3d5dcf73599c27b323c2759eefd3`.
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/primary_bindings01/episode.json`, SHA-256 `356b99d81563d8c53bf8d15686c04e2cc1ade24ae2fab0aaa45a2fa87de24d5a`.
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/binding_pose_recovery01/episode.json`, SHA-256 `81d5cca516f32d6f0910c57b84d4519e8a6790d848b964d0aeddbb49f63a978f`.
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/binding_pose_failure_review.json`, SHA-256 `d6cea42e8f9b3b8c065ef7aa395d2316546442ee6dac8e48126ea52b19c4ca2c`.
+- [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/resource_review.json`, SHA-256 `728c1cfcaaffbd33e56930c2bc99d8e4a2553634dcb8fe7bc25b68a83c1a1d5e`.
