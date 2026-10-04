@@ -10,6 +10,7 @@ from .interaction_spellbook_recon import resources
 from .interaction_spellbook_navigation import known
 from .interaction_spellbook_actions import saved_actions
 from .observation.inventory import Inventory
+from .interaction_archaeology_projects import dbc
 
 
 def detail(t,label,ready=None):
@@ -28,10 +29,12 @@ def select(t,key,page,label):
         matches=[]
         for index,button in enumerate(probe['actions'],1):
             entry=native.get(button['slot']-1)
+            native_kind={'spell':0,'item':128,'macro':64}.get(button.get('kind'))
+            if button.get('kind')=='companion' and button.get('id') in t.native_mounts:native_kind=0
             matches.append(button['slot']==index+(expected_page-1)*12 and
                 ((not button.get('kind') and entry is None) or
                  (entry is not None and button.get('id')==entry[0] and
-                  {'spell':0,'item':128,'macro':64}.get(button.get('kind'))==entry[1])))
+                  native_kind==entry[1])))
         checks={'ordinary_binding':s=='binding','requested_page':probe['page']==page,
             'visible_main_bar':probe['frames'].get('MainMenuBar') is True,
             'requested_effective_page':probe['effective_page']==expected_page,
@@ -51,6 +54,14 @@ def suite(t):
     if state.get('observer_version',0)<69:raise RuntimeError('requires passive action-bar observer69')
     original=resources(oracle);spells=known(t.fixture['guid']);t.actions_baseline=saved_actions(t.fixture['guid'])
     layout=detail(t,'bar_layout');page=layout['page']
+    companions={r['id'] for r in layout['actions'] if r.get('kind')=='companion'}
+    learned={r[0] for r in spells if r[1:]==[1,0]};t.native_mounts={};mount_digest=None
+    if companions:
+        effects,_=dbc('SpellEffect',27)
+        t.native_mounts={r[24]:{'effect_id':r[0],'effect':r[1],'aura':r[3],'spell':r[24]} for r in effects
+            if r[24] in companions and r[24] in learned and r[1]==6 and r[3]==78}
+        mount_digest=lab.sha256(lab.ROOT/'data/dbc/enUS/SpellEffect.dbc')
+        if set(t.native_mounts)!=companions:raise RuntimeError('companion action lacks a learned native mounted-aura contract')
     if not isinstance(page,int) or not 1<=page<=6:raise RuntimeError('requires an ordinary numbered action-bar page')
     viewable=layout['viewable_pages'];next_page=next((p for p in viewable if p>page),1)
     if next_page==page:raise RuntimeError('requires two viewable numbered pages')
@@ -59,7 +70,8 @@ def suite(t):
     keys={name:binding_key(layout['keys'][name][0]) for name in names}
     t.bar_layout=layout
     t.receipt.update(baseline=original,native_persisted_spells=spells,native_actions=t.actions_baseline,
-        layout_baseline=layout,qualified_scope='Stock next/previous and direct numbered page bindings on one idle owned fixture. Native saved action rows/resources stay unchanged; the original page and visible slot assignment are restored. Other bar types and settings remain open.');t.persist()
+        layout_baseline=layout,native_mount_contracts=t.native_mounts,native_mount_catalog_sha256=mount_digest,
+        qualified_scope='Stock next/previous and direct numbered page bindings on one idle owned fixture. All12 public slot assignments match native rows, including learned native mount spells exposed as companion actions. Native saved action rows/resources stay unchanged; the original page and slot assignment are restored. Other bar types and settings remain open.');t.persist()
     try:
         select(t,keys['NEXTACTIONPAGE'],next_page,'actionbars.page_next')
         select(t,keys['PREVIOUSACTIONPAGE'],page,'actionbars.page_previous')
