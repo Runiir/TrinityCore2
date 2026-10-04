@@ -1,4 +1,4 @@
-"""Explicitly cancel a binding listener and clear a disposable saved binding."""
+"""Explicitly cancel a binding listener and clear a disposable binding."""
 import argparse,json,time
 from pathlib import Path
 from .interaction_trial import Trial
