@@ -22,6 +22,10 @@ def pose(oracle):
         'sheath':fields.get(INDEX['UNIT_FIELD_BYTES_2'],0)&255}
 
 
+def afk(oracle):
+    oracle.poll();return bool(oracle.objects[oracle.guid].get(INDEX['PLAYER_FLAGS'],0)&2)
+
+
 def select(t,oracle,wanted,label):
     since=time.time()
     def outcome(b,a,s):
@@ -53,31 +57,42 @@ def suite(t):
     if state.get('observer_version')!=74:raise RuntimeError('requires passive pose/binding observer74')
     t.bar_baseline=detail(t,'pose_layout');t.pose_baseline=pose(oracle)
     t.position_baseline=state.get('world_position');keys=t.bar_baseline['keys'].get('SITORSTAND')
-    if (t.pose_baseline['stand']!=0 or not keys or not t.position_baseline or
+    original_afk=afk(oracle)
+    t.receipt['preflight']={'native_pose':t.pose_baseline,'native_afk':original_afk,
+        'public_pose':t.bar_baseline['pose'],'position':t.position_baseline,'binding':keys};t.persist()
+    if (t.pose_baseline['stand'] not in [0,1] or not keys or not t.position_baseline or
         len(t.position_baseline)!=4 or t.bar_baseline['pose'].get('speed')!=0 or
         t.bar_baseline['pose'].get('sheath')!=t.pose_baseline['sheath']+1):
-        raise RuntimeError('requires a standing, idle owned fixture with public/native sheath agreement')
+        raise RuntimeError('requires a standing or seated idle owned fixture with public/native sheath agreement')
     t.pose_key=binding_key(keys[0]);original=resources(oracle);spells=known(t.fixture['guid'])
     actions=saved_actions(t.fixture['guid']);stats=native_state(oracle)
     t.receipt.update(native_session=t.session,baseline=original,native_persisted_spells=spells,
         native_actions=actions,native_state_baseline=stats,pose_baseline=t.pose_baseline,
+        native_afk_baseline=original_afk,
         position_baseline=t.position_baseline,bar_baseline=t.bar_baseline,observed_pose_binding=keys,
-        qualified_scope='Stock installed sit/stand binding on one standing idle owned fixture. Native four-byte requests, one-byte state updates, stand-state fields, unchanged sheath/main bar/position and exact rendered poses. Restore original standing pose, health/power/stats, inventory/money and saved spell/action rows. Other movement, emotes, combat, death, chairs and persistence remain open.');t.persist()
+        qualified_scope='Stock installed sit/stand binding on one standing or seated idle owned fixture. Native four-byte requests, one-byte state updates, stand-state fields, unchanged sheath/main bar/public position and exact rendered poses. Restore original pose and AFK status, health/power/stats, inventory/money and saved spell/action rows. Natural automatic AFK/sit packets and cleanup do not qualify binding actions. Other movement, emotes, combat, death, chairs and persistence remain open.');t.persist()
     try:
-        select(t,oracle,1,'movement.sit')
-        select(t,oracle,0,'movement.stand')
+        for wanted in [1-t.pose_baseline['stand'],t.pose_baseline['stand']]:
+            select(t,oracle,wanted,'movement.sit' if wanted else 'movement.stand')
     except Exception as error:
         t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
         try:
             if pose(oracle)['stand']!=t.pose_baseline['stand']:
-                select(t,oracle,0,'movement.cleanup_stand')
+                select(t,oracle,t.pose_baseline['stand'],'movement.cleanup_pose')
+            if afk(oracle)!=original_afk:
+                t.receipt['afk_cleanup']={'source':'code_fixture_cleanup','input':'/afk',
+                    'original':original_afk,'qualification':False};t.persist()
+                t.execute({'kind':'chat','value':'/afk'})
+                detail(t,'pose_afk_restored',lambda p:afk(oracle)==original_afk and
+                    pose(oracle)['stand']==t.pose_baseline['stand'])
             final,_=t.observe('pose_restored');bar=detail(t,'pose_bar_restored')
             t.receipt['layout_restored']=(pose(oracle)==t.pose_baseline and
                 final.get('world_position')==t.position_baseline and signature(bar)==signature(t.bar_baseline) and
-                bar['pose']==t.bar_baseline['pose']);t.persist();t.clean_panels()
+                bar['pose']==t.bar_baseline['pose'] and afk(oracle)==original_afk);t.persist();t.clean_panels()
         finally:
             t.receipt.update(native_after=resources(oracle),native_pose_after=pose(oracle),
+                native_afk_after=afk(oracle),
                 native_state_after=native_state(oracle),native_actions_after=saved_actions(t.fixture['guid']),
                 native_persisted_spells_after=known(t.fixture['guid']))
             t.receipt['native_resources_preserved']=(t.receipt['native_after']==original and
