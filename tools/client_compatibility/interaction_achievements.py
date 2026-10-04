@@ -57,6 +57,32 @@ def tracking(t,id,wanted,label):
         lambda c:c['name']==row['tracking_button'],outcome),'stock_achievement_tracking_pass')
 
 
+def restore_layout(t,layout,selected=None):
+    current=detail(t,'achievement_restore_before')
+    if selected and selected['id'] in current['tracked'] and selected['id'] not in layout['tracked']:
+        tracking(t,selected['id'],False,'achievements.cleanup_untrack');current=detail(t,'after_cleanup_untrack')
+    if current.get('selection')!=layout.get('selection'):
+        if layout.get('selection') is not None:raise RuntimeError('requires original empty achievement selection')
+        # Summary returns early without clearing its hidden selected row.
+        # Entering General normally clears that stale selection; otherwise
+        # click the already-expanded visible row once to collapse it.
+        if not current['rows']:
+            category(t,92,'achievements.recovery_general');current=detail(t,'recovery_general')
+        if current.get('selection') is not None:
+            row=next(r for r in current['rows'] if r['id']==current['selection'])
+            def deselect(b,a,s):
+                after=detail(t,'selection_restored',lambda p:p.get('selection') is None)
+                return {'status':'stock_achievement_deselect_pass' if s and after.get('selection') is None else
+                    'client_or_protocol_failure','oracle':{'public':after}}
+            require(click_case(t,'achievements.restore_selection','Collapse the selected stock achievement row.',
+                lambda c:c['name']==row['button'],deselect),'stock_achievement_deselect_pass')
+        current=detail(t,'after_selection_restore')
+    if current.get('category')!=layout.get('category'):category(t,layout['category'],'achievements.restore_category')
+    after=detail(t,'achievement_restored');t.receipt['layout_restored']=all(after.get(k)==layout.get(k)
+        for k in ['tab','category','selection','tracked']);t.persist()
+    if not t.receipt['layout_restored']:raise RuntimeError('achievement layout/tracking did not restore')
+
+
 def suite(t):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();state,_=t.observe('achievement_fixture')
@@ -95,13 +121,7 @@ def suite(t):
     finally:
         try:
             if layout:
-                current=detail(t,'achievement_restore_before')
-                if selected and selected['id'] in current['tracked'] and selected['id'] not in layout['tracked']:
-                    tracking(t,selected['id'],False,'achievements.cleanup_untrack')
-                if current.get('category')!=layout.get('category'):category(t,layout['category'],'achievements.restore_category')
-                after=detail(t,'achievement_restored');t.receipt['layout_restored']=all(after.get(k)==layout.get(k)
-                    for k in ['tab','category','selection','tracked']);t.persist()
-                if not t.receipt['layout_restored']:raise RuntimeError('achievement layout/tracking did not restore')
+                restore_layout(t,layout,selected)
             t.clean_panels()
         finally:
             t.receipt.update(native_after=resources(oracle),native_achievements_after=saved(t.fixture['guid']),
@@ -112,11 +132,34 @@ def suite(t):
     if not t.receipt['native_resources_preserved']:raise RuntimeError('stock achievement trial changed native resources')
 
 
+def recover(t,source):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('require an owned failed achievement-layout episode')
+    old=json.loads(source.read_text());session=actors.session_entry(t.fixture)['session']
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();native=saved(t.fixture['guid'])
+    if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or not old.get('finished_at') or
+        old.get('completed') or old.get('failure')!='RuntimeError: achievement layout/tracking did not restore' or
+        old.get('native_resources_preserved') is not True or resources(oracle)!=old['baseline'] or
+        native!=old['native_achievements'] or known(t.fixture['guid'])!=old['native_persisted_spells']):
+        raise RuntimeError('failed layout source and current native/client fixture differ')
+    t.achievement_baseline=native
+    t.receipt.update(recovery_source={'file':str(source),'sha256':lab.sha256(source)},
+        qualified_scope='Cleanup only: restore the exact failed Summary/selection/tracking layout; no new gameplay qualification.');t.persist()
+    restore_layout(t,old['layout_baseline']);t.clean_panels()
+    t.receipt['native_resources_preserved']=(resources(oracle)==old['baseline'] and saved(t.fixture['guid'])==native
+        and known(t.fixture['guid'])==old['native_persisted_spells']);t.persist()
+    if not t.receipt['native_resources_preserved']:raise RuntimeError('achievement cleanup changed native resources')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--actor',choices=['primary','scout'],required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--recover-layout',type=Path);a=p.parse_args()
     with actor(a.actor):
         t=Trial(a.output,controller='code')
-        try:suite(t);t.receipt['completed']=True
+        try:
+            if a.recover_layout:recover(t,a.recover_layout)
+            else:suite(t)
+            t.receipt['completed']=True
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
