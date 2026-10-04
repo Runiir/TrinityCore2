@@ -160,6 +160,7 @@ def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False,key
             raise RuntimeError('second reviewed input requires the closed first input receipt')
         if dismiss_dialog and after_dismiss:raise ValueError('choose one reviewed lobby stage')
         dismissed=out/(name+'_disconnect_dismiss')/'episode.json'
+        if not dismissed.is_file():dismissed=out/(name+'_disconnect_dismiss_key')/'episode.json'
         if after_dismiss and (not dismissed.is_file() or not json.loads(dismissed.read_text()).get('completed')):
             raise RuntimeError('reconnect after modal requires its closed dismissal receipt')
         suffix=('_disconnect_dismiss' if dismiss_dialog else '_login_after_dismiss' if after_dismiss else
