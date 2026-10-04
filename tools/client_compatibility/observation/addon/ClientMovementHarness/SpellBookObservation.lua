@@ -39,5 +39,6 @@ function Client442ObserveSpellBook()
         book_type=book and book.bookType,skill_line=book and book.selectedSkillLine,
         book_types={spell=BOOKTYPE_SPELL,profession=BOOKTYPE_PROFESSION,pet=BOOKTYPE_PET},
         tabs=tabs,rows=rows,pages=pages,page=current,max_pages=maximum,
-        page_text=text(SpellBookPageText),tooltip=tooltip}
+        page_text=text(SpellBookPageText),tooltip=tooltip,
+        professions=book and book.bookType==BOOKTYPE_PROFESSION and Client442ObserveProfessions() or nil}
 end

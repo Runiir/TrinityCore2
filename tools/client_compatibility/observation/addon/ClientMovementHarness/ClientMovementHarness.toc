@@ -13,4 +13,5 @@ MapObservation.lua
 TooltipObservation.lua
 EquipmentObservation.lua
 SpellBookObservation.lua
+ProfessionObservation.lua
 ClientInteractions.lua
