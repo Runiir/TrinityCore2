@@ -128,7 +128,7 @@ def move(t,peer,session,peer_session,op,command,start,stop,sign):
         diagnostic_action='move'),'ground_movement_pass')
 
 
-def suite(out,work=None,separated=False):
+def suite(out,work=None,separated=False,trial_class=Trial):
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     report={'schema':'client442_ground_movement_v1','started_at':time.time(),'completed':False,'failure':None}
     trials={};oracles={};baselines={};sessions={};fixture=None
@@ -138,7 +138,7 @@ def suite(out,work=None,separated=False):
         lab.private_write(flag,str(out)+'\n');owns_flag=True
         for name in ['primary','scout']:
             with actor(name):
-                t=trials[name]=Trial(out/name,controller='code');t.clean_panels()
+                t=trials[name]=trial_class(out/name,controller='code');t.clean_panels()
                 state,_=t.observe('ground_fixture');t.ground_bar=detail(t,'ground_layout')
                 if (state['observer_version']<75 or state.get('framerate',0)<10 or state['target'].get('exists') or
                     state['follow'].get('active') or state['group']['members'] or native_group()):
