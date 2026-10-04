@@ -35,7 +35,15 @@ class NearbyFixture:
                 row=(start+i,*source,name)
                 cur.execute('INSERT INTO client442_world.game_tele '
                     '(id,position_x,position_y,position_z,orientation,map,name) VALUES (%s,%s,%s,%s,%s,%s,%s)',row)
-                self.rows.append(row)
+                cur.execute('SELECT id,position_x,position_y,position_z,orientation,map,name '
+                    'FROM client442_world.game_tele WHERE id=%s',(row[0],));stored=cur.fetchone()
+                if (stored is None or stored[0]!=row[0] or stored[5:]!=row[5:] or
+                    any(abs(a-b)>.001 for a,b in zip(stored[1:4],row[1:4])) or
+                    abs(stored[4]-row[4])>.00001):
+                    raise RuntimeError('temporary teleport storage differs from its owned input')
+                # MySQL FLOAT/text round trips can round a new orientation.
+                # Cleanup compares the exact read-back row, not the input double.
+                self.rows.append(stored)
         lab.private_write(self.out/'nearby_fixture.json',json.dumps({'source':'code_fixture_native_console',
             'before':self.before,'temporary_teleports':self.rows,'native_worldserver':{
                 k:lab.owned_process('worldserver')[k] for k in ['pid','start_ticks']}},indent=2)+'\n')
