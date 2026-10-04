@@ -48,6 +48,13 @@ int main(int argc, char **argv)
                     else
                         result = nullptr;
                 }
+                else if (op == "stand_state_request" || op == "stand_state_update")
+                {
+                    auto packet=op=="stand_state_request" ?
+                        stand_state_request(data("body"),truth(get(request,"in_world"))) :
+                        stand_state_update(data("body"));
+                    result=Array{packet.first,hex(packet.second)};
+                }
                 else if (op == "pack")
                     result = hex(Writer()
                                      .pack(str(get(request, "format")), get(request, "values").as_array())

@@ -17,6 +17,7 @@ function Client442ObserveActionBars()
         frame_limit={max=call(GetCVar,'maxFPS'),background=call(GetCVar,'maxFPSBk')},
         camera_zoom=call(GetCameraZoom),network={call(GetNetStats)},
         power=call(UnitPower,'player'),power_type=call(UnitPowerType,'player'),
+        pose={sheath=call(GetSheathState),speed=call(GetUnitSpeed,'player')},
         viewport={width=width,height=height,basis='scaled_game_ui_screen'},
         performance_event=Client442PerformanceTooltipEvent()}
     for index=1,6 do
@@ -25,7 +26,8 @@ function Client442ObserveActionBars()
         end
     end
     for _,name in ipairs({'NEXTACTIONPAGE','PREVIOUSACTIONPAGE','ACTIONPAGE1','ACTIONPAGE2','ACTIONPAGE3',
-        'ACTIONPAGE4','ACTIONPAGE5','ACTIONPAGE6','CAMERAZOOMIN','CAMERAZOOMOUT','NEXTVIEW','PREVVIEW'}) do
+        'ACTIONPAGE4','ACTIONPAGE5','ACTIONPAGE6','CAMERAZOOMIN','CAMERAZOOMOUT','NEXTVIEW','PREVVIEW',
+        'SITORSTAND','TOGGLESHEATH'}) do
         result.keys[name]={call(GetBindingKey,name)}
     end
     for _,name in ipairs({'MainMenuBar','MultiBarBottomLeft','MultiBarBottomRight','MultiBarLeft','MultiBarRight',

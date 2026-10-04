@@ -9,12 +9,18 @@
 #include "quests.hpp"
 #include "talents.hpp"
 #include "archaeology.hpp"
+#include "player_ui_state.hpp"
 #include <ctime>
 
 namespace bridge
 {
 Task<> Session::gameplay(std::string name, Bytes body)
 {
+    if (name=="SMSG_STAND_STATE_UPDATE")
+    {
+        send(stand_state_update(body));
+        co_return;
+    }
     if(name=="SMSG_PONG")
     {
         Reader r(body);r.take<std::uint32_t>();r.end();
