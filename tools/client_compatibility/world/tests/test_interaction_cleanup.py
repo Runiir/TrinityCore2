@@ -75,7 +75,7 @@ def test_reload_extends_only_the_read_wait_without_repeating_input(monkeypatch):
         waits.append(seconds);return {'chat_edit_open':False},{'file':label+'.png'}
     t.observe=observe;monkeypatch.setattr(module.owned_input,'lease',nullcontext)
     assert t.execute({'kind':'chat','value':'/reload'})==[]
-    assert waits==[60]
+    assert waits==[180]
     assert events==[('key','Return'),('text','/reload'),('key','Return')]
 
 
