@@ -140,9 +140,9 @@ def suite(out,work=None,separated=False):
             with actor(name):
                 t=trials[name]=Trial(out/name,controller='code');t.clean_panels()
                 state,_=t.observe('ground_fixture');t.ground_bar=detail(t,'ground_layout')
-                if (state['observer_version']!=75 or state.get('framerate',0)<10 or state['target'].get('exists') or
+                if (state['observer_version']<75 or state.get('framerate',0)<10 or state['target'].get('exists') or
                     state['follow'].get('active') or state['group']['members'] or native_group()):
-                    raise RuntimeError('requires observer75, at least10 rendered FPS, no target/follow and two solo fixtures')
+                    raise RuntimeError('requires observer75 or newer, at least10 rendered FPS, no target/follow and two solo fixtures')
                 if any(not t.ground_bar['keys'].get(c) for _,c,*_ in OPERATIONS):
                     raise RuntimeError('required installed ground binding missing')
                 session=sessions[name]=actors.session_entry(t.fixture)['session']
@@ -195,6 +195,11 @@ def suite(out,work=None,separated=False):
                 report['completed']=False;report.setdefault('cleanup_failures',{})['party']=str(error)
         for name,t in trials.items():
             with actor(name):
+                if name not in baselines:
+                    t.receipt['ground_restoration']={'skipped':True,'qualification':False,
+                        'reason':'Preflight failed before native baseline capture or fixture staging.'}
+                    t.receipt.update(completed=False,failure=report['failure'],finished_at=time.time());t.persist()
+                    continue
                 try:
                     t.clean_panels();state,_=t.observe('ground_cleanup_target')
                     if state['target'].get('exists'):t.execute({'kind':'key','value':'Escape','hold':.4})
