@@ -134,8 +134,8 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
 
 
-def resume_login(out,name,attempt=1):
-    """Click only the reviewed disconnect dialog's Reconnect button."""
+def resume_login(out,name,attempt=1,dismiss_dialog=False,after_dismiss=False):
+    """Emit one reviewed lobby input, then require a new screen review."""
     report=json.loads((out/'deployment.json').read_text())
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('login resumption requires the same deployment processes')
@@ -148,10 +148,17 @@ def resume_login(out,name,attempt=1):
         prior=out/(name+'_login')/'episode.json'
         if attempt==2 and (not prior.is_file() or not json.loads(prior.read_text()).get('finished_at')):
             raise RuntimeError('second reviewed input requires the closed first input receipt')
-        t=Trial(out/(name+'_login'+('' if attempt==1 else str(attempt))),controller='code')
+        if dismiss_dialog and after_dismiss:raise ValueError('choose one reviewed lobby stage')
+        dismissed=out/(name+'_disconnect_dismiss')/'episode.json'
+        if after_dismiss and (not dismissed.is_file() or not json.loads(dismissed.read_text()).get('completed')):
+            raise RuntimeError('reconnect after modal requires its closed dismissal receipt')
+        suffix=('_disconnect_dismiss' if dismiss_dialog else '_login_after_dismiss' if after_dismiss else
+            '_login'+('' if attempt==1 else str(attempt)))
+        t=Trial(out/(name+suffix),controller='code')
         try:
-            t.receipt['qualified_scope']='Reviewed disconnect Reconnect input only; next lobby screen requires separate visual review'
-            frame=shot(t.out/'before.png');action={'kind':'click','value':[640,418],'hold':.4}
+            t.receipt['qualified_scope']='Reviewed disconnect '+('Okay' if dismiss_dialog else 'Reconnect')+' input only; next lobby screen requires separate visual review'
+            frame=shot(t.out/'before.png');action={'kind':'click','value':[640,380 if dismiss_dialog else 418],'hold':.4}
+            if after_dismiss:t.receipt['modal_dismissal']={'file':str(dismissed),'sha256':lab.sha256(dismissed)}
             if attempt==2:
                 t.receipt['previous_input']={'file':str(prior),'sha256':lab.sha256(prior),
                     'reason':'Separately reviewed unchanged disconnect dialog; first acknowledged short click did not advance.'}
@@ -229,7 +236,7 @@ def recovery(source,out,name,client_restart_source=None,observer_version=None):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery','select-realm','resume-login'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['restart','reconnect','recovery','select-realm','resume-login','dismiss-dialog','resume-after-dismiss'])
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--version',type=int)
     parser.add_argument('--actor',choices=['primary','scout']);parser.add_argument('--source',type=Path)
     parser.add_argument('--keyboard-modal',action='store_true',help='Use Return for the reviewed default modal/entry buttons')
@@ -250,9 +257,9 @@ if __name__=='__main__':
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)
-    elif args.action=='resume-login':
+    elif args.action in ['resume-login','dismiss-dialog','resume-after-dismiss']:
         if args.actor is None or not args.disconnect_screen:parser.error('login resumption requires actor and reviewed disconnect screen')
-        resume_login(args.output,args.actor,args.login_attempt)
+        resume_login(args.output,args.actor,args.login_attempt,args.action=='dismiss-dialog',args.action=='resume-after-dismiss')
     elif args.action=='select-realm':
         if args.actor is None:parser.error('realm selection requires an actor')
         select_realm(args.output,args.actor)
