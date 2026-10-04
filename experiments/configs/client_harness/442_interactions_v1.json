@@ -8980,8 +8980,8 @@
         "bags.unequip_item",
         "bags.equip_item"
       ],
-      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass.",
-      "limits": "Owned geared warrior and documented helmet/damage/combat variants only. Item level, haste, ratings, expertise/mastery/defense, offscreen ranged/spell rows, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage.",
+      "scope": "One helmet unequipped and reequipped; native and visible strength, armor, damage and maximum-health deltas agree and the entire fixture is restored. The geared physical damage modifier, attack speed and finite rendered melee DPS also match exact native fields after the bridge correction; full resources and sidebar restore. Public melee/ranged crit, all seven spell-school crit values, ranged speed/damage/percentage and rendered melee crit/ranged DPS match native fields on login and during ordinary helmet removal/re-equip; exact sparse updates and complete fixture restoration pass. Native/public supported ratings, melee/ranged haste, mastery, both expertise values and dodge/parry agree in a complete ordinary helmet and haste-belt roundtrip. Five reviewed stock phases render the expected melee haste, mastery and expertise values; four native sparse updates and full original fixture/sidebar restoration pass.",
+      "limits": "Owned geared warrior and documented helmet/belt/damage/combat variants only. Item level, spell haste updates, offscreen ranged/spell/defense rows, actual dual-wield and shield-block gameplay, offhand/shield-block crit APIs, other classes and unsampled variants remain open. Compiled school modifier gate tests do not imply a newly proven live buff mutation. Separate weapon/set/comparison records do not imply broader equipment coverage.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261002_04.tar.gz.dvc",
@@ -9025,6 +9025,25 @@
           "pointer": "artifacts/client_harness/442_interactions_20261003_41.tar.gz.dvc",
           "member": "evidence/client_interactions_20261003_ui40/character_combat_after_review.json",
           "sha256": "8716a9d4def29c9dcad1db87b9f744651e99237e8fb115164a7fcaa4bc2e0981",
+          "archived_receipt_digest_verified": true
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_42.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui41/character_ratings_after_03/episode.json",
+          "sha256": "91407b407c4e93e16fedc96adbff63f5dcca02583b5e13f157314213cd8717c1",
+          "archived_receipt_digest_verified": true,
+          "cases": {
+            "character.stats.ratings.equipped_before": "character_ratings_display_pass",
+            "character.stats.ratings.unequipped": "character_ratings_display_pass",
+            "character.stats.ratings.equipped_after": "character_ratings_display_pass",
+            "character.stats.ratings.waist_unequipped": "character_ratings_display_pass",
+            "character.stats.ratings.waist_equipped_after": "character_ratings_display_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_42.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui41/character_ratings_after_review.json",
+          "sha256": "eef0402a3ea6a219ca8be101521023af7bc231e03d71192f6d0ae405e45a40bd",
           "archived_receipt_digest_verified": true
         }
       ]

@@ -363,3 +363,10 @@ and mastery19.55/19.55/19.55/18.03/19.55. Public dodge/parry and both expertise
 values agree with native fields throughout. This proof awaits DVC42 remote
 and archive verification before augmenting character.stats; unique count
 remains264. Spell/defense rendered rows and item level remain open.
+
+UI41 is remotely verified in DVC42. Archive review validates26 selected
+JSON receipts and223 attributed PNGs. The successful full ratings trial
+augments character.stats; unique coverage stays264/916. Both failed
+post-fix roots retain their failures. The next batch pins six real missing
+public cast-speed/spell-haste sparse updates, with three creation/unchanged
+checks passing.
