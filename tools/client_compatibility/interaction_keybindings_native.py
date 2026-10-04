@@ -18,7 +18,7 @@ from .interaction_ground_movement import position
 from .interaction_actionbar_pages import detail as bar_detail
 
 
-def suite(t):
+def suite(t,operations=bindings.suite):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();before,_=t.observe('native_binding_fixture')
     native={'resources':resources(oracle),'stats':native_state(oracle),'spells':known(t.fixture['guid']),
@@ -31,7 +31,7 @@ def suite(t):
         require(click_case(t,'fixture.close_original_settings','Close original settings before the binding trial.',
             lambda c:c['text']=='Close',lambda b,a,s:{'status':'fixture_settings_closed' if s and
                 'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'}),'fixture_settings_closed')
-        t.clean_panels();bindings.suite(t)
+        t.clean_panels();operations(t)
     finally:
         baseline=t.receipt.get('binding_baseline')
         if baseline:
