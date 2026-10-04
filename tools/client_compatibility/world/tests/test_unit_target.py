@@ -1,9 +1,9 @@
 """Pinned 4.4.2 UnitData.Target GUID creation and public sparse updates."""
 import pytest
 from tools.client_compatibility.world.objects import INDEX
-from tools.client_compatibility.world.buffer import player_high
+from tools.client_compatibility.world.buffer import Reader,player_high
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
-from tools.client_compatibility.world.tests.test_inventory_packets import read_block,mask
+from tools.client_compatibility.world.tests.test_inventory_packets import mask
 
 TARGET=INDEX['UNIT_FIELD_TARGET']
 CREATURE=(0xf13<<52)|(1234<<32)|28
@@ -20,6 +20,14 @@ def identity(target):
     return [target,player_high()]
 
 
+def read_block(body,visibility):
+    r=Reader(bytes.fromhex(body))
+    assert r.unpack('B')==(0,) and r.guid()==(2,player_high())
+    assert r.unpack('I')[0]==len(r.data)-r.pos
+    assert r.unpack('BBBI')==(visibility,0,3,1<<5)
+    return r
+
+
 @pytest.mark.parametrize('target',[0,1,CREATURE])
 def test_create_target_retains_zero_player_and_creature_identity(codec,target):
     unit=result(codec,op='object_values',snapshot=snapshot(target),character={})['UnitData']
@@ -33,7 +41,7 @@ def test_target_guid_is_public_and_either_native_word_triggers_update(codec,visi
     body=result(codec,op='unit_update',snapshot=s,character={},
         changed={TARGET+word:s['fields'][TARGET+word]},visibility=visibility)
     assert body,'native target GUID update was dropped'
-    r=read_block(body,(2,player_high()),1<<5)
+    r=read_block(body,visibility)
     assert mask(r,8)=={0,21};r.align()
     assert list(r.guid())==identity(target);r.end()
 
@@ -43,7 +51,7 @@ def test_target_guid_keeps_pinned_order_between_display_and_flags(codec):
     s['fields'].update({INDEX['UNIT_FIELD_DISPLAYID']:49,INDEX['UNIT_FIELD_FLAGS']:8,
         INDEX['UNIT_FIELD_HEALTH']:100})
     body=result(codec,op='unit_update',snapshot=s,character={},changed=s['fields'],visibility=0)
-    r=read_block(body,(2,player_high()),1<<5)
+    r=read_block(body,0)
     assert mask(r,8)=={0,5,7,21,32,41};r.align()
     assert r.unpack('qi')==(100,49)
     assert list(r.guid())==identity(1)
