@@ -108,10 +108,15 @@ def create(t,name):
 
 
 def select(t,name,label):
+    before=detail(t,label+'_before')
+    if before['selected'].get('name')==name:raise RuntimeError('selection test requires a different currently selected macro')
     def selected(b,a,s):
         p=detail(t,label+'_detail',lambda p:p['selected'].get('name')==name)
-        return {'status':'macro_selection_pass' if s and p['selected'].get('name')==name else 'client_or_protocol_failure',
-            'oracle':{'public':p}}
+        checks={'ordinary_macro_button':s,'requested_name':p['selected'].get('name')==name,
+            'name_changed':p['selected'].get('name')!=before['selected'].get('name'),
+            'index_changed':p['actual_index']!=before['actual_index'],'counts_unchanged':p['counts']==before['counts']}
+        return {'status':'macro_selection_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'before':before,'public':p}}
     require(click_case(t,label,'Select the visible '+name+' macro from the stock list.',
         lambda c:c.get('macro_name')==name and c['name']!='MacroFrameSelectedMacroButton',selected),
         'macro_selection_pass')
@@ -140,7 +145,8 @@ def operations(t):
     try:
         open_editor(t);create(t,NAMES[0]);create(t,NAMES[1])
         tab(t,2,'macros.character_tab');create(t,NAMES[2])
-        tab(t,1,'macros.account_tab');select(t,NAMES[0],'macros.select')
+        tab(t,1,'macros.account_tab');select(t,NAMES[1],'fixture.select_second_account_macro')
+        select(t,NAMES[0],'macros.select')
         original=detail(t,'before_rename')['selected']
         require(click_case(t,'fixture.edit_name_icon','Open Change Name/Icon for the selected disposable macro.',
             lambda c:c['name']=='MacroEditButton',lambda b,a,s:{'status':'macro_popup_pass' if s and
@@ -235,16 +241,39 @@ def recover(t,source):
     if not all(checks.values()):raise RuntimeError('macro source baseline did not restore')
 
 
+def selection(t):
+    state,_=t.observe('macro_selection_fixture')
+    if state.get('macros')!=[0,0] or state.get('action_probe',{}).get('kind'):
+        raise RuntimeError('requires zero original macros and an empty action probe')
+    t.receipt['macro_selection_baseline']=state;t.persist()
+    try:
+        open_editor(t);create(t,NAMES[0]);create(t,NAMES[1])
+        select(t,NAMES[0],'macros.select')
+    finally:
+        close_editor(t);open_editor(t)
+        if detail(t,'selection_cleanup_tab')['tab']!=1:tab(t,1,'fixture.selection_cleanup_account_tab')
+        for i in range(2):
+            if detail(t,'selection_cleanup_count_'+str(i))['counts'][0]==0:break
+            delete_selected(t,'fixture.selection_cleanup_macro_'+str(i))
+        if detail(t,'selection_cleanup_verified')['counts']!=[0,0]:raise RuntimeError('selection fixture cleanup differs')
+        close_editor(t);t.execute({'kind':'chat','value':'/reload'});state,frame=t.observe('macro_selection_restored',seconds=120)
+        checks={'zero_macros':state.get('macros')==[0,0],'empty_action_probe':not state.get('action_probe',{}).get('kind'),
+            'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+        t.receipt['macro_selection_restoration']={'checks':checks,'frame':frame};t.persist()
+        if not all(checks.values()):raise RuntimeError('selection baseline did not restore')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--recon',action='store_true');p.add_argument('--targeted-controls',action='store_true')
     p.add_argument('--require-empty-guard',action='store_true')
+    p.add_argument('--selection-only',action='store_true')
     p.add_argument('--recover-source',type=Path);a=p.parse_args()
-    if a.recon and a.recover_source:p.error('recon and recovery are distinct trials')
+    if sum(bool(x) for x in [a.recon,a.recover_source,a.selection_only])>1:p.error('recon, selection and recovery are distinct trials')
     t=Trial(a.output,controller='code')
     t.targeted_controls=a.targeted_controls
     t.empty_macro_guard_required=a.require_empty_guard
-    selected=(lambda t:recover(t,a.recover_source)) if a.recover_source else recon if a.recon else operations
+    selected=(lambda t:recover(t,a.recover_source)) if a.recover_source else recon if a.recon else selection if a.selection_only else operations
     try:native_suite(t,operations=selected,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
