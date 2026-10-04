@@ -155,7 +155,10 @@ def suite(out,work=None,separated=False):
         # ground01. Use an ordinary temporary owned party for the peer oracle.
         report['temporary_party']={'source':'ordinary_fixture_inputs','qualification':False}
         with actor('primary'):
-            party_attempted=True;trials['primary'].execute({'kind':'chat','value':'/invite Harnesstwo'})
+            # The stock autocomplete appends this observed same-realm suffix
+            # after a fresh reconnect. Submit the explicit owned identity so
+            # the exact pending-text guard continues to reject other changes.
+            party_attempted=True;trials['primary'].execute({'kind':'chat','value':'/invite Harnesstwo-Client442Lab'})
         with actor('scout'):
             require(click_case(trials['scout'],'fixture.party_accept','Accept the owned temporary movement fixture party.',
                 lambda c:c['name']=='StaticPopup1Button1' and c['text']=='Accept',
