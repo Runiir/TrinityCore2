@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791144401.1628325,
+  "reviewed_at": 1791146191.0183098,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -3430,6 +3430,122 @@
           "pointer": "artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc",
           "member": "evidence/client_interactions_20261004_ui62/resource_review.json",
           "sha256": "728c1cfcaaffbd33e56930c2bc99d8e4a2553634dcb8fe7bc25b68a83c1a1d5e"
+        }
+      ]
+    },
+    {
+      "id": "owned_binding_cancel_clear",
+      "operations": [
+        "keybindings.cancel",
+        "keybindings.clear_binding"
+      ],
+      "scope": "Primary idle level85 account set1 cancels the observed second-slot listener with Escape, retaining original Ctrl+R and unbound chord. A later explicitly assigned Ctrl+Shift+F12 is visibly cleared by right-click, and Close/reload persist removal. All ten native/public and full original settings restoration checks pass.",
+      "limits": "Listener cancellation and one disposable second-slot binding only. The clear case acts on a freshly assigned chord before saving its removal. Whole-window unsaved cancel, conflicts, defaults, per-character and other keys remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/primary_binding_controls01/episode.json",
+          "sha256": "89f1d963944302796e48e9b261bc3fd03b59ba91083203999b864dfb31e025b6"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/binding_controls_visual_review.json",
+          "sha256": "5e8551534c2299d4a63f93537d9649b5b0ff6341a988228f0f600350f5984a38"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/resource_review.json",
+          "sha256": "89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c"
+        }
+      ]
+    },
+    {
+      "id": "owned_macro_menu_route",
+      "operations": [
+        "menu.macros"
+      ],
+      "scope": "Ordinary Game Menu Macros click visibly opens the stock editor. Escape closes it with original zero account/character macro counts preserved. Original settings and all ten native/public restoration checks pass.",
+      "limits": "Owned primary idle level85 panel route only. Macro content mutations and other variants require their separate evidence.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/menu_macros01/episode.json",
+          "sha256": "c4a6683b0ea9310afb3399e48f92328a5a8582bc022eb044dac1059d983a622d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/menu_macros_visual_review.json",
+          "sha256": "e10ef196ee8faf4314a97140914d441fee10f442d740083c571f00f7e382c27c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/resource_review.json",
+          "sha256": "89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c"
+        }
+      ]
+    },
+    {
+      "id": "owned_addon_menu_route",
+      "operations": [
+        "menu.addons"
+      ],
+      "scope": "Fresh whole AddOns02 opens and closes the stock AddonList root and named controls with both owned addon rows visibly checked. Observer78 sees the previously omitted root. Full original settings and all ten native/public checks restore, including the visibly seated original pose.",
+      "limits": "Owned primary idle level85 panel route only. No enable/disable, out-of-date, per-character loading or settings-addon mutation qualification. Initial AddOns/root observation failure, scout preflight and reentry guard/reader failures remain failed; separate exact recovery verifies original fixture.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/menu_addons02/episode.json",
+          "sha256": "e9358fbfdd0904b5601beecd2a5e2f5ddf57fc44ea26314d684b557500da5b81"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/menu_addons_visual_review.json",
+          "sha256": "a478c312741b7c76507d2a38f81d315f48a9d75da8653923ae2c31222200108e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/addon_observer_failure_review.json",
+          "sha256": "3b30372dfebcff3a83562f7c54205cb37a865fee6dddc5abdb23071c13b45b79"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/addon_fixture_recovered01/episode.json",
+          "sha256": "c34a9364b67143631330d70d55175ceee1029a8c7f600321c90d9ca98f2e733e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/resource_review.json",
+          "sha256": "89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c"
+        }
+      ]
+    },
+    {
+      "id": "owned_menu_logout_reused",
+      "operations": [
+        "menu.logout"
+      ],
+      "scope": "Review of immutable UI34 owned primary evidence: ordinary GameMenuButtonLogout clicks produce two rendered countdowns with native request/response. The first cancels with native acknowledgement; the second completes and reenters the same character with all five original session persistence checks passing. Three archive frames were separately reviewed again.",
+      "limits": "Historical primary idle level85 fixture and its recorded runtime/controller identities. This review launches no new logout and infers no expanded pose or native baseline claim. Other actors, resting/combat and other variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui34/session_logout_01/episode.json",
+          "sha256": "4d6492077afc10016b24148087f651589674a6c79729bc0e712006e8b2909a7d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui34/session_reenter_01/episode.json",
+          "sha256": "0492b5dc32c503c8219ee9aa986d1a1b56167a646d4b910c6acf5a476584ea4e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261003_ui34/session_persistence_review.json",
+          "sha256": "67f497647a642d79688375b521527f1f5757d64fc5e2373466577b79d0721e13"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261004_ui63/menu_logout_reuse_review.json",
+          "sha256": "38f318b508514c52861f70bd9647abb61bf2680084eaec97d163bb2efa67f09c"
         }
       ]
     }

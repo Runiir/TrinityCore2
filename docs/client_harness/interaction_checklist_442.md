@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 337 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 342 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -690,12 +690,12 @@ Fixture: `saved_local_bindings`.
 - [x] `keybindings.modifier_chord` (qualified variant; [evidence](#keybinding_mutation))
 - [ ] `keybindings.conflict_replace`
 - [ ] `keybindings.conflict_cancel`
-- [ ] `keybindings.clear_binding`
+- [x] `keybindings.clear_binding` (qualified variant; [evidence](#owned_binding_cancel_clear))
 - [ ] `keybindings.per_character_toggle`
 - [ ] `keybindings.defaults_cancel`
 - [ ] `keybindings.defaults_apply`
 - [x] `keybindings.save` (qualified variant; [evidence](#keybinding_mutation))
-- [ ] `keybindings.cancel`
+- [x] `keybindings.cancel` (qualified variant; [evidence](#owned_binding_cancel_clear))
 - [x] `keybindings.persistence` (qualified variant; [evidence](#keybinding_mutation))
 - [x] `keybindings.restore_original` (qualified variant; [evidence](#keybinding_mutation))
 
@@ -787,10 +787,10 @@ Fixture: `in_world`.
 - [x] `menu.close` (qualified variant; [evidence](#panel_visibility))
 - [x] `menu.options` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
 - [x] `menu.keybindings` (qualified variant; [evidence](#owned_keybinding_native_roundtrip))
-- [ ] `menu.macros`
-- [ ] `menu.addons`
+- [x] `menu.macros` (qualified variant; [evidence](#owned_macro_menu_route))
+- [x] `menu.addons` (qualified variant; [evidence](#owned_addon_menu_route))
 - [ ] `menu.help`
-- [ ] `menu.logout`
+- [x] `menu.logout` (qualified variant; [evidence](#owned_menu_logout_reused))
 - [ ] `menu.exit_cancel`
 
 ## help
@@ -2273,3 +2273,46 @@ Remaining limits: Build60895 routes menu.keybindings through Options then Keybin
 - [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/binding_pose_recovery01/episode.json`, SHA-256 `81d5cca516f32d6f0910c57b84d4519e8a6790d848b964d0aeddbb49f63a978f`.
 - [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/binding_pose_failure_review.json`, SHA-256 `d6cea42e8f9b3b8c065ef7aa395d2316546442ee6dac8e48126ea52b19c4ca2c`.
 - [442_interactions_20261004_62.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_62.tar.gz.dvc), member `evidence/client_interactions_20261004_ui62/resource_review.json`, SHA-256 `728c1cfcaaffbd33e56930c2bc99d8e4a2553634dcb8fe7bc25b68a83c1a1d5e`.
+
+### owned_binding_cancel_clear
+
+Primary idle level85 account set1 cancels the observed second-slot listener with Escape, retaining original Ctrl+R and unbound chord. A later explicitly assigned Ctrl+Shift+F12 is visibly cleared by right-click, and Close/reload persist removal. All ten native/public and full original settings restoration checks pass.
+
+Remaining limits: Listener cancellation and one disposable second-slot binding only. The clear case acts on a freshly assigned chord before saving its removal. Whole-window unsaved cancel, conflicts, defaults, per-character and other keys remain open.
+
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/primary_binding_controls01/episode.json`, SHA-256 `89f1d963944302796e48e9b261bc3fd03b59ba91083203999b864dfb31e025b6`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/binding_controls_visual_review.json`, SHA-256 `5e8551534c2299d4a63f93537d9649b5b0ff6341a988228f0f600350f5984a38`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/resource_review.json`, SHA-256 `89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c`.
+
+### owned_macro_menu_route
+
+Ordinary Game Menu Macros click visibly opens the stock editor. Escape closes it with original zero account/character macro counts preserved. Original settings and all ten native/public restoration checks pass.
+
+Remaining limits: Owned primary idle level85 panel route only. Macro content mutations and other variants require their separate evidence.
+
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_macros01/episode.json`, SHA-256 `c4a6683b0ea9310afb3399e48f92328a5a8582bc022eb044dac1059d983a622d`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_macros_visual_review.json`, SHA-256 `e10ef196ee8faf4314a97140914d441fee10f442d740083c571f00f7e382c27c`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/resource_review.json`, SHA-256 `89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c`.
+
+### owned_addon_menu_route
+
+Fresh whole AddOns02 opens and closes the stock AddonList root and named controls with both owned addon rows visibly checked. Observer78 sees the previously omitted root. Full original settings and all ten native/public checks restore, including the visibly seated original pose.
+
+Remaining limits: Owned primary idle level85 panel route only. No enable/disable, out-of-date, per-character loading or settings-addon mutation qualification. Initial AddOns/root observation failure, scout preflight and reentry guard/reader failures remain failed; separate exact recovery verifies original fixture.
+
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_addons02/episode.json`, SHA-256 `e9358fbfdd0904b5601beecd2a5e2f5ddf57fc44ea26314d684b557500da5b81`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_addons_visual_review.json`, SHA-256 `a478c312741b7c76507d2a38f81d315f48a9d75da8653923ae2c31222200108e`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/addon_observer_failure_review.json`, SHA-256 `3b30372dfebcff3a83562f7c54205cb37a865fee6dddc5abdb23071c13b45b79`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/addon_fixture_recovered01/episode.json`, SHA-256 `c34a9364b67143631330d70d55175ceee1029a8c7f600321c90d9ca98f2e733e`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/resource_review.json`, SHA-256 `89488d63a171587198c84236f2ccaae4eb521aa53965eef38682ae562e4bc36c`.
+
+### owned_menu_logout_reused
+
+Review of immutable UI34 owned primary evidence: ordinary GameMenuButtonLogout clicks produce two rendered countdowns with native request/response. The first cancels with native acknowledgement; the second completes and reenters the same character with all five original session persistence checks passing. Three archive frames were separately reviewed again.
+
+Remaining limits: Historical primary idle level85 fixture and its recorded runtime/controller identities. This review launches no new logout and infers no expanded pose or native baseline claim. Other actors, resting/combat and other variants remain open.
+
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_logout_01/episode.json`, SHA-256 `4d6492077afc10016b24148087f651589674a6c79729bc0e712006e8b2909a7d`.
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_reenter_01/episode.json`, SHA-256 `0492b5dc32c503c8219ee9aa986d1a1b56167a646d4b910c6acf5a476584ea4e`.
+- [442_interactions_20261003_35.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261003_35.tar.gz.dvc), member `evidence/client_interactions_20261003_ui34/session_persistence_review.json`, SHA-256 `67f497647a642d79688375b521527f1f5757d64fc5e2373466577b79d0721e13`.
+- [442_interactions_20261004_63.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261004_63.tar.gz.dvc), member `evidence/client_interactions_20261004_ui63/menu_logout_reuse_review.json`, SHA-256 `38f318b508514c52861f70bd9647abb61bf2680084eaec97d163bb2efa67f09c`.
