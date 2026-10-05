@@ -3,11 +3,12 @@ import argparse,json,time
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
-from .interaction_settings_volume import SettingsTrial,restore_layout,click_control
+from .interaction_settings_volume import SettingsTrial,restore_layout,layout_checks
 from .interaction_settings_search import open_search
 from .interaction_settings_booleans import detail,search
 from .interaction_control_target import target
-from .interaction_operations import point,controls
+from .interaction_operations import point,controls,command
+from .interaction_observation import read_page
 from .interaction_macros import require
 from .interaction_keybindings_native import suite as native_suite
 
@@ -37,22 +38,37 @@ def restore_interact_fixture(t,layout,current,prefix):
     if current['cvars']['softTargetInteract']==layout['cvars']['softTargetInteract']:return current
     if not interact_fixture_restorable(current,layout):
         raise RuntimeError('Interact fixture differs beyond the stock None-to-Gamepad proxy mapping')
-    close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
-    click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
+    before,_=t.observe(prefix+'_observer_guard')
+    if before.get('observer_version',0)<110:raise RuntimeError('closed Settings snapshot requires observer110')
+    restore_layout(t,{**layout,'cvars':{**layout['cvars'],'softTargetInteract':'1'}},prefix+'_layout')
+    t.receipt['interact_pre_cvar_layout_restoration']=t.receipt.pop('volume_layout_restoration');t.persist()
     t.clean_panels()
     require(t.step(prefix+'_saved_cvar','Restore the exact saved None flag with a fixed ordinary chat fixture script.',
         {'restore':{'kind':'chat','value':'/run SetCVar("softTargetInteract", 0)'}},
         lambda b,a,s:{'status':'fixture_cvar_command_submitted' if s=='restore' and
             not a.get('chat_edit_open') and not a.get('lua_errors') and not a.get('blocked_actions') else
             'client_or_protocol_failure'},diagnostic_action='restore'),'fixture_cvar_command_submitted')
-    t.settings_search=open_search(t)
-    after=detail(t,prefix+'_confirmed')
+    try:
+        state,frame=read_page(t,prefix+'_closed_confirmed','settings','/tcui settings')
+        t.receipt.setdefault('settings_details',{})[prefix+'_closed_confirmed']={'state':state,'frame':frame};t.persist()
+        after=state['settings_probe']
+    finally:command(t,'/tcui state')
     checks={'exact_cvar':after['cvars']==layout['cvars'],'public_values':after['values']==layout['values'],
         'interact_binding':after['interact_keys']==layout['interact_keys'],
-        'move_pad':after['move_pad_visible']==layout['move_pad_visible'],'unapplied':after['unapplied']==layout['unapplied']}
+        'move_pad':after['move_pad_visible']==layout['move_pad_visible'],'unapplied':after['unapplied']==layout['unapplied'],
+        'closed_panel':after['visible'] is False}
     t.receipt['interact_fixture_restoration']={'checks':checks,'method':'fixed_ordinary_chat_SetCVar_fixture',
         'original':'0','stock_disabled':'1','restored':after['cvars']['softTargetInteract']};t.persist()
     if not all(checks.values()):raise RuntimeError('exact original Interact fixture did not restore')
+    restored=layout_checks(after,layout)
+    # Search/category are proven in the visible stock panel before Close.
+    # The exact CVars/Settings values are then proven after fixture restoration.
+    pre=t.receipt['interact_pre_cvar_layout_restoration']['checks']
+    for key in ('search','category'):restored[key]=pre[key]
+    t.receipt['volume_layout_restoration']={'checks':restored,
+        'phases':{'search_and_category':'visible_stock_panel_before_close',
+            'cvars_values_and_unapplied':'closed_panel_after_fixed_fixture_restore'}};t.persist()
+    if not all(restored.values()):raise RuntimeError('original control settings or pre-close layout differs')
     return after
 
 
@@ -122,7 +138,7 @@ def suite(t,variables):
                 current=detail(t,operation+'_cleanup_confirmed')
             if 'PROXY_ENABLE_INTERACT' in attempted:
                 current=restore_interact_fixture(t,layout,current,'fixture.restore_interact_none')
-            after=restore_layout(t,layout,'fixture.restore_stock_controls')
+            after=restore_layout(t,layout,'fixture.restore_stock_controls') if current['visible'] else current
             t.receipt['settings_layout_restoration']=t.receipt.pop('volume_layout_restoration')
             checks={'interact_binding':after['interact_keys']==layout['interact_keys'],
                 'move_pad':after['move_pad_visible']==layout['move_pad_visible']}
@@ -139,7 +155,7 @@ def main():
         t=SettingsTrial(a.output,controller='code')
         try:
             state,_=t.observe('stock_control_observer_guard')
-            if state.get('observer_version',0)<109:raise RuntimeError('requires read-only settings observer109')
+            if state.get('observer_version',0)<110:raise RuntimeError('requires read-only settings observer110')
             native_suite(t,operations=lambda t:suite(t,a.setting),preserve_settings=False)
             t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
