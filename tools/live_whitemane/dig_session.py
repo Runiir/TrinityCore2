@@ -6,7 +6,7 @@ import math
 import subprocess
 from pathlib import Path
 import time
-from . import runtime, inputs
+from . import runtime, inputs, resources
 from .observe import observe
 from .archaeology_probe import sha256
 from .dig_policy import DigProgress
@@ -55,10 +55,12 @@ def run(args):
         'code_sha256':sha256(__file__),'steps':[],'progress':asdict(DigProgress()),
         'last_survey_at':0,'walked_since_survey':True,'finished':False}
     progress=DigProgress(**session['progress'])
+    resources.trim_session(session,'dig')
     session.setdefault('runs',[]).append({'started_at':time.time(),
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=runtime.REPO,text=True).strip(),
         'source_sha256':{str(p.relative_to(runtime.REPO)):sha256(p)
                          for p in Path(__file__).parent.glob('*.py')}})
+    resources.trim_session(session,'dig')
     session.pop('stop_reason',None)
     if progress.last_decision: progress.last_decision=tuple(progress.last_decision)
     try:
@@ -77,7 +79,8 @@ def run(args):
         for _ in range(args.steps):
             if (runtime.ROOT/'run/stop_dig').exists():
                 raise RuntimeError('supervisor stop requested')
-            index=len(session['steps'])
+            resources.check()
+            index=session['next_step_index'];session['next_step_index']=index+1
             folder=output/f'step_{index:04d}'
             folder.mkdir(mode=0o700)
             before=observe(folder/'before.png')
@@ -120,6 +123,7 @@ def run(args):
                 'direction_slot_encoding':'selected addon guide in retained telescope schema',
                 'completed':False,'Laya_received_screenshot_pixels':False}
             session['steps'].append(step)
+            resources.trim_session(session,'dig')
             runtime.write(path,session)
             fresh=observe(folder/'precheck.png')
             if (not healthy(fresh) or fresh['runtime']!=before['runtime']

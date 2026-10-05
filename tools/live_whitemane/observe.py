@@ -31,6 +31,8 @@ def attach_pose(row):
 
 
 def observe(output):
+    from .resources import check
+    check()
     output = Path(output).resolve()
     owner = runtime.owned_process()
     if not owner:

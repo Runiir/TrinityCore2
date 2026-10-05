@@ -9,6 +9,9 @@ import copy
 
 
 def serve(args):
+    import os
+    from .resources import register_model
+    register_model(os.getpid())
     from fastapi import FastAPI, HTTPException
     import uvicorn
     from safetensors.torch import load_file

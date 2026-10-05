@@ -12,5 +12,20 @@
   "survey_mouse_button": 8,
   "guidance": ["visible GatherMate markers", "latched Survey telescope after failed markers"],
   "gameplay_action_owner": "Laya",
-  "codex_manual_gameplay_fallback": false
+  "codex_manual_gameplay_fallback": false,
+  "resource_limits": {
+    "soft_disk_mib": 64,
+    "hard_disk_mib": 256,
+    "minimum_free_disk_mib": 2048,
+    "controller_rss_mib": 512,
+    "reader_rss_mib": 128,
+    "model_rss_mib": 3072,
+    "model_vram_mib": 3584,
+    "minimum_free_host_memory_mib": 1024,
+    "poll_seconds": 5,
+    "loop_history": 16,
+    "dig_history": 40,
+    "movement_history": 40,
+    "action_log_mib": 1
+  }
 }

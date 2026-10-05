@@ -1,7 +1,9 @@
 """Ten Hz Laya decisions over public addon facts, with persistent owned input."""
 import fcntl
+import json
 import math
 import time
+from collections import deque
 from . import runtime, inputs, native_control, guide
 from .observe import observe
 from .decisions import choose
@@ -34,15 +36,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     tolerance=(6 if flying else 4) if tolerance is None else tolerance
-    receipts=[];started=time.time();turns=[]
+    from .resources import DEFAULTS,limits,check
+    check()
+    receipts=deque(maxlen=(limits() or DEFAULTS)['movement_history']);started=time.time();turns=[]
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
-        previous=None;deadline=None;index=0
+        previous=None;deadline=None;index=0;decision_count=0
         try:
             while True:
-                cycle=time.monotonic();row=observe(folder/f'approach_{index:04d}.png')
+                cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                     or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<90
@@ -69,7 +73,9 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
                     'model':model,'request':request,'response':response,'action':action,
                     'channel_ages':row['channel_ages']}
                 receipts.append(receipt)
-                if distance<=tolerance or action in ('survey','loot','arrived','land'):return receipts
+                decision_count+=1
+                with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
+                if distance<=tolerance or action in ('survey','loot','arrived','land'):return list(receipts)
                 if action not in ('forward_short','forward_long','turn_left','turn_right','cruise','portal'):
                     raise RuntimeError('Laya interrupted continuous waypoint movement with '+action)
                 sticky.renew()
@@ -95,5 +101,5 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
         finally:
             sticky.close()
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
-                'started_at':started,'finished_at':time.time(),'observations':receipts,
+                'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
                 'transport':'addon_relay','decision_period_seconds':.1,'input_lease_seconds':sticky.lease})

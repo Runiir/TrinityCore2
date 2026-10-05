@@ -199,11 +199,13 @@ local function sample()
     local ok,result=pcall(snapshot)
     if ok and WhitemaneLiveRelayUI then
         local fast={soft_interact=result.soft_interact,tooltip=result.tooltip,
-            camera_zoom=call(GetCameraZoom),error=lastError,auto_loot=call(GetCVar,'autoLootDefault')}
+            camera_zoom=call(GetCameraZoom),error=lastError,auto_loot=call(GetCVar,'autoLootDefault'),
+            frame_rate=call(GetFramerate),max_fps=call(GetCVar,'maxFPS'),background_max_fps=call(GetCVar,'maxFPSBk')}
         result.uptime=nil;result.cursor=nil;result.soft_interact=nil;result.tooltip=nil
         WhitemaneLiveRelayUI(json(result),fast,json)
         result.uptime=GetTime();result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
         result.camera_zoom=fast.camera_zoom;result.error=lastError
+        result.frame_rate=fast.frame_rate;result.max_fps=fast.max_fps;result.background_max_fps=fast.background_max_fps
         result.relay_status=call(WhitemaneLiveRelayStatus)
     end
     local payload=json(ok and result or {observer_error=tostring(result):sub(1,200)})

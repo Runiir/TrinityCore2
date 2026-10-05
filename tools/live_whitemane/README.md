@@ -74,6 +74,28 @@ travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay
 and relay installation. Large local screenshot copies are removed only
 after the exact archive has been pushed and its remote status checked.
 
+## Resource limits
+
+The farm checks its own hot directory and process memory every five seconds.
+Closed phases are checkpointed at action boundaries once hot data reaches
+64 MiB. The controller stops before further input at 256 MiB or with less than
+2 GiB free disk. A failed upload preserves the unsynced files and stops the
+farm. Only unchanged files listed in the verified archive manifest are pruned;
+shared DVC objects and other threads' services are not collected.
+
+Hot histories retain 16 farm phases, 40 dig decisions and 40 movement decisions.
+Step indices remain monotonic after pruning. Full movement decisions stream to
+closed evidence; the latest eight observation files are reused. Action logs
+rotate at 1 MiB. Memory limits are 512 MiB controller RSS, 128 MiB reader RSS,
+3 GiB model RSS and 3.5 GiB model VRAM, with a 1 GiB host-memory reserve.
+Resource interruption releases the owned input sender and never closes a game
+or stops another thread's model service.
+
+The resource regression first exposed a failed budget check being hidden by
+its five-second cache. The cache now keeps that failure fatal until a fresh
+check confirms recovery. All 44 Python checks and the Lua sender/boundary
+checks pass with the fix.
+
 Checks use the client environment:
 
 ```sh

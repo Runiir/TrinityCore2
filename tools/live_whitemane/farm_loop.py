@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 from types import SimpleNamespace
 import time
-from . import runtime, dig_session, portal, taxi, solve_batch
+from . import runtime, dig_session, portal, taxi, solve_batch, resources
 from .observe import observe
 from .farm_actions import click_choice, command_choice
 from .navigation import orient
@@ -65,6 +65,7 @@ def teleport(folder,row):
 
 
 def run(output):
+    resources.enable();resources.check(force=True)
     output.mkdir(parents=True,exist_ok=True)
     path=output/'loop.json'
     session=json.loads(path.read_text()) if path.exists() else {
@@ -72,6 +73,7 @@ def run(output):
         'completed_sites':0,'looted_finds':0,'last_progress_at':time.time(),'active_races':[],
         'via_tolbarad':False,'dig_output':None,'dig_site':None}
     batches=SolveBatches(set(session['active_races']))
+    resources.trim_session(session,'loop')
     session.update(status='running',failure=None)
     with (runtime.ROOT/'run/farm_loop.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -79,14 +81,16 @@ def run(output):
             while True:
                 if (runtime.ROOT/'run/stop_dig').exists():session['status']='supervisor_stopped';break
                 if time.time()-session['last_progress_at']>=1800:session['status']='inactive_30_minutes';break
-                index=len(session['steps'])
+                resources.check()
+                index=session['next_step_index']
                 folder=output/f'step_{index:05d}'
                 while folder.exists():index+=1;folder=output/f'step_{index:05d}'
                 folder.mkdir(exist_ok=False)
                 row=observe(folder/'before.png')
                 action,target=phase(row,batches,session['via_tolbarad'])
-                step={'phase':action,'before':row,'started_at':time.time(),'completed':False}
-                session['steps'].append(step);runtime.write(path,session)
+                session['next_step_index']=index+1
+                step={'index':index,'phase':action,'before':row,'started_at':time.time(),'completed':False}
+                session['steps'].append(step);resources.trim_session(session,'loop');runtime.write(path,session)
                 if action=='recipe':session['status']='recipe_found';step['completed']=True;break
                 if action=='wait':time.sleep(2)
                 elif action=='jar':
@@ -126,6 +130,7 @@ def run(output):
                 if finds or sites or moved>.25 or solved or after_a['canopic_jars_in_bags']!=before_a['canopic_jars_in_bags']:
                     session['last_progress_at']=time.time()
                 session['active_races']=sorted(batches.active_races);runtime.write(path,session)
+                resources.phase_boundary(output,session)
                 print(json.dumps({'phase':action,'finds':session['looted_finds'],'sites':session['completed_sites']}),flush=True)
         except Exception as error:
             session.update(status='repair_required',failure=f'{type(error).__name__}: {error}')

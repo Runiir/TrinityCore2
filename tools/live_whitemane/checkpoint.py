@@ -34,16 +34,23 @@ def checkpoint_closed(label, roots, metrics, conclusions):
         live.next_step()
     archive=runtime.REPO/'artifacts/client_harness'/f'whitemane_live_{label}.tar.gz'
     if archive.exists():raise RuntimeError('immutable closed-phase checkpoint already exists')
-    files=sorted({path for root in roots+[output] for path in root.rglob('*')
+    files=sorted({path for root in roots+[output] for path in ([root] if root.is_file() else root.rglob('*'))
         if path.is_file() and path.suffix in ('.json','.jsonl','.png','.tsv','.lua','.toc')})
     # Refuse mutable evidence: inspect file identity immediately before and
     # after archiving, without copying any active loop or feed records.
     stats={path:(path.stat().st_size,path.stat().st_mtime_ns) for path in files}
+    manifest=[]
+    for path in files:
+        with path.open('rb') as handle:digest=hashlib.file_digest(handle,'sha256').hexdigest()
+        manifest.append({'path':str(path.relative_to(runtime.ROOT)),
+            'bytes':stats[path][0],'mtime_ns':stats[path][1],'sha256':digest})
+    archive.parent.mkdir(parents=True,exist_ok=True)
     with tarfile.open(archive,'w:gz') as handle:
         for path in files:handle.add(path,arcname=str(path.relative_to(runtime.ROOT)),recursive=False)
     if any(stats[p]!=(p.stat().st_size,p.stat().st_mtime_ns) for p in files):
         archive.unlink();raise RuntimeError('closed evidence changed during checkpoint')
-    return {'archive':str(archive),'public_evidence_files':len(files),'bytes':archive.stat().st_size,'metrics':metrics}
+    return {'archive':str(archive),'public_evidence_files':len(files),'bytes':archive.stat().st_size,
+            'metrics':metrics,'manifest':manifest}
 
 
 def checkpoint_trial(label, trial, include=()):

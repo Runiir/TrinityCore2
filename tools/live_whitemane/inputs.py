@@ -29,6 +29,8 @@ def focus(title):
 
 
 def execute(title, action, arguments):
+    from .resources import check,append_action
+    check()
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from . import native_control
@@ -74,8 +76,7 @@ def execute(title, action, arguments):
         finally:
             sender.close()
             receipt['finished_at'] = time.time()
-            with (runtime.ROOT / 'evidence/actions.jsonl').open('a') as out:
-                out.write(json.dumps(receipt) + '\n')
+            append_action(receipt)
         return receipt
 
 
