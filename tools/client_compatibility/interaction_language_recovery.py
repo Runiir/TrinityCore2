@@ -31,11 +31,17 @@ def source(path):
         failed=={'original_skills','original_native_skills'})
     staged=(d.get('language_lifecycle_schema')=='client442_language_lifecycle_v1' and
         d.get('phase')=='await_offline_language_cleanup' and
-        {'original_skills','original_native_skills'}<=failed<=
-        {'original_skills','original_native_skills','original_languages'})
+        {'original_spells','original_skills','original_native_skills'}<=failed<=
+        {'original_spells','original_skills','original_native_skills','original_languages'} and
+        sorted(d.get('language_fixture_trained',{}).get('spells',[]))==
+        sorted(d['language_fixture_baseline']['spells']+[[672,1,0]]))
+    native=d.get('native_restoration',{}).get('checks',{})
+    native_keys={'resources','stats','spells','actions','pose','afk','position','group','no_lua_errors','no_blocked_actions'}
+    native_restored=set(native)==native_keys and (all(native.values()) if legacy else
+        staged and native.get('spells') is False and all(v for k,v in native.items() if k!='spells'))
     if (d['actor']['guid']!=1 or d['completed'] or not d.get('finished_at') or
         not (legacy or staged) or
-        not all(d['native_restoration']['checks'].values()) or
+        not native_restored or
         not all(r.get('restored') for r in d['fixture_permissions'])):
         raise RuntimeError('exact failed fixture or restoration evidence differs')
     return d
@@ -43,9 +49,11 @@ def source(path):
 
 def offline(t,path):
     old=source(path);original=old['language_fixture_baseline']
+    extra_spell=old.get('language_lifecycle_schema')=='client442_language_lifecycle_v1'
+    expected_spells=original['spells']+([[672,1,0]] if extra_spell else [])
     if t.fixture!=old['actor'] or t.receipt['runtime']!=old['runtime']:
         raise RuntimeError('owned actor or process lifetime differs')
-    if known(1)!=original['spells'] or sorted(skills(1))!=sorted(original['skills']+[[111,1,300]]):
+    if sorted(known(1))!=sorted(expected_spells) or sorted(skills(1))!=sorted(original['skills']+[[111,1,300]]):
         raise RuntimeError('refuses an unexpected native spell or skill change')
     t.clean_panels();state,frame=t.observe('language_recovery_before_logout')
     session=actors.session_entry(t.fixture)['session'];packets=Packets(session);started=time.time()
@@ -61,14 +69,20 @@ def offline(t,path):
     frame=shot(t.out/'owned_selection.png')
     with lab.connection() as con,con.cursor() as q:
         q.execute('SELECT online FROM client442_characters.characters WHERE guid=1');row=q.fetchone()
-        if row!=(0,) or sorted(skills(1))!=sorted(original['skills']+[[111,1,300]]):
+        if (row!=(0,) or sorted(skills(1))!=sorted(original['skills']+[[111,1,300]]) or
+            sorted(known(1))!=sorted(expected_spells)):
             raise RuntimeError('refuses skill cleanup until the exact owned character is offline')
+        con.begin()
+        if extra_spell:
+            q.execute('DELETE FROM client442_characters.character_spell WHERE guid=1 AND spell=672 AND active=1 AND disabled=0')
+            if q.rowcount!=1:raise RuntimeError('exact extra language spell row was not removed')
         q.execute('DELETE FROM client442_characters.character_skills WHERE guid=1 AND skill=111 AND value=1 AND max=300')
         if q.rowcount!=1:raise RuntimeError('exact extra language row was not removed')
         con.commit()
-    if skills(1)!=original['skills']:raise RuntimeError('offline skill rows differ from source baseline')
+    if skills(1)!=original['skills'] or known(1)!=original['spells']:
+        raise RuntimeError('offline spell or skill rows differ from source baseline')
     t.receipt.update(phase='await_owned_selection_review',selection_frame=frame,
-        offline_skill_rows_restored=True,completed=True);t.persist()
+        offline_skill_rows_restored=True,offline_spell_rows_restored=True,completed=True);t.persist()
 
 
 def enter(t,path,offline_path,review_path):
