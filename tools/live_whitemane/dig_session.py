@@ -3,6 +3,7 @@ import argparse
 from dataclasses import asdict
 import json
 import math
+import subprocess
 from pathlib import Path
 import time
 from . import runtime, inputs
@@ -52,6 +53,10 @@ def run(args):
         'code_sha256':sha256(__file__),'steps':[],'progress':asdict(DigProgress()),
         'last_survey_at':0,'walked_since_survey':True,'finished':False}
     progress=DigProgress(**session['progress'])
+    session.setdefault('runs',[]).append({'started_at':time.time(),
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=runtime.REPO,text=True).strip(),
+        'source_sha256':{str(p.relative_to(runtime.REPO)):sha256(p)
+                         for p in Path(__file__).parent.glob('*.py')}})
     session.pop('stop_reason',None)
     if progress.last_decision: progress.last_decision=tuple(progress.last_decision)
     try:
