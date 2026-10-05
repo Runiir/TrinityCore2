@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 404 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 405 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -1114,7 +1114,7 @@ Fixture: `in_world`.
 - [ ] `ui_misc.item_text_close`
 - [x] `ui_misc.tooltip_compare` (qualified variant; [evidence](#stock_owned_sword_comparison))
 - [x] `ui_misc.achievement_link` (qualified variant; [evidence](#owned_pending_achievement_link))
-- [ ] `ui_misc.quest_link`
+- [x] `ui_misc.quest_link` (qualified variant; [evidence](#owned_existing_quest_link_cancel))
 - [x] `ui_misc.item_link` (qualified variant; [evidence](#owned_pending_backpack_item_link))
 - [x] `ui_misc.spell_link` (qualified variant; [evidence](#owned_pending_known_spell_link))
 - [x] `ui_misc.copy_name` (qualified variant; [evidence](#owned_player_chat_link_name_copy))
@@ -2792,3 +2792,16 @@ Remaining limits: One Colorblind Mode current-category default only. All Setting
   Checked cases: `settings.defaults_apply.current_colorblind` (stock_current_category_defaults_pass).
 - [442_interactions_20261005_97.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc), member `evidence/client_interactions_20261005_ui97/defaults_whole_review.json`, SHA-256 `150a38aaaedc440aee5bd3e041aadf07fd62c367898a95f0459496a7c05462f0`.
 - [442_interactions_20261005_97.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc), member `evidence/client_interactions_20261005_ui97/defaults_source_review.json`, SHA-256 `9e013e9889cf2f64f24ce7d36cf71adc7dc5a13a88d68a4339ba6a2b644bc8be`.
+
+### owned_existing_quest_link_cancel
+
+Owned primary observer121: stock Shift-left-click on the attributed existing quest28825 A Personal Summons row at zero offset inserts its exact public green quest28825:80 link into blank focused Say chat. Escape cancels without submission; all nine action checks, six pending-link checks and the complete owned packet window show no chat message or cast. Quest rows, collapsed Stormwind header, watch0, original selection0, observed settings and all native fixture fields restore through separately reviewed ordinary same-character logout/reentry. Ten layout, ten native and fourteen quest/settings restoration checks pass. Actual pending-link and final HUD images are reviewed and the archive is remotely verified.
+
+Remaining limits: One existing owned completed-unrewarded quest and one blank-chat insertion/cancellation only. Delivery, hyperlinks, other quests, nonzero offsets and other chat contexts remain open. Calibrations01 and02 remain failed and excluded: ordinary reload retained selection2, and a passive settings page was missed. Exact cleanup recovered selection0; fresh calibration03 and quest_link01 whole final phases pass. Fixed observer settings diagnostics are read-only and unqualified; AFK restores afterward. All86 focused and1613 final protocol tests pass. No new client/server/model or native build. Scripts stay blocked; historical softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/quest_link01_begin/episode.json`, SHA-256 `0a2156ae51784c935c031fdcc8347805cf3eebb6ea4d2d50aa146b5a2d5af135`.
+  Checked cases: `ui_misc.quest_link` (stock_chat_link_pass).
+- [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/quest_link01_finish/episode.json`, SHA-256 `8276726dec85683ee75ec837f6f0477eeb1a54113422a182976b75d6511b9bf6`.
+- [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/quest_link_whole_review.json`, SHA-256 `8d23a52b10feeec2b6aabddae103e081208008a96feb7c1207a9c89ef8b10653`.
+- [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/layout_calibration03_whole_review.json`, SHA-256 `37ab95f6f03d7d979d6f73732a94ba9ab8664cad1b0d24d8fd6b6fee5dfb6b37`.
+- [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/source_qa.json`, SHA-256 `01bb255cd164fe42b721ad1353824a792c94959ec0ccdd2b6769a9bc49618d25`.

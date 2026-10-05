@@ -1,0 +1,15 @@
+# Existing quest link and ordinary reentry cleanup
+
+The owned primary passes stock Shift-click insertion of the existing "A Personal Summons" quest link into blank focused Say chat. The pending text matches the exact public green quest28825:80 link. Escape cancels it, and the complete owned input window contains no chat-message request. All nine action checks and six quest-specific pending checks pass. The accepted completed-unrewarded quest remains unchanged.
+
+Opening the stock log selects quest index `2` even when the original hidden selection was `0`. Collapsing the Stormwind header does not deselect the quest. The first calibration fails because a verified ordinary UI reload also retains `2`. All ten native cleanup checks pass, but selection `0` is unrestored until ordinary logout and same-character reentry recover it against the exact failed receipt. That failed calibration remains excluded.
+
+The second calibration fails before logout because screenshot sampling misses the brief passive settings page. Its four stock layout actions and nine native cleanup checks pass. Exact cleanup again restores selection `0`. The repaired adapter selects only the fixed read-only observer settings page, returns to passive cycling, and restores AFK after the ordinary diagnostic inputs. Those diagnostic inputs do not qualify gameplay.
+
+A fresh calibration `03` passes all ten layout and ten native checks before any quest-link input. The fresh link trial then passes, cancels the text and restores the original collapsed header, watch count `0`, selection `0`, active/rewarded quest rows, observed settings and native fixture through separately reviewed ordinary same-character reentry. Its final ten layout, ten native and fourteen quest/settings checks pass. Reviewed images show the pending green link, the owned character-selection screens and the final seated primary with ordinary panels and chat closed.
+
+The final source passes 86 focused and 1,613 full protocol tests. Earlier codec-free recovery testing had 52 passed/7 skipped because the login codec binding was absent; the corrected codec-bound run passed all 59. Both live calibration failures are retained separately from later successful cleanup and fresh validation.
+
+This qualifies only `ui_misc.quest_link` for one existing owned quest, zero scroll offset and blank-chat insertion/cancellation. Delivery, hyperlink activation, other quests and chat contexts remain open. The same two owned clients stay on HDMI-1, with the scout parked. No new client, server, model job or native build starts. Scripts remain blocked; historical original `softTargetInteract=0` remains unrestored at stock-disabled `1`, as accepted by the user.
+
+Coverage is 405 of 916 scoped operations, with 511 open. The [UI98 DVC pointer](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc) identifies the remotely verified 591,574,246-byte archive, SHA-256 `495406127f8e0c297b2fe755d79c04e7def1b26bc48ea50299da8ce520b559d1`. Archive review verifies 36 JSON receipts and 205 attributed image hashes, including all 11 closed runs and both failures.
