@@ -63,7 +63,9 @@ def enter(t,baseline_source,interrupted_source,review_path):
         selection_review_source={'file':str(review_path),'sha256':lab.sha256(review_path)},
         custom_script_permission='blocked_by_user',qualified_scope=
         'Preparation recovery only: one reviewed ordinary same-character entry after a preexisting logout. No gameplay qualification or server deployment.');t.persist()
-    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl');list(cursor.poll());started=time.time()
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    for _ in cursor.poll():pass
+    started=time.time()
     t.io.key('Return',hold=1.2);state,frame=t.observe('primary_reentered',seconds=240)
     session=actors.session_entry(t.fixture)['session']
     rows=[r for r in cursor.poll() if r.get('session')==session and r.get('time',0)>=started and

@@ -7,16 +7,30 @@ from . import actors,lab_runtime as lab,owned_input
 from .observation.journal import Cursor
 
 
+def session_history(cursor,account_id):
+    # Cursor rotations are chronological. Keep only the latest owned login and
+    # its two state flags, rather than every historical diagnostic payload.
+    authenticated=None;closed=False;enumerated=False
+    for row in cursor.poll():
+        if row.get('event')=='world_authenticated' and row.get('account_id')==account_id:
+            authenticated=row;closed=False;enumerated=False
+        if authenticated and row.get('session')==authenticated['session']:
+            closed=closed or row.get('event')=='world_connection_closed'
+            enumerated=enumerated or (row.get('name')=='SMSG_ENUM_CHARACTERS_RESULT' and
+                row.get('direction')=='to_client')
+    return authenticated,closed,enumerated
+
+
 def suite(out,seconds):
     if not 155<=seconds<=180:raise ValueError('idle trial must cross 120 seconds plus one 30-second ping interval')
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
-    fixture=actors.load();cursor=Cursor(lab.ROOT/'logs/modern_world.jsonl');history=list(cursor.poll())
-    authenticated=next((x for x in reversed(history) if x.get('event')=='world_authenticated' and x['account_id']==fixture['account_id']),None)
+    fixture=actors.load();cursor=Cursor(lab.ROOT/'logs/modern_world.jsonl')
+    authenticated,closed,enumerated=session_history(cursor,fixture['account_id'])
     if not authenticated:raise RuntimeError('owned account has no modern realm session')
     session=authenticated['session']
-    if any(x.get('session')==session and x.get('event')=='world_connection_closed' for x in history):
+    if closed:
         raise RuntimeError('owned realm is already disconnected')
-    if not any(x.get('session')==session and x.get('name')=='SMSG_ENUM_CHARACTERS_RESULT' and x.get('direction')=='to_client' for x in history):
+    if not enumerated:
         raise RuntimeError('owned realm has not returned character selection')
     from tools.second_client import ctl
     ctl._launcher_env=lab.client_environment
