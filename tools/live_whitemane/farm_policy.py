@@ -2,7 +2,7 @@
 import math
 import json
 from pathlib import Path
-from . import laya_ui,pending_find
+from . import laya_ui,pending_find,dig_decisions
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
@@ -68,6 +68,9 @@ def choose(row,batches,session):
     options=legal_actions(row,batches,dig_guide)
     if len(options)==1:return 'wait',None,{'only_legal_action':'wait'}
     route=ui.get('route') or {};signal=row.get('minimap_finds') or {}
+    previous=session.get('steps',[])
+    stalled=sum(step.get('started_at',0)>=session.get('last_progress_at',math.inf)
+        for step in previous)
     state={'goal':'Find a Canopic Jar; leave it unopened',
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'casting':a['casting'],'falling':a['falling'],
@@ -77,6 +80,9 @@ def choose(row,batches,session):
         'named_object':(ui.get('soft_interact') or {}).get('name'),
         'pending_pickup':bool(row.get('pending_find')),'minimap':signal.get('status'),
         'minimap_clear':signal.get('clear'),
+        'recent_actions':[{'action':step['phase'],'completed':step.get('completed',False),
+            'failure':step.get('local_failure')} for step in previous[-4:]],
+        'consecutive_actions_without_progress':stalled,
         'pickup':pending_find.facts(row,row.get('pending_find')),
         'guide_error':guide_error,
         'route':route.get('kind'),'via_Tol_Barad_requested':session['via_tolbarad'],
@@ -90,4 +96,5 @@ def choose(row,batches,session):
         'Start solve batches around 150 fragments and continue while affordable with maximum keystones. '
         'Travel via Tol Barad and Orgrimmar to the next digsite. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
+    action=dig_decisions.explore(action,response,options,state)
     return ('solve' if action.startswith('solve_') else action),options[action][1],{'state':state,'request':request,'response':response,'choice':action}

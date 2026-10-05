@@ -45,3 +45,28 @@ def test_recovery_keeps_unconfirmed_pickup_and_does_not_renew_inactivity(monkeyp
     assert recovery.run(tmp_path/'recovery',r,step,session,graph)['completed']
     assert pending_find.load(r) and session['last_progress_at']==123
     assert not recovery.retryable('pending find belongs to another owned client')
+
+
+def test_farm_waits_with_no_progress_use_layas_complete_action_distribution(monkeypatch):
+    r=row();r['archaeology'].update(falling=False)
+    r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
+    r['minimap_finds']={'clear':True,'status':'no_visible_candidates'}
+    session={'via_tolbarad':True,'last_progress_at':10,
+        'steps':[{'phase':'wait','completed':True,'started_at':n} for n in (11,12,13)]}
+    def choose(state,_,options):
+        assert state['combat'] is False and state['mounted'] is False
+        assert state['consecutive_actions_without_progress']==3
+        assert state['recent_actions'][-1]=={'action':'wait','completed':True,'failure':None}
+        assert set(options)=={'wait','teleport'}
+        return 'wait',{}, {'answers':{'action':{'choice':'wait','probabilities':{'wait':.6,'teleport':.4}}}}
+    monkeypatch.setattr(farm_policy.laya_ui,'choose',choose)
+    def sample(options,weights,k):
+        assert options==['wait','teleport'] and weights==[.6,.4]
+        return ['teleport']
+    monkeypatch.setattr(farm_policy.dig_decisions.random,'choices',sample)
+    action,_,receipt=farm_policy.choose(r,SolveBatches(),session)
+    assert action=='teleport'
+    assert receipt['response']['policy_selection']['probabilities_modified'] is False
+    session['last_progress_at']=14
+    monkeypatch.setattr(farm_policy.laya_ui,'choose',lambda *_:('wait',{},{}))
+    assert farm_policy.choose(r,SolveBatches(),session)[0]=='wait'
