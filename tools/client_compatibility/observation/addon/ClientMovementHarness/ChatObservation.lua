@@ -28,6 +28,19 @@ function Client442ObservePointer()
 end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
+    result.voice={api_available=type(C_VoiceChat)=='table',available=false}
+    if result.voice.api_available then
+        for key,name in pairs({muted='IsMuted',deafened='IsDeafened',enabled='IsEnabled',
+                can_use='CanPlayerUseVoiceChat',logged_in='IsLoggedIn'}) do
+            local value=read(C_VoiceChat[name])
+            if type(value)=='boolean' then result.voice[key]=value end
+        end
+        result.voice.available=type(result.voice.muted)=='boolean' and type(result.voice.deafened)=='boolean'
+        local channel=read(C_VoiceChat.GetActiveChannelID)
+        if type(channel)=='number' and channel>=0 and channel<=4294967295 and channel%1==0 then
+            result.voice.active_channel_id=channel
+        end
+    end
     result.languages={available=false,rows={}}
     local count=read(GetNumLanguages)
     if type(count)=='number' and count>=0 and count<=16 and count%1==0 then
