@@ -10,6 +10,22 @@ function Client442ObserveChatEdit()
     return {chat_edit_open=open,chat_edit_text=open and tostring(read(edit.GetText,edit) or ''):sub(1,255) or '',
         chat_edit_focused=open and not not read(edit.HasFocus,edit) or false}
 end
+function Client442ObservePointer()
+    local result={foci={}}
+    local x,y=read(GetCursorPosition)
+    if type(x)=='number' and type(y)=='number' then result.x=x;result.y=y end
+    local foci=read(GetMouseFoci) or {read(GetMouseFocus)}
+    if type(foci)=='table' then
+        for index=1,math.min(#foci,3) do
+            local frame=foci[index]
+            if not read(frame.IsForbidden,frame) then
+                result.foci[#result.foci+1]={name=tostring(read(frame.GetName,frame) or ''):sub(1,72),
+                    kind=read(frame.GetObjectType,frame),text=tostring(read(frame.GetText,frame) or ''):sub(1,80)}
+            end
+        end
+    end
+    return result
+end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
     result.languages={available=false,rows={}}

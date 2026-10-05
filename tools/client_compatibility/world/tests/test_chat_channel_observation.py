@@ -73,3 +73,20 @@ assert(Client442ObserveChatWindows().languages.available)
 '''
     subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,
         text=True,capture_output=True,check=True)
+
+
+def test_pointer_reads_bound_public_foci_and_skip_forbidden_frames():
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/ChatObservation.lua'
+    script=r'''
+dofile(SOURCE)
+assert(#Client442ObservePointer().foci==0)
+function GetCursorPosition()return 84,263 end
+local allowed={IsForbidden=function()return false end,GetName=function()return 'Menu' end,
+    GetObjectType=function()return 'Button' end,GetText=function()return 'Language' end}
+local forbidden={IsForbidden=function()return true end,GetName=function()error('must not read') end}
+function GetMouseFoci()return {allowed,forbidden,allowed,allowed} end
+local d=Client442ObservePointer()
+assert(d.x==84 and d.y==263 and #d.foci==2 and d.foci[1].text=='Language')
+'''
+    subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,
+        text=True,capture_output=True,check=True)

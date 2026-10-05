@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=98,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=99,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -542,7 +542,8 @@ local function snapshot(viewMode,viewPage)
         return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
             panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12,
             control_snapshot=controlSnapshot,chat_edit_open=data.chat_edit_open,
-            chat_edit_text=data.chat_edit_text,chat_edit_focused=data.chat_edit_focused}
+            chat_edit_text=data.chat_edit_text,chat_edit_focused=data.chat_edit_focused,
+            pointer=Client442ObservePointer()}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.recipe_selection=call(GetTradeSkillSelectionIndex)
