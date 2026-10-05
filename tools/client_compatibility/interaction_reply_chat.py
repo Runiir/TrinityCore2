@@ -8,6 +8,7 @@ from .interaction_keybindings_native import suite as native_suite
 from .interaction_actionbar_pages import detail as bindings
 from .interaction_macros import require
 from .observation.journal import entries,Cursor
+from .interaction_observation import read_current_page
 
 
 def pending(state,target,token,command=None):
@@ -27,12 +28,14 @@ class WhisperTrial(Trial):
             before,_=self.observe('seed_chat_before')
             if before.get('observer_version',0)<83 or before.get('chat_edit_open'):
                 raise RuntimeError('requires observer83 and a closed owned chat box')
-            self.io.key('Return',hold=.4);time.sleep(.2)
-            opened,frame=self.observe('seed_chat_open')
+            self.io.key('Return',hold=1.2);time.sleep(.2)
+            opened,frame=read_current_page(self,'seed_chat_open','state',lambda s:
+                s.get('chat_edit_open') and s.get('chat_edit_focused'))
             if not opened.get('chat_edit_open') or not opened.get('chat_edit_focused'):
                 raise RuntimeError('owned seed chat did not gain keyboard focus')
             self.io.type(action['value']);time.sleep(.2)
-            state,frame=self.observe('seed_chat_pending')
+            state,frame=read_current_page(self,'seed_chat_pending','state',lambda s:
+                pending(s,target,token,action['value']))
             exact=pending(state,target,token,action['value'])
             guard={'frame':frame,'selected_command':action['value'],'expected_target':target,
                 'expected_token':token,'observed_text':state.get('chat_edit_text'),
@@ -40,8 +43,9 @@ class WhisperTrial(Trial):
                 'exact':exact,'submitted':False}
             self.receipt.setdefault('owned_whisper_guards',[]).append(guard);self.persist()
             if not exact:raise RuntimeError('owned whisper text or target differs; refusing submission')
-            self.io.key('Return',hold=.4);guard['submitted']=True;self.persist();time.sleep(.8)
-            after,frame=self.observe('seed_chat_submitted');guard['after_frame']=frame;self.persist()
+            self.io.key('Return',hold=1.2);guard['submitted']=True;self.persist();time.sleep(.8)
+            after,frame=read_current_page(self,'seed_chat_submitted','state',lambda s:not s.get('chat_edit_open'))
+            guard['after_frame']=frame;self.persist()
             if after.get('chat_edit_open'):raise RuntimeError('owned seed remained pending; refusing input replay')
             return []
 
