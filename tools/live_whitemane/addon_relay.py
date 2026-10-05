@@ -50,7 +50,9 @@ def targeted(payload,player=None):
     guid_self=player is not None and recipient==player
     if channel!=(0,0) or channel_name or (name and not named_self) or not (named_self or guid_self):
         raise ValueError('relay is not self-addressed to Runiir')
-    if recipient!=(0,0) and (player is None or recipient!=player):
+    # Before the first own movement packet, the explicit self name is enough.
+    # Once an owned mover is known, a nonzero target must match it exactly.
+    if recipient!=(0,0) and player is not None and recipient!=player:
         raise ValueError('relay recipient is not the owned character')
     return text.decode('ascii')
 

@@ -10,6 +10,6 @@ echo "Enter your sudo password here. Only the endpoint capture runs as root."
 echo "Stops after 30 minutes without Survey, gathering, spell casts or player movement."
 echo "Raw packets stay in the pipe. Ctrl+C stops capture and clears the bearing mailbox."
 sudo /usr/bin/tcpdump \
-    -npi any -B 1024 -U -s 0 -w - 'host 51.255.74.57 and tcp port 8085' | \
+    --immediate-mode -npi any -B 1024 -U -s 0 -w - 'host 51.255.74.57 and tcp port 8085' | \
     pixi run --manifest-path tools/live_whitemane/packet/pixi.toml \
     python -m tools.live_whitemane.bearing_reader
