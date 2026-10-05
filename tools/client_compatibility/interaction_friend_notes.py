@@ -1,22 +1,24 @@
-"""Inspect the stock note dialog for one original owned offline friend."""
+"""Edit and restore a note through the observed stock owned-friend dialog."""
 import argparse,json,struct,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
 from .interaction_friends import (canonical,social,public,offline_fixture,open_friends,close_friends,restored,HIGH)
-from .interaction_control_target import target,click
+from .interaction_control_target import target,click,edit
 from .interaction_chat_player_actions import menu_click
 from .interaction_operations import controls,point
 from .interaction_macros import require
 from .interaction_bridge_restoration import capture
 from .interaction_quest_link import detail as quest_detail,saved as saved_quests
 from .interaction_trade import inventory
+from .interaction_lifecycle import Packets
 from .world.buffer import Reader
 
 FRIEND='Harnesstwo'
 GUID=2
 NOTE='Owned offline scout note UI101'
+CONTEXT='Set Notes for Harnesstwo:'
 
 
 def wire_checks(rows,note):
@@ -97,12 +99,84 @@ def probe(t):
         cancel_dialog(t);close_friends(t);restored(t,t.receipt)
 
 
+def dialog_identity(rows):
+    return sorted((c['name'],c['kind'],c['text'] if c['kind']!='EditBox' else '',c.get('context')) for c in rows)
+
+
+def source_matches(old,current):
+    expected=[('StaticPopup1Button1','Button','Accept',CONTEXT),
+        ('StaticPopup1Button2','Button','Cancel',CONTEXT),('StaticPopup1EditBox','EditBox','',CONTEXT)]
+    return (old.get('completed') is True and old.get('failure') is None and bool(old.get('finished_at')) and
+        old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
+        old.get('original_social')==[[1,2,1,''],[2,1,1,'']] and len(old.get('friend_note_dialogs',[]))==1 and
+        dialog_identity(old['friend_note_dialogs'][0]['controls'])==expected and
+        all(c['enabled'] for c in old['friend_note_dialogs'][0]['controls']) and
+        all(old.get(k,{}).get('checks') and all(old[k]['checks'].values()) for k in
+            ('bridge_native_restoration','friend_restoration')))
+
+
+def set_note(t,packets,label,note,source):
+    contract=note_dialog(t,label)
+    if dialog_identity(contract)!=dialog_identity(source['friend_note_dialogs'][0]['controls']):
+        raise RuntimeError('fresh friend note dialog differs from the reviewed owned probe')
+    require(edit(t,label+'.text','Enter the exact short owned friend note.',
+        lambda c:c['name']=='StaticPopup1EditBox' and c.get('context')==CONTEXT,note),'ui_edit_pass')
+    state,frame=t.observe(label.replace('.','_')+'_pending')
+    t.receipt.setdefault('friend_note_pending',[]).append({'case':label,'note':note,'state':state,'frame':frame})
+    t.persist();started=time.time()
+    expected=[[1,2,1,note],[2,1,1,'']]
+    def outcome(b,a,s):
+        rows=[r for r in packets.since(started) if r['name']=='CMSG_SET_CONTACT_NOTES']
+        checks=wire_checks(rows,note)
+        checks.update(ordinary_input=bool(s),native_social=social()==expected,
+            public_friends=public(a.get('friends'))==[{'name':FRIEND,'connected':False,'level':0,'notes':note}],
+            friends_ready=a.get('friends_ready') is True,stock_window='FriendsFrame' in a['panels'],
+            dialog_closed='StaticPopup1' not in a['panels'],chat_closed=not a.get('chat_edit_open'),
+            clean=not a.get('lua_errors') and not a.get('blocked_actions'))
+        return {'status':'friend_note_edit_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'packets':rows,'native_has_no_note_acknowledgement':True}}
+    require(click(t,label,'Accept the exact owned friend note.',lambda c:c['name']=='StaticPopup1Button1' and
+        c['text']=='Accept' and c.get('context')==CONTEXT,outcome,
+        await_state=lambda a:'StaticPopup1' not in a['panels'] and
+            any(f['name']==FRIEND and f['notes']==note for f in a.get('friends') or [])),'friend_note_edit_pass')
+    row=target(t,label+'.hover',lambda c:c['kind']=='Button' and
+        c['name'].startswith('FriendsFrameFriendsScrollFrameButton') and c['text']==FRIEND)
+    t.execute({'kind':'hover','value':point(row)});time.sleep(1)
+    state,frame=t.observe(label.replace('.','_')+'_rendered')
+    t.receipt.setdefault('friend_note_rendered',[]).append({'case':label,'note':note,'state':state,'frame':frame})
+    t.persist();t.execute({'kind':'hover','value':[1000,360]})
+
+
+def suite(t,path):
+    path=path.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a closed owned note dialog probe')
+    old=json.loads(path.read_text())
+    if not source_matches(old,t.receipt):raise RuntimeError('owned note probe verdict, actor or runtime differs')
+    t.receipt['source']={'path':str(path),'sha256':lab.sha256(path)};t.persist()
+    baseline(t);packets=Packets(t.receipt['session'])
+    t.receipt['qualified_scope']='One short ASCII note on the original owned offline scout friend, then empty-note restoration through stock controls. No persistence or other social qualification.'
+    t.persist()
+    try:
+        open_friends(t,'fixture.friend_note.open');set_note(t,packets,'friends.note_edit',NOTE,old)
+    finally:
+        cancel_dialog(t);current=social()
+        if current!=t.receipt['original_social']:
+            if current!=[[1,2,1,NOTE],[2,1,1,'']]:
+                raise RuntimeError('friend note cleanup refuses any unrelated social change')
+            state,_=t.observe('friend_note_restore_guard')
+            if 'FriendsFrame' not in state['panels']:open_friends(t,'fixture.friend_note.restore_open')
+            set_note(t,packets,'fixture.friend_note.restore','',old)
+        close_friends(t);restored(t,t.receipt)
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args()
+    p.add_argument('--source-probe',type=Path);a=p.parse_args()
     with actor('primary'):
         t=Trial(a.output,controller='code')
-        try:probe(t);t.receipt['completed']=True
+        try:
+            (suite(t,a.source_probe) if a.source_probe else probe(t));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
