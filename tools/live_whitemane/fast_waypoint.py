@@ -63,9 +63,11 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
+                if a['falling']:
+                    raise RuntimeError('terrain falling interrupted the continuous approach')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                     or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<=0
-                    or not world or world['instance']!=target['instance'] or a['falling'] or a.get('swimming')):
+                    or not world or world['instance']!=target['instance'] or a.get('swimming')):
                     raise RuntimeError('character or owned feed unavailable during continuous approach')
                 if site_id is not None:check_point(site_id,world)
                 if a['flying']!=flying:

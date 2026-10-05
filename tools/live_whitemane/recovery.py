@@ -41,6 +41,7 @@ RETRYABLE=(
     'camera steering did not produce observed yaw',
     'camera view did not reach forward alignment',
     'minimap tooltip observation did not follow the cursor',
+    'terrain falling interrupted the continuous approach',
 )
 
 

@@ -2,7 +2,7 @@ import copy
 import math
 import pytest
 from types import SimpleNamespace
-from . import fast_waypoint,sticky_input,camera_input
+from . import fast_waypoint,sticky_input,camera_input,recovery
 from .test_flight_recovery import observation
 
 
@@ -53,19 +53,24 @@ def test_stationary_near_arrival_retries_after_position_updates_with_a_measured_
     assert len(calls)==1
 
 
-def test_new_survey_releases_the_held_forward_route_and_camera(monkeypatch,tmp_path):
+@pytest.mark.parametrize('interrupt,error',[
+    ('survey','new Survey'),('falling','terrain falling')])
+def test_changed_route_or_terrain_releases_forward_and_camera(monkeypatch,tmp_path,interrupt,error):
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,100)
     index=[0]
     def observe(_):
         index[0]+=1;now[0]+=.1;controllers[0].tick()
         row=copy.deepcopy(r)
         row['movement'].update(sequence=index[0],client_uptime_ms=index[0]*100)
-        row['archaeology'].update(sequence=index[0],successful_surveys=5 if index[0]<4 else 6)
+        row['archaeology'].update(sequence=index[0],successful_surveys=5)
+        if index[0]>=4:
+            if interrupt=='survey':row['archaeology']['successful_surveys']=6
+            else:row['archaeology']['falling']=True
         row['observed_at']=now[0]
         row['owned_pose']={'pitch_radians':0,'client_uptime_ms':index[0]*100}
         return row
     monkeypatch.setattr(fast_waypoint,'observe',observe)
-    with pytest.raises(RuntimeError,match='new Survey'):
+    with pytest.raises(RuntimeError,match=error) as failed:
         fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
             guidance={'source':'Survey telescope'})
     assert events.count(('press','Up'))==1
@@ -73,3 +78,4 @@ def test_new_survey_releases_the_held_forward_route_and_camera(monkeypatch,tmp_p
     assert events.count(('button_press',3))==1
     assert events.count(('button_release',3))==1
     assert len(calls)==1
+    assert recovery.retryable(failed.value)
