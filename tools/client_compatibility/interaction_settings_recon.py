@@ -31,7 +31,7 @@ def inspect(t,terms):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--term',choices=['Mouse','Colorblind'],action='append',required=True);a=p.parse_args()
+    p.add_argument('--term',choices=['Mouse','Colorblind','Move Pad','Interact Key'],action='append',required=True);a=p.parse_args()
     if len(set(a.term))!=len(a.term):p.error('each search term may be requested once')
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
