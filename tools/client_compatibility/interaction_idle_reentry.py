@@ -4,7 +4,7 @@ from pathlib import Path
 from . import lab_runtime as lab,actors
 from .interaction_social import actor
 from .interaction_trial import Trial
-from .interaction_bridge_deploy import shot
+from .interaction_bridge_deploy import shot,identity
 from .interaction_lifecycle import Packets
 from .interaction_spellbook_navigation import known
 from .observation.journal import entries
@@ -77,7 +77,19 @@ def run_completed_baseline(t,source,selection):
         monitor['input_isolation']['actor']!='scout' or monitor['pid']!=t.receipt['runtime']['client']['pid'] or
         not 0<=time.time()-selection.stat().st_mtime<=120):
         raise RuntimeError('completed scout baseline, owned monitor or fresh reviewed screen differs')
-    original=old['native_pose_before'];cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    original=old.get('native_pose_before')
+    if original is None:
+        deployed_path=source.parent.parent/'deployment.json';deployed=json.loads(deployed_path.read_text())
+        checks=old.get('bridge_native_restoration',{}).get('checks',{})
+        attempt=deployed.get('reconnect_attempts',{}).get('scout',{})
+        if (set(checks)!={'resources','stats','spells','actions','pose','afk','position','no_lua_errors','no_blocked_actions'} or
+            not all(checks.values()) or not deployed.get('completed') or not deployed.get('native_unchanged') or
+            attempt.get('episode')!=str(source) or attempt.get('sha256')!=lab.sha256(source) or
+            deployed['native']!=identity('worldserver') or deployed['after']!=identity('modern_world')):
+            raise RuntimeError('completed bridge scout baseline is not source-bound to this lifetime')
+        baseline=deployed['native_baselines']['scout'];original={k:baseline[k] for k in ['pose','afk']}
+        t.receipt['completed_deployment_source']={'file':str(deployed_path),'sha256':lab.sha256(deployed_path)};t.persist()
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
     for packet in cursor.poll():pass
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},
         reviewed_selection={'frame':frame,'character':'Harnesstwo','input':[640,661],
