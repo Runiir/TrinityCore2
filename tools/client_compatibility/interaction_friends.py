@@ -73,7 +73,7 @@ def wire_checks(rows,name,guid,result,remove=False):
 
 
 def open_friends(t,label):
-    require(click(t,label,'Open the stock Friends window.',lambda c:c['name']=='SocialsMicroButton',
+    require(click(t,label,'Open the stock Friends window.',lambda c:c['name']=='FriendsMicroButton',
         lambda b,a,s:{'status':'friend_window_open' if s and 'FriendsFrame' in a['panels'] else
             'client_or_protocol_failure'},await_state=lambda s:'FriendsFrame' in s['panels']),
         'friend_window_open')
