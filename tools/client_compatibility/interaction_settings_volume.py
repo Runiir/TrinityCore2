@@ -42,6 +42,21 @@ def layout_checks(current,original):
     return checks
 
 
+def restore_layout(t,layout,prefix):
+    search(t,layout.get('search') or '',prefix+'_search')
+    current=detail(t,prefix+'_before')
+    if current.get('category')!=layout.get('category'):
+        name=layout['category']['name']
+        control=target(t,prefix+'_category',lambda c:c['text']==name or c['text'].startswith(name+'|T'))
+        click_control(t,prefix+'_category',control,lambda a:
+            detail(t,prefix+'_category_restored')['category']==layout['category'],'settings_category_restored')
+    current=detail(t,prefix+'_restored');checks=layout_checks(current,layout)
+    t.receipt['volume_layout_restoration']={'checks':checks};t.persist()
+    if not all(checks.values()):raise RuntimeError('original volume settings layout differs')
+    close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
+    click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
+
+
 def step_volume(t,layout,direction,label):
     if direction not in (-1,1):raise ValueError('Master Volume step direction must be -1 or 1')
     before=detail(t,label+'_before');original=value(layout);previous=value(before)
@@ -101,20 +116,7 @@ def inspect(t,exercise=False):
     finally:
         if layout is not None:
             if t.receipt.get('volume_exercise_attempted'):restore_volume(t,layout,'fixture.restore_master_volume')
-            search(t,layout.get('search') or '','fixture.restore_volume_search')
-            current=detail(t,'volume_layout_restore_before')
-            if current.get('category')!=layout.get('category'):
-                name=layout['category']['name']
-                control=target(t,'fixture.restore_volume_category',lambda c:c['text']==name or c['text'].startswith(name+'|T'))
-                click_control(t,'fixture.restore_volume_category',control,lambda a:
-                    detail(t,'volume_category_restored')['category']==layout['category'],'settings_category_restored')
-            current=detail(t,'volume_layout_restored')
-            checks=layout_checks(current,layout)
-            t.receipt['volume_layout_restoration']={'checks':checks};t.persist()
-            if not all(checks.values()):raise RuntimeError('original volume settings layout differs')
-            close=target(t,'fixture.close_volume_recon',lambda c:c['kind']=='Button' and c['text']=='Close')
-            click_control(t,'fixture.close_volume_recon',close,lambda a:'SettingsPanel' not in a['panels'],
-                'settings_panel_closed')
+            restore_layout(t,layout,'fixture.restore_volume')
 
 
 def main():
