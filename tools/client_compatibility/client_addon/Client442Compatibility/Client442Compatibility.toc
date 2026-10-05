@@ -1,7 +1,7 @@
 ## Interface: 40402
 ## Title: Client442 Compatibility
 ## Notes: Client resource diagnostics for the private 60895 compatibility lab.
-## Version: 2.2.0
+## Version: 2.2.1
 GuildTabs.lua
 EquipmentMenu.lua
 MacroSelection.lua

@@ -72,6 +72,7 @@ def spell(t,with_cast=False):
         diagnostic_action='open'),'link_spellbook_open')
     layout=book_detail(t,'link_spellbook_before')
     if layout['book_type']!=layout['book_types']['spell']:raise RuntimeError('requires an original ordinary spellbook tab')
+    if layout.get('chat_link_dispatch') is not True:raise RuntimeError('requires the installed secure stock chat-link dispatch repair')
     current=layout
     try:
         row=next((r for r in current['rows'] if r.get('kind')=='SPELL' and r.get('known') is True and
@@ -151,14 +152,24 @@ def recovered(t,source):
     old=json.loads(source.read_text())
     if (not old.get('finished_at') or old.get('completed') or old['actor']!=t.fixture or
             old['runtime']!=t.receipt['runtime'] or old.get('failure')!='RuntimeError: native binding fixture restoration differs' or
-            not any(c['id']=='ui_misc.spell_link' and c['status']=='client_or_protocol_failure' for c in old['cases'])):
+            not any(c['id'] in {'ui_misc.spell_link','spellbook.cast_spell'} and c['status']=='client_or_protocol_failure'
+                for c in old['cases'])):
         raise RuntimeError('recovery requires the exact closed failed spell-link source and unchanged runtime')
     before=json.loads(json.dumps(t.receipt['native_baseline']));expected=old['native_baseline']
     checks={k:before[k]==expected[k] for k in expected if k!='stats'}
     checks['stats']=restored_native_state(expected['stats'],before['stats'])
     t.receipt['original_link_fixture_recovered']={'source':str(source),'sha256':lab.sha256(source),
-        'checks':checks,'method':'read-only verification after the ordinary two-minute self-buff expires'};t.persist()
+        'checks':checks,'method':'read-only verification of the original native fixture after self-buff expiry or a blocked cast'};t.persist()
     if not all(checks.values()):raise RuntimeError('original pre-link native fixture has not returned')
+    layout=old['spellbook_details']['link_spellbook_before']['state']['spellbook_probe']
+    state,_=t.observe('recovery_book_before')
+    if 'SpellBookFrame' not in state['panels']:t.execute({'kind':'key','value':'p'})
+    current=book_detail(t,'recovery_book_layout')
+    if current['skill_line']!=layout['skill_line']:select_line(t,'fixture.restore_failed_link_book_tab',layout['skill_line'])
+    after=book_detail(t,'recovered_link_book',line=layout['skill_line'])
+    restored={k:after.get(k)==layout.get(k) for k in ['book_type','skill_line','pages','page']}
+    t.receipt['link_spellbook_restoration']=restored;t.persist();t.clean_panels()
+    if not all(restored.values()):raise RuntimeError('failed source spellbook layout has not restored')
 
 
 if __name__=='__main__':

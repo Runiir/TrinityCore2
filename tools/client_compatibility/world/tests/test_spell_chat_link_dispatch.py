@@ -17,8 +17,18 @@ local casts,links={},{}
 Client442CompatibilityStatus={}
 GetBuildInfo=function() return '4.4.2','60895' end
 IsModifiedClick=function(kind) assert(kind=='CHATLINK');return modified end
-CreateFrame=function()
+CreateFrame=function(_,_,_,template)
+    if template then assert(template=='SecureHandlerBaseTemplate');return {} end
     return {RegisterEvent=function() end,SetScript=function(_,_,fn) handler=fn end}
+end
+SecureHandlerWrapScript=function(frame,kind,header,body)
+    assert(kind=='OnClick' and type(header)=='table')
+    local before=assert((loadstring or load)('return function(self,button) '..body..' end'))()
+    frame.CallMethod=function(self,method,button) self[method](self,button) end
+    frame.click=function(self,button,...)
+        if before(self,button)==false then return end
+        return self.original(self,button,...)
+    end
 end
 -- Lazy addon loading leaves the initial install pending.
 dofile(source)
@@ -30,7 +40,7 @@ for i=1,12 do
         casts[i]=(casts[i] or 0)+1
     end
     frame.GetScript=function(self,kind) assert(kind=='OnClick');return self.original end
-    frame.SetScript=function(self,kind,fn) assert(kind=='OnClick');self.click=fn end
+    frame.SetScript=function() error('must preserve the stock secure click script') end
     frame.OnModifiedClick=function(self,button)
         assert(self==frame and button=='LeftButton');links[i]=(links[i] or 0)+1
     end
@@ -48,4 +58,5 @@ modified=false
 for i=1,12 do _G['SpellButton'..i]:click('RightButton','original argument') end
 for i=1,12 do assert(links[i]==1 and casts[i]==1) end
 '''
-    subprocess.run([lua,'-',str(source)],input=script,text=True,check=True,capture_output=True)
+    result=subprocess.run([lua,'-',str(source)],input=script,text=True,capture_output=True)
+    assert result.returncode==0,result.stderr

@@ -36,6 +36,7 @@ function Client442ObserveSpellBook()
     tooltip.comparisons=nil
     while #tooltip.lines>6 do table.remove(tooltip.lines) end
     return {visible=book and not not read(book.IsVisible,book) or false,
+        chat_link_dispatch=Client442CompatibilityStatus and Client442CompatibilityStatus.spell_chat_link_dispatch or false,
         book_type=book and book.bookType,skill_line=book and book.selectedSkillLine,
         book_types={spell=BOOKTYPE_SPELL,profession=BOOKTYPE_PROFESSION,pet=BOOKTYPE_PET},
         tabs=tabs,rows=rows,pages=pages,page=current,max_pages=maximum,
