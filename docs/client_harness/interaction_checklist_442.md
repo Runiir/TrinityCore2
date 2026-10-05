@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 379 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 380 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -450,7 +450,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.channel_password` (qualified variant; [evidence](#owned_native_channel_password_gate))
 - [x] `chat.channel_owner` (qualified variant; [evidence](#owned_native_stock_channel_owner_query))
 - [x] `chat.emote` (qualified variant; [evidence](#chat))
-- [ ] `chat.language_switch`
+- [x] `chat.language_switch` (qualified variant; [evidence](#owned_native_racial_stock_language))
 - [x] `chat.combat_log` (qualified variant; [evidence](#owned_native_stock_combat_log_timestamps))
 - [x] `chat.chat_settings` (qualified variant; [evidence](#stock_general_say_filter_roundtrip))
 - [x] `chat.chat_tab_create` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
@@ -2573,3 +2573,17 @@ Remaining limits: Two owned actors and the fixed public disposable fixture only.
 - [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password01/cohort.json`, SHA-256 `99c3b5f725a3ff0832fec934740224c5bd6db4191ccabd4f200c25a1260d92c9`.
 - [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password_whole_review.json`, SHA-256 `01552358096f43f7e5aac5826705e266ae8ba9f0fdbea00ac8967834603083b8`.
 - [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/password_validation.json`, SHA-256 `742a09f0942bcc265bb619c168f781d1309ae4da9a9c09857fecc42414fe9b4c`.
+
+### owned_native_racial_stock_language
+
+Fresh whole-pass UI83/natural_language02 uses the owned native dwarf warrior and ordinary stock Language menu/submenu/radio clicks. Public Dwarvish6 and Common7 choices and selections agree. Exact Say markers and senderGUID3 match independently decoded modern request, native request, native reply and modern reply; reviewed General chat renders both messages. Exact language/chat/channel/spell/skill cleanup and all ten native checks pass. Normal logout, reviewed original-character selection and entry restore Harnesstwo with all21 checks against the immutable preparation baseline. Native race capability data repairs the character-list unlock gate without restarting the native worldserver or either game.
+
+Remaining limits: Only the owned native dwarf Dwarvish/Common Say variant. Other racial languages, peer comprehension, default language selection, creation UI, unsupported race/class combinations and arbitrary language teaching remain open. UI80/81/82 hypotheses and rejected entries, plus UI83/natural_language01 exact-text guard failure, remain excluded. The parsed Say guard requires exact marker text, focused edit and public SAY mode; observer101 and1137 full tests pass. No decision model or extra game client.
+
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/natural_language02/episode.json`, SHA-256 `4385b8df6f7b10b5bc50cbaa6798c19be3e04e93dacfcc830a1e5cc8c9245e3b`.
+  Checked cases: `chat.language_switch` (owned_stock_language_pass).
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/natural_language_whole_review.json`, SHA-256 `eb7a2a44bc9d4a77a2837563734c07c4aa1d8d42e08c495209f233143e497345`.
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/natural_language_visual_review.json`, SHA-256 `e4e3b9afab632d09f4523529f5356fc9bab9ba37d810afff7f039316ce26402d`.
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/natural_fixture_origin_enter01/episode.json`, SHA-256 `5d7be8b2134e598816e9f34189bbeb4ce7f9bed9a35b80ed7398c0bd88ad0c75`.
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/say_guard_failure_review.json`, SHA-256 `27576e1ea55e6bdb3d6ed4643cdd56f7d2497b3fb0eee09f0a2ff87bbb2e7a92`.
+- [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/live_race_unlock_review.json`, SHA-256 `dd0b3cc7e8547bd3f11308069606400dfe454d163e236a9c5796e997478840e0`.

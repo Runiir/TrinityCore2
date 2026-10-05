@@ -1,6 +1,16 @@
 # Racial language fixture and login capabilities, 2026-10-05
 
-UI82 closes at **379/916** reviewed operations. `chat.language_switch` remains open. The nonracial spell672/skill111 fixture with rank300/max300 still exposes Common only. Its CLI is quarantined; exact offline cleanup restores both rows and the primary passes all19 recovery checks.
+UI83 closes at **380/916** reviewed operations. `chat.language_switch` passes for the owned native dwarf's Dwarvish/Common Say fixture. Other languages and variants remain open.
+
+The character-list race-unlock tail now uses the native capability list, matching auth discovery. A captured response unlocks all12 native races. One-job bridge-only deployment preserves the native worldserver and both existing game lifetimes. Ordinary dwarf entry exposes Dwarvish6 and Common7 with native skill111 at300/300.
+
+The first whole trial is retained as failed. Stock chat consumes `/say` when selecting SAY mode, leaving the complete marker in the edit box; the literal guard refused submission. Observer101 reads the public edit mode. The guard accepts that parsed form only with focused SAY mode and exact payload. Wrong mode, missing focus and changed text are rejected. Focused checks pass44 tests; two initially skipped codec cases pass when bound to the deployed codec. Full1137 tests pass. Six expected old-codec race-unlock failures and the earlier1129 passing suite remain recorded.
+
+Fresh `natural_language02` selects each stock radio and sends one exact marker. Public echoes, independently decoded modern/native requests and replies, language6/7, text and senderGUID3 agree. Actual reviewed General chat renders the Dwarvish-tagged message followed by Common. All5 language/chat/channel/spell/skill and10 native cleanup checks pass. Normal dwarf logout, reviewed Harnesstwo selection and ordinary entry restore all21 original checks. Preparation, recovery and the failed first trial do not qualify the operation.
+
+Evidence: [UI83 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), archive628739991 bytes, SHA-256 `a99ed75e778b6ef4055d06d45e551171984873c66d6c21e4a3b5eef295240612`. Remote review verifies42 JSON receipts and289 attributed images. Key members under `evidence/client_interactions_20261005_ui83/` are `natural_language02/episode.json`, `natural_language_whole_review.json`, `natural_language_visual_review.json`, `natural_fixture_origin_enter01/episode.json`, `say_guard_failure_review.json`, and `live_race_unlock_review.json`.
+
+UI82 history follows. It closed at379/916. The nonracial spell672/skill111 fixture with rank300/max300 still exposes Common only. Its CLI is quarantined; exact offline cleanup restores both rows and the primary passes all19 recovery checks.
 
 The existing scout client prepared an owned dwarf warrior with its native language skill111 at300/300. Two reviewed single login attempts show "Login for that race, class, or character is currently disabled." Neither entered the world or selected/sent a language. Each rejected attempt is retained as a whole failure. Source-bound offline cleanup registers the original Harnesstwo again; reviewed ordinary entry restores all21 checks, including spells, skills, actions, resources, stats, pose, AFK, position, target, group, chat and login traffic.
 
