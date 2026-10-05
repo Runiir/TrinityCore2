@@ -4,10 +4,12 @@ from pathlib import Path
 from . import lab_runtime as lab,owned_input
 from .interaction_trial import Trial
 from .interaction_social import actor
-from .interaction_operations import controls
+from .interaction_operations import controls,point as control_point
 from .interaction_macros import require
 from .interaction_keybindings_native import suite as native_suite
 from .interaction_chat_window import detail
+from .interaction_chat_settings import signature
+from .interaction_chat_history import scroll
 
 
 def inspect(t,source):
@@ -19,11 +21,45 @@ def inspect(t,source):
     t.receipt['player_link_layout']={'public':probe,'controls':rows,'state':state,'frame':frame};t.persist()
 
 
-def play(t,source,review_path,point):
-    source=source.resolve();review_path=review_path.resolve()
-    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence') or \
-        not review_path.is_relative_to(lab.ROOT/'evidence'):
-        raise ValueError('requires private owned seed and review sources')
+def prepare(t,source,review_path):
+    """Reveal retained history, then accept a hash-bound visual review once."""
+    if review_path.exists():raise RuntimeError('review path must be new')
+    seed_source(t,source)
+    before=detail(t,'player_link_history_original');row=before['windows'][0]
+    if before['selected']!=1 or row['name']!='General' or row['scroll_offset']!=0 or 'WHISPER' not in before['message_types']:
+        raise RuntimeError('requires original General whisper history at bottom')
+    rows=controls(t);up=[r for r in rows if r['name']=='ChatFrame1ButtonFrameUpButton' and r.get('enabled')]
+    if len(up)!=1:raise RuntimeError('requires one observed history up button')
+    t.receipt['player_link_history_baseline']=before;t.persist()
+    try:
+        t.io.click(*control_point(up[0]),hold=1.2);time.sleep(1)
+        state,frame=t.observe('player_link_revealed')
+        t.receipt['player_link_reveal']={'control':up[0],'input':{'point':control_point(up[0]),'hold':1.2},
+            'state':state,'frame':frame};t.persist()
+        print(json.dumps({'review_ready':str(t.out/'episode.json'),'frame':frame['file']}),flush=True)
+        deadline=time.monotonic()+180
+        while not review_path.exists():
+            if time.monotonic()>deadline:raise RuntimeError('visual review did not arrive; no link input sent')
+            time.sleep(1)
+        review=json.loads(review_path.read_text())
+        play(t,source,review_path,review['point'])
+    finally:
+        t.clean_panels();after=detail(t,'player_link_history_cleanup')
+        if after['selected']!=1:raise RuntimeError('unexpected chat selection during history cleanup')
+        if after['windows'][0]['scroll_offset']!=0:
+            scroll(t,'fixture.player_link_history_bottom','ChatFrame1ButtonFrameBottomButton',
+                after['windows'][0]['message_count'],lambda offset:offset==0)
+        after=detail(t,'player_link_history_restored')
+        checks={'settings_and_offset':signature(before)==signature(after),
+            'message_count':row['message_count']==after['windows'][0]['message_count']}
+        t.receipt['player_link_history_restoration']={'checks':checks,'public':after};t.persist()
+        if not all(checks.values()):raise RuntimeError('original player-link history differs')
+
+
+def seed_source(t,source):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires private owned seed source')
     old=json.loads(source.read_text());peer=json.loads((source.parent.parent/'scout/episode.json').read_text())
     seed=old['player_link_seed']
     if (not old['completed'] or not old.get('finished_at') or old['actor']!=t.fixture or
@@ -33,6 +69,13 @@ def play(t,source,review_path,point):
         any(len(d['native_restoration']['checks'])!=10 or not all(d['native_restoration']['checks'].values())
             for d in [old,peer])):
         raise RuntimeError('closed owned chat seed or its restoration differs')
+    return seed
+
+
+def play(t,source,review_path,point):
+    source=source.resolve();review_path=review_path.resolve();seed=seed_source(t,source)
+    if not review_path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires private owned review source')
     review=json.loads(review_path.read_text());frame=review['frame'];image=review_path.parent/frame['file']
     monitor=frame['monitor'];current=owned_input.focus()
     if (review.get('source_sha256')!=lab.sha256(source) or review.get('point')!=point or
@@ -64,12 +107,15 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['source','output']:p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--review',type=Path);p.add_argument('--point',type=int,nargs=2)
-    p.add_argument('--inspect',action='store_true');a=p.parse_args()
-    if not a.inspect and (not a.review or not a.point):p.error('menu input requires the reviewed link point')
+    p.add_argument('--inspect',action='store_true');p.add_argument('--await-review',action='store_true');a=p.parse_args()
+    if a.inspect and a.await_review:p.error('choose inspect or await-review')
+    if a.await_review and (not a.review or a.point):p.error('await-review requires a new review file and no point')
+    if not a.inspect and not a.await_review and (not a.review or not a.point):p.error('menu input requires the reviewed link point')
     with actor('primary'):
         t=Trial(a.output,controller='code')
         try:
-            native_suite(t,operations=lambda t:inspect(t,a.source) if a.inspect else play(t,a.source,a.review,a.point),
+            native_suite(t,operations=lambda t:inspect(t,a.source) if a.inspect else
+                prepare(t,a.source,a.review) if a.await_review else play(t,a.source,a.review,a.point),
                 preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
