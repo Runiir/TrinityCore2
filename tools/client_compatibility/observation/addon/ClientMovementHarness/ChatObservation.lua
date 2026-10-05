@@ -6,6 +6,7 @@ local function read(fn,...)
 end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
+    if type(Client442ObserveChannelList)=='function' then result.channel_list=Client442ObserveChannelList() end
     result.channels={available=false,rows={}}
     if type(GetChannelList)=='function' then
         local values={pcall(GetChannelList)}

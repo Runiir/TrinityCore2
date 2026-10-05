@@ -20,5 +20,6 @@ ActionBarObservation.lua
 SettingsObservation.lua
 MacroObservation.lua
 ChatObservation.lua
+ChannelObservation.lua
 CombatLogObservation.lua
 ClientInteractions.lua
