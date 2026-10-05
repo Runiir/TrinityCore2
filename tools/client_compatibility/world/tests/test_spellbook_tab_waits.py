@@ -57,3 +57,21 @@ def test_class_and_page_reads_wait_for_the_requested_native_book_location(monkey
     probe=navigation.detail(t,'class_page',book_type='spell',line=3,page=2)
     assert (probe['skill_line'],probe['page'])==(3,2)
     assert len(t.receipt['observation_settling'][0]['samples'])==2
+
+
+@pytest.mark.parametrize('guid',['owned','foreign'])
+def test_invalid_other_page_is_skipped_but_foreign_control_identity_still_fails(monkeypatch,tmp_path,guid):
+    t,captures=fixture(monkeypatch,tmp_path,[])
+    pages=iter([{'observer_error':'UI observation exceeds packet capacity'},
+        {'guid':guid,'sequence':2,'mode':'controls'}]);skips=[]
+    monkeypatch.setattr(observation.Image,'open',lambda _:nullcontext(next(pages)))
+    def decode(value):
+        if value.get('observer_error'):raise ValueError(value['observer_error'])
+        return value
+    monkeypatch.setattr(observation,'decode_image',decode)
+    monkeypatch.setattr(observation,'retain_decode_skip',lambda *args:skips.append(str(args[3])))
+    if guid=='foreign':
+        with pytest.raises(RuntimeError,match='another actor'):observation.read_current_page(t,'controls','controls')
+    else:
+        state,_=observation.read_current_page(t,'controls','controls');assert state['guid']=='owned'
+    assert skips==['UI observation exceeds packet capacity'] and len(captures)==2

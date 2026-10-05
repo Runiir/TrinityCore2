@@ -10,10 +10,14 @@ from . import lab_runtime as lab,owned_input
 
 
 def target(t,label,predicate):
+    from .interaction_observation import retain_decode_skip
     deadline=time.monotonic()+40;path=t.out/'target_latest.png';samples=[]
     while time.monotonic()<deadline:
         with redirect_stdout(StringIO()):ctl.shot(str(path))
-        with Image.open(path) as image:state=decode_image(image)
+        try:
+            with Image.open(path) as image:state=decode_image(image)
+        except ValueError as error:
+            retain_decode_skip(t,label,path,error);time.sleep(.1);continue
         if state.get('guid')!=t.guid:raise RuntimeError('target control page belongs to another actor')
         if state.get('mode')=='controls':
             samples.append({'sequence':state['sequence'],'page':state['page'],

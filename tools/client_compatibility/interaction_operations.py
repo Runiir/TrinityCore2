@@ -39,6 +39,7 @@ def retain_control_pixels(path,target,state):
 
 
 def controls(trial):
+    from .interaction_observation import retain_decode_skip
     from PIL import Image
     from tools.second_client import ctl
     from .observation.interactions import decode_image
@@ -46,7 +47,9 @@ def controls(trial):
     while time.monotonic()<deadline:
         path=trial.out/'controls_latest.png'
         with redirect_stdout(StringIO()):ctl.shot(str(path))
-        state=decode_image(Image.open(path))
+        try:state=decode_image(Image.open(path))
+        except ValueError as error:
+            retain_decode_skip(trial,'controls_catalog',path,error);time.sleep(.1);continue
         if state['guid']!=trial.guid:raise RuntimeError('control page identity mismatch')
         if state['mode']!='controls':continue
         current=state.get('panels') or []
