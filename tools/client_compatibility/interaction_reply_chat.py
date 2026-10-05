@@ -96,7 +96,19 @@ def phase(primary,scout):
                 'client_or_protocol_failure'},diagnostic_action='reply'),'owned_reply_open')
         state,frame=primary.observe('reply_before_typing')
         if not pending(state,destination,''):raise RuntimeError('owned reply focus or destination differs')
-        primary.io.type(reply);state,frame=primary.observe('reply_pending')
+        primary.io.type(reply);time.sleep(.2);deadline=time.monotonic()+12
+        while True:
+            state,frame=primary.observe('reply_pending')
+            primary.receipt.setdefault('reply_text_settling',[]).append({'frame':frame,
+                'observed_text':state.get('chat_edit_text'),'input_replayed':False});primary.persist()
+            if pending(state,destination,reply):break
+            text=state.get('chat_edit_text')
+            if (not state.get('chat_edit_open') or not state.get('chat_edit_focused') or
+                    state.get('chat_edit_type')!='WHISPER' or state.get('chat_edit_target')!=destination or
+                    not isinstance(text,str) or not reply.startswith(text)):
+                raise RuntimeError('reply focus, recipient or text differs while settling; refusing submission')
+            if time.monotonic()>deadline:raise RuntimeError('owned reply text did not settle; refusing input replay')
+            time.sleep(.2)
         exact=pending(state,destination,reply)
         guard={'frame':frame,'target':destination,'token':reply,'exact':exact,'submitted':False,
             'destination_source':received_seed}
