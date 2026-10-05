@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=86,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=87,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -294,13 +294,15 @@ local function snapshot(viewMode,viewPage)
     local menu=manager and call(manager.GetOpenMenu,manager)
     if menu and menu.IsVisible and menu:IsVisible() then
         data.panels[#data.panels+1]='ContextMenu';scan(menu,0)
-        -- Blizzard_Menu returns only the root. Submenu proxies are sibling
-        -- frames; inspect only visible siblings with the public menu methods.
-        local parent=call(menu.GetParent,menu)
-        if parent and parent.GetChildren then
-            for _,sibling in ipairs({parent:GetChildren()}) do
-                if sibling.GetOwnerRegion and sibling.SendResponse and sibling.Close and
-                    call(sibling.IsVisible,sibling) then scan(sibling,0) end
+        -- Blizzard_Menu's factory creates unparented submenu proxies. Enumerate
+        -- frames read-only, with a hard bound, and scan only visible menus.
+        local candidate
+        for index=1,8192 do
+            candidate=call(EnumerateFrames,candidate)
+            if not candidate then break end
+            if not call(candidate.IsForbidden,candidate) and candidate.GetOwnerRegion and
+                candidate.SendResponse and candidate.Close and call(candidate.IsVisible,candidate) then
+                scan(candidate,0)
             end
         end
     end
