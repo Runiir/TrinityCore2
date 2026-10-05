@@ -7,6 +7,7 @@ from .interaction_social import actor
 from .interaction_chat_channels import run,member,packets
 from .interaction_channel_ui import inspect
 from .interaction_channel_peer import roster
+from .interaction_control_target import click
 from .interaction_chat_window import detail
 from .interaction_chat_settings import signature
 from .interaction_keybindings_native import suite as native_suite
@@ -15,6 +16,15 @@ from .observation.journal import Cursor
 from .world.buffer import Reader,player_high
 
 PASSWORD='TC442TestPass1'
+
+
+def password_prompt(state,name):
+    return 'StaticPopup1' in (state.get('panels') or []) and any(
+        c.get('name')=='StaticPopup1Button2' and c.get('text')=='Cancel' and
+        c.get('context')=="Please enter a password for '"+name+"'."
+        for c in state.get('controls') or []) and any(
+        f.get('name')=='StaticPopup1EditBox' and f.get('focused') and f.get('text')==''
+        for f in state.get('edit_fields') or [])
 
 
 def terminated(r):
@@ -75,26 +85,42 @@ def join(t,name,password,rejected=False):
     for p in cursor.poll():pass
     started=time.time()
     def result(b,a,s):
-        after=detail(t,'password_join_result');wire=packets(cursor,session,name,started);rows=member(after,name)
+        # The stock password prompt owns keyboard focus. Do not submit a slash
+        # diagnostic until its observed Cancel button has dismissed it.
+        after=None if rejected else detail(t,'password_join_result')
+        wire=packets(cursor,session,name,started)
         expected={('from_client','CMSG_CHAT_JOIN_CHANNEL'),('to_native','CMSG_JOIN_CHANNEL')}
         checks={'ordinary_join':s=='join','native_join_request':expected.issubset({(p['direction'],p['name']) for p in wire}),
             'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         if rejected:
             decoded=notice(wire,name,4,0);checks.update(native_wrong_password=decoded['matches'],
-                no_enabled_membership=not any(not r['disabled'] for r in rows),
-                new_general_line=after['windows'][0]['message_count']>before['windows'][0]['message_count'])
+                owned_empty_password_prompt=password_prompt(a,name))
         else:
+            rows=member(after,name)
             decoded={};checks.update(public_enabled_membership=len(rows)==1 and not rows[0]['disabled'],
                 native_join_response=any(p['direction']=='from_native' and p['name']=='SMSG_CHANNEL_NOTIFY' and bytes.fromhex(p['body'])[0]==2 for p in wire),
                 modern_join_response=any(p['direction']=='to_client' and p['name']=='SMSG_CHANNEL_NOTIFY_JOINED' for p in wire))
-        return {'status':('owned_password_rejection_pass' if rejected else 'owned_password_join_pass') if all(checks.values()) else 'client_or_protocol_failure',
+        return {'status':('owned_password_prompt_visible' if rejected else 'owned_password_join_pass') if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'public':after,'packets':wire,'rejection':decoded,'password_case':'absent' if not password else 'public_disposable'}}
-    status='owned_password_rejection_pass' if rejected else 'owned_password_join_pass'
-    require(t.step('fixture.reject_without_password' if rejected else 'fixture.join_with_disposable_password' if password else 'fixture.join_after_password_clear',
+    status='owned_password_prompt_visible' if rejected else 'owned_password_join_pass'
+    row=t.step('fixture.reject_without_password' if rejected else 'fixture.join_with_disposable_password' if password else 'fixture.join_after_password_clear',
         'Exercise the native password gate using only the owned peer.',
-        {'join':{'kind':'chat','value':'/join '+name+(' '+password if password else '')}},result,diagnostic_action='join'),status)
+        {'join':{'kind':'chat','value':'/join '+name+(' '+password if password else '')}},result,diagnostic_action='join',
+        await_state=(lambda a:password_prompt(a,name)) if rejected else None)
+    require(row,status)
     state,frame=t.observe(('password_rejected' if rejected else 'password_joined')+'_rendered')
     t.receipt.setdefault('password_gate_rendered',[]).append({'state':state,'frame':frame});t.persist()
+    if rejected:
+        require(click(t,'fixture.cancel_owned_password_prompt','Cancel the observed owned channel password prompt.',
+            lambda c:c.get('name')=='StaticPopup1Button2' and c.get('text')=='Cancel' and
+                c.get('context')=="Please enter a password for '"+name+"'.",
+            lambda b,a,s:{'status':'owned_password_prompt_cancelled' if s and 'StaticPopup1' not in (a.get('panels') or []) else 'client_or_protocol_failure'},
+            await_state=lambda a:'StaticPopup1' not in (a.get('panels') or [])), 'owned_password_prompt_cancelled')
+        after=detail(t,'password_rejection_membership')
+        row['oracle']['public']=after
+        row['oracle']['checks']['no_enabled_membership']=not any(not r['disabled'] for r in member(after,name))
+        row['status']='owned_password_rejection_pass' if all(row['oracle']['checks'].values()) else 'client_or_protocol_failure'
+        t.persist();require(row,'owned_password_rejection_pass')
 
 
 def leave(t,name,label):
