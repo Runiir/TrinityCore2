@@ -18,6 +18,7 @@ DressUpObservation.lua
 AchievementObservation.lua
 ActionBarObservation.lua
 SettingsObservation.lua
+AddOnsObservation.lua
 MacroObservation.lua
 ChatObservation.lua
 ChannelObservation.lua

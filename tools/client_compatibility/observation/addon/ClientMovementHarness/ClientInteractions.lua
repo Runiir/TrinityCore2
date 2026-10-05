@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=110,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=111,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -178,6 +178,7 @@ local function snapshot(viewMode,viewPage)
         data.actionbar_probe.targeting=targetingProbe();return data
     end
     if mode=='settings' then data.settings_probe=Client442ObserveSettings();return data end
+    if mode=='addons' then data.addons_probe=Client442ObserveAddOns();return data end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -742,6 +743,7 @@ local function update()
     elseif mode=='state' and autoPage==-6 then viewMode,viewPage='actionbars',1
     elseif mode=='state' and autoPage==-8 then viewMode,viewPage='settings',1
     elseif mode=='state' and autoPage==-9 then viewMode,viewPage='macros',1
+    elseif mode=='state' and autoPage==-10 then viewMode,viewPage='addons',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -753,14 +755,15 @@ local function update()
             equipmentTick=equipmentTick+1
             if equipmentTick%3==0 and #data.panels==0 and #data.bags==0 then autoPage=-6 end
             if equipmentTick%2==0 then
-                if MacroFrame and MacroFrame:IsVisible() then autoPage=-9
+                if AddonList and AddonList:IsVisible() then autoPage=-10
+                elseif MacroFrame and MacroFrame:IsVisible() then autoPage=-9
                 elseif SettingsPanel and SettingsPanel:IsVisible() then autoPage=-8
                 elseif DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
                 elseif AchievementFrame and AchievementFrame:IsVisible() then autoPage=-5
                 elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
                 elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
             end
-        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' or viewMode=='macros' then
+        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' or viewMode=='macros' or viewMode=='addons' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0
@@ -797,7 +800,7 @@ SlashCmdList.CLIENTOBSERVERPANELS=function(text)
 end
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
-    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='equipment' or command=='spellbook' or command=='chat' or command=='combat_log' or command=='recipes' or command=='settings' then mode=command;page=math.max(1,tonumber(arg) or 1)
+    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='equipment' or command=='spellbook' or command=='chat' or command=='combat_log' or command=='recipes' or command=='settings' or command=='addons' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
     else mode='state';autoPage=0;autoPhase='group';controlPage=1;groupPage=1 end
     frame:Show();update()
