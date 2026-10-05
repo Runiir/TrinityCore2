@@ -3132,7 +3132,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_offline_dwarf_ignore"
     },
     {
       "id": "friends.ignored_chat",
@@ -3150,7 +3151,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_offline_dwarf_ignore"
     },
     {
       "id": "friends.who_open",
@@ -13781,8 +13783,48 @@
           "sha256": "f4c21d158f9bb6509e105aeccf0fdf93e359bc6ae88405c2625353ea49e1ea44"
         }
       ]
+    },
+    {
+      "id": "owned_offline_dwarf_ignore",
+      "operations": [
+        "friends.add_ignore",
+        "friends.remove_ignore"
+      ],
+      "scope": "UI102 ignore01 whole completed pass on owned Harnessone/build60895. Observed stock Ignore Player name dialog accepts only owned offline Harnessdwarf GUID3. Exact modern/native add requests and result15 agree with the native ignored flag2 and sole rendered/public-control Harnessdwarf row. Ordinary selection of that exact row and stock Remove Player produce exact result16 and an empty Ignore list with removal disabled. Both main cases pass12 wire/native/public/UI checks; all9 native,12 friend and2 Ignore restoration checks pass. Original social rows, friend list, both actors inventories/money, offline dwarf, quest layout, session, group, pose and AFK restore. Code controller, model None.",
+      "limits": "Owned offline dwarf addition/removal only. Ignored chat, online presence, persistence, limits and other social variants remain open. Addition system message is rendered; no removal system message is claimed. Probe is setup only. Initial review caption was corrected before archive creation/acceptance, with interrupted packaging recorded separately. All19 focused and1733 full tests pass; no live failures, native build, restart or extra client. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui102/ignore01/episode.json",
+          "sha256": "c2944ca1ff35c8ca00b83f1a494520484a7206023160e07f4e99812c15a03085",
+          "cases": {
+            "friends.add_ignore": "ignore_status_pass",
+            "friends.remove_ignore": "ignore_status_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui102/whole_ignore_review.json",
+          "sha256": "b480f23c1304c0c98d6efba9b3334e0165b1546e76a76e60a68ee7806727402a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui102/ignore_probe_review.json",
+          "sha256": "59286ec1751d3150b696f635ba9dffb6d7892dc8bbfa9aa682f778c640a06b70"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui102/verification.json",
+          "sha256": "8f5b1d58f8484b5ce968fac6c7851738219ad6191e32606f88da6a3cd3a64f57"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui102/runtime_closure.json",
+          "sha256": "a7cc6064ae8ae23255f55ee382cf57e3f9f0769a929081c1f9add6e55e397ff7"
+        }
+      ]
     }
   ],
-  "qualified_operations": 414,
+  "qualified_operations": 416,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
