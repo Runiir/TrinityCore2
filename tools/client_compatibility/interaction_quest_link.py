@@ -12,6 +12,7 @@ from .interaction_chat_links import insert
 from .interaction_observation import read_current_page
 from .observation.journal import entries
 from . import actors
+from .interaction_settings_persistence import reload_checks
 
 QUEST=28825
 TITLE='A Personal Summons'
@@ -38,7 +39,7 @@ def fixture(probe):
     link=owned.get('link')
     if (any(type(probe.get(k)) is not int for k in ('count','total_quests','selection')) or
             probe.get('visible') is not False or probe.get('count')!=1 or probe.get('total_quests')!=1 or
-            probe.get('selection')!=1 or type(probe.get('watched_count')) is not int or
+            probe.get('selection') not in (0,1) or type(probe.get('watched_count')) is not int or
             probe['watched_count'] not in (0,1) or not isinstance(rows,list) or len(rows)!=1 or
             rows[0].get('header') is not True or rows[0].get('collapsed') is not True or
             rows[0].get('index')!=1 or rows[0].get('title')!='Stormwind City' or
@@ -73,13 +74,62 @@ def pending_matches(state,text,id):
         state.get('chat_edit_text')==text and not state.get('lua_errors') and not state.get('blocked_actions'))
 
 
-def message_requests(session,since):
+def message_requests(session,since,until=None):
     return [{'name':row['name'],'time':row['time']} for row in entries(lab.ROOT/'evidence/world_packets.jsonl')
-        if row.get('session')==session and row.get('time',0)>=since and row.get('direction')=='from_client' and
+        if row.get('session')==session and row.get('time',0)>=since and
+        (until is None or row.get('time',0)<=until) and row.get('direction')=='from_client' and
         row.get('name','').startswith('CMSG_CHAT_MESSAGE_')]
 
 
-def suite(t,inspect=False):
+def restore(t,original,native,key):
+    t.clean_panels();open_log(t,'fixture.quest_link.reopen',key)
+    header(t,True,'fixture.quest_link.collapse')
+    require(t.step('fixture.quest_link.close','Close the restored stock quest header.',
+        {'close':{'kind':'key','value':key}},lambda b,a,s:{'status':'quest_link_log_closed' if s=='close' and
+            'QuestLogFrame' not in a['panels'] else 'client_or_protocol_failure'},diagnostic_action='close'),
+        'quest_link_log_closed')
+    state,current=detail(t,'quest_link_closed_before_selection_restore')
+    if current.get('selection')!=original['selection']:
+        if original['selection']!=0:raise RuntimeError('stock quest selection cannot restore the original header')
+        session=actors.session_entry(t.fixture)['session'];previous=len(t.receipt.get('chat_submission_checks',[]))
+        before,frame=t.observe('quest_link_selection_before_reload')
+        t.execute({'kind':'chat','value':'/reload'})
+        after,after_frame=t.observe('quest_link_selection_after_reload',seconds=240)
+        result=reload_checks(before,after,session,actors.session_entry(t.fixture)['session'],
+            t.receipt.get('chat_submission_checks',[])[previous:],t.guid)
+        t.receipt['quest_link_selection_reload']={'checks':result,'before_frame':frame,'after_frame':after_frame};t.persist()
+        if not all(result.values()):raise RuntimeError('ordinary quest-layout UI reload did not verify a new generation')
+        state,current=detail(t,'quest_link_restored_hidden')
+    result={k:current.get(k)==original.get(k) for k in ['visible','count','total_quests','selection','rows','watched_count','fixture']}
+    result.update(native_quests=saved(1)==native,chat_closed=not state.get('chat_edit_open'),
+        ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
+    window=t.receipt.get('quest_link_submission_window')
+    if window:
+        window['until']=time.time();result['no_message_request']=not message_requests(window['session'],window['since'],window['until'])
+    t.receipt['quest_link_restoration']={'checks':result};t.persist()
+    if not all(result.values()):raise RuntimeError('original quest/header/selection state did not restore')
+
+
+def layout_source(t,path,original,native):
+    path=path.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires an owned closed quest-layout calibration')
+    old=json.loads(path.read_text());checks=old.get('quest_link_restoration',{}).get('checks',{})
+    expected={'visible','count','total_quests','selection','rows','watched_count','fixture','native_quests','chat_closed','ui_clean'}
+    restored=old.get('native_restoration',{}).get('checks',{})
+    expected_native={'resources','stats','spells','actions','pose','afk','position','group','no_lua_errors','no_blocked_actions'}
+    if (old.get('completed') is not True or old.get('failure') is not None or not old.get('finished_at') or
+            old.get('quest_link_layout_calibration') is not True or old.get('actor')!=t.fixture or
+            old.get('runtime')!=t.receipt['runtime'] or old.get('quest_link_original')!=original or
+            old.get('quest_link_native_original')!=native or set(checks)!=expected or
+            not all(v is True for v in checks.values()) or set(restored)!=expected_native or
+            not all(v is True for v in restored.values()) or
+            json.dumps(old.get('native_baseline'),sort_keys=True)!=json.dumps(t.receipt['native_baseline'],sort_keys=True)):
+        raise RuntimeError('closed layout calibration does not match the current owned fixture')
+    t.receipt['quest_link_layout_source']={'file':str(path),'sha256':lab.sha256(path)};t.persist()
+
+
+def suite(t,inspect=False,calibrate=False,source=None):
     state,original=detail(t,'quest_link_hidden_original')
     if state.get('observer_version',0)<121:raise RuntimeError('requires read-only quest-link observer121')
     t.receipt.update(custom_script_permission='blocked_by_user',quest_link_original=original,
@@ -93,8 +143,15 @@ def suite(t,inspect=False):
         raise RuntimeError('native accepted quest fixture differs')
     if not keys:raise RuntimeError('requires the installed quest-log binding')
     key=binding_key(keys[0]);t.receipt['quest_link_native_original']=native;t.persist()
+    if calibrate:
+        t.receipt.update(quest_link_layout_calibration=True,qualified_scope=
+            'Layout calibration only: stock quest-log open/close and original collapsed header/selection restoration, with one ordinary UI reload if selection0 needs a new UI generation. No quest-link input or gameplay qualification.');t.persist()
+    else:
+        if source is None:raise RuntimeError('requires a passed source-bound layout calibration before quest-link input')
+        layout_source(t,source,original,native)
     try:
         open_log(t,'fixture.quest_link.open',key);header(t,False,'fixture.quest_link.expand')
+        if calibrate:return
         _,current=detail(t,'quest_link_expanded')
         row=next((r for r in current['rows'] if r.get('quest_id')==QUEST and r.get('title')==TITLE and
             r.get('header') is False),None)
@@ -116,30 +173,20 @@ def suite(t,inspect=False):
             if not all(result.values()):raise RuntimeError('pending quest link differs from the owned public/native fixture')
         insert(t,'quest',QUEST,control,on_insert=guard)
     finally:
-        t.clean_panels();open_log(t,'fixture.quest_link.reopen',key)
-        header(t,True,'fixture.quest_link.collapse')
-        state,current=detail(t,'quest_link_restored_open')
-        result={k:current.get(k)==original.get(k) for k in ['count','total_quests','selection','rows','watched_count','fixture']}
-        result.update(native_quests=saved(1)==native,chat_closed=not state.get('chat_edit_open'),
-            ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
-        window=t.receipt.get('quest_link_submission_window')
-        if window:result['no_message_request']=not message_requests(window['session'],window['since'])
-        t.receipt['quest_link_restoration']={'checks':result};t.persist()
-        if not all(result.values()):raise RuntimeError('original quest/header/selection state did not restore')
-        require(t.step('fixture.quest_link.close','Close the restored stock quest log.',
-            {'close':{'kind':'key','value':key}},lambda b,a,s:{'status':'quest_link_log_closed' if s=='close' and
-                'QuestLogFrame' not in a['panels'] else 'client_or_protocol_failure'},diagnostic_action='close'),
-            'quest_link_log_closed')
+        restore(t,original,native,key)
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--inspect',action='store_true',help='Read hidden quest-log state without opening or mutating it')
+    group=p.add_mutually_exclusive_group(required=True)
+    group.add_argument('--inspect',action='store_true',help='Read hidden quest-log state without opening or mutating it')
+    group.add_argument('--calibrate-layout',action='store_true',help='Verify original quest-layout restoration before any link input')
+    group.add_argument('--layout-source',type=Path,help='Exact passed closed calibration authorizing one fresh link trial')
     a=p.parse_args()
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
         t=SettingsTrial(a.output,controller='code')
-        try:native_suite(t,operations=lambda t:suite(t,a.inspect),preserve_settings=False);t.receipt['completed']=True
+        try:native_suite(t,operations=lambda t:suite(t,a.inspect,a.calibrate_layout,a.layout_source),preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)

@@ -26,7 +26,7 @@ def test_non_owned_or_unrestorable_fixture_refuses_before_log_input(change):
     elif change=='title':old['fixture']['link']=LINK.replace('A Personal Summons','Another quest')
     elif change=='multiple_quests':old['total_quests']=2
     elif change=='count_bool':old['count']=True
-    elif change=='unrestorable_selection':old['selection']=0
+    elif change=='unrestorable_selection':old['selection']=2
     elif change=='already_open':old['visible']=True
     elif change=='expanded':old['rows'][0]['collapsed']=False
     elif change=='other_zone':old['rows'][0]['title']='Elwynn Forest'
@@ -56,3 +56,42 @@ def test_submission_check_is_owned_session_and_window_specific(monkeypatch):
         {'name':'CMSG_CAST_SPELL','time':11,'session':'own','direction':'from_client'}]
     monkeypatch.setattr(links,'entries',lambda path:packets)
     assert links.message_requests('own',10)==[{'name':'CMSG_CHAT_MESSAGE_SAY','time':10}]
+
+
+def test_original_zero_selection_requires_calibration_rather_than_fabricating_header_selection():
+    old=baseline();old['selection']=0;assert links.fixture(old)==LINK
+
+
+@pytest.mark.parametrize('change',['valid','open','failed','link_run','other_actor','other_runtime','different_layout',
+    'different_native','partial_checks','false_check','native_failure','baseline_change'])
+def test_only_complete_source_bound_layout_calibration_can_authorize_link(tmp_path,monkeypatch,change):
+    import json
+    from types import SimpleNamespace
+    original=baseline();native={'active':[{'quest':28825,'status':1}],'rewarded':[]}
+    current={'runtime':{'world':1},'native_baseline':{'pose':1}}
+    t=SimpleNamespace(fixture={'guid':1},receipt=current,persist=lambda:None)
+    checks={k:True for k in ['visible','count','total_quests','selection','rows','watched_count','fixture',
+        'native_quests','chat_closed','ui_clean']}
+    old={'completed':True,'failure':None,'finished_at':100,'quest_link_layout_calibration':True,
+        'actor':t.fixture,'runtime':current['runtime'],'native_baseline':current['native_baseline'],
+        'quest_link_original':original,'quest_link_native_original':native,
+        'quest_link_restoration':{'checks':checks},'native_restoration':{'checks':{k:True for k in
+            ['resources','stats','spells','actions','pose','afk','position','group','no_lua_errors','no_blocked_actions']}}}
+    old=copy.deepcopy(old)
+    if change=='open':old['finished_at']=None
+    elif change=='failed':old['completed']=False
+    elif change=='link_run':old['quest_link_layout_calibration']=False
+    elif change=='other_actor':old['actor']={'guid':2}
+    elif change=='other_runtime':old['runtime']={'world':2}
+    elif change=='different_layout':old['quest_link_original']['selection']=0
+    elif change=='different_native':old['quest_link_native_original']['active'][0]['status']=3
+    elif change=='partial_checks':old['quest_link_restoration']['checks'].pop('selection')
+    elif change=='false_check':old['quest_link_restoration']['checks']['selection']=False
+    elif change=='native_failure':old['native_restoration']['checks']['pose']=False
+    elif change=='baseline_change':old['native_baseline']['pose']=0
+    monkeypatch.setattr(links.lab,'ROOT',tmp_path);folder=tmp_path/'evidence/calibration';folder.mkdir(parents=True)
+    path=folder/'episode.json';path.write_text(json.dumps(old))
+    if change=='valid':
+        links.layout_source(t,path,original,native);assert len(current['quest_link_layout_source']['sha256'])==64
+    else:
+        with pytest.raises(RuntimeError):links.layout_source(t,path,original,native)
