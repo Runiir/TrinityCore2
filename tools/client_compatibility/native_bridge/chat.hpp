@@ -2,7 +2,7 @@
 #include "protocol.hpp"
 namespace bridge
 {
-Reply chat_request(State const &owner,std::string const &name,View body);
+Reply chat_request(State &owner,std::string const &name,View body);
 Reply chat_response(State &owner,std::string const &name,View body);
 inline void require_chat_character(bool created,bool active_world)
 {

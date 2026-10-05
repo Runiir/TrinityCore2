@@ -6,6 +6,7 @@
 #include <deque>
 #include <array>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
@@ -14,6 +15,7 @@ namespace bridge
 {
 using Packet = std::pair<std::string, Bytes>;
 using Reply = std::optional<Packet>;
+struct ChannelState;
 struct State
 {
     Value character;
@@ -37,8 +39,8 @@ struct State
     std::array<std::uint32_t,17> account_times{};
     Array action_buttons;
     EquipmentSets equipment_sets;
-    // Native YouJoined owns this per-character identity; userlists carry counts.
-    std::unordered_map<std::string, std::uint32_t> joined_channel_ids;
+    // Channel metadata is isolated so channel-only changes retain other build caches.
+    std::shared_ptr<ChannelState> channel_state;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;

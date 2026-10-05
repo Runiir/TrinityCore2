@@ -173,3 +173,33 @@ def test_userlist_capture_is_limited_to_exact_owned_members_and_channel(codec,na
         assert codec(op='public_channel_probe',name=name,body=body.replace(channel,b'ForeignOwnedChannelABC').hex())['result'] is False
     foreign=bytearray(native);foreign[0]=3
     assert codec(op='public_channel_probe',name=name,body=foreign.hex())['result'] is False
+
+
+@pytest.mark.parametrize('opcode,count',[('SMSG_USERLIST_UPDATE',2),('SMSG_USERLIST_REMOVE',1)])
+def test_selected_roster_reads_full_native_membership_after_peer_change(codec,opcode,count):
+    channel=b'TC442UIChannel1234abcd'
+    joined=Writer().pack('B',2).raw(channel+b'\0').pack('BII',1,0,0).finish()
+    request=Writer().bits(len(channel),7).raw(channel).finish()
+    update=Writer().pack('Q',2)
+    if opcode!='SMSG_USERLIST_REMOVE':update.pack('B',0)
+    update.pack('BI',1,count).raw(channel+b'\0')
+    replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
+        action('chat_request','CMSG_CHAT_CHANNEL_DISPLAY_LIST',request),action('chat_response',opcode,update.finish())])
+    assert [r[0] for r in replies]==['SMSG_CHANNEL_NOTIFY_JOINED','CMSG_CHAT_CHANNEL_DISPLAY_LIST',
+        'CMSG_CHAT_CHANNEL_DISPLAY_LIST',opcode]
+    r=Reader(bytes.fromhex(replies[-2][1]));assert r.bits(8)==len(channel) and r.raw(len(channel))==channel;r.end()
+
+
+def test_roster_refresh_stops_after_different_selection_or_leave(codec):
+    joined=Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,0,0).finish()
+    selected=Writer().bits(7,7).raw(b'TestLab').finish()
+    other=Writer().bits(5,7).raw(b'Other').finish()
+    update=Writer().pack('QBBI',2,0,1,2).raw(b'TestLab\0').finish()
+    left=Writer().pack('B',3).raw(b'TestLab\0').pack('IB',0,0).finish()
+    for boundary in [action('chat_request','CMSG_CHAT_CHANNEL_DISPLAY_LIST',other),
+                     action('chat_response','SMSG_CHANNEL_NOTIFY',left)]:
+        replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
+            action('chat_request','CMSG_CHAT_CHANNEL_DISPLAY_LIST',selected),boundary,
+            action('chat_response','SMSG_USERLIST_UPDATE',update)])
+        assert len(replies)==4
+        assert replies[-1] is None or replies[-1][0]=='SMSG_USERLIST_UPDATE'

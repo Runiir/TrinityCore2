@@ -42,9 +42,9 @@ std::string counted(Reader &r,unsigned maximum)
     return value;
 }
 }
-Reply chat_request(State const &,std::string const &name,View body)
+Reply chat_request(State &owner,std::string const &name,View body)
 {
-    if(auto channel=chat_channel_request(name,body))return channel;
+    if(auto channel=chat_channel_request(owner,name,body))return channel;
     static std::unordered_map<std::string,std::string> const names={
         {"CMSG_CHAT_MESSAGE_SAY","CMSG_MESSAGECHAT_SAY"},{"CMSG_CHAT_MESSAGE_YELL","CMSG_MESSAGECHAT_YELL"},
         {"CMSG_CHAT_MESSAGE_PARTY","CMSG_MESSAGECHAT_PARTY"},{"CMSG_CHAT_MESSAGE_RAID","CMSG_MESSAGECHAT_RAID"},

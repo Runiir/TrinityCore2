@@ -4,8 +4,18 @@
 
 namespace bridge
 {
+struct ChannelState
+{
+    std::unordered_map<std::string,std::uint32_t> joined_ids;
+    std::string selected_roster;
+};
 namespace
 {
+ChannelState &channels(State &owner)
+{
+    if(!owner.channel_state)owner.channel_state=std::make_shared<ChannelState>();
+    return *owner.channel_state;
+}
 std::string text(Reader &r,unsigned size)
 {
     if(size>127)throw std::runtime_error("channel string exceeds bound");
@@ -52,7 +62,7 @@ bool fixture(std::string const &name)
 }
 }
 
-Reply chat_channel_request(std::string const &name,View body)
+Reply chat_channel_request(State &owner,std::string const &name,View body)
 {
     Reader r(body);Writer w;std::string channel,password,native;
     if(name=="CMSG_CHAT_JOIN_CHANNEL")
@@ -73,7 +83,13 @@ Reply chat_channel_request(std::string const &name,View body)
         native=name;
     }
     else return {};
-    r.end();require_name(channel);return Packet{native,w.finish()};
+    r.end();require_name(channel);
+    if(name=="CMSG_CHAT_CHANNEL_DISPLAY_LIST")
+    {
+        auto &state=channels(owner);auto key=identity(channel);
+        state.selected_roster=state.joined_ids.contains(key)?key:"";
+    }
+    return Packet{native,w.finish()};
 }
 
 Reply chat_channel_response(State &owner,std::string const &name,View body)
@@ -86,7 +102,7 @@ Reply chat_channel_response(State &owner,std::string const &name,View body)
         {
             auto flags=r.take<std::uint8_t>();auto id=r.take<std::uint32_t>();
             auto instance=r.take<std::uint32_t>();r.end();
-            owner.joined_channel_ids[identity(channel)]=id;
+            channels(owner).joined_ids[identity(channel)]=id;
             w.bits(channel.size(),7).bits(0,11).put<std::uint32_t>(flags).put<std::uint8_t>(0)
                 .put(id).put<std::uint64_t>(instance).guid(channel_guid(owner,channel,id,flags)).raw(channel);
             return Packet{"SMSG_CHANNEL_NOTIFY_JOINED",w.finish()};
@@ -95,7 +111,11 @@ Reply chat_channel_response(State &owner,std::string const &name,View body)
         {
             auto id=r.take<std::uint32_t>();auto suspended=r.take<std::uint8_t>();r.end();
             if(suspended>1)throw std::runtime_error("invalid native channel suspension");
-            owner.joined_channel_ids.erase(identity(channel));
+            if(owner.channel_state)
+            {
+                auto key=identity(channel);auto &state=*owner.channel_state;state.joined_ids.erase(key);
+                if(state.selected_roster==key)state.selected_roster.clear();
+            }
             w.bits(channel.size(),7).bits(suspended,1).put(id).raw(channel);
             return Packet{"SMSG_CHANNEL_NOTIFY_LEFT",w.finish()};
         }
@@ -134,11 +154,19 @@ Reply chat_channel_response(State &owner,std::string const &name,View body)
         if(name!="SMSG_USERLIST_REMOVE")role=r.take<std::uint8_t>();
         auto flags=r.take<std::uint8_t>();r.take<std::uint32_t>(); // Native member count is not a channel ID.
         auto channel=terminated(r);r.end();require_name(channel);
-        auto joined=owner.joined_channel_ids.find(identity(channel));
-        if(joined==owner.joined_channel_ids.end())return {}; // No native joined identity, including late updates after leave.
+        if(!owner.channel_state)return {};
+        auto &state=*owner.channel_state;auto key=identity(channel);auto joined=state.joined_ids.find(key);
+        if(joined==state.joined_ids.end())return {}; // No native joined identity, including late updates after leave.
         w.guid(Protocol::modern_guid(guid,owner.map()));
         if(name!="SMSG_USERLIST_REMOVE")w.put<std::uint8_t>(role);
         w.put<std::uint32_t>(flags).put(joined->second).bits(channel.size(),7).raw(channel);
+        // UI76 peer01 proves userlist delivery alone leaves the selected roster
+        // cached. Read its full membership from native authority after changes.
+        if(state.selected_roster==key && owner.native_send)
+        {
+            Writer query;query.bits(channel.size(),8).raw(channel);
+            owner.native_send("CMSG_CHAT_CHANNEL_DISPLAY_LIST",query.finish());
+        }
         return Packet{name,w.finish()};
     }
     return {};
