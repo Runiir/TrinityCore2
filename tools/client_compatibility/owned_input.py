@@ -109,7 +109,7 @@ class Inputs:
             if time.monotonic()-started>20:raise RuntimeError('held modifier exceeded its bounded observation')
 
     def drag(self,start,end,button=1,duration=.5):
-        if button not in [1,3] or not .2<=duration<=2 or any(
+        if type(button) is not int or button not in [1,3] or type(duration) not in (int,float) or not .2<=duration<=2 or any(
             not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
             raise ValueError('drag exceeds the owned client input bounds')
         with lease():
