@@ -25,11 +25,12 @@ def choose(state):
     options={'observe':'Wait without input','inspect':'Read minimap blips'}
     if state['available'] and not state['casting']:
         options['camera_forward']='Align the camera with the current forward direction'
-        if state['artifact_visible']:options['loot']='Interact with named find; observe range or gathering cast'
+        if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
+            options['loot']='Locate and interact with the discovered find; check range or gathering cast'
         if (state.get('can_survey') and state.get('survey_ready')
                 and not (state.get('pickup') or {}).get('uncollected')):
             options['survey']='Survey using Mouse Button 4'
-        if state.get('telescope'):
+        if state.get('telescope') and not state.get('guide_arrived'):
             options.update(forward_short='Approach the guide using forward movement and camera steering',
                 forward_long='Follow the telescope or marker continuously; fly if red or far')
     action,request,response=laya_ui.choose(state,

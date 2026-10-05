@@ -20,7 +20,7 @@ def model_state(row, guide, visible_find, pending, steps):
     state.update(combat=row['movement']['in_combat'],can_survey=row['archaeology']['can_survey'],
         survey_ready=bool((ui.get('survey') or {}).get('ready')),
         guide_source=guide['source'] if guide else None, pending_pickup=bool(pending),
-        named_artifact=ui.get('soft_interact', {}).get('name'),
+        named_artifact=ui.get('soft_interact', {}).get('name') or ui.get('tooltip'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
     if pending:state['pickup']=pending_find.facts(row,pending)
     if guide:

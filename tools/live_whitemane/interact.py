@@ -17,16 +17,20 @@ def search_points(maximum):
     return list(dict.fromkeys(center+interleaved))[:maximum]
 
 
-def hover(sender,point,before,folder):
+def hover(sender,point,before,folder,expected=None):
     sender.move(*point);sequence=before['farm_ui']['sequence'];deadline=time.monotonic()+1.5
+    matched=None
     while True:
         if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
         row=observe(folder/'hover.png');stationary(before,row)
         ui=row['farm_ui'];cursor=ui.get('cursor') or {}
         if (ui['sequence']!=sequence and
                 abs(cursor.get('x',-1)*runtime.WIDTH-point[0])<2 and
-                abs(cursor.get('y',-1)*runtime.HEIGHT-point[1])<2):return row
+                abs(cursor.get('y',-1)*runtime.HEIGHT-point[1])<2):
+            matched=row
+            if expected is None or ui.get('tooltip')==expected:return row
         if time.monotonic()>=deadline:
+            if matched:return matched
             raise RuntimeError('artifact tooltip observation did not follow the cursor')
         time.sleep(.02)
 
@@ -48,6 +52,11 @@ def use(folder,before,names,*,maximum=100):
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     points=search_points(maximum)
+    cursor=ui.get('cursor') or {}
+    if ui.get('tooltip') in names and 'x' in cursor and 'y' in cursor:
+        point=(round(cursor['x']*runtime.WIDTH),round(cursor['y']*runtime.HEIGHT))
+        if 0<=point[0]<runtime.WIDTH and 0<=point[1]<runtime.HEIGHT:
+            points=([point]+[p for p in points if p!=point])[:maximum]
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
@@ -67,7 +76,7 @@ def use(folder,before,names,*,maximum=100):
                     time.sleep(.02);cleared=observe(folder/'cleared.png');stationary(before,cleared)
                 observed=cleared
                 if cleared['farm_ui'].get('tooltip') in names:continue
-                confirmed=hover(sender,(x,y),cleared,folder)
+                confirmed=hover(sender,(x,y),cleared,folder,expected=name)
                 observed=confirmed
                 if confirmed['farm_ui'].get('tooltip')!=name:continue
                 sender._send(sender.X.ButtonPress,3)

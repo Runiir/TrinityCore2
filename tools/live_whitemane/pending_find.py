@@ -12,7 +12,7 @@ def fragments(row):
 
 def facts(row,value):
     ui=row.get('farm_ui') or {};gathering=ui.get('gathering') or {}
-    named=(ui.get('soft_interact') or {}).get('name') in FIND_NAMES
+    named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
     cast_started=bool(value and gathering.get('starts',0)>value.get('gathering_starts',gathering.get('starts',0)))
     discovered=bool(value or named or row['archaeology'].get('loot_open') or
         (row.get('minimap_finds') or {}).get('confirmed'))
@@ -66,7 +66,8 @@ def clear():
 def update(row,session):
     value=load(row)
     confirmed=(row.get('minimap_finds') or {}).get('confirmed') or []
-    named=((row.get('farm_ui') or {}).get('soft_interact') or {}).get('name') in FIND_NAMES
+    ui=row.get('farm_ui') or {}
+    named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
     if not value and (confirmed or row.get('visible_find') or named or row['archaeology']['loot_open'] or
         ((row.get('farm_ui') or {}).get('route') or {}).get('kind')=='pending_loot'):
         approach=row.get('visible_find') or (confirmed[0] if confirmed else session.get('last_green_endpoint'))

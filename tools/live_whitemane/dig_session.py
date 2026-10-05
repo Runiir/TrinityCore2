@@ -120,12 +120,12 @@ def run(args):
             value=pending_find.update(before,session)
             before['pending_find']=value
             pickup_priority=pending_find.priority(before,value) if value else None
-            visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or
+            visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES or
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             if session.get('reapproach_find'):
                 from .survey_find import in_range
                 visible_find=(a['loot_open'] or in_range(before)
-                    or ui.get('soft_interact',{}).get('name') in FIND_NAMES)
+                    or ui.get('soft_interact',{}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
                 approach=session.get('pickup_approach')
                 tolerance=.1 if approach and approach.get('source')=='named find forward range approach' else .5
                 if approach and distance(a['world'],approach['world'])<=tolerance:visible_find=True

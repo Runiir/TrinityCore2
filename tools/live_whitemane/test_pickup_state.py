@@ -58,3 +58,15 @@ def test_combat_fact_preempts_pickup_and_preserves_it_for_after_combat():
     assert set(farm_policy.legal_actions(r,SolveBatches()))=={'wait','minimap','combat'}
     r['movement']['in_combat']=False
     assert 'dig' in farm_policy.legal_actions(r,SolveBatches())
+
+
+def test_completed_waypoint_returns_to_locating_the_uncollected_object(monkeypatch):
+    state={'available':True,'casting':False,'artifact_visible':False,'can_survey':True,
+        'survey_ready':True,'telescope':{'color':'green'},'guide_arrived':True,
+        'pickup':{'uncollected':True}}
+    def choose(_,instructions,options):
+        assert 'loot' in options and 'survey' not in options
+        assert 'forward_short' not in options and 'forward_long' not in options
+        return 'loot',{},{}
+    monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
+    assert dig_decisions.choose(state)[0]=='loot'
