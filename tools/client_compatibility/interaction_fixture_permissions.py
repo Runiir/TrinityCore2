@@ -13,7 +13,7 @@ def permission_rows(account,permission):
 @contextmanager
 def fixture_permission(trial,permission):
     # Exact native RBAC command permissions only; no administrative role.
-    if permission not in [488,554,605]:raise ValueError('unsupported disposable inventory/money/quest fixture permission')
+    if permission not in [417,429,488,554,605]:raise ValueError('unsupported disposable fixture permission')
     account=trial.fixture['account_id']
     baseline=permission_rows(account,permission)
     if baseline:raise RuntimeError('fixture requires no pre-existing direct command permission')
