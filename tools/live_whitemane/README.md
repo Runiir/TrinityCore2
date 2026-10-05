@@ -168,6 +168,13 @@ The local-tile replay completed 100 requests with no input or server telemetry:
 steering prompt in replay and were removed. The original-head pickup-priority
 question receives the signal separately, only for confirmed or pending finds.
 
+Digging decisions include measured bearing changes and whether pickup range is
+unknown. After three consecutive turns without approach, the controller samples
+the complete, unmodified Laya action distribution. It records both the model's
+highest-scoring action and the sampled action, keeping every legal action
+available. This is exploration, not online weight training. Replay checks send
+no game input and do not establish successful pickup.
+
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay
 and relay installation. Large local screenshot copies are removed only

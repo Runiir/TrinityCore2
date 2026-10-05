@@ -16,7 +16,7 @@ def select(row, session, tool):
         tolerance=.1 if approach.get('source')=='named find forward range approach' else .5
         return {'source':'visible owned archaeology find' if find else approach.get('source','last green Survey endpoint'),
             'world':endpoint,'color':'green',
-            'distance_yards':distance,'arrived':distance<=tolerance,
+            'distance_yards':distance,'arrived':distance<=tolerance,'arrival_tolerance_yards':tolerance,
             'heading_relative_to_player':'aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'},error
     visited=session.setdefault('visited_marker_ids',[])
     target=session.get('marker_target')

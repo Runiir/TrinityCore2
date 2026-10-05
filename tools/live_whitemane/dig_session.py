@@ -16,7 +16,7 @@ from . import guide as routes
 from .smooth_move import walk
 from .motion import turn_duration
 from .boundaries import constrain
-from . import interact,pending_find,minimap_finds,farm_graph
+from . import interact,pending_find,minimap_finds,farm_graph,dig_context
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
@@ -157,15 +157,7 @@ def run(args):
                 names=('Troll Archaeology Find','Fossil Archaeology Find','Night Elf Archaeology Find',"Tol'vir Archaeology Find")
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
-            state=routes.model_state(before,guide,bool(args.loot_at) or visible_find)
-            state.update(can_survey=a['can_survey'],survey_ready=bool((ui.get('survey') or {}).get('ready')),
-                guide_source=guide['source'] if guide else None,pending_pickup=bool(value),
-                named_artifact=ui.get('soft_interact',{}).get('name'),out_of_range=bool(value and value['out_of_range']),
-                recent_outcomes=[{'action':s['action'],'outcome':s.get('outcome'),
-                    'moved_yards':round(s.get('walked_yards',0),2),'pickup_confirmed':bool(s.get('confirmed_looted_find'))}
-                    for s in session['steps'][-3:]])
-            if guide:
-                state['telescope']={k:guide[k] for k in ('color','heading_relative_to_player','distance_yards')}
+            state=dig_context.model_state(before,guide,bool(args.loot_at) or visible_find,value,session['steps'])
             if value and not visible_find and not guide:
                 action,model,request,result,state=pending_find.choose_inspection(before)
             else:
@@ -237,7 +229,7 @@ def run(args):
                     step['travel_mode']='held_waypoint_approach'
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
-                        approaching_find=finding,tolerance=1.25 if finding else None)
+                        approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else None)
                     step['inputs']=[]
                 else:
                     hold=.4 if action=='forward_short' else 1.25
