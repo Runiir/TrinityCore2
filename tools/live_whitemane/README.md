@@ -176,6 +176,14 @@ highest-scoring action and the sampled action, keeping every legal action
 available. This is exploration, not online weight training. Replay checks send
 no game input and do not establish successful pickup.
 
+Route movement holds forward and right-button mouselook through the private EI
+sender. Relative mouse yaw is calibrated against observed player facing. Flight
+pitch uses owned movement telemetry to keep the approach level. The controller
+reuses Laya's movement intent while monitoring the target, health, artifact
+appearance and Survey generation; a new Survey interrupts the old telescope
+destination. A separate `camera_forward` action aligns the camera without
+pressing forward. Lease expiry releases both movement and mouselook.
+
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay
 and relay installation. Large local screenshot copies are removed only

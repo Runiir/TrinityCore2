@@ -5,7 +5,7 @@ from .sticky_input import StickyInput
 
 def controller():
     events=[];now=[0]
-    sender=SimpleNamespace(X=SimpleNamespace(KeyPress='press',KeyRelease='release'),
+    sender=SimpleNamespace(X=SimpleNamespace(KeyPress='press',KeyRelease='release',ButtonPress='button_press',ButtonRelease='button_release'),
         XK=SimpleNamespace(string_to_keysym=lambda name:name),_keycode=lambda name:(name,None),
         _send=lambda event,key:events.append((event,key)),close=lambda:events.append(('close',None)))
     return StickyInput(sender,clock=lambda:now[0],threaded=False),events,now
@@ -28,6 +28,13 @@ def test_missing_decisions_release_all_inputs_without_waiting_for_inference():
     with pytest.raises(RuntimeError,match='expired'):sticky.renew()
     with pytest.raises(RuntimeError,match='expired'):sticky.hold('Up',True)
     sticky.close();assert events==[('press','Up'),('press','Right'),('release','Up'),('release','Right'),('close',None)]
+
+
+def test_watchdog_releases_mouselook_and_forward_together():
+    sticky,events,now=controller();sticky.hold('Up',True);sticky.button(3,True);sticky.button(3,True)
+    now[0]=.36;sticky.tick()
+    assert sticky.interrupted and not sticky.held and not sticky.buttons
+    assert events==[('press','Up'),('button_press',3),('release','Up'),('button_release',3)]
 
 
 def test_a_continuous_command_accepts_an_earlier_stop_without_resending_keydown():

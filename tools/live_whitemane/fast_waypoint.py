@@ -1,4 +1,4 @@
-"""Ten Hz Laya decisions over public addon facts, with persistent owned input."""
+"""Ten Hz public feedback with retained Laya intent and owned mouse steering."""
 import fcntl
 import json
 import math
@@ -8,14 +8,14 @@ from collections import deque
 from . import runtime, inputs, native_control, guide
 from .observe import observe
 from .decisions import choose
-from .motion import turn_duration
+from .camera_steering import CameraSteering
 from .boundaries import check_point
 from .sticky_input import StickyInput
 from tools.client_compatibility import travel_policy
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
-def decision(row,target,distance,error,flying,site_id,tolerance,*,approaching_find=False):
+def decision(row,target,distance,error,flying,site_id,tolerance,*,approaching_find=False,guidance=None):
     m,a=row['movement'],row['archaeology']
     direction='aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'
     if site_id is not None and not flying:
@@ -25,15 +25,21 @@ def decision(row,target,distance,error,flying,site_id,tolerance,*,approaching_fi
         named=(row.get('farm_ui') or {}).get('soft_interact',{}).get('name') in FIND_NAMES
         artifact=in_range(row) if row.get('visible_find') else named and not approaching_find
         state=guide.model_state(row,waypoint,artifact)
+        state['guidance_source']=(guidance or {}).get('source','selected waypoint')
+        state['Survey_generation']=a.get('successful_surveys')
         return choose(state)
     flags={'mode':'flight' if flying else 'portal','available':True,'casting':a['casting'],
         'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],'falling':a['falling'],
         'at_route_height':flying,'near_destination':distance<=tolerance,
         'destination_reached':distance<=tolerance,'taxi_map_open':False}
-    return choose(travel_policy.model_state(flags),'travel',physical_state=flags)
+    state=travel_policy.model_state(flags)
+    state['guidance']={'source':(guidance or {}).get('source','selected waypoint'),
+        'distance_yards':round(distance,2),'bearing_error_degrees':round(math.degrees(error),1),
+        'Survey_generation':a.get('successful_surveys')}
+    return choose(state,'travel',physical_state=flags)
 
 
-def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False):
+def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False,guidance=None):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from .smooth_move import GroundContact
@@ -42,13 +48,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
     tolerance=(6 if flying else 4) if tolerance is None else tolerance
     from .resources import DEFAULTS,limits,check
     check()
-    receipts=deque(maxlen=(limits() or DEFAULTS)['movement_history']);started=time.time();turns=[]
+    receipts=deque(maxlen=(limits() or DEFAULTS)['movement_history']);started=time.time()
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
+        from .camera_input import Input
+        identity=inputs.focus('World of Warcraft');sender=Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
         previous=None;deadline=None;index=0;decision_count=0;last_pulse=None
         sample_periods=deque(maxlen=8);last_sample=None
+        steering=CameraSteering();current_decision=None;look_sequence=None
+        pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
+        survey_generation=None;artifact_before=None
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
@@ -77,16 +87,32 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if deadline is None:deadline=cycle+10+3*distance/speed
                 if cycle>deadline:raise RuntimeError('continuous waypoint exceeded its calculated emergency bound')
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
-                action,model,request,response=decision(row,target,distance,error,flying,site_id,tolerance,
-                    approaching_find=approaching_find)
+                if survey_generation is None:survey_generation=a.get('successful_surveys')
+                elif a.get('successful_surveys')!=survey_generation:
+                    raise RuntimeError('new Survey replaced the active telescope route')
+                artifact=(row.get('farm_ui') or {}).get('soft_interact',{}).get('name') in FIND_NAMES
+                changed_artifact=artifact_before is not None and artifact!=artifact_before
+                artifact_before=artifact
+                if distance<=tolerance:
+                    receipts.append({'observed_at':row['observed_at'],'distance_yards':distance,
+                        'heading_error':error,'outcome':'waypoint_arrived','model_decision_reused':True})
+                    return list(receipts)
+                new_decision=current_decision is None or changed_artifact
+                if new_decision:
+                    sticky.hold('Up',False)
+                    current_decision=decision(row,target,distance,error,flying,site_id,tolerance,
+                        approaching_find=approaching_find,guidance=guidance)
+                    decision_count+=1
+                action,model,request,response=current_decision
                 receipt={'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,
                     'altitude_yards':a.get('altitude_yards'),'grounded':a['grounded'],
                     'model':model,'request':request,'response':response,'action':action,
-                    'channel_ages':row['channel_ages']}
+                    'channel_ages':row['channel_ages'],'model_decision_reused':not new_decision,
+                    'guidance_source':(guidance or {}).get('source','selected waypoint')}
                 receipts.append(receipt)
-                decision_count+=1
-                with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
-                if distance<=tolerance or action in ('survey','loot','arrived','land'):return list(receipts)
+                if new_decision:
+                    with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
+                if action in ('survey','loot','arrived','land'):return list(receipts)
                 if action not in ('forward_short','forward_long','turn_left','turn_right','cruise','portal'):
                     raise RuntimeError('Laya interrupted continuous waypoint movement with '+action)
                 sticky.renew()
@@ -94,16 +120,30 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 elif 'Up' in sticky.held and cycle-last_progress>2:
                     raise RuntimeError('continuous waypoint movement is blocked')
                 previous=distance
-                if abs(error)>.18:
+                if look_sequence is None:
+                    sender.move(640,350);sticky.button(3,True);look_sequence=m['sequence']
+                    index+=1;time.sleep(.1);continue
+                if m['sequence']<=look_sequence:continue
+                pixels,receipt['camera_steering']=steering.update(m['facing_radians'],m['client_uptime_ms'],
+                    error,distance,tolerance)
+                vertical=0;pitch_ready=True
+                if flying:
+                    pose=row.get('owned_pose');pitch_ready=False
+                    if pose and pose.get('pitch_radians') is not None:
+                        pitch=pose['pitch_radians']
+                        vertical,receipt['pitch_steering']=pitch_steering.update(pitch,pose['client_uptime_ms'],
+                            -pitch,distance,4)
+                        pitch_ready=abs(pitch)<=.03
+                if pixels or vertical:sticky.relative(pixels,vertical)
+                # Forward motion remains productive throughout a correcting
+                # arc while facing into the destination's half-plane.
+                if abs(error)>=math.pi/2 or not pitch_ready:
                     sticky.hold('Up',False)
-                    duration,receipt['turn_calibration']=turn_duration(error,turns)
-                    sticky.hold('Left',error>0,duration);sticky.hold('Right',error<0,duration)
                 else:
-                    sticky.hold('Left',False);sticky.hold('Right',False)
                     # Predict the travel during the measured feed delay. Near
                     # arrival, a calculated pulse ends independently of the
                     # next observation or model request.
-                    age=row['channel_ages']['M']
+                    age=max(row['channel_ages']['M'],row['channel_ages'].get('A',0))
                     remaining=(distance-tolerance-m['speed']*age)/speed
                     # A pulse shorter than one observed client update can be
                     # pressed and released without the game seeing movement.
@@ -125,4 +165,6 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
             sticky.close()
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
-                'transport':row['source'],'decision_period_seconds':.1,'input_lease_seconds':sticky.lease})
+                'transport':row['source'],'decision_period_seconds':.1,'input_lease_seconds':sticky.lease,
+                'steering':'right_button_relative_mouselook','yaw_samples':list(steering.samples),
+                'pitch_samples':list(pitch_steering.samples)})

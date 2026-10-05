@@ -5,7 +5,7 @@ import time
 
 class StickyInput:
     def __init__(self,sender,*,lease=.35,clock=time.monotonic,threaded=True):
-        self.sender=sender;self.lease=lease;self.clock=clock;self.held={}
+        self.sender=sender;self.lease=lease;self.clock=clock;self.held={};self.buttons=set()
         self.deadline=clock()+lease;self.interrupted=None;self.lock=threading.RLock()
         self.stop=threading.Event();self.worker=None
         if threaded:
@@ -19,6 +19,19 @@ class StickyInput:
         with self.lock:
             if self.interrupted:raise RuntimeError(self.interrupted)
             self.deadline=self.clock()+self.lease
+
+    def button(self, button, on):
+        with self.lock:
+            if on and self.interrupted:raise RuntimeError(self.interrupted)
+            if on and button not in self.buttons:
+                self.sender._send(self.sender.X.ButtonPress,button);self.buttons.add(button)
+            elif not on and button in self.buttons:
+                self.sender._send(self.sender.X.ButtonRelease,button);self.buttons.remove(button)
+
+    def relative(self, dx, dy=0):
+        with self.lock:
+            if self.interrupted:raise RuntimeError(self.interrupted)
+            self.sender.relative(dx,dy)
 
     def hold(self,name,on,seconds=None):
         with self.lock:
@@ -37,6 +50,7 @@ class StickyInput:
             if now>=self.deadline:
                 self.interrupted='movement decision lease expired'
                 for name in list(self.held):self.hold(name,False)
+                for button in list(self.buttons):self.button(button,False)
             else:
                 for name,deadline in list(self.held.items()):
                     if deadline is not None and now>=deadline:self.hold(name,False)
@@ -53,4 +67,5 @@ class StickyInput:
         try:
             with self.lock:
                 for name in list(self.held):self.hold(name,False)
+                for button in list(self.buttons):self.button(button,False)
         finally:self.sender.close()

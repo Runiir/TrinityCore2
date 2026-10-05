@@ -14,7 +14,6 @@ from .flight import fly
 from .dig_decisions import choose
 from . import guide as routes
 from .smooth_move import walk
-from .motion import turn_duration
 from .boundaries import constrain
 from . import interact,pending_find,minimap_finds,farm_graph,dig_context
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
@@ -210,9 +209,13 @@ def run(args):
                     {'x':640,'y':350,'button':8})]
                 time.sleep(2)
             elif action in ('turn_left','turn_right'):
-                hold,step['turn_calibration']=turn_duration(error,session.get('turn_history',[])+session['steps'][:-1])
-                step['inputs']=[inputs.execute('World of Warcraft','key',
-                    {'key':'Left' if action=='turn_left' else 'Right','hold':hold})]
+                from .camera_navigation import align
+                step['camera_alignment']=align(folder/'camera',before,guide['world'])
+                step['inputs']=[]
+            elif action=='camera_forward':
+                from .camera_navigation import align
+                step['camera_alignment']=align(folder/'camera',before)
+                step['inputs']=[]
             elif action in ('forward_short','forward_long'):
                 if not guide: raise RuntimeError('movement requires a selected addon guide')
                 if guide['source']=='named find forward range approach':
@@ -223,6 +226,8 @@ def run(args):
                     hold=max(.05,min(1.25,guide['distance_yards']/speed))
                     step['travel_mode']='measured_pickup_range_step'
                     step['calculated_walk_seconds']=hold
+                    from .camera_navigation import align
+                    step['camera_alignment']=align(folder/'camera',fresh,guide['world'])
                     step['inputs']=[inputs.execute('World of Warcraft','key',{'key':'Up','hold':hold})]
                     # This endpoint represents a measured probe distance. On
                     # completion, interact again even if the map overshot it.
@@ -240,12 +245,14 @@ def run(args):
                     step['travel_mode']='held_waypoint_approach'
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
-                        approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else None)
+                        approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else None,
+                        guidance=guide)
                     step['inputs']=[]
                 else:
-                    hold=.4 if action=='forward_short' else 1.25
-                    step['travel_mode']='green_small_steps' if action=='forward_short' else 'yellow_approach'
-                    step['inputs']=[inputs.execute('World of Warcraft','key',{'key':'Up','hold':hold})]
+                    step['travel_mode']='green_telescope_approach'
+                    step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
+                        tolerance=guide.get('arrival_tolerance_yards',.5),guidance=guide)
+                    step['inputs']=[]
                 session['walked_since_survey']=True
                 if guide['source']=='Survey telescope' and guide['color']=='green':
                     session['last_green_endpoint']={'world':guide['world']}

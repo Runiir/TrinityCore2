@@ -37,6 +37,10 @@ RETRYABLE=(
     'Laya interrupted continuous waypoint movement',
     'character unavailable for this walking trial',
     'Survey is still on cooldown',
+    'new Survey replaced the active telescope route',
+    'camera steering did not produce observed yaw',
+    'camera view did not reach forward alignment',
+    'minimap tooltip observation did not follow the cursor',
 )
 
 

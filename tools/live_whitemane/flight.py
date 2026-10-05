@@ -72,7 +72,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             phase['height_basis']='calculated reference corridor clearance and authenticated owned climb feedback'
         elif action=='cruise':
             try:
-                phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'))
+                phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'),guidance=arrow)
             except GroundContact as contact:
                 landed=contact.observation['archaeology']['world']
                 contacts.append(landed)
