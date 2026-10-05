@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791160510.9831436,
+  "reviewed_at": 1791161562.2029366,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -3861,6 +3861,51 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui68/achievement_link_visual_review.json",
           "sha256": "b3cd65fb5eb87878be135f2d984e0090f524155e19f48f47856f958c0941f0d0"
+        }
+      ]
+    },
+    {
+      "id": "owned_exact_whisper_reply",
+      "operations": [
+        "chat.reply"
+      ],
+      "scope": "Fresh whole-pass reply_chat04 receives the exact owned scout seed whisper, uses the observed stock Chat Reply binding, verifies focus and the full Harnesstwo-Client442Lab target, waits for the complete exact marker and submits one reply. Actual pending/outgoing/incoming frames reviewed. Native incoming sender GUIDs2/1 and recipient confirmation GUIDs1/2, native/public deliveries and ordinary requests all pass. Both actors restore all10 native/public checks.",
+      "limits": "Two owned solo actors on the private realm only. Other senders/realms/permissions, re-whisper, links and other chat families remain open. Failed bare-name, GUID-role and immediate-text-read trials remain excluded with both actors restored; no input or submission replay during settling.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_chat04/cohort.json",
+          "sha256": "3c4286e9b6bf94ebcefa6a11be04f946f3ede0050dc4baf797a4e18440e863b9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_chat04/primary/episode.json",
+          "sha256": "f6a23e19af9dda9ef480ec6d92ef23d4cfd66b9e465fb092d8cca5a65a9b7d91"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_chat04/scout/episode.json",
+          "sha256": "e0b682ddc3840432a5e1e84b5ec1d478210bae2fde0fa8870291b82fc73c42dc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_visual_review.json",
+          "sha256": "071e4bca98ab9534cab6fd84cf212b00a34f07a3e9c24e32367d7fa06143b6e4"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_target_failure_review.json",
+          "sha256": "45bfe33c969b63b8d74ef90bced45b0c54bb232338098afa903e7e60cb5b8550"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_guid_oracle_failure_review.json",
+          "sha256": "77fda9dad620f50a4ebdc809eea0e4509110ab3db4314f7b21fce93e48e71492"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui69/reply_text_settling_failure_review.json",
+          "sha256": "d976330bcfca1fddff8ac0059de224bbf1a5d48ed93f529559b0a5f57bcf05c0"
         }
       ]
     }

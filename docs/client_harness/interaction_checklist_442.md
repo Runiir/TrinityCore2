@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 364 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 365 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -438,7 +438,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.say` (qualified variant; [evidence](#chat))
 - [x] `chat.yell` (qualified variant; [evidence](#chat))
 - [x] `chat.whisper` (qualified variant; [evidence](#chat))
-- [ ] `chat.reply`
+- [x] `chat.reply` (qualified variant; [evidence](#owned_exact_whisper_reply))
 - [x] `chat.party` (qualified variant; [evidence](#owned_party_chat))
 - [x] `chat.raid` (qualified variant; [evidence](#chat))
 - [x] `chat.raid_warning` (qualified variant; [evidence](#chat))
@@ -2437,3 +2437,17 @@ Remaining limits: Owned achievement2536 only. Other achievements/actors, deliver
 
 - [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/achievement_link01/episode.json`, SHA-256 `aa926e1a864bb215ab1a68d92ac9f80f0c40e0a12303e1e152d18130c661e4d8`.
 - [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/achievement_link_visual_review.json`, SHA-256 `b3cd65fb5eb87878be135f2d984e0090f524155e19f48f47856f958c0941f0d0`.
+
+### owned_exact_whisper_reply
+
+Fresh whole-pass reply_chat04 receives the exact owned scout seed whisper, uses the observed stock Chat Reply binding, verifies focus and the full Harnesstwo-Client442Lab target, waits for the complete exact marker and submits one reply. Actual pending/outgoing/incoming frames reviewed. Native incoming sender GUIDs2/1 and recipient confirmation GUIDs1/2, native/public deliveries and ordinary requests all pass. Both actors restore all10 native/public checks.
+
+Remaining limits: Two owned solo actors on the private realm only. Other senders/realms/permissions, re-whisper, links and other chat families remain open. Failed bare-name, GUID-role and immediate-text-read trials remain excluded with both actors restored; no input or submission replay during settling.
+
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_chat04/cohort.json`, SHA-256 `3c4286e9b6bf94ebcefa6a11be04f946f3ede0050dc4baf797a4e18440e863b9`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_chat04/primary/episode.json`, SHA-256 `f6a23e19af9dda9ef480ec6d92ef23d4cfd66b9e465fb092d8cca5a65a9b7d91`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_chat04/scout/episode.json`, SHA-256 `e0b682ddc3840432a5e1e84b5ec1d478210bae2fde0fa8870291b82fc73c42dc`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_visual_review.json`, SHA-256 `071e4bca98ab9534cab6fd84cf212b00a34f07a3e9c24e32367d7fa06143b6e4`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_target_failure_review.json`, SHA-256 `45bfe33c969b63b8d74ef90bced45b0c54bb232338098afa903e7e60cb5b8550`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_guid_oracle_failure_review.json`, SHA-256 `77fda9dad620f50a4ebdc809eea0e4509110ab3db4314f7b21fce93e48e71492`.
+- [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_text_settling_failure_review.json`, SHA-256 `d976330bcfca1fddff8ac0059de224bbf1a5d48ed93f529559b0a5f57bcf05c0`.
