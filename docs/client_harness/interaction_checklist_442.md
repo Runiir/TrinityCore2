@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 400 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 403 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -755,9 +755,9 @@ Fixture: `saved_local_settings`.
 - [x] `settings.open` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.close` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.graphics` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
-- [ ] `settings.resolution`
-- [ ] `settings.window_mode`
-- [ ] `settings.monitor_selection`
+- [x] `settings.resolution` (qualified variant; [evidence](#owned_pending_display_selection_discard))
+- [x] `settings.window_mode` (qualified variant; [evidence](#owned_pending_display_selection_discard))
+- [x] `settings.monitor_selection` (qualified variant; [evidence](#owned_pending_display_selection_discard))
 - [x] `settings.render_scale` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
 - [x] `settings.quality` (qualified variant; [evidence](#owned_pending_graphics_quality_discard))
 - [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
@@ -2770,3 +2770,14 @@ Remaining limits: Pending lower base-quality selection/discard only. Applied pre
 - [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_pending01/episode.json`, SHA-256 `fb3e2b87845d9c436ede30f209122bdbc0187b063665833fe806f94368fbf76b`.
 - [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_whole_review.json`, SHA-256 `eda9892d2411bc56ae0cd7915658d713e887f515bf9b8bc6c79472cda36fa92b`.
 - [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_source_review.json`, SHA-256 `2aca2930757f08ecef9b853f7387efb5fa23410caa43063b65d1ece7ca21e5bc`.
+
+### owned_pending_display_selection_discard
+
+Owned primary observer119: one stock stepper per pending display setting selects Resolution1280x720-to1152x720, Windowed-toWindowed(Fullscreen), and private nested Monitor0-to1(Generic Non-PnP Monitor). Each ordinary Close and exact Exit discards before Apply. All observed active CVars and actual C_VideoOptions window1280x720 remain fixed, logical screen metrics remain unchanged, all other proxies preserve the baseline, and owned physical geometry stays onHDMI-1. Each pending case passes7 checks, each discard restoration passes6, and final display4/layout5/native10 checks restore. Six reviewed images include the three selectors, exit confirmation, reopened Controls category and closed world HUD.
+
+Remaining limits: Pending selections and stock discard only. Applying display changes, other options, full client restart/persistence, allocation/performance and physical-monitor switching remain open. Private Primary/Monitor labels do not identify the physical host monitor. Reopened restoration capture shows Controls; its encoded probe proves original display values. All174 focused and1484 full protocol tests pass. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261005_96.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc), member `evidence/client_interactions_20261005_ui96/display_pending01/episode.json`, SHA-256 `f0fb8be8f978f49ad12de41de7953a736056445a2d510840f39fa386b0913ef2`.
+  Checked cases: `settings.resolution.pending` (stock_pending_display_selection_pass), `settings.window_mode.pending` (stock_pending_display_selection_pass), `settings.monitor_selection.pending` (stock_pending_display_selection_pass).
+- [442_interactions_20261005_96.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc), member `evidence/client_interactions_20261005_ui96/display_whole_review.json`, SHA-256 `faa50bdb7d01947f9b20851723e1251ede230b224a9b291f482025210fc1ec4a`.
+- [442_interactions_20261005_96.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc), member `evidence/client_interactions_20261005_ui96/display_source_review.json`, SHA-256 `85452412f9340a4adb19132a180a6becdb01516d99ecad81b2c46d52492fa212`.

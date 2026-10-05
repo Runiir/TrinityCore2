@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": "2026-10-05",
+  "reviewed_at": 1791232950.4851441,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -4806,6 +4806,38 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui95/quality_source_review.json",
           "sha256": "2aca2930757f08ecef9b853f7387efb5fa23410caa43063b65d1ece7ca21e5bc"
+        }
+      ]
+    },
+    {
+      "id": "owned_pending_display_selection_discard",
+      "operations": [
+        "settings.resolution",
+        "settings.window_mode",
+        "settings.monitor_selection"
+      ],
+      "scope": "Owned primary observer119: one stock stepper per pending display setting selects Resolution1280x720-to1152x720, Windowed-toWindowed(Fullscreen), and private nested Monitor0-to1(Generic Non-PnP Monitor). Each ordinary Close and exact Exit discards before Apply. All observed active CVars and actual C_VideoOptions window1280x720 remain fixed, logical screen metrics remain unchanged, all other proxies preserve the baseline, and owned physical geometry stays onHDMI-1. Each pending case passes7 checks, each discard restoration passes6, and final display4/layout5/native10 checks restore. Six reviewed images include the three selectors, exit confirmation, reopened Controls category and closed world HUD.",
+      "limits": "Pending selections and stock discard only. Applying display changes, other options, full client restart/persistence, allocation/performance and physical-monitor switching remain open. Private Primary/Monitor labels do not identify the physical host monitor. Reopened restoration capture shows Controls; its encoded probe proves original display values. All174 focused and1484 full protocol tests pass. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui96/display_pending01/episode.json",
+          "sha256": "f0fb8be8f978f49ad12de41de7953a736056445a2d510840f39fa386b0913ef2",
+          "cases": {
+            "settings.resolution.pending": "stock_pending_display_selection_pass",
+            "settings.window_mode.pending": "stock_pending_display_selection_pass",
+            "settings.monitor_selection.pending": "stock_pending_display_selection_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui96/display_whole_review.json",
+          "sha256": "faa50bdb7d01947f9b20851723e1251ede230b224a9b291f482025210fc1ec4a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui96/display_source_review.json",
+          "sha256": "85452412f9340a4adb19132a180a6becdb01516d99ecad81b2c46d52492fa212"
         }
       ]
     }
