@@ -6,6 +6,7 @@ if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
     status.register_result=ok and tostring(result) or 'registration error'
 end
 function WhitemaneLiveRelayStatus()return status end
+function WhitemaneLiveRelayError(value)status.last_error=tostring(value):sub(1,160) end
 local alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local function base64(value)
     local result={}

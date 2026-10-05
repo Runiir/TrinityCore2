@@ -97,7 +97,10 @@ local function sample()
     status:SetText("Live observer: " .. (call(UnitName, "player") or "unavailable"))
 end
 panel:SetScript("OnUpdate", function(_, delta)
-    if WhitemaneLiveRelayPump then WhitemaneLiveRelayPump(delta) end
+    if WhitemaneLiveRelayPump then
+        local ok,error=pcall(WhitemaneLiveRelayPump,delta)
+        if not ok and WhitemaneLiveRelayError then WhitemaneLiveRelayError(error) end
+    end
     elapsed = elapsed + delta
     if elapsed >= 0.1 then elapsed = elapsed%0.1; sample() end
 end)

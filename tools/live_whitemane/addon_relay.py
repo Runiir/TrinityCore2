@@ -36,7 +36,9 @@ def targeted(payload,player=None):
     name=r.raw(name_size).rstrip(b'\0') if name_size>1 else b''
     channel_name=r.raw(channel_size).rstrip(b'\0') if channel_size>1 else b''
     r.end()
-    if channel!=(0,0) or channel_name or name.split(b'-')[0]!=b'Runiir':
+    named_self=name.split(b'-')[0]==b'Runiir'
+    guid_self=player is not None and recipient==player
+    if channel!=(0,0) or channel_name or (name and not named_self) or not (named_self or guid_self):
         raise ValueError('relay is not self-addressed to Runiir')
     if recipient!=(0,0) and (player is None or recipient!=player):
         raise ValueError('relay recipient is not the owned character')

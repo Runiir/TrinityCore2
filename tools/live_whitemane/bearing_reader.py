@@ -1,5 +1,6 @@
 """Passive bearings from one live client; stop on 30 minutes of gameplay inactivity."""
 import fcntl
+import hashlib
 import importlib.util
 import json
 import os
@@ -95,6 +96,8 @@ def main():
     movement_opcodes={opcode_table[name] for name in movement.SUPPORTED}
     movement_opcodes.add(opcode_table['CMSG_MOVE_SET_FACING_HEARTBEAT'])
     mailbox.clear();relay=addon_relay.Assembler()
+    relay_file=Path(addon_relay.__file__);relay_hash=hashlib.sha256(relay_file.read_bytes()).hexdigest()
+    session['addon_decoder_sha256']=relay_hash
     try:
         library = reader.crypto.load_native(runtime)
         keys, scanned, _, limited = reader.crypto.schedules(library, scope['game_pid'], 4096, 45)
@@ -133,7 +136,10 @@ def main():
             activity = False
             try:
                 if direction == 'client_to_server':
+                    counts=session.setdefault('outbound_opcode_counts',{})
+                    if str(opcode) in counts or len(counts)<128:counts[str(opcode)]=counts.get(str(opcode),0)+1
                     if opcode==opcode_table['CMSG_CHAT_ADDON_MESSAGE_TARGETED']:
+                        session['relay_targeted_frames']=session.get('relay_targeted_frames',0)+1
                         message=addon_relay.targeted(payload,window.player)
                         if message is not None and relay.packet(message,stamp):
                             write(ROOT/'run/addon_state.json',relay.state(scope['runtime'],session))
@@ -152,8 +158,11 @@ def main():
                             session['height_samples']=session.get('height_samples',0)+1
                     elif opcode == 0x340155:
                         activity = bool(reader.spell_request(payload))
-            except (ValueError, struct.error, IndexError):
-                pass
+            except (ValueError, struct.error, IndexError) as error:
+                if opcode==opcode_table['CMSG_CHAT_ADDON_MESSAGE_TARGETED']:
+                    # Layout diagnostics contain no prefix payload or chat.
+                    counts=session.setdefault('relay_rejections',{});reason=str(error)[:120]
+                    if reason in counts or len(counts)<16:counts[reason]=counts.get(reason,0)+1
             if activity:
                 last_activity = time.monotonic()
                 session['last_gameplay_activity_at'] = stamp
@@ -161,6 +170,10 @@ def main():
             validate(scope)
             window.expire(time.time())
             if time.monotonic() - heartbeat >= 2:
+                candidate_hash=hashlib.sha256(relay_file.read_bytes()).hexdigest()
+                if candidate_hash!=relay_hash:
+                    importlib.reload(addon_relay);relay_hash=candidate_hash
+                    session['addon_decoder_sha256']=relay_hash
                 owned_ports=owned_sockets.ports(scope['game_pid'])
                 if not owned_ports:raise RuntimeError('owned world socket closed')
                 session['idle_seconds'] = round(time.monotonic() - last_activity, 1)

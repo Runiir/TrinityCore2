@@ -36,6 +36,7 @@ def test_only_own_unlogged_addon_prefix_and_recipient_are_decoded():
     assert relay.targeted(targeted(b'M|1|1|1|a'))=='M|1|1|1|a'
     assert relay.targeted(targeted(b'ignored',prefix=b'Other')) is None
     assert relay.targeted(targeted(b'own',recipient=(7,8)),(7,8))=='own'
+    assert relay.targeted(targeted(b'own',name=b'',recipient=(7,8)),(7,8))=='own'
     for changes in ({'name':b'Other\0'},{'recipient':(9,10)},{'logged':1}):
         with pytest.raises(ValueError):relay.targeted(targeted(b'own',**changes),(7,8))
 
