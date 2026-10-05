@@ -85,7 +85,7 @@ def run(args):
             a,m=before['archaeology'],before['movement']
             auto_loot=getattr(args,'auto_loot',False)
             ui=before.get('farm_ui') or {}
-            visible_find=(ui.get('soft_interact',{}).get('name') in FIND_NAMES or
+            visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             session.setdefault('site_id',a['site_id'])
             if not args.loot_at and not visible_find and (not a['can_survey'] or a['site_id'] != session['site_id']):
@@ -123,7 +123,7 @@ def run(args):
             runtime.write(path,session)
             fresh=observe(folder/'precheck.png')
             if (not healthy(fresh) or fresh['runtime']!=before['runtime']
-                    or fresh['movement']['sequence']==m['sequence']
+                    or (fresh['source']=='normal_public_addon_api_rendered_pixels' and fresh['movement']['sequence']==m['sequence'])
                     or distance(a['world'],fresh['archaeology']['world'])>.15
                     or abs((fresh['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.03
                     or fresh['archaeology']['casting']):
@@ -162,7 +162,20 @@ def run(args):
                     session.pop('telescope_target',None)
             elif action=='loot':
                 if auto_loot:
-                    step['interaction']=interact.use(folder/'interaction',fresh,set(FIND_NAMES))
+                    if not fresh['archaeology']['loot_open']:
+                        step['interaction']=interact.use(folder/'interaction',fresh,set(FIND_NAMES))
+                    # An interact can open the normal loot window while auto
+                    # loot is disabled. Laya chooses each visible loot button.
+                    from .farm_actions import click_choice
+                    for slot in range(8):
+                        loot=observe(folder/f'loot_{slot:02d}.png')
+                        if not loot['archaeology']['loot_open']:break
+                        if not (loot.get('farm_ui') or {}).get('loot'):
+                            time.sleep(.2);continue
+                        selected=click_choice(folder/f'loot_choice_{slot:02d}',loot,['loot'],
+                            'Collect the archaeology fragments or items in the open loot window')
+                        step.setdefault('loot_choices',[]).append(selected)
+                        if not selected['executed']:break
                     step['inputs']=[]
                 else:
                     x,y=args.loot_at
@@ -186,7 +199,7 @@ def run(args):
                 if not fresh_tool and not auto_loot:session['stop_reason']='survey_without_telescope_review_visible_find'
                 routes.marker_survey_outcome(session,guide,fresh_tool,not fresh_tool)
             if action=='loot':
-                if not found: raise RuntimeError('right click did not confirm fragment pickup')
+                if not found: raise RuntimeError('artifact interaction did not confirm fragment pickup')
                 args.loot_at=None
                 routes.pickup(session)
                 session['observed_find_count']=after['archaeology']['looted_finds']

@@ -9,6 +9,24 @@ from . import runtime
 from .snapshot import decode_image as archaeology_image
 from . import own_pose
 from . import farm_ui
+from . import addon_relay
+
+
+def attach_pose(row):
+    pose_file=runtime.ROOT/'run/movement_pose.json'
+    if pose_file.exists():
+        try:
+            pose=json.loads(pose_file.read_text())
+            feed=json.loads((runtime.ROOT/'run/bearing_reader.json').read_text())
+            if (feed['status']=='ready' and feed['pid']==pose['reader_pid']
+                    and feed['start_ticks']==pose['reader_start_ticks']
+                    and runtime.proc_start(feed['pid'])==feed['start_ticks']):
+                row['owned_pose']=own_pose.match(row,pose,now=time.time())
+        except (ValueError,KeyError,FileNotFoundError,ProcessLookupError):pass
+    if row['owned_pose']:
+        row['archaeology']['altitude_yards']=row['owned_pose']['height_yards']
+        row['archaeology']['altitude_source']=row['owned_pose']['source']
+    return row
 
 
 def observe(output):
@@ -16,6 +34,15 @@ def observe(output):
     owner = runtime.owned_process()
     if not owner:
         raise RuntimeError('live client is absent')
+    mode=runtime.ROOT/'run/observation_mode.json'
+    direct_required=mode.exists() and json.loads(mode.read_text()).get('transport')=='addon_relay'
+    if direct_required:
+        # The loop never silently falls back to expensive or unavailable pixels.
+        try:row=addon_relay.observation(owner,runtime.ROOT)
+        except (ValueError,KeyError,FileNotFoundError) as error:
+            raise RuntimeError('direct public addon feed unavailable: '+str(error)) from error
+        attach_pose(row);runtime.write(output.with_suffix('.json'),row)
+        return row
     errors = []
     calibration_file = runtime.ROOT / 'run/observer_calibration.json'
     calibration = json.loads(calibration_file.read_text()) if calibration_file.exists() else {'x': 16, 'y': 16, 'cell_size': 4}
@@ -50,21 +77,7 @@ def observe(output):
                    'frame': str(output), 'server': 'Whitemane live realm',
                    'source': 'normal_public_addon_api_rendered_pixels', 'calibration': calibration,
                    'archaeology': archaeology, 'farm_ui': ui,'farm_ui_error':ui_error}
-            pose_file=runtime.ROOT/'run/movement_pose.json'
-            row['owned_pose']=None
-            if pose_file.exists():
-                try:
-                    pose=json.loads(pose_file.read_text())
-                    feed=json.loads((runtime.ROOT/'run/bearing_reader.json').read_text())
-                    if (feed['status']=='ready' and feed['pid']==pose['reader_pid']
-                            and feed['start_ticks']==pose['reader_start_ticks']
-                            and runtime.proc_start(feed['pid'])==feed['start_ticks']):
-                        row['owned_pose']=own_pose.match(row,pose,now=time.time())
-                except (ValueError,KeyError,FileNotFoundError,ProcessLookupError):
-                    pass
-            if row['owned_pose']:
-                archaeology['altitude_yards']=row['owned_pose']['height_yards']
-                archaeology['altitude_source']=row['owned_pose']['source']
+            attach_pose(row)
             runtime.write(output.with_suffix('.json'), row)
             return row
         except ValueError as error:

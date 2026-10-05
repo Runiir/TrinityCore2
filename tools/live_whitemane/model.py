@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import threading
 import time
+import copy
 
 
 def serve(args):
@@ -13,7 +14,10 @@ def serve(args):
     from safetensors.torch import load_file
     from laya.common import build_sequence, render_options, serialize_state
     from tools.client_compatibility import archaeology_policy, travel_policy
-    agent, _ = archaeology_policy.load_adapter(args.adapter)
+    agent = archaeology_policy.base_agent()
+    base_weights={k:v.detach().cpu().clone() for k,v in agent.model.state_dict().items() if not k.startswith('encoder.')}
+    base_temperature=copy.deepcopy(agent.temperature)
+    base_options=copy.deepcopy(agent.temperature_by_options)
     heads = {}
     for name, path, policy in [('archaeology',args.adapter,archaeology_policy),
                                ('travel',args.travel_adapter,travel_policy)]:
@@ -24,16 +28,56 @@ def serve(args):
                 or any(k.startswith('encoder.') for k in weights)):
             raise RuntimeError('unverified or encoder-changing Laya head')
         heads[name]={'metadata':metadata,'weights':weights,'policy':policy}
-    app=FastAPI(); lock=threading.Lock(); active='archaeology'
+    app=FastAPI(); lock=threading.Lock(); active='base_ui'
+    def activate(name):
+        nonlocal active
+        if active!=name:
+            weights=base_weights if name=='base_ui' else heads[name]['weights']
+            loaded=agent.model.load_state_dict(weights,strict=False)
+            if loaded.unexpected_keys or any(not k.startswith('encoder.') for k in loaded.missing_keys):
+                raise RuntimeError('incomplete Laya decision head')
+            active=name
+        agent.temperature=base_temperature if name=='base_ui' else [1.,1.,1.]
+        agent.temperature_by_options=base_options if name=='base_ui' else {}
     def identity(name):
         metadata=heads[name]['metadata']
         return {'model':metadata['model'],'revision':metadata['adapter_sha256'],
                 'parent_revision':metadata['parent_revision'],'policy':name,
                 'question_sha256':hashlib.sha256(json.dumps(heads[name]['policy'].question(),sort_keys=True).encode()).hexdigest()}
+    # Initialize CUDA kernels before readiness, rather than charging the first
+    # live decision for startup. This grants no input authority.
+    started=time.perf_counter()
+    for name in ('archaeology','travel','base_ui'):
+        activate(name)
+        definition=({'type':'choice','instructions':'Choose wait during service warm-up.',
+            'criteria':{'wait':'Wait without input','continue':'Continue'}} if name=='base_ui'
+            else heads[name]['policy'].question())
+        agent.predict({'warmup':True},{'action':definition})
+    warmup_seconds=time.perf_counter()-started
     @app.get('/health')
     def health():
         return {'status':'ready',**identity('archaeology'),'heads':{n:identity(n) for n in heads},
-                'device':str(agent.device),'action_authority':False,'shared_frozen_encoder':True}
+                'device':str(agent.device),'action_authority':False,'shared_frozen_encoder':True,
+                'warmup_seconds':warmup_seconds,
+                'base_ui':{'model':archaeology_policy.MODEL,'revision':archaeology_policy.REVISION,'adapter':None}}
+    @app.post('/v1/ui')
+    def ui_decide(payload:dict):
+        from .ui_choice import token_budget
+        questions=payload.get('questions',{})
+        if (payload.get('model')!=archaeology_policy.MODEL or not isinstance(payload.get('state'),dict)
+                or 'action' not in questions or set(questions)-{'action','camera'}):
+            raise HTTPException(422,'invalid original-head UI request')
+        started=time.perf_counter()
+        with lock:
+            activate('base_ui')
+            budget=token_budget(agent,payload['state'],questions)
+            if any(value['truncated_fields'] for value in budget.values()):
+                raise HTTPException(422,{'error':'truncation','token_budget':budget})
+            result=agent.predict(payload['state'],questions)
+        result.update(model=archaeology_policy.MODEL,revision=archaeology_policy.REVISION,adapter=None,
+            device=str(agent.device),action_authority=False,shared_frozen_encoder=True,
+            token_budget=budget,elapsed_sec=time.perf_counter()-started)
+        return result
     @app.post('/v1/systemone')
     def decide(payload:dict):
         nonlocal active
@@ -55,11 +99,7 @@ def serve(args):
             raise HTTPException(422,'input truncation')
         started=time.perf_counter()
         with lock:
-            if active!=name:
-                result=agent.model.load_state_dict(head['weights'],strict=False)
-                if result.unexpected_keys or any(not k.startswith('encoder.') for k in result.missing_keys):
-                    raise RuntimeError('incomplete Laya decision head')
-                active=name
+            activate(name)
             result=agent.predict(state,{'action':definition})
         result.update(**identity(name),elapsed_sec=time.perf_counter()-started,action_authority=False,
             token_budget={'action':{'input_tokens':len(sequence),'truncated_fields':[]}})

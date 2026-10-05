@@ -131,6 +131,7 @@ local function sample()
     local length = #bytes + 2
     bytes[5], bytes[6] = math.floor(length / 256), length % 256
     append(bytes,checksum(bytes),2)
+    if WhitemaneLiveRelayBytes then WhitemaneLiveRelayBytes('A',bytes) end
     for index, pixel in ipairs(pixels) do
         local byte = bytes[math.floor((index - 1) / 8) + 1] or 0
         local bit = math.floor(byte / (2 ^ (7 - ((index - 1) % 8)))) % 2

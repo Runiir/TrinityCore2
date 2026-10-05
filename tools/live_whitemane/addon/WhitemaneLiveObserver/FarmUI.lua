@@ -143,6 +143,15 @@ local function gossip()
     scan(GossipFrame,0)
     return rows
 end
+local function loot()
+    local rows={}
+    if not visible(LootFrame) then return rows end
+    for index=1,LOOTFRAME_NUMBUTTONS or 4 do
+        local button=_G['LootButton'..index]
+        append(rows,control(button,text(_G['LootButton'..index..'Text']),{slot=button and button.slot}))
+    end
+    return rows
+end
 local function snapshot()
     local tip=text(GameTooltipTextLeft1)
     local x,y=GetCursorPosition()
@@ -152,7 +161,7 @@ local function snapshot()
         keys[name]={call(GetBindingKey,name)}
     end
     return {uptime=GetTime(),route=call(WhitemaneLiveCanopicRoute),actionbars=actionbars(),flyout=flyout(),
-        journal=journal(),taxi=taxi(),gossip=gossip(),canopic=canopic(),tooltip=visible(GameTooltip) and tip or nil,
+        journal=journal(),taxi=taxi(),gossip=gossip(),loot=loot(),canopic=canopic(),tooltip=visible(GameTooltip) and tip or nil,
         cursor={x=x/(GetScreenWidth()*uiScale),y=1-y/(GetScreenHeight()*uiScale)},
         soft_interact={exists=not not call(UnitExists,"softinteract"),name=call(UnitName,"softinteract"),
                        enabled=call(GetCVar,"SoftTargetInteract")},bindings=keys,
@@ -182,9 +191,20 @@ local function number(bytes,value,width)
     for power=width-1,0,-1 do bytes[#bytes+1]=math.floor(value/256^power)%256 end
 end
 local sequence,elapsed=0,0
+local lastError
+panel:RegisterEvent('UI_ERROR_MESSAGE')
+panel:SetScript('OnEvent',function(_,_,code,message)lastError={code=code,message=clean(message),at=GetTime()} end)
 local function sample()
     sequence=(sequence+1)%4294967296
     local ok,result=pcall(snapshot)
+    if ok and WhitemaneLiveRelayUI then
+        local fast={soft_interact=result.soft_interact,tooltip=result.tooltip,
+            camera_zoom=call(GetCameraZoom),error=lastError,auto_loot=call(GetCVar,'autoLootDefault')}
+        result.uptime=nil;result.cursor=nil;result.soft_interact=nil;result.tooltip=nil
+        WhitemaneLiveRelayUI(json(result),fast,json)
+        result.uptime=GetTime();result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
+        result.camera_zoom=fast.camera_zoom;result.error=lastError
+    end
     local payload=json(ok and result or {observer_error=tostring(result):sub(1,200)})
     if #payload>capacity then payload=json({observer_error="Farm UI packet capacity exceeded",bytes=#payload}) end
     local bytes={84,67,85,51};number(bytes,#payload,2);number(bytes,sequence,4)

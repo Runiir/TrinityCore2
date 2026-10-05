@@ -1,4 +1,4 @@
--- Public API reads only. No movement, spells, targeting, or network commands.
+-- Public API reads only. No movement, spells or targeting.
 -- Uses the existing TCM1 screenshot packet; no rewrite bridge is required.
 local panel = CreateFrame("Frame", "WhitemaneLiveObserverPanel", UIParent)
 panel:SetScale(1 / UIParent:GetEffectiveScale())
@@ -20,8 +20,8 @@ status:SetText("Live observer: public movement only")
 
 local function call(fn, ...)
     if type(fn) ~= "function" then return nil end
-    local ok, a, b, c = pcall(fn, ...)
-    if ok then return a, b, c end
+    local ok, a, b, c, d = pcall(fn, ...)
+    if ok then return a, b, c, d end
 end
 local function integer(value, maximum)
     return math.max(0, math.min(maximum, math.floor(tonumber(value) or 0)))
@@ -65,6 +65,31 @@ local function sample()
     append(bytes, integer(percent, 100), 1)
     append(bytes, flags, 1)
     append(bytes, checksum(bytes), 2)
+    if WhitemaneLiveRelayBytes then
+        -- Fast public world/mode facts travel with heading. The journal and
+        -- marker packet can then update less often without delaying steering.
+        local relay={unpack(bytes)}
+        local instance,p=call(C_Map and C_Map.GetWorldPosFromMapPos,map,position)
+        local north,west;if p then north,west=p:GetXY() end
+        local mode=0
+        for _,pair in ipairs({{IsMounted,1},{IsFlying,2},{IsFalling,16},{IsSwimming,32},{CanScanResearchSite,256}}) do
+            if call(pair[1]) then mode=mode+pair[2] end
+        end
+        if call(UnitCastingInfo,'player') or call(UnitChannelInfo,'player') then mode=mode+4 end
+        if LootFrame and LootFrame:IsShown() then mode=mode+8 end
+        if instance and north and west then mode=mode+64 end
+        local _,_,height,heightInstance=call(UnitPosition,'player')
+        if type(height)=='number' and height==height and math.abs(height)<100000 and heightInstance==instance then
+            mode=mode+128
+        else height=nil end
+        relay[#relay+1]=87;relay[#relay+1]=49 -- W1 extension
+        for _,pair in ipairs({{mode,2},{instance or 0,2},{((north or 0)+100000)*100,4},
+            {((west or 0)+100000)*100,4},{((height or 0)+100000)*100,4}}) do
+            append(relay,integer(pair[1],256^pair[2]-1),pair[2])
+        end
+        append(relay,checksum(relay),2)
+        WhitemaneLiveRelayBytes('M',relay)
+    end
     for i = 1, #bytes * 8 do
         local value = math.floor(bytes[math.floor((i - 1) / 8) + 1] / (2 ^ (7 - ((i - 1) % 8)))) % 2
         pixels[i]:SetColorTexture(value, value, value, 1)
@@ -73,5 +98,5 @@ local function sample()
 end
 panel:SetScript("OnUpdate", function(_, delta)
     elapsed = elapsed + delta
-    if elapsed >= 0.2 then elapsed = 0; sample() end
+    if elapsed >= 0.1 then elapsed = elapsed%0.1; sample() end
 end)

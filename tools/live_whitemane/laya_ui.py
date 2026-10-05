@@ -1,13 +1,14 @@
 """Small UI questions using the original pinned Laya head on localhost."""
 import json
 import urllib.request
-from .ui_choice import ENDPOINT, MODEL, REVISION
+from .ui_choice import MODEL, REVISION
+ENDPOINT='http://127.0.0.1:8004'
 
 
 def choose(state,instructions,candidates):
     request={'model':MODEL,'state':state,'questions':{'action':{
         'type':'choice','instructions':instructions,'criteria':candidates}}}
-    req=urllib.request.Request(ENDPOINT+'/v1/systemone',data=json.dumps(request).encode(),
+    req=urllib.request.Request(ENDPOINT+'/v1/ui',data=json.dumps(request).encode(),
                                headers={'Content-Type':'application/json'})
     with urllib.request.urlopen(req,timeout=15) as reply:response=json.load(reply)
     action=response['answers']['action']['choice']

@@ -9,7 +9,7 @@ import signal
 import struct
 import sys
 import time
-from . import own_pose, owned_sockets
+from . import own_pose, owned_sockets, addon_relay
 from tools.client_compatibility.world import movement
 
 ROOT = Path.home() / '.local/share/trinity-whitemane-live'
@@ -94,7 +94,7 @@ def main():
     opcode_table=json.loads(Path(movement.__file__).with_name('opcodes.json').read_text())['modern']
     movement_opcodes={opcode_table[name] for name in movement.SUPPORTED}
     movement_opcodes.add(opcode_table['CMSG_MOVE_SET_FACING_HEARTBEAT'])
-    mailbox.clear()
+    mailbox.clear();relay=addon_relay.Assembler()
     try:
         library = reader.crypto.load_native(runtime)
         keys, scanned, _, limited = reader.crypto.schedules(library, scope['game_pid'], 4096, 45)
@@ -126,7 +126,12 @@ def main():
             activity = False
             try:
                 if direction == 'client_to_server':
-                    if opcode in movement_opcodes:
+                    if opcode==opcode_table['CMSG_CHAT_ADDON_MESSAGE_TARGETED']:
+                        message=addon_relay.targeted(payload,window.player)
+                        if message is not None and relay.packet(message,stamp):
+                            write(ROOT/'run/addon_state.json',relay.state(scope['runtime'],session))
+                            session['addon_updates']=session.get('addon_updates',0)+1
+                    elif opcode in movement_opcodes:
                         mover = reader.Reader(payload).guid()
                         if mover[1]>>58==2 and (window.player is None or mover==window.player):
                             window.player=mover
