@@ -7,6 +7,13 @@ from .observe import observe
 from .boundaries import check_point
 
 
+class GroundContact(RuntimeError):
+    """A flying route reached terrain; release input and ask Laya again."""
+    def __init__(self, row):
+        super().__init__('flight reached terrain')
+        self.observation = row
+
+
 def walk(folder,target,*,flying=False,site_id=None):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
@@ -30,9 +37,13 @@ def walk(folder,target,*,flying=False,site_id=None):
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                         or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<90
                         or not world or world['instance']!=target['instance']
-                        or a['flying']!=flying or a['falling'] or a.get('swimming')):
+                        or a['falling'] or a.get('swimming')):
                     raise RuntimeError('supervisor interruption or unavailable character during marker approach')
                 if site_id is not None:check_point(site_id,world)
+                if a['flying'] != flying:
+                    if flying and a['mounted'] and a['grounded']:
+                        raise GroundContact(row)
+                    raise RuntimeError('unexpected movement mode during marker approach')
                 distance=math.hypot(target['north']-world['north'],target['west']-world['west'])
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
                 receipts.append({'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,

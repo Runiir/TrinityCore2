@@ -4,12 +4,13 @@ import time
 from . import inputs, runtime
 from .observe import observe
 from .decisions import choose
-from .smooth_move import walk, descend
+from .smooth_move import walk, descend, GroundContact
 from tools.client_compatibility import travel_policy
 
 
 def fly(folder, row, arrow, step):
     receipts=[]; phases=[]; at_height=False; previous_phase=None
+    contacts=[]
     step['travel_decisions']=phases
     target=arrow['endpoint']
     def click_mount():
@@ -41,10 +42,23 @@ def fly(folder, row, arrow, step):
         if action=='mount':
             phase['inputs'].extend(click_mount());time.sleep(2.5)
         elif action=='takeoff':
-            phase['inputs'].append(key('space',1));at_height=True
+            phase['inputs'].append(key('space',2));at_height=True
             phase['height_basis']='bounded ascent then public IsFlying confirmation; absolute altitude unavailable'
         elif action=='cruise':
-            phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'))
+            try:
+                phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'))
+            except GroundContact as contact:
+                landed=contact.observation['archaeology']['world']
+                contacts.append(landed)
+                phase.update(outcome='terrain_contact_reobserve',
+                             after=contact.observation,inputs_released=True)
+                at_height=False
+                if len(contacts)>=3 and all(math.hypot(p['north']-landed['north'],p['west']-landed['west'])<3
+                                            for p in contacts[-3:]):
+                    raise RuntimeError('repeated terrain contact without route progress')
+                # The next model request sees mounted ground, remaining route
+                # distance and availability. Laya chooses takeoff or landing.
+                continue
         elif action=='land':
             phase['smooth_descent']=descend(folder,target,site_id=arrow.get('site_id'))
         elif action=='dismount':

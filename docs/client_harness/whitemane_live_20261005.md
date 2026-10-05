@@ -71,6 +71,18 @@ fresh live evidence confirms completion. Per-race 150-fragment batches with
 maximum bag keystones are specified in `dig_policy.py`; live solving and the
 cross-zone travel loop are not implemented by this dig controller.
 
+The resumed Bael Modan trial aligned to the first marker in one calculated
+turn and made a continuous flight along the authenticated, boundary-clipped
+telescope line. Its low ascent reached rising terrain before the endpoint.
+The movement controller released input and stopped; no pickup is attributed
+to that flight. Flight now treats safe mounted ground contact as an observation
+for Laya's next travel choice, resets its route-height estimate, and stops after
+three contacts without three yards of progress. Laya's takeoff action holds
+ascent for two seconds. This is a bounded clearance estimate, not a measured
+height above terrain. A synthetic recovery test verifies that ground contact
+requests a fresh Laya choice before any further input; nine Python tests pass.
+The live recovery remains to be qualified.
+
 Batch 01 is checkpointed through DVCLive and
 `artifacts/client_harness/whitemane_live_20261005_batch01.tar.gz.dvc`. DVC push
 completed and cloud status confirmed synchronization. Closed screenshots and
