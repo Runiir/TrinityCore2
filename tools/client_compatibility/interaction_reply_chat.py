@@ -47,7 +47,7 @@ class WhisperTrial(Trial):
             return []
 
 
-def delivered(t,session,since,token,event,label,author,request=False):
+def delivered(t,session,since,token,event,label,expected_guid,request=False):
     state,frame=t.observe(label,seconds=60);rows=packets(session,since,token)
     visible=[r for r in state.get('chat_probes',[]) if r['text']==token and r['event']==event]
     authors=[]
@@ -57,11 +57,13 @@ def delivered(t,session,since,token,event,label,author,request=False):
             body=bytes.fromhex(row['body'])
             if token.encode() in body and len(body)>=13:authors.append(int.from_bytes(body[5:13],'little'))
     checks={'native_delivery':any(r['direction']=='from_native' and r['name']=='SMSG_MESSAGECHAT' for r in rows),
-        'public_message':len(visible)==1,'exact_native_author':bool(authors) and all(a==author for a in authors),
+        'public_message':len(visible)==1,'exact_native_chat_guid':bool(authors) and all(a==expected_guid for a in authors),
         'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
     if request:checks['ordinary_request']=any(r['direction']=='from_client' and r['name']=='CMSG_CHAT_MESSAGE_WHISPER' for r in rows)
     record={'token':token,'checks':checks,'packets':rows,'frame':frame,
-        'native_authors':authors,'expected_author':author,'observed_sender':visible[0]['sender'] if visible else None}
+        'native_chat_guids':authors,'expected_native_guid':expected_guid,
+        'native_guid_role':'recipient_in_inform' if event=='CHAT_MSG_WHISPER_INFORM' else 'incoming_sender',
+        'observed_sender':visible[0]['sender'] if visible else None}
     t.receipt.setdefault('reply_deliveries',[]).append(record);t.persist()
     if not all(checks.values()):raise RuntimeError('owned whisper delivery differs: '+label)
     return record
@@ -80,9 +82,9 @@ def phase(primary,scout):
     seed='TC442UI:reply_seed_'+nonce;reply='TC442UI:reply_'+nonce;started=time.time()
     with actor('scout'):
         scout.execute({'kind':'chat','value':'/w Harnessone '+seed})
-        delivered(scout,sessions['scout'],started,seed,'CHAT_MSG_WHISPER_INFORM','seed_sent',author=2,request=True)
+        delivered(scout,sessions['scout'],started,seed,'CHAT_MSG_WHISPER_INFORM','seed_sent',expected_guid=1,request=True)
     with actor('primary'):
-        received_seed=delivered(primary,sessions['primary'],started,seed,'CHAT_MSG_WHISPER','seed_received',author=2)
+        received_seed=delivered(primary,sessions['primary'],started,seed,'CHAT_MSG_WHISPER','seed_received',expected_guid=2)
         destination=received_seed['observed_sender']
         if not isinstance(destination,str) or destination.split('-',1)[0]!=scout.fixture['character_name']:
             raise RuntimeError('native-attributed incoming sender does not name the owned scout')
@@ -101,9 +103,9 @@ def phase(primary,scout):
         primary.receipt['reply_submission_guard']=guard;primary.persist()
         if not exact:raise RuntimeError('exact owned reply text or destination differs; refusing submission')
         started=time.time();primary.io.key('Return',hold=.4);guard['submitted']=True;primary.persist();time.sleep(.8)
-        sent=delivered(primary,sessions['primary'],started,reply,'CHAT_MSG_WHISPER_INFORM','reply_sent',author=1,request=True)
+        sent=delivered(primary,sessions['primary'],started,reply,'CHAT_MSG_WHISPER_INFORM','reply_sent',expected_guid=2,request=True)
     with actor('scout'):
-        received=delivered(scout,sessions['scout'],started,reply,'CHAT_MSG_WHISPER','reply_received',author=1)
+        received=delivered(scout,sessions['scout'],started,reply,'CHAT_MSG_WHISPER','reply_received',expected_guid=1)
     primary.receipt['cases'].append({'id':'chat.reply','status':'owned_reply_delivery_pass','time':time.time(),
         'oracle':{'sent':sent,'received':received,'exact_target_guard':guard}});primary.persist()
 
