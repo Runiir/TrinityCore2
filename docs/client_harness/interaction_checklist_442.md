@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 392 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 393 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -816,7 +816,7 @@ Fixture: `safe_terrain_variants`.
 - [x] `movement.turn_right` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.strafe_left` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.strafe_right` (qualified variant; [evidence](#follow))
-- [ ] `movement.mouse_turn`
+- [x] `movement.mouse_turn` (qualified variant; [evidence](#owned_stationary_mouse_turn_roundtrip))
 - [x] `movement.autorun` (qualified variant; [evidence](#stock_walk_run_autorun))
 - [x] `movement.stop` (qualified variant; [evidence](#stock_ground_bindings_native_peer))
 - [x] `movement.walk_toggle` (qualified variant; [evidence](#stock_walk_run_autorun))
@@ -2717,3 +2717,16 @@ Remaining limits: Version-check checkbox only. Effective out-of-date addon loadi
 - [442_interactions_20261005_91.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_91.tar.gz.dvc), member `evidence/client_interactions_20261005_ui91/addons_version_check01/episode.json`, SHA-256 `3ce52a00eb1ff587b8c91f3ecba72aac9f5b39b06e0f34100489e70735f520eb`.
   Checked cases: `settings.addons.pending_version_check_change` (addons_version_check_pass), `settings.addons.pending_version_check_restore` (addons_version_check_pass).
 - [442_interactions_20261005_91.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_91.tar.gz.dvc), member `evidence/client_interactions_20261005_ui91/addons_version_check_whole_review.json`, SHA-256 `96d7c393d743d7d33451512b20fbcce5fe0bb080b579d8d1cb81a9eee98a75b2`.
+
+### owned_stationary_mouse_turn_roundtrip
+
+Both owned primary and scout each make one 80-pixel ordinary right-button horizontal drag in each direction. Native accepted facing, rendered player facing and owned peer movement-broadcast facing agree; peer public coordinates agree, actor position stays bounded and released input is idle. Both native positions/headings, resources, stats, saved spells/actions, pose/AFK, target and solo groups restore.
+
+Remaining limits: Stationary horizontal turning only. Camera orbit/pitch, movement while turning, sensitivity and other contexts remain open. UI92 absolute-motion trial stays whole failed/excluded; relative motion passes without relaxing acceptance bounds. Scripts stay blocked and historical softTargetInteract0 stays unrestored at1.
+
+- [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn02/cohort.json`, SHA-256 `62a0577a6d2039fa8c2725f7a60a1f02f1486f5d5d729d6fdf4cd6ce3314cb4a`.
+- [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn02/primary/episode.json`, SHA-256 `98f2a974fb76b985578f741c8ebe82f880e50b76503cb1231df528d7c9ec48bc`.
+  Checked cases: `movement.mouse_turn.right` (native_mouse_turn_pass), `movement.mouse_turn.left` (native_mouse_turn_pass).
+- [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn02/scout/episode.json`, SHA-256 `f1a357929c082fc608d89b9c4c569c1e88c3ba18fc2524d50c4b56b67277f45d`.
+  Checked cases: `movement.mouse_turn.right` (native_mouse_turn_pass), `movement.mouse_turn.left` (native_mouse_turn_pass).
+- [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn_whole_review.json`, SHA-256 `d121f3494682629dd15eb1ba201c826cc7cccce11819dd8b2d940ea25b7c4b3f`.

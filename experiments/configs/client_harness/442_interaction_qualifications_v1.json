@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791222241.570849,
+  "reviewed_at": "2026-10-05",
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -4664,6 +4664,44 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_91.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui91/addons_version_check_whole_review.json",
           "sha256": "96d7c393d743d7d33451512b20fbcce5fe0bb080b579d8d1cb81a9eee98a75b2"
+        }
+      ]
+    },
+    {
+      "id": "owned_stationary_mouse_turn_roundtrip",
+      "operations": [
+        "movement.mouse_turn"
+      ],
+      "scope": "Both owned primary and scout each make one 80-pixel ordinary right-button horizontal drag in each direction. Native accepted facing, rendered player facing and owned peer movement-broadcast facing agree; peer public coordinates agree, actor position stays bounded and released input is idle. Both native positions/headings, resources, stats, saved spells/actions, pose/AFK, target and solo groups restore.",
+      "limits": "Stationary horizontal turning only. Camera orbit/pitch, movement while turning, sensitivity and other contexts remain open. UI92 absolute-motion trial stays whole failed/excluded; relative motion passes without relaxing acceptance bounds. Scripts stay blocked and historical softTargetInteract0 stays unrestored at1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui92/mouse_turn02/cohort.json",
+          "sha256": "62a0577a6d2039fa8c2725f7a60a1f02f1486f5d5d729d6fdf4cd6ce3314cb4a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui92/mouse_turn02/primary/episode.json",
+          "sha256": "98f2a974fb76b985578f741c8ebe82f880e50b76503cb1231df528d7c9ec48bc",
+          "cases": {
+            "movement.mouse_turn.right": "native_mouse_turn_pass",
+            "movement.mouse_turn.left": "native_mouse_turn_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui92/mouse_turn02/scout/episode.json",
+          "sha256": "f1a357929c082fc608d89b9c4c569c1e88c3ba18fc2524d50c4b56b67277f45d",
+          "cases": {
+            "movement.mouse_turn.right": "native_mouse_turn_pass",
+            "movement.mouse_turn.left": "native_mouse_turn_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui92/mouse_turn_whole_review.json",
+          "sha256": "d121f3494682629dd15eb1ba201c826cc7cccce11819dd8b2d940ea25b7c4b3f"
         }
       ]
     }

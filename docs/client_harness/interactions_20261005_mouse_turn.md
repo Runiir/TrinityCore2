@@ -1,0 +1,11 @@
+# Stationary mouse turning
+
+Both owned clients pass an ordinary right-button horizontal drag in each direction. Each 80-pixel drag turns about 0.319 radians. Native accepted facing, rendered player facing and peer movement-broadcast facing agree; peer public coordinates match and released input is idle. Both original positions and headings, resources, stats, saved spells and actions, pose, AFK state, target and solo group restore. The reviewed final captures show the primary seated in Badlands and the scout seated in Northshire. Ordinary logout then returns the scout to character selection, with native logout, enumeration and offline state verified.
+
+This qualifies only the stationary horizontal variant of `movement.mouse_turn`. Coverage is 393 of 916 scoped operations, with 523 open. Camera orbit, pitch, turning while moving, sensitivity and other contexts remain open.
+
+The first absolute-motion trial remains a whole failure. Its final 2.4315-radian turn exceeds the existing upper bound despite native and peer delivery. The sender now advertises relative-pointer capability and accepts bounded relative motion only while the right button is held. The right-drag adapter sends relative increments and releases the button in cleanup. The fresh whole run passes all four directional cases without changing the acceptance bound. The sender rebuild uses one job and a memory guard. The 58 focused checks before the build and all 1,371 protocol checks after the build pass.
+
+Both existing game windows remain on HDMI-1. No additional client, server or model job starts. Custom-script permission remains blocked. The historical original `softTargetInteract=0` remains unrestored at the current stock-disabled value `1`, as accepted by the user.
+
+The [UI92 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc) identifies the remotely verified 287,447,929-byte archive, SHA-256 `c96f285afe87c0e5dc1fefb59e22631f5a3eec510a88ff21660c822ea7b53b4c`. Archive review verifies 26 JSON receipts and 99 attributed image hashes. The complete passing `mouse_turn02/cohort.json`, both actor episodes and `mouse_turn_whole_review.json` support the qualification. The earlier failed episode and `mouse_turn_absolute_failure_review.json` remain in the same archive.
