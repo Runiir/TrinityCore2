@@ -19,4 +19,5 @@ AchievementObservation.lua
 ActionBarObservation.lua
 SettingsObservation.lua
 MacroObservation.lua
+ChatObservation.lua
 ClientInteractions.lua
