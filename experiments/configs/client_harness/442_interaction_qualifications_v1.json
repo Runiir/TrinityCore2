@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791237038.5181155,
+  "reviewed_at": "2026-10-06",
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -4982,6 +4982,51 @@
           "pointer": "artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc",
           "member": "evidence/client_interactions_20261006_ui99/runtime_closure.json",
           "sha256": "faa6ca5c791805ed23151a4efb50b1d7187f77e1a49754f0adb1224d0b0f836e"
+        }
+      ]
+    },
+    {
+      "id": "owned_offline_friend_removal_errors",
+      "operations": [
+        "friends.remove_friend",
+        "friends.duplicate_friend_error",
+        "friends.self_friend_error",
+        "friends.nonexistent_friend_error"
+      ],
+      "scope": "UI100 friends04 whole completed pass on owned Harnessone/build60895: ordinary stock Add Friend confirmation revalidates previously counted addition of the owned offline Harnessdwarf GUID3. Duplicate, self and verified missing-name requests produce exact native results8/9/4, unchanged native/public lists and their rendered stock messages. Right-click on the exact dwarf row and observed Remove Friend menu produce native result5 and remove only that row; no removal chat line is claimed. Every main case passes12 wire/native/public/UI checks, and all9 native plus12 friend restoration checks pass. Original Harnesstwo, both social rows, actor inventories/money, quest layout, session, group, seated pose and AFK restore. Code controller, model None.",
+      "limits": "Four newly counted operations; friend addition was already qualified. Only the owned offline dwarf and exact duplicate/self/nonexistent errors. Online presence, note editing/persistence, limits, ignore and other social variants remain open. Four whole failed runs retain their failed verdicts and are excluded, including bare-name autocomplete refusal and the no-packet fully qualified removal route. Source-bound menu cleanup passes separately. No additional clients, native build or server/bridge restart. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui100/friends04/episode.json",
+          "sha256": "2df3892277444f4938652bbc0d8c5cd58e565465c458ea97df54c09f596d7d93",
+          "cases": {
+            "friends.add_friend": "friend_status_pass",
+            "friends.remove_friend": "friend_status_pass",
+            "friends.duplicate_friend_error": "friend_status_pass",
+            "friends.self_friend_error": "friend_status_pass",
+            "friends.nonexistent_friend_error": "friend_status_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui100/whole_friend_review.json",
+          "sha256": "c2f449baa2bbc70bf8ce5ffa1581391391737886e1f5b9e6d06e3adff1a695a8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui100/source_cleanup_review.json",
+          "sha256": "685bb6214fa97c5b6a274d35045b5901809ad9d77ebf9f51b8dd4472c1446556"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui100/verification.json",
+          "sha256": "76d83fab110981858c3e5b417d35cfc078a2b492476a52cf893d0cf052411584"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui100/runtime_closure.json",
+          "sha256": "6136bb76aa5e1fcd9946e73a7454554af84c6691eb2929723a4fadbd6acda0d7"
         }
       ]
     }

@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 409 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 413 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -419,16 +419,16 @@ Fixture: `owned_second_actor`.
 - [ ] `friends.offline_presence`
 - [ ] `friends.note_edit`
 - [ ] `friends.note_persist`
-- [ ] `friends.remove_friend`
+- [x] `friends.remove_friend` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [ ] `friends.add_ignore`
 - [ ] `friends.ignored_chat`
 - [ ] `friends.remove_ignore`
 - [ ] `friends.who_open`
 - [ ] `friends.who_search`
 - [ ] `friends.whisper`
-- [ ] `friends.self_friend_error`
-- [ ] `friends.nonexistent_friend_error`
-- [ ] `friends.duplicate_friend_error`
+- [x] `friends.self_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
+- [x] `friends.nonexistent_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
+- [x] `friends.duplicate_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [ ] `friends.friend_limit`
 
 ## chat
@@ -2830,3 +2830,16 @@ Remaining limits: One owned native letter910 with default material and two publi
 - [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/bridge_item_text_deployment02/deployment.json`, SHA-256 `45d0fd934eef257861be365a1715c4b08f2661ff7b0c5c36a90ba9bcd8175319`.
 - [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/verification.json`, SHA-256 `17442668486162213345becf04e258e00a27fd2034c02eff818091ae02a0a57e`.
 - [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/runtime_closure.json`, SHA-256 `faa6ca5c791805ed23151a4efb50b1d7187f77e1a49754f0adb1224d0b0f836e`.
+
+### owned_offline_friend_removal_errors
+
+UI100 friends04 whole completed pass on owned Harnessone/build60895: ordinary stock Add Friend confirmation revalidates previously counted addition of the owned offline Harnessdwarf GUID3. Duplicate, self and verified missing-name requests produce exact native results8/9/4, unchanged native/public lists and their rendered stock messages. Right-click on the exact dwarf row and observed Remove Friend menu produce native result5 and remove only that row; no removal chat line is claimed. Every main case passes12 wire/native/public/UI checks, and all9 native plus12 friend restoration checks pass. Original Harnesstwo, both social rows, actor inventories/money, quest layout, session, group, seated pose and AFK restore. Code controller, model None.
+
+Remaining limits: Four newly counted operations; friend addition was already qualified. Only the owned offline dwarf and exact duplicate/self/nonexistent errors. Online presence, note editing/persistence, limits, ignore and other social variants remain open. Four whole failed runs retain their failed verdicts and are excluded, including bare-name autocomplete refusal and the no-packet fully qualified removal route. Source-bound menu cleanup passes separately. No additional clients, native build or server/bridge restart. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/friends04/episode.json`, SHA-256 `2df3892277444f4938652bbc0d8c5cd58e565465c458ea97df54c09f596d7d93`.
+  Checked cases: `friends.add_friend` (friend_status_pass), `friends.remove_friend` (friend_status_pass), `friends.duplicate_friend_error` (friend_status_pass), `friends.self_friend_error` (friend_status_pass), `friends.nonexistent_friend_error` (friend_status_pass).
+- [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/whole_friend_review.json`, SHA-256 `c2f449baa2bbc70bf8ce5ffa1581391391737886e1f5b9e6d06e3adff1a695a8`.
+- [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/source_cleanup_review.json`, SHA-256 `685bb6214fa97c5b6a274d35045b5901809ad9d77ebf9f51b8dd4472c1446556`.
+- [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/verification.json`, SHA-256 `76d83fab110981858c3e5b417d35cfc078a2b492476a52cf893d0cf052411584`.
+- [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/runtime_closure.json`, SHA-256 `6136bb76aa5e1fcd9946e73a7454554af84c6691eb2929723a4fadbd6acda0d7`.
