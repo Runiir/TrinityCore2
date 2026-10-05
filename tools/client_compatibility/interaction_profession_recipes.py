@@ -12,6 +12,11 @@ from .interaction_keybindings_native import suite as native_suite
 
 
 class RecipeTrial(Trial):
+    def execute(self,action):
+        if action['kind']=='drag':
+            self.io.drag(action['start'],action['end'],duration=action.get('duration',1.5));return
+        return super().execute(action)
+
     def step(self,case_id,goal,actions,oracle,**kwargs):
         # Retain the requested hold in each case. Background clients can idle
         # near one FPS; each ordinary click must span a full update.

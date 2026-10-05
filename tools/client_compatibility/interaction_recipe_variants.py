@@ -13,6 +13,7 @@ from .interaction_keybindings_native import suite as native_suite
 from .interaction_spellbook_recon import resources
 from .interaction_spellbook_navigation import known
 from .observation.inventory import Inventory
+from .interaction_recipe_navigation import select_original,detail as viewport
 
 FILTER='TradeSkillFrameAvailableFilterCheckButton'
 NAME='Potion of Deepholm';SPELL=80725;PRODUCT=58487;REAGENTS={52986:5,3371:1}
@@ -69,27 +70,19 @@ def hover_item(t,oracle,control_name,entry,title,label):
 
 
 def restore_selection(t,baseline):
-    state,_=t.observe('recipe_selection_restore_before')
-    if state.get('selected_recipe')!=baseline.get('selected_recipe'):
-        require(edit(t,'fixture.search_original_recipe','Find the original selected recipe.',
-            lambda c:c['name']=='TradeSkillFrameEditBox',NAME),'ui_edit_pass')
-        row=target(t,'fixture.select_original_recipe',lambda c:c['name'].startswith('TradeSkillSkill') and c['text'].strip()==NAME)
-        require(t.step('fixture.select_original_recipe','Select the original Potion of Deepholm recipe.',
-            {'click':{'kind':'click','value':point(row),'hold':1.2}},
-            lambda b,a,s:{'status':'recipe_selection_restored' if s=='click' and
-                a.get('selected_recipe')==baseline['selected_recipe'] else 'client_or_protocol_failure'},
-            diagnostic_action='click',await_state=lambda a:a.get('selected_recipe')==baseline['selected_recipe']),
-            'recipe_selection_restored')
     search=target(t,'fixture.recipe_search_restore_guard',lambda c:c['name']=='TradeSkillFrameEditBox')
     if search['text']!='Search':
         require(edit(t,'fixture.clear_recipe_restore_search','Restore the unfiltered recipe search.',
             lambda c:c['name']=='TradeSkillFrameEditBox',''),'ui_edit_pass')
         t.execute({'kind':'key','value':'Return','hold':1.2})
+    state,_=t.observe('recipe_selection_restore_before')
+    if state.get('selected_recipe')!=baseline.get('selected_recipe'):select_original(t,baseline)
     state,frame=t.observe('recipe_layout_restored')
     current=target(t,'recipe_filter_restored',lambda c:c['name']==FILTER)
     search=target(t,'recipe_search_restored',lambda c:c['name']=='TradeSkillFrameEditBox')
     checks={k:state.get(k)==baseline.get(k) for k in ('trade_skill','recipe_count','recipe_selection','selected_recipe','recipe_reagents')}
-    checks.update(filter_unchecked=current.get('checked') is False,search=search['text']=='Search')
+    checks.update(filter_unchecked=current.get('checked') is False,search=search['text']=='Search',
+        viewport_top=viewport(t,'recipe_viewport_restored')['offset']==0)
     t.receipt['recipe_layout_restoration']={'checks':checks,'frame':frame};t.persist()
     if not all(checks.values()):raise RuntimeError('original recipe layout differs')
 
@@ -99,11 +92,22 @@ def variants(t):
     baseline=None
     try:
         stock_click(t,'fixture.open_owned_alchemy',lambda c:c['text']=='Alchemy','TradeSkillFrame')
+        source=getattr(t,'recipe_restore_source',None)
+        if source is not None:
+            source=source.resolve();old=json.loads(source.read_text());checks=old.get('native_restoration',{}).get('checks',{})
+            if (not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json' or old.get('completed') or
+                not old.get('finished_at') or old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or
+                not old.get('native_resources_preserved') or not old.get('book_layout_restored') or
+                len(checks)!=10 or not all(checks.values()) or old['native_baseline']!=t.receipt['native_baseline'] or
+                not all(old.get('recipe_variant_contract',{}).get('checks',{'missing':False}).values())):
+                raise RuntimeError('failed recipe restoration source differs')
+            t.receipt['recipe_fixture_restore_source']={'path':str(source),'sha256':lab.sha256(source)};t.persist()
+            restore_selection(t,old['recipe_variant_contract']['baseline'])
         baseline,frame=t.observe('recipe_variant_baseline');t.recipe_before=baseline
         selected=baseline.get('selected_recipe',{});reagents=baseline.get('recipe_reagents') or []
         catalogs,digest=items([PRODUCT,*REAGENTS]);control=target(t,'recipe_original_filter',lambda c:c['name']==FILTER)
         search=target(t,'recipe_original_search',lambda c:c['name']=='TradeSkillFrameEditBox')
-        checks={'observer105':baseline.get('observer_version')==105,'alchemy':baseline.get('trade_skill')==['Alchemy',525,525],
+        checks={'observer106':baseline.get('observer_version')==106,'alchemy':baseline.get('trade_skill')==['Alchemy',525,525],
             'unfiltered':control.get('checked') is False and search['text']=='Search','catalog':baseline.get('recipe_count',0)>0,
             'native_known_recipe':SPELL in t.receipt['native_known_spell_packet']['ids'],
             'recipe_identity':selected.get('name')==NAME and item_id(selected.get('link'))==PRODUCT and
@@ -143,10 +147,12 @@ def variants(t):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--restore-recipe-from',type=Path);a=p.parse_args()
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
         t=RecipeTrial(a.output,controller='code')
+        t.recipe_restore_source=a.restore_recipe_from
         try:
             native_suite(t,operations=lambda t:profession_suite(t,after_tab=variants),preserve_settings=False)
             t.receipt['completed']=True

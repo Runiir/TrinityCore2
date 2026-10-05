@@ -22,4 +22,5 @@ MacroObservation.lua
 ChatObservation.lua
 ChannelObservation.lua
 CombatLogObservation.lua
+TradeSkillObservation.lua
 ClientInteractions.lua
