@@ -3,6 +3,7 @@
 local events,sequence={},0
 local reader=CreateFrame('Frame')
 local registered=pcall(reader.RegisterEvent,reader,'COMBAT_LOG_EVENT')
+local unfiltered=pcall(reader.RegisterEvent,reader,'COMBAT_LOG_EVENT_UNFILTERED')
 reader:SetScript('OnEvent',function(_,event,...)
     local fn=C_CombatLog and C_CombatLog.GetCurrentEventInfo or CombatLogGetCurrentEventInfo
     local values={...};local source='event_arguments'
@@ -14,18 +15,54 @@ reader:SetScript('OnEvent',function(_,event,...)
     if values[12]~=6673 or values[4]~=UnitGUID('player') then return end
     sequence=sequence+1
     events[#events+1]={sequence=sequence,timestamp=values[1],event=values[2],source_guid=values[4],
-        destination_guid=values[8],spell_id=values[12],spell_name=values[13],reader=source}
+        destination_guid=values[8],spell_id=values[12],spell_name=values[13],reader=source,dispatch=event}
     if #events>4 then table.remove(events,1) end
 end)
 local function read(fn,...)
     if type(fn)~='function' then return end
     local ok,value=pcall(fn,...);if ok then return value end
 end
+local function fingerprint(value)
+    local nodes,first,second=0,0,0
+    local function feed(text)
+        for index=1,#text do
+            local byte=text:byte(index)
+            first=(first*33+byte)%4294967291;second=(second*65599+byte)%4294967279
+        end
+    end
+    local active={}
+    local function visit(item,depth)
+        nodes=nodes+1;if nodes>8192 or depth>16 then error('public saved settings exceed the observation bound') end
+        local kind=type(item);feed(kind..':')
+        if kind=='table' then
+            if active[item] then error('cyclic public saved settings') end;active[item]=true
+            local keys={};for key in pairs(item) do keys[#keys+1]=key end
+            table.sort(keys,function(a,b)return type(a)..':'..tostring(a)<type(b)..':'..tostring(b) end)
+            feed('{');for _,key in ipairs(keys) do visit(key,depth+1);visit(item[key],depth+1) end;feed('}')
+            active[item]=nil
+        elseif kind=='string' then feed(#item..':'..item)
+        elseif kind=='number' then feed(string.format('%.17g',item))
+        elseif kind=='boolean' or kind=='nil' then feed(tostring(item))
+        else error('unsupported public saved-setting type') end
+        feed(';')
+    end
+    local ok,why=pcall(visit,value,0)
+    return {available=ok and type(value)=='table',nodes=nodes,first=ok and first or nil,
+        second=ok and second or nil,error=not ok and tostring(why) or nil}
+end
 function Client442ObserveCombatLog()
     local log=ChatFrame2;local count=log and read(log.GetNumMessages,log)
-    local result={event_registered=registered,event_sequence=sequence,events=events,
+    local selected=CHATCONFIG_SELECTED_FILTER or Blizzard_CombatLog_CurrentSettings
+    local result={event_registered=registered,unfiltered_registered=unfiltered,event_sequence=sequence,events=events,
         selected=SELECTED_CHAT_FRAME and read(SELECTED_CHAT_FRAME.GetID,SELECTED_CHAT_FRAME),
-        visible=log and read(log.IsVisible,log),message_count=count,recent_messages={}}
+        visible=log and read(log.IsVisible,log),message_count=count,recent_messages={},
+        saved_settings=fingerprint(Blizzard_CombatLog_Filters),filter_name=selected and selected.name,
+        current_filter=Blizzard_CombatLog_Filters and Blizzard_CombatLog_Filters.currentFilter,
+        settings_filter=ChatConfigCombatSettingsFilters and ChatConfigCombatSettingsFilters.selectedFilter,
+        cast_success_enabled={}}
+    for index,filter in ipairs(selected and selected.filters or {}) do
+        result.cast_success_enabled[index]=filter.eventList and filter.eventList.SPELL_CAST_SUCCESS or false
+    end
     result.text_reader_available=log and type(log.GetMessageInfo)=='function' or false
     for index=math.max(1,(tonumber(count) or 0)-3),tonumber(count) or 0 do
         local text=read(log.GetMessageInfo,log,index)
