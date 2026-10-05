@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 381 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 383 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -460,9 +460,9 @@ Fixture: `owned_second_actor`.
 - [x] `chat.timestamps` (qualified variant; [evidence](#owned_native_stock_combat_log_timestamps))
 - [x] `chat.chat_links` (qualified variant; [evidence](#owned_item_link_native_say_delivery))
 - [x] `chat.scroll_history` (qualified variant; [evidence](#owned_native_chat_history_scroll))
-- [ ] `chat.copy_if_available`
+- [x] `chat.copy_if_available` (qualified variant; [evidence](#owned_player_chat_link_name_copy))
 - [x] `chat.mute_voice` (qualified variant; [evidence](#owned_stock_local_voice_self_mute))
-- [ ] `chat.report_ui_cancel`
+- [x] `chat.report_ui_cancel` (qualified variant; [evidence](#owned_player_chat_link_report_cancel))
 
 ## party
 
@@ -2599,3 +2599,29 @@ Remaining limits: Local self-mute through this installed binding only. Connected
 - [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_whole_review.json`, SHA-256 `8bfb75c4543909d240c71ceef3fcb5db2b5f0111679b6f645c0c36d7da06f18a`.
 - [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_search_failure_review.json`, SHA-256 `9e89f28b9daa5090b1d26475d6f03d7ee9c311eb514d1a2de136f9ae9fa53676`.
 - [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_search_recovery02/episode.json`, SHA-256 `d81c13d5eee5b724fc89251b51054d6d85613612b0fcc45d4e30d3dd4a182418`.
+
+### owned_player_chat_link_name_copy
+
+Whole-pass UI85/player_name_copy08 seeds one exact whisper from owned native GUID2/Harnesstwo to GUID1/Harnessone. Reviewed rendered sender text and actual ChatFrame1 OnHyperlinkEnter player data gate the ordinary right-click. Stock Copy Character Name replaces a uniquely served private nested-display clipboard marker with exactly Harnesstwo, independently read as UTF8 with a new selection owner. The stock menu may stay open after Copy; separate UI cleanup closes it. Both actors restore all ten native checks.
+
+Remaining limits: Owned sender name on primary nested display2 only. No host clipboard read and no claim that prior private clipboard bytes were restored; the copied owned name is retained. Arbitrary names, item/quest links and other clipboard forms remain open. Earlier failed Copy01-07, source recon and cleanup-only work are excluded, including Copy03 incorrect menu-closure oracle and Copy04 provider atom error. New trials use code only. Full1215 tests pass.
+
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_name_copy08/primary/episode.json`, SHA-256 `d052895f619924931d0a6339ea1810d935741c9cb3a87fd430686e2c2a1731cb`.
+  Checked cases: `chat.copy_if_available` (owned_player_name_copy_pass).
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_name_copy08/scout/episode.json`, SHA-256 `aa88c135341c5cc8af6d9cc026788ccf068b4fe4caf408d67972a0d34f012d79`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_copy_visual_review.json`, SHA-256 `0d8e658d91590ee0488a11587533604c33f8b0734d8d38e38e3c8b77ca07587f`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_menu_whole_review.json`, SHA-256 `df3a3b0cac8f82fd84e143a50143b87a10756d9cd11984afa0ed030dc5f34d55`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_link_failed_run_review.json`, SHA-256 `3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da`.
+
+### owned_player_chat_link_report_cancel
+
+Whole-pass UI85/player_report_cancel03 uses the same exact owned native GUID2 whisper, reviewed sender and actual owned hyperlink-enter gate. Ordinary Report Player opens the stock Report Harnesstwo form after bounded observation settling, without replaying input. Exact form name, one Close, one disabled Report button and the attributable native/public chat source pass. This chat-link form exposes no public GUID; a present foreign or empty GUID is rejected. Only the observed Close button is clicked. Reviewed form/closed frames and both actors ten native restoration checks pass.
+
+Remaining limits: Opening and cancelling this owned-player form only. No reason, comment or Report submission input; submitted reports, moderation outcomes, arbitrary targets and other report forms remain open. Report01 early-snapshot failure and Report02 unavailable-public-GUID guard failure remain excluded, with both fixtures restored. Negative tests require exact native seed, owned hyperlink and one matching public whisper for a missing form GUID. Full1215 tests pass.
+
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_report_cancel03/primary/episode.json`, SHA-256 `996c18196b15e08b1691b2eba7039bdb17a9c9318f6663e8d178688fd6bfa5b0`.
+  Checked cases: `chat.report_ui_cancel` (owned_report_ui_cancel_pass).
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_report_cancel03/scout/episode.json`, SHA-256 `b2d7889f6b0b2e634e4d9356b84352ee52521ca4db3d637c1a59959d9fe37ef2`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_report_visual_review.json`, SHA-256 `553dfc9432ff4c3766b4cf8c6837dcd88bba36c346b96a4caf9791666e36c47b`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_menu_whole_review.json`, SHA-256 `df3a3b0cac8f82fd84e143a50143b87a10756d9cd11984afa0ed030dc5f34d55`.
+- [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_link_failed_run_review.json`, SHA-256 `3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da`.
