@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 397 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 398 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -776,7 +776,7 @@ Fixture: `saved_local_settings`.
 - [x] `settings.cancel` (qualified variant; [evidence](#owned_settings_exit_cancel_discard))
 - [x] `settings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
 - [ ] `settings.defaults_apply`
-- [ ] `settings.persistence`
+- [x] `settings.persistence` (qualified variant; [evidence](#owned_render_scale_ui_reload_persistence))
 - [x] `settings.restore_original` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 
 ## menu
@@ -2750,3 +2750,12 @@ Remaining limits: Pending render-change exit Cancel and discard variant only. Ot
 - [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/settings_discard03/episode.json`, SHA-256 `b52ed722eb62b0ddb3d1b6d866935af881fe06dacc7bf9a7c1b51cdae05ea867`.
   Checked cases: `settings.cancel.render_scale_pending` (stock_render_scale_pending_pass), `settings.cancel.keep_pending` (stock_settings_exit_choice_pass), `settings.cancel.discard_pending` (stock_settings_exit_choice_pass).
 - [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/settings_discard_whole_review.json`, SHA-256 `ba21bfdc0f909ebfd56e92c3b241596c1f5ab2e251cd00baff689d215f47e6ea`.
+
+### owned_render_scale_ui_reload_persistence
+
+Owned primary observer117: apply one lower stock RenderScale step1 to0.98333334922791, close Settings and submit the verified ordinary /reload, then reopen Settings with active/pending scale unchanged and no unapplied edit. Reset observer sequence3187-to11, owned GUID and unchanged native session8657730f prove a new UI generation. Inverse step and Apply restore1, which survives another verified reload with sequence199-to11. Five graphics, five layout and ten native checks restore. Reviewed post-first-reload search shows98percent render label at1280x720; reopened post-reload panels show original Controls category and their encoded probes establish exact values.
+
+Remaining limits: Applied render-scale persistence through ordinary UI reload only. Full client restart, storage-level/account/character and other-setting persistence remain open. Earlier launch constructor TypeError sent no input and is retained/excluded. All109 final focused checks pass; earlier1418 full protocol checks passed before the launcher argument repair. Scripts stay blocked; historical original softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261005_94.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc), member `evidence/client_interactions_20261005_ui94/settings_persistence01/episode.json`, SHA-256 `84f4e32b7dae594a0b83e1206f4df25e33e69dc1d742ca6c7a6098f1ac3d793d`.
+- [442_interactions_20261005_94.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc), member `evidence/client_interactions_20261005_ui94/settings_persistence_whole_review.json`, SHA-256 `641f93151e90b6573e0d91371f6d7d954c57fb531ac2751d55fdd76ff7be4ccb`.

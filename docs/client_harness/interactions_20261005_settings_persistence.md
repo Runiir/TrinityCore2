@@ -1,0 +1,11 @@
+# Render-scale persistence through UI reload
+
+The whole owned-primary trial applies one render-scale decrement from 1 to 0.98333334922791, closes Settings and submits the exact ordinary `/reload`. Reopened Settings reports that same active and pending scale with no unapplied edit. An inverse step and Apply restore 1, which survives a second reload. The observer sequence resets from 3187 to 11 and from 199 to 11 while the owned GUID and native session stay fixed. Each reload has a new matching, submitted chat receipt. Five graphics, five layout and ten native fixture checks restore.
+
+Reviewed images show the post-first-reload Render Scale search at 98% with 1280x720 resolution, the restored 100% label before the second reload, and the final seated primary with Settings closed. Reopened post-reload captures show the original Controls category; their encoded settings probes establish exact render-scale values. These captures do not visibly show the render-scale slider.
+
+This qualifies only `settings.persistence` for applied render scale through ordinary UI reload. Coverage is 398 of 916 scoped operations, with 518 open. Full client restart, storage/account/character and other-setting persistence remain open. The first launch failed before any input because of an unsupported redundant constructor argument. Its receipt is retained; the supported constructor and isolated command-entry regression pass 109 focused checks. The earlier full protocol run passed 1,418 checks before this launcher-only repair.
+
+Both existing windows stay on HDMI-1 and the scout remains parked. No native build, server restart, extra client or model job starts. Scale never exceeds its original allocation. Scripts stay blocked; historical original `softTargetInteract=0` remains unrestored at stock-disabled `1`, as accepted by the user.
+
+The [UI94 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc) identifies the remotely verified 203,101,149-byte archive, SHA-256 `40a2278296aae6f4b22fcc0e56661bbd5e1021ca998c6d95d206bb7cb0e9b254`. Archive review verifies eight JSON receipts and 89 attributed image hashes, including the whole trial, visual review and failed launch.
