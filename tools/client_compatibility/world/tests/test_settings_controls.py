@@ -1,7 +1,9 @@
 """Stock control targets require typed public agreement, including native CVars."""
 import copy
+from types import SimpleNamespace
 import pytest
-from tools.client_compatibility.interaction_settings_controls import agrees,interact_fixture_restorable
+from tools.client_compatibility.interaction_settings_controls import agrees,interact_fixture_restorable,validate_layout,restore_interact_fixture
+from tools.client_compatibility.interaction_trial import Trial
 from tools.client_compatibility.interaction_settings_controls_recovery import source_layout,verify_resume
 
 
@@ -48,9 +50,36 @@ def interact_layout():
         'interact_keys':{'known':True,'primary':'','secondary':''},'move_pad_visible':False,'unapplied':False}
 
 
-def test_exact_proxy_fixture_difference_can_be_recovered():
+def test_exact_historical_proxy_fixture_difference_is_identifiable():
     original=interact_layout();current=copy.deepcopy(original);current['cvars']['softTargetInteract']='1'
     assert interact_fixture_restorable(current,original)
+
+
+def test_script_restore_is_refused_before_any_input():
+    original=interact_layout();current=copy.deepcopy(original);current['cvars']['softTargetInteract']='1'
+    t=SimpleNamespace(receipt={},persist=lambda:None)
+    with pytest.raises(RuntimeError,match='custom scripts stay blocked'):
+        restore_interact_fixture(t,original,current,'never_send')
+    assert t.receipt['unrestored_cvars']=={'softTargetInteract':{'original':'0','after':'1'}}
+    assert t.receipt['custom_script_permission']=='blocked_by_user'
+
+
+@pytest.mark.parametrize('flag,wanted',[('1',False),('3',True)])
+def test_canonical_stock_proxy_start_can_roundtrip_without_scripts(flag,wanted):
+    layout=interact_layout();layout['cvars']['softTargetInteract']=flag
+    layout['values']['PROXY_ENABLE_INTERACT']=wanted
+    validate_layout(layout,['enableMovePad','PROXY_ENABLE_INTERACT'])
+
+
+def test_original_none_is_rejected_in_the_all_settings_preflight():
+    with pytest.raises(RuntimeError,match='original0 cannot restore'):
+        validate_layout(interact_layout(),['enableMovePad','PROXY_ENABLE_INTERACT'])
+
+
+@pytest.mark.parametrize('text',['/run SetCVar("softTargetInteract", 0)',' /SCRIPT x()','/console softTargetInteract 0'])
+def test_script_commands_are_refused_before_input_initialization(text):
+    with pytest.raises(RuntimeError,match='blocked by user instruction'):
+        Trial.__new__(Trial).submit_chat(text)
 
 
 @pytest.mark.parametrize('change',['flag','other_cvar','missing_cvar','extra_cvar','proxy','binding','pad','pending'])

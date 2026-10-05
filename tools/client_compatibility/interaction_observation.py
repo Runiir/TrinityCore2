@@ -5,6 +5,7 @@ from .interaction_operations import command
 from .interaction_bridge_deploy import shot
 from .observation.interactions import decode_image
 from . import lab_runtime as lab,owned_input
+from .interaction_capture import retain_capture_failure
 
 
 def retain_decode_skip(t,label,path,error,frame=None):
@@ -33,8 +34,9 @@ def read_current_page(t,label,mode,ready=None):
         frame=shot(path)
         try:
             with Image.open(path) as image:state=decode_image(image)
-        except ValueError as error:
-            retain_decode_skip(t,label,path,error,frame)
+        except (ValueError,OSError) as error:
+            if isinstance(error,OSError):retain_capture_failure(t,label,path,error,frame)
+            else:retain_decode_skip(t,label,path,error,frame)
             if time.monotonic()>deadline:raise RuntimeError(mode+' diagnostic did not become decodable') from error
             time.sleep(.2);continue
         if state.get('guid')!=t.guid:raise RuntimeError('diagnostic page belongs to another actor')

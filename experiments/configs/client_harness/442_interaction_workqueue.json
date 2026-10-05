@@ -21,7 +21,18 @@
     "second_monitor": "HDMI-1",
     "isolated_databases": true,
     "native_worldserver_restart_only_when_required": true,
-    "decision_models": "New compatibility trials use code-controlled ordinary keyboard/mouse inputs. Jev and Laya are retired by the latest AGENTS.md; no new step calls either. Historical receipts retain their actual controller/model identities, including the completed two-client Laya isolation probe."
+    "decision_models": "New compatibility trials use code-controlled ordinary keyboard/mouse inputs. Jev and Laya are retired by the latest AGENTS.md; no new step calls either. Historical receipts retain their actual controller/model identities, including the completed two-client Laya isolation probe.",
+    "custom_scripts": {
+      "permission": "blocked",
+      "user_choice": "Keep scripts blocked; record the original 0 as unrestored",
+      "softTargetInteract": {
+        "original": "0",
+        "current_stock_disabled": "1",
+        "original_restored": false
+      },
+      "live_trial_scope": "canonical stock1-to3-to1 only; no run/script/console inputs",
+      "historical_trial": "UI89/move_pad_interact02 remains whole failed and excluded"
+    }
   },
   "last_closed_batches": [
     "followup/panel_trial_01: 22 opens, 10 closes, 13 controller failures, 1 guild failure",

@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 import time
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout,nullcontext
 from io import StringIO
 from . import lab_runtime as lab
 from .interaction_trial import Trial
@@ -21,12 +21,12 @@ def command(trial,text):
     time.sleep(.65)
 
 
-def retain_control_pixels(path,target,state):
+def retain_control_pixels(path,target,state,loaded=None):
     # Only catalog plumbing uses this lossless region. Action/cleanup frames
     # retain the complete game image for rendering and coordinate review.
     from PIL import Image
     from .observation.interactions import decode_image
-    with Image.open(path) as full:
+    with (Image.open(path) if loaded is None else nullcontext(loaded)) as full:
         if full.size!=(1280,720):raise RuntimeError('control capture viewport changed')
         # Retain the encoded rows actually used, including expanded packets.
         rgb=full.convert('RGB')
@@ -46,6 +46,7 @@ def retain_control_pixels(path,target,state):
 
 def controls(trial):
     from .interaction_observation import retain_decode_skip
+    from .interaction_capture import retain_capture_failure
     from PIL import Image
     from tools.second_client import ctl
     from .observation.interactions import decode_image
@@ -53,9 +54,13 @@ def controls(trial):
     while time.monotonic()<deadline:
         path=trial.out/'controls_latest.png'
         with redirect_stdout(StringIO()):ctl.shot(str(path))
-        try:state=decode_image(Image.open(path))
-        except ValueError as error:
-            retain_decode_skip(trial,'controls_catalog',path,error);time.sleep(.1);continue
+        try:
+            with Image.open(path) as image:loaded=image.copy()
+            state=decode_image(loaded)
+        except (ValueError,OSError) as error:
+            if isinstance(error,OSError):retain_capture_failure(trial,'controls_catalog',path,error)
+            else:retain_decode_skip(trial,'controls_catalog',path,error)
+            time.sleep(.1);continue
         if state['guid']!=trial.guid:raise RuntimeError('control page identity mismatch')
         if state['mode']!='controls':continue
         current=state.get('panels') or []
@@ -67,7 +72,7 @@ def controls(trial):
             # frame that establishes the matching current fingerprint.
             reused=trial.receipt.setdefault('control_catalog_reuse',[])
             target=trial.out/('controls_reuse_'+str(len(reused))+'.png')
-            frame=retain_control_pixels(path,target,state)
+            frame=retain_control_pixels(path,target,state,loaded)
             reused.append({'frame':frame,
                 'sequence':state['sequence'],'control_snapshot':state['control_snapshot'],
                 'control_count':state['control_count'],'source_catalog':cached['source']});trial.persist()
@@ -90,7 +95,7 @@ def controls(trial):
             target=trial.out/('controls_'+digest+'.png')
             if target.exists():
                 path.unlink();frame=trial.receipt['control_frames'][digest]
-            else:frame=retain_control_pixels(path,target,state)
+            else:frame=retain_control_pixels(path,target,state,loaded)
             trial.receipt.setdefault('control_frames',{})[digest]={**frame,'observed':observed}
             trial.persist()
         if total is not None and len(pages)==__import__('math').ceil(total/state.get('page_size',18)):

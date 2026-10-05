@@ -129,6 +129,7 @@ class Trial:
         if not 1<=seconds<=240:raise ValueError('observation timeout exceeds its bounded duration')
         from PIL import Image
         from tools.second_client import ctl
+        from .interaction_capture import retain_capture_failure
         ctl._launcher_env=lab.client_environment
         monitor=owned_input.focus();path=self.out/(label+'.png');deadline=time.monotonic()+seconds;pending_modes=[]
         # Multiple cleanup calls and settling samples may reuse a logical label.
@@ -141,9 +142,10 @@ class Trial:
             try:
                 with Image.open(path) as image:
                     state=decode_image(image);movement=decode_movement(image,x=15,y=15,cell_size=3.75)
-            except ValueError as error:
+            except (ValueError,OSError) as error:
                 # Normal reloads can expose a partially redrawn observation
                 # strip. Retry the screenshot; never accept a missing identity.
+                if isinstance(error,OSError):retain_capture_failure(self,label,path,error,{'monitor':monitor})
                 if time.monotonic()>deadline:raise RuntimeError('UI observation did not become decodable') from error
                 time.sleep(.1);continue
             if mode is None or state['mode']==mode:break
@@ -179,6 +181,8 @@ class Trial:
 
     def submit_chat(self,value,*,any_mode=False):
         """Submit exact observed text; diagnostics may start on any public page."""
+        if (value.lstrip().split(maxsplit=1) or [''])[0].lower() in ('/run','/script','/console'):
+            raise RuntimeError('custom script and console inputs are blocked by user instruction')
         hold=getattr(self,'chat_key_hold',.4)
         if not .05<=hold<=2:raise ValueError('ordinary chat key hold exceeds its bounded duration')
         def observe(label):

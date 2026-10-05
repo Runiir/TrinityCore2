@@ -58,7 +58,7 @@ def recover(t,path,resume_from=None,close_only=False,closed_fixture_from=None):
     base=old['native_baseline'];before=old['cases'][0]['before']
     oracle=Inventory(lab.ROOT,actors.session_entry(t.fixture)['session'],t.fixture['guid']).poll()
     t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},qualified_scope=
-        'Source-bound cleanup only. Verify the exact stock proxy 0-to-1 difference and native fixture, restore None=0 with a fixed ordinary chat SetCVar fixture script, then verify and close the stock Settings panel. No gameplay qualification.');t.persist()
+        'Source-bound cleanup only. Verify the historical stock proxy0-to1 difference and native fixture. Custom scripts stay blocked and original0 remains unrestored. No gameplay qualification.');t.persist()
     def native_checks(state):
         return {'resources':resources(oracle)==base['resources'],
             'stats':restored_native_state(base['stats'],native_state(oracle)),

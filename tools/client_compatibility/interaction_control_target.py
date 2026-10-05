@@ -11,13 +11,17 @@ from . import lab_runtime as lab,owned_input
 
 def target(t,label,predicate):
     from .interaction_observation import retain_decode_skip
+    from .interaction_capture import retain_capture_failure
     deadline=time.monotonic()+40;path=t.out/'target_latest.png';samples=[]
     while time.monotonic()<deadline:
         with redirect_stdout(StringIO()):ctl.shot(str(path))
         try:
-            with Image.open(path) as image:state=decode_image(image)
-        except ValueError as error:
-            retain_decode_skip(t,label,path,error);time.sleep(.1);continue
+            with Image.open(path) as image:loaded=image.copy()
+            state=decode_image(loaded)
+        except (ValueError,OSError) as error:
+            if isinstance(error,OSError):retain_capture_failure(t,label,path,error)
+            else:retain_decode_skip(t,label,path,error)
+            time.sleep(.1);continue
         if state.get('guid')!=t.guid:raise RuntimeError('target control page belongs to another actor')
         if state.get('mode')=='controls':
             samples.append({'sequence':state['sequence'],'page':state['page'],
@@ -28,15 +32,18 @@ def target(t,label,predicate):
             if matches:
                 rows=t.receipt.setdefault('target_control_pages',[])
                 saved=t.out/('target_'+str(len(rows))+'.png')
-                frame=retain_control_pixels(path,saved,state)
+                frame=retain_control_pixels(path,saved,state,loaded)
                 rows.append({'label':label,'control':matches[0],'sequence':state['sequence'],
                     'control_snapshot':state.get('control_snapshot'),'page':state['page'],'frame':frame})
                 t.persist();return matches[0]
         time.sleep(.1)
     rows=t.receipt.setdefault('target_control_timeouts',[]);saved=t.out/('missing_target_'+str(len(rows))+'.png')
-    shutil.copyfile(path,saved)
+    frame=None
+    if path.exists():
+        shutil.copyfile(path,saved)
+        frame={'file':saved.name,'sha256':lab.sha256(saved),'monitor':owned_input.focus()}
     rows.append({'label':label,'samples':samples,'input_replayed':False,
-        'frame':{'file':saved.name,'sha256':lab.sha256(saved),'monitor':owned_input.focus()}});t.persist()
+        'frame':frame});t.persist()
     raise RuntimeError('fresh target control was not observed: '+label)
 
 
