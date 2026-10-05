@@ -20,6 +20,7 @@ SPECS={
     'showTutorials':('Tutorials','settings.tutorials'),
     'nameplateShowEnemies':('Enemy Units','settings.nameplates'),
     'enableFloatingCombatText':('Floating Combat Text','settings.floating_combat_text'),
+    'colorblindMode':('Enable UI Colorblind Mode','settings.accessibility'),
 }
 
 
