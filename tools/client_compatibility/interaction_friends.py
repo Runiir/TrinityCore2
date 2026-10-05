@@ -13,6 +13,7 @@ from .interaction_lifecycle import Packets
 from .world.buffer import Reader
 
 FRIEND='Harnessdwarf'
+REMOVE_NAME=FRIEND+'-Client442Lab'
 MISSING='Zzqvxfixture'
 GUID=3
 HIGH=(2<<58)|(1<<42)
@@ -105,7 +106,7 @@ def operation(t,packets,label,name,guid,result,expected_rows,expected_public,rem
                 'rendered_stock_message_requires_visual_review':True}}
     if remove:
         require(t.step(label,'Remove only the disposable owned dwarf friend.',
-            {'remove':{'kind':'chat','value':'/removefriend '+FRIEND}},outcome,diagnostic_action='remove',
+            {'remove':{'kind':'chat','value':'/removefriend '+REMOVE_NAME}},outcome,diagnostic_action='remove',
             await_state=lambda s:not any(r['name']==FRIEND for r in s.get('friends') or [])),'friend_status_pass')
     else:
         require(click(t,label,'Confirm the stock Add Friend dialog.',lambda c:c['name']=='StaticPopup1Button1' and
@@ -115,6 +116,88 @@ def operation(t,packets,label,name,guid,result,expected_rows,expected_public,rem
     state,frame=t.observe(label.replace('.','_')+'_rendered')
     t.receipt.setdefault('friend_rendered_outcomes',[]).append({'case':label,'name':name,'native_result':result,
         'state':state,'frame':frame});t.persist()
+
+
+def close_friends(t):
+    state,frame=t.observe('friends_close_guard')
+    if state.get('chat_edit_open'):
+        if (not state.get('chat_edit_focused') or state.get('chat_edit_text')!=
+                '/removefriend '+REMOVE_NAME):
+            raise RuntimeError('friend cleanup refuses an unrelated pending chat edit')
+        t.receipt['friend_pending_cancel']={'frame':frame,'text':state['chat_edit_text'],
+            'input':{'kind':'key','value':'Escape','hold':.4},'submitted':False};t.persist()
+        t.execute(t.receipt['friend_pending_cancel']['input'])
+        state,frame=t.observe('friends_pending_cancelled')
+        if state.get('chat_edit_open'):raise RuntimeError('exact pending friend edit did not cancel')
+    if 'FriendsFrame' in state['panels']:
+        require(click(t,'fixture.friends.close','Close Friends through its observed stock Close button.',
+            lambda c:c['name']=='FriendsFrameCloseButton',lambda b,a,s:{'status':'friend_window_closed' if s and
+                'FriendsFrame' not in a['panels'] else 'client_or_protocol_failure'},
+            await_state=lambda s:'FriendsFrame' not in s['panels']),'friend_window_closed')
+    t.clean_panels()
+
+
+def restored(t,old):
+    restore(t,old['native_baseline'])
+    state,current_quest=quest_detail(t,'friends_restored')
+    checks={'native_social':social()==old['original_social'],
+        'public_friends':public(state.get('friends'))==old['original_public_friends'],
+        'inventory_money':canonical(inventory())==old['original_inventory'],
+        'offline_owned_dwarf':offline_fixture()==old['offline_owned_dwarf'],
+        'quest_layout':current_quest==old['original_quest_log'],
+        'native_quests':saved_quests(1)==old['original_native_quests'],
+        'same_session':actors.session_entry(t.fixture)['session']==old['session'],
+        'group':state['group']==old['original_group'],
+        'panels_closed':not state.get('panels') and not state.get('bags'),
+        'chat_closed':not state.get('chat_edit_open'),'no_lua_errors':not state.get('lua_errors'),
+        'no_blocked_actions':not state.get('blocked_actions')}
+    t.receipt['friend_restoration']={'checks':checks};t.persist()
+    if not all(checks.values()):raise RuntimeError('friend trial did not restore its original fixture')
+
+
+def recovery_source_matches(old,current):
+    pending=old.get('chat_submission_checks',[{}])[-1]
+    outcomes=[r for r in old.get('cases',[]) if r.get('status')=='friend_status_pass']
+    failed=old.get('cases',[{}])[-1]
+    return (old.get('completed') is False and bool(old.get('finished_at')) and
+        old.get('failure')=='RuntimeError: panel cleanup did not change state; refusing to replay Escape' and
+        old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
+        old.get('actor',{}).get('guid')==1 and
+        [r.get('id') for r in outcomes]==['friends.add_friend','friends.duplicate_friend_error',
+            'friends.self_friend_error','friends.nonexistent_friend_error'] and
+        all(r.get('oracle',{}).get('checks') and all(r['oracle']['checks'].values()) for r in outcomes) and
+        failed.get('id')=='friends.remove_friend' and failed.get('status')=='infrastructure_failure' and
+        failed.get('error')=='RuntimeError: chat edit differs from the selected command; refusing submission' and
+        pending.get('submitted') is False and pending.get('selected_text')=='/removefriend '+FRIEND and
+        pending.get('observed_text')=='/removefriend '+REMOVE_NAME and pending.get('observed_focused') is True)
+
+
+def recover(t,path):
+    path=path.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a closed owned friend removal failure')
+    old=json.loads(path.read_text())
+    if not recovery_source_matches(old,t.receipt):raise RuntimeError('friend cleanup source or owned lifetime differs')
+    expected=sorted(old['original_social']+[[1,GUID,1,'']],key=lambda r:(r[0],r[1]))
+    native=canonical(capture(t));base=old['native_baseline']
+    state,quest=quest_detail(t,'friends_recovery_guard')
+    checks={'exact_prepared_social':social()==expected,
+        'native_state':all(native[k]==base[k] for k in base if k!='afk'),
+        'inventory_money':canonical(inventory())==old['original_inventory'],
+        'quest_layout':quest==old['original_quest_log'],'native_quests':saved_quests(1)==old['original_native_quests'],
+        'offline_owned_dwarf':offline_fixture()==old['offline_owned_dwarf'],
+        'same_session':actors.session_entry(t.fixture)['session']==old['session'],
+        'exact_pending_edit':state.get('chat_edit_open') is True and state.get('chat_edit_focused') is True and
+            state.get('chat_edit_text')=='/removefriend '+REMOVE_NAME,
+        'group':state['group']==old['original_group'],'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+    t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},source_preflight=checks,
+        qualified_scope='Cleanup only. Cancel the exact unsubmitted autocomplete edit and remove only the source-bound dwarf friend. No gameplay qualification.',
+        custom_script_permission='blocked_by_user');t.persist()
+    if not all(checks.values()):raise RuntimeError('source-bound friend cleanup fixture differs')
+    close_friends(t);open_friends(t,'fixture.friends.recovery_open')
+    operation(t,Packets(old['session']),'fixture.friends.recovery_remove',FRIEND,GUID,5,
+        old['original_social'],old['original_public_friends'],remove=True)
+    close_friends(t);restored(t,old)
 
 
 def suite(t):
@@ -148,30 +231,22 @@ def suite(t):
         operation(t,packets,'friends.nonexistent_friend_error',MISSING,0,4,expected,added_public)
         operation(t,packets,'friends.remove_friend',FRIEND,GUID,5,original,original_public,remove=True)
     finally:
-        t.clean_panels();current=social()
+        close_friends(t);current=social()
         if current!=original:
             if current!=expected:raise RuntimeError('social cleanup differs from the exact prepared row; refusing mutation')
             open_friends(t,'fixture.friends.cleanup_open')
             operation(t,packets,'fixture.friends.cleanup_remove',FRIEND,GUID,5,original,original_public,remove=True)
-            t.clean_panels()
-        restore(t,native)
-        state,current_quest=quest_detail(t,'friends_restored')
-        checks={'native_social':social()==original,'public_friends':public(state.get('friends'))==original_public,
-            'inventory_money':canonical(inventory())==original_inventory,'offline_owned_dwarf':offline_fixture()==dwarf,
-            'quest_layout':current_quest==quest,'native_quests':saved_quests(1)==quests,
-            'same_session':actors.session_entry(t.fixture)['session']==session,'group':state['group']==t.receipt['original_group'],
-            'panels_closed':not state.get('panels') and not state.get('bags'),
-            'chat_closed':not state.get('chat_edit_open'),'no_lua_errors':not state.get('lua_errors'),
-            'no_blocked_actions':not state.get('blocked_actions')}
-        t.receipt['friend_restoration']={'checks':checks};t.persist()
-        if not all(checks.values()):raise RuntimeError('friend trial did not restore its original fixture')
+            close_friends(t)
+        restored(t,t.receipt)
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--source',type=Path);a=p.parse_args()
     with actor('primary'):
         t=Trial(a.output,controller='code')
-        try:suite(t);t.receipt['completed']=True
+        try:
+            (recover(t,a.source) if a.source else suite(t));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
