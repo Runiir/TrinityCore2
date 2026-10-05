@@ -30,7 +30,8 @@ def parse(payload, player):
     return {'north':north,'west':west,'height_yards':height,
             'facing_radians':facing,'client_uptime_ms':tick,
             'flying':bool(flags&0x1000000),'falling':bool(flags&0x800),
-            'ascending':bool(flags&0x400000)}
+            'ascending':bool(flags&0x200000),'descending':bool(flags&0x400000),
+            'pitch_radians':pitch}
 
 
 def match(row, pose, *, now):

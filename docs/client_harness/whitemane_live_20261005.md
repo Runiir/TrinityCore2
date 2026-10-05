@@ -110,3 +110,43 @@ the rejected partial head were then pruned after checking their archived
 hashes. The local archive and its exact cache object were also removed to keep
 the batch remote-only. Local DVC status therefore reports this output not in cache;
 restore it with `pixi run dvc pull` targeting that `.dvc` file.
+
+## User demonstration and supervised teleport
+
+The user completed Bael Modan after taking control of the calculated-ascent
+trial. Public counters increased by three finds, 22 race-index-10 fragments,
+and one keystone. Bael Modan was replaced by Terror Run; the UI reported two
+completed sites this login. These finds are credited to the user. A retained
+16-sample section covers 21.33 yards in 2.822 seconds, with height 92.14 to
+96.87 yards. The bounded feed did not retain the full route or the user's
+key sequence, and no model training used this demonstration.
+
+The calculated-ascent trial remains unqualified. Its first climb passed the
+105.55-yard ceiling and released at 132.92 yards after delayed feedback.
+Cruise then lost height and contacted terrain. The user later controlled
+the character, so the cause of the height loss is unproven. The reader now
+uses the modern movement flags for ascent and descent and retains pitch.
+Climb-rate estimation uses actual positive height changes with little
+horizontal movement, so it also works with the earlier reader's incorrect
+ascent flag. The pitch/flag export takes effect on the next feed restart;
+the current feed was not restarted for the teleport test. All 21 movement
+and feed tests passed after these corrections.
+
+The unadapted pinned Laya model opened the physical Teleport flyout and chose
+its Tol Barad spell. Public map ID 245, instance 732 and the Hellscream's
+Grasp screen confirmed arrival. The flyout-opening choice had probability
+0.8408; the Tol Barad destination choice had probability 0.8026. These are
+option probabilities, not estimates of overall task success.
+
+The user identified the Teleport icon. Codex then supplied public tooltip
+labels and reviewed button coordinates as perception annotations. Laya saw
+text facts, selected each hover/click, and the owned input controller executed
+the selection. No model weights changed. The initial broad inspection
+question repeatedly chose the Dalaran Hearthstone. A changed button appearance
+blocked one input, and another choice waited. Opening a confirmed menu and
+inspecting unread destination slots were subsequently treated as separate
+phases. All visible destination slots remained candidates for the final
+selection; seven had verified tooltip labels and one was still unidentified.
+The controller refuses casting a different destination or an unidentified
+spell. This establishes supervised UI execution, not independent perception
+or a complete travel/farm loop.

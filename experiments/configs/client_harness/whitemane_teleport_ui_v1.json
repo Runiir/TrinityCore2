@@ -1,0 +1,29 @@
+{
+  "schema": "whitemane_supervised_teleport_ui_v1",
+  "model": "convaiinnovations/laya-typed-decisions",
+  "revision": "c5d78730f3493e4fe16d61507ef4b78eef7318cf",
+  "adapter": null,
+  "device": "cpu",
+  "endpoint": "http://127.0.0.1:8005",
+  "service_module": "tools.live_whitemane.ui_choice",
+  "manifest": "~/.local/share/trinity-laya/pixi.toml",
+  "viewport": [1280, 900],
+  "monitor": "HDMI-1",
+  "perception": "supervised public screenshot and tooltip labels",
+  "model_saw_pixels": false,
+  "must_review_current_viewport": true,
+  "teleport_button": {"x": 1219, "y": 315},
+  "flyout_slots_left_to_right": [
+    {"x": 966, "y": 315, "tooltip_destination": "Tol Barad"},
+    {"x": 997, "y": 315, "tooltip_destination": "Dalaran"},
+    {"x": 1028, "y": 315, "tooltip_destination": "Shattrath"},
+    {"x": 1058, "y": 315, "tooltip_destination": "Stonard"},
+    {"x": 1089, "y": 315, "tooltip_destination": "Silvermoon City"},
+    {"x": 1120, "y": 315, "tooltip_destination": "Thunder Bluff"},
+    {"x": 1151, "y": 315, "tooltip_destination": "Undercity"},
+    {"x": 1182, "y": 315, "tooltip_destination": null}
+  ],
+  "destination": {"name": "Tol Barad", "public_map_id": 245, "world_instance": 732},
+  "training_performed": false,
+  "independent_visual_recognition_qualified": false
+}

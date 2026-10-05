@@ -6,13 +6,22 @@ from tools.live_whitemane import own_pose, clearance, guide
 
 def test_owned_movement_height_is_typed_and_unsupported_layouts_are_rejected():
     player=(9,2<<58|7<<42)
-    payload=Writer().guid(*player).pack('4I6f2I',0x1400000,0,0,1234,
+    payload=Writer().guid(*player).pack('4I6f2I',0x1200000,0,0,1234,
         -4170,-2220,80,1.2,0,0,0,1).bits(0,8).finish()
     result=own_pose.parse(payload,player)
     assert result['height_yards']==80 and result['ascending'] and result['flying']
     with pytest.raises(ValueError):own_pose.parse(payload,(8,player[1]))
     with pytest.raises(ValueError):own_pose.parse(payload+b'x',player)
     with pytest.raises(ValueError):own_pose.parse(payload[:-1]+b'\x40',player)
+
+
+def test_descent_does_not_report_ascent_and_pitch_is_preserved():
+    player=(9,2<<58|7<<42)
+    payload=Writer().guid(*player).pack('4I6f2I',0x1400000,0,0,1234,
+        -4170,-2220,80,1.2,-.4,0,0,1).bits(0,8).finish()
+    result=own_pose.parse(payload,player)
+    assert result['descending'] and not result['ascending']
+    assert result['pitch_radians']==pytest.approx(-.4)
 
 
 def test_stale_or_unmatched_pose_cannot_supply_flight_height():
@@ -36,6 +45,18 @@ def test_ascent_time_follows_actual_height_gap_and_measured_speed():
     assert clearance.vertical_speed(faster)==30
     assert clearance.remaining_seconds({**faster,'height_yards':40},60)==pytest.approx(2/3)
     assert clearance.remaining_seconds({'height_yards':40,'samples':[]},60) is None
+
+
+def test_vertical_rate_handles_old_flag_but_rejects_horizontal_or_downward_motion():
+    samples=[{'client_uptime_ms':1000+i*500,'height_yards':10+i*10,
+              'ascending':False,'north':0,'west':0} for i in range(4)]
+    assert clearance.vertical_speed({'samples':samples})==20
+    horizontal=copy.deepcopy(samples)
+    for i,s in enumerate(horizontal):s['north']=i*5
+    assert clearance.vertical_speed({'samples':horizontal}) is None
+    descending=copy.deepcopy(samples)
+    for i,s in enumerate(descending):s['height_yards']=50-i*10
+    assert clearance.vertical_speed({'samples':descending}) is None
 
 
 def test_corridor_ceiling_clears_the_highest_reference_surface(monkeypatch):

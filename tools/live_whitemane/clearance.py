@@ -40,7 +40,8 @@ def vertical_speed(pose):
     samples=pose.get('samples',[])
     for a,b in zip(samples,samples[1:]):
         elapsed=((b['client_uptime_ms']-a['client_uptime_ms'])%2**32)/1000
-        if .05<=elapsed<=2 and a['ascending'] and b['ascending']:
+        stationary=math.hypot(a.get('north',0)-b.get('north',0),a.get('west',0)-b.get('west',0))<.75
+        if .05<=elapsed<=2 and stationary:
             rate=(b['height_yards']-a['height_yards'])/elapsed
             if 1<rate<100:rates.append(rate)
     return statistics.median(rates[-6:]) if rates else None
