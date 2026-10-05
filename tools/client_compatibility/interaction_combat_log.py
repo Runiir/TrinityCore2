@@ -81,7 +81,7 @@ def run(t):
         def logged(b,a,s):
             result=probe(t,'combat_log_real_event');chat=chat_detail(t,'combat_log_selected_chat')
             events=[e for e in result['events'] if e['sequence']>baseline['event_sequence'] and
-                e['source_guid']==t.guid and e['spell_id']==6673]
+                e['source_guid']==t.guid and e['spell_id']==6673 and e['event']=='SPELL_CAST_SUCCESS']
             old_text={r['text'] for r in baseline['recent_messages']}
             fresh_text=[r for r in result['recent_messages'] if r['contains_battle_shout'] and
                 r['text'] not in old_text and not r.get('truncated')]
