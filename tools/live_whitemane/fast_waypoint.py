@@ -20,7 +20,9 @@ def decision(row,target,distance,error,flying,site_id,tolerance):
     if site_id is not None and not flying:
         waypoint={'color':'green' if distance<=40 else 'yellow' if distance<=80 else 'red',
             'distance_yards':round(distance,2),'heading_relative_to_player':direction,'arrived':distance<=tolerance}
-        state=guide.model_state(row,waypoint,(row.get('farm_ui') or {}).get('soft_interact',{}).get('name') in FIND_NAMES)
+        from .survey_find import in_range
+        named=(row.get('farm_ui') or {}).get('soft_interact',{}).get('name') in FIND_NAMES
+        state=guide.model_state(row,waypoint,in_range(row) if row.get('visible_find') else named)
         return choose(state)
     flags={'mode':'flight' if flying else 'portal','available':True,'casting':a['casting'],
         'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],'falling':a['falling'],

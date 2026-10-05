@@ -4,6 +4,14 @@ import math
 
 def select(row, session, tool):
     a,m=row['archaeology'],row['movement']; world=a['world']
+    find=row.get('visible_find')
+    if find and session.get('reapproach_find'):
+        endpoint=find['world'];distance=find['distance_yards']
+        heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
+        error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
+        return {'source':'visible owned archaeology find','world':endpoint,'color':'green',
+            'distance_yards':distance,'arrived':distance<=3,
+            'heading_relative_to_player':'aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'},error
     visited=session.setdefault('visited_marker_ids',[])
     target=session.get('marker_target')
     if target and target['world']['instance'] != world['instance']:
@@ -68,6 +76,7 @@ def pickup(session):
     if target: session['visited_marker_ids'].append(target['marker_id'])
     session.update(marker_target=None,marker_fallback=False,marker_failed_surveys=0)
     session.pop('telescope_target',None)
+    session.pop('reapproach_find',None);session.pop('pickup_retries',None)
 
 
 def model_state(row, guide, artifact_visible):

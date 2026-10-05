@@ -6,13 +6,12 @@ import json
 import os
 import queue
 from pathlib import Path
-import select
 import signal
 import struct
 import sys
 import time
 import threading
-from . import own_pose, owned_sockets, addon_relay
+from . import own_pose, owned_sockets, addon_relay,survey_find
 from tools.client_compatibility.world import movement
 
 ROOT = Path.home() / '.local/share/trinity-whitemane-live'
@@ -126,6 +125,7 @@ def main():
         def clear():
             mailbox.clear()
             (ROOT / 'run/telescope.json').unlink(missing_ok=True)
+            (ROOT / 'run/visible_find.json').unlink(missing_ok=True)
         def emit(record):
             validate(scope)
             mailbox.write(reader.wire_record(record))
@@ -148,6 +148,11 @@ def main():
                 write(ROOT/'run/bearing_reader.json',session)
                 print('Session ready. Authenticated owned-client feed active. Stops after 30 minutes of gameplay inactivity.',flush=True)
             window.packet(direction, opcode, payload, stamp)
+            find=survey_find.owned(reader,window,direction,opcode,payload,stamp)
+            if find:
+                write(ROOT/'run/visible_find.json',{**find,'runtime':scope['runtime'],
+                    'reader_pid':os.getpid(),'reader_start_ticks':session['start_ticks']})
+                session['visible_find_samples']=session.get('visible_find_samples',0)+1
             session['authenticated_frames'] += 1
             activity = False
             try:
@@ -246,6 +251,7 @@ def main():
         mailbox.clear()
         (ROOT / 'run/telescope.json').unlink(missing_ok=True)
         (ROOT / 'run/movement_pose.json').unlink(missing_ok=True)
+        (ROOT / 'run/visible_find.json').unlink(missing_ok=True)
         flows.clear(); keys.clear(); buffer.clear()
         while not captured.empty():
             try:captured.get_nowait()

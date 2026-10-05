@@ -65,6 +65,12 @@ def run(args):
     if progress.last_decision: progress.last_decision=tuple(progress.last_decision)
     try:
         pending=session['steps'][-1] if session['steps'] else None
+        if (pending and pending.get('action')=='loot' and not pending.get('confirmed_looted_find')
+            and ((pending.get('after',{}).get('farm_ui') or {}).get('error') or {}).get('message')=='Out of range.'
+            and not session.get('reapproach_find')):
+            session.update(reapproach_find=True,pickup_retries=1,marker_fallback=True,
+                walked_since_survey=True,marker_target=None)
+            session.pop('telescope_target',None)
         if pending and pending.get('travel_mode')=='red_flight' and not pending['completed']:
             current=observe(output/'resume_precheck.png')
             if current['archaeology']['mounted'] or current['archaeology']['flying']:
@@ -90,6 +96,9 @@ def run(args):
             ui=before.get('farm_ui') or {}
             visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
+            if session.get('reapproach_find'):
+                from .survey_find import in_range
+                visible_find=a['loot_open'] or in_range(before)
             session.setdefault('site_id',a['site_id'])
             if not args.loot_at and not visible_find and (not a['can_survey'] or a['site_id'] != session['site_id']):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
@@ -135,6 +144,9 @@ def run(args):
             if tool and guide and guide['source']=='Survey telescope' and time.time()-tool['observed_at']>10:
                 raise RuntimeError('telescope expired before input')
             if action=='survey':
+                if session.get('reapproach_find') and not fresh.get('owned_pose'):
+                    from .navigation import seed_height
+                    step['pose_refresh']=seed_height(folder/'pose_refresh',fresh)
                 session['last_survey_at']=time.time()
                 session['walked_since_survey']=False
                 session.pop('telescope_target',None)
@@ -153,7 +165,7 @@ def run(args):
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
                     step['inputs']=fly(folder,before,arrow,step)
-                elif guide['source']=='GatherMate marker' or guide['color']=='yellow':
+                elif guide['source'] in ('GatherMate marker','visible owned archaeology find') or guide['color']=='yellow':
                     step['travel_mode']='held_waypoint_approach'
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'])
                     step['inputs']=[]
@@ -203,10 +215,20 @@ def run(args):
                 if not fresh_tool and not auto_loot:session['stop_reason']='survey_without_telescope_review_visible_find'
                 routes.marker_survey_outcome(session,guide,fresh_tool,not fresh_tool)
             if action=='loot':
-                if not found: raise RuntimeError('artifact interaction did not confirm fragment pickup')
-                args.loot_at=None
-                routes.pickup(session)
-                session['observed_find_count']=after['archaeology']['looted_finds']
+                if not found:
+                    error=(after.get('farm_ui') or {}).get('error') or {}
+                    if error.get('message')!='Out of range.':
+                        raise RuntimeError('artifact interaction did not confirm fragment pickup')
+                    retries=session.get('pickup_retries',0)+1
+                    if retries>2:raise RuntimeError('artifact stayed out of range after two guided recoveries')
+                    session.update(reapproach_find=True,pickup_retries=retries,marker_fallback=True,
+                        walked_since_survey=True,marker_target=None)
+                    session.pop('telescope_target',None)
+                    step['outcome']='out_of_range_refresh_survey_guidance'
+                else:
+                    args.loot_at=None
+                    routes.pickup(session)
+                    session['observed_find_count']=after['archaeology']['looted_finds']
             if action.startswith('forward_') and (walked<.25 or walked>(750 if step.get('travel_mode') in ('red_flight','held_waypoint_approach') else 15)):
                 raise RuntimeError('walking outcome was blocked or exceeded its bound')
             if action.startswith('turn_') and walked>.15:

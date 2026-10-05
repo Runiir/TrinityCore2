@@ -27,7 +27,8 @@ def attach_pose(row):
     if row['owned_pose']:
         row['archaeology']['altitude_yards']=row['owned_pose']['height_yards']
         row['archaeology']['altitude_source']=row['owned_pose']['source']
-    return row
+    from .survey_find import attach
+    return attach(row,time.time())
 
 
 def observe(output):

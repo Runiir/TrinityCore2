@@ -69,6 +69,15 @@ calculated flight clearance and 150-fragment solve batches remain active.
 Normal loot-window buttons are exposed and chosen by Laya if interaction
 does not auto-loot the find.
 
+An out-of-range interaction enters a bounded approach recovery. The passive
+reader admits a visible find's CreateObject position only within eight seconds
+of Runiir's own Survey, with the exact owned character as creator and a known
+archaeology-find entry. Other objects and owners are ignored. The position
+expires after 20 seconds and must match the current reader, client and world.
+It is a rendered find position, not a server-side hidden dig destination.
+Laya receives its bearing through the existing waypoint schema; loot becomes
+available within three yards. After pickup, the find observation is discarded.
+
 ## Validation boundary
 
 The October 5 GPU replay made 100 original-head UI decisions at 10 Hz:
@@ -82,6 +91,13 @@ The initial live travel and four Night Elf solves succeeded. The first find
 interaction did not confirm fragments, and no complete model-driven digsite
 or repeating farm loop has yet been established. The relay and continuous
 controller require live qualification after the reader restart.
+
+The direct live observation replay subsequently completed 100 requests without
+screenshots or gameplay input. Observation plus inference took 30.9 ms median,
+36.0 ms at the 95th percentile and 109.6 ms maximum. Movement sample age was
+53.9 ms median and 144.6 ms maximum. At the owned client's 15 FPS idle rate,
+68 distinct movement generations were observed in those 100 request cycles.
+This does not claim a guaranteed new observation every 100 ms.
 
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay
