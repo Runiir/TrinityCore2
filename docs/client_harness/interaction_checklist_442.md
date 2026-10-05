@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 383 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 386 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -146,10 +146,10 @@ Fixture: `profession_variants`.
 - [x] `professions.archaeology` (qualified variant; [evidence](#profession_catalogs))
 - [x] `professions.recipe_list` (qualified variant; [evidence](#crafting))
 - [x] `professions.recipe_search` (qualified variant; [evidence](#crafting))
-- [ ] `professions.recipe_filter`
-- [ ] `professions.recipe_tooltip`
+- [x] `professions.recipe_filter` (qualified variant; [evidence](#owned_alchemy_makeable_filter))
+- [x] `professions.recipe_tooltip` (qualified variant; [evidence](#owned_alchemy_recipe_result_tooltip))
 - [x] `professions.recipe_select` (qualified variant; [evidence](#crafting))
-- [ ] `professions.reagent_tooltip`
+- [x] `professions.reagent_tooltip` (qualified variant; [evidence](#owned_alchemy_recipe_reagent_tooltips))
 - [x] `professions.craft_one` (qualified variant; [evidence](#crafting))
 - [x] `professions.craft_multiple` (qualified variant; [evidence](#crafting))
 - [ ] `professions.cancel_craft`
@@ -2625,3 +2625,33 @@ Remaining limits: Opening and cancelling this owned-player form only. No reason,
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_report_visual_review.json`, SHA-256 `553dfc9432ff4c3766b4cf8c6837dcd88bba36c346b96a4caf9791666e36c47b`.
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_menu_whole_review.json`, SHA-256 `df3a3b0cac8f82fd84e143a50143b87a10756d9cd11984afa0ed030dc5f34d55`.
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_link_failed_run_review.json`, SHA-256 `3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da`.
+
+### owned_alchemy_makeable_filter
+
+Stock Have Materials checkbox on idle owned Alchemy at 525/525 with zero materials changes the catalog from 318 to zero entries and back to 318. Ordinary unfiltered thumb drag and exact row 126 selection restore Deepholm, the search placeholder, checkbox and top viewport. Original spellbook and all ten native checks pass.
+
+Remaining limits: Other profession, rank, populated makeable-list, subclass, slot, permission, combat and persistence variants remain open.
+
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json`, SHA-256 `d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc`.
+  Checked cases: `professions.recipe_filter.makeable_on` (recipe_filter_pass), `professions.recipe_filter.makeable_off` (recipe_filter_pass).
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/recipe_whole_review.json`, SHA-256 `6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362`.
+
+### owned_alchemy_recipe_result_tooltip
+
+Ordinary hover of TradeSkillSkillIcon for native-known Potion of Deepholm, spell 80725, displays the stock item 58487 tooltip with the exact native catalog name, rendered title and owner. Recipe and native resources stay unchanged; whole layout and native restoration pass.
+
+Remaining limits: This qualifies only the selected Deepholm result-item icon tooltip. Other recipe links, rows, items, classes, ranks, comparisons, combat and locale variants remain open.
+
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json`, SHA-256 `d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc`.
+  Checked cases: `professions.recipe_tooltip` (recipe_item_tooltip_pass).
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/recipe_whole_review.json`, SHA-256 `6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362`.
+
+### owned_alchemy_recipe_reagent_tooltips
+
+Ordinary hovers of TradeSkillReagent1 and TradeSkillReagent2 display native item 52986, Heartblossom, and item 3371, Crystal Vial, with exact names, rendered titles and owners. The selected native recipe requires five and one respectively and has zero of both. Whole recipe, spellbook and ten native restoration checks pass.
+
+Remaining limits: Other reagents, recipes, inventories, crafting, classes, ranks, links, comparisons, combat and locale variants remain open.
+
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json`, SHA-256 `d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc`.
+  Checked cases: `professions.reagent_tooltip.52986` (recipe_item_tooltip_pass), `professions.reagent_tooltip.3371` (recipe_item_tooltip_pass).
+- [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/recipe_whole_review.json`, SHA-256 `6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362`.

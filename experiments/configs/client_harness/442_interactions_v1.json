@@ -1059,7 +1059,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_alchemy_makeable_filter"
     },
     {
       "id": "professions.recipe_tooltip",
@@ -1068,7 +1069,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_alchemy_recipe_result_tooltip"
     },
     {
       "id": "professions.recipe_select",
@@ -1087,7 +1089,8 @@
       "fixture": "profession_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_alchemy_recipe_reagent_tooltips"
     },
     {
       "id": "professions.craft_one",
@@ -13123,8 +13126,79 @@
           "sha256": "3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da"
         }
       ]
+    },
+    {
+      "id": "owned_alchemy_makeable_filter",
+      "operations": [
+        "professions.recipe_filter"
+      ],
+      "scope": "Stock Have Materials checkbox on idle owned Alchemy at 525/525 with zero materials changes the catalog from 318 to zero entries and back to 318. Ordinary unfiltered thumb drag and exact row 126 selection restore Deepholm, the search placeholder, checkbox and top viewport. Original spellbook and all ten native checks pass.",
+      "limits": "Other profession, rank, populated makeable-list, subclass, slot, permission, combat and persistence variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json",
+          "sha256": "d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc",
+          "cases": {
+            "professions.recipe_filter.makeable_on": "recipe_filter_pass",
+            "professions.recipe_filter.makeable_off": "recipe_filter_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/recipe_whole_review.json",
+          "sha256": "6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362"
+        }
+      ]
+    },
+    {
+      "id": "owned_alchemy_recipe_result_tooltip",
+      "operations": [
+        "professions.recipe_tooltip"
+      ],
+      "scope": "Ordinary hover of TradeSkillSkillIcon for native-known Potion of Deepholm, spell 80725, displays the stock item 58487 tooltip with the exact native catalog name, rendered title and owner. Recipe and native resources stay unchanged; whole layout and native restoration pass.",
+      "limits": "This qualifies only the selected Deepholm result-item icon tooltip. Other recipe links, rows, items, classes, ranks, comparisons, combat and locale variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json",
+          "sha256": "d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc",
+          "cases": {
+            "professions.recipe_tooltip": "recipe_item_tooltip_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/recipe_whole_review.json",
+          "sha256": "6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362"
+        }
+      ]
+    },
+    {
+      "id": "owned_alchemy_recipe_reagent_tooltips",
+      "operations": [
+        "professions.reagent_tooltip"
+      ],
+      "scope": "Ordinary hovers of TradeSkillReagent1 and TradeSkillReagent2 display native item 52986, Heartblossom, and item 3371, Crystal Vial, with exact names, rendered titles and owners. The selected native recipe requires five and one respectively and has zero of both. Whole recipe, spellbook and ten native restoration checks pass.",
+      "limits": "Other reagents, recipes, inventories, crafting, classes, ranks, links, comparisons, combat and locale variants remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json",
+          "sha256": "d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc",
+          "cases": {
+            "professions.reagent_tooltip.52986": "recipe_item_tooltip_pass",
+            "professions.reagent_tooltip.3371": "recipe_item_tooltip_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui86/recipe_whole_review.json",
+          "sha256": "6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362"
+        }
+      ]
     }
   ],
-  "qualified_operations": 383,
+  "qualified_operations": 386,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
