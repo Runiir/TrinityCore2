@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 386 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 387 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -760,7 +760,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.monitor_selection`
 - [ ] `settings.render_scale`
 - [ ] `settings.quality`
-- [ ] `settings.sound_volume`
+- [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
 - [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `settings.interface`
 - [ ] `settings.mouse_sensitivity`
@@ -2655,3 +2655,13 @@ Remaining limits: Other reagents, recipes, inventories, crafting, classes, ranks
 - [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/alchemy_variants02/episode.json`, SHA-256 `d070a4709430c0b5a29ee99780dc26ce58ed4dc06c0b10a67fadde16f3c169fc`.
   Checked cases: `professions.reagent_tooltip.52986` (recipe_item_tooltip_pass), `professions.reagent_tooltip.3371` (recipe_item_tooltip_pass).
 - [442_interactions_20261005_86.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_86.tar.gz.dvc), member `evidence/client_interactions_20261005_ui86/recipe_whole_review.json`, SHA-256 `6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362`.
+
+### owned_master_volume_stepper_roundtrip
+
+Owned primary muted-audio fixture: one stock Master Volume decrement from 100 to95 percent and increment back to100. Rendered percentage, public CVar and Settings value agree; original search/category, other observed settings and all ten native fixture checks restore.
+
+Remaining limits: Master Volume arrows at the saved upper endpoint only. Other audio controls and ranges, slider dragging, audible output, keybindings and reconnect persistence remain open. Failed exercise01 and source-bound cleanup recovery01 remain excluded; numeric formatting 1.0 versus 1 is reviewed as equivalent only for this CVar.
+
+- [442_interactions_20261005_87.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc), member `evidence/client_interactions_20261005_ui87/master_volume_exercise02/episode.json`, SHA-256 `576b22c8c1bcab84fa6d6603dfffc89bba844c69bec2ef712d1c60f2bf8e7564`.
+  Checked cases: `settings.sound_volume.decrease` (stock_numeric_setting_pass), `settings.sound_volume.restore.1` (stock_numeric_setting_pass).
+- [442_interactions_20261005_87.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc), member `evidence/client_interactions_20261005_ui87/volume_whole_review.json`, SHA-256 `31934ab868034fcdc3304c69b89e45b75346a69aaed6fd65e6229bd73a41f54f`.

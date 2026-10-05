@@ -5744,7 +5744,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_master_volume_stepper_roundtrip"
     },
     {
       "id": "settings.mute",
@@ -13197,8 +13198,32 @@
           "sha256": "6e7f162f1717a78c953ae7d2628834dc1a8bbf91db683f4b496bd157f2ca5362"
         }
       ]
+    },
+    {
+      "id": "owned_master_volume_stepper_roundtrip",
+      "operations": [
+        "settings.sound_volume"
+      ],
+      "scope": "Owned primary muted-audio fixture: one stock Master Volume decrement from 100 to95 percent and increment back to100. Rendered percentage, public CVar and Settings value agree; original search/category, other observed settings and all ten native fixture checks restore.",
+      "limits": "Master Volume arrows at the saved upper endpoint only. Other audio controls and ranges, slider dragging, audible output, keybindings and reconnect persistence remain open. Failed exercise01 and source-bound cleanup recovery01 remain excluded; numeric formatting 1.0 versus 1 is reviewed as equivalent only for this CVar.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui87/master_volume_exercise02/episode.json",
+          "sha256": "576b22c8c1bcab84fa6d6603dfffc89bba844c69bec2ef712d1c60f2bf8e7564",
+          "cases": {
+            "settings.sound_volume.decrease": "stock_numeric_setting_pass",
+            "settings.sound_volume.restore.1": "stock_numeric_setting_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui87/volume_whole_review.json",
+          "sha256": "31934ab868034fcdc3304c69b89e45b75346a69aaed6fd65e6229bd73a41f54f"
+        }
+      ]
     }
   ],
-  "qualified_operations": 386,
+  "qualified_operations": 387,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
