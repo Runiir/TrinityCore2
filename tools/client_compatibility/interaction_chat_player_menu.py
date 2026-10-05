@@ -98,6 +98,9 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
         r.get('text')==seed['token'] and r.get('sender')==seed['observed_sender']]
     if len(matches)!=1:raise RuntimeError('fresh public owned chat seed differs')
     t.receipt['reviewed_link']={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame};t.persist()
+    t.io.move(*point);time.sleep(1)
+    hover,hover_frame=t.observe('player_link_pointer_settled')
+    t.receipt['player_link_pointer_settled']={'point':point,'seconds':1,'frame':hover_frame};t.persist()
     def outcome(b,a,s):
         rows=controls(t);state,frame=t.observe('owned_player_menu_rendered')
         t.receipt['player_menu']={'controls':rows,'state':state,'frame':frame};t.persist()
@@ -106,7 +109,8 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
             else 'client_or_protocol_failure'}
     try:
         require(t.step('fixture.player_chat_link_menu','Right-click the reviewed owned player chat link.',
-            {'menu':{'kind':'click','value':point,'button':3,'hold':1.2}},outcome,diagnostic_action='menu'),
+            {'menu':{'kind':'click','value':point,'button':3,'hold':1.2}},outcome,diagnostic_action='menu',
+            await_state=lambda s:any(p in s['panels'] for p in ['ContextMenu','DropDownList1'])),
             'owned_player_menu_inspected')
         if operation!='inspect':
             from . import interaction_chat_player_actions as actions
