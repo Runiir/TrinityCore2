@@ -11,6 +11,7 @@
 #include "talents.hpp"
 #include "archaeology.hpp"
 #include "player_ui_state.hpp"
+#include "item_text.hpp"
 #include <ctime>
 
 namespace bridge
@@ -225,6 +226,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {
         if ((reply = Protocol::creature_reply(state, body)))
             send(*reply);
+        co_return;
+    }
+    if(name=="SMSG_READ_ITEM_OK" || name=="SMSG_READ_ITEM_FAILED" || name=="SMSG_PAGE_TEXT_QUERY_RESPONSE")
+    {
+        if(auto text=item_text_response(protocol,state,name,body))send(*text);
         co_return;
     }
     if ((reply = protocol.bank_response(state, name, body)))

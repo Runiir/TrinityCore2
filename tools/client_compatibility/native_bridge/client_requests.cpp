@@ -11,6 +11,7 @@
 #include "currency.hpp"
 #include "appearance.hpp"
 #include "player_ui_state.hpp"
+#include "item_text.hpp"
 
 namespace bridge
 {
@@ -67,6 +68,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         return;
     }
     if(Protocol::bank_close(state,name,body))return;
+    if(name=="CMSG_READ_ITEM" || name=="CMSG_QUERY_PAGE_TEXT")
+    {require_world();native_send(*item_text_request(protocol,state,name,body));return;}
     if(auto request=appearance_request(name,body))
     {require_world();native_send(*request);return;}
     if(auto request=talent_request(name,body))

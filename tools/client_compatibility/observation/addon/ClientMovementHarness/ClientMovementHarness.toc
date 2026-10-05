@@ -11,6 +11,7 @@ CurrencyObservation.lua
 ArchaeologyObservation.lua
 MapObservation.lua
 TooltipObservation.lua
+ItemTextObservation.lua
 EquipmentObservation.lua
 SpellBookObservation.lua
 ProfessionObservation.lua
