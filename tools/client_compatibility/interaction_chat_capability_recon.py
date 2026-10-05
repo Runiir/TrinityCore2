@@ -22,6 +22,9 @@ def binding_recon(t):
             lambda c:c['kind']=='EditBox' and point(c)==point(field),term),'ui_edit_pass')
         catalog=controls(t);state,frame=t.observe('voice_binding_search_'+term)
         t.receipt.setdefault('voice_binding_search',{})[term]={'controls':catalog,'state':state,'frame':frame};t.persist()
+    require(click_case(t,'fixture.voice_binding_close','Close the observed stock settings panel.',
+        lambda c:c['text']=='Close',lambda b,a,s:{'status':'panel_closed_pass' if s and
+            'SettingsPanel' not in a['panels'] else 'client_or_protocol_failure'}),'panel_closed_pass')
 
 
 def play(t):
