@@ -23,12 +23,12 @@ def plan(row, target, *, maximum_distance=750):
         fraction=min(1,index*5/max(distance,.01))
         point=[start[i]+(end[i]-start[i])*fraction for i in range(3)]
         column=model_collision.supporting_surface(map_id,point)
-        if column['highest_surface'] is None:raise RuntimeError('flight corridor has no reference surface')
+        if column['highest_surface'] is None or not math.isfinite(column['highest_surface']):
+            raise RuntimeError('flight corridor has no finite reference surface')
         columns.append({'north':point[0],'west':point[1],**column})
     # Reserve a body and sampling margin. Duration follows the height gap and
     # measured velocity; this margin is in yards, not a fixed key-hold time.
     ceiling=max(start[2],max(c['highest_surface'] for c in columns)+8)
-    if ceiling-start[2]>100:raise RuntimeError('reference corridor requires excessive climb')
     return {'ceiling_yards':ceiling,'departure_height_yards':start[2],
             'required_climb_yards':ceiling-start[2],'surface_margin_yards':8,
             'columns':columns,'source':'legacy public MAPS/VMAP corridor, departure checked against live height',

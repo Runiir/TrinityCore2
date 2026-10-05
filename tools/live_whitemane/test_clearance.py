@@ -80,3 +80,20 @@ def test_red_endpoint_arrival_matches_flight_braking_radius():
         'world':{'instance':1,'north':5.5,'west':0},'color':'red','source':'Survey telescope'}}
     result,_=guide.select(row,session,None)
     assert result['arrived']
+
+
+def test_a_real_high_corridor_is_not_rejected_by_an_arbitrary_climb_cutoff(monkeypatch):
+    def surface(_,point):
+        height=5.75 if point[0]==0 else 119.09
+        return {'terrain_height':height,'model_collision_height':None,'highest_surface':height}
+    monkeypatch.setattr(clearance.model_collision,'supporting_surface',surface)
+    monkeypatch.setattr(clearance.model_collision,'column',lambda *_:{'support_height':5.75})
+    row={'owned_pose':{'height_yards':5.75},'archaeology':{
+        'world':{'instance':1,'north':0,'west':0},'grounded':True}}
+    result=clearance.plan(row,{'instance':1,'north':191,'west':0})
+    assert result['required_climb_yards']==pytest.approx(121.34)
+    assert result['ceiling_yards']==pytest.approx(127.09)
+    monkeypatch.setattr(clearance.model_collision,'supporting_surface',lambda *_:{'highest_surface':float('nan')})
+    row['archaeology']['grounded']=False
+    with pytest.raises(RuntimeError,match='finite reference surface'):
+        clearance.plan(row,{'instance':1,'north':191,'west':0})

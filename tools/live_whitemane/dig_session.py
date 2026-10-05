@@ -23,7 +23,7 @@ COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 def write_decision(folder, step, session):
     keys=('index','started_at','action','state','model','request','response','guide',
-          'completed','finished_at','outcome','walked_yards','confirmed_looted_find','gathering_cast_started')
+          'completed','finished_at','outcome','failure','walked_yards','confirmed_looted_find','gathering_cast_started')
     receipt={key:step[key] for key in keys if key in step}
     receipt['code_commit']=session['runs'][-1]['code_commit']
     runtime.write(folder/'decision.json',receipt)
@@ -79,6 +79,7 @@ def run(args):
     resources.trim_session(session,'dig')
     session.pop('stop_reason',None)
     if progress.last_decision: progress.last_decision=tuple(progress.last_decision)
+    step=None
     try:
         pending=session['steps'][-1] if session['steps'] else None
         if (pending and pending.get('action')=='loot' and not pending.get('confirmed_looted_find')
@@ -100,6 +101,7 @@ def run(args):
                 runtime.write(path,session)
                 print('Laya resumed the observed flight to the addon endpoint',flush=True)
         for _ in range(args.steps):
+            step=None
             if (runtime.ROOT/'run/stop_dig').exists():
                 raise RuntimeError('supervisor stop requested')
             resources.check()
@@ -348,6 +350,9 @@ def run(args):
     except Exception as error:
         session['failure']=f'{type(error).__name__}: {error}'
         session['stop_reason']='guard_stopped_input'
+        if step is not None:
+            step['failure']=session['failure']
+            write_decision(folder,step,session)
     session.update(updated_at=time.time(),progress=asdict(progress))
     runtime.write(path,session)
     return {k:session.get(k) for k in ('finished','stop_reason','failure','site_id')}

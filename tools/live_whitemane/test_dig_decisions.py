@@ -55,7 +55,7 @@ def test_context_reports_wrong_turn_and_keeps_pickup_range_unknown():
         'walked_yards':0,'confirmed_looted_find':False}
     state=dig_context.model_state(after,target,True,{'out_of_range':False},[step]*4)
     recent=state['recent_outcomes'][-1]
-    assert recent['bearing_after_deg']>recent['bearing_before_deg']>0
+    assert recent['bearing_improvement_degrees']<0
     assert state['consecutive_turns_without_approach']==4
     assert state['consecutive_actions_without_progress']==4
     assert state['pickup_range']=='unknown' and state['guide_position_is_estimate']

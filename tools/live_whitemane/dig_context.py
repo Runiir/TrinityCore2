@@ -32,10 +32,14 @@ def model_state(row, guide, visible_find, pending, steps):
         result = {'action': step['action'], 'moved_yards': round(step.get('walked_yards', 0), 2),
                   'pickup_confirmed': bool(step.get('confirmed_looted_find'))}
         if step.get('guide') and step.get('after'):
-            result['bearing_before_deg'] = bearing_error(step['before'], step['guide'])
-            result['bearing_after_deg'] = bearing_error(step['after'], step['guide'])
+            before = bearing_error(step['before'], step['guide'])
+            after = bearing_error(step['after'], step['guide'])
+            result['bearing_improvement_degrees'] = round(abs(before) - abs(after), 1)
         if step.get('outcome'):
-            result['outcome'] = step['outcome']
+            result['outcome'] = {'waypoint_already_arrived_no_movement': 'already_arrived',
+                'out_of_range_approach_same_pending_find': 'out_of_range',
+                'Survey_deferred_until_cooldown_ready': 'cooldown',
+                'waiting_for_public_survey_cooldown': 'cooldown'}.get(step['outcome'], step['outcome'])
         recent.append(result)
     state['recent_outcomes'] = recent
     turns = 0
