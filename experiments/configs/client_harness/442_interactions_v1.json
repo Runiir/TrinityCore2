@@ -12853,8 +12853,8 @@
       "operations": [
         "chat.channel_list"
       ],
-      "scope": "Fresh whole-pass channel_ui_roster01 uses ordinary stock ChatFrameChannelButton and selects the exact owned disposable channel row. Native and modern list replies, a fresh stock roster request/event, public Harnessone player identity and the reviewed rendered channel title/member row agree. Exact ordinary leave restores original channels/chat settings and all ten native/public checks. Both existing HDMI-1 clients remain owned and observer96 deployments complete.",
-      "limits": "One primary-owned channel roster through stock Channels UI only. UI74 slash chatlist01/02/03 remain failed and excluded; no slash text/event success is inferred. Peer membership, ownership reassignment, passwords and persistence remain open. Source-backed native member-count/modern channel-ID mismatch in userlist updates awaits repair.",
+      "scope": "Fresh whole-pass channel_ui_roster01 uses ordinary stock ChatFrameChannelButton and selects the exact owned disposable channel row. Native and modern list replies, a fresh stock roster request/event, public Harnessone player identity and the reviewed rendered channel title/member row agree. Exact ordinary leave restores original channels/chat settings and all ten native/public checks. Both existing HDMI-1 clients remain owned and observer96 deployments complete. UI76 whole-pass channel_peer02 keeps the roster selected while the owned scout joins and leaves. Reviewed two-member then one-member scenes, exact public player GUIDs, native member counts2/1, modern channelID0, and independently decoded full native/modern rosters agree. Both actors restore original channels/chat and all ten native checks. The bridge reads complete native membership after updates to the stock-selected channel.",
+      "limits": "Owned custom channels only; stock UI initial and live two-actor rosters. UI74 slash chatlist01/02/03 remain failed and excluded. UI76 peer01 fails its cached roster despite correct wire fields and is excluded; fresh whole peer02 passes after native roster-read repair. Passwords, ownership reassignment, larger cohorts, built-in-channel variants and persistence remain open. Final30 focused and1061 full checks pass; existing unrelated mail.cpp warning remains.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc",
@@ -12883,6 +12883,49 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui75/observer96_deployment01/deployment.json",
           "sha256": "aef9fd722b4ee086712f10c31079676e518a44da15401d6244e4e7b835cfd021"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_peer02/primary/episode.json",
+          "sha256": "4bea707dfcffb09a3d343dd5230591ba5442bce011b006523a1e163906b9dec6",
+          "cases": {
+            "chat.channel_list": "owned_stock_channel_roster_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_peer02/scout/episode.json",
+          "sha256": "751c3c02976434324beca58850a3d20b80a48d736f16d1941677e7899d8fabb1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_peer02/cohort.json",
+          "sha256": "6b2680d13328f9810294a837ff8601dba04d7b70e5b19449b3602b5709bbc54e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_peer_visual_wire_review.json",
+          "sha256": "c9dff388aac53d7b1aa2a60692c20cc6c74346a9db58130f58959daec4993d98"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_peer_failure_review.json",
+          "sha256": "47a635fb42f9e1a0b7e51faf48d898b7184989462872f17da2defe9c979954fa"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_validation.json",
+          "sha256": "482fd20f3120c93033f2f47f807ace83cd94828ac2e81dd829ec2413bc2c422d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_bridge_deploy01/deployment.json",
+          "sha256": "04a58d2ae0cdd5fe6a668aadb59919a2a641a42224aaf6e62ee5b817c9a26a7b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui76/channel_bridge_deploy02/deployment.json",
+          "sha256": "e445f79fe9bd525b4c30ae7e69edbb7f88b5ead9a6d55c9738b8393c0a2dd776"
         }
       ]
     }

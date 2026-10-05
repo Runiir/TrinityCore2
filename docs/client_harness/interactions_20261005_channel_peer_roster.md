@@ -1,0 +1,15 @@
+# Native channel peer roster
+
+UI76 extends the existing stock channel-roster qualification to two owned actors. Coverage stays at 378/916 and the parent objective remains open.
+
+Native userlist ADD/UPDATE/REMOVE packets carry member count; the pinned [modern channel implementation](https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Chat/Channels/Channel.cpp) uses channel ID. The bridge now takes that ID from native YouJoined, clears it on leave/logout, and excludes updates without a current native joined identity. Channel metadata is isolated behind a pointer to preserve unrelated build caches for later channel-only changes.
+
+Whole `channel_peer01` fails after Harnesstwo joins: independent decoding proves native count 2 and modern channel ID 0, and General visibly says Harnesstwo joined, but the selected roster still shows only Harnessone. Both actors restore original channel membership, chat settings and all ten native checks. That run remains failed and excluded.
+
+The repair queries complete native membership when an update affects the roster selected through stock UI. Fresh whole `channel_peer02` keeps that roster selected while the scout joins and leaves. Reviewed scenes show Harnessone and Harnesstwo, then Harnessone alone. Exact public GUIDs, native counts 2/1, modern channel ID 0, and independently decoded native/modern list responses agree. Both actors restore all original channel/chat and native checks. No member row is fabricated by the observer.
+
+The initial 22 focused checks, final 25 after bounded packet capture, and two peer-evidence checks pass. The first full suite passes 1056 checks. The selected-roster repair passes 30 focused and 1061 full checks. Header builds 01/03 emit an existing unrelated misleading-indentation warning in mail.cpp:123; the channel-only build 02 has no warnings. No failing implementation tests are omitted. Both bridge deployments preserve the native worldserver and the two existing HDMI-1 game processes; both actors pass nine native restoration checks after each deployment. Available memory remains approximately 20 GiB with zero current pressure.
+
+All three UI74 `/chatlist` failures remain open. Native and pinned modern handlers both set the list display flag, so that flag alone is not a source-confirmed explanation and no speculative flag change is promoted. Passwords, ownership reassignment, larger cohorts, built-in channels and persistence remain open. UI75's first archive-eviction command supplies a path instead of a basename and is refused before deletion; the corrected exact invocation verifies and evicts only the owned archive/cache, with scoped DVC status/push synchronized.
+
+DVC pointer `artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc` contains 427072976 bytes, SHA256 `6bec50b8d9bf4223421fab8380a55b3377f5815aa81385a8e9f64d66b710bf41`. Remote review verifies all 35 JSON receipts and 165 attributed images before local pruning and exact archive/cache eviction.
