@@ -51,7 +51,7 @@ def run(folder,origin,destination):
                 time.sleep(.4)
                 try:after=observe(folder/'transit.png')
                 except RuntimeError as e:
-                    if str(e).startswith('live public observer is unavailable'):continue
+                    if str(e).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
                     raise
                 w=after['archaeology']['world']
                 if not after['movement']['on_taxi'] and w and w['instance']==end['instance'] and math.hypot(w['north']-end['north'],w['west']-end['west'])<30:

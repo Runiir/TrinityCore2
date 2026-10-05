@@ -1,4 +1,4 @@
-"""Read current live movement from the owned screenshot's public addon pixels."""
+"""Read public addon facts through the own relay, or the explicit pixel mode."""
 import argparse
 import json
 import time

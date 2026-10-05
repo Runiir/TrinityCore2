@@ -57,7 +57,7 @@ def teleport(folder,row):
         time.sleep(.3)
         try:row=observe(folder/'arrival.png')
         except RuntimeError as error:
-            if str(error).startswith('live public observer is unavailable'):continue
+            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
             raise
         if row['movement']['map_id']==245 and not row['archaeology']['casting']:
             return {'opened':opened,'chosen':chosen,'after':row,'completed':True}

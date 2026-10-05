@@ -37,7 +37,7 @@ def run(folder,portal):
         time.sleep(.4)
         try:after=observe(folder/'arrival.png')
         except RuntimeError as error:
-            if str(error).startswith('live public observer is unavailable'):continue
+            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
             raise
         w=after['archaeology']['world'];destination=portal['to']
         if w and w['instance']==destination['instance'] and math.hypot(w['north']-destination['north'],w['west']-destination['west'])<100:

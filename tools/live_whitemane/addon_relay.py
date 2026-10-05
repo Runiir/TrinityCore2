@@ -104,3 +104,24 @@ def observation(owner,root,now=None):
         'farm_ui':ui,'farm_ui_error':None if ui else 'waiting for complete UI generation',
         'source':state['source'],'frame':None,'server':'Whitemane live realm',
         'channel_ages':{key:now-value['observed_at'] for key,value in channels.items()},'owned_pose':None}
+
+
+def main():
+    import argparse
+    from . import runtime
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--activate',action='store_true')
+    args=parser.parse_args()
+    runtime.monitor();owner=runtime.owned_process()
+    if owner is None:raise RuntimeError('owned client is absent')
+    row=observation(owner,runtime.ROOT)
+    if row['farm_ui'] is None:raise RuntimeError('wait for a complete public UI generation')
+    if args.activate:
+        runtime.write(runtime.ROOT/'run/observation_mode.json',{'transport':'addon_relay',
+            'activated_at':time.time(),'runtime':owner,'reader_pid':json.loads(
+                (runtime.ROOT/'run/bearing_reader.json').read_text())['pid']})
+    print(json.dumps({'source':row['source'],'channel_ages':row['channel_ages'],
+        'runtime_pid':owner['pid'],'screenshots_required':False,'activated':args.activate}))
+
+
+if __name__=='__main__':main()

@@ -15,6 +15,12 @@ class GroundContact(RuntimeError):
 
 
 def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
+    mode=runtime.ROOT/'run/observation_mode.json'
+    if mode.exists():
+        import json
+        if json.loads(mode.read_text()).get('transport')=='addon_relay':
+            from .fast_waypoint import walk as continuous
+            return continuous(folder,target,flying=flying,site_id=site_id,tolerance=tolerance)
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     ctl._launcher_env=runtime.client_environment
@@ -148,7 +154,7 @@ def ascend(folder, ceiling, *, site_id=None):
         held=False;rows=[];started=time.time();last_height=None;stalled=0
         observation_seconds=[];missing_height=0
         try:
-            for index in range(40):
+            for index in range(150):
                 observation_started=time.monotonic()
                 row=observe(folder/f'ascent_{time.time_ns()}.png')
                 observation_seconds.append(time.monotonic()-observation_started)
