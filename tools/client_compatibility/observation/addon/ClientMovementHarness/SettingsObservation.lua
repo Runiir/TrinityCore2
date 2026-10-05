@@ -13,6 +13,8 @@ function Client442ObserveSettings()
         unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={}}
     for _,name in ipairs({'autoLootDefault','lockActionBars','Sound_EnableAllSound','Sound_MasterVolume',
         'Sound_MusicVolume','Sound_SFXVolume','Sound_EnableMusic','cameraTerrainTilt','cameraBobbing',
+        'enableMouseSpeed','mouseSpeed','PROXY_MOUSE_LOOK_SPEED','cameraYawMoveSpeed','cameraPitchMoveSpeed',
+        'colorblindMode','colorblindSimulator',
         'showTutorials','nameplateShowEnemies','enableFloatingCombatText','alwaysShowActionBars',
         'PROXY_SHOW_ACTIONBAR_2','PROXY_SHOW_ACTIONBAR_3','PROXY_SHOW_ACTIONBAR_4','PROXY_SHOW_ACTIONBAR_5'}) do
         result.cvars[name]=call(GetCVar,name)

@@ -21,7 +21,7 @@ def deploy(out,version,with_compatibility=False,names=('primary','scout')):
     try:
         for name in names:
             with actor(name):
-                t=Trial(out/name,controller='code')
+                t=Trial(out/name,controller='code',chat_key_hold=1.2)
                 try:
                     entry=actors.session_entry(t.fixture);t.clean_panels();before,frame=t.observe('before_reload')
                     oracle=Inventory(lab.ROOT,entry['session'],t.fixture['guid']).poll()
