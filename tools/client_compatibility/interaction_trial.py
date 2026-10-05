@@ -19,6 +19,17 @@ from .archaeology_controller import MODEL,REVISION,ENDPOINT
 from .observation.interactions import decode_image
 from .observation.telemetry import decode_image as decode_movement
 
+
+def chat_input_matches(state,value,*,require_focus=False):
+    """Keep literal commands exact; accept stock /say parsing only in focused SAY."""
+    if not state.get('chat_edit_open') or (require_focus and not state.get('chat_edit_focused')):
+        return False
+    text=state.get('chat_edit_text','')
+    if text.rstrip(' ')==value:return True
+    return bool(value.startswith('/say ') and len(value)>5 and
+        state.get('chat_edit_focused') and state.get('chat_edit_type')=='SAY' and text==value[5:])
+
+
 # Installed binding names are resolved at run time, not guessed shortcuts.
 PANELS=[
  ('bags.backpack','Open the backpack.','TOGGLEBACKPACK',['bags']),
@@ -189,12 +200,12 @@ class Trial:
             deadline=time.monotonic()+12
             while True:
                 pending,pending_frame=observe(f'input_{len(self.receipt["cases"]):03}_chat_pre_submit')
-                matches=(pending.get('chat_edit_open') and
-                    pending.get('chat_edit_text','').rstrip(' ')==value and
-                    (not any_mode or pending.get('chat_edit_focused')))
+                matches=chat_input_matches(pending,value,require_focus=any_mode)
                 self.receipt.setdefault('chat_submission_checks',[]).append({'frame':pending_frame,
                     'open_frame':opened_frame,'observed_text':pending.get('chat_edit_text'),
-                    'selected_text':value,'matches':bool(matches),'submitted':False})
+                    'selected_text':value,'observed_type':pending.get('chat_edit_type'),
+                    'observed_focused':pending.get('chat_edit_focused'),
+                    'matches':bool(matches),'submitted':False})
                 self.persist()
                 if matches:break
                 if time.monotonic()>deadline:
@@ -274,10 +285,11 @@ class Trial:
                 time.sleep(.2)
                 state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_settling',seconds=seconds)
             if state.get('chat_edit_open'):
-                if state.get('chat_edit_text','').rstrip(' ')!=action['value']:
+                if not chat_input_matches(state,action['value']):
                     raise RuntimeError('chat input differs from the selected command; refusing to submit it')
                 transport.append({'reason':'selected command remained after name completion','input':'Return',
-                    'observed_text':state['chat_edit_text'],'normalization':'ignore trailing spaces only',
+                    'observed_text':state['chat_edit_text'],'observed_type':state.get('chat_edit_type'),
+                    'normalization':'literal command or exact focused stock SAY payload',
                     'hold':.4,'before_frame':frame})
                 self.io.key('Return',hold=.4);time.sleep(.8)
                 state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_retry',seconds=seconds)

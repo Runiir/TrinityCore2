@@ -43,11 +43,12 @@ d=Client442ObserveChatEdit()
 assert(d.chat_edit_open and not d.chat_edit_focused and #d.chat_edit_text==255)
 ChatFrame1EditBox.HasFocus=function()return true end
 ChatFrame1EditBox.GetText=function()return '/tcui state' end
+ChatFrame1EditBox.GetAttribute=function(self,key)assert(key=='chatType');return 'SAY' end
 d=Client442ObserveChatEdit()
-assert(d.chat_edit_focused and d.chat_edit_text=='/tcui state')
+assert(d.chat_edit_focused and d.chat_edit_text=='/tcui state' and d.chat_edit_type=='SAY')
 ChatFrame1EditBox.IsVisible=function()return false end
 d=Client442ObserveChatEdit()
-assert(not d.chat_edit_open and not d.chat_edit_focused and d.chat_edit_text=='')
+assert(not d.chat_edit_open and not d.chat_edit_focused and d.chat_edit_text=='' and d.chat_edit_type==nil)
 '''
     subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,
         text=True,capture_output=True,check=True)

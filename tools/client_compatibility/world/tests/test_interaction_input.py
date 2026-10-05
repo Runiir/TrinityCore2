@@ -4,6 +4,38 @@ import pytest
 from tools.client_compatibility import interaction_trial as module
 
 
+@pytest.mark.parametrize('change',[
+    {},{'chat_edit_type':'WHISPER'},{'chat_edit_type':None},
+    {'chat_edit_focused':False},{'chat_edit_open':False},
+    {'chat_edit_text':'TC442UI:language_6_1234567'},
+    {'chat_edit_text':'TC442UI:language_6_12345678 extra'},
+    {'chat_edit_text':'TC442UI:language_6_12345678 '},
+])
+def test_stock_say_parsing_submits_only_exact_focused_say(monkeypatch,change):
+    trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};trial.persist=lambda:None
+    events=[]
+    from types import SimpleNamespace
+    trial.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
+        type=lambda value:events.append(('type',value)))
+    token='TC442UI:language_6_12345678';command='/say '+token
+    pending={'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_type':'SAY','chat_edit_text':token}
+    pending.update(change)
+    states=iter([{'chat_edit_open':True,'chat_edit_focused':True},pending])
+    trial.observe=lambda label,**kw:(next(states),{'file':label})
+    ticks=iter([0,0,13]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    if change:
+        with pytest.raises(RuntimeError,match='refusing submission'):trial.submit_chat(command)
+        assert events==[('key','Return'),('type',command)]
+        assert not trial.receipt['chat_submission_checks'][-1]['submitted']
+    else:
+        trial.submit_chat(command)
+        assert events==[('key','Return'),('type',command),('key','Return')]
+        guard=trial.receipt['chat_submission_checks'][-1]
+        assert guard['submitted'] and guard['observed_type']=='SAY' and guard['observed_focused']
+
+
 @pytest.mark.parametrize('text,settled',[('/invite Harnesstwo',True),('/invite Harnesstwo ',True),('/invite Harnesstwo',False),('/quit',False)])
 def test_chat_recovery_does_not_submit_changed_text(monkeypatch,text,settled):
     trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};events=[]
