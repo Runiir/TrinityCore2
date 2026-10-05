@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 398 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 400 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -759,7 +759,7 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.window_mode`
 - [ ] `settings.monitor_selection`
 - [x] `settings.render_scale` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
-- [ ] `settings.quality`
+- [x] `settings.quality` (qualified variant; [evidence](#owned_pending_graphics_quality_discard))
 - [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
 - [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.interface` (qualified variant; [evidence](#owned_move_pad_enable_roundtrip))
@@ -1117,7 +1117,7 @@ Fixture: `in_world`.
 - [ ] `ui_misc.quest_link`
 - [x] `ui_misc.item_link` (qualified variant; [evidence](#owned_pending_backpack_item_link))
 - [x] `ui_misc.spell_link` (qualified variant; [evidence](#owned_pending_known_spell_link))
-- [ ] `ui_misc.copy_name`
+- [x] `ui_misc.copy_name` (qualified variant; [evidence](#owned_player_chat_link_name_copy))
 - [x] `ui_misc.screenshot` (qualified variant; [evidence](#stock_display_controls))
 - [x] `ui_misc.toggle_ui` (qualified variant; [evidence](#stock_display_controls))
 - [x] `ui_misc.zoom_camera` (qualified variant; [evidence](#stock_camera_zoom_latency))
@@ -2602,7 +2602,7 @@ Remaining limits: Local self-mute through this installed binding only. Connected
 
 ### owned_player_chat_link_name_copy
 
-Whole-pass UI85/player_name_copy08 seeds one exact whisper from owned native GUID2/Harnesstwo to GUID1/Harnessone. Reviewed rendered sender text and actual ChatFrame1 OnHyperlinkEnter player data gate the ordinary right-click. Stock Copy Character Name replaces a uniquely served private nested-display clipboard marker with exactly Harnesstwo, independently read as UTF8 with a new selection owner. The stock menu may stay open after Copy; separate UI cleanup closes it. Both actors restore all ten native checks.
+Whole-pass UI85/player_name_copy08 seeds one exact whisper from owned native GUID2/Harnesstwo to GUID1/Harnessone. Reviewed rendered sender text and actual ChatFrame1 OnHyperlinkEnter player data gate the ordinary right-click. Stock Copy Character Name replaces a uniquely served private nested-display clipboard marker with exactly Harnesstwo, independently read as UTF8 with a new selection owner. The stock menu may stay open after Copy; separate UI cleanup closes it. Both actors restore all ten native checks. The generic ui_misc.copy_name entry maps to this same exact stock action and owned-name fixture; no additional live Copy is claimed.
 
 Remaining limits: Owned sender name on primary nested display2 only. No host clipboard read and no claim that prior private clipboard bytes were restored; the copied owned name is retained. Arbitrary names, item/quest links and other clipboard forms remain open. Earlier failed Copy01-07, source recon and cleanup-only work are excluded, including Copy03 incorrect menu-closure oracle and Copy04 provider atom error. New trials use code only. Full1215 tests pass.
 
@@ -2612,6 +2612,7 @@ Remaining limits: Owned sender name on primary nested display2 only. No host cli
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_copy_visual_review.json`, SHA-256 `0d8e658d91590ee0488a11587533604c33f8b0734d8d38e38e3c8b77ca07587f`.
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_menu_whole_review.json`, SHA-256 `df3a3b0cac8f82fd84e143a50143b87a10756d9cd11984afa0ed030dc5f34d55`.
 - [442_interactions_20261005_85.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc), member `evidence/client_interactions_20261005_ui85/player_link_failed_run_review.json`, SHA-256 `3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da`.
+- [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/copy_name_mapping_review.json`, SHA-256 `39fa5beb20594ea7d390c112b07b63143d31808b2e429a52d2c5b2e18a4e8c18`.
 
 ### owned_player_chat_link_report_cancel
 
@@ -2759,3 +2760,13 @@ Remaining limits: Applied render-scale persistence through ordinary UI reload on
 
 - [442_interactions_20261005_94.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc), member `evidence/client_interactions_20261005_ui94/settings_persistence01/episode.json`, SHA-256 `84f4e32b7dae594a0b83e1206f4df25e33e69dc1d742ca6c7a6098f1ac3d793d`.
 - [442_interactions_20261005_94.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc), member `evidence/client_interactions_20261005_ui94/settings_persistence_whole_review.json`, SHA-256 `641f93151e90b6573e0d91371f6d7d954c57fb531ac2751d55fdd76ff7be4ccb`.
+
+### owned_pending_graphics_quality_discard
+
+Owned primary observer118: exact Base quality Back widget selects pending index1-to0, visible level2-to1. All10 child proxies agree with the installed read-only GetGraphicsCVarValueForQualityLevel map, including minimum particle density1, while all active CVars stay byte-identical. Ordinary Close and the exact Exit choice discard the pending preset without Apply. Reopened Settings verifies original quality index1 and all child proxies; five quality, five layout and ten native checks restore. Reviewed images show initial level2, pending level1 with Apply visible, exact exit confirmation, restored Controls category and final seated world HUD.
+
+Remaining limits: Pending lower base-quality selection/discard only. Applied presets, other levels, allocation/performance and restart persistence remain open. Reopened restoration image shows Controls; encoded settings probe proves original quality values and does not visibly show the slider. All138 focused and1448 full tests pass. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_pending01/episode.json`, SHA-256 `fb3e2b87845d9c436ede30f209122bdbc0187b063665833fe806f94368fbf76b`.
+- [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_whole_review.json`, SHA-256 `eda9892d2411bc56ae0cd7915658d713e887f515bf9b8bc6c79472cda36fa92b`.
+- [442_interactions_20261005_95.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc), member `evidence/client_interactions_20261005_ui95/quality_source_review.json`, SHA-256 `2aca2930757f08ecef9b853f7387efb5fa23410caa43063b65d1ece7ca21e5bc`.

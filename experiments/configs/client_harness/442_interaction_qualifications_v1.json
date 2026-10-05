@@ -4369,9 +4369,10 @@
     {
       "id": "owned_player_chat_link_name_copy",
       "operations": [
-        "chat.copy_if_available"
+        "chat.copy_if_available",
+        "ui_misc.copy_name"
       ],
-      "scope": "Whole-pass UI85/player_name_copy08 seeds one exact whisper from owned native GUID2/Harnesstwo to GUID1/Harnessone. Reviewed rendered sender text and actual ChatFrame1 OnHyperlinkEnter player data gate the ordinary right-click. Stock Copy Character Name replaces a uniquely served private nested-display clipboard marker with exactly Harnesstwo, independently read as UTF8 with a new selection owner. The stock menu may stay open after Copy; separate UI cleanup closes it. Both actors restore all ten native checks.",
+      "scope": "Whole-pass UI85/player_name_copy08 seeds one exact whisper from owned native GUID2/Harnesstwo to GUID1/Harnessone. Reviewed rendered sender text and actual ChatFrame1 OnHyperlinkEnter player data gate the ordinary right-click. Stock Copy Character Name replaces a uniquely served private nested-display clipboard marker with exactly Harnesstwo, independently read as UTF8 with a new selection owner. The stock menu may stay open after Copy; separate UI cleanup closes it. Both actors restore all ten native checks. The generic ui_misc.copy_name entry maps to this same exact stock action and owned-name fixture; no additional live Copy is claimed.",
       "limits": "Owned sender name on primary nested display2 only. No host clipboard read and no claim that prior private clipboard bytes were restored; the copied owned name is retained. Arbitrary names, item/quest links and other clipboard forms remain open. Earlier failed Copy01-07, source recon and cleanup-only work are excluded, including Copy03 incorrect menu-closure oracle and Copy04 provider atom error. New trials use code only. Full1215 tests pass.",
       "evidence": [
         {
@@ -4401,6 +4402,11 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_85.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui85/player_link_failed_run_review.json",
           "sha256": "3c95d76bb2767842bbc9a59d5963773f9b103a0b117731c4b205cee95aae15da"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui95/copy_name_mapping_review.json",
+          "sha256": "39fa5beb20594ea7d390c112b07b63143d31808b2e429a52d2c5b2e18a4e8c18"
         }
       ]
     },
@@ -4775,6 +4781,31 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_94.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui94/settings_persistence_whole_review.json",
           "sha256": "641f93151e90b6573e0d91371f6d7d954c57fb531ac2751d55fdd76ff7be4ccb"
+        }
+      ]
+    },
+    {
+      "id": "owned_pending_graphics_quality_discard",
+      "operations": [
+        "settings.quality"
+      ],
+      "scope": "Owned primary observer118: exact Base quality Back widget selects pending index1-to0, visible level2-to1. All10 child proxies agree with the installed read-only GetGraphicsCVarValueForQualityLevel map, including minimum particle density1, while all active CVars stay byte-identical. Ordinary Close and the exact Exit choice discard the pending preset without Apply. Reopened Settings verifies original quality index1 and all child proxies; five quality, five layout and ten native checks restore. Reviewed images show initial level2, pending level1 with Apply visible, exact exit confirmation, restored Controls category and final seated world HUD.",
+      "limits": "Pending lower base-quality selection/discard only. Applied presets, other levels, allocation/performance and restart persistence remain open. Reopened restoration image shows Controls; encoded settings probe proves original quality values and does not visibly show the slider. All138 focused and1448 full tests pass. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui95/quality_pending01/episode.json",
+          "sha256": "fb3e2b87845d9c436ede30f209122bdbc0187b063665833fe806f94368fbf76b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui95/quality_whole_review.json",
+          "sha256": "eda9892d2411bc56ae0cd7915658d713e887f515bf9b8bc6c79472cda36fa92b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_95.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui95/quality_source_review.json",
+          "sha256": "2aca2930757f08ecef9b853f7387efb5fa23410caa43063b65d1ece7ca21e5bc"
         }
       ]
     }
