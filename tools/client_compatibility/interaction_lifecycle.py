@@ -23,7 +23,8 @@ class Packets:
         self.session = session
         self.cursor = Cursor(lab.ROOT / 'evidence/world_packets.jsonl')
         self.rows = []
-        list(self.cursor.poll())  # Prime before entering the 20-second cancel window.
+        # Drain historical rotations without retaining the whole journal.
+        for _ in self.cursor.poll():pass
 
     def since(self, started):
         self.rows.extend(row for row in self.cursor.poll() if row.get('session') == self.session)
