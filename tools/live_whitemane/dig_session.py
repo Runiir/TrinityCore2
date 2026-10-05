@@ -21,6 +21,14 @@ from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 
+def write_decision(folder, step, session):
+    keys=('index','started_at','action','state','model','request','response','guide',
+          'completed','finished_at','outcome','walked_yards','confirmed_looted_find','gathering_cast_started')
+    receipt={key:step[key] for key in keys if key in step}
+    receipt['code_commit']=session['runs'][-1]['code_commit']
+    runtime.write(folder/'decision.json',receipt)
+
+
 def healthy(row):
     m, a = row['movement'], row['archaeology']
     return (m['in_world'] and m['position_available'] and m['health_percent'] > 0
@@ -172,6 +180,7 @@ def run(args):
             session['steps'].append(step)
             resources.trim_session(session,'dig')
             runtime.write(path,session)
+            write_decision(folder,step,session)
             graph=getattr(args,'graph',None)
             if action=='survey' and (ui.get('survey') or {}).get('ready') is False:
                 step.update(completed=True,inputs=[],outcome='Survey_deferred_until_cooldown_ready',finished_at=time.time())
@@ -318,8 +327,11 @@ def run(args):
                     routes.pickup(session)
                     pending_find.clear();session.pop('pending_find',None)
                     session['observed_find_count']=after['archaeology']['looted_finds']
-            if action.startswith('forward_') and (walked<.25 or walked>(750 if step.get('travel_mode') in ('red_flight','held_waypoint_approach') else 15)):
-                raise RuntimeError('walking outcome was blocked or exceeded its bound')
+            if action.startswith('forward_'):
+                if walked<.25 and guide['arrived']:
+                    step['outcome']='waypoint_already_arrived_no_movement'
+                elif walked<.25 or walked>(750 if step.get('travel_mode') in ('red_flight','held_waypoint_approach') else 15):
+                    raise RuntimeError('walking outcome was blocked or exceeded its bound')
             if action.startswith('turn_') and walked>.15:
                 raise RuntimeError('turn unexpectedly moved the character')
             turned=abs((after['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.05
@@ -328,6 +340,7 @@ def run(args):
             session['progress']=asdict(progress)
             if graph:farm_graph.transition(graph,'observe',after,pending=pending_find.load(after))
             runtime.write(path,session)
+            write_decision(folder,step,session)
             print(json.dumps({'step':index,'action':action,'walked_yards':round(walked,2),
                               'looted_find':found,'guidance':guidance}),flush=True)
             if session.get('stop_reason')=='survey_without_telescope_review_visible_find': break

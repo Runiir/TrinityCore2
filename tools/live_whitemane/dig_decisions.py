@@ -6,8 +6,8 @@ from .ui_choice import MODEL,REVISION
 
 
 def explore(action, response, options, state):
-    """Sample Laya's full policy after repeated turns without approach."""
-    if state.get('consecutive_turns_without_approach', 0) < 3:
+    """Sample Laya's full policy after repeated actions without progress."""
+    if state.get('consecutive_actions_without_progress', state.get('consecutive_turns_without_approach', 0)) < 3:
         return action
     probabilities = response['answers']['action']['probabilities']
     if (set(probabilities) != set(options) or any(not isinstance(p, (int, float))
@@ -15,7 +15,7 @@ def explore(action, response, options, state):
             or not .99 <= sum(probabilities.values()) <= 1.01):
         raise RuntimeError('Laya exploration requires a complete legal action distribution')
     selected = random.choices(list(options), weights=[probabilities[key] for key in options], k=1)[0]
-    response['policy_selection'] = {'method': 'sample_Laya_probabilities_after_stalled_turns',
+    response['policy_selection'] = {'method': 'sample_Laya_probabilities_after_stalled_actions',
         'argmax_action': action, 'selected_action': selected,
         'probabilities_modified': False, 'actions_removed': []}
     return selected

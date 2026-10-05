@@ -26,6 +26,7 @@ def model_state(row, guide, visible_find, pending, steps):
         state['telescope'].update(distance_yards=round(guide['distance_yards'], 2),
             bearing_error_degrees=bearing_error(row, guide))
         state['guide_position_is_estimate'] = guide['source'] != 'visible owned archaeology find'
+        state['guide_arrived'] = guide['arrived']
     recent = []
     for step in steps[-3:]:
         result = {'action': step['action'], 'moved_yards': round(step.get('walked_yards', 0), 2),
@@ -44,4 +45,11 @@ def model_state(row, guide, visible_find, pending, steps):
             break
         turns += 1
     state['consecutive_turns_without_approach'] = turns
+    stalled = 0
+    for step in reversed(steps):
+        if (not step.get('completed') or step.get('walked_yards', 0) > .25
+                or step.get('confirmed_looted_find')):
+            break
+        stalled += 1
+    state['consecutive_actions_without_progress'] = stalled
     return state

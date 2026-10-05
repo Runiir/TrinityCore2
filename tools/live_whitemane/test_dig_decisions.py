@@ -57,10 +57,23 @@ def test_context_reports_wrong_turn_and_keeps_pickup_range_unknown():
     recent=state['recent_outcomes'][-1]
     assert recent['bearing_after_deg']>recent['bearing_before_deg']>0
     assert state['consecutive_turns_without_approach']==4
+    assert state['consecutive_actions_without_progress']==4
     assert state['pickup_range']=='unknown' and state['guide_position_is_estimate']
     step['walked_yards']=.5
     assert dig_context.model_state(after,target,True,{'out_of_range':False},[step])[
         'consecutive_turns_without_approach']==0
+
+
+def test_a_forward_command_without_displacement_does_not_clear_stall_feedback():
+    before=row();before['archaeology']['world']={'instance':1,'north':0,'west':0}
+    before['movement']['facing_radians']=0
+    target={'source':'GatherMate marker','world':{'instance':1,'north':2,'west':0},
+        'color':'green','arrived':True,'distance_yards':2,'heading_relative_to_player':'aligned'}
+    step={'action':'forward_long','completed':True,'before':before,'after':before,'guide':target,
+        'walked_yards':0,'confirmed_looted_find':False}
+    state=dig_context.model_state(before,target,False,None,[step]*4)
+    assert state['guide_arrived'] and state['consecutive_actions_without_progress']==4
+    assert state['consecutive_turns_without_approach']==0
 
 
 def test_pickup_guide_exposes_its_actual_arrival_tolerance():
