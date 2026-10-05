@@ -115,7 +115,8 @@ def run(args):
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             if session.get('reapproach_find'):
                 from .survey_find import in_range
-                visible_find=a['loot_open'] or in_range(before)
+                visible_find=(a['loot_open'] or in_range(before)
+                    or ui.get('soft_interact',{}).get('name') in FIND_NAMES)
                 approach=session.get('pickup_approach')
                 tolerance=.1 if approach and approach.get('source')=='named find forward range approach' else .5
                 if approach and distance(a['world'],approach['world'])<=tolerance:visible_find=True
@@ -134,7 +135,7 @@ def run(args):
                     time.sleep(.5)
                     before=observe(folder/f'arrow_wait_{attempt:02d}.png')
                 a,m=before['archaeology'],before['movement']
-            guide,error=routes.select(before,session,tool) if not visible_find else (None,None)
+            guide,error=routes.select(before,session,tool) if not visible_find or session.get('reapproach_find') else (None,None)
             guide=constrain(before,guide,site_id=value['site_id'] if value else None) if guide else None
             ui=before.get('farm_ui') or {}
             cooldown=ui.get('survey') or {}
@@ -159,9 +160,12 @@ def run(args):
             state=routes.model_state(before,guide,bool(args.loot_at) or visible_find)
             state.update(can_survey=a['can_survey'],survey_ready=bool((ui.get('survey') or {}).get('ready')),
                 guide_source=guide['source'] if guide else None,pending_pickup=bool(value),
+                named_artifact=ui.get('soft_interact',{}).get('name'),out_of_range=bool(value and value['out_of_range']),
                 recent_outcomes=[{'action':s['action'],'outcome':s.get('outcome'),
                     'moved_yards':round(s.get('walked_yards',0),2),'pickup_confirmed':bool(s.get('confirmed_looted_find'))}
                     for s in session['steps'][-3:]])
+            if guide:
+                state['telescope']={k:guide[k] for k in ('color','heading_relative_to_player','distance_yards')}
             if value and not visible_find and not guide:
                 action,model,request,result,state=pending_find.choose_inspection(before)
             else:

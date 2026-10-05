@@ -15,6 +15,6 @@ def choose(state):
                 forward_long='Approach the guide endpoint; fly for red or distant markers')
     action,request,response=laya_ui.choose(state,
         'Recover archaeology artifacts. Prefer GatherMate markers. For red, fly along the telescope line; '
-        'for green, take small steps. Approach a discovered artifact until its gathering cast starts. '
+        'for green, take small steps. Interact with a named artifact; if out of range, approach it until its gathering cast starts. '
         'Use recent outcomes to change an approach that is not making progress.',options)
     return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response
