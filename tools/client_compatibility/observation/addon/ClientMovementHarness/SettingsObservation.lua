@@ -27,6 +27,8 @@ function Client442ObserveSettings()
         'enableMouseSpeed','mouseSpeed','PROXY_MOUSE_LOOK_SPEED','cameraYawMoveSpeed','cameraPitchMoveSpeed',
         'colorblindMode','colorblindSimulator',
         'enableMovePad','PROXY_ENABLE_INTERACT','softTargetInteract','softTargettingInteractKeySound','interactOnLeftClick',
+        'RenderScale','gxWindow','gxMaximize','gxMonitor','gxResolution','graphicsQuality','groundEffectDensity','farclip',
+        'PROXY_RESOLUTION_RENDER_SCALE','PROXY_RESOLUTION','PROXY_DISPLAY_MODE','PROXY_PRIMARY_MONITOR',
         'showTutorials','nameplateShowEnemies','enableFloatingCombatText','alwaysShowActionBars',
         'PROXY_SHOW_ACTIONBAR_2','PROXY_SHOW_ACTIONBAR_3','PROXY_SHOW_ACTIONBAR_4','PROXY_SHOW_ACTIONBAR_5'}) do
         result.cvars[name]=call(GetCVar,name)
