@@ -41,7 +41,12 @@ def controls_guard(t,label,ready):
     while True:
         state,frame=t.observe(label,mode='controls',seconds=12)
         move=frame['movement']
-        if (state.get('observer_version')!=104 or state.get('lua_errors') or state.get('blocked_actions') or
+        t.receipt.setdefault('bootstrap_control_guards',[]).append({'label':label,'frame':frame,
+            'observer_version':state.get('observer_version'),'panels':state.get('panels'),
+            'chat_edit_open':state.get('chat_edit_open'),'chat_edit_text':state.get('chat_edit_text')});t.persist()
+        # Stock controls projection omits observer version and error lists.
+        # Bind the old installed source before staging; reload validates the full new state.
+        if (state.get('observer_version') not in (None,104) or state.get('lua_errors') or state.get('blocked_actions') or
             move['in_combat'] or move['dead'] or move['on_taxi'] or move['health_percent']!=100 or move['speed']!=0):
             raise RuntimeError('source-bound observer104 idle controls differ')
         if ready(state):return state,frame
@@ -51,6 +56,8 @@ def controls_guard(t,label,ready):
 
 def prepare(t,failed,baseline):
     old=sources(t,failed,baseline);expected=old['native_baseline']
+    if t.receipt['observer_file_sha256']!=old['observer_file_sha256']:
+        raise RuntimeError('installed failed observer source changed before staging')
     checks=native_checks(capture(t),expected)
     t.receipt['source_native_checks']=checks;t.persist()
     if not all(checks.values()):raise RuntimeError('native recipe resources changed')
