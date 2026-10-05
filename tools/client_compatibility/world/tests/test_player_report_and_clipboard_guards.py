@@ -1,7 +1,9 @@
 from types import SimpleNamespace
+from contextlib import contextmanager
 import pytest
 from tools.client_compatibility.interaction_chat_player_actions import report_identity,expected_names
 from tools.client_compatibility import interaction_private_clipboard as clipboard
+from tools.client_compatibility import interaction_chat_player_actions as actions
 
 
 @pytest.mark.parametrize('change',[None,'name','guid','missing_close','two_close','ready_submit','missing_submit'])
@@ -30,3 +32,29 @@ def test_clipboard_mismatch_never_opens_or_reads_a_selection(monkeypatch,actor,n
     monkeypatch.setattr(clipboard.display,'Display',forbidden)
     t=SimpleNamespace(fixture={'actor':'primary'},io=SimpleNamespace(initialization={'display':':2'}))
     with pytest.raises(RuntimeError,match='clipboard display differs'):clipboard.copied_name(t,{'Harnesstwo'})
+
+
+@pytest.mark.parametrize('replaced,exact,after,passes',[
+    (True,True,['ContextMenu'],True),(True,True,[],True),
+    (False,True,['ContextMenu'],False),(True,False,['ContextMenu'],False),
+    (True,True,['ReportFrame'],False)])
+def test_copy_must_replace_its_guard_but_stock_menu_may_remain_open(monkeypatch,replaced,exact,after,passes):
+    @contextmanager
+    def fixture(t):yield {'owner_window':123,'marker':'TC442UI:copy_guard_12345678'}
+    def copied(t,expected,previous=None):
+        if previous is None:return {'exact_owned_name':True,'owner_window':123}
+        assert previous==123
+        return {'exact_owned_name':exact,'owned_guard_replaced':replaced}
+    monkeypatch.setattr(actions,'marker',fixture);monkeypatch.setattr(actions,'copied_name',copied)
+    results=[]
+    def clicked(t,label,text,oracle):
+        result={'id':label,**oracle({'panels':['ContextMenu']},{'panels':after},True)}
+        results.append(result);return result
+    monkeypatch.setattr(actions,'menu_click',clicked)
+    t=SimpleNamespace(receipt={},persist=lambda:None)
+    seed={'observed_sender':'Harnesstwo-Client442Lab','expected_native_guid':2}
+    if passes:
+        actions.copy(t,seed);assert results[0]['status']=='owned_player_name_copy_pass'
+    else:
+        with pytest.raises(RuntimeError):actions.copy(t,seed)
+        assert results[0]['status']=='client_or_protocol_failure'

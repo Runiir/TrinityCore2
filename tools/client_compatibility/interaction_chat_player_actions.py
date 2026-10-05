@@ -3,7 +3,7 @@ import time
 from .interaction_control_target import target
 from .interaction_operations import controls,point
 from .interaction_macros import require
-from .interaction_private_clipboard import copied_name
+from .interaction_private_clipboard import copied_name,marker
 
 
 def menu_click(t,label,text,oracle):
@@ -26,12 +26,20 @@ def expected_names(seed):
 def copy(t,seed):
     expected=expected_names(seed)
     def outcome(b,a,s):
-        result=copied_name(t,expected);t.receipt['owned_name_clipboard']=result;t.persist()
+        result=copied_name(t,expected,fixture['owner_window']);t.receipt['owned_name_clipboard']=result;t.persist()
         checks={'ordinary_copy':s,'exact_owned_name':result['exact_owned_name'],
-            'menu_closed':not a['panels'],'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+            'owned_guard_replaced':result['owned_guard_replaced'],'owned_menu_before':'ContextMenu' in b['panels'],
+            'only_transient_menu_after':set(a['panels']).issubset({'ContextMenu','DropDownList1','DropDownList2'}),
+            'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'owned_player_name_copy_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'clipboard':result}}
-    require(menu_click(t,'chat.copy_if_available','Copy Character Name',outcome),'owned_player_name_copy_pass')
+    with marker(t) as fixture:
+        t.receipt['owned_copy_clipboard_fixture']=fixture;t.persist()
+        probe=copied_name(t,{fixture['marker']})
+        t.receipt['owned_copy_clipboard_fixture_probe']=probe;t.persist()
+        if not probe['exact_owned_name'] or probe['owner_window']!=fixture['owner_window']:
+            raise RuntimeError('private clipboard marker is not readable from its owned provider; no Copy sent')
+        require(menu_click(t,'chat.copy_if_available','Copy Character Name',outcome),'owned_player_name_copy_pass')
 
 
 def report(t,seed):

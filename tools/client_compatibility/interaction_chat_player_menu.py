@@ -123,7 +123,14 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
             from . import interaction_chat_player_actions as actions
             if operation not in ('copy','report'):raise ValueError('unknown owned player operation')
             getattr(actions,operation)(t,seed)
-    finally:t.clean_panels()
+    finally:
+        t.clean_panels()
+        if operation!='inspect':
+            restored,restored_frame=t.observe('owned_player_operation_ui_restored')
+            checks={'panels_closed':not restored['panels'],'chat_closed':not restored.get('chat_edit_open'),
+                'clean':not restored.get('lua_errors') and not restored.get('blocked_actions')}
+            t.receipt['owned_player_operation_ui_restoration']={'checks':checks,'frame':restored_frame};t.persist()
+            if not all(checks.values()):raise RuntimeError('owned player operation UI cleanup differs')
 
 
 def owned_link_hover(state,seed):
