@@ -6,10 +6,23 @@ from . import lab_runtime as lab
 
 def frame_members(value,parent,batch,manifest):
     found={}
-    def visit(item):
+    def visit(item,base=parent):
         if isinstance(item,list):
-            for row in item:visit(row)
+            for row in item:visit(row,base)
         elif isinstance(item,dict):
+            # Reviewed lobby frames are copied into later receipts. Their file
+            # names remain relative to the hash-bound source review JSON.
+            source=item.get('path')
+            if 'frame' in item and isinstance(source,str) and source.endswith('.json'):
+                source_path=Path(source)
+                if source_path.is_absolute():
+                    try:source=str(source_path.relative_to(lab.ROOT))
+                    except ValueError:raise ValueError('referenced frame review is outside the owned lab')
+                else:source=str(PurePosixPath(base)/source)
+                if (not source.startswith(batch+'/') or source not in manifest or
+                        item.get('sha256')!=manifest[source]['sha256']):
+                    raise ValueError('referenced frame review is absent or changed')
+                base=str(PurePosixPath(source).parent)
             name=item.get('file')
             if isinstance(name,str) and name.lower().endswith(('.png','.jpg','.jpeg')):
                 path=Path(name);candidates=[]
@@ -18,7 +31,7 @@ def frame_members(value,parent,batch,manifest):
                     except ValueError:raise ValueError('frame is outside the owned lab')
                 else:
                     if '..' in path.parts:raise ValueError('frame path escapes its receipt')
-                    candidates=[str(PurePosixPath(parent)/name),str(PurePosixPath(batch)/name),name]
+                    candidates=[str(PurePosixPath(base)/name),str(PurePosixPath(batch)/name),name]
                 matches=[p for p in dict.fromkeys(candidates) if p in manifest]
                 if not matches:
                     matches=[p for p,r in manifest.items() if p.startswith(batch+'/') and
@@ -29,7 +42,7 @@ def frame_members(value,parent,batch,manifest):
                 if item.get('sha256') and item['sha256']!=manifest[member]['sha256']:
                     raise ValueError('frame digest differs from the checkpoint: '+member)
                 found[member]=manifest[member]['sha256']
-            for child in item.values():visit(child)
+            for child in item.values():visit(child,base)
     visit(value);return found
 
 
