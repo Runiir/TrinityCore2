@@ -36,13 +36,13 @@ def target(t,label,predicate):
     raise RuntimeError('fresh target control was not observed: '+label)
 
 
-def click(t,label,goal,predicate,oracle):
+def click(t,label,goal,predicate,oracle,*,await_state=None):
     control=target(t,label,predicate)
     if not control.get('enabled') or control['kind'] not in ('Button','CheckButton'):
         raise RuntimeError('target is not an enabled ordinary button')
     return t.step(label,goal,{'click':{'kind':'click','value':point(control),
         'description':'Click the observed '+(control['name'] or control['text'] or 'stock button')+'.'}},
-        lambda b,a,s:oracle(b,a,s=='click'),diagnostic_action='click')
+        lambda b,a,s:oracle(b,a,s=='click'),diagnostic_action='click',await_state=await_state)
 
 
 def edit(t,label,goal,predicate,value):

@@ -21,7 +21,7 @@ def inspect(t,name,button=None,select=False):
         require(click(t,'fixture.open_channels_ui','Use the separately reviewed visible stock channel button.',
             lambda c:c['name']==button,
             lambda b,a,s:{'status':'stock_channel_frame_visible' if s and 'ChannelFrame' in a['panels']
-                else 'client_or_protocol_failure'}),'stock_channel_frame_visible')
+                else 'client_or_protocol_failure'},await_state=lambda a:'ChannelFrame' in a['panels']),'stock_channel_frame_visible')
         rows=controls(t);t.receipt['channel_ui_controls']=rows;t.persist()
     if select:
         if not button:raise ValueError('select requires the reviewed stock open button')
