@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=84,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=85,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -506,7 +506,8 @@ local function snapshot(viewMode,viewPage)
     for _,name in ipairs({'CharacterMicroButton','SpellbookMicroButton','TalentMicroButton','AchievementMicroButton',
         'QuestLogMicroButton','SocialsMicroButton','GuildMicroButton','EJMicroButton','CollectionsMicroButton',
         'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame','PlayerFrame','CompactRaidFrameManager',
-        'ChatFrame1Tab','ChatFrame2Tab','ChatFrame3Tab'}) do
+        'ChatFrame1Tab','ChatFrame2Tab','ChatFrame3Tab','ChatFrame4Tab','ChatFrame5Tab',
+        'ChatFrame6Tab','ChatFrame7Tab','ChatFrame8Tab','ChatFrame9Tab','ChatFrame10Tab'}) do
         local f=_G[name];if f then scan(f,0) end
     end
     data.control_count=#data.controls
