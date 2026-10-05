@@ -28,13 +28,20 @@ def movement_packet(data):
 
 def targeted(payload,player=None):
     r=Reader(payload);prefix_size=r.bits(5);text_size=r.bits(8);logged=r.bits(1)
-    r.unpack('i');prefix=r.raw(prefix_size);text=r.raw(text_size)
+    try:r.unpack('i');prefix=r.raw(prefix_size);text=r.raw(text_size)
+    except ValueError as error:
+        raise ValueError(f'addon parameters truncated: bytes={len(payload)} prefix={prefix_size} text={text_size}') from error
     if prefix!=PREFIX:return None
     if logged:raise ValueError('relay must not enter chat logging')
-    channel=r.guid();recipient=r.guid();r.unpack('I')
+    try:channel=r.guid();recipient=r.guid();r.unpack('I')
+    except ValueError as error:
+        raise ValueError(f'own relay recipient GUID fields truncated: bytes={len(payload)} position={r.pos}') from error
     name_size=r.bits(7);channel_size=r.bits(7)
-    name=r.raw(name_size).rstrip(b'\0') if name_size>1 else b''
-    channel_name=r.raw(channel_size).rstrip(b'\0') if channel_size>1 else b''
+    try:
+        name=r.raw(name_size).rstrip(b'\0') if name_size>1 else b''
+        channel_name=r.raw(channel_size).rstrip(b'\0') if channel_size>1 else b''
+    except ValueError as error:
+        raise ValueError(f'own relay recipient names truncated: name={name_size} channel={channel_size} remaining={len(payload)-r.pos}') from error
     r.end()
     named_self=name.split(b'-')[0]==b'Runiir'
     guid_self=player is not None and recipient==player
