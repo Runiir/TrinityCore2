@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=111,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=112,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -213,6 +213,12 @@ local function snapshot(viewMode,viewPage)
                     context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
+                if name:match('^AddonListEntry%d+') then
+                    local control=data.controls[#data.controls]
+                    control.addon_onclick=type(call(f.GetScript,f,'OnClick'))=='function'
+                    control.addon_onmousedown=type(call(f.GetScript,f,'OnMouseDown'))=='function'
+                    control.addon_onmouseup=type(call(f.GetScript,f,'OnMouseUp'))=='function'
+                end
                 if ReportFrame and ReportFrame:IsVisible() then
                     local action=f==ReportFrame.CloseButton and 'close' or f==ReportFrame.ReportButton and 'submit'
                     if action then

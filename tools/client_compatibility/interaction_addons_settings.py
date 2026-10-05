@@ -1,5 +1,5 @@
 """Select the owned compatibility addon off, cancel, and verify its restoration."""
-import argparse,json,time
+import argparse,json,time,re
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
@@ -71,20 +71,28 @@ def checkbox(t,label,caption,checked=None):
         c['context']==caption and (checked is None or c.get('checked') is checked))
 
 
+def row_matches(row,check,caption):
+    name=check.get('name','')
+    if not re.fullmatch(r'AddonListEntry\d+Enabled',name):return False
+    return (row.get('name')==name.removesuffix('Enabled') and row.get('kind')=='Button' and
+        row.get('text')==caption and row.get('enabled') is True and row.get('addon_onclick') is True)
+
+
 def select(t,original,wanted,label):
-    caption=original['rows'][COMPAT]['title'];button=checkbox(t,label+'_target',caption,not wanted)
+    caption=original['rows'][COMPAT]['title'];check=checkbox(t,label+'_target',caption,not wanted)
+    button=target(t,label+'_row_target',lambda c:row_matches(c,check,caption))
     t.io.move(*point(button));time.sleep(1)
     def outcome(b,a,s):
         rendered=checkbox(t,label+'_checked',caption,wanted);after=detail(t,label+'_public')
         checks=pending_checks(after,original)
-        checks.update(ordinary_checkbox=s=='click',rendered_selection=rendered['checked'] is wanted,
+        checks.update(ordinary_row=s=='click' and row_matches(button,check,caption),rendered_selection=rendered['checked'] is wanted,
             ui_clean=not a.get('lua_errors') and not a.get('blocked_actions'))
         state,frame=t.observe(label+'_rendered')
         return {'status':'addons_pending_selection_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'public':after,'checkbox':rendered,'state':state,'frame':frame,
+            'oracle':{'checks':checks,'public':after,'checkbox':rendered,'row':button,'state':state,'frame':frame,
                 'public_enable_changed':{k:after.get('rows',{}).get(COMPAT,{}).get(k)!=original['rows'][COMPAT][k]
                     for k in ('enable_all','enable_character')}}}
-    require(t.step(label,'Change only the observed compatibility-addon selection without reloading.',
+    require(t.step(label,'Change only the observed compatibility-addon selection through its stock row button.',
         {'click':{'kind':'click','value':point(button),'hold':1.2}},outcome,diagnostic_action='click'),
         'addons_pending_selection_pass')
 
@@ -159,7 +167,7 @@ def main():
         t=SettingsTrial(a.output,controller='code')
         try:
             state,_=t.observe('addons_observer_guard')
-            if state.get('observer_version',0)<111:raise RuntimeError('requires read-only AddOns observer111')
+            if state.get('observer_version',0)<112:raise RuntimeError('requires read-only AddOns observer112')
             native_suite(t,operations=suite,preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)

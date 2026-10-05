@@ -3,7 +3,7 @@ import copy
 import subprocess
 from pathlib import Path
 import pytest
-from tools.client_compatibility.interaction_addons_settings import COMPAT,HARNESS,pending_checks,valid_row
+from tools.client_compatibility.interaction_addons_settings import COMPAT,HARNESS,pending_checks,valid_row,row_matches
 
 
 def original():
@@ -39,6 +39,19 @@ def test_pending_checkbox_cannot_accept_unrelated_state_changes(change):
 def test_enable_preference_requires_an_exact_supported_integer(flag):
     row=original()['rows'][COMPAT];row['enable_all']=flag
     assert not valid_row(row,COMPAT)
+
+
+@pytest.mark.parametrize('change',[None,'name','kind','caption','disabled','no_handler','foreign_checkbox'])
+def test_row_button_requires_the_exact_owned_checkbox_identity_and_click_handler(change):
+    check={'name':'AddonListEntry2Enabled'}
+    row={'name':'AddonListEntry2','kind':'Button','text':'Owned Compatibility','enabled':True,'addon_onclick':True}
+    if change=='name':row['name']='AddonListEntry1'
+    elif change=='kind':row['kind']='CheckButton'
+    elif change=='caption':row['text']='foreign'
+    elif change=='disabled':row['enabled']=False
+    elif change=='no_handler':row['addon_onclick']=False
+    elif change=='foreign_checkbox':check['name']='ForeignEntry2Enabled'
+    assert row_matches(row,check,'Owned Compatibility')==(change is None)
 
 
 def test_pinned_addon_getters_use_name_first_and_never_request_a_setter():
