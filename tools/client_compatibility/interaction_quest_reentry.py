@@ -7,7 +7,7 @@ from .interaction_settings_volume import SettingsTrial
 from . import interaction_quest_link as links
 from .interaction_quest_selection_recovery import enter,LAYOUT,NATIVE
 from .interaction_bridge_restoration import capture,restore
-from .interaction_settings_booleans import detail as settings_detail
+from .interaction_quest_settings import snapshot as settings_detail
 from .interaction_owned_language_fixture import logout
 from .interaction_lifecycle import Packets
 from .interaction_bridge_deploy import shot
@@ -58,8 +58,8 @@ def pause(t,original,native,state,current):
         window['until']=time.time()
         t.receipt['quest_no_message_request']=not links.message_requests(window['session'],window['since'],window['until'])
         if not t.receipt['quest_no_message_request']:raise RuntimeError('quest-link trial submitted a chat message')
-    restore(t,t.receipt['native_baseline'])
     settings=settings_detail(t,'quest_prelogout_settings')
+    restore(t,t.receipt['native_baseline'])
     checks['settings_preserved']=all(settings.get(k)==t.receipt['original_settings'].get(k) for k in
         ['cvars','values','category','search','unapplied'])
     t.receipt.update(quest_prelogout_checks=checks,original_quest_log=original,original_native=t.receipt['native_baseline'],
@@ -85,6 +85,7 @@ def begin(t,kind,layout_source):
     if t.fixture['guid']!=1 or original['selection']!=0:raise RuntimeError('requires the exact owned cold selection0 fixture')
     t.receipt.update(native_baseline=json.loads(json.dumps(capture(t))),original_settings=settings_detail(t,'quest_staged_settings'),
         quest_original_group=state['group'],quest_trial_kind=kind,custom_script_permission='blocked_by_user');t.persist()
+    restore(t,t.receipt['native_baseline'])
     links.suite(t,calibrate=kind=='layout',source=layout_source,selection_restore=pause)
     raise RuntimeError('staged quest trial did not reach reviewed reentry boundary')
 
@@ -95,7 +96,7 @@ def finish(t,path,review):
         raise ValueError('requires the owned closed quest preparation')
     old=json.loads(path.read_text())
     if not prepared_matches(old,t.receipt):raise RuntimeError('closed quest preparation or owned lifetime differs')
-    enter(t,path,review)
+    enter(t,path,review,settings_detail)
     state,current=links.detail(t,'quest_staged_final_hidden')
     checks={k:current.get(k)==old['original_quest_log'].get(k) for k in
         ['visible','count','total_quests','selection','rows','watched_count','fixture']}

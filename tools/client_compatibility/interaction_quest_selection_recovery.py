@@ -14,6 +14,7 @@ from .interaction_spellbook_navigation import known
 from .interaction_spellbook_actions import saved_actions
 from .interaction_ground_movement import position
 from .observation.journal import Cursor
+from .interaction_quest_settings import snapshot as settings_snapshot
 
 NATIVE={'resources','stats','spells','actions','pose','afk','position','group','no_lua_errors','no_blocked_actions'}
 LAYOUT={'visible','count','total_quests','selection','rows','watched_count','fixture','native_quests','chat_closed','ui_clean'}
@@ -22,12 +23,23 @@ LAYOUT={'visible','count','total_quests','selection','rows','watched_count','fix
 def source_matches(old,current):
     checks=old.get('quest_link_restoration',{}).get('checks',{})
     native=old.get('native_restoration',{}).get('checks',{})
-    return (old.get('completed') is False and old.get('finished_at') and
-        old.get('failure')=='RuntimeError: original quest/header/selection state did not restore' and
-        old.get('quest_link_layout_calibration') is True and old.get('actor')==current.get('actor') and
-        old.get('runtime')==current.get('runtime') and set(checks)==LAYOUT and checks.get('selection') is False and
+    layout_failure=(old.get('failure')=='RuntimeError: original quest/header/selection state did not restore' and
+        set(checks)==LAYOUT and checks.get('selection') is False and
         all(v is True for k,v in checks.items() if k!='selection') and set(native)==NATIVE and
-        all(v is True for v in native.values()) and old.get('quest_link_original',{}).get('selection')==0)
+        all(v is True for v in native.values()))
+    bridge=old.get('bridge_native_restoration',{}).get('checks',{})
+    timeout=old.get('diagnostic_timeouts',[])
+    cases=old.get('cases',[])
+    settings_failure=(old.get('failure')=='RuntimeError: settings diagnostic did not become visible' and
+        len(timeout)==1 and timeout[0].get('label')=='quest_prelogout_settings' and timeout[0].get('mode')=='settings' and
+        set(bridge)==NATIVE-{'group'} and all(v is True for v in bridge.values()) and
+        [(c.get('id'),c.get('status')) for c in cases]==[
+            ('fixture.quest_link.open','quest_link_log_open'),('fixture.quest_link.reopen','quest_link_log_open'),
+            ('fixture.quest_link.collapse','quest_link_header_pass'),('fixture.quest_link.close','quest_link_log_closed')] and
+        old.get('quest_trial_kind')=='layout' and not old.get('quest_link_execution_failure') and not old.get('logout_checks'))
+    return (old.get('completed') is False and old.get('finished_at') and (layout_failure or settings_failure) and
+        old.get('quest_link_layout_calibration') is True and old.get('actor')==current.get('actor') and
+        old.get('runtime')==current.get('runtime') and old.get('quest_link_original',{}).get('selection')==0)
 
 
 def source(t,path):
@@ -47,7 +59,11 @@ def prepare(t,path):
             ['visible','count','total_quests','rows','watched_count','fixture']) or
             native!=old['native_baseline'] or saved(1)!=old['quest_link_native_original']):
         raise RuntimeError('cleanup requires the exact isolated selection0-to2 difference')
-    settings=settings_detail(t,'quest_selection_settings_before')
+    settings=settings_snapshot(t,'quest_selection_settings_before')
+    if old.get('quest_trial_kind')=='layout' and (state['group']!=old['quest_original_group'] or
+            any(settings.get(k)!=old['original_settings'].get(k) for k in ['cvars','values','category','search','unapplied'])):
+        restore(t,native)
+        raise RuntimeError('failed settings calibration changed the original group or settings fixture')
     t.receipt.update(source={'file':str(path.resolve()),'sha256':lab.sha256(path)},
         original_quest_log=original,original_native=native,original_native_quests=old['quest_link_native_original'],
         original_settings=settings,original_group=state['group'],
@@ -64,7 +80,7 @@ def prepare(t,path):
     if not all(checks.values()):raise RuntimeError('ordinary cleanup logout wire checks differ')
 
 
-def enter(t,path,review_path):
+def enter(t,path,review_path,settings_reader=settings_detail):
     path=path.resolve();review_path=review_path.resolve()
     if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence') or not review_path.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires owned closed logout and fresh lobby review')
@@ -107,8 +123,10 @@ def enter(t,path,review_path):
     checks={k:current.get(k)==old['original_quest_log'].get(k) for k in
         ['visible','count','total_quests','selection','rows','watched_count','fixture']}
     checks.update(native_quests=saved(1)==old['original_native_quests'],group=state['group']==old['original_group'])
-    settings=settings_detail(t,'quest_selection_settings_after')
+    settings=settings_reader(t,'quest_selection_settings_after')
     checks.update({k:settings.get(k)==old['original_settings'].get(k) for k in ['cvars','values','category','search','unapplied']})
+    # Fixed observer commands are ordinary chat input and can clear AFK.
+    if settings_reader is not settings_detail:restore(t,base)
     t.receipt['quest_selection_recovery']={'checks':checks};t.persist()
     if not all(checks.values()):raise RuntimeError('original quest selection or observed settings did not recover')
 
@@ -121,7 +139,7 @@ def main():
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
         t=SettingsTrial(a.output,controller='code')
-        try:(prepare(t,a.source) if a.phase=='logout' else enter(t,a.source,a.review));t.receipt['completed']=True
+        try:(prepare(t,a.source) if a.phase=='logout' else enter(t,a.source,a.review,settings_snapshot));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)
