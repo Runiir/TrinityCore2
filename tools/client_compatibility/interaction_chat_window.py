@@ -38,6 +38,19 @@ def recon(t):
     if not same:raise RuntimeError('chat-window settings changed during read-only menu inspection')
 
 
+def font_recon(t):
+    before=detail(t,'font_recon_original');menu(t,1,'fixture.font_recon_menu')
+    control=target(t,'font_recon_submenu',lambda c:c['text']=='Font Size')
+    t.io.move(*point(control));time.sleep(1)
+    rows=controls(t);state,frame=t.observe('font_submenu_rendered')
+    t.receipt['font_submenu_recon']={'controls':rows,'frame':frame,'input':{'hover':point(control)}};t.persist()
+    t.clean_panels();after=detail(t,'font_recon_restored')
+    keys=['id','name','font_size','actual_font','actual_font_size','color','alpha','shown','locked','docked']
+    same=[{k:r.get(k) for k in keys} for r in before['windows']]==[{k:r.get(k) for k in keys} for r in after['windows']]
+    t.receipt['font_recon_restored']=same;t.persist()
+    if not same:raise RuntimeError('font submenu inspection changed chat settings')
+
+
 NAMES={'TC442Chat','TC442Renamed'}
 
 
@@ -142,8 +155,8 @@ def mutate(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--mutate',action='store_true');a=p.parse_args()
+    p.add_argument('--mutate',action='store_true');p.add_argument('--font-recon',action='store_true');a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=mutate if a.mutate else recon,preserve_settings=False);t.receipt['completed']=True
+    try:native_suite(t,operations=mutate if a.mutate else font_recon if a.font_recon else recon,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)

@@ -1,20 +1,24 @@
 """Retain a fresh public page for one uniquely identified visible control."""
-import json,time
+import json,time,shutil
 from contextlib import redirect_stdout
 from io import StringIO
 from PIL import Image
 from tools.second_client import ctl
 from .observation.interactions import decode_image
 from .interaction_operations import point,retain_control_pixels
+from . import lab_runtime as lab,owned_input
 
 
 def target(t,label,predicate):
-    deadline=time.monotonic()+40;path=t.out/'target_latest.png'
+    deadline=time.monotonic()+40;path=t.out/'target_latest.png';samples=[]
     while time.monotonic()<deadline:
         with redirect_stdout(StringIO()):ctl.shot(str(path))
         with Image.open(path) as image:state=decode_image(image)
         if state.get('guid')!=t.guid:raise RuntimeError('target control page belongs to another actor')
         if state.get('mode')=='controls':
+            samples.append({'sequence':state['sequence'],'page':state['page'],
+                'control_snapshot':state.get('control_snapshot'),'controls':state.get('controls') or []})
+            samples=samples[-20:]
             matches=[c for c in state.get('controls') or [] if predicate(c)]
             if len(matches)>1:raise RuntimeError('target predicate is ambiguous on its observed page')
             if matches:
@@ -25,6 +29,10 @@ def target(t,label,predicate):
                     'control_snapshot':state.get('control_snapshot'),'page':state['page'],'frame':frame})
                 t.persist();return matches[0]
         time.sleep(.1)
+    rows=t.receipt.setdefault('target_control_timeouts',[]);saved=t.out/('missing_target_'+str(len(rows))+'.png')
+    shutil.copyfile(path,saved)
+    rows.append({'label':label,'samples':samples,'input_replayed':False,
+        'frame':{'file':saved.name,'sha256':lab.sha256(saved),'monitor':owned_input.focus()}});t.persist()
     raise RuntimeError('fresh target control was not observed: '+label)
 
 
