@@ -14,6 +14,14 @@ from .observation.journal import Cursor
 
 def inspect(t,name,button=None,select=False):
     before=detail(t,'channel_ui_roster_before')
+    if select:
+        if not button:raise ValueError('select requires the reviewed stock open button')
+        # Opening the panel can select and request the owned roster itself.
+        # Clicking that already-selected row need not send a second request.
+        ready=before;session=actors.session_entry(t.fixture)['session']
+        cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+        for packet in cursor.poll():pass
+        started=time.time()
     rows=controls(t)
     t.receipt['channel_ui_visible_buttons']=[r for r in rows if any(word in (r.get('name','')+' '+r.get('text','')).lower()
         for word in ['chat','channel','voice'])];t.persist()
@@ -24,11 +32,6 @@ def inspect(t,name,button=None,select=False):
                 else 'client_or_protocol_failure'},await_state=lambda a:'ChannelFrame' in a['panels']),'stock_channel_frame_visible')
         rows=controls(t);t.receipt['channel_ui_controls']=rows;t.persist()
     if select:
-        if not button:raise ValueError('select requires the reviewed stock open button')
-        ready=detail(t,'channel_ui_owned_roster_before_select')
-        session=actors.session_entry(t.fixture)['session'];cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
-        for packet in cursor.poll():pass
-        started=time.time()
         def selected(b,a,s):
             after=detail(t,'channel_ui_owned_roster_selected')
             channel_list=after.get('channel_list',{});roster=channel_list.get('roster',{})
@@ -45,7 +48,8 @@ def inspect(t,name,button=None,select=False):
                 'fresh_roster_event':channel_list.get('received_sequence',0)>ready.get('channel_list',{}).get('received_sequence',0),
                 'stock_panel_visible':'ChannelFrame' in a['panels'],'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
             return {'status':'owned_stock_channel_roster_pass' if all(checks.values()) else 'client_or_protocol_failure',
-                'oracle':{'checks':checks,'public':after,'packets':packets,'name':name,'native_session':session}}
+                'oracle':{'checks':checks,'public':after,'packets':packets,'name':name,'native_session':session,
+                    'evidence_window':{'started_at':started,'scope':'stock panel opening and exact owned row selection'}}}
         def exact_row(c):
             text=re.sub(r'\|c[0-9a-fA-F]{8}|\|r','',c.get('text','')).strip()
             return c['kind']=='Button' and text.split('. ',1)[-1]==name
