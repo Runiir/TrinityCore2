@@ -62,6 +62,25 @@ function Client442ReadDisplayState(cvars)
     end
     return result
 end
+function Client442IsSettingsDefaultsButton(frame)
+    local panel=SettingsPanel
+    local list=panel and call(panel.GetSettingsList,panel)
+    return not not (frame and list and list.Header and list.Header.DefaultsButton and frame==list.Header.DefaultsButton)
+end
+function Client442ReadColorblindDefaults(panel,category)
+    local setting=panel and call(panel.GetSetting,panel,'colorblindMode')
+    local registry=panel and panel.settings
+    if not setting or not category or type(registry)~='table' or registry[setting]~=category then return nil end
+    local rows={}
+    for item,owner in pairs(registry) do
+        if owner==category then
+            if #rows>=8 then return {invalid=true} end
+            rows[#rows+1]={variable=call(item.GetVariable,item),value=call(item.GetValue,item),
+                default=call(item.GetDefaultValue,item)}
+        end
+    end
+    return rows
+end
 function Client442ObserveSettings()
     local panel=SettingsPanel
     local category=panel and call(panel.GetCurrentCategory,panel)
@@ -69,12 +88,15 @@ function Client442ObserveSettings()
     local result={visible=panel and panel:IsVisible() or false,
         category=category and {name=call(category.GetName,category),id=call(category.GetID,category)},
         search=search and call(search.GetText,search),
-        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},discard_dialogs={},
+        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},discard_dialogs={},defaults_dialogs={},
+        colorblind_defaults=Client442ReadColorblindDefaults(panel,category),
         interact_keys={primary='',secondary='',known=false}}
     for i=1,3 do
         local popup=_G['StaticPopup'..i]
         if popup and popup:IsVisible() and popup.which=='GAME_SETTINGS_CONFIRM_DISCARD' then
             result.discard_dialogs[#result.discard_dialogs+1]={name=popup:GetName(),which=popup.which}
+        elseif popup and popup:IsVisible() and popup.which=='GAME_SETTINGS_APPLY_DEFAULTS' then
+            result.defaults_dialogs[#result.defaults_dialogs+1]={name=popup:GetName(),which=popup.which}
         end
     end
     if type(GetBindingKey)=='function' then
@@ -90,7 +112,7 @@ function Client442ObserveSettings()
     for _,name in ipairs({'autoLootDefault','lockActionBars','Sound_EnableAllSound','Sound_MasterVolume',
         'Sound_MusicVolume','Sound_SFXVolume','Sound_EnableMusic','cameraTerrainTilt','cameraBobbing',
         'enableMouseSpeed','mouseSpeed','PROXY_MOUSE_LOOK_SPEED','cameraYawMoveSpeed','cameraPitchMoveSpeed',
-        'colorblindMode','colorblindSimulator',
+        'colorblindMode','colorblindSimulator','colorblindWeaknessFactor',
         'enableMovePad','PROXY_ENABLE_INTERACT','softTargetInteract','softTargettingInteractKeySound','interactOnLeftClick',
         'RenderScale','gxWindow','gxMaximize','gxMonitor','gxResolution','graphicsQuality','groundEffectDensity','farclip',
         'PROXY_RESOLUTION_RENDER_SCALE','PROXY_RESOLUTION','PROXY_DISPLAY_MODE','PROXY_PRIMARY_MONITOR',
