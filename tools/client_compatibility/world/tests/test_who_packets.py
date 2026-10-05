@@ -36,11 +36,11 @@ def response(rows=None,count=None,total=None):
 
 def run(codec,actions,identities=None,active=True):
     return result(codec,op='stateful',character={'guid':1},snapshot={} if active else None,
-        identities=[IDENTITY] if identities is None else identities,actions=actions)
+        identities=[IDENTITY] if identities is None else identities,actions=actions,gameobjects=[],units=[])
 
 
 def decoded(packet):
-    assert packet[0]=='SMSG_WHO';r=Reader(bytes.fromhex(packet[1]));id,=r.unpack('I');n=r.bits(6);rows=[]
+    assert packet[0]=='SMSG_WHO';r=Reader(bytes.fromhex(packet[1]));id,=r.unpack('I');n=r.bits(6);r.align();rows=[]
     for _ in range(n):
         assert r.bits(1)==0;length=r.bits(6);assert [r.bits(7) for _ in range(5)]==[0]*5
         assert r.guid()==(0,0) and r.guid()==(0,0);guid=r.guid()

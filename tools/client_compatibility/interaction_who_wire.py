@@ -47,7 +47,7 @@ def native_response(body):
 
 
 def modern_response(body):
-    r=Reader(body);id,=r.unpack('I');count=r.bits(6);rows=[]
+    r=Reader(body);id,=r.unpack('I');count=r.bits(6);r.align();rows=[]
     for _ in range(count):
         deleted=r.bits(1);name_length=r.bits(6);declined=[r.bits(7) for _ in range(5)]
         declines=[r.raw(n).decode() for n in declined]
