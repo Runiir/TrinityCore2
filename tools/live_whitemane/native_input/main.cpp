@@ -130,7 +130,7 @@ struct Sender
         if(kind=="move")
         {
             auto x=input_integer(request,"x"),y=input_integer(request,"y");
-            if(x<0 || x>=1280 || y<0 || y>=720)throw std::runtime_error("pointer is outside the owned client");
+            if(x<0 || x>=1280 || y<0 || y>=900)throw std::runtime_error("pointer is outside the owned client");
             ei_device_pointer_motion_absolute(device,x,y);
         }
         else if(kind=="key")

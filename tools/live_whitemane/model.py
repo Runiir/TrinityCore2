@@ -13,6 +13,7 @@ def serve(args):
     from safetensors.torch import load_file
     from laya.common import build_sequence, render_options, serialize_state
     from tools.client_compatibility import archaeology_policy, travel_policy
+    from . import guidance_policy
     agent, _ = archaeology_policy.load_adapter(args.adapter)
     heads = {}
     for name, path, policy in [('archaeology',args.adapter,archaeology_policy),
@@ -24,6 +25,7 @@ def serve(args):
                 or any(k.startswith('encoder.') for k in weights)):
             raise RuntimeError('unverified or encoder-changing Laya head')
         heads[name]={'metadata':metadata,'weights':weights,'policy':policy}
+    heads['guidance']={**heads['archaeology'],'policy':guidance_policy}
     app=FastAPI(); lock=threading.Lock(); active='archaeology'
     def identity(name):
         metadata=heads[name]['metadata']

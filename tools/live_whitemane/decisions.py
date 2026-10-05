@@ -2,6 +2,7 @@
 import json
 import urllib.request
 from tools.client_compatibility import archaeology_policy, travel_policy
+from . import guidance_policy
 
 ENDPOINT='http://127.0.0.1:8004'
 
@@ -15,7 +16,7 @@ def choose(state, which='archaeology', physical_state=None):
                                headers={'Content-Type':'application/json'})
     with urllib.request.urlopen(req,timeout=10) as response:
         result=json.load(response)
-    policy=archaeology_policy if which=='archaeology' else travel_policy
+    policy={'archaeology':archaeology_policy,'travel':travel_policy,'guidance':guidance_policy}[which]
     action=result['answers']['action']['choice']
     if (result['revision']!=model['revision'] or action not in policy.ACTIONS
             or any(v['truncated_fields'] for v in result['token_budget'].values())

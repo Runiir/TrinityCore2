@@ -48,7 +48,18 @@ def execute(title, action, arguments):
                 x, y = arguments['x'], arguments['y']
                 if not 0 <= x < runtime.WIDTH or not 0 <= y < runtime.HEIGHT:
                     raise ValueError('click is outside the private viewport')
-                sender.click(x, y, button=arguments['button'], hold=.15)
+                sender.move(x,y)
+                time.sleep(.35)
+                sender._send(sender.X.ButtonPress,arguments['button'])
+                try: time.sleep(.15)
+                finally: sender._send(sender.X.ButtonRelease,arguments['button'])
+                time.sleep(.15)
+            elif action == 'hover':
+                x,y=arguments['x'],arguments['y']
+                if not 0<=x<runtime.WIDTH or not 0<=y<runtime.HEIGHT:
+                    raise ValueError('hover is outside the private viewport')
+                sender.move(x,y)
+                time.sleep(.5)
             elif action == 'key':
                 if not .05 <= arguments['hold'] <= 2:
                     raise ValueError('key hold is outside its bounded interval')

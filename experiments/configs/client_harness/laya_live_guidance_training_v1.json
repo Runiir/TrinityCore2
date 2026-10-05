@@ -1,0 +1,15 @@
+{
+  "schema": "laya_live_guidance_training_v1",
+  "model_id": "laya-whitemane-guidance-v1",
+  "seed": 440205,
+  "train_per_action": 80,
+  "validation_per_action": 20,
+  "test_per_action": 40,
+  "learning_rate": 0.00002,
+  "batch_size": 12,
+  "epochs": 20,
+  "minimum_validation_accuracy": 0.99,
+  "minimum_test_accuracy": 0.99,
+  "encoder_frozen": true,
+  "training_source": "synthetic explicit guidance states, including recorded-marker arrival and telescope fallback"
+}
