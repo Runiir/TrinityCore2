@@ -28,12 +28,18 @@ def fly(folder, row, arrow, step):
         remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
         maximum_distance=750 if arrow.get('site_id') else 1500
         if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
+        if remaining>6 and not row.get('owned_pose'):
+            from .navigation import seed_height
+            phase_folder=folder/f'height_refresh_{time.time_ns()}'
+            refresh=seed_height(phase_folder,row)
+            step.setdefault('height_refreshes',[]).append(refresh)
+            row=refresh['after'];m,a=row['movement'],row['archaeology'];world=a['world']
         if remaining>6 and height_plan is None:
             height_plan=clearance.plan(row,target,maximum_distance=maximum_distance)
             step['height_plan']=height_plan
         if height_plan:
             pose=row.get('owned_pose')
-            at_height=bool(pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
+            at_height=bool(a['flying'] and pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
         flags={'mode':'flight','available':m['in_world'] and m['health_percent']>=90 and not (m['dead'] or m['in_combat']),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,

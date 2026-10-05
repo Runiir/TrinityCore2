@@ -14,10 +14,10 @@ def observation(north, *, flying=False, mounted=True):
 
 
 def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeypatch, tmp_path):
-    ground=observation(0)
+    ground=observation(0);ground['owned_pose']={'height_yards':100}
     air=observation(0,flying=True)
     air['owned_pose']={'height_yards':100}
-    contact=observation(40)
+    contact=observation(40);contact['owned_pose']={'height_yards':100}
     near_air=observation(100,flying=True)
     near_ground=observation(100)
     arrived=observation(100,mounted=False)

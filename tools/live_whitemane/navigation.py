@@ -27,3 +27,25 @@ def orient(folder,row,target,history=()):
         time.sleep(.5)
     result.update(completed=True,after=observe(folder/'after.png'));runtime.write(folder/'turn.json',result)
     return result
+
+
+def seed_height(folder,row):
+    """Laya can refresh a stationary owned pose with a measured reversible turn."""
+    folder.mkdir(parents=True,exist_ok=False)
+    action,request,response=laya_ui.choose({'player':'stationary, healthy, all movement inputs released',
+        'height_measurement':'expired','needed':'fresh height before calculating flight'},
+        'Choose whether to refresh the expired height measurement before flight.',
+        {'refresh':'Turn slightly and return to obtain a fresh owned movement measurement','wait':'Wait without input'})
+    result={'action':action,'request':request,'response':response,'before':row,'inputs':[]}
+    runtime.write(folder/'height_refresh.json',result)
+    if action=='refresh':
+        stationary(row,observe(folder/'precheck.png'))
+        duration,result['calibration']=turn_duration(.15,[])
+        for key in ('Left','Right'):
+            result['inputs'].append(inputs.execute('World of Warcraft','key',{'key':key,'hold':duration}))
+        for i in range(8):
+            time.sleep(.15);after=observe(folder/'after.png')
+            if after.get('owned_pose'):result['after']=after;break
+    runtime.write(folder/'height_refresh.json',result)
+    if 'after' not in result:raise RuntimeError('Laya height refresh did not obtain a fresh pose')
+    return result

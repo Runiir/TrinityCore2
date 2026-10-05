@@ -146,7 +146,7 @@ def ascend(folder, ceiling, *, site_id=None):
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         code,_=sender._keycode(sender.XK.string_to_keysym('space'))
         held=False;rows=[];started=time.time();last_height=None;stalled=0
-        observation_seconds=[]
+        observation_seconds=[];missing_height=0
         try:
             for index in range(40):
                 observation_started=time.monotonic()
@@ -155,8 +155,16 @@ def ascend(folder, ceiling, *, site_id=None):
                 m,a=row['movement'],row['archaeology'];pose=row.get('owned_pose')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                         or m['in_combat'] or m['on_taxi'] or m['health_percent']<90 or a['casting']
-                        or not a['mounted'] or a['falling'] or a['swimming'] or not pose):
+                        or not a['mounted'] or a['falling'] or a['swimming']):
                     raise RuntimeError('calculated ascent lost a healthy owned height observation')
+                if not pose:
+                    # The public flight flag can precede its captured movement
+                    # packet. Release immediately and wait for the real height.
+                    if held:sender._send(sender.X.KeyRelease,code);held=False
+                    missing_height+=1
+                    if missing_height>=6:raise RuntimeError('calculated ascent lost a healthy owned height observation')
+                    time.sleep(.1);continue
+                missing_height=0
                 if site_id is not None:check_point(site_id,a['world'])
                 if time.time()-started>15:raise RuntimeError('calculated ascent exceeded its emergency bound')
                 seconds=remaining_seconds(pose,ceiling)

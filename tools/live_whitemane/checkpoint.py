@@ -15,6 +15,37 @@ from dvclive import Live
 from . import runtime
 
 
+def checkpoint_closed(label, roots, metrics, conclusions):
+    """Checkpoint explicitly closed phases while another farm phase continues."""
+    if not re.fullmatch(r'[a-zA-Z0-9_]+',label):raise ValueError('invalid batch label')
+    roots=[root.resolve() for root in roots]
+    if any(not root.is_relative_to(runtime.ROOT/'evidence') for root in roots):
+        raise ValueError('closed phase is outside public evidence')
+    output=runtime.ROOT/'evidence'/('checkpoint_'+label)
+    output.mkdir(parents=True,exist_ok=False,mode=0o700)
+    receipt={'schema':'whitemane_closed_phases_v1','closed_at':time.time(),
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=runtime.REPO,text=True).strip(),
+        'closed_roots':[str(root.relative_to(runtime.ROOT)) for root in roots],
+        'metrics':metrics,'conclusions':conclusions,'public_evidence_only':True,
+        'raw_packets':False,'account_logs':False,'retained_head_weights_changed':False}
+    runtime.write(output/'receipt.json',receipt)
+    with Live(dir=str(output/'dvclive'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
+        for key,value in metrics.items():live.log_metric(key,value)
+        live.next_step()
+    archive=runtime.REPO/'artifacts/client_harness'/f'whitemane_live_{label}.tar.gz'
+    if archive.exists():raise RuntimeError('immutable closed-phase checkpoint already exists')
+    files=sorted({path for root in roots+[output] for path in root.rglob('*')
+        if path.is_file() and path.suffix in ('.json','.jsonl','.png','.tsv','.lua','.toc')})
+    # Refuse mutable evidence: inspect file identity immediately before and
+    # after archiving, without copying any active loop or feed records.
+    stats={path:(path.stat().st_size,path.stat().st_mtime_ns) for path in files}
+    with tarfile.open(archive,'w:gz') as handle:
+        for path in files:handle.add(path,arcname=str(path.relative_to(runtime.ROOT)),recursive=False)
+    if any(stats[p]!=(p.stat().st_size,p.stat().st_mtime_ns) for p in files):
+        archive.unlink();raise RuntimeError('closed evidence changed during checkpoint')
+    return {'archive':str(archive),'public_evidence_files':len(files),'bytes':archive.stat().st_size,'metrics':metrics}
+
+
 def checkpoint_trial(label, trial, include=()):
     """Archive one closed live trial using observed, rather than preset, metrics."""
     if not re.fullmatch(r'[a-zA-Z0-9_]+',label):raise ValueError('invalid batch label')

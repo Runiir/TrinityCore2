@@ -39,9 +39,9 @@ def match(row, pose, *, now):
     world=row['archaeology']['world']
     if not world or pose.get('runtime')!=row['runtime']:return None
     age=now-pose['observed_at']
-    stationary_ground=row['movement']['speed']==0 and row['archaeology']['grounded']
-    if not 0<=age<=(30 if stationary_ground else 2):return None
-    limit=.75 if stationary_ground else 2+row['movement']['speed']*.6
+    stationary=row['movement']['speed']==0 and not row['archaeology']['falling']
+    if not 0<=age<=(30 if stationary else 2):return None
+    limit=.75 if stationary else 2+row['movement']['speed']*.6
     if math.hypot(pose['north']-world['north'],pose['west']-world['west'])>limit:return None
     transition=pose['flying']!=row['archaeology']['flying'] or pose['falling']!=row['archaeology']['falling']
     if transition and age>.75:return None
