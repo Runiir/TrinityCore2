@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 357 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 358 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -718,7 +718,7 @@ Fixture: `saved_local_macros`.
 - [x] `macros.execute` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.delete_confirm` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.delete_cancel` (qualified variant; [evidence](#owned_macro_editor_controls))
-- [ ] `macros.macro_limit`
+- [x] `macros.macro_limit` (qualified variant; [evidence](#owned_character_macro_limit))
 - [x] `macros.persistence` (qualified variant; [evidence](#macro_mutation))
 - [x] `macros.restore_original` (qualified variant; [evidence](#macro_mutation))
 
@@ -2387,3 +2387,13 @@ Remaining limits: Stock macro deletion confirmation on the owned primary only. O
 
 - [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_controls02/episode.json`, SHA-256 `eb97ef54a83bbb9dc5a24995fadfd5488e29ad516ae58739fa664140f88631ac`.
 - [442_interactions_20261005_66.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_66.tar.gz.dvc), member `evidence/client_interactions_20261005_ui66/macro_editor_visual_review.json`, SHA-256 `c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e`.
+
+### owned_character_macro_limit
+
+Fresh whole-pass character_macro_limit01 reaches the installed character bank cap30 through stock creation, physically clicks disabled New with no extra macro or popup, deletes one fixture to29 and observes New enabled, recreates30 and repeats the disabled boundary. Rendered capacity, scrolling and final restoration frames reviewed. All30 owned empty-body fixtures are removed, zero banks survive reload and all10 native/public checks pass.
+
+Remaining limits: Owned primary with originally empty banks, installed60895 character cap30 only. Account cap120, other actors/builds, existing macros and nonempty bodies remain open. No macro executes or enters an action bar.
+
+- [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/character_macro_limit01/episode.json`, SHA-256 `1b42349b7726f1d50e766fd8287c4aa47b086e5951b5391d0755e400638c5477`.
+- [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/character_macro_limit_visual_review.json`, SHA-256 `7e39e3297d7d8cee3781ebded4b4be6fdc2393d2e0ebc89587bc38685460d6eb`.
+- [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/capacity_budget_sample01.json`, SHA-256 `aff144c449b263c39ea0136eae798226e7daea177c82df530d275900251cd5ad`.

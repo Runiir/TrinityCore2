@@ -5415,7 +5415,8 @@
       "fixture": "saved_local_macros",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_character_macro_limit"
     },
     {
       "id": "macros.persistence",
@@ -12392,8 +12393,33 @@
           "sha256": "c68b26b6972bef639817ddf7b3dd2cbc1ef314b51eae3bbb10b7cead4ed4230e"
         }
       ]
+    },
+    {
+      "id": "owned_character_macro_limit",
+      "operations": [
+        "macros.macro_limit"
+      ],
+      "scope": "Fresh whole-pass character_macro_limit01 reaches the installed character bank cap30 through stock creation, physically clicks disabled New with no extra macro or popup, deletes one fixture to29 and observes New enabled, recreates30 and repeats the disabled boundary. Rendered capacity, scrolling and final restoration frames reviewed. All30 owned empty-body fixtures are removed, zero banks survive reload and all10 native/public checks pass.",
+      "limits": "Owned primary with originally empty banks, installed60895 character cap30 only. Account cap120, other actors/builds, existing macros and nonempty bodies remain open. No macro executes or enters an action bar.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui67/character_macro_limit01/episode.json",
+          "sha256": "1b42349b7726f1d50e766fd8287c4aa47b086e5951b5391d0755e400638c5477"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui67/character_macro_limit_visual_review.json",
+          "sha256": "7e39e3297d7d8cee3781ebded4b4be6fdc2393d2e0ebc89587bc38685460d6eb"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui67/capacity_budget_sample01.json",
+          "sha256": "aff144c449b263c39ea0136eae798226e7daea177c82df530d275900251cd5ad"
+        }
+      ]
     }
   ],
-  "qualified_operations": 357,
+  "qualified_operations": 358,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
