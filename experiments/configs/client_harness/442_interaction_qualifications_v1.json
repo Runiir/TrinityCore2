@@ -3917,7 +3917,7 @@
         "chat.font_size",
         "chat.chat_tab_close"
       ],
-      "scope": "Fresh whole-pass chat_window_controls03 creates disposable stock slot4 TC442Chat, renames itTC442Renamed through the exact stock dialog, uses observed16 pt and14 pt submenu buttons, and closes the owned tab. Public full name/font getters agree; reviewed actual frames show creation, exact rename dialog,16 pt checkmark and tab closure. Existing General, Combat Log and Voice settings and original selection restore. All10 native/public checks pass. Observer87 includes unparented submenu proxies.",
+      "scope": "Fresh whole-pass chat_window_controls03 creates disposable stock slot4 TC442Chat, renames it TC442Renamed through the exact stock dialog, uses observed 16 pt and 14 pt submenu buttons, and closes the owned tab. Public full name/font getters agree; reviewed actual frames show creation, exact rename dialog,16 pt checkmark and tab closure. Existing General, Combat Log and Voice settings and original selection restore. All 10 native/public checks pass. Observer87 includes unparented submenu proxies.",
       "limits": "Exact disposable character slot4 only, idle private owned warrior. Stock closing retains hidden unused-slot metadata; no byte-identical chat-cache claim. Account-wide/window-cap/dock/layout/other font choices and chat filters remain open. Two failed whole trials are excluded even though their cleanup passes. Full renamed string comes from the public getter because its docked caption truncates/fades.",
       "evidence": [
         {
