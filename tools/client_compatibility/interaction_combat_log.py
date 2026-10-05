@@ -82,8 +82,11 @@ def run(t):
             result=probe(t,'combat_log_real_event');chat=chat_detail(t,'combat_log_selected_chat')
             events=[e for e in result['events'] if e['sequence']>baseline['event_sequence'] and
                 e['source_guid']==t.guid and e['spell_id']==6673]
+            old_text={r['text'] for r in baseline['recent_messages']}
+            fresh_text=[r for r in result['recent_messages'] if r['contains_battle_shout'] and
+                r['text'] not in old_text and not r.get('truncated')]
             checks={'ordinary_tab_click':s,'selected_visible_log':result['selected']==2 and result['visible'],
-                'new_owned_public_event':bool(events),'new_stock_message':result['message_count']>baseline['message_count'],
+                'new_owned_public_event':bool(events),'new_stock_message':bool(fresh_text),
                 'stock_battle_shout_text':any(r['contains_battle_shout'] for r in result['recent_messages']),
                 'native_cast_pass':any(c['id']=='spellbook.cast_spell' and c['status']=='spellbook_cast_pass' for c in t.receipt['cases']),
                 'buff_restored':t.receipt.get('buffs_restored') is True,

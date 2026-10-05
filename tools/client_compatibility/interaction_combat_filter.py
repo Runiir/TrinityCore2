@@ -6,7 +6,7 @@ from .interaction_keybindings_native import suite as native_suite
 from .interaction_combat_log import probe,run as real_log
 from .interaction_chat_window import menu,option,detail
 from .interaction_chat_settings import signature
-from .interaction_control_target import click,edit
+from .interaction_control_target import click,edit,target
 from .interaction_macros import require
 
 NAME='TC442Log'
@@ -79,6 +79,21 @@ def cycle(t,with_cast):
         require(click(t,'fixture.enable_owned_cast_success','Select the enabled Success child on the disposable copy.',lambda c:
             c['name']=='CombatConfigMessageTypesRightCheckbox2_2' and c['text']=='Success' and
             c.get('enabled') is True and c.get('checked') is False,enabled),'owned_cast_filter_enabled')
+        require(click(t,'fixture.owned_filter_formatting','Select the observed Formatting tab.',lambda c:
+            c['name']=='CombatConfigTab4' and c['text']=='Formatting',lambda b,a,s:{'status':'formatting_selected'
+            if s and 'ChatConfigFrame' in a['panels'] else 'client_or_protocol_failure'}),'formatting_selected')
+        timestamp=lambda c:c['name']=='CombatConfigFormattingShowTimeStamp' and c['kind']=='CheckButton'
+        timestamp_control=target(t,'owned_timestamp_before',timestamp)
+        if timestamp_control.get('checked') is not True:
+            def stamped(b,a,s):
+                control=target(t,'owned_timestamp_after',timestamp)
+                result=probe(t,'owned_timestamp_filter_guard')
+                checks={'ordinary_checkbox':s,'timestamp_checked':control.get('checked') is True,
+                    'owned_only':result['filter_name']==NAME and result['settings_filter']==original_count+1}
+                return {'status':'owned_timestamp_enabled' if all(checks.values()) else 'client_or_protocol_failure',
+                    'oracle':{'checks':checks,'control':control,'public':result}}
+            require(click(t,'fixture.enable_owned_log_timestamp','Show timestamps on the disposable filter.',
+                lambda c:timestamp(c) and c.get('checked') is False,stamped),'owned_timestamp_enabled')
         closed(t,'fixture.save_owned_combat_filter');log_tab(t,'fixture.show_owned_filter_log')
         def activated(b,a,s):
             result=probe(t,'owned_combat_filter_activated')
