@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 358 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 364 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -204,9 +204,9 @@ Fixture: `inventory_items`.
 - [ ] `bags.sort`
 - [ ] `bags.search`
 - [ ] `bags.quality_filter`
-- [ ] `bags.item_tooltip`
-- [ ] `bags.compare_tooltip`
-- [ ] `bags.item_link`
+- [x] `bags.item_tooltip` (qualified variant; [evidence](#owned_backpack_tooltip_and_comparison))
+- [x] `bags.compare_tooltip` (qualified variant; [evidence](#owned_backpack_tooltip_and_comparison))
+- [x] `bags.item_link` (qualified variant; [evidence](#owned_pending_backpack_item_link))
 - [x] `bags.move_item` (qualified variant; [evidence](#inventory_movement))
 - [ ] `bags.swap_item`
 - [x] `bags.split_stack` (qualified variant; [evidence](#stack_split_merge))
@@ -1113,10 +1113,10 @@ Fixture: `in_world`.
 - [ ] `ui_misc.item_text_page`
 - [ ] `ui_misc.item_text_close`
 - [x] `ui_misc.tooltip_compare` (qualified variant; [evidence](#stock_owned_sword_comparison))
-- [ ] `ui_misc.achievement_link`
+- [x] `ui_misc.achievement_link` (qualified variant; [evidence](#owned_pending_achievement_link))
 - [ ] `ui_misc.quest_link`
-- [ ] `ui_misc.item_link`
-- [ ] `ui_misc.spell_link`
+- [x] `ui_misc.item_link` (qualified variant; [evidence](#owned_pending_backpack_item_link))
+- [x] `ui_misc.spell_link` (qualified variant; [evidence](#owned_pending_known_spell_link))
 - [ ] `ui_misc.copy_name`
 - [x] `ui_misc.screenshot` (qualified variant; [evidence](#stock_display_controls))
 - [x] `ui_misc.toggle_ui` (qualified variant; [evidence](#stock_display_controls))
@@ -2397,3 +2397,43 @@ Remaining limits: Owned primary with originally empty banks, installed60895 char
 - [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/character_macro_limit01/episode.json`, SHA-256 `1b42349b7726f1d50e766fd8287c4aa47b086e5951b5391d0755e400638c5477`.
 - [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/character_macro_limit_visual_review.json`, SHA-256 `7e39e3297d7d8cee3781ebded4b4be6fdc2393d2e0ebc89587bc38685460d6eb`.
 - [442_interactions_20261005_67.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_67.tar.gz.dvc), member `evidence/client_interactions_20261005_ui67/capacity_budget_sample01.json`, SHA-256 `aff144c449b263c39ea0136eae798226e7daea177c82df530d275900251cd5ad`.
+
+### owned_pending_backpack_item_link
+
+Whole-pass bag_link01 physically Shift-clicks the exact owned Worn Greatsword49778 backpack slot10 into a blank pending Say edit box. Actual rendered label and public item hyperlink reviewed. No message is submitted; the exact native item and all10 native/public checks remain unchanged.
+
+Remaining limits: Owned plain backpack sword only. Delivery, clicking sent links, other item classes/slots and generic chat-link behavior remain open.
+
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/bag_link01/episode.json`, SHA-256 `f91db0ccb26d1cff1c914c86cd0cfe830529809336e9ffa88c37ba4aa92e5b50`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/pending_chat_links_visual_review.json`, SHA-256 `26e467b4426f30b42b02c38a6c8c452367092b42c4708bf1b896c76a0e79ca94`.
+
+### owned_pending_known_spell_link
+
+Fresh whole-pass spell_link04 physically Shift-clicks native-known Battle Shout6673 into pending Say chat, with zero cast requests and owned native cast completions. Actual blue link reviewed. Corrected secure stock dispatch also passes ordinary right-click native cast/public buff/cooldown and normal cancellation. Original spellbook layout and all10 native/public checks restore.
+
+Remaining limits: Owned warrior Battle Shout on installed60895 only. Other spells/classes/actors, delivery and clicking sent links remain open. Failed fixture, shifted-cast and insecure-wrapper trials plus source-bound recovery remain explicit; no subcase from a failed episode qualifies this operation.
+
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/spell_link04/episode.json`, SHA-256 `e6f03227c658fba39ffe08aea1fb21d598c1b67a8c5ec7c59e0841cc1dd5a15c`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/pending_chat_links_visual_review.json`, SHA-256 `26e467b4426f30b42b02c38a6c8c452367092b42c4708bf1b896c76a0e79ca94`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/chat_link_failure_review.json`, SHA-256 `bcff1728c361274a17bbedbab4a6660fc262dd8a1fcfa3f858b129f1f26cdf84`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/secure_spell_recovery01/episode.json`, SHA-256 `4783712983458aa6e05c4e6014d32e69480bba01040c2dd5f0709e8f462222c3`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/secure_spell_dispatch_deploy01/deployment.json`, SHA-256 `7a1e4db38e188b8393ef4133a29da424efcf7ea3b5a9e56ddd4a63a9a51779f3`.
+
+### owned_backpack_tooltip_and_comparison
+
+Fresh whole-pass bag_tooltips02 normally hovers stored sword49778, then holds private Shift to compare it with equipped sword78478. Actual Worn Greatsword, Currently Equipped Gurthalak and comparison disappearance on Shift release reviewed. Native catalog names/IDs, unchanged inventory and all10 native/public checks pass.
+
+Remaining limits: Exact owned two-hand sword fixture only. Other slots/items, dual wield and numerical tooltip parity remain open. Failed pinned-mode diagnostic01 is retained and excluded.
+
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/bag_tooltips02/episode.json`, SHA-256 `59d202320f2b02ea7feabaa490470c2ef60d5fc56ba0902caafc85e1541a0b30`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/bag_tooltip_visual_review.json`, SHA-256 `b665eb1d49d5e7d80a5cb4c9006be69aaf00b8be50c61d4ce3844d3df96f5cf9`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/bag_tooltip_failure_review.json`, SHA-256 `565ec35e66c97bb5cfba8ce740bdb4940c82458220b5e7aaa95bc7182bc5a797`.
+
+### owned_pending_achievement_link
+
+Whole-pass achievement_link01 physically Shift-clicks native-catalog achievement2536 Mountain o' Mounts into pending Say chat. Actual journal row and gold link reviewed. No message or cast is submitted. Original layout/tracking, native earned/progress state and all10 native/public checks restore.
+
+Remaining limits: Owned achievement2536 only. Other achievements/actors, delivery, clicking sent links and generic chat-link acceptance remain open.
+
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/achievement_link01/episode.json`, SHA-256 `aa926e1a864bb215ab1a68d92ac9f80f0c40e0a12303e1e152d18130c661e4d8`.
+- [442_interactions_20261005_68.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc), member `evidence/client_interactions_20261005_ui68/achievement_link_visual_review.json`, SHA-256 `b3cd65fb5eb87878be135f2d984e0090f524155e19f48f47856f958c0941f0d0`.

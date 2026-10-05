@@ -1520,7 +1520,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_backpack_tooltip_and_comparison"
     },
     {
       "id": "bags.compare_tooltip",
@@ -1529,7 +1530,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_backpack_tooltip_and_comparison"
     },
     {
       "id": "bags.item_link",
@@ -1538,7 +1540,8 @@
       "fixture": "inventory_items",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_pending_backpack_item_link"
     },
     {
       "id": "bags.move_item",
@@ -8368,7 +8371,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_pending_achievement_link"
     },
     {
       "id": "ui_misc.quest_link",
@@ -8386,7 +8390,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_pending_backpack_item_link"
     },
     {
       "id": "ui_misc.spell_link",
@@ -8395,7 +8400,8 @@
       "fixture": "in_world",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_pending_known_spell_link"
     },
     {
       "id": "ui_misc.copy_name",
@@ -12418,8 +12424,110 @@
           "sha256": "aff144c449b263c39ea0136eae798226e7daea177c82df530d275900251cd5ad"
         }
       ]
+    },
+    {
+      "id": "owned_pending_backpack_item_link",
+      "operations": [
+        "bags.item_link",
+        "ui_misc.item_link"
+      ],
+      "scope": "Whole-pass bag_link01 physically Shift-clicks the exact owned Worn Greatsword49778 backpack slot10 into a blank pending Say edit box. Actual rendered label and public item hyperlink reviewed. No message is submitted; the exact native item and all10 native/public checks remain unchanged.",
+      "limits": "Owned plain backpack sword only. Delivery, clicking sent links, other item classes/slots and generic chat-link behavior remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/bag_link01/episode.json",
+          "sha256": "f91db0ccb26d1cff1c914c86cd0cfe830529809336e9ffa88c37ba4aa92e5b50"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/pending_chat_links_visual_review.json",
+          "sha256": "26e467b4426f30b42b02c38a6c8c452367092b42c4708bf1b896c76a0e79ca94"
+        }
+      ]
+    },
+    {
+      "id": "owned_pending_known_spell_link",
+      "operations": [
+        "ui_misc.spell_link"
+      ],
+      "scope": "Fresh whole-pass spell_link04 physically Shift-clicks native-known Battle Shout6673 into pending Say chat, with zero cast requests and owned native cast completions. Actual blue link reviewed. Corrected secure stock dispatch also passes ordinary right-click native cast/public buff/cooldown and normal cancellation. Original spellbook layout and all10 native/public checks restore.",
+      "limits": "Owned warrior Battle Shout on installed60895 only. Other spells/classes/actors, delivery and clicking sent links remain open. Failed fixture, shifted-cast and insecure-wrapper trials plus source-bound recovery remain explicit; no subcase from a failed episode qualifies this operation.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/spell_link04/episode.json",
+          "sha256": "e6f03227c658fba39ffe08aea1fb21d598c1b67a8c5ec7c59e0841cc1dd5a15c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/pending_chat_links_visual_review.json",
+          "sha256": "26e467b4426f30b42b02c38a6c8c452367092b42c4708bf1b896c76a0e79ca94"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/chat_link_failure_review.json",
+          "sha256": "bcff1728c361274a17bbedbab4a6660fc262dd8a1fcfa3f858b129f1f26cdf84"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/secure_spell_recovery01/episode.json",
+          "sha256": "4783712983458aa6e05c4e6014d32e69480bba01040c2dd5f0709e8f462222c3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/secure_spell_dispatch_deploy01/deployment.json",
+          "sha256": "7a1e4db38e188b8393ef4133a29da424efcf7ea3b5a9e56ddd4a63a9a51779f3"
+        }
+      ]
+    },
+    {
+      "id": "owned_backpack_tooltip_and_comparison",
+      "operations": [
+        "bags.item_tooltip",
+        "bags.compare_tooltip"
+      ],
+      "scope": "Fresh whole-pass bag_tooltips02 normally hovers stored sword49778, then holds private Shift to compare it with equipped sword78478. Actual Worn Greatsword, Currently Equipped Gurthalak and comparison disappearance on Shift release reviewed. Native catalog names/IDs, unchanged inventory and all10 native/public checks pass.",
+      "limits": "Exact owned two-hand sword fixture only. Other slots/items, dual wield and numerical tooltip parity remain open. Failed pinned-mode diagnostic01 is retained and excluded.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/bag_tooltips02/episode.json",
+          "sha256": "59d202320f2b02ea7feabaa490470c2ef60d5fc56ba0902caafc85e1541a0b30"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/bag_tooltip_visual_review.json",
+          "sha256": "b665eb1d49d5e7d80a5cb4c9006be69aaf00b8be50c61d4ce3844d3df96f5cf9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/bag_tooltip_failure_review.json",
+          "sha256": "565ec35e66c97bb5cfba8ce740bdb4940c82458220b5e7aaa95bc7182bc5a797"
+        }
+      ]
+    },
+    {
+      "id": "owned_pending_achievement_link",
+      "operations": [
+        "ui_misc.achievement_link"
+      ],
+      "scope": "Whole-pass achievement_link01 physically Shift-clicks native-catalog achievement2536 Mountain o' Mounts into pending Say chat. Actual journal row and gold link reviewed. No message or cast is submitted. Original layout/tracking, native earned/progress state and all10 native/public checks restore.",
+      "limits": "Owned achievement2536 only. Other achievements/actors, delivery, clicking sent links and generic chat-link acceptance remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/achievement_link01/episode.json",
+          "sha256": "aa926e1a864bb215ab1a68d92ac9f80f0c40e0a12303e1e152d18130c661e4d8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui68/achievement_link_visual_review.json",
+          "sha256": "b3cd65fb5eb87878be135f2d984e0090f524155e19f48f47856f958c0941f0d0"
+        }
+      ]
     }
   ],
-  "qualified_operations": 358,
+  "qualified_operations": 364,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

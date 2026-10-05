@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "358/916 reviewed scoped operations. UI67 qualifies the installed character macro cap30 through a whole-pass boundary, reopen and exact cleanup trial; all10 native/public checks pass. Next UI68 checks pending item and spell chat links without sending messages, one owned trial at a time.",
+  "current": "364/916 reviewed scoped operations. UI68 qualifies pending backpack item, native-known spell and achievement links plus backpack hover/comparison. The installed spell Shift-click route is repaired through the secure stock wrapper and ordinary casting is retested. Original native state and layouts restore; failed attempts and recoveries remain explicit. Next UI69 tests exact two-client whisper reply with public recipient/focus guards, one input task at a time.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -157,7 +157,8 @@
     "ui64: +6 scoped operations (342->348), 69 JSON receipts and486 attributed archive images verified; failures retained; native worldserver and both client lifetimes preserved.",
     "ui65: +1 scoped binding-set contract (348->349),15 JSON receipts and183 attributed archive frames verified; first failed trial retained with all10 restoration checks true.",
     "ui66: +8 scoped macro/editor/confirmation contracts (349->357),18 JSON receipts and654 attributed archive frames verified; failed cleanup/observation/GUID-guard trials and whole-pass exact recovery retained.",
-    "ui67: +1 scoped character macro cap contract (357->358),5 JSON receipts and696 attributed archive frames verified; all30 fixtures removed and zero banks survive reload."
+    "ui67: +1 scoped character macro cap contract (357->358),5 JSON receipts and696 attributed archive frames verified; all30 fixtures removed and zero banks survive reload.",
+    "ui68: +6 scoped pending-link and backpack-tooltip contracts (358->364),26 JSON receipts and214 attributed archive frames verified; shifted-cast/taint/fixture/pinned-mode/preflight failures and source-bound recovery retained."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

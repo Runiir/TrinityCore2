@@ -1,0 +1,17 @@
+# Pending links and backpack tooltips
+
+UI68 adds six scoped contracts, taking reviewed coverage to **364/916**. The parent objective remains open.
+
+Whole-pass trials insert the owned Worn Greatsword49778, native-known Battle Shout6673 and native-catalog achievement2536 Mountain o' Mounts into pending Say chat through ordinary Shift-click. Actual item, blue spell and gold achievement links were reviewed. No linked message is submitted. Each trial restores its native fixture and all ten native/public checks; spellbook and achievement layout/tracking also restore. These trials do not qualify delivery or clicking a sent link.
+
+The fresh backpack tooltip trial identifies stored49778 and compares it with equipped78478 Gurthalak while private Shift is held. Actual tooltips and comparison disappearance after release were reviewed. No item moves or is consumed. Other items/slots, dual wield and tooltip numerical parity remain open.
+
+The first spell attempt finds no exact native-known active match on the General page and performs no link click. The second reaches Battle Shout on Fury, but the shipped60895 XML calls normal OnClick directly: Shift-click casts instead of linking. Its temporary buff fails stats restoration; source-bound recovery verifies the original fixture after expiry. The initial compatibility wrapper inserts the link but taints the ordinary CastSpell path, so the third trial fails its required normal-cast regression and cannot restore the tab through its blocked diagnostic page.
+
+The corrected repair uses Blizzard's [secure script wrapper](https://raw.githubusercontent.com/Gethe/wow-ui-source/classic/Interface/AddOns/Blizzard_RestrictedAddOnEnvironment/SecureHandlers.lua) to retain the original stock cast script and suppress only chat-link clicks. A source-bound recovery restores the original General tab and all ten checks after normal observer82/compatibility2.2.1 reloads. Fresh spell_link04 passes both paths: Shift-click creates a link with no cast request/completion; ordinary right-click produces the native completion/public buff and visible cooldown, then cancels the buff normally. All ten final checks pass. Other modified-click behaviors remain open.
+
+The first backpack tooltip attempt waits for a state page while the observer is pinned to tooltip mode and fails before hovering. Cleanup passes all ten checks. The corrected fresh trial reads that pinned public page directly. The first deployment passes on primary but fails before scout files/input because the idle scout is at the reviewed character-selection screen. Ordinary reentry and scout deployment pass; both client and server lifetimes remain unchanged. All failed episodes stay failed in the archive.
+
+The first secure-wrapper mock fails because Lua5.1 load does not accept a string. The corrected loadstring-or-load test passes the same lazy-installation, idempotency, twelve-button dispatch, argument-preservation and no-direct-script-replacement checks. The final dispatch and qualification checks pass4/4. Reply-guard preparation passes7/7 separately.
+
+DVC pointer `artifacts/client_harness/442_interactions_20261005_68.tar.gz.dvc` contains633555827 bytes, SHA256 `a49d837c75a6d3afdee03b2819e64a78453696efdbdba3243de72e756d557e68`. Remote review verifies all 26 JSON receipts and 214 attributed frames before local pruning and exact archive/cache eviction. Both clients remain on HDMI-1, work is sequential, and no extra client/model or native rebuild is used.
