@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 365 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 369 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -453,10 +453,10 @@ Fixture: `owned_second_actor`.
 - [ ] `chat.language_switch`
 - [ ] `chat.combat_log`
 - [ ] `chat.chat_settings`
-- [ ] `chat.chat_tab_create`
-- [ ] `chat.chat_tab_rename`
-- [ ] `chat.chat_tab_close`
-- [ ] `chat.font_size`
+- [x] `chat.chat_tab_create` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
+- [x] `chat.chat_tab_rename` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
+- [x] `chat.chat_tab_close` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
+- [x] `chat.font_size` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [ ] `chat.timestamps`
 - [ ] `chat.chat_links`
 - [ ] `chat.scroll_history`
@@ -2451,3 +2451,15 @@ Remaining limits: Two owned solo actors on the private realm only. Other senders
 - [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_target_failure_review.json`, SHA-256 `45bfe33c969b63b8d74ef90bced45b0c54bb232338098afa903e7e60cb5b8550`.
 - [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_guid_oracle_failure_review.json`, SHA-256 `77fda9dad620f50a4ebdc809eea0e4509110ab3db4314f7b21fce93e48e71492`.
 - [442_interactions_20261005_69.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_69.tar.gz.dvc), member `evidence/client_interactions_20261005_ui69/reply_text_settling_failure_review.json`, SHA-256 `d976330bcfca1fddff8ac0059de224bbf1a5d48ed93f529559b0a5f57bcf05c0`.
+
+### owned_stock_chat_window_lifecycle
+
+Fresh whole-pass chat_window_controls03 creates disposable stock slot4 TC442Chat, renames itTC442Renamed through the exact stock dialog, uses observed16 pt and14 pt submenu buttons, and closes the owned tab. Public full name/font getters agree; reviewed actual frames show creation, exact rename dialog,16 pt checkmark and tab closure. Existing General, Combat Log and Voice settings and original selection restore. All10 native/public checks pass. Observer87 includes unparented submenu proxies.
+
+Remaining limits: Exact disposable character slot4 only, idle private owned warrior. Stock closing retains hidden unused-slot metadata; no byte-identical chat-cache claim. Account-wide/window-cap/dock/layout/other font choices and chat filters remain open. Two failed whole trials are excluded even though their cleanup passes. Full renamed string comes from the public getter because its docked caption truncates/fades.
+
+- [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_window_controls03/episode.json`, SHA-256 `e55684c58634d1947c153b63bc904ac2c7f557569a3078ad5b173cc04fd11d17`.
+- [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_window_visual_review.json`, SHA-256 `b60dc5bb3260bca3f36525ce174899f5bfb07b2bd41abca3169f67dda91dc94b`.
+- [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_menu_failure_review.json`, SHA-256 `3fc48e6e778c7985c59b76c0a3d97541d198def8c0bb73dc34be219a4ec1e2dd`.
+- [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_menu_unparented_failure_review.json`, SHA-256 `d6177f6459b60a1a8819451893446885a3b4f6b45473bb2d592bb7bcce107720`.
+- [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/font_submenu_recon02/episode.json`, SHA-256 `98e5c97d7b26eb0338c42a9a8773f016f96e72e5a9ac13d9d651b04621b4dec7`.
