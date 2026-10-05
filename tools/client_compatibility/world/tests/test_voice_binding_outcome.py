@@ -14,7 +14,7 @@ def test_local_mute_requires_owned_binding_and_only_expected_voice_change(monkey
     monkeypatch.setattr(module,'detail',lambda t,label:{'voice':voice})
     def step(label,goal,actions,oracle,**kwargs):
         assert actions['mute']=={'kind':'key','value':'ctrl+shift+F12','hold':1.2}
-        result=oracle({'binding_probe':binding},{},'mute');results.append(result);return result
+        result={'id':label,**oracle({'binding_probe':binding},{},'mute')};results.append(result);return result
     t=SimpleNamespace(step=step)
     if binding==module.ACTION and not change:
         module.toggle(t,before,True,'chat.mute_voice')
