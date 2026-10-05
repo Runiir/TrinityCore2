@@ -160,7 +160,8 @@ int main(int argc, char **argv)
                         displays[integer(v.at(0))] = Array{v.at(1), v.at(2), v.at(3)};
                     }
                     result = hex(character_list(get(request, "characters").as_array(),
-                                                get(request, "equipment").as_array(), displays));
+                                                get(request, "equipment").as_array(), displays,
+                                                get(request, "race_classes").as_array()));
                 }
                 else if (op == "guid")
                     result = hex(Writer().guid(get(request, "value")).finish());

@@ -15,13 +15,14 @@ def rows(account_id):
         return [dict(zip(keys, row)) for row in cursor.fetchall()]
 
 
-def enumeration(account_id):
+def enumeration(account_id,race_classes=None):
     characters = rows(account_id)
     equipment=visual_equipment(account_id)
+    supported=availability(race_classes)
     w = Writer()
     for value in [1, 0, 0, 1, 0, 0, 0, 1, 0]:
         w.bits(value, 1)
-    w.pack("IIiIIIII", len(characters), 0, 85, 1, 0, 0, 0, 0)
+    w.pack("IIiIIIII", len(characters), 0, 85, len(supported), 0, 0, 0, 0)
     for c in characters:
         w.guid(c["guid"], player_high()).pack("IBBBBhI", ADDRESS, c["slot"], c["race"], c["gender"], c["class"], 0, 0)
         w.pack("Bii3fQ", c["level"], c["map"], c["zone"], c["position_x"], c["position_y"], c["position_z"], 0).guid()
@@ -31,7 +32,7 @@ def enumeration(account_id):
         w.pack("iQi5iIIiI", 0, int(c["logout_time"]), 60895, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         w.bits(len(c["name"].encode()), 6).bits(0, 1).raw(c["name"].encode())
         w.bits(0, 3).pack("III", 0, 0, 0)
-    w.pack("i", 1).bits(1, 1).bits(1, 1).bits(0, 3)
+    for race in sorted(supported):w.pack('i',race).bits(1,1).bits(1,1).bits(0,3).flush()
     return w.finish()
 
 
@@ -70,7 +71,7 @@ def item_displays():
     return {row[0]:(row[5],row[6],row[2]) for row in rows}
 
 
-def auth_success(race_classes=None):
+def availability(race_classes=None):
     if race_classes is None:
         from .race_class_availability import native_rows
         race_classes=native_rows()
@@ -81,6 +82,11 @@ def auth_success(race_classes=None):
                 not 0<klass<=255 or not 0<=expansion<=3 or klass in supported.get(race,{})):
             raise ValueError('invalid native race/class availability')
         supported.setdefault(race,{})[klass]=expansion
+    return supported
+
+
+def auth_success(race_classes=None):
+    supported=availability(race_classes)
     w = Writer().pack("I", 0).bits(1, 1).bits(0, 1)
     w.pack("IIIBBIIIIq", ADDRESS, 1, 0, 3, 3, 0, len(supported), 0, 0, int(time.time()))
     for race,classes in sorted(supported.items()):

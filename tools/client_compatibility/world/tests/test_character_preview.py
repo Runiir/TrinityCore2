@@ -10,7 +10,7 @@ def test_equipped_items_have_display_inventory_subclass_and_item_id(monkeypatch)
     seen=[]
     monkeypatch.setattr(characters,'rows',lambda account:seen.append(account) or [character])
     monkeypatch.setattr(characters,'visual_equipment',lambda account:seen.append(account) or {1:gear})
-    r=Reader(characters.enumeration(7));r.bits(9);r.unpack('IIiIIIII');r.guid()
+    r=Reader(characters.enumeration(7,race_classes=[{'race':1,'class':1,'expansion':0}]));r.bits(9);r.unpack('IIiIIIII');r.guid()
     r.unpack('IBBBBhIBii3fQ');r.guid();r.unpack('IIIBIII')
     slots=[r.unpack('IBIBiII') for _ in range(19)]
     assert slots[0]==gear[0] and slots[15]==gear[15]

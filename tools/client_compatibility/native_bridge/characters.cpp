@@ -5,9 +5,26 @@
 
 namespace bridge
 {
-Bytes character_list(Array const &characters, Array const &equipment,
-                     std::unordered_map<unsigned, Array> const &item_displays)
+namespace
 {
+using RaceClasses = std::map<unsigned, std::map<unsigned, unsigned>>;
+RaceClasses supported_classes(Array const &race_classes)
+{
+    RaceClasses supported;
+    for (auto const &row : race_classes)
+    {
+        auto race = integer(get(row, "race")), cls = integer(get(row, "class")), expansion = integer(get(row, "expansion"));
+        if (!race || race > 255 || !cls || cls > 255 || expansion > 3 ||
+            !supported[race].emplace(cls, expansion).second)
+            throw std::runtime_error("invalid native race/class availability");
+    }
+    return supported;
+}
+}
+Bytes character_list(Array const &characters, Array const &equipment,
+                     std::unordered_map<unsigned, Array> const &item_displays, Array const &race_classes)
+{
+    auto supported = supported_classes(race_classes);
     std::unordered_map<std::uint64_t, std::unordered_map<unsigned, Array>> visible;
     for (auto const &row : equipment)
     {
@@ -20,7 +37,7 @@ Bytes character_list(Array const &characters, Array const &equipment,
     Writer w;
     for (auto bit : {1, 0, 0, 1, 0, 0, 0, 1, 0})
         w.bits(bit, 1);
-    w.pack("IIiIIIII", {characters.size(), 0, 85, 1, 0, 0, 0, 0});
+    w.pack("IIiIIIII", {characters.size(), 0, 85, supported.size(), 0, 0, 0, 0});
     for (auto const &c : characters)
     {
         auto guid = integer(get(c, "guid"));
@@ -45,22 +62,19 @@ Bytes character_list(Array const &characters, Array const &equipment,
         auto name = str(get(c, "name"));
         w.bits(name.size(), 6).bits(0, 1).raw(name).bits(0, 3).pack("III", {0, 0, 0});
     }
-    return w.pack("i", {1}).bits(1, 1).bits(1, 1).bits(0, 3).finish();
+    // Pinned enum RaceUnlock: race ID, expansion/achievement availability,
+    // heritage/locked/unused bits. Only native supported races are unlocked.
+    for (auto const &[race, classes] : supported)
+        w.pack("i", {race}).bits(1, 1).bits(1, 1).bits(0, 3).flush();
+    return w.finish();
 }
 Bytes PublicData::enumeration(Array const &characters, Array const &equipment) const
 {
-    return character_list(characters, equipment, item_displays);
+    return character_list(characters, equipment, item_displays, race_classes);
 }
 Bytes auth_success(Array const &race_classes)
 {
-    std::map<unsigned, std::map<unsigned, unsigned>> supported;
-    for (auto const &row : race_classes)
-    {
-        auto race = integer(get(row, "race")), cls = integer(get(row, "class")), expansion = integer(get(row, "expansion"));
-        if (!race || race > 255 || !cls || cls > 255 || expansion > 3 ||
-            !supported[race].emplace(cls, expansion).second)
-            throw std::runtime_error("invalid native race/class availability");
-    }
+    auto supported = supported_classes(race_classes);
     Writer w;
     w.pack("I", {0}).bits(1, 1).bits(0, 1);
     w.pack("IIIBBIIIIq", {0x01010001, 1, 0, 3, 3, 0, supported.size(), 0, 0, std::time(nullptr)});

@@ -9,9 +9,13 @@ from tools.client_compatibility.world.buffer import Reader,player_high
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 
 
-def read_characters(body):
+NATIVE_PAIRS=[{'race':1,'class':1,'expansion':0},{'race':3,'class':1,'expansion':0},
+    {'race':3,'class':5,'expansion':0}]
+
+
+def read_characters(body,unlocked=(1,3)):
     r=Reader(bytes.fromhex(body));assert r.bits(9)==0x122
-    head=r.unpack('IIiIIIII');assert head[1:]==(0,85,1,0,0,0,0)
+    head=r.unpack('IIiIIIII');assert head[1:]==(0,85,len(unlocked),0,0,0,0)
     found=[]
     for _ in range(head[0]):
         guid=r.guid();realm,slot,race,gender,cls,spec,custom=r.unpack('IBBBBhI')
@@ -21,7 +25,9 @@ def read_characters(body):
         name=r.raw(length).decode();assert r.bits(3)==0 and r.unpack('III')==(0,0,0)
         found.append({'guid':guid,'slot':slot,'flags':flags,'gear':gear,'name':name,
             'tail':tail,'first_login':first,'realm':realm})
-    assert r.unpack('i')==(1,) and (r.bits(1),r.bits(1),r.bits(3))==(1,1,0);r.end()
+    for race in unlocked:
+        assert r.unpack('i')==(race,) and (r.bits(1),r.bits(1),r.bits(3))==(1,1,0)
+    r.end()
     return found
 
 
@@ -33,7 +39,7 @@ def test_saved_visibility_reaches_each_owned_character_without_shifting_gear(cod
         dict(base,guid=2,slot=1,name='Harnesstwo',characterFlags=hidden^0xc00)]
     body=result(codec,op='character_list',characters=characters,
         equipment=[{'guid':1,'slot':0,'itemEntry':78688},{'guid':1,'slot':14,'itemEntry':77097}],
-        displays=[[78688,103376,1,4],[77097,102947,16,1]])
+        displays=[[78688,103376,1,4],[77097,102947,16,1]],race_classes=NATIVE_PAIRS)
     rows=read_characters(body)
     assert [x['guid'] for x in rows]==[(1,player_high()),(2,player_high())]
     assert [x['name'] for x in rows]==['Harnessone','Harnesstwo']
@@ -46,4 +52,8 @@ def test_saved_visibility_reaches_each_owned_character_without_shifting_gear(cod
 
 
 def test_empty_account_enumeration_has_no_synthetic_character(codec):
-    assert read_characters(result(codec,op='character_list',characters=[],equipment=[],displays=[]))==[]
+    assert read_characters(result(codec,op='character_list',characters=[],equipment=[],displays=[],race_classes=NATIVE_PAIRS))==[]
+
+
+def test_enum_does_not_invent_unlocked_races_when_native_capabilities_are_empty(codec):
+    assert read_characters(result(codec,op='character_list',characters=[],equipment=[],displays=[],race_classes=[]),unlocked=())==[]
