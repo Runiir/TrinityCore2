@@ -84,7 +84,8 @@ def add_dialog(t,name,label):
         lambda c:c['name']=='FriendsFrameAddFriendButton',lambda b,a,s:{'status':'friend_dialog_open' if s and
             'StaticPopup1' in a['panels'] else 'client_or_protocol_failure'}),'friend_dialog_open')
     require(edit(t,label+'.name','Enter the exact owned or verified missing character name.',
-        lambda c:c['name']=='StaticPopup1EditBox',name),'ui_edit_pass')
+        lambda c:c['name']=='StaticPopup1EditBox' and c.get('context')=='Enter name of friend to add:',name),
+        'ui_edit_pass')
 
 
 def operation(t,packets,label,name,guid,result,expected_rows,expected_public,remove=False):
@@ -108,7 +109,8 @@ def operation(t,packets,label,name,guid,result,expected_rows,expected_public,rem
             await_state=lambda s:not any(r['name']==FRIEND for r in s.get('friends') or [])),'friend_status_pass')
     else:
         require(click(t,label,'Confirm the stock Add Friend dialog.',lambda c:c['name']=='StaticPopup1Button1' and
-            c['text']=='Add Friend',outcome,await_state=lambda s:'StaticPopup1' not in s['panels']),
+            c['text']=='Accept' and c.get('context')=='Enter name of friend to add:',outcome,
+            await_state=lambda s:'StaticPopup1' not in s['panels']),
             'friend_status_pass')
     state,frame=t.observe(label.replace('.','_')+'_rendered')
     t.receipt.setdefault('friend_rendered_outcomes',[]).append({'case':label,'name':name,'native_result':result,
