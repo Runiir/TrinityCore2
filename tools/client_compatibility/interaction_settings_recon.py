@@ -9,10 +9,14 @@ from .interaction_settings_booleans import detail,search
 from .interaction_operations import controls
 from .interaction_keybindings_native import suite as native_suite
 
+TERMS=('Mouse','Colorblind','Move Pad','Interact Key','Graphics','Render Scale',
+    'View Distance','Ground Clutter','Resolution','Window Mode','Monitor')
+
 
 def inspect(t,terms):
     layout=None
-    t.receipt['qualified_scope']='Control reconnaissance only. Search and inspect requested stock controls, then restore the settings layout and native fixture. No setting mutation or gameplay qualification.';t.persist()
+    t.receipt['qualified_scope']='Control reconnaissance only. Search and inspect requested stock controls, then restore the settings layout and native fixture. No setting mutation or gameplay qualification.'
+    t.receipt['custom_script_permission']='blocked_by_user';t.persist()
     try:
         t.settings_search=open_search(t);layout=detail(t,'settings_layout_baseline')
         t.receipt['settings_layout_baseline']=layout;t.persist()
@@ -31,7 +35,7 @@ def inspect(t,terms):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--term',choices=['Mouse','Colorblind','Move Pad','Interact Key'],action='append',required=True);a=p.parse_args()
+    p.add_argument('--term',choices=TERMS,action='append',required=True);a=p.parse_args()
     if len(set(a.term))!=len(a.term):p.error('each search term may be requested once')
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
