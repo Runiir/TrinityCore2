@@ -1,5 +1,6 @@
 """Play the stock language gates, then require exact offline fixture teardown."""
 import argparse,json,time
+from contextlib import ExitStack
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -26,17 +27,22 @@ def play(t):
     if original['target'] not in [0,1,2]:raise RuntimeError('refuses an unrelated original target')
     t.receipt.update(language_lifecycle_schema='client442_language_lifecycle_v1',
         language_baseline=before,language_fixture_baseline=original,
-        language_fixture={'spell':672,'language':6,'skill':111,'temporary':True,
+        language_fixture={'spell':672,'language':6,'skill':111,'skill_value':300,'temporary':True,
             'teardown':'Normal owned logout, exact extra offline spell and skill-row removal, reviewed reentry.'},
         language_phase_completed=False);t.persist()
-    with fixture_permission(t,417):
+    with ExitStack() as stack:
+        stack.enter_context(fixture_permission(t,417));stack.enter_context(fixture_permission(t,526))
         try:
             if selection(oracle)!=1:
                 select_target(t,oracle,session,'fixture.language_target_self',{'kind':'chat','value':'/target Harnessone'},1)
-            t.execute({'kind':'chat','value':'.learn 672'});t.execute({'kind':'chat','value':'.save'})
+            t.execute({'kind':'chat','value':'.learn 672'})
+            # Native language skills use the fixed300..300 range. The GM
+            # spell-teach path leaves this nonracial language at1/300.
+            t.execute({'kind':'chat','value':'.setskill 111 300 300'})
+            t.execute({'kind':'chat','value':'.save'})
             trained=detail(t,'language_lifecycle_trained')
             checks={'exact_extra_native_spell':sorted(known(1))==sorted(original['spells']+[[672,1,0]]),
-                'exact_extra_native_skill':sorted(skills(1))==sorted(original['skills']+[[111,1,300]]),
+                'exact_extra_native_skill':sorted(skills(1))==sorted(original['skills']+[[111,300,300]]),
                 'public_languages':trained['languages'].get('available') and
                     {r['id'] for r in trained['languages']['rows']}=={6,7}}
             t.receipt['language_fixture_trained']={'checks':checks,'public':trained,'spells':known(1),
@@ -62,7 +68,7 @@ def play(t):
                 'original_spells':known(1)==original['spells'],'original_skills':skills(1)==original['skills'],
                 'original_native_skills':native_skills(oracle)==original['native_skills'],
                 'original_target':selection(oracle)==original['target']}
-            pending=(sorted(skills(1))==sorted(original['skills']+[[111,1,300]]) and
+            pending=(sorted(skills(1))==sorted(original['skills']+[[111,300,300]]) and
                 sorted(known(1))==sorted(original['spells']+[[672,1,0]]))
             t.receipt.update(language_restoration={'checks':checks,'public':after},
                 phase='await_offline_language_cleanup' if pending else 'language_fixture_not_added');t.persist()
