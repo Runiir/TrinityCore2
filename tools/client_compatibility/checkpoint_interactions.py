@@ -17,6 +17,7 @@ from .interaction_metrics import choice_counts
 from .native_input.control import verified as verified_input
 
 SAFE_BODY_NAMES={
+    'CMSG_WHO','SMSG_WHO',
     'CMSG_SAVE_EQUIPMENT_SET','CMSG_DELETE_EQUIPMENT_SET','CMSG_USE_EQUIPMENT_SET',
     'CMSG_EQUIPMENT_SET_SAVE','CMSG_EQUIPMENT_SET_DELETE','CMSG_EQUIPMENT_SET_USE',
     'CMSG_SHOWING_HELM','CMSG_SHOWING_CLOAK',
