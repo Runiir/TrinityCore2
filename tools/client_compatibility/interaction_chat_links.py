@@ -8,6 +8,7 @@ from .interaction_control_target import target,click
 from .interaction_operations import point
 from .interaction_macros import require
 from .interaction_spellbook_navigation import detail as book_detail,known
+from .interaction_stance_bar import restored_native_state
 from .observation.inventory import Inventory
 
 
@@ -89,10 +90,31 @@ def select_line(t,label,index):
             else 'client_or_protocol_failure'}),'link_book_tab_pass')
 
 
+def recovered(t,source):
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('require the owned failed spell-link episode')
+    old=json.loads(source.read_text())
+    if (not old.get('finished_at') or old.get('completed') or old['actor']!=t.fixture or
+            old['runtime']!=t.receipt['runtime'] or old.get('failure')!='RuntimeError: native binding fixture restoration differs' or
+            not any(c['id']=='ui_misc.spell_link' and c['status']=='client_or_protocol_failure' for c in old['cases'])):
+        raise RuntimeError('recovery requires the exact closed failed spell-link source and unchanged runtime')
+    before=json.loads(json.dumps(t.receipt['native_baseline']));expected=old['native_baseline']
+    checks={k:before[k]==expected[k] for k in expected if k!='stats'}
+    checks['stats']=restored_native_state(expected['stats'],before['stats'])
+    t.receipt['original_link_fixture_recovered']={'source':str(source),'sha256':lab.sha256(source),
+        'checks':checks,'method':'read-only verification after the ordinary two-minute self-buff expires'};t.persist()
+    if not all(checks.values()):raise RuntimeError('original pre-link native fixture has not returned')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--kind',choices=['bag','spell'],required=True);a=p.parse_args()
+    p.add_argument('--kind',choices=['bag','spell'],required=True)
+    p.add_argument('--recover-source',type=Path);a=p.parse_args()
+    if a.recover_source and a.kind!='spell':p.error('recovery applies only to the closed spell-link source')
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=bag if a.kind=='bag' else spell,preserve_settings=False);t.receipt['completed']=True
+    try:
+        operation=(lambda t:recovered(t,a.recover_source)) if a.recover_source else bag if a.kind=='bag' else spell
+        native_suite(t,operations=operation,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
