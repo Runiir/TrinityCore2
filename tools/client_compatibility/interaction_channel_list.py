@@ -27,11 +27,15 @@ def listed(t,name):
         for direction,event,session_id,names in [
             ('from_client','modern_packet',session,{'CMSG_CHAT_CHANNEL_LIST','CMSG_CHAT_CHANNEL_DISPLAY_LIST'}),
             ('from_native','native_packet',session,{'SMSG_CHANNEL_LIST'}),
-            ('to_client','modern_packet',instance['session'],{'SMSG_CHANNEL_LIST'})]:
+            ('to_client','modern_packet',session,{'SMSG_CHANNEL_LIST'})]:
             facts[direction]=latest(path,lambda r:r.get('session')==session_id and r.get('time',0)>=started and
                 r.get('event')==event and r.get('direction')==direction and r.get('name') in names)
         checks={'ordinary_list':s=='list','authenticated_native_response':facts['from_native'] is not None,
             'modern_list_response':facts['to_client'] is not None,'stock_list_request':facts['from_client'] is not None,
+            'fresh_stock_list_event':bool(after.get('channel_list',{}).get('registered') and
+                after['channel_list']['sequence']>before.get('channel_list',{}).get('sequence',0) and
+                any(name in r.get('channel','') and t.fixture['character_name'] in r.get('text','')
+                    for r in after['channel_list'].get('events',[]))),
             'same_enabled_channel':member(before,name)==member(after,name),'new_general_line':after['selected']==1 and
                 after['windows'][0]['message_count']>before['windows'][0]['message_count'],
             'clean':not a.get('lua_errors') and not a.get('blocked_actions')}

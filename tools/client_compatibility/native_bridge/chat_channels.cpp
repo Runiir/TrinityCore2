@@ -166,7 +166,8 @@ bool public_channel_probe(std::string const &name,View body)
             {r.take<std::uint8_t>();channel=terminated(r);auto owner=terminated(r);r.end();return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");}
             if(!body.empty() && body[0]>35)
             {
-                if(r.bits(6)!=11)return false;auto size=r.bits(7),owner_size=r.bits(6);
+                if(r.bits(6)!=11)return false;
+                auto size=r.bits(7),owner_size=r.bits(6);
                 r.guid();r.guid();r.raw(4);r.guid();r.raw(8);channel=text(r,size);auto owner=text(r,owner_size);r.end();
                 return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");
             }

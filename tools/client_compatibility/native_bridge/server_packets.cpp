@@ -1,5 +1,6 @@
 #include "service.hpp"
 #include "chat.hpp"
+#include "chat_channels.hpp"
 #include "guild_packets.hpp"
 #include "merchants.hpp"
 #include "item_notifications.hpp"
@@ -281,6 +282,10 @@ Task<> Session::gameplay(std::string name, Bytes body)
         send(*reply);
         co_return;
     }
+    // The pinned 60895 channel opcode contract uses the authenticated realm
+    // connection. The client silently discards a list delivered on instance.
+    if(auto channel_reply=chat_channel_response(state,name,body))
+    {this->send(*channel_reply);co_return;}
     reply = chat_response(state,name,body);
     if(!reply)reply = Protocol::initialize_response(state, name, body);
     if (!reply)
