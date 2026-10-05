@@ -14,8 +14,9 @@ def decode(data):
         raise ValueError('archaeology snapshot has invalid length')
     values = HEADER.unpack_from(data)
     magic, length, sequence, uptime, flags, instance, north, west, surveys, at, finds, site, jars, recipe, races, markers = values
-    if (magic != b'TCA1' or length != len(data) or races > 16 or markers > 8 or flags & ~255
-            or length != HEADER.size + races * RACE.size + markers * MARKER.size + (ARROW.size if flags & 128 else 0) + 2
+    if (magic != b'TCA1' or length != len(data) or races > 16 or markers > 8 or flags & ~4095
+            or length != HEADER.size + races * RACE.size + markers * MARKER.size + (ARROW.size if flags & 128 else 0)
+            + (4 if flags & 256 else 0) + (2 if flags & 1024 else 0) + 2
             or checksum(data[:-2]) != int.from_bytes(data[-2:], 'big')):
         raise ValueError('archaeology snapshot failed layout or checksum validation')
     offset = HEADER.size
@@ -33,16 +34,26 @@ def decode(data):
                             'node_id': node, 'source': 'visible_GatherMate_minimap_frame'})
     arrow = None
     if flags & 128:
-        n,w,angle,length,at=ARROW.unpack_from(data,offset)
+        n,w,angle,length,arrow_at=ARROW.unpack_from(data,offset)
+        offset += ARROW.size
         heading=angle/65535*math.tau
-        arrow={'observed_at':at,'heading_radians':heading,'length_yards':length/100,
+        arrow={'observed_at':arrow_at,'heading_radians':heading,'length_yards':length/100,
+               'boundary_verified':bool(flags & 2048),
                'origin':{'instance':instance,'north':n/100-100000,'west':w/100-100000},
                'endpoint':{'instance':instance,'north':n/100-100000+math.cos(heading)*length/100,
                            'west':w/100-100000+math.sin(heading)*length/100},
                'source':'public_Canopic_Helper_observed_line_endpoint'}
+    altitude = None
+    if flags & 256:
+        altitude = int.from_bytes(data[offset:offset+4], 'big') / 100 - 100000
+        offset += 4
+    tooltip = int.from_bytes(data[offset:offset+2], 'big') if flags & 1024 else None
     return {'sequence': sequence, 'client_uptime_ms': uptime, 'can_survey': bool(flags & 1),
             'mounted': bool(flags & 2), 'flying': bool(flags & 4), 'casting': bool(flags & 8),
             'loot_open': bool(flags & 16), 'falling': bool(flags & 64), 'arrow':arrow,
+            'swimming': bool(flags & 512), 'altitude_yards':altitude,
+            'height_above_ground_yards':None,
+            'grounded': not bool(flags & (4 | 64 | 512)), 'tooltip_checksum':tooltip,
             'world': {'instance': instance, 'north': north/100-100000,
                 'west': west/100-100000} if flags & 32 else None,
             'successful_surveys': surveys, 'last_survey_uptime_ms': at,

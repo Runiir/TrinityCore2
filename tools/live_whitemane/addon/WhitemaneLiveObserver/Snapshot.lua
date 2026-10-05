@@ -51,6 +51,15 @@ local function sample()
     if LootFrame and LootFrame:IsShown() then flags = flags + 16 end
     if instance and north and west then flags = flags + 32 end
     if call(IsFalling) then flags = flags + 64 end
+    if call(IsSwimming) then flags = flags + 512 end
+    local _, _, altitude, altitudeInstance = call(UnitPosition, "player")
+    if type(altitude) == "number" and altitude == altitude and math.abs(altitude) < 100000 and
+        altitudeInstance == instance then flags = flags + 256 else altitude = nil end
+    local tip = GameTooltip and GameTooltip:IsShown() and GameTooltip:GetAlpha() > 0.99 and
+        GameTooltipTextLeft1 and GameTooltipTextLeft1:GetText() or ""
+    local tipBytes = {}
+    for j = 1, #tip do tipBytes[j] = tip:byte(j) end
+    flags = flags + 1024
     local races, total = {}, 0
     for index = 1, math.min(call(GetNumArchaeologyRaces) or 0, 16) do
         local _, _, stone, fragments, cost = call(GetArchaeologyRaceInfo, index)
@@ -95,6 +104,10 @@ local function sample()
     if arrow and arrow.siteID == siteID and arrow.at and time() - arrow.at <= 20 and
         arrow.north and arrow.west and arrow.angle and arrow.length then flags = flags + 128
     else arrow = nil end
+    local boundary = CanopicHelperArrow and CanopicHelperArrow.liveBoundary
+    if arrow and boundary and boundary.siteID == siteID and boundary.at == arrow.at then
+        flags = flags + 2048
+    end
     local bytes = {84, 67, 65, 49, 0, 0} -- TCA1 plus total length
     for _, pair in ipairs({{sequence,4},{GetTime()*1000,4},{flags,2},{instance,2},
         {((north or 0)+100000)*100,4},{((west or 0)+100000)*100,4},
@@ -113,6 +126,8 @@ local function sample()
         for _, pair in ipairs({{(arrow.north+100000)*100,4},{(arrow.west+100000)*100,4},
             {arrow.angle/(2*math.pi)*65535,2},{arrow.length*100,2},{arrow.at,4}}) do append(bytes,pair[1],pair[2]) end
     end
+    if altitude then append(bytes, (altitude + 100000) * 100, 4) end
+    append(bytes, checksum(tipBytes), 2)
     local length = #bytes + 2
     bytes[5], bytes[6] = math.floor(length / 256), length % 256
     append(bytes,checksum(bytes),2)

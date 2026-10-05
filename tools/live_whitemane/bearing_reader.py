@@ -29,8 +29,15 @@ def validate(scope):
                        (scope['runtime']['pid'], scope['runtime']['start_ticks'])]:
         if start_ticks(pid) != ticks:
             raise RuntimeError('owned live process lifetime changed')
-    if Path(f"/proc/{scope['game_pid']}/cwd").resolve() != Path(scope['game_directory']):
-        raise RuntimeError('owned game installation changed')
+    # CWD is mutable during in-process addon loading. Pin the already-owned
+    # client lifetime, process name and host executable instead.
+    if Path(f"/proc/{scope['game_pid']}/comm").read_text().strip() != 'WowClassic.exe':
+        raise RuntimeError('owned game process identity changed')
+    expected=scope.get('host_executable_identity')
+    if expected:
+        executable=Path(f"/proc/{scope['game_pid']}/exe").stat()
+        if {'device':executable.st_dev,'inode':executable.st_ino} != expected:
+            raise RuntimeError('owned game executable changed')
 
 
 def load(name, path):

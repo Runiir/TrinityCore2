@@ -4,6 +4,7 @@ import time
 from . import inputs, runtime
 from .observe import observe
 from .decisions import choose
+from .smooth_move import walk, descend
 from tools.client_compatibility import travel_policy
 
 
@@ -12,7 +13,8 @@ def fly(folder, row, arrow, step):
     step['travel_decisions']=phases
     target=arrow['endpoint']
     def click_mount():
-        return inputs.execute('World of Warcraft','click',{'x':1260,'y':274,'button':1})
+        from .archaeology_probe import command
+        return command('/cast Blue Wind Rider')
     def key(name,hold):
         return inputs.execute('World of Warcraft','key',{'key':name,'hold':hold})
     for index in range(32):
@@ -37,19 +39,17 @@ def fly(folder, row, arrow, step):
         phases.append(phase)
         if action=='arrived': return receipts
         if action=='mount':
-            phase['inputs'].append(click_mount());time.sleep(2.5)
+            phase['inputs'].extend(click_mount());time.sleep(2.5)
         elif action=='takeoff':
             phase['inputs'].append(key('space',1));at_height=True
             phase['height_basis']='bounded ascent then public IsFlying confirmation; absolute altitude unavailable'
         elif action=='cruise':
-            if abs(error)>.18:
-                phase['inputs'].append(key('Left' if error>0 else 'Right',max(.05,min(.6,abs(error)/3.5))))
-            else:
-                phase['inputs'].append(key('Up',min(2,max(.10,(remaining-3)/14))))
+            phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'))
         elif action=='land':
-            phase['inputs'].append(key('x',.4))
+            phase['smooth_descent']=descend(folder,target,site_id=arrow.get('site_id'))
         elif action=='dismount':
-            phase['inputs'].append(click_mount());time.sleep(.5)
+            from .archaeology_probe import command
+            phase['inputs'].extend(command('/dismount'));time.sleep(.5)
         elif action=='observe':
             time.sleep(.5)
         else: raise RuntimeError('unexpected travel action for a flight route')

@@ -5,16 +5,16 @@ import json
 import math
 from pathlib import Path
 import time
-import urllib.request
 from . import runtime, inputs
 from .observe import observe
-from .archaeology_probe import command, sha256
+from .archaeology_probe import sha256
 from .dig_policy import DigProgress
 from .flight import fly
 from .decisions import choose
-from tools.client_compatibility import archaeology_policy as policy
-
-ENDPOINT = 'http://127.0.0.1:8004'
+from . import guide as routes
+from .smooth_move import walk
+from .motion import turn_duration
+from .boundaries import constrain
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 
@@ -41,22 +41,6 @@ def telescope(row, session):
             or tool['entry'] not in COLORS or distance(tool, row['archaeology']['world']) > 25):
         return None
     return tool
-
-
-def choose(state):
-    with urllib.request.urlopen(ENDPOINT+'/health',timeout=5) as response:
-        model=json.load(response)
-    request={'model':model['model'],'state':state}
-    req=urllib.request.Request(ENDPOINT+'/v1/systemone', data=json.dumps(request).encode(),
-                               headers={'Content-Type':'application/json'})
-    with urllib.request.urlopen(req,timeout=10) as response:
-        result=json.load(response)
-    action=result['answers']['action']['choice']
-    if (result['revision'] != model['revision'] or action not in policy.ACTIONS
-            or any(v['truncated_fields'] for v in result['token_budget'].values())
-            or action != policy.label(state)):
-        raise RuntimeError('Laya identity, complete input or declared-policy check failed')
-    return action, model, request, result
 
 
 def run(args):
@@ -93,28 +77,36 @@ def run(args):
             if not healthy(before): raise RuntimeError('character unavailable for this walking trial')
             a,m=before['archaeology'],before['movement']
             session.setdefault('site_id',a['site_id'])
-            if not a['can_survey'] or a['site_id'] != session['site_id']:
+            if not args.loot_at and (not a['can_survey'] or a['site_id'] != session['site_id']):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
                 break
             tool=telescope(before,session)
-            error=(tool['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi if tool else None
-            direction='aligned' if error is not None and abs(error)<=.18 else 'left' if error is not None and error>0 else 'right'
-            state={'task':'recover an archaeology find','available':healthy(before),
-                'casting':a['casting'],'artifact_visible':bool(args.loot_at),
-                'instrument_current':bool(tool),'telescope':{'color':COLORS[tool['entry']],
-                'heading_relative_to_player':direction} if tool else None}
+            if session.get('observed_find_count',a['looted_finds']) != a['looted_finds']:
+                routes.pickup(session)
+            session['observed_find_count']=a['looted_finds']
+            if tool and session.get('marker_fallback') and not session.get('telescope_target'):
+                for attempt in range(6):
+                    arrow=before['archaeology'].get('arrow')
+                    if arrow and arrow.get('boundary_verified'):break
+                    time.sleep(.5)
+                    before=observe(folder/f'arrow_wait_{attempt:02d}.png')
+                a,m=before['archaeology'],before['movement']
+            guide,error=routes.select(before,session,tool)
+            guide=constrain(before,guide)
+            if args.loot_at:
+                inputs.execute('World of Warcraft','hover',dict(zip(('x','y'),args.loot_at)))
+                hovered=observe(folder/'loot_hover.png')
+                from tools.client_compatibility.observation.telemetry import checksum
+                names=('Troll Archaeology Find','Fossil Archaeology Find','Night Elf Archaeology Find',"Tol'vir Archaeology Find")
+                if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
+                    raise RuntimeError('hovered object is not a confirmed archaeology find')
+            state=routes.model_state(before,guide,bool(args.loot_at))
             action,model,request,result=choose(state)
-            marker=None
-            if tool:
-                for candidate in a['visible_markers']:
-                    difference=abs((candidate['heading_radians']-tool['facing_radians']+math.pi)%math.tau-math.pi)
-                    if difference<=math.radians(25) and candidate['distance_yards']>=3:
-                        marker=candidate;break
-            guidance=progress.guidance(site_id=a['site_id'],looted_finds=a['looted_finds'],
-                                       visible_marker=marker and marker['marker_id'])
+            guidance=guide['source'] if guide else 'awaiting Survey'
             step={'index':index,'started_at':time.time(),'before':before,'state':state,
                 'action':action,'model':model,'request':request,'response':result,
-                'telescope':tool,'guidance_source':guidance,'marker':marker,
+                'telescope':tool,'guidance_source':guidance,'guide':guide,
+                'direction_slot_encoding':'selected addon guide in retained telescope schema',
                 'completed':False,'Laya_received_screenshot_pixels':False}
             session['steps'].append(step)
             runtime.write(path,session)
@@ -125,44 +117,42 @@ def run(args):
                     or abs((fresh['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.03
                     or fresh['archaeology']['casting']):
                 raise RuntimeError('client changed, casting started, or supervisor moved before input')
-            if tool and time.time()-tool['observed_at']>10:
+            if tool and guide and guide['source']=='Survey telescope' and time.time()-tool['observed_at']>10:
                 raise RuntimeError('telescope expired before input')
             if action=='survey':
                 session['last_survey_at']=time.time()
                 session['walked_since_survey']=False
+                session.pop('telescope_target',None)
                 # WoW Mouse Button 4 is X button 8 / Linux BTN_SIDE (275).
                 step['inputs']=[inputs.execute('World of Warcraft','click',
                     {'x':640,'y':350,'button':8})]
                 time.sleep(2)
-                # A missing bearing can mean a discovered visible find. Pause for screenshot review.
-                if not (runtime.ROOT/'run/telescope.json').exists():
-                    session['stop_reason']='survey_without_telescope_review_visible_find'
-                if marker and marker['distance_yards']<=5:
-                    progress.failed_marker_survey(marker['marker_id'])
             elif action in ('turn_left','turn_right'):
-                hold=max(.05,min(.30,abs(error)/2.618))
+                hold,step['turn_calibration']=turn_duration(error,session['steps'][:-1])
                 step['inputs']=[inputs.execute('World of Warcraft','key',
                     {'key':'Left' if action=='turn_left' else 'Right','hold':hold})]
             elif action in ('forward_short','forward_long'):
-                if tool['entry']==206590:
-                    arrow=a.get('arrow')
-                    if not arrow or abs(arrow['observed_at']-tool['observed_at'])>2:
-                        raise RuntimeError('fresh public addon arrow endpoint is not available')
+                if not guide: raise RuntimeError('movement requires a selected addon guide')
+                if guide['color']=='red' or (guide['source']=='GatherMate marker' and guide['distance_yards']>20):
+                    arrow={'endpoint':guide['world'],'source':guide['source'],'site_id':guide['boundary_site_id']}
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
                     step['inputs']=fly(folder,before,arrow,step)
+                elif guide['source']=='GatherMate marker' or guide['color']=='yellow':
+                    step['travel_mode']='held_waypoint_approach'
+                    step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'])
+                    step['inputs']=[]
                 else:
                     hold=.4 if action=='forward_short' else 1.25
-                    if guidance=='gathermate_minimap_marker' and marker:
-                        hold=min(hold,max(.10,marker['distance_yards']/7))
                     step['travel_mode']='green_small_steps' if action=='forward_short' else 'yellow_approach'
                     step['inputs']=[inputs.execute('World of Warcraft','key',{'key':'Up','hold':hold})]
                 session['walked_since_survey']=True
+                if guide['source']=='Survey telescope' and guide['color']=='green':
+                    session.pop('telescope_target',None)
             elif action=='loot':
                 x,y=args.loot_at
                 step['inputs']=[inputs.execute('World of Warcraft','click',{'x':x,'y':y,'button':3})]
                 time.sleep(3)
-                args.loot_at=None
                 session['walked_since_survey']=True
             else:
                 step['inputs']=[]
@@ -176,7 +166,16 @@ def run(args):
             if not healthy(after): raise RuntimeError('character became unavailable after input')
             if action=='survey' and after['archaeology']['successful_surveys']<=a['successful_surveys']:
                 raise RuntimeError('Mouse Button 4 did not produce a successful Survey')
-            if action.startswith('forward_') and (walked<.25 or walked>(750 if step.get('travel_mode')=='red_flight' else 15)):
+            if action=='survey':
+                fresh_tool=telescope(after,session)
+                if not fresh_tool:session['stop_reason']='survey_without_telescope_review_visible_find'
+                routes.marker_survey_outcome(session,guide,fresh_tool,not fresh_tool)
+            if action=='loot':
+                if not found: raise RuntimeError('right click did not confirm fragment pickup')
+                args.loot_at=None
+                routes.pickup(session)
+                session['observed_find_count']=after['archaeology']['looted_finds']
+            if action.startswith('forward_') and (walked<.25 or walked>(750 if step.get('travel_mode') in ('red_flight','held_waypoint_approach') else 15)):
                 raise RuntimeError('walking outcome was blocked or exceeded its bound')
             if action.startswith('turn_') and walked>.15:
                 raise RuntimeError('turn unexpectedly moved the character')
