@@ -46,7 +46,8 @@ def restore_interact_fixture(t,layout,current,prefix):
     require(t.step(prefix+'_saved_cvar','Restore the exact saved None flag with a fixed ordinary chat fixture script.',
         {'restore':{'kind':'chat','value':'/run SetCVar("softTargetInteract", 0)'}},
         lambda b,a,s:{'status':'fixture_cvar_command_submitted' if s=='restore' and
-            not a.get('chat_edit_open') and not a.get('lua_errors') and not a.get('blocked_actions') else
+            not a.get('chat_edit_open') and not any(p.startswith('StaticPopup') for p in a.get('panels',[])) and
+            not a.get('lua_errors') and not a.get('blocked_actions') else
             'client_or_protocol_failure'},diagnostic_action='restore'),'fixture_cvar_command_submitted')
     try:
         state,frame=read_page(t,prefix+'_closed_confirmed','settings','/tcui settings')
