@@ -27,3 +27,19 @@ def test_player_link_rejects_foreign_or_unrestored_seed(tmp_path,monkeypatch,cha
     else:
         with pytest.raises(RuntimeError,match='closed owned chat seed'):
             module.seed_source(t,cohort/'primary/episode.json')
+
+
+@pytest.mark.parametrize('change',[None,'primary','peer','actor','sender','native','checks'])
+def test_live_seed_uses_native_fixture_guid_and_requires_both_owned_baselines(change):
+    t=SimpleNamespace(guid='Player-1-00000001',fixture={'actor':'primary','guid':1},
+        receipt={'native_baseline':{'spells':[]}})
+    peer=SimpleNamespace(guid='Player-1-00000002',fixture={'actor':'scout','guid':2},
+        receipt={'native_baseline':{'spells':[]}})
+    seed={'expected_native_guid':2,'checks':{'native_delivery':True}}
+    if change=='primary':t.fixture['guid']=3
+    if change=='peer':peer.fixture['guid']=3
+    if change=='actor':peer.fixture['actor']='primary'
+    if change=='sender':seed['expected_native_guid']=1
+    if change=='native':peer.receipt={}
+    if change=='checks':seed['checks']['native_delivery']=False
+    assert module.live_seed_valid(t,peer,seed)==(change is None)

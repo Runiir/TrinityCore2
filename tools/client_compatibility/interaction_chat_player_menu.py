@@ -110,10 +110,15 @@ def reviewed_menu(t,seed,review_path,point,source_sha256):
     finally:t.clean_panels()
 
 
+def live_seed_valid(t,peer,seed):
+    return (t.fixture['actor']=='primary' and t.fixture['guid']==1 and
+        peer.fixture['actor']=='scout' and peer.fixture['guid']==2 and
+        seed['expected_native_guid']==2 and bool(seed['checks']) and all(seed['checks'].values()) and
+        bool(t.receipt.get('native_baseline')) and bool(peer.receipt.get('native_baseline')))
+
+
 def live(t,peer,seed,review_path):
-    if (t.fixture['actor']!='primary' or t.guid!=1 or peer.guid!=2 or
-        seed['expected_native_guid']!=2 or not all(seed['checks'].values()) or
-        not t.receipt.get('native_baseline') or not peer.receipt.get('native_baseline') or review_path.exists()):
+    if not live_seed_valid(t,peer,seed) or review_path.exists():
         raise RuntimeError('owned live cohort seed differs')
     source=t.out/'player_link_seed_source.json';lab.private_write(source,json.dumps(seed,indent=2)+'\n')
     state,frame=t.observe('player_link_live_review')
