@@ -48,7 +48,7 @@ def restore_failed(t,source):
     if not all(checks.values()):raise RuntimeError('prior owned channel cleanup differs')
 
 
-def run(t):
+def run(t,on_join=None):
     before=detail(t,'channel_join_original')
     name='TC442UIChannel'+hashlib.sha256(str(t.out).encode()).hexdigest()[:8]
     if before['selected']!=1 or not before['channels']['available'] or member(before,name):
@@ -76,6 +76,7 @@ def run(t):
             {'join':{'kind':'chat','value':'/join '+name,'description':'Join the exact owned disposable channel.'}},
             joined,diagnostic_action='join'),'owned_channel_join_pass')
         state,frame=t.observe('owned_channel_join_rendered');t.receipt['channel_rendered']={'state':state,'frame':frame};t.persist()
+        if on_join:on_join(t,name)
     finally:
         t.clean_panels();current=detail(t,'owned_channel_cleanup_guard')
         if member(current,name):
