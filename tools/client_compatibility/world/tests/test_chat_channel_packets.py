@@ -33,6 +33,33 @@ def test_leave_and_list_keep_exact_name(codec,modern,native,has_id):
     assert r.bits(8)==7 and r.raw(7)==b'TestLab';r.end()
 
 
+def test_owned_channel_owner_query_and_native_notice_capture(codec):
+    channel=b'TC442UIChannel1234abcd'
+    body=Writer().bits(22,7).raw(channel).finish()
+    name,encoded=call(codec,'chat_request','CMSG_CHAT_CHANNEL_OWNER',body)
+    assert name=='CMSG_CHAT_CHANNEL_OWNER'
+    r=Reader(bytes.fromhex(encoded));assert r.bits(8)==22 and r.raw(22)==channel;r.end()
+    for request in [body,bytes.fromhex(encoded)]:
+        assert codec(op='public_channel_probe',name=name,body=request.hex())['result'] is True
+    native=b'\x0b'+channel+b'\0Harnessone\0'
+    name,encoded=call(codec,'chat_response','SMSG_CHANNEL_NOTIFY',native)
+    for packet in [native,bytes.fromhex(encoded)]:
+        assert codec(op='public_channel_probe',name=name,body=packet.hex())['result'] is True
+        assert codec(op='public_channel_probe',name=name,body=(packet+b'x').hex())['result'] is False
+    foreign=b'\x0b'+channel+b'\0Foreignname\0'
+    assert codec(op='public_channel_probe',name=name,body=foreign.hex())['result'] is False
+
+
+def test_capture_channel_lists_accepts_only_owned_members_and_exact_bounds(codec):
+    native=Writer().pack('B',1).raw(b'TC442UIChannel1234abcd\0').pack('BIQB',1,1,1,3).finish()
+    name,encoded=call(codec,'chat_response','SMSG_CHANNEL_LIST',native)
+    for packet in [native,bytes.fromhex(encoded)]:
+        assert codec(op='public_channel_probe',name=name,body=packet.hex())['result'] is True
+        assert codec(op='public_channel_probe',name=name,body=(packet+b'x').hex())['result'] is False
+    foreign=Writer().pack('B',1).raw(b'TC442UIChannel1234abcd\0').pack('BIQB',1,1,9,3).finish()
+    assert codec(op='public_channel_probe',name=name,body=foreign.hex())['result'] is False
+
+
 def test_native_join_becomes_dedicated_modern_join_with_stable_channel_identity(codec):
     body=b'\x02TC442UIChannel1234abcd\0'+bytes([1])+bytes(8)
     name,encoded=call(codec,'chat_response','SMSG_CHANNEL_NOTIFY',body)

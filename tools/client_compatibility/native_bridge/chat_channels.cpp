@@ -62,7 +62,7 @@ Reply chat_channel_request(std::string const &name,View body)
         auto id=r.take<std::uint32_t>();channel=text(r,r.bits(7));
         w.put(id).bits(channel.size(),8).raw(channel);native="CMSG_LEAVE_CHANNEL";
     }
-    else if(name=="CMSG_CHAT_CHANNEL_LIST" || name=="CMSG_CHAT_CHANNEL_DISPLAY_LIST")
+    else if(name=="CMSG_CHAT_CHANNEL_LIST" || name=="CMSG_CHAT_CHANNEL_DISPLAY_LIST" || name=="CMSG_CHAT_CHANNEL_OWNER")
     {
         channel=text(r,r.bits(7));w.bits(channel.size(),8).raw(channel);
         native=name;
@@ -149,8 +149,27 @@ bool public_channel_probe(std::string const &name,View body)
         }
         if(name=="CMSG_CHAT_LEAVE_CHANNEL" || name=="CMSG_LEAVE_CHANNEL")
         {r.take<std::uint32_t>();channel=text(r,r.bits(name=="CMSG_LEAVE_CHANNEL"?8:7));r.end();return fixture(channel);}
+        if(name=="CMSG_CHAT_CHANNEL_LIST" || name=="CMSG_CHAT_CHANNEL_DISPLAY_LIST" || name=="CMSG_CHAT_CHANNEL_OWNER")
+        {
+            // Modern/native requests share opcode names but use seven/eight
+            // length bits. Admit only a complete exact fixture under either.
+            for(unsigned width:{7,8})
+            {
+                try{Reader request(body);auto value=text(request,request.bits(width));request.end();if(fixture(value))return true;}
+                catch(std::exception const &){}
+            }
+            return false;
+        }
         if(name=="SMSG_CHANNEL_NOTIFY")
         {
+            if(!body.empty() && body[0]==11)
+            {r.take<std::uint8_t>();channel=terminated(r);auto owner=terminated(r);r.end();return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");}
+            if(!body.empty() && body[0]>35)
+            {
+                if(r.bits(6)!=11)return false;auto size=r.bits(7),owner_size=r.bits(6);
+                r.guid();r.guid();r.raw(4);r.guid();r.raw(8);channel=text(r,size);auto owner=text(r,owner_size);r.end();
+                return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");
+            }
             auto kind=r.take<std::uint8_t>();channel=terminated(r);
             if(kind==2)r.raw(9);else if(kind==3)r.raw(5);else if(kind==0 || kind==8 || kind==23)r.raw(8);else return false;
             r.end();return fixture(channel);
@@ -159,6 +178,22 @@ bool public_channel_probe(std::string const &name,View body)
         {auto size=r.bits(7);if(r.bits(11))return false;r.raw(17);r.guid();channel=text(r,size);r.end();return fixture(channel);}
         if(name=="SMSG_CHANNEL_NOTIFY_LEFT")
         {auto size=r.bits(7);r.bits(1);r.raw(4);channel=text(r,size);r.end();return fixture(channel);}
+        if(name=="SMSG_CHANNEL_LIST")
+        {
+            bool native=!body.empty() && body[0]<=1;unsigned count;
+            if(native){r.take<std::uint8_t>();channel=terminated(r);r.raw(1);count=r.take<std::uint32_t>();}
+            else{r.bits(1);auto size=r.bits(7);r.raw(4);count=r.take<std::uint32_t>();channel=text(r,size);}
+            if(!fixture(channel) || count>2)return false;
+            for(unsigned i=0;i<count;++i)
+            {
+                std::uint64_t guid;
+                if(native)guid=r.take<std::uint64_t>();
+                else{auto pair=r.guid();guid=integer(pair[0]);if(integer(pair[1])!=player_high() || r.take<std::uint32_t>()!=0x01010001)return false;}
+                if(guid!=1 && guid!=2)return false;
+                r.raw(1);
+            }
+            r.end();return true;
+        }
     }
     catch(std::exception const &){}
     return false;

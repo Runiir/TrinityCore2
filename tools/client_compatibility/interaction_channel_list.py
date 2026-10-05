@@ -7,7 +7,7 @@ from .interaction_chat_channels import run,member
 from .interaction_chat_window import detail
 from .interaction_keybindings_native import suite as native_suite
 from .interaction_macros import require
-from .observation.journal import latest
+from .observation.journal import latest,Cursor
 
 
 def listed(t,name):
@@ -17,8 +17,12 @@ def listed(t,name):
     if not instance or len(member(before,name))!=1 or member(before,name)[0]['disabled']:
         raise RuntimeError('owned active channel or authenticated instance differs')
     session=entry['session'];started=time.time()
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    for packet in cursor.poll():pass
     def outcome(b,a,s):
         after=detail(t,'owned_channel_list_result');path=lab.ROOT/'logs/modern_world.jsonl'
+        observed=[r for r in cursor.poll() if r.get('session')==session and r.get('time',0)>=started and
+            name.encode() in bytes.fromhex(r.get('body',''))]
         facts={}
         for direction,event,session_id,names in [
             ('from_client','modern_packet',session,{'CMSG_CHAT_CHANNEL_LIST','CMSG_CHAT_CHANNEL_DISPLAY_LIST'}),
@@ -33,7 +37,8 @@ def listed(t,name):
             'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'owned_channel_list_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'events':facts,'public':after,'native_session':session,
-                'authenticated_instance':instance,'name':name,'limits':'Native list packet attribution and reviewed stock text; raw list body is not captured.'}}
+                'authenticated_instance':instance,'name':name,'packets':observed,
+                'channel_list_events_before':before.get('channel_list'),'channel_list_events_after':after.get('channel_list')}}
     require(t.step('chat.channel_list','Use stock chatlist for only the enabled owned channel.',
         {'list':{'kind':'chat','value':'/chatlist '+name,'description':'List the exact owned channel through stock chatlist.'}},
         outcome,diagnostic_action='list'),'owned_channel_list_pass')

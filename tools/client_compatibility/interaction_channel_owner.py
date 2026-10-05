@@ -7,7 +7,7 @@ from .interaction_chat_channels import run,member
 from .interaction_chat_window import detail
 from .interaction_keybindings_native import suite as native_suite
 from .interaction_macros import require
-from .observation.journal import latest
+from .observation.journal import latest,Cursor
 
 
 def owner(t,name):
@@ -15,18 +15,27 @@ def owner(t,name):
     if len(member(before,name))!=1 or member(before,name)[0]['disabled']:
         raise RuntimeError('owned active channel differs')
     session=entry['session'];started=time.time()
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    for packet in cursor.poll():pass
     def outcome(b,a,s):
         after=detail(t,'owned_channel_owner_result');path=lab.ROOT/'logs/modern_world.jsonl'
         dropped=latest(path,lambda r:r.get('session')==session and r.get('time',0)>=started and
             r.get('event')=='unmapped_client_packet' and r.get('name')=='CMSG_CHAT_CHANNEL_OWNER')
         native=latest(path,lambda r:r.get('session')==session and r.get('time',0)>=started and
             r.get('event')=='native_packet' and r.get('direction')=='from_native' and r.get('name')=='SMSG_CHANNEL_NOTIFY')
+        observed=[r for r in cursor.poll() if r.get('session')==session and r.get('time',0)>=started and
+            name.encode() in bytes.fromhex(r.get('body',''))]
+        native_owner=[r for r in observed if r['direction']=='from_native' and r['name']=='SMSG_CHANNEL_NOTIFY' and
+            bytes.fromhex(r['body'])==b'\x0b'+name.encode()+b'\0'+t.fixture['character_name'].encode()+b'\0']
+        required={('from_client','CMSG_CHAT_CHANNEL_OWNER'),('to_native','CMSG_CHAT_CHANNEL_OWNER'),
+            ('from_native','SMSG_CHANNEL_NOTIFY'),('to_client','SMSG_CHANNEL_NOTIFY')}
         checks={'ordinary_owner_query':s=='owner','request_translated':dropped is None,'native_notice':native is not None,
+            'native_exact_owner':len(native_owner)==1,'all_wire_directions':required.issubset({(r['direction'],r['name']) for r in observed}),
             'same_enabled_channel':member(before,name)==member(after,name),'new_general_line':after['selected']==1 and
                 after['windows'][0]['message_count']>before['windows'][0]['message_count'],
             'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'owned_channel_owner_query_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'native_notice':native,'unmapped_request':dropped,'public':after,'name':name}}
+            'oracle':{'checks':checks,'native_notice':native,'unmapped_request':dropped,'packets':observed,'public':after,'name':name}}
     require(t.step('chat.channel_owner','Query only the disposable channel owner through ordinary slash input.',
         {'owner':{'kind':'chat','value':'/owner '+name,'description':'Display the exact owned channel owner.'}},
         outcome,diagnostic_action='owner'),'owned_channel_owner_query_pass')
