@@ -78,7 +78,7 @@ def play(t,source,review_path,point):
     reviewed_menu(t,seed,review_path,point,lab.sha256(source))
 
 
-def reviewed_menu(t,seed,review_path,point,source_sha256):
+def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
     review_path=review_path.resolve()
     if not review_path.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires private owned review source')
@@ -102,11 +102,16 @@ def reviewed_menu(t,seed,review_path,point,source_sha256):
         rows=controls(t);state,frame=t.observe('owned_player_menu_rendered')
         t.receipt['player_menu']={'controls':rows,'state':state,'frame':frame};t.persist()
         return {'status':'owned_player_menu_inspected' if s=='menu' and
-            any('whisper' in c['text'].lower() for c in rows) else 'client_or_protocol_failure'}
+            any(c['text']=='Harnesstwo' for c in rows) and any(c['text']=='Whisper' for c in rows)
+            else 'client_or_protocol_failure'}
     try:
         require(t.step('fixture.player_chat_link_menu','Right-click the reviewed owned player chat link.',
             {'menu':{'kind':'click','value':point,'button':3,'hold':1.2}},outcome,diagnostic_action='menu'),
             'owned_player_menu_inspected')
+        if operation!='inspect':
+            from . import interaction_chat_player_actions as actions
+            if operation not in ('copy','report'):raise ValueError('unknown owned player operation')
+            getattr(actions,operation)(t,seed)
     finally:t.clean_panels()
 
 
@@ -117,7 +122,7 @@ def live_seed_valid(t,peer,seed):
         bool(t.receipt.get('native_baseline')) and bool(peer.receipt.get('native_baseline')))
 
 
-def live(t,peer,seed,review_path):
+def live(t,peer,seed,review_path,operation='inspect'):
     if not live_seed_valid(t,peer,seed) or review_path.exists():
         raise RuntimeError('owned live cohort seed differs')
     source=t.out/'player_link_seed_source.json';lab.private_write(source,json.dumps(seed,indent=2)+'\n')
@@ -128,7 +133,7 @@ def live(t,peer,seed,review_path):
     while not review_path.exists():
         if time.monotonic()>deadline:raise RuntimeError('fresh link visual review absent; no input sent')
         time.sleep(1)
-    review=json.loads(review_path.read_text());reviewed_menu(t,seed,review_path,review.get('point'),lab.sha256(source))
+    review=json.loads(review_path.read_text());reviewed_menu(t,seed,review_path,review.get('point'),lab.sha256(source),operation)
 
 
 if __name__=='__main__':
