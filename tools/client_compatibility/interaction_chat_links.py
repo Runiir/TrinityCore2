@@ -11,6 +11,9 @@ from .interaction_spellbook_navigation import detail as book_detail,known
 from .interaction_stance_bar import restored_native_state
 from .interaction_spellbook_actions import cast as normal_cast
 from .observation.inventory import Inventory
+from .observation.journal import entries
+from .world.buffer import Reader
+from .world.native_objects import guid as native_guid
 
 
 def insert(t,kind,id,control):
@@ -18,14 +21,26 @@ def insert(t,kind,id,control):
         {'open':{'kind':'key','value':'Return','description':'Open the stock chat edit box.'}},
         lambda b,a,s:{'status':'blank_chat_open' if a.get('chat_edit_open') and not a.get('chat_edit_text') else
             'client_or_protocol_failure'},diagnostic_action='open'),'blank_chat_open')
+    session=actors.session_entry(t.fixture)['session'];since=time.time()
     def outcome(b,a,s):
         text=a.get('chat_edit_text') or '';match=re.search(r'\|H'+kind+r':(\d+)',text)
+        requests=[];completions=[]
+        for row in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+            if row.get('session')!=session or row.get('time',0)<since:continue
+            if row.get('name')=='CMSG_CAST_SPELL' and row.get('direction') in {'from_client','to_native'}:
+                requests.append({'time':row['time'],'direction':row['direction'],'name':row['name']})
+            if row.get('name')=='SMSG_SPELL_GO' and row.get('direction')=='from_native':
+                reader=Reader(bytes.fromhex(row['body']));caster=native_guid(reader);native_guid(reader)
+                counter,spell=reader.unpack('Bi')
+                if caster==t.fixture['guid']:completions.append({'time':row['time'],'spell':spell,'caster':caster})
         checks={'ordinary_shift_click':s=='link','blank_before':bool(b.get('chat_edit_open')) and not b.get('chat_edit_text'),
             'chat_still_open':bool(a.get('chat_edit_open')),'requested_link':bool(match and int(match[1])==id),
             'rendered_label_markup':'|h[' in text and ']|h' in text,'no_item_cursor':not a.get('cursor_info'),
-            'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+            'clean':not a.get('lua_errors') and not a.get('blocked_actions'),
+            'no_spell_cast_request':not requests,'no_owned_native_cast_completion':not completions}
         return {'status':'stock_chat_link_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'kind':kind,'id':id,'pending_text':text,'message_submitted':False}}
+            'oracle':{'checks':checks,'kind':kind,'id':id,'pending_text':text,'message_submitted':False,
+                'session':session,'since':since,'cast_requests':requests,'native_cast_completions':completions}}
     require(t.step('ui_misc.'+kind+'_link','Insert the observed '+kind+' link into the pending chat edit box.',
         {'link':{'kind':'click','value':point(control),'modifiers':['shift'],
             'description':'Shift-left-click the observed owned '+kind+' control.'}},outcome,diagnostic_action='link'),
