@@ -104,10 +104,41 @@ def recon(t):
         if not all(checks.values()):raise RuntimeError('original chat window settings or filters differ')
 
 
+def combat_log(t):
+    before=detail(t,'combat_log_original')
+    if before['selected']!=1 or before['windows'][1]['name']!='Combat Log':
+        raise RuntimeError('requires original General selection and the observed stock Combat Log tab')
+    t.receipt['combat_log_baseline']=before;t.persist()
+    try:
+        def outcome(b,a,s):
+            probe=detail(t,'combat_log_selected');row=probe['windows'][1]
+            checks={'ordinary_tab_click':s,'selected_combat_log':probe['selected']==2,
+                'visible_stock_log':row['name']=='Combat Log' and row['frame_visible'] and row['tab_visible'],
+                'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+            return {'status':'stock_combat_log_pass' if all(checks.values()) else 'client_or_protocol_failure',
+                'oracle':{'checks':checks,'public':probe}}
+        require(click(t,'chat.combat_log','Select the observed stock Combat Log tab.',lambda c:
+            c['name']=='ChatFrame2Tab' and c['text']=='Combat Log',outcome),'stock_combat_log_pass')
+        rows=controls(t);state,frame=t.observe('combat_log_rendered')
+        t.receipt['combat_log_observation']={'controls':rows,'frame':frame};t.persist()
+    finally:
+        t.clean_panels();current=detail(t,'combat_log_cleanup_guard')
+        if current['selected']!=before['selected']:
+            require(click(t,'fixture.restore_general_after_combat_log','Restore the observed original General tab.',
+                lambda c:c['name']=='ChatFrame1Tab' and c['text']=='General',lambda b,a,s:{'status':
+                'chat_selection_restored' if s and detail(t,'combat_log_selection_restored')['selected']==1
+                else 'client_or_protocol_failure'}),'chat_selection_restored')
+        after=detail(t,'combat_log_restored')
+        checks={'local_settings_exact':signature(before)==signature(after),'settings_closed':not after['settings_visible']}
+        t.receipt['combat_log_restoration']={'checks':checks,'public':after};t.persist()
+        if not all(checks.values()):raise RuntimeError('original chat settings or selection differ after Combat Log inspection')
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--mutate',action='store_true');a=p.parse_args()
+    mode=p.add_mutually_exclusive_group();mode.add_argument('--mutate',action='store_true')
+    mode.add_argument('--combat-log',action='store_true');a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=mutate if a.mutate else recon,preserve_settings=False);t.receipt['completed']=True
+    try:native_suite(t,operations=mutate if a.mutate else combat_log if a.combat_log else recon,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
