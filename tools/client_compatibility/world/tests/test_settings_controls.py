@@ -2,7 +2,7 @@
 import copy
 import pytest
 from tools.client_compatibility.interaction_settings_controls import agrees,interact_fixture_restorable
-from tools.client_compatibility.interaction_settings_controls_recovery import source_layout
+from tools.client_compatibility.interaction_settings_controls_recovery import source_layout,verify_resume
 
 
 @pytest.mark.parametrize('wanted',[False,True])
@@ -98,3 +98,30 @@ def test_proxy_recovery_rejects_unrelated_or_live_sources(change):
     elif change=='layout':old['volume_layout_restoration']['checks']['values']=False
     else:old['settings_details']['fixture.restore_stock_controls_restored']['state']['settings_probe']['cvars']['enableMovePad']='1'
     with pytest.raises(RuntimeError,match='exact closed'):source_layout(old,fixture,runtime)
+
+
+def closed_menu_failure():
+    return {'completed':False,'finished_at':1,'failure':
+        'RuntimeError: operation did not advance: settings.inspect_menu client_or_protocol_failure',
+        'actor':{'guid':1},'runtime':{'client':{'pid':1}},'source':{'path':'original','sha256':'digest'},
+        'source_preflight':{'native':{str(i):True for i in range(10)}},'cases':[
+            {'id':'fixture.recover_interact_none_close','status':'settings_panel_closed'},
+            {'id':'fixture.recover_interact_none_console','status':'fixture_console_submitted'},
+            {'id':'settings.inspect_menu','status':'client_or_protocol_failure','after':{'panels':[],'chat_edit_open':False}}]}
+
+
+def test_post_console_resume_requires_the_closed_menu_transition():
+    old=closed_menu_failure();verify_resume(old,old['source'],old['actor'],old['runtime'])
+
+
+@pytest.mark.parametrize('change',['live','source','case','panel','chat','native','missing_native'])
+def test_post_console_resume_rejects_changed_or_incomplete_sources(change):
+    old=closed_menu_failure();source=copy.deepcopy(old['source'])
+    if change=='live':old['finished_at']=None
+    elif change=='source':old['source']['sha256']='different'
+    elif change=='case':old['cases'][1]['status']='infrastructure_failure'
+    elif change=='panel':old['cases'][-1]['after']['panels']=['GameMenuFrame']
+    elif change=='chat':old['cases'][-1]['after']['chat_edit_open']=True
+    elif change=='native':old['source_preflight']['native']['0']=False
+    else:old['source_preflight']['native'].pop('0')
+    with pytest.raises(RuntimeError,match='post-console'):verify_resume(old,source,old['actor'],old['runtime'])

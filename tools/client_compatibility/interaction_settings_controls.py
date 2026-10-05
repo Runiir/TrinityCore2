@@ -39,6 +39,7 @@ def restore_interact_fixture(t,layout,current,prefix):
         raise RuntimeError('Interact fixture differs beyond the stock None-to-Gamepad proxy mapping')
     close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
     click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
+    t.clean_panels()
     require(t.step(prefix+'_console','Restore the exact saved None flag after the stock proxy disabled to Gamepad.',
         {'restore':{'kind':'chat','value':'/console softTargetInteract 0'}},
         lambda b,a,s:{'status':'fixture_console_submitted' if s=='restore' and
