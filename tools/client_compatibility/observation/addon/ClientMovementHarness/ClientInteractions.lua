@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=82,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=83,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -651,7 +651,13 @@ local function snapshot(viewMode,viewPage)
         {action=KeybindListener.pending.action,slot=KeybindListener.pending.slotIndex} or false
     data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
     data.chat_edit_text=data.chat_edit_open and trim(ChatFrame1EditBox:GetText(),255) or ''
-    if data.chat_edit_open then data.chat_edit_type=call(ChatFrame1EditBox.GetAttribute,ChatFrame1EditBox,'chatType') end
+    if data.chat_edit_open then
+        data.chat_edit_type=call(ChatFrame1EditBox.GetAttribute,ChatFrame1EditBox,'chatType')
+        data.chat_edit_focused=not not call(ChatFrame1EditBox.HasFocus,ChatFrame1EditBox)
+        if data.chat_edit_type=='WHISPER' then
+            data.chat_edit_target=trim(call(ChatFrame1EditBox.GetAttribute,ChatFrame1EditBox,'tellTarget'),64)
+        end
+    end
     data.item_cursor=not not call(CursorHasItem)
     data.cursor_info={call(GetCursorInfo)}
     data.framerate_visible=FramerateLabel and FramerateLabel:IsVisible() or false

@@ -31,7 +31,7 @@ function Client442ObserveActionBars()
         'STRAFELEFT','STRAFERIGHT','TOGGLEAUTORUN','TOGGLERUN','JUMP',
         'TARGETSELF','TARGETPARTYMEMBER1','TARGETLASTTARGET','ASSISTTARGET',
         'TARGETNEARESTENEMY','TARGETPREVIOUSENEMY','TARGETNEARESTFRIEND',
-        'TARGETFOCUS','FOCUSTARGET','TARGETTARGET'}) do
+        'TARGETFOCUS','FOCUSTARGET','TARGETTARGET','REPLY','REPLY2'}) do
         result.keys[name]={call(GetBindingKey,name)}
     end
     for _,name in ipairs({'MainMenuBar','MultiBarBottomLeft','MultiBarBottomRight','MultiBarLeft','MultiBarRight',
