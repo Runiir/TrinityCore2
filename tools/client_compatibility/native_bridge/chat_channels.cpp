@@ -60,6 +60,10 @@ bool fixture(std::string const &name)
     for(unsigned char c:std::string_view(name).substr(14))if(!std::isxdigit(c))return false;
     return true;
 }
+bool fixture_password(std::string const &value)
+{
+    return value.empty() || value=="TC442TestPass1"; // Disposable public test value; never arbitrary channel secrets.
+}
 }
 
 Reply chat_channel_request(State &owner,std::string const &name,View body)
@@ -81,6 +85,11 @@ Reply chat_channel_request(State &owner,std::string const &name,View body)
     {
         channel=text(r,r.bits(7));w.bits(channel.size(),8).raw(channel);
         native=name;
+    }
+    else if(name=="CMSG_CHAT_CHANNEL_PASSWORD")
+    {
+        auto size=r.bits(7),pass_size=r.bits(7);channel=text(r,size);password=text(r,pass_size);
+        w.bits(size,8).bits(pass_size,7).raw(channel).raw(password);native=name;
     }
     else return {};
     r.end();require_name(channel);
@@ -212,7 +221,18 @@ bool public_channel_probe(std::string const &name,View body)
             r.bits(1);r.bits(1);
             unsigned width=name=="CMSG_JOIN_CHANNEL"?8:7;
             auto size=r.bits(width),pass=r.bits(width);channel=text(r,size);password=text(r,pass);r.end();
-            return fixture(channel) && password.empty();
+            return fixture(channel) && fixture_password(password);
+        }
+        if(name=="CMSG_CHAT_CHANNEL_PASSWORD")
+        {
+            for(unsigned width:{7,8})try
+            {
+                Reader request(body);auto size=request.bits(width),pass_size=request.bits(7);
+                auto value=text(request,size),pass=text(request,pass_size);request.end();
+                if(fixture(value) && fixture_password(pass))return true;
+            }
+            catch(std::exception const &){}
+            return false;
         }
         if(name=="CMSG_CHAT_LEAVE_CHANNEL" || name=="CMSG_LEAVE_CHANNEL")
         {r.take<std::uint32_t>();channel=text(r,r.bits(name=="CMSG_LEAVE_CHANNEL"?8:7));r.end();return fixture(channel);}
@@ -229,6 +249,18 @@ bool public_channel_probe(std::string const &name,View body)
         }
         if(name=="SMSG_CHANNEL_NOTIFY")
         {
+            if(!body.empty() && ((body[0]>>2)==4 || (body[0]>>2)==7))
+            {
+                Reader notice(body);auto kind=notice.bits(6),size=notice.bits(7);
+                if(notice.bits(6))return false;
+                auto sender=notice.guid(),account=notice.guid();auto realm=notice.take<std::uint32_t>();
+                auto target=notice.guid();auto target_realm=notice.take<std::uint32_t>(),id=notice.take<std::uint32_t>();
+                channel=text(notice,size);notice.end();
+                bool owned=kind==4?integer(sender[0])==0 && integer(sender[1])==0:
+                    (integer(sender[0])==1 || integer(sender[0])==2) && integer(sender[1])==player_high();
+                return fixture(channel) && owned && account==Array{0,0} && target==Array{0,0} &&
+                    realm==0x01010001 && target_realm==0x01010001 && id==0;
+            }
             if(!body.empty() && body[0]==11)
             {r.take<std::uint8_t>();channel=terminated(r);auto owner=terminated(r);r.end();return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");}
             if(!body.empty() && body[0]>35)
@@ -239,7 +271,9 @@ bool public_channel_probe(std::string const &name,View body)
                 return fixture(channel) && (owner=="Harnessone" || owner=="Harnesstwo");
             }
             auto kind=r.take<std::uint8_t>();channel=terminated(r);
-            if(kind==2)r.raw(9);else if(kind==3)r.raw(5);else if(kind==0 || kind==8 || kind==23)r.raw(8);else return false;
+            if(kind==2)r.raw(9);else if(kind==3)r.raw(5);else if(kind==0 || kind==8 || kind==23)r.raw(8);
+            else if(kind==7){auto guid=r.take<std::uint64_t>();if(guid!=1 && guid!=2)return false;}
+            else if(kind!=4)return false;
             r.end();return fixture(channel);
         }
         if(name=="SMSG_CHANNEL_NOTIFY_JOINED")
