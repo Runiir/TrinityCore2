@@ -16,7 +16,7 @@ from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
 
 
-def insert(t,kind,id,control):
+def insert(t,kind,id,control,on_insert=None):
     require(t.step('fixture.open_link_chat','Open a blank stock chat edit box without submitting a message.',
         {'open':{'kind':'key','value':'Return','description':'Open the stock chat edit box.'}},
         lambda b,a,s:{'status':'blank_chat_open' if a.get('chat_edit_open') and not a.get('chat_edit_text') else
@@ -45,10 +45,13 @@ def insert(t,kind,id,control):
         {'link':{'kind':'click','value':point(control),'modifiers':['shift'],
             'description':'Shift-left-click the observed owned '+kind+' control.'}},outcome,diagnostic_action='link'),
         'stock_chat_link_pass')
+    if on_insert is not None:
+        case=t.receipt['cases'][-1]
+        on_insert(t,case['oracle']['pending_text'],id)
     t.clean_panels()
 
 
-def bag(t):
+def bag(t,on_insert=None):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     item=oracle.slot(0,10)
     if t.fixture['guid']!=1 or item['id']!=49778 or not item['guid']:
@@ -60,7 +63,7 @@ def bag(t):
             x['id']==item['id'] and not x['locked'] for x in a.get('bag_items',[])) else 'client_or_protocol_failure'},
         diagnostic_action='open'),'link_bag_open')
     control=target(t,'owned_link_item',lambda c:c['kind']=='Button' and c.get('bag_id')==0 and c.get('bag_slot')==10)
-    insert(t,'item',item['id'],control)
+    insert(t,'item',item['id'],control,on_insert=on_insert)
     if oracle.slot(0,10)!=item:raise RuntimeError('linking changed the native owned item')
 
 
