@@ -99,6 +99,7 @@ def start():
                VK_DRIVER_FILES='/usr/share/vulkan/icd.d/nvidia_icd.json')
     command = ['gamescope', '-w', str(WIDTH), '-h', str(HEIGHT), '-W', str(WIDTH),
                '-H', str(HEIGHT), '-r', '30', '-o', '15', '--backend', 'sdl',
+               '--force-windows-fullscreen',
                '--', str(LAUNCHER)]
     with (ROOT / 'logs/launcher.console.log').open('ab') as log:
         os.chmod(log.name, 0o600)
@@ -120,6 +121,21 @@ def start():
             os.kill(process.pid, signal.SIGTERM)
         raise
     print(json.dumps({'runtime': row, 'placement': placement}))
+
+
+def stop():
+    owner = owned_process()
+    if not owner:
+        raise RuntimeError('owned live Gamescope is absent')
+    os.kill(owner['pid'], signal.SIGTERM)
+    for _ in range(40):
+        if not owned_process():
+            write(ROOT / 'evidence/last_client_closure.json',
+                  {'runtime': owner, 'finished_at': time.time(), 'closed': True})
+            print('Stopped only the owned live launcher/client supervisor')
+            return
+        time.sleep(.25)
+    raise RuntimeError('owned live Gamescope did not stop')
 
 
 def windows():
@@ -160,11 +176,13 @@ def screenshot(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('start', 'status', 'shot'))
+    parser.add_argument('action', choices=('start', 'stop', 'status', 'shot'))
     parser.add_argument('--output', type=Path, default=ROOT / 'evidence/current.png')
     args = parser.parse_args()
     if args.action == 'start':
         start()
+    elif args.action == 'stop':
+        stop()
     elif args.action == 'status':
         print(json.dumps({'runtime': owned_process(), 'monitor': monitor(), 'windows': windows()}))
     else:
