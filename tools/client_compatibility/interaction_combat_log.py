@@ -24,7 +24,7 @@ def probe(t,label):
     finally:command(t,'/tcui state')
 
 
-def settings_recon(t):
+def settings_recon(t,message_types=False):
     original=chat_detail(t,'combat_settings_original_chat');before=probe(t,'combat_settings_original')
     if original['selected']!=1 or not before['saved_settings']['available']:
         raise RuntimeError('requires original General selection and public saved combat settings')
@@ -33,6 +33,10 @@ def settings_recon(t):
         menu(t,2,'fixture.combat_settings_menu')
         require(option(t,'fixture.open_combat_settings','Settings',lambda b,a,s:{'status':'combat_settings_open'
             if s and 'ChatConfigFrame' in a['panels'] else 'client_or_protocol_failure'}),'combat_settings_open')
+        if message_types:
+            require(click(t,'fixture.combat_message_types','Inspect the observed stock Message Types tab.',lambda c:
+                c['name']=='CombatConfigTab2' and c['text']=='Message Types',lambda b,a,s:{'status':'combat_message_types_visible'
+                if s and 'ChatConfigFrame' in a['panels'] else 'client_or_protocol_failure'}),'combat_message_types_visible')
         rows=controls(t);state,frame=t.observe('combat_settings_rendered');current=probe(t,'combat_settings_open')
         t.receipt['combat_settings_recon']={'controls':rows,'frame':frame,'public':current};t.persist()
     finally:
@@ -105,8 +109,10 @@ def run(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--settings-recon',action='store_true');a=p.parse_args()
+    mode=p.add_mutually_exclusive_group();mode.add_argument('--settings-recon',action='store_true')
+    mode.add_argument('--message-types-recon',action='store_true');a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=settings_recon if a.settings_recon else run,preserve_settings=False);t.receipt['completed']=True
+    try:native_suite(t,operations=(lambda t:settings_recon(t,a.message_types_recon)) if
+        a.settings_recon or a.message_types_recon else run,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
