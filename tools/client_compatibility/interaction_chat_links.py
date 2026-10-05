@@ -109,6 +109,41 @@ def select_line(t,label,index):
             else 'client_or_protocol_failure'}),'link_book_tab_pass')
 
 
+def achievement(t):
+    from .interaction_achievements import detail,saved,restore_layout
+    from .interaction_archaeology_projects import dbc
+    original=saved(t.fixture['guid']);layout=None
+    def opened(label):
+        require(click(t,label,'Open the stock achievement journal.',lambda c:c['name']=='AchievementMicroButton',
+            lambda b,a,s:{'status':'link_achievement_open' if s and 'AchievementFrame' in a['panels'] else
+                'client_or_protocol_failure'}),'link_achievement_open')
+    try:
+        opened('fixture.open_link_achievements');layout=detail(t,'link_achievement_original')
+        if layout['category']!=92:
+            category=next((r for r in layout['categories'] if r['id']==92),None)
+            if category is None:raise RuntimeError('requires the observed General achievement category')
+            require(click(t,'fixture.link_achievement_category','Open the observed General category.',
+                lambda c:c['name']==category['button'],lambda b,a,s:{'status':'link_achievement_category' if s and
+                    detail(t,'link_achievement_general',lambda p:p['category']==92)['category']==92 else
+                    'client_or_protocol_failure'}),'link_achievement_category')
+        current=detail(t,'link_achievement_rows',lambda p:bool(p['rows']))
+        rows,text=dbc('Achievement',14);catalog={r[0]:text(r[4]) for r in rows}
+        row=next((r for r in current['rows'] if catalog.get(r['id'])==r['name']==r['shown_name']),None)
+        if row is None:raise RuntimeError('requires an observed native-catalog achievement row')
+        t.receipt['link_achievement_fixture']={'row':row,'native_before':original,
+            'catalog_sha256':lab.sha256(lab.ROOT/'data/dbc/enUS/Achievement.dbc')};t.persist()
+        control=target(t,'native_achievement_link',lambda c:c['name']==row['button'])
+        insert(t,'achievement',row['id'],control)
+    finally:
+        if layout:
+            state,_=t.observe('link_achievement_cleanup')
+            if 'AchievementFrame' not in state['panels']:opened('fixture.reopen_link_achievements')
+            restore_layout(t,layout);t.clean_panels()
+        unchanged=saved(t.fixture['guid'])==original
+        t.receipt['link_native_achievements_preserved']=unchanged;t.persist()
+        if not unchanged:raise RuntimeError('achievement linking changed native achievements or criteria')
+
+
 def recovered(t,source):
     source=source.resolve()
     if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
@@ -128,7 +163,7 @@ def recovered(t,source):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--kind',choices=['bag','spell'],required=True)
+    p.add_argument('--kind',choices=['bag','spell','achievement'],required=True)
     p.add_argument('--recover-source',type=Path)
     p.add_argument('--normal-cast',action='store_true',help='Also verify the unchanged ordinary right-click cast and cancel its self-buff')
     a=p.parse_args()
@@ -136,7 +171,8 @@ if __name__=='__main__':
     if a.normal_cast and (a.kind!='spell' or a.recover_source):p.error('ordinary cast regression requires a fresh spell trial')
     t=Trial(a.output,controller='code')
     try:
-        operation=(lambda t:recovered(t,a.recover_source)) if a.recover_source else bag if a.kind=='bag' else lambda t:spell(t,a.normal_cast)
+        operation=(lambda t:recovered(t,a.recover_source)) if a.recover_source else {
+            'bag':bag,'spell':lambda t:spell(t,a.normal_cast),'achievement':achievement}[a.kind]
         native_suite(t,operations=operation,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
