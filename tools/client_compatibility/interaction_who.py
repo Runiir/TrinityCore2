@@ -75,8 +75,31 @@ def who_state(t,label):
     return state['who_probe']
 
 
-def suite(t):
+def check_deployed_baseline(t,path):
+    path=path.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires the owned closed unmapped Who probe')
+    old=json.loads(path.read_text());current=t.receipt
+    if (old.get('completed') is not False or not old.get('finished_at') or
+        old.get('failure')!='RuntimeError: operation did not advance: friends.who_search_probe client_or_protocol_failure' or
+        old.get('actor')!=current['actor'] or old.get('original_who_text')!='' or
+        not any(c.get('id')=='fixture.who.restore_text' and c.get('status')=='ui_edit_pass' for c in old.get('cases',[])) or
+        any(old.get('runtime',{}).get(k)!=current['runtime'][k] for k in ('worldserver','client')) or
+        old.get('runtime',{}).get('modern_world')==current['runtime']['modern_world'] or
+        any(not old.get(k,{}).get('checks') or not all(old[k]['checks'].values()) for k in
+            ('bridge_native_restoration','friend_restoration'))):
+        raise RuntimeError('Who deployment baseline, closed cleanup or owned lifetime differs')
+    keys=('native_baseline','original_social','original_public_friends','original_inventory',
+        'original_quest_log','original_native_quests','original_group','offline_owned_dwarf')
+    checks={k:current.get(k)==old.get(k) for k in keys}
+    t.receipt['deployed_fixture_checks']=checks
+    t.receipt['baseline_source']={'file':str(path),'sha256':lab.sha256(path)};t.persist()
+    if not all(checks.values()):raise RuntimeError('Who deployment did not preserve the pre-repair fixture')
+
+
+def suite(t,path):
     baseline(t,observer_version=123);packets=Packets(t.receipt['session']);original=None
+    check_deployed_baseline(t,path)
     t.receipt.update(raw_who_capture_available=True,qualified_scope=
         'One stock owned-primary name search and exact native-backed result. No race filters, cross-realm/addon queries, sorting, selection, invitations or whispers.');t.persist()
     try:
@@ -122,10 +145,11 @@ def suite(t):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--mode',choices=['probe','suite'],default='probe');a=p.parse_args()
+    p.add_argument('--mode',choices=['probe','suite'],default='probe');p.add_argument('--baseline-source',type=Path);a=p.parse_args()
+    if a.mode=='suite' and not a.baseline_source:p.error('suite requires the closed pre-repair baseline source')
     with actor('primary'):
         t=Trial(a.output,controller='code')
-        try:(suite(t) if a.mode=='suite' else probe(t));t.receipt['completed']=True
+        try:(suite(t,a.baseline_source) if a.mode=='suite' else probe(t));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
