@@ -76,14 +76,19 @@ def suite(t):
         open_exit(t,'settings.cancel.exit_dialog_again')
         select(t,1,'settings.cancel.discard_pending')
     finally:
-        current=detail(t,'discard_cleanup_before')
-        if current.get('discard_dialogs'):
-            if t.receipt.get('discard_attempted'):raise RuntimeError('failed discard is not replayed during cleanup')
-            select(t,1,'fixture.settings_discard.cleanup_exit')
-            current=detail(t,'discard_cleanup_closed')
-        if not current.get('visible'):
-            t.clean_panels();t.settings_search=open_search(t)
-        restore(t,layout)
+        cleanup(t,layout)
+
+
+def cleanup(t,layout):
+    state,_=t.observe('discard_cleanup_visibility')
+    if 'SettingsPanel' not in state['panels']:
+        t.clean_panels();t.settings_search=open_search(t)
+    current=detail(t,'discard_cleanup_before')
+    if current.get('discard_dialogs'):
+        if t.receipt.get('discard_attempted'):raise RuntimeError('failed discard is not replayed during cleanup')
+        select(t,1,'fixture.settings_discard.cleanup_exit')
+        t.clean_panels();t.settings_search=open_search(t)
+    restore(t,layout)
 
 
 def recovery_matches(old,current):
