@@ -37,7 +37,7 @@ Reply who_request(State &owner,std::string const &opcode,View body)
     if(areas>10 || wc>4 || min<0 || max>255 || min>max || addon || enemies || arena ||
        (race!=-1 && race!=0) || klass<-1)
         throw std::runtime_error("unsupported Who filters or counts");
-    Array words,zones;
+    std::vector<std::string> words;std::vector<std::int32_t> zones;
     for(unsigned i=0;i<wc;++i){auto length=r.bits(7);words.push_back(text(r,length));r.align();}
     auto name=text(r,nl),realm=text(r,rl),guild=text(r,gl),guild_realm=text(r,grl);
     if((!realm.empty() && realm!="Client442Lab") || (!guild_realm.empty() && guild_realm!="Client442Lab"))
@@ -54,8 +54,8 @@ Reply who_request(State &owner,std::string const &opcode,View body)
     r.end();if(exact)folded(name);
     Writer w;w.put(min).put(max).raw(name).put<std::uint8_t>(0).raw(guild).put<std::uint8_t>(0)
         .put<std::int32_t>(-1).put(klass).put<std::uint32_t>(areas);
-    for(auto const &zone:zones)w.put<std::int32_t>(integer(zone));
-    w.put<std::uint32_t>(wc);for(auto const &word:words)w.raw(str(word)).put<std::uint8_t>(0);
+    for(auto zone:zones)w.put(zone);
+    w.put<std::uint32_t>(wc);for(auto const &word:words)w.raw(word).put<std::uint8_t>(0);
     if(!owner.who_state)owner.who_state=std::make_shared<WhoState>();
     auto &state=*owner.who_state;
     // Native replies have no request ID. Never replace an unanswered query,
