@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_settings_booleans import detail
-from .interaction_operations import click_case,point
+from .interaction_operations import click_case
 from .interaction_macros import edit_case,require
 from .interaction_spellbook_recon import resources
 from .interaction_stance_bar import native_state,restored_native_state
@@ -46,7 +46,7 @@ def recover(t,path):
     if not all(checks.values()) or not current['visible'] or current['category']['name']!='Keybindings':
         raise RuntimeError('source resources or current search panel differs')
     require(click_case(t,'fixture.search_recover_category','Restore the saved settings category.',
-        lambda c:c['text']==layout['category']['name'][:64],
+        lambda c:c['text']==layout['category']['name'][:60],
         lambda b,a,s:{'status':'settings_category_restored' if s and
             detail(t,'source_category')['category']==layout['category'] else 'client_or_protocol_failure'}),
         'settings_category_restored')

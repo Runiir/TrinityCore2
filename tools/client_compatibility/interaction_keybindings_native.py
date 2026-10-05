@@ -43,7 +43,7 @@ def suite(t,operations=bindings.suite,preserve_settings=True):
             if current.get('category')!=layout.get('category'):
                 category=layout['category']['name']
                 require(click_case(t,'fixture.restore_settings_category','Restore the original settings category.',
-                    lambda c:c['text']==category[:64],lambda b,a,s:{'status':'settings_category_restored' if s and
+                    lambda c:c['text']==category[:60],lambda b,a,s:{'status':'settings_category_restored' if s and
                         detail(t,'settings_category')['category']==layout['category'] else 'client_or_protocol_failure'}),
                     'settings_category_restored')
             require(edit_case(t,'fixture.restore_settings_search','Restore the original settings search.',
