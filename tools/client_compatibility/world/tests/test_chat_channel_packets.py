@@ -128,15 +128,15 @@ def test_userlist_requires_current_native_join_and_rebinds_after_leave(codec):
     update=Writer().pack('QBBI',2,3,1,2).raw(b'testlab\0').finish()
     joined=lambda channel_id:Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,channel_id,0).finish()
     left=Writer().pack('B',3).raw(b'TestLab\0').pack('IB',7,0).finish()
-    assert stateful(codec,{'guid':1},[action('chat_response','SMSG_USERLIST_UPDATE',update)])==[]
+    assert stateful(codec,{'guid':1},[action('chat_response','SMSG_USERLIST_UPDATE',update)])==[None]
     replies=stateful(codec,{'guid':1},[
         action('chat_response','SMSG_CHANNEL_NOTIFY',joined(7)),
         action('chat_response','SMSG_CHANNEL_NOTIFY',left),
         action('chat_response','SMSG_USERLIST_UPDATE',update),
         action('chat_response','SMSG_CHANNEL_NOTIFY',joined(9)),
         action('chat_response','SMSG_USERLIST_UPDATE',update)])
-    assert [r[0] for r in replies]==['SMSG_CHANNEL_NOTIFY_JOINED','SMSG_CHANNEL_NOTIFY_LEFT',
-        'SMSG_CHANNEL_NOTIFY_JOINED','SMSG_USERLIST_UPDATE']
+    assert [r[0] if r else None for r in replies]==['SMSG_CHANNEL_NOTIFY_JOINED','SMSG_CHANNEL_NOTIFY_LEFT',
+        None,'SMSG_CHANNEL_NOTIFY_JOINED','SMSG_USERLIST_UPDATE']
     r=Reader(bytes.fromhex(replies[-1][1]));r.guid();r.unpack('B')
     assert r.unpack('II')==(1,9)
 
@@ -146,4 +146,12 @@ def test_malformed_join_cannot_grant_userlist_identity(codec):
     update=Writer().pack('QBBI',2,3,1,2).raw(b'TestLab\0').finish()
     replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
         action('chat_response','SMSG_USERLIST_UPDATE',update)])
-    assert len(replies)==1 and replies[0][0]=='error'
+    assert len(replies)==2 and 'error' in replies[0] and replies[1] is None
+
+
+def test_logout_clears_native_channel_identity(codec):
+    joined=Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,7,0).finish()
+    update=Writer().pack('QBBI',2,3,1,2).raw(b'TestLab\0').finish()
+    replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
+        action('logout_complete','SMSG_LOGOUT_COMPLETE',b''),action('chat_response','SMSG_USERLIST_UPDATE',update)])
+    assert replies[1:]==[None,None]
