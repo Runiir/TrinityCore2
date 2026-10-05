@@ -101,9 +101,9 @@ def main():
         if not keys:
             raise RuntimeError('no live crypto schedules found')
         last_activity, heartbeat = time.monotonic(), 0
-        session.update(status='ready', ready_at=time.time(), scan_bytes=scanned, scan_limited=limited)
+        session.update(status='waiting_capture', scan_bytes=scanned, scan_limited=limited)
         write(ROOT / 'run/bearing_reader.json', session)
-        print('Session ready. Cast Survey in the digsite. Stops after 30 minutes of gameplay inactivity.', flush=True)
+        print('Decoder initialized. Waiting for authenticated capture; complete sudo authentication in this terminal.', flush=True)
         def clear():
             mailbox.clear()
             (ROOT / 'run/telescope.json').unlink(missing_ok=True)
@@ -121,6 +121,13 @@ def main():
         window = reader.SurveyWindow(emit, clear)
         def packet(direction, opcode, payload, stamp):
             nonlocal last_activity
+            # Crypto initialization alone does not prove the sudo capture has
+            # started. Announce readiness only after authenticating an owned
+            # client's frame from the pipe.
+            if session['status']=='waiting_capture':
+                session.update(status='ready',ready_at=time.time())
+                write(ROOT/'run/bearing_reader.json',session)
+                print('Session ready. Authenticated owned-client feed active. Stops after 30 minutes of gameplay inactivity.',flush=True)
             window.packet(direction, opcode, payload, stamp)
             session['authenticated_frames'] += 1
             activity = False

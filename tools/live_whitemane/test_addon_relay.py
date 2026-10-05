@@ -99,3 +99,8 @@ def test_required_direct_transport_never_requests_a_screenshot_even_when_stale(m
     def unavailable(*_):raise ValueError('stale')
     monkeypatch.setattr(relay,'observation',unavailable)
     with pytest.raises(RuntimeError,match='stale'):observe.observe(tmp_path/'output.png')
+
+
+def test_new_reader_without_a_height_sample_keeps_public_observation_available(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    assert observe.attach_pose({'archaeology':{}})['owned_pose'] is None

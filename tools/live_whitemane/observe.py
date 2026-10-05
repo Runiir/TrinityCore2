@@ -13,6 +13,7 @@ from . import addon_relay
 
 
 def attach_pose(row):
+    row.setdefault('owned_pose',None)
     pose_file=runtime.ROOT/'run/movement_pose.json'
     if pose_file.exists():
         try:
