@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=122,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=123,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -166,6 +166,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='map' then data.map_probe=Client442ObserveMap();return data end
     if mode=='tooltip' then data.tooltip_probe=Client442ObserveTooltip();return data end
     if mode=='itemtext' then data.item_text_probe=Client442ObserveItemText();return data end
+    if mode=='who' then data.who_probe=Client442ObserveWho();return data end
     if mode=='recipes' then data.recipe_probe=Client442ObserveTradeSkill();return data end
     if mode=='chat' then data.chat_window_probe=Client442ObserveChatWindows();return data end
     if mode=='combat_log' then data.combat_log_probe=Client442ObserveCombatLog();return data end
@@ -774,6 +775,7 @@ local function update()
     elseif mode=='state' and autoPage==-8 then viewMode,viewPage='settings',1
     elseif mode=='state' and autoPage==-9 then viewMode,viewPage='macros',1
     elseif mode=='state' and autoPage==-10 then viewMode,viewPage='addons',1
+    elseif mode=='state' and autoPage==-11 then viewMode,viewPage='who',1
     elseif mode=='state' and autoPage>0 then viewMode,viewPage='controls',autoPage end
     local ok,data=pcall(snapshot,viewMode,viewPage)
     if mode=='state' and ok then
@@ -785,7 +787,8 @@ local function update()
             equipmentTick=equipmentTick+1
             if equipmentTick%3==0 and #data.panels==0 and #data.bags==0 then autoPage=-6 end
             if equipmentTick%2==0 then
-                if AddonList and AddonList:IsVisible() then autoPage=-10
+                if WhoFrame and WhoFrame:IsVisible() then autoPage=-11
+                elseif AddonList and AddonList:IsVisible() then autoPage=-10
                 elseif MacroFrame and MacroFrame:IsVisible() then autoPage=-9
                 elseif Client442ShouldObserveSettings(SettingsPanel,equipmentTick) then autoPage=-8
                 elseif DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
@@ -793,7 +796,7 @@ local function update()
                 elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2
                 elseif SpellBookFrame and SpellBookFrame:IsVisible() then autoPage=-3 end
             end
-        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' or viewMode=='macros' or viewMode=='addons' then
+        elseif viewMode=='equipment' or viewMode=='spellbook' or viewMode=='dressup' or viewMode=='achievements' or viewMode=='actionbars' or viewMode=='settings' or viewMode=='macros' or viewMode=='addons' or viewMode=='who' then
             -- Passive equipment readings alternate with state. Group/control
             -- progress is retained, so this cannot starve the normal pages.
             autoPage=0

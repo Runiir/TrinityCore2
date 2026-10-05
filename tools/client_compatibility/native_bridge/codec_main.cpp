@@ -25,6 +25,7 @@
 #include "data.hpp"
 #include "player_ui_state.hpp"
 #include "item_text.hpp"
+#include "who.hpp"
 #include <iostream>
 #include <memory>
 
@@ -343,6 +344,8 @@ int main(int argc, char **argv)
                             else if(fn=="item_use")reply=protocol.item_use(state,body);
                             else if(fn=="item_text_request")reply=item_text_request(protocol,state,name,body);
                             else if(fn=="item_text_response")reply=item_text_response(protocol,state,name,body);
+                            else if(fn=="who_request")reply=who_request(state,name,body);
+                            else if(fn=="who_response")reply=who_complete(state,body,get(request,"identities").as_array());
                             else if(fn=="item_use_rejected")reply=Packet{"SMSG_CAST_FAILED",Protocol::item_use_rejected(body)};
                             else if(fn=="extra_marker_go")
                                 reply = protocol.extra_marker_go(state);

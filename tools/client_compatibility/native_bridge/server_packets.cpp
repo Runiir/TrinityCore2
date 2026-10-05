@@ -18,6 +18,7 @@ namespace bridge
 {
 Task<> Session::gameplay(std::string name, Bytes body)
 {
+    if(name=="SMSG_WHO"){co_await who_reply(std::move(body));co_return;}
     if (name=="SMSG_STAND_STATE_UPDATE")
     {
         send(stand_state_update(body));

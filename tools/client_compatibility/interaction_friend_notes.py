@@ -34,11 +34,11 @@ def wire_checks(rows,note):
         'exact_native_request':native==[struct.pack('<Q',GUID)+note.encode()+b'\0']}
 
 
-def baseline(t):
+def baseline(t,observer_version=122):
     if t.fixture['guid']!=1:raise RuntimeError('requires the owned primary warrior')
     t.clean_panels();state,quest=quest_detail(t,'friend_note_original_quest')
-    if state.get('observer_version')!=122 or state.get('target',{}).get('exists'):
-        raise RuntimeError('requires observer122 and no original target')
+    if state.get('observer_version')!=observer_version or state.get('target',{}).get('exists'):
+        raise RuntimeError('requires the specified observer version and no original target')
     lab.server_command('saveall');time.sleep(1)
     rows=social();original_public=public(state.get('friends'))
     if rows!=[[1,2,1,''],[2,1,1,'']] or original_public!=[

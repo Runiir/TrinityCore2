@@ -12,6 +12,7 @@
 #include "appearance.hpp"
 #include "player_ui_state.hpp"
 #include "item_text.hpp"
+#include "who.hpp"
 
 namespace bridge
 {
@@ -66,6 +67,13 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         }
         else native_send(*request);
         return;
+    }
+    if(name=="CMSG_WHO")
+    {
+        // Like other social reads, WHO travels on the authenticated Realm
+        // socket while character authority belongs to the active instance.
+        if(!state.created || !active_world)throw std::runtime_error("Who request without owned character");
+        native_send(*who_request(state,name,body));return;
     }
     if(Protocol::bank_close(state,name,body))return;
     if(name=="CMSG_READ_ITEM" || name=="CMSG_QUERY_PAGE_TEXT")

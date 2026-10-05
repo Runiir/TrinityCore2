@@ -17,6 +17,7 @@ using Packet = std::pair<std::string, Bytes>;
 using Reply = std::optional<Packet>;
 struct ChannelState;
 struct ItemTextState;
+struct WhoState;
 struct State
 {
     Value character;
@@ -43,6 +44,7 @@ struct State
     // Channel metadata is isolated so channel-only changes retain other build caches.
     std::shared_ptr<ChannelState> channel_state;
     std::shared_ptr<ItemTextState> item_text_state;
+    std::shared_ptr<WhoState> who_state;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;
