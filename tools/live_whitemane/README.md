@@ -35,6 +35,20 @@ of current own-reader identity or fresh movement data releases input.
 The passive reader stops after 30 minutes of actual gameplay inactivity;
 telemetry messages do not reset that timer.
 
+For agent-managed capture restarts, Runiir can install the fixed command once:
+
+```sh
+sudo bash tools/live_whitemane/install_capture_permission.sh
+```
+
+The installer writes a root-owned wrapper and an argument-free sudoers rule.
+Only `51.255.74.57:8085` traffic can be captured, to stdout, without promiscuous
+mode. Tcpdump drops to Runiir after opening capture. No editable repository
+script, arbitrary tcpdump options, output path or shell receives passwordless
+sudo. The existing feed script uses the installed command with `sudo -n`.
+To revoke this permission, remove `/etc/sudoers.d/whitemane-owned-capture` and
+`/usr/local/libexec/whitemane-owned-capture` with sudo.
+
 ## Decisions and held input
 
 The archaeology and travel heads share the frozen GPU encoder with the

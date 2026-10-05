@@ -6,10 +6,16 @@ cd -- "$whitemane_repo"
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml \
     python -m tools.live_whitemane.bearing_scope
 pixi install --manifest-path tools/live_whitemane/packet/pixi.toml
-echo "Enter your sudo password here. Only the endpoint capture runs as root."
+whitemane_capture=/usr/local/libexec/whitemane-owned-capture
+if [[ -x "$whitemane_capture" ]]; then
+    whitemane_capture_command=(sudo -n -- "$whitemane_capture")
+    echo "Using the fixed endpoint capture permission; no password prompt."
+else
+    whitemane_capture_command=(sudo /usr/bin/tcpdump --immediate-mode -npi any -B 1024 -U -s 0 -w - 'host 51.255.74.57 and tcp port 8085')
+    echo "Enter your sudo password here. Only the endpoint capture runs as root."
+fi
 echo "Stops after 30 minutes without Survey, gathering, spell casts or player movement."
 echo "Raw packets stay in the pipe. Ctrl+C stops capture and clears the bearing mailbox."
-sudo /usr/bin/tcpdump \
-    --immediate-mode -npi any -B 1024 -U -s 0 -w - 'host 51.255.74.57 and tcp port 8085' | \
+"${whitemane_capture_command[@]}" | \
     pixi run --manifest-path tools/live_whitemane/packet/pixi.toml \
     python -m tools.live_whitemane.bearing_reader
