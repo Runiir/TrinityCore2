@@ -1,0 +1,18 @@
+from types import SimpleNamespace
+from . import interact,runtime
+
+
+def test_a_named_tooltip_is_not_accepted_at_the_previous_cursor_position(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    before={'farm_ui':{'sequence':7}}
+    def frame(sequence,x,y):
+        return {'farm_ui':{'sequence':sequence,'cursor':{'x':x/1280,'y':y/900},
+            'tooltip':'Night Elf Archaeology Find'}}
+    frames=iter([frame(8,620,540),frame(9,600,520)])
+    monkeypatch.setattr(interact,'observe',lambda _:next(frames))
+    monkeypatch.setattr(interact,'stationary',lambda *_:None)
+    sleeps=[]
+    monkeypatch.setattr(interact,'time',SimpleNamespace(monotonic=lambda:0,sleep=lambda n:sleeps.append(n)))
+    moves=[]
+    observed=interact.hover(SimpleNamespace(move=lambda x,y:moves.append((x,y))),(600,520),before,tmp_path)
+    assert observed['farm_ui']['sequence']==9 and moves==[(600,520)] and sleeps==[.02]

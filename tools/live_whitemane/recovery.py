@@ -43,6 +43,7 @@ RETRYABLE=(
     'minimap tooltip observation did not follow the cursor',
     'terrain falling interrupted the continuous approach',
     'no matching public tooltip in bounded interaction search',
+    'artifact tooltip observation did not follow the cursor',
 )
 
 
