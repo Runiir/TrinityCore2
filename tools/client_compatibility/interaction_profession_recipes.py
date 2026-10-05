@@ -22,7 +22,7 @@ class RecipeTrial(Trial):
 
 def stock_click(t,label,predicate,panel):
     control=target(t,label,predicate)
-    if not control.get('enabled') or control['kind']!='Button':
+    if not control.get('enabled') or control['kind'] not in ('Button','CheckButton'):
         raise RuntimeError('stock profession control is not one enabled button')
     t.io.move(*point(control));time.sleep(1)
     require(t.step(label,'Use the observed stock profession control.',
@@ -46,15 +46,36 @@ def inspect_recipes(t):
         stock_click(t,'fixture.return_to_profession_book',lambda c:c['name']=='SpellbookMicroButton','SpellBookFrame')
 
 
+def restore_source(t,source):
+    from .interaction_spellbook_navigation import detail
+    source=source.resolve()
+    if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+        raise ValueError('requires a private failed recipe episode')
+    old=json.loads(source.read_text());baseline=old.get('native_baseline')
+    if (old.get('completed') or not old.get('finished_at') or old['actor']!=t.fixture or
+        old['runtime']!=t.receipt['runtime'] or not old.get('native_resources_preserved') or
+        len(old.get('native_restoration',{}).get('checks',{}))!=10 or
+        not all(old['native_restoration']['checks'].values()) or baseline!=t.receipt['native_baseline']):
+        raise RuntimeError('failed recipe source or restored native baseline differs')
+    layout=old['book_layout_baseline'];t.receipt['restore_source']={'path':str(source),'sha256':lab.sha256(source)};t.persist()
+    stock_click(t,'fixture.verify_original_recipe_book',lambda c:c['name']=='SpellbookMicroButton','SpellBookFrame')
+    current=detail(t,'source_recipe_layout',book_type=layout['book_type'],line=layout['skill_line'],page=layout['page'])
+    checks={k:current.get(k)==layout.get(k) for k in ('book_type','skill_line','page','pages')}
+    checks['visible']=current['visible'];t.receipt['source_book_restoration']={'checks':checks};t.persist()
+    if not all(checks.values()):raise RuntimeError('original failed recipe book layout differs')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--restore-from',type=Path)
     args=parser.parse_args();out=args.output.resolve()
     if not out.is_relative_to(lab.ROOT/'evidence'):parser.error('requires a private owned evidence output')
     with actor('primary'):
         t=RecipeTrial(out,controller='code')
         try:
             if t.fixture['guid']!=1:raise RuntimeError('requires the owned trained primary warrior')
-            native_suite(t,operations=lambda t:profession_suite(t,after_tab=inspect_recipes),preserve_settings=False)
+            native_suite(t,operations=lambda t:restore_source(t,args.restore_from) if args.restore_from else
+                profession_suite(t,after_tab=inspect_recipes),preserve_settings=False)
             t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:

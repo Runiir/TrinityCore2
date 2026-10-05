@@ -70,10 +70,14 @@ def suite(t,after_tab=None):
     finally:
         try:
             if layout:
-                require(click_case(t,'spellbook.professions.restore_book','Return to the original spellbook tab.',
-                    lambda c:c['name']=='SpellBookFrameTabButton1',lambda b,a,s:{'status':'spellbook_restore_pass' if s and
-                        detail(t,'profession_restore_book',book_type=layout['book_type'])['book_type']==layout['book_type'] else 'client_or_protocol_failure'}),'spellbook_restore_pass')
-                current=detail(t,'profession_restore_category')
+                current=detail(t,'profession_restore_before')
+                if not current['visible']:raise RuntimeError('profession cleanup requires the visible owned spellbook')
+                if current['book_type']!=layout['book_type']:
+                    tab='SpellBookFrameTabButton'+('1' if layout['book_type']==layout['book_types']['spell'] else '2')
+                    require(click_case(t,'spellbook.professions.restore_book','Return to the original spellbook tab.',
+                        lambda c:c['name']==tab,lambda b,a,s:{'status':'spellbook_restore_pass' if s and
+                            detail(t,'profession_restore_book',book_type=layout['book_type'])['book_type']==layout['book_type'] else 'client_or_protocol_failure'}),'spellbook_restore_pass')
+                    current=detail(t,'profession_restore_category')
                 if current['skill_line']!=layout['skill_line']:
                     require(navigate(t,learned,'spellbook.professions.restore_line','SpellBookSkillLineTab'+str(layout['skill_line']),
                         line=layout['skill_line'],check_content=False),'spellbook_navigation_pass')
