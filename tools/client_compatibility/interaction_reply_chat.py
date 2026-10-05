@@ -6,9 +6,8 @@ from .interaction_social import actor
 from .interaction_trial import Trial,binding_key
 from .interaction_keybindings_native import suite as native_suite
 from .interaction_actionbar_pages import detail as bindings
-from .interaction_chat import packets
 from .interaction_macros import require
-from .observation.journal import entries
+from .observation.journal import entries,Cursor
 
 
 def pending(state,target,token,command=None):
@@ -47,14 +46,17 @@ class WhisperTrial(Trial):
             return []
 
 
-def delivered(t,session,since,token,event,label,expected_guid,request=False):
-    state,frame=t.observe(label,seconds=60);rows=packets(session,since,token)
+def delivered(t,session,since,token,event,label,expected_guid,request=False,packet_rows=None):
+    state,frame=t.observe(label,seconds=60);rows=[]
     visible=[r for r in state.get('chat_probes',[]) if r['text']==token and r['event']==event]
     authors=[]
-    for row in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+    for row in entries(lab.ROOT/'evidence/world_packets.jsonl') if packet_rows is None else packet_rows:
+        if row.get('session')!=session or row.get('time',0)<since:continue
+        body=bytes.fromhex(row.get('body',''))
+        if token.encode() not in body:continue
+        rows.append({k:row[k] for k in ['time','direction','name']})
         if (row.get('session')==session and row.get('time',0)>=since and row.get('direction')=='from_native' and
                 row.get('name')=='SMSG_MESSAGECHAT'):
-            body=bytes.fromhex(row['body'])
             if token.encode() in body and len(body)>=13:authors.append(int.from_bytes(body[5:13],'little'))
     checks={'native_delivery':any(r['direction']=='from_native' and r['name']=='SMSG_MESSAGECHAT' for r in rows),
         'public_message':len(visible)==1,'exact_native_chat_guid':bool(authors) and all(a==expected_guid for a in authors),
@@ -69,7 +71,7 @@ def delivered(t,session,since,token,event,label,expected_guid,request=False):
     return record
 
 
-def phase(primary,scout,seed_only=False):
+def phase(primary,scout,seed_only=False,after_seed=None):
     sessions={}
     for name,t in [('primary',primary),('scout',scout)]:
         with actor(name):
@@ -79,16 +81,31 @@ def phase(primary,scout,seed_only=False):
                 raise RuntimeError('reply cohort is not the exact owned closed-chat fixture')
             sessions[name]=actors.session_entry(t.fixture)['session']
     nonce=hashlib.sha256(str(primary.out.parent).encode()).hexdigest()[:8]
-    seed='TC442UI:reply_seed_'+nonce;reply='TC442UI:reply_'+nonce;started=time.time()
+    seed='TC442UI:reply_seed_'+nonce;reply='TC442UI:reply_'+nonce
+    cursor=None;fresh=None
+    if seed_only:
+        cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+        for row in cursor.poll():pass
+    started=time.time()
     with actor('scout'):
         scout.execute({'kind':'chat','value':'/w Harnessone '+seed})
-        delivered(scout,sessions['scout'],started,seed,'CHAT_MSG_WHISPER_INFORM','seed_sent',expected_guid=1,request=True)
+        if cursor:
+            fresh=[]
+            for row in cursor.poll():
+                if row.get('time',0)>=started and seed.encode() in bytes.fromhex(row.get('body','')):
+                    fresh.append(row)
+                    if len(fresh)>32:raise RuntimeError('owned seed packet count exceeds bound')
+        delivered(scout,sessions['scout'],started,seed,'CHAT_MSG_WHISPER_INFORM','seed_sent',expected_guid=1,
+            request=True,packet_rows=fresh)
     with actor('primary'):
-        received_seed=delivered(primary,sessions['primary'],started,seed,'CHAT_MSG_WHISPER','seed_received',expected_guid=2)
+        received_seed=delivered(primary,sessions['primary'],started,seed,'CHAT_MSG_WHISPER','seed_received',expected_guid=2,
+            packet_rows=fresh)
         if seed_only:
             primary.receipt['player_link_seed']=received_seed
             primary.receipt['cases'].append({'id':'fixture.player_link_seed','status':'owned_peer_chat_seed_pass',
-                'time':time.time(),'oracle':{'received':received_seed}});primary.persist();return
+                'time':time.time(),'oracle':{'received':received_seed}});primary.persist()
+            if after_seed:after_seed(primary,scout,received_seed)
+            return
         destination=received_seed['observed_sender']
         if not isinstance(destination,str) or destination.split('-',1)[0]!=scout.fixture['character_name']:
             raise RuntimeError('native-attributed incoming sender does not name the owned scout')
@@ -126,14 +143,14 @@ def phase(primary,scout,seed_only=False):
         'oracle':{'sent':sent,'received':received,'exact_target_guard':guard}});primary.persist()
 
 
-def run(out,seed_only=False):
+def run(out,seed_only=False,after_seed=None):
     out.mkdir(mode=0o700,parents=True,exist_ok=False);trials={};report={'completed':False,'failure':None}
     try:
         for name in ['primary','scout']:
             with actor(name):trials[name]=WhisperTrial(out/name,controller='code')
         def primary_work(t):
             with actor('scout'):
-                native_suite(trials['scout'],operations=lambda peer:phase(t,peer,seed_only),preserve_settings=False)
+                native_suite(trials['scout'],operations=lambda peer:phase(t,peer,seed_only,after_seed),preserve_settings=False)
         with actor('primary'):native_suite(trials['primary'],operations=primary_work,preserve_settings=False)
         report['completed']=True
     except Exception as error:report['failure']=f'{type(error).__name__}: {error}'

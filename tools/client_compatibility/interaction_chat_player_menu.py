@@ -74,11 +74,19 @@ def seed_source(t,source):
 
 def play(t,source,review_path,point):
     source=source.resolve();review_path=review_path.resolve();seed=seed_source(t,source)
+    t.receipt['seed_source']={'path':str(source),'sha256':lab.sha256(source)};t.persist()
+    reviewed_menu(t,seed,review_path,point,lab.sha256(source))
+
+
+def reviewed_menu(t,seed,review_path,point,source_sha256):
+    review_path=review_path.resolve()
     if not review_path.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires private owned review source')
     review=json.loads(review_path.read_text());frame=review['frame'];image=review_path.parent/frame['file']
     monitor=frame['monitor'];current=owned_input.focus()
-    if (review.get('source_sha256')!=lab.sha256(source) or review.get('point')!=point or
+    if (review.get('approved') is not True or not isinstance(point,list) or len(point)!=2 or
+        any(type(v) is not int for v in point) or not 0<=point[0]<1280 or not 0<=point[1]<720 or
+        review.get('source_sha256')!=source_sha256 or review.get('point')!=point or
         not image.is_relative_to(lab.ROOT/'evidence') or lab.sha256(image)!=frame['sha256'] or
         not monitor.get('second_monitor_verified') or monitor['pid']!=t.receipt['runtime']['client']['pid'] or
         monitor['input_isolation']['actor']!='primary' or
@@ -89,8 +97,7 @@ def play(t,source,review_path,point):
     matches=[r for r in state.get('chat_probes',[]) if r.get('event')=='CHAT_MSG_WHISPER' and
         r.get('text')==seed['token'] and r.get('sender')==seed['observed_sender']]
     if len(matches)!=1:raise RuntimeError('fresh public owned chat seed differs')
-    t.receipt.update(seed_source={'path':str(source),'sha256':lab.sha256(source)},
-        reviewed_link={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame});t.persist()
+    t.receipt['reviewed_link']={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame};t.persist()
     def outcome(b,a,s):
         rows=controls(t);state,frame=t.observe('owned_player_menu_rendered')
         t.receipt['player_menu']={'controls':rows,'state':state,'frame':frame};t.persist()
@@ -101,6 +108,22 @@ def play(t,source,review_path,point):
             {'menu':{'kind':'click','value':point,'button':3,'hold':1.2}},outcome,diagnostic_action='menu'),
             'owned_player_menu_inspected')
     finally:t.clean_panels()
+
+
+def live(t,peer,seed,review_path):
+    if (t.fixture['actor']!='primary' or t.guid!=1 or peer.guid!=2 or
+        seed['expected_native_guid']!=2 or not all(seed['checks'].values()) or
+        not t.receipt.get('native_baseline') or not peer.receipt.get('native_baseline') or review_path.exists()):
+        raise RuntimeError('owned live cohort seed differs')
+    source=t.out/'player_link_seed_source.json';lab.private_write(source,json.dumps(seed,indent=2)+'\n')
+    state,frame=t.observe('player_link_live_review')
+    t.receipt['player_link_live_review']={'frame':frame,'source_sha256':lab.sha256(source)};t.persist()
+    print(json.dumps({'review_ready':str(t.out/'episode.json'),'frame':frame['file']}),flush=True)
+    deadline=time.monotonic()+90
+    while not review_path.exists():
+        if time.monotonic()>deadline:raise RuntimeError('fresh link visual review absent; no input sent')
+        time.sleep(1)
+    review=json.loads(review_path.read_text());reviewed_menu(t,seed,review_path,review.get('point'),lab.sha256(source))
 
 
 if __name__=='__main__':
