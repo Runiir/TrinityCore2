@@ -3066,7 +3066,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_current_offline_friend_and_who_open"
     },
     {
       "id": "friends.add_friend",
@@ -3094,7 +3095,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_current_offline_friend_and_who_open"
     },
     {
       "id": "friends.note_edit",
@@ -3161,7 +3163,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_current_offline_friend_and_who_open"
     },
     {
       "id": "friends.who_search",
@@ -13823,8 +13826,45 @@
           "sha256": "a7cc6064ae8ae23255f55ee382cf57e3f9f0769a929081c1f9add6e55e397ff7"
         }
       ]
+    },
+    {
+      "id": "owned_current_offline_friend_and_who_open",
+      "operations": [
+        "friends.list",
+        "friends.offline_presence",
+        "friends.who_open"
+      ],
+      "scope": "UI103 friend_reads01 whole completed pass on owned Harnessone/build60895. Current original Harnesstwo GUID2/account2 is the sole native friend and stock named row; passive public friend count/name/empty note agree with SQL. Native character online0 agrees with public connected false and offline level0. Actual images show the grey Harnesstwo row, Unknown beneath it and name-only hover tooltip. Ordinary bottom Who tab opens the stock Who List with search field, enabled Refresh and disabled Add Friend/Group Invite. The three cases pass9/10/8 checks, and all9 native plus12 friend restoration checks pass. Original social, inventories/money, quest layout, session, group, pose and AFK restore. Code controller, model None.",
+      "limits": "One current owned offline game-character entry and list display only. No online/offline transition, BNet/account presence, server-refresh acceptance, long lists or other presence variants. Who pane opening only: no query was sent and the pre-search 0 People Found display does not qualify results. New read-only adapter syntax/diff checks pass; prior UI102 foundation suite1733 passed, with no redundant full-suite rerun. No live/test failures, build, restart or extra client. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui103/friend_reads01/episode.json",
+          "sha256": "ceb5ae4479b57ec65727277c088e52d6820ad0aa97bffe4e36946b9691c79de8",
+          "cases": {
+            "friends.list": "owned_offline_friend_read_pass",
+            "friends.offline_presence": "owned_offline_friend_read_pass",
+            "friends.who_open": "stock_who_open_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui103/whole_friend_read_review.json",
+          "sha256": "bf612456f68a7837287a496d7ab222d1dee76b35b67d1a4499c24d246b316353"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui103/verification.json",
+          "sha256": "5f4a7c5c7bb5c0b1dd36723fe437c79e482d20165eae95d9ab8ce5cd48c324c7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui103/runtime_closure.json",
+          "sha256": "261414bf060c6c30d987c308c75b28c87e146ae4cd3308c8ce4db056c1b6812f"
+        }
+      ]
     }
   ],
-  "qualified_operations": 416,
+  "qualified_operations": 419,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

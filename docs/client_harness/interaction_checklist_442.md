@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 416 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 419 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -413,17 +413,17 @@ Fixture: `owned_second_actor`.
 
 - [x] `friends.open` (qualified variant; [evidence](#panel_visibility))
 - [x] `friends.close` (qualified variant; [evidence](#panel_visibility))
-- [ ] `friends.list`
+- [x] `friends.list` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [x] `friends.add_friend` (qualified variant; [evidence](#party_invitation))
 - [ ] `friends.online_presence`
-- [ ] `friends.offline_presence`
+- [x] `friends.offline_presence` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [x] `friends.note_edit` (qualified variant; [evidence](#owned_offline_friend_note))
 - [ ] `friends.note_persist`
 - [x] `friends.remove_friend` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [x] `friends.add_ignore` (qualified variant; [evidence](#owned_offline_dwarf_ignore))
 - [ ] `friends.ignored_chat`
 - [x] `friends.remove_ignore` (qualified variant; [evidence](#owned_offline_dwarf_ignore))
-- [ ] `friends.who_open`
+- [x] `friends.who_open` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [ ] `friends.who_search`
 - [ ] `friends.whisper`
 - [x] `friends.self_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
@@ -2869,3 +2869,15 @@ Remaining limits: Owned offline dwarf addition/removal only. Ignored chat, onlin
 - [442_interactions_20261006_102.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc), member `evidence/client_interactions_20261006_ui102/ignore_probe_review.json`, SHA-256 `59286ec1751d3150b696f635ba9dffb6d7892dc8bbfa9aa682f778c640a06b70`.
 - [442_interactions_20261006_102.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc), member `evidence/client_interactions_20261006_ui102/verification.json`, SHA-256 `8f5b1d58f8484b5ce968fac6c7851738219ad6191e32606f88da6a3cd3a64f57`.
 - [442_interactions_20261006_102.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_102.tar.gz.dvc), member `evidence/client_interactions_20261006_ui102/runtime_closure.json`, SHA-256 `a7cc6064ae8ae23255f55ee382cf57e3f9f0769a929081c1f9add6e55e397ff7`.
+
+### owned_current_offline_friend_and_who_open
+
+UI103 friend_reads01 whole completed pass on owned Harnessone/build60895. Current original Harnesstwo GUID2/account2 is the sole native friend and stock named row; passive public friend count/name/empty note agree with SQL. Native character online0 agrees with public connected false and offline level0. Actual images show the grey Harnesstwo row, Unknown beneath it and name-only hover tooltip. Ordinary bottom Who tab opens the stock Who List with search field, enabled Refresh and disabled Add Friend/Group Invite. The three cases pass9/10/8 checks, and all9 native plus12 friend restoration checks pass. Original social, inventories/money, quest layout, session, group, pose and AFK restore. Code controller, model None.
+
+Remaining limits: One current owned offline game-character entry and list display only. No online/offline transition, BNet/account presence, server-refresh acceptance, long lists or other presence variants. Who pane opening only: no query was sent and the pre-search 0 People Found display does not qualify results. New read-only adapter syntax/diff checks pass; prior UI102 foundation suite1733 passed, with no redundant full-suite rerun. No live/test failures, build, restart or extra client. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/friend_reads01/episode.json`, SHA-256 `ceb5ae4479b57ec65727277c088e52d6820ad0aa97bffe4e36946b9691c79de8`.
+  Checked cases: `friends.list` (owned_offline_friend_read_pass), `friends.offline_presence` (owned_offline_friend_read_pass), `friends.who_open` (stock_who_open_pass).
+- [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/whole_friend_read_review.json`, SHA-256 `bf612456f68a7837287a496d7ab222d1dee76b35b67d1a4499c24d246b316353`.
+- [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/verification.json`, SHA-256 `5f4a7c5c7bb5c0b1dd36723fe437c79e482d20165eae95d9ab8ce5cd48c324c7`.
+- [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/runtime_closure.json`, SHA-256 `261414bf060c6c30d987c308c75b28c87e146ae4cd3308c8ce4db056c1b6812f`.
