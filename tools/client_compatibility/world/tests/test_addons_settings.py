@@ -79,3 +79,27 @@ for name in pairs(names) do
 end
 '''
     subprocess.run(['lua','-',str(source)],input=script,text=True,capture_output=True,check=True,timeout=3)
+
+
+def test_post_click_listener_records_delivery_without_invoking_or_replacing_a_handler():
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/AddOnsObservation.lua'
+    script=r'''
+local callback,installs,checked=nil,0,true
+UnitName=function() return 'Harnessone' end
+AddonListEntry2Enabled=setmetatable({
+ HookScript=function(self,kind,fn) assert(kind=='OnClick');installs=installs+1;callback=fn end,
+ GetName=function() return 'AddonListEntry2Enabled' end,
+ GetChecked=function() return checked end,
+}, {__index=function(_,key) error('observer attempted a setter or handler '..key) end})
+C_AddOns={GetAddOnEnableState=function(name,char) assert(name=='Client442Compatibility' and char=='0');return 2 end}
+dofile(arg[1]);Client442ObserveAddOns();Client442ObserveAddOns()
+local probe=Client442ObserveAddOnClicks();assert(installs==1 and #probe.events==0 and probe.hook_installed)
+assert(checked==true) -- installing observations did not click or toggle anything
+checked=false -- an ordinary player event, simulated by this test
+for i=1,11 do callback(AddonListEntry2Enabled,'LeftButton',false) end
+probe=Client442ObserveAddOnClicks();assert(#probe.events==8 and probe.events[1].serial==4)
+assert(probe.events[8].serial==11 and probe.events[8].checked==false and probe.events[8].enable_all==2)
+assert(probe.events[8].button=='LeftButton' and probe.events[8].down_known and probe.events[8].down==false)
+assert(checked==false)
+'''
+    subprocess.run(['lua','-',str(source)],input=script,text=True,capture_output=True,check=True,timeout=3)

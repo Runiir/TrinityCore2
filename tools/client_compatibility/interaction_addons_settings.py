@@ -79,20 +79,33 @@ def row_matches(row,check,caption):
 
 
 def select(t,original,wanted,label):
-    caption=original['rows'][COMPAT]['title'];check=checkbox(t,label+'_target',caption,not wanted)
-    button=target(t,label+'_row_target',lambda c:row_matches(c,check,caption))
+    caption=original['rows'][COMPAT]['title'];button=checkbox(t,label+'_target',caption,not wanted)
+    if (button.get('addon_onclick') is not True or button.get('addon_mouse_enabled') is not True or
+        button.get('addon_mouse_click_enabled') is not True):
+        raise RuntimeError('stock AddOns checkbox has no enabled ordinary mouse-click path')
     t.io.move(*point(button));time.sleep(1)
+    hovered=target(t,label+'_mouse_guard',lambda c:c.get('name')==button['name'] and
+        c.get('context')==caption and c.get('addon_mouse_over') is True)
+    detail(t,label+'_click_baseline')
+    baseline=t.receipt['addons_details'][label+'_click_baseline']['state'].get('addon_click_probe',{})
+    if baseline.get('hook_installed') is not True:raise RuntimeError('read-only checkbox click listener is absent')
+    prior=max((c['serial'] for c in baseline.get('events') or []),default=0)
     def outcome(b,a,s):
-        rendered=checkbox(t,label+'_checked',caption,wanted);after=detail(t,label+'_public')
+        # Preserve delivery evidence even if the rendered selection never settles.
+        after=detail(t,label+'_public');rendered=checkbox(t,label+'_checked',caption,wanted)
         checks=pending_checks(after,original)
-        checks.update(ordinary_row=s=='click' and row_matches(button,check,caption),rendered_selection=rendered['checked'] is wanted,
+        click_probe=t.receipt['addons_details'][label+'_public']['state'].get('addon_click_probe',{})
+        events=[c for c in click_probe.get('events') or [] if c['serial']>prior]
+        checks.update(ordinary_checkbox=s=='click',mouse_over_before_input=hovered['addon_mouse_over'] is True,
+            click_delivered=bool(events) and all(c.get('name')==button['name'] and c.get('button')=='LeftButton' for c in events),
+            rendered_selection=rendered['checked'] is wanted,
             ui_clean=not a.get('lua_errors') and not a.get('blocked_actions'))
         state,frame=t.observe(label+'_rendered')
         return {'status':'addons_pending_selection_pass' if all(checks.values()) else 'client_or_protocol_failure',
-            'oracle':{'checks':checks,'public':after,'checkbox':rendered,'row':button,'state':state,'frame':frame,
+            'oracle':{'checks':checks,'public':after,'checkbox':rendered,'click_events':events,'state':state,'frame':frame,
                 'public_enable_changed':{k:after.get('rows',{}).get(COMPAT,{}).get(k)!=original['rows'][COMPAT][k]
                     for k in ('enable_all','enable_character')}}}
-    require(t.step(label,'Change only the observed compatibility-addon selection through its stock row button.',
+    require(t.step(label,'Change only the observed compatibility-addon checkbox after its ordinary mouse path is verified.',
         {'click':{'kind':'click','value':point(button),'hold':1.2}},outcome,diagnostic_action='click'),
         'addons_pending_selection_pass')
 
@@ -167,7 +180,7 @@ def main():
         t=SettingsTrial(a.output,controller='code')
         try:
             state,_=t.observe('addons_observer_guard')
-            if state.get('observer_version',0)<112:raise RuntimeError('requires read-only AddOns observer112')
+            if state.get('observer_version',0)<113:raise RuntimeError('requires read-only AddOns observer113')
             native_suite(t,operations=suite,preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)

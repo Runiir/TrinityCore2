@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=112,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=113,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -178,7 +178,9 @@ local function snapshot(viewMode,viewPage)
         data.actionbar_probe.targeting=targetingProbe();return data
     end
     if mode=='settings' then data.settings_probe=Client442ObserveSettings();return data end
-    if mode=='addons' then data.addons_probe=Client442ObserveAddOns();return data end
+    if mode=='addons' then
+        data.addons_probe=Client442ObserveAddOns();data.addon_click_probe=Client442ObserveAddOnClicks();return data
+    end
     if mode=='bindings' then data.page=page;data.rows=bindings((page-1)*12+1,12);return data end
     local profile=call(GetActiveRaidProfile)
     data.raid_profile={name=profile,count=call(GetNumRaidProfiles),locked=profile and call(GetRaidProfileOption,profile,'locked'),
@@ -218,6 +220,9 @@ local function snapshot(viewMode,viewPage)
                     control.addon_onclick=type(call(f.GetScript,f,'OnClick'))=='function'
                     control.addon_onmousedown=type(call(f.GetScript,f,'OnMouseDown'))=='function'
                     control.addon_onmouseup=type(call(f.GetScript,f,'OnMouseUp'))=='function'
+                    control.addon_mouse_enabled=call(f.IsMouseEnabled,f)
+                    control.addon_mouse_click_enabled=call(f.IsMouseClickEnabled,f)
+                    control.addon_mouse_over=call(MouseIsOver,f)
                 end
                 if ReportFrame and ReportFrame:IsVisible() then
                     local action=f==ReportFrame.CloseButton and 'close' or f==ReportFrame.ReportButton and 'submit'
