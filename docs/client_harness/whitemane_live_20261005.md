@@ -150,3 +150,16 @@ selection; seven had verified tooltip labels and one was still unidentified.
 The controller refuses casting a different destination or an unidentified
 spell. This establishes supervised UI execution, not independent perception
 or a complete travel/farm loop.
+
+Batch 03 is checkpointed through DVCLive and
+`artifacts/client_harness/whitemane_live_20261005_batch03.tar.gz.dvc`.
+It contains the rejected calculated-ascent trial, the partial user demonstration,
+and the supervised teleport, with 15 UI decisions, 11 executed hovers, two
+executed clicks and one verified Tol Barad arrival. The user's three finds
+are tracked separately from Laya's zero confirmed finds in the dig trial.
+DVC push completed and cloud status confirmed this batch was in sync. The
+archive, its exact cache object and closed screenshots were then pruned after
+hash verification; the arrival screen and user icon remain locally reviewable.
+Restore the batch with `pixi run dvc pull` targeting its pointer. The broader
+repository's DVC status still reports pre-existing changed dependencies and
+absent/offloaded outputs; this batch's targeted status passed before pruning.
