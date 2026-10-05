@@ -43,11 +43,13 @@ def layout_checks(current,original):
 
 
 def restore_layout(t,layout,prefix):
-    search(t,layout.get('search') or '',prefix+'_search')
     current=detail(t,prefix+'_before')
+    if current.get('search')!=layout.get('search'):
+        search(t,layout.get('search') or '',prefix+'_search')
+        current=detail(t,prefix+'_search_restored')
     if current.get('category')!=layout.get('category'):
-        name=layout['category']['name']
-        control=target(t,prefix+'_category',lambda c:c['text']==name or c['text'].startswith(name+'|T'))
+        name=layout['category']['name'];caption=name[:60];plain=name.split('|T',1)[0]
+        control=target(t,prefix+'_category',lambda c:c['text']==caption or c['text'].startswith(plain+'|T'))
         click_control(t,prefix+'_category',control,lambda a:
             detail(t,prefix+'_category_restored')['category']==layout['category'],'settings_category_restored')
     current=detail(t,prefix+'_restored');checks=layout_checks(current,layout)

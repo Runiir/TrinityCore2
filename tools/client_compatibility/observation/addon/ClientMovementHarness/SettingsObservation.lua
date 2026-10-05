@@ -10,11 +10,17 @@ function Client442ObserveSettings()
     local result={visible=panel and panel:IsVisible() or false,
         category=category and {name=call(category.GetName,category),id=call(category.GetID,category)},
         search=search and call(search.GetText,search),
-        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={}}
+        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},interact_keys={}}
+    if type(GetBindingKey)=='function' then
+        local ok,a,b=pcall(GetBindingKey,'INTERACTTARGET')
+        if ok then result.interact_keys={a,b} end
+    end
+    result.move_pad_visible=MovePadFrame and MovePadFrame:IsVisible() or false
     for _,name in ipairs({'autoLootDefault','lockActionBars','Sound_EnableAllSound','Sound_MasterVolume',
         'Sound_MusicVolume','Sound_SFXVolume','Sound_EnableMusic','cameraTerrainTilt','cameraBobbing',
         'enableMouseSpeed','mouseSpeed','PROXY_MOUSE_LOOK_SPEED','cameraYawMoveSpeed','cameraPitchMoveSpeed',
         'colorblindMode','colorblindSimulator',
+        'enableMovePad','PROXY_ENABLE_INTERACT','softTargetInteract','softTargettingInteractKeySound','interactOnLeftClick',
         'showTutorials','nameplateShowEnemies','enableFloatingCombatText','alwaysShowActionBars',
         'PROXY_SHOW_ACTIONBAR_2','PROXY_SHOW_ACTIONBAR_3','PROXY_SHOW_ACTIONBAR_4','PROXY_SHOW_ACTIONBAR_5'}) do
         result.cvars[name]=call(GetCVar,name)
