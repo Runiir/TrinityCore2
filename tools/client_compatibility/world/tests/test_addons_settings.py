@@ -3,7 +3,8 @@ import copy
 import subprocess
 from pathlib import Path
 import pytest
-from tools.client_compatibility.interaction_addons_settings import COMPAT,HARNESS,pending_checks,valid_row,row_matches
+from tools.client_compatibility.interaction_addons_settings import COMPAT,HARNESS,pending_checks,valid_row,row_matches,AddonsTrial,cadence_ready
+from tools.client_compatibility.interaction_trial import Trial
 
 
 def original():
@@ -39,6 +40,19 @@ def test_pending_checkbox_cannot_accept_unrelated_state_changes(change):
 def test_enable_preference_requires_an_exact_supported_integer(flag):
     row=original()['rows'][COMPAT];row['enable_all']=flag
     assert not valid_row(row,COMPAT)
+
+
+@pytest.mark.parametrize('fps,accepted',[(15,True),(10,True),(9.9,False),(None,False),(True,False),('15',False),(float('nan'),False),(float('inf'),False)])
+def test_short_addons_click_requires_measured_frame_cadence(fps,accepted):
+    assert cadence_ready({'framerate':fps}) is accepted
+
+
+def test_only_the_guarded_addons_selection_uses_a_short_pulse(monkeypatch):
+    monkeypatch.setattr(Trial,'step',lambda self,case,goal,actions,oracle,**kw:actions)
+    t=AddonsTrial.__new__(AddonsTrial);actions={'click':{'kind':'click','value':[430,205],'hold':1.2}}
+    assert t.step('settings.addons.pending_off','goal',actions,None)['click']['hold']==.2
+    assert t.step('fixture.restore_addons_selection','goal',actions,None)['click']['hold']==.2
+    assert t.step('settings.addons.open','goal',actions,None)['click']['hold']==1.2
 
 
 @pytest.mark.parametrize('change',[None,'name','kind','caption','disabled','no_handler','foreign_checkbox'])

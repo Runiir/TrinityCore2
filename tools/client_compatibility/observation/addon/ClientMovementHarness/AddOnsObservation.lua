@@ -38,6 +38,7 @@ local function watchClicks()
             clickSerial=clickSerial+1
             clickEvents[#clickEvents+1]={serial=clickSerial,name=self:GetName(),button=mouseButton,
                 down_known=type(down)=='boolean',down=down,checked=call(self.GetChecked,self),
+                shift=call(IsShiftKeyDown),control=call(IsControlKeyDown),alt=call(IsAltKeyDown),
                 enable_all=call(C_AddOns and C_AddOns.GetAddOnEnableState,'Client442Compatibility','0')}
             if #clickEvents>8 then table.remove(clickEvents,1) end
         end)

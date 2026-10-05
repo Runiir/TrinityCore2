@@ -1,5 +1,5 @@
 """Select the owned compatibility addon off, cancel, and verify its restoration."""
-import argparse,json,time,re
+import argparse,json,time,re,math
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
@@ -9,9 +9,23 @@ from .interaction_control_target import target
 from .interaction_observation import read_current_page,read_page
 from .interaction_macros import require
 from .interaction_keybindings_native import suite as native_suite
+from .interaction_trial import Trial
 
 COMPAT='Client442Compatibility'
 HARNESS='ClientMovementHarness'
+
+
+class AddonsTrial(SettingsTrial):
+    def step(self,case_id,goal,actions,oracle,**kwargs):
+        if case_id.startswith(('settings.addons.pending_','fixture.restore_addons_selection')):
+            actions={k:{**v,'hold':.2} if v['kind']=='click' else v for k,v in actions.items()}
+            return Trial.step(self,case_id,goal,actions,oracle,**kwargs)
+        return super().step(case_id,goal,actions,oracle,**kwargs)
+
+
+def cadence_ready(state):
+    fps=state.get('framerate')
+    return type(fps) in (int,float) and math.isfinite(fps) and 10<=fps<=240
 
 
 def valid_row(row,name):
@@ -90,6 +104,10 @@ def select(t,original,wanted,label):
     baseline=t.receipt['addons_details'][label+'_click_baseline']['state'].get('addon_click_probe',{})
     if baseline.get('hook_installed') is not True:raise RuntimeError('read-only checkbox click listener is absent')
     prior=max((c['serial'] for c in baseline.get('events') or []),default=0)
+    state,frame=t.observe(label+'_cadence_guard')
+    t.receipt.setdefault('addons_click_cadence_guards',[]).append({'label':label,'frame':frame,
+        'framerate':state.get('framerate'),'hold':.2,'input_replayed':False});t.persist()
+    if not cadence_ready(state):raise RuntimeError('200ms AddOns click requires a freshly observed rate of at least10FPS')
     def outcome(b,a,s):
         # Preserve delivery evidence even if the rendered selection never settles.
         after=detail(t,label+'_public');rendered=checkbox(t,label+'_checked',caption,wanted)
@@ -177,7 +195,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
-        t=SettingsTrial(a.output,controller='code')
+        t=AddonsTrial(a.output,controller='code')
         try:
             state,_=t.observe('addons_observer_guard')
             if state.get('observer_version',0)<114:raise RuntimeError('requires read-only AddOns observer114')
