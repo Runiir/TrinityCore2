@@ -10,7 +10,7 @@ from .interaction_operations import controls
 from .interaction_keybindings_native import suite as native_suite
 
 TERMS=('Mouse','Colorblind','Move Pad','Interact Key','Graphics','Render Scale',
-    'View Distance','Ground Clutter','Resolution','Window Mode','Monitor')
+    'View Distance','Ground Clutter','Resolution','Window Mode','Display Mode','Monitor')
 
 
 def inspect(t,terms):
