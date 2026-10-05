@@ -7,6 +7,7 @@ from .interaction_observation import read_page
 from .interaction_operations import command,controls,point
 from .interaction_control_target import target,click,edit
 from .interaction_macros import require
+from . import lab_runtime as lab
 
 
 def detail(t,label):
@@ -111,9 +112,29 @@ def close_owned(t,index,label):
     require(option(t,label,'Close Window',outcome),'stock_chat_close_pass')
 
 
-def mutate(t):
-    before=detail(t,'chat_mutation_original');existing={r['id']:r for r in before['windows'] if r.get('name')}
-    if before['selected']!=1 or before['windows'][0]['name']!='General' or any(r['name'] in NAMES for r in before['windows']):
+def mutate(t,closed_source=None):
+    before=detail(t,'chat_mutation_original');closed_ids=set()
+    if closed_source:
+        source=closed_source.resolve()
+        if not source.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json':
+            raise ValueError('require the exact owned closed-window failure receipt')
+        old=json.loads(source.read_text())
+        if (old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime'] or not old.get('finished_at') or
+                old['completed'] or old['failure']!='RuntimeError: fresh target control was not observed: chat.font_size' or
+                not all(old['native_restoration']['checks'].values()) or
+                not all(old['chat_mutation_restoration']['checks'].values()) or
+                json.loads(json.dumps(t.receipt['native_baseline']))!=old['native_baseline']):
+            raise RuntimeError('closed source or original native fixture differs')
+        index=old['owned_chat_window']['id']
+        expected=next(r for r in old['chat_mutation_restoration']['closed_slot_metadata'] if r['id']==index)
+        current=next(r for r in before['windows'] if r['id']==index)
+        if current!=expected or current['name'] not in NAMES or any(current[k] for k in ['shown','frame_visible','tab_visible']):
+            raise RuntimeError('exact source-attributed closed slot metadata differs')
+        closed_ids.add(index);t.receipt['prior_closed_chat_source']={'file':str(source),'sha256':lab.sha256(source),
+            'closed_slot':current,'native_fixture_unchanged':True};t.persist()
+    existing={r['id']:r for r in before['windows'] if r.get('name') and r['id'] not in closed_ids}
+    if before['selected']!=1 or before['windows'][0]['name']!='General' or any(r['name'] in NAMES and
+            r['id'] not in closed_ids for r in before['windows']):
         raise RuntimeError('requires the original selected General tab and absent disposable names')
     t.receipt['chat_mutation_baseline']=before;t.persist();owned=None;created=None
     fields=['id','name','font_size','color','alpha','shown','locked','docked','uninteractable',
@@ -155,8 +176,10 @@ def mutate(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--mutate',action='store_true');p.add_argument('--font-recon',action='store_true');a=p.parse_args()
+    p.add_argument('--mutate',action='store_true');p.add_argument('--font-recon',action='store_true')
+    p.add_argument('--closed-source',type=Path);a=p.parse_args()
+    if a.closed_source and not a.mutate:p.error('closed source applies only to a fresh mutation trial')
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=mutate if a.mutate else font_recon if a.font_recon else recon,preserve_settings=False);t.receipt['completed']=True
+    try:native_suite(t,operations=(lambda t:mutate(t,a.closed_source)) if a.mutate else font_recon if a.font_recon else recon,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
