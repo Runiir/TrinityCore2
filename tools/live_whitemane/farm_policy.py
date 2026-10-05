@@ -2,12 +2,17 @@
 import math
 import json
 from pathlib import Path
-from . import laya_ui,pending_find,dig_decisions
+from . import laya_ui,pending_find,dig_decisions,world_facts
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
 def distance(a,b):
     return math.inf if not a or not b or a['instance']!=b['instance'] else math.hypot(a['north']-b['north'],a['west']-b['west'])
+
+
+def teleport_button(ui):
+    return next((b for b in ui.get('actionbars',[]) if b.get('enabled',True) and
+        (b.get('kind')=='spell' and b.get('id')==5000028 or b.get('label')=='Teleport')),None)
 
 
 def legal_actions(row,batches,dig_guide=None):
@@ -32,8 +37,8 @@ def legal_actions(row,batches,dig_guide=None):
             if r['cost']>0 and r['fragments']>=required and (r['fragments']>=150 or r['index'] in batches.active_races):
                 actions[f"solve_{r['index']}"]=(f"Solve race {r['index']} using maximum accepted keystones",{'race':r['index']})
     if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
-    if any(b.get('label')=='Teleport' and b.get('enabled',True) for b in ui.get('actionbars',[])):
-        actions['teleport']=('Open Teleport and choose Tol Barad',None)
+    if m['map_id']!=245 and teleport_button(ui):
+        actions['teleport']=('Use the Tol Barad teleport button',None)
     if ui.get('taxi') and route.get('exit'):
         current=route.get('current_taxi');node=next((n for n in ui['taxi'] if n['id']==current),None)
         if node:actions['taxi']=('Take the route taxi',({'id':current,'name':node['label'],'point':a['world']},route['exit']))
@@ -71,7 +76,10 @@ def choose(row,batches,session):
     previous=session.get('steps',[])
     stalled=sum(step.get('started_at',0)>=session.get('last_progress_at',math.inf)
         for step in previous)
+    observed=world_facts.reduce(row,row.get('pending_find'))
     state={'goal':'Find a Canopic Jar; leave it unopened',
+        'activity':observed['activity'],'map_id':m['map_id'],
+        'portal_distance_yards':observed['facts']['portal_distance_yards'],
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'casting':a['casting'],'falling':a['falling'],
         'at_digsite':a['can_survey'],'Survey_ready':(ui.get('survey') or {}).get('ready'),
@@ -85,7 +93,8 @@ def choose(row,batches,session):
         'consecutive_actions_without_progress':stalled,
         'pickup':pending_find.facts(row,row.get('pending_find')),
         'guide_error':guide_error,
-        'route':route.get('kind'),'via_Tol_Barad_requested':session['via_tolbarad'],
+        'route':route.get('kind'),'route_instruction':route.get('instruction'),
+        'via_Tol_Barad_requested':session['via_tolbarad'],
         'fragments':[{k:r[k] for k in ('index','fragments','cost','sockets','keystones_in_bags')} for r in a['races'] if r['cost']],
         'last_failure':[{ 'failure':r['failure'][:120],'choice':r['choice']} for r in session.get('recoveries',[])[-1:]]}
     action,request,response=laya_ui.choose(state,

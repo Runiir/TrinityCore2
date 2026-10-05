@@ -10,7 +10,7 @@ from . import runtime
 
 MIB=2**20
 DEFAULTS={'soft_disk_mib':64,'hard_disk_mib':256,'minimum_free_disk_mib':2048,
-    'controller_rss_mib':512,'reader_rss_mib':128,'model_rss_mib':3072,
+    'controller_rss_mib':512,'reader_rss_mib':128,'observer_rss_mib':128,'model_rss_mib':3072,
     'model_vram_mib':3584,'minimum_free_host_memory_mib':1024,
     'poll_seconds':5,'loop_history':16,'dig_history':40,'movement_history':40,
     'action_log_mib':1}
@@ -55,11 +55,12 @@ def tree_bytes(root):
 def snapshot(values):
     result={'at':time.time(),'hot_bytes':tree_bytes(runtime.ROOT),
         'free_disk_bytes':shutil.disk_usage(runtime.ROOT).free,'controller_rss_mib':rss(os.getpid())}
-    for name,file in [('reader','bearing_reader.json'),('model','model_service.json')]:
+    for name,file in [('reader','bearing_reader.json'),('model','model_service.json'),('observer','state_observer.json')]:
         path=runtime.ROOT/'run'/file
         if not path.exists():continue
         process=json.loads(path.read_text())
         if name=='reader' and process.get('status')!='ready':continue
+        if name=='observer' and process.get('status')!='running':continue
         try:
             if runtime.proc_start(process['pid'])!=process['start_ticks']:
                 raise ResourceLimit(name+' process identity changed')
@@ -73,7 +74,7 @@ def snapshot(values):
     for line in Path('/proc/meminfo').read_text().splitlines():
         if line.startswith('MemAvailable:'):result['free_host_memory_mib']=int(line.split()[1])/1024
     failures=[]
-    for field in ('controller_rss_mib','reader_rss_mib','model_rss_mib','model_vram_mib'):
+    for field in ('controller_rss_mib','reader_rss_mib','observer_rss_mib','model_rss_mib','model_vram_mib'):
         if result.get(field,0)>values[field]:failures.append(f'{field}={result[field]:.1f} exceeds {values[field]}')
     if result['hot_bytes']>=values['hard_disk_mib']*MIB:failures.append('owned hot data reached the disk limit')
     if result['free_disk_bytes']<values['minimum_free_disk_mib']*MIB:failures.append('free disk is below the reserve')

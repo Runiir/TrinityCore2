@@ -56,7 +56,7 @@ def retryable(error):
 def run(folder,row,step,session,graph):
     folder.mkdir(exist_ok=False)
     pending=pending_find.load(row)
-    current=json.loads(graph.read_text())['current']
+    state=json.loads(graph.read_text());current=state.get('last_action_node',state['current'])
     if current=='gather':farm_graph.transition(graph,'verify_pickup',row,pending=pending,outcome='pickup_unconfirmed')
     farm_graph.transition(graph,'observe',row,pending=pending,outcome='recover_local_action_failure')
     a=row['archaeology'];m=row['movement']

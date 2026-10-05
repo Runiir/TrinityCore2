@@ -30,7 +30,10 @@ def click_choice(folder, before, collection, goal, expected=None):
     if before.get('minimap_finds'):
         state['minimap_live_finds']=[f['name'] for f in before['minimap_finds'].get('confirmed') or []]
         state['minimap_checked']=before['minimap_finds']['clear']
-    choice,request,response=laya_ui.choose(state,'Select the visible button matching the goal. Otherwise wait.',candidates)
+    if len(candidates)==1:
+        choice,request,response='wait',{}, {'only_legal_action':'wait','visible_controls':0}
+    else:
+        choice,request,response=laya_ui.choose(state,'Select the visible button matching the goal. Otherwise wait.',candidates)
     record={'before':before,'choice':choice,'request':request,'response':response,'executed':False}
     runtime.write(folder/'decision.json',record)
     if choice=='wait':return record

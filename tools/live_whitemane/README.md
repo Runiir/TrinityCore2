@@ -189,7 +189,17 @@ a discovered find keeps the pickup activity available after site replacement.
 New Survey, solve and onward travel choices resume after fragment gain or an
 increased pickup counter confirms collection. A tooltip scan miss returns to
 Laya with the uncollected find and recent failure intact. The graph records
-the current combat, artifact and readiness facts with each transition.
+the current combat, artifact and readiness facts. The independent observation
+service refreshes them every 200 ms while the owned client is present, even
+while Laya is idle or the action controller is stopped. It reads local tiles
+and sends no game input or server messages. `run/world_state.json` is the
+current observed state; stale telemetry sets its validity to false.
+The graph's `current` field is the activity derived from those facts.
+`last_action_node` separately records the last attempted action. An action
+never establishes its intended result. Manual movement and teleports update
+the observed state without appending an action event.
+The direct Tol Barad action-bar spell is reported alongside the older Teleport
+flyout. Laya can choose the direct button once; map facts confirm arrival.
 When a current public tooltip identifies an artifact under the cursor, Laya
 can choose `mouseover_interact`. This presses the user's Mouse Button 5 binding
 without repositioning, then checks the ordinary gathering and range feedback.
@@ -207,6 +217,8 @@ Closed phases are checkpointed at action boundaries once hot data reaches
 2 GiB free disk. A failed upload preserves the unsynced files and stops the
 farm. Only unchanged files listed in the verified archive manifest are pruned;
 shared DVC objects and other threads' services are not collected.
+The independent state observer has a 128 MiB RSS limit and reuses two local
+JSON snapshots. It does not accumulate screenshots or observation history.
 
 Hot histories retain 16 farm phases, 40 dig decisions and 40 movement decisions.
 Step indices remain monotonic after pruning. Full movement decisions stream to

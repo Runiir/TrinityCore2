@@ -2,8 +2,10 @@
 import hashlib
 import json
 import time
+import fcntl
+import os
 from . import runtime
-from . import pending_find
+from . import pending_find,world_facts
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 CONFIG=runtime.REPO/'experiments/configs/client_harness/whitemane_farm_graph_v1.json'
@@ -23,38 +25,55 @@ def guard(node,row,pending):
         raise RuntimeError('graph jar completion requires the item in bags')
 
 
+def refresh(path,row,*,latch=None):
+    """An observation changes current state without an action or event."""
+    with path.with_suffix('.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        state=json.loads(path.read_text())
+        if state['runtime']!=row['runtime']:raise RuntimeError('farm graph belongs to another client')
+        state.setdefault('last_action_node',state['current'])
+        state.update(world_facts.reduce(row,latch));state['current']=state['activity']
+        state['action_dependency']=False
+        save(path,state)
+    return state
+
+
+def save(path,state):
+    temp=path.with_name(path.name+f'.{os.getpid()}.tmp')
+    runtime.write(temp,state);temp.replace(path)
+
+
 def transition(path,action,row,*,pending=None,outcome=None,target=None):
+    with path.with_suffix('.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        return record(path,action,row,pending=pending,outcome=outcome,target=target)
+
+
+def record(path,action,row,*,pending=None,outcome=None,target=None):
     node=NODES.get(action,action);config=json.loads(CONFIG.read_text())
     state=json.loads(path.read_text()) if path.exists() else {'schema':config['schema'],
         'current':config['initial'],'runtime':row['runtime'],'events':[],
         'config_sha256':hashlib.sha256(CONFIG.read_bytes()).hexdigest()}
     if state['runtime']!=row['runtime']:raise RuntimeError('farm graph belongs to another client')
     if state['config_sha256']!=hashlib.sha256(CONFIG.read_bytes()).hexdigest():raise RuntimeError('active graph configuration changed')
-    resumed_combat=node==state['current']=='combat'
-    if state['current'] in ('jar_found','recipe_found') or node not in config['edges']:
-        raise RuntimeError('unsupported farm transition '+state['current']+' -> '+node)
+    previous=state.get('last_action_node',state['current'])
+    resumed_combat=node==previous=='combat'
+    if previous in ('jar_found','recipe_found') or node not in config['edges']:
+        raise RuntimeError('unsupported farm transition '+previous+' -> '+node)
     guard(node,row,pending)
     state['role']='record Laya decisions and observed outcomes'
-    state['pickup_facts']=pending_find.facts(row,pending)
-    state['activity']='combat' if row['movement']['in_combat'] else 'pickup' if state['pickup_facts']['uncollected'] else 'dig' if row['archaeology']['can_survey'] else 'travel'
+    state.update(world_facts.reduce(row,pending))
     state.pop('transition_facts',None)
-    state['facts']={key:row['archaeology'].get(key) for key in ('mounted','flying','falling','casting','loot_open')}
-    state['facts'].update(combat=row['movement']['in_combat'],
-        artifact_uncollected=state['pickup_facts']['uncollected'],
-        artifact_named=state['pickup_facts']['named_target'],
-        survey_ready=((row.get('farm_ui') or {}).get('survey') or {}).get('ready'))
-    state['transition_conditions']={'onward_travel':not state['facts']['artifact_uncollected'],
-        'survey':state['facts']['survey_ready'] is True and not state['facts']['artifact_uncollected'],
-        'combat':state['facts']['combat']}
-    if node=='combat':state.setdefault('interrupted_state',state['current'])
-    elif node=='observe' and row['movement'].get('in_combat') and state['current']!='combat':
-        state['interrupted_state']=state['current']
+    if node=='combat':state.setdefault('interrupted_state',previous)
+    elif node=='observe' and row['movement'].get('in_combat') and previous!='combat':
+        state['interrupted_state']=previous
     if target is not None:state['travel_destination']=target
-    event={'at':time.time(),'from':state['current'],'to':node,'pending_pickup':bool(pending),
+    event={'at':time.time(),'from':previous,'to':node,'pending_pickup':bool(pending),
         'facts':state['facts'],'condition_results':state['transition_conditions'],'outcome':outcome}
     if resumed_combat:event['resumed_after_repair']=True
-    if state['current']=='combat' and node=='observe' and not row['movement'].get('in_combat'):
+    if previous=='combat' and node=='observe' and not row['movement'].get('in_combat'):
         event['resume_state']=state.pop('interrupted_state',None)
-    state['events']=(state['events']+[event])[-40:];state['current']=node
-    runtime.write(path,state)
+    state['events']=(state['events']+[event])[-40:];state['last_action_node']=node
+    state['current']=state['activity'];state['action_dependency']=False
+    save(path,state)
     return event

@@ -44,6 +44,9 @@ local function actionbars()
             if kind=="flyout" then
                 local label=call(GetFlyoutInfo,id)
                 append(rows,control(frame,label,{kind=kind,id=id,slot=slot}))
+            elseif kind=="spell" and id==5000028 then
+                local label=call(C_Spell and C_Spell.GetSpellName or GetSpellInfo,id)
+                append(rows,control(frame,label,{kind=kind,id=id,slot=slot}))
             end
         end
     end

@@ -22,7 +22,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
     graph=Path(step['graph_path']) if step.get('graph_path') else None
     if graph:
         import json
-        current=json.loads(graph.read_text())['current']
+        state=json.loads(graph.read_text());current=state.get('last_action_node',state['current'])
         if current!='flight':farm_graph.transition(graph,'flight',row,pending=pending_find.load(row),target=target)
     def key(name,hold):
         return inputs.execute('World of Warcraft','key',{'key':name,'hold':hold})

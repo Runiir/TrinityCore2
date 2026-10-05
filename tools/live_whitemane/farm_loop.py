@@ -52,22 +52,28 @@ def phase(row,batches,via_tolbarad=False,pending=None):
 
 
 def teleport(folder,row):
-    opened=click_choice(folder/'open',row,['actionbars'],'Open Teleport',{'label':'Teleport'})
-    if not opened['executed']:raise RuntimeError('Laya waited before opening Teleport')
-    row=opened['after']
-    for i in range(10):
-        if row['farm_ui']['flyout']:break
-        time.sleep(.3);row=observe(folder/'flyout.png')
-    chosen=click_choice(folder/'destination',row,['flyout'],'Teleport to Tol Barad',{'label':'Tol Barad'})
-    if not chosen['executed']:raise RuntimeError('Laya waited before Tol Barad teleport')
+    def arrived(row):
+        return row['movement']['map_id']==245 and not row['archaeology']['casting']
+    if arrived(row):return {'after':row,'completed':True,'already_at_destination':True}
+    button=farm_policy.teleport_button(row['farm_ui'])
+    if not button:raise RuntimeError('public Tol Barad teleport button is unavailable')
+    expected={k:button[k] for k in ('kind','id','label') if k in button}
+    opened=click_choice(folder/'open',row,['actionbars'],'Teleport to Tol Barad',expected)
+    if not opened['executed']:raise RuntimeError('Laya waited before Tol Barad teleport')
+    row=opened['after'];direct=button.get('kind')=='spell' and button.get('id')==5000028
+    chosen=None
     for i in range(40):
+        if arrived(row):return {'opened':opened,'chosen':chosen,'after':row,'completed':True}
+        if not direct and chosen is None and row['farm_ui'].get('flyout'):
+            chosen=click_choice(folder/'destination',row,['flyout'],'Teleport to Tol Barad',{'label':'Tol Barad'})
+            if not chosen['executed']:raise RuntimeError('Laya waited before Tol Barad teleport')
+            row=chosen['after'];continue
         time.sleep(.3)
         try:row=observe(folder/'arrival.png')
         except RuntimeError as error:
-            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
+            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable',
+                    'local public tiles unavailable')):continue
             raise
-        if row['movement']['map_id']==245 and not row['archaeology']['casting']:
-            return {'opened':opened,'chosen':chosen,'after':row,'completed':True}
     raise RuntimeError('Tol Barad teleport did not confirm destination')
 
 
@@ -88,6 +94,8 @@ def run(output,stop_on='recipe'):
     session.update(status='running',failure=None,stop_on=stop_on)
     session['selection_mode']='Laya current state and legal actions'
     graph=output/'graph.json'
+    from .observed_state import ensure
+    ensure(graph)
     with (runtime.ROOT/'run/farm_loop.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         try:
