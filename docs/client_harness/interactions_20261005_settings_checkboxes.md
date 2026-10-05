@@ -1,0 +1,15 @@
+# UI colorblind and mouse-enable checkboxes
+
+The owned primary client passes stock UI Colorblind Mode and Mouse Sensitivity enable checkbox roundtrips. Each public CVar changes from 0 to 1 and back to 0; its Settings boolean and settled rendered checkbox agree. Original observed settings, search/category, native resources and all ten native fixture checks restore. These two scoped contracts bring coverage to 389 of 916 operations, with 527 open.
+
+The colorblind filter stays None. The numeric mouse-speed CVar stays `0.0`, while the stock slider displays `-4`. This qualifies the enable checkbox only. Numeric speed mapping, adjustment and effective pointer cadence remain open, as do Mouse Look Speed, colorblind filter variants and persistence. The early colorblind after-click frame still shows an unchecked box; the later getter-ready frame shows the checked state and is used for visual acceptance. Both settled restored frames are reviewed.
+
+The long Enable UI Colorblind Mode search also returns other Enable controls. Its Item Quality preview row overlaps the following Controls header. That preview layout remains unqualified. The broader Colorblind-only reconnaissance has a clean isolated preview; neither observation establishes a preview rendering contract.
+
+Read-only observer 107 adds getters for the actual mouse and colorblind variables. Its primary-only reload preserves the session, pose and AFK state. The next whole trial's native baseline also matches the saved UI87 resources, stats, spells, action bars, pose, AFK and position. The scout stays parked at character selection. No client, decision model or server is started.
+
+A separate search-only inspection finds Show Move Pad (`enableMovePad`) and Enable Interact Key (`PROXY_ENABLE_INTERACT`). It restores all five settings-layout and ten native checks, but qualifies neither operation. Observer 108 and the next adapter are committed for those tests; the primary remains on installed observer 107 at UI88 closure. The adapter checks the rendered pad and saved Interact Target binding rather than accepting a visible settings panel alone. Lua syntax checks pass. The UI88 protocol suite passes 1,238 tests; the next adapter's focused checks pass 29 tests.
+
+Evidence is in the [UI88 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), archive 263,862,357 bytes, SHA-256 `23a7699ab0ece80976f1a3dcda496927cdbd74a5b58a8450b4a0cc43782fbbb5`. Remote review verifies 12 JSON receipts and 169 attributed images. Important members under `evidence/client_interactions_20261005_ui88/` are `colorblind_mouse_enable01/episode.json`, `checkboxes_whole_review.json`, `observer107_primary01/deployment.json` and `interface_keyboard_recon01/episode.json`.
+
+The DVC/DVCLive checkpoint uses an isolated copy of committed source and preserves unrelated work in the shared checkout. Both existing owned windows remain on HDMI-1, the native worldserver identity is unchanged, and observed memory pressure remains low.

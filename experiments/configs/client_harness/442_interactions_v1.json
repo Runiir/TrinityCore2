@@ -5773,7 +5773,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_mouse_sensitivity_enable_roundtrip"
     },
     {
       "id": "settings.keyboard_controls",
@@ -5791,7 +5792,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_ui_colorblind_checkbox_roundtrip"
     },
     {
       "id": "settings.camera",
@@ -13222,8 +13224,56 @@
           "sha256": "31934ab868034fcdc3304c69b89e45b75346a69aaed6fd65e6229bd73a41f54f"
         }
       ]
+    },
+    {
+      "id": "owned_ui_colorblind_checkbox_roundtrip",
+      "operations": [
+        "settings.accessibility"
+      ],
+      "scope": "Owned primary observer107: stock Enable UI Colorblind Mode checkbox0->1->0. Public CVar, Settings boolean and settled rendered checkbox agree; original observed settings/layout and ten native checks restore.",
+      "limits": "UI checkbox only. Colorblind filter staysNone. Other accessibility controls, preview rendering/layout, filter variants and persistence remain open. The long Enable UI Colorblind Mode search visually overlaps Item Quality with a following Controls header; no preview-layout acceptance is claimed.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui88/colorblind_mouse_enable01/episode.json",
+          "sha256": "dbee4252760a17396e1602d4190505801287615e133d7c267b90b1af5e05d2c7",
+          "cases": {
+            "settings.accessibility.change": "stock_boolean_setting_pass",
+            "settings.accessibility.restore": "stock_boolean_setting_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui88/checkboxes_whole_review.json",
+          "sha256": "fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5"
+        }
+      ]
+    },
+    {
+      "id": "owned_mouse_sensitivity_enable_roundtrip",
+      "operations": [
+        "settings.mouse_sensitivity"
+      ],
+      "scope": "Owned primary observer107: stock Enable Mouse Sensitivity checkbox0->1->0. Public CVar, Settings boolean and settled rendered checkbox agree; original observed settings/layout and ten native checks restore.",
+      "limits": "Enable flag only. Numeric mouseSpeed stays0.0 while the stock display reads-4. Numeric mapping/adjustment, effective pointer cadence, Mouse Look Speed, other ranges and persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui88/colorblind_mouse_enable01/episode.json",
+          "sha256": "dbee4252760a17396e1602d4190505801287615e133d7c267b90b1af5e05d2c7",
+          "cases": {
+            "settings.mouse_sensitivity.change": "stock_boolean_setting_pass",
+            "settings.mouse_sensitivity.restore": "stock_boolean_setting_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui88/checkboxes_whole_review.json",
+          "sha256": "fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5"
+        }
+      ]
     }
   ],
-  "qualified_operations": 387,
+  "qualified_operations": 389,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

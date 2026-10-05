@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 387 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 389 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -763,9 +763,9 @@ Fixture: `saved_local_settings`.
 - [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
 - [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [ ] `settings.interface`
-- [ ] `settings.mouse_sensitivity`
+- [x] `settings.mouse_sensitivity` (qualified variant; [evidence](#owned_mouse_sensitivity_enable_roundtrip))
 - [ ] `settings.keyboard_controls`
-- [ ] `settings.accessibility`
+- [x] `settings.accessibility` (qualified variant; [evidence](#owned_ui_colorblind_checkbox_roundtrip))
 - [x] `settings.camera` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.nameplates` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.floating_combat_text` (qualified variant; [evidence](#stock_interface_boolean_settings))
@@ -2665,3 +2665,23 @@ Remaining limits: Master Volume arrows at the saved upper endpoint only. Other a
 - [442_interactions_20261005_87.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc), member `evidence/client_interactions_20261005_ui87/master_volume_exercise02/episode.json`, SHA-256 `576b22c8c1bcab84fa6d6603dfffc89bba844c69bec2ef712d1c60f2bf8e7564`.
   Checked cases: `settings.sound_volume.decrease` (stock_numeric_setting_pass), `settings.sound_volume.restore.1` (stock_numeric_setting_pass).
 - [442_interactions_20261005_87.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_87.tar.gz.dvc), member `evidence/client_interactions_20261005_ui87/volume_whole_review.json`, SHA-256 `31934ab868034fcdc3304c69b89e45b75346a69aaed6fd65e6229bd73a41f54f`.
+
+### owned_ui_colorblind_checkbox_roundtrip
+
+Owned primary observer107: stock Enable UI Colorblind Mode checkbox0->1->0. Public CVar, Settings boolean and settled rendered checkbox agree; original observed settings/layout and ten native checks restore.
+
+Remaining limits: UI checkbox only. Colorblind filter staysNone. Other accessibility controls, preview rendering/layout, filter variants and persistence remain open. The long Enable UI Colorblind Mode search visually overlaps Item Quality with a following Controls header; no preview-layout acceptance is claimed.
+
+- [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/colorblind_mouse_enable01/episode.json`, SHA-256 `dbee4252760a17396e1602d4190505801287615e133d7c267b90b1af5e05d2c7`.
+  Checked cases: `settings.accessibility.change` (stock_boolean_setting_pass), `settings.accessibility.restore` (stock_boolean_setting_pass).
+- [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/checkboxes_whole_review.json`, SHA-256 `fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5`.
+
+### owned_mouse_sensitivity_enable_roundtrip
+
+Owned primary observer107: stock Enable Mouse Sensitivity checkbox0->1->0. Public CVar, Settings boolean and settled rendered checkbox agree; original observed settings/layout and ten native checks restore.
+
+Remaining limits: Enable flag only. Numeric mouseSpeed stays0.0 while the stock display reads-4. Numeric mapping/adjustment, effective pointer cadence, Mouse Look Speed, other ranges and persistence remain open.
+
+- [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/colorblind_mouse_enable01/episode.json`, SHA-256 `dbee4252760a17396e1602d4190505801287615e133d7c267b90b1af5e05d2c7`.
+  Checked cases: `settings.mouse_sensitivity.change` (stock_boolean_setting_pass), `settings.mouse_sensitivity.restore` (stock_boolean_setting_pass).
+- [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/checkboxes_whole_review.json`, SHA-256 `fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5`.
