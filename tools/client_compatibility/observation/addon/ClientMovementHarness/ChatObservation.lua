@@ -12,6 +12,20 @@ function Client442ObserveChatEdit()
 end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
+    result.languages={available=false,rows={}}
+    local count=read(GetNumLanguages)
+    if type(count)=='number' and count>=0 and count<=16 and count%1==0 then
+        result.languages.available=true
+        for index=1,count do
+            local name,id=read(GetLanguageByIndex,index)
+            if type(name)~='string' or type(id)~='number' then
+                result.languages.available=false;result.languages.error='unsupported public language tuple';break
+            end
+            result.languages.rows[#result.languages.rows+1]={name=name:sub(1,80),id=id}
+        end
+    end
+    local edit=DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox or ChatFrame1EditBox
+    result.languages.selected_id=edit and tonumber(edit.languageID) or nil
     if type(Client442ObserveChannelList)=='function' then result.channel_list=Client442ObserveChannelList() end
     result.channels={available=false,rows={}}
     if type(GetChannelList)=='function' then

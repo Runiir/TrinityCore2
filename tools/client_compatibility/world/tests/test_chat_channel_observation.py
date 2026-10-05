@@ -51,3 +51,25 @@ assert(not d.chat_edit_open and not d.chat_edit_focused and d.chat_edit_text==''
 '''
     subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,
         text=True,capture_output=True,check=True)
+
+
+def test_public_languages_observe_choices_and_selected_without_setters():
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/ChatObservation.lua'
+    script=r'''
+NUM_CHAT_WINDOWS=0
+dofile(SOURCE)
+assert(not Client442ObserveChatWindows().languages.available)
+function GetNumLanguages()return 2 end
+function GetLanguageByIndex(i)if i==1 then return 'Common',7 else return 'Orcish',1 end end
+DEFAULT_CHAT_FRAME={editBox={languageID=7}}
+local d=Client442ObserveChatWindows().languages
+assert(d.available and #d.rows==2 and d.rows[2].name=='Orcish' and d.rows[2].id==1 and d.selected_id==7)
+function GetLanguageByIndex()error('unavailable') end
+assert(not Client442ObserveChatWindows().languages.available)
+function GetNumLanguages()return 17 end
+assert(not Client442ObserveChatWindows().languages.available)
+function GetNumLanguages()return 0 end
+assert(Client442ObserveChatWindows().languages.available)
+'''
+    subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,
+        text=True,capture_output=True,check=True)
