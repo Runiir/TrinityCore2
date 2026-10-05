@@ -41,7 +41,7 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
         return []
     monkeypatch.setattr(flight,'walk',walk)
     monkeypatch.setattr(flight,'descend',lambda *args,**kwargs:[])
-    monkeypatch.setattr(flight.clearance,'plan',lambda *args:{'ceiling_yards':100})
+    monkeypatch.setattr(flight.clearance,'plan',lambda *args,**kwargs:{'ceiling_yards':100})
     ascents=[]
     def ascend(*args,**kwargs):
         ascents.append(args[1])

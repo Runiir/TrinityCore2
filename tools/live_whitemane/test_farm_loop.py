@@ -1,0 +1,104 @@
+import copy
+import json
+import struct
+from types import SimpleNamespace
+import pytest
+from tools.live_whitemane import farm_ui, farm_loop, interact, farm_actions
+from tools.live_whitemane.dig_policy import SolveBatches
+from tools.client_compatibility.observation.telemetry import checksum
+
+
+def packet(value):
+    payload=json.dumps(value).encode();body=b'TCU3'+struct.pack('>HI',len(payload),7)+payload
+    return body+checksum(body).to_bytes(2,'big')
+
+
+def row():
+    return {'runtime':{'pid':1},'movement':{'in_world':True,'position_available':True,'health_percent':100,
+        'in_combat':False,'dead':False,'on_taxi':False,'map_id':1454,'speed':0},
+        'archaeology':{'mounted':False,'flying':False,'casting':False,'recipe_items_in_bags':0,
+        'canopic_jars_in_bags':0,'can_survey':False,'world':{'instance':1,'north':0,'west':0},
+        'races':[{'index':7,'fragments':149,'cost':45,'sockets':2,'keystones_in_bags':0,'project_spell':91769}]},
+        'farm_ui':{'recipe_known':False,'route':{'kind':'shortcut'},
+            'soft_interact':{'enabled':'3','exists':False,'name':'Portal to Orgrimmar'},
+            'bindings':{'INTERACTTARGET':['9']}}}
+
+
+def test_public_ui_checksum_capacity_and_non_objects():
+    assert farm_ui.decode(packet({'text':'x'*12000}))['sequence']==7
+    corrupted=bytearray(packet({'foo':2}));corrupted[11]^=1
+    with pytest.raises(ValueError,match='checksum'):farm_ui.decode(corrupted)
+    with pytest.raises(ValueError,match='invalid farm UI'):farm_ui.decode(packet([]))
+    with pytest.raises(ValueError,match='capacity'):farm_ui.decode(packet({'observer_error':'capacity'}))
+
+
+def test_final_pending_loot_precedes_travel_and_solving():
+    r=row();r['farm_ui']['route']['kind']='pending_loot';r['archaeology']['races'][0]['fragments']=160
+    assert farm_loop.phase(r,SolveBatches(),True)==('dig',None)
+
+
+def test_solve_threshold_and_active_batch_are_kept_across_loop_steps():
+    r=row();b=SolveBatches()
+    assert farm_loop.phase(r,b)[0]=='teleport'
+    r['archaeology']['races'][0]['fragments']=150
+    assert farm_loop.phase(r,b)[0]=='solve'
+    r['archaeology']['races'][0]['fragments']=50
+    assert farm_loop.phase(r,b)[0]=='solve'
+    r['archaeology']['races'][0]['fragments']=20
+    assert farm_loop.phase(r,b)[0]=='teleport'
+
+
+def test_existing_digsite_is_finished_before_next_travel_and_recipe_stops_input():
+    r=row();r['archaeology']['can_survey']=True
+    assert farm_loop.phase(r,SolveBatches(),True)[0]=='dig'
+    r['archaeology']['recipe_items_in_bags']=1;r['archaeology']['canopic_jars_in_bags']=1
+    assert farm_loop.phase(r,SolveBatches(),True)[0]=='recipe'
+    r['farm_ui']=None
+    assert farm_loop.phase(r,SolveBatches(),True)[0]=='wait'
+
+
+def test_named_game_object_soft_target_can_use_interact_without_unit_exists(monkeypatch,tmp_path):
+    r=row();monkeypatch.setattr(interact,'observe',lambda _:copy.deepcopy(r))
+    monkeypatch.setattr(interact,'stationary',lambda *_:None)
+    calls=[];monkeypatch.setattr(interact.inputs,'execute',lambda *args:calls.append(args) or {'completed':True})
+    result=interact.use(tmp_path/'use',r,{'Portal to Orgrimmar'})
+    assert result['name']=='Portal to Orgrimmar'
+    assert calls==[('World of Warcraft','key',{'key':'9','hold':.15})]
+
+
+def test_wrong_ui_destination_is_rejected_before_any_input(monkeypatch,tmp_path):
+    r=row();r['farm_ui']['buttons']=[{'label':'Wrong destination','enabled':True,'x':.5,'y':.5}]
+    monkeypatch.setattr(farm_actions.laya_ui,'choose',lambda *_:('button_0',{},{}))
+    monkeypatch.setattr(farm_actions.inputs,'execute',lambda *_:pytest.fail('must not send wrong destination'))
+    with pytest.raises(RuntimeError,match='inconsistent'):
+        farm_actions.click_choice(tmp_path/'choice',r,['buttons'],'Tol Barad',{'label':'Tol Barad'})
+
+
+def test_observer_panels_do_not_overlap_at_the_live_scale():
+    # Normal addon anchors are scaled by 1.17 in this owned client. The UI
+    # packet's complete maximum-height rectangle must clear both bit panels.
+    archaeology=(16,76,16+288,76+129)
+    ui=(340,16,340+128*3,16+((16384+12+383)//384)*3)
+    assert ui[0]>=archaeology[2]
+
+
+def test_open_taxi_map_remains_a_taxi_phase_when_route_origin_is_omitted():
+    r=row();r['farm_ui']['route'].update(kind='site',current_taxi=23,
+        exit={'id':79,'point':{'instance':1,'north':-7548,'west':-1541}},
+        site={'point':{'instance':1,'north':-7815,'west':-692}})
+    r['farm_ui']['taxi']=[{'id':23,'label':'Orgrimmar, Durotar'},{'id':79,'label':"Marshal's Stand"}]
+    selected,target=farm_loop.phase(r,SolveBatches())
+    assert selected=='taxi' and target[0]['id']==23 and target[1]['id']==79
+
+
+def test_large_rgb_packet_requires_checksum_valid_scale_calibration():
+    from PIL import Image,ImageDraw
+    encoded=packet({'text':'abcdefghijklm'*850});cell=3.515625;x=398;y=17.5
+    encoded+=b'\0'*(-len(encoded)%3)
+    image=Image.new('RGB',(1280,900));draw=ImageDraw.Draw(image)
+    for i in range(len(encoded)//3):
+        left,top=x+(i%128)*cell,y+(i//128)*cell
+        draw.rectangle((int(left),int(top),int(left+cell)-1,int(top+cell)-1),fill=tuple(encoded[i*3:i*3+3]))
+    value,calibration=farm_ui.recalibrate(image,{'x':398.245,'y':17.245,'cell':3.51})
+    assert value['text']=='abcdefghijklm'*850
+    assert farm_ui.decode_image(image,**calibration)['text']==value['text']

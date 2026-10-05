@@ -16,6 +16,8 @@ from . import guide as routes
 from .smooth_move import walk
 from .motion import turn_duration
 from .boundaries import constrain
+from . import interact
+from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 
@@ -81,8 +83,12 @@ def run(args):
             before=observe(folder/'before.png')
             if not healthy(before): raise RuntimeError('character unavailable for this walking trial')
             a,m=before['archaeology'],before['movement']
+            auto_loot=getattr(args,'auto_loot',False)
+            ui=before.get('farm_ui') or {}
+            visible_find=(ui.get('soft_interact',{}).get('name') in FIND_NAMES or
+                          ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             session.setdefault('site_id',a['site_id'])
-            if not args.loot_at and (not a['can_survey'] or a['site_id'] != session['site_id']):
+            if not args.loot_at and not visible_find and (not a['can_survey'] or a['site_id'] != session['site_id']):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
                 break
             tool=telescope(before,session)
@@ -96,8 +102,8 @@ def run(args):
                     time.sleep(.5)
                     before=observe(folder/f'arrow_wait_{attempt:02d}.png')
                 a,m=before['archaeology'],before['movement']
-            guide,error=routes.select(before,session,tool)
-            guide=constrain(before,guide)
+            guide,error=routes.select(before,session,tool) if not visible_find else (None,None)
+            guide=constrain(before,guide) if guide else None
             if args.loot_at:
                 inputs.execute('World of Warcraft','hover',dict(zip(('x','y'),args.loot_at)))
                 hovered=observe(folder/'loot_hover.png')
@@ -105,7 +111,7 @@ def run(args):
                 names=('Troll Archaeology Find','Fossil Archaeology Find','Night Elf Archaeology Find',"Tol'vir Archaeology Find")
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
-            state=routes.model_state(before,guide,bool(args.loot_at))
+            state=routes.model_state(before,guide,bool(args.loot_at) or visible_find)
             action,model,request,result=choose(state)
             guidance=guide['source'] if guide else 'awaiting Survey'
             step={'index':index,'started_at':time.time(),'before':before,'state':state,
@@ -155,8 +161,12 @@ def run(args):
                 if guide['source']=='Survey telescope' and guide['color']=='green':
                     session.pop('telescope_target',None)
             elif action=='loot':
-                x,y=args.loot_at
-                step['inputs']=[inputs.execute('World of Warcraft','click',{'x':x,'y':y,'button':3})]
+                if auto_loot:
+                    step['interaction']=interact.use(folder/'interaction',fresh,set(FIND_NAMES))
+                    step['inputs']=[]
+                else:
+                    x,y=args.loot_at
+                    step['inputs']=[inputs.execute('World of Warcraft','click',{'x':x,'y':y,'button':3})]
                 time.sleep(3)
                 session['walked_since_survey']=True
             else:
@@ -173,7 +183,7 @@ def run(args):
                 raise RuntimeError('Mouse Button 4 did not produce a successful Survey')
             if action=='survey':
                 fresh_tool=telescope(after,session)
-                if not fresh_tool:session['stop_reason']='survey_without_telescope_review_visible_find'
+                if not fresh_tool and not auto_loot:session['stop_reason']='survey_without_telescope_review_visible_find'
                 routes.marker_survey_outcome(session,guide,fresh_tool,not fresh_tool)
             if action=='loot':
                 if not found: raise RuntimeError('right click did not confirm fragment pickup')
@@ -208,6 +218,7 @@ def main():
     parser.add_argument('--walk-hold',type=float,default=.35)
     parser.add_argument('--loot-at',type=int,nargs=2)
     parser.add_argument('--continuous',action='store_true')
+    parser.add_argument('--auto-loot',action='store_true')
     args=parser.parse_args()
     if not 1<=args.steps<=15 or not .1<=args.walk_hold<=1.25:
         parser.error('bounded steps or walking duration exceeded')

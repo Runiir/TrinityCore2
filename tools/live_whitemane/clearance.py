@@ -4,14 +4,14 @@ import statistics
 from tools.client_compatibility import terrain_geometry, model_collision
 
 
-def plan(row, target):
+def plan(row, target, *, maximum_distance=750):
     pose=row.get('owned_pose')
     if not pose:raise RuntimeError('calculated ascent requires authenticated owned height telemetry')
     world=row['archaeology']['world'];map_id=world['instance']
     start=[world['north'],world['west'],pose['height_yards']]
     end=[target['north'],target['west'],start[2]]
     distance=math.dist(start[:2],end[:2])
-    if distance>750:raise RuntimeError('flight clearance route exceeds the digsite range')
+    if distance>maximum_distance:raise RuntimeError('flight clearance route exceeds its bounded route range')
     surface=model_collision.supporting_surface(map_id,start)
     # Legacy geometry is a reference, never an authoritative live terrain API.
     if row['archaeology']['grounded']:

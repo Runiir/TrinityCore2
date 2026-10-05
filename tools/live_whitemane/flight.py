@@ -26,9 +26,10 @@ def fly(folder, row, arrow, step):
         if not world or world['instance']!=target['instance']:
             raise RuntimeError('flight observation or world instance changed')
         remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
-        if remaining>750: raise RuntimeError('addon line endpoint exceeds local digsite range')
+        maximum_distance=750 if arrow.get('site_id') else 1500
+        if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
         if remaining>6 and height_plan is None:
-            height_plan=clearance.plan(row,target)
+            height_plan=clearance.plan(row,target,maximum_distance=maximum_distance)
             step['height_plan']=height_plan
         if height_plan:
             pose=row.get('owned_pose')

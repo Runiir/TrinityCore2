@@ -8,6 +8,7 @@ from tools.client_compatibility.observation.telemetry import decode_image
 from . import runtime
 from .snapshot import decode_image as archaeology_image
 from . import own_pose
+from . import farm_ui
 
 
 def observe(output):
@@ -27,10 +28,28 @@ def observe(output):
                 archaeology = archaeology_image(frame, x=calibration.get('archaeology_x', calibration['x']),
                     y=calibration.get('archaeology_y', 89.4),
                     cell_size=calibration.get('archaeology_cell_size', calibration['cell_size'] * .75))
+                ui,ui_error = None,None
+                try:
+                    if calibration.get('farm_ui'):
+                        try:ui = farm_ui.decode_image(frame, **calibration['farm_ui'])
+                        except ValueError as error:
+                            if str(error)=='farm UI marker is absent':
+                                ui,position=farm_ui.locate(frame,calibration.get('archaeology_cell_size',3.51))
+                            elif str(error)=='farm UI checksum mismatch':
+                                ui,position=farm_ui.recalibrate(frame,calibration['farm_ui'])
+                            else:raise
+                            if position:
+                                calibration['farm_ui']=position;runtime.write(calibration_file,calibration)
+                    else:
+                        ui, position = farm_ui.locate(frame,calibration.get('archaeology_cell_size',3.51))
+                        if position:
+                            calibration['farm_ui']=position
+                            runtime.write(calibration_file,calibration)
+                except ValueError as error:ui_error=str(error)
             row = {'observed_at': started, 'runtime': owner, 'movement': state,
                    'frame': str(output), 'server': 'Whitemane live realm',
                    'source': 'normal_public_addon_api_rendered_pixels', 'calibration': calibration,
-                   'archaeology': archaeology}
+                   'archaeology': archaeology, 'farm_ui': ui,'farm_ui_error':ui_error}
             pose_file=runtime.ROOT/'run/movement_pose.json'
             row['owned_pose']=None
             if pose_file.exists():
@@ -52,6 +71,16 @@ def observe(output):
             errors.append(str(error))
             time.sleep(.25)
     raise RuntimeError('live public observer is unavailable: ' + '; '.join(errors))
+
+
+def setup_movement(output):
+    """Read only the independent movement panel when repairing addon layout."""
+    output=Path(output);runtime.screenshot(output)
+    calibration=json.loads((runtime.ROOT/'run/observer_calibration.json').read_text())
+    with Image.open(output) as image:
+        movement=decode_image(image,**{k:calibration[k] for k in ('x','y','cell_size')})
+    return {'runtime':runtime.owned_process(),'movement':movement,'frame':str(output),
+            'setup_only':True,'source':'public_addon_movement_pixels'}
 
 
 def main():

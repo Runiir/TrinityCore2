@@ -14,7 +14,7 @@ class GroundContact(RuntimeError):
         self.observation = row
 
 
-def walk(folder,target,*,flying=False,site_id=None):
+def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     ctl._launcher_env=runtime.client_environment
@@ -31,7 +31,7 @@ def walk(folder,target,*,flying=False,site_id=None):
                 sender._send(sender.X.KeyRelease,code);held.remove(name)
         try:
             stalled=0;previous=None
-            for index in range(60):
+            for index in range(120 if flying and site_id is None else 60):
                 row=observe(folder/f'approach_{index:02d}.png')
                 m,a=row['movement'],row['archaeology']; world=a['world']
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
@@ -48,9 +48,9 @@ def walk(folder,target,*,flying=False,site_id=None):
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
                 receipts.append({'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,
                                  'altitude_yards':a.get('altitude_yards'),'grounded':a.get('grounded')})
-                tolerance=6 if flying else 4
+                tolerance=(6 if flying else 4) if tolerance is None else tolerance
                 if distance<=tolerance: break
-                if distance>750: raise RuntimeError('waypoint exceeds a local digsite route')
+                if distance>(1500 if flying and site_id is None else 750): raise RuntimeError('waypoint exceeds its bounded route range')
                 if previous is not None and 'Up' in held:
                     stalled=stalled+1 if distance>=previous-.15 else 0
                     if stalled>=5: raise RuntimeError('waypoint movement is blocked')
@@ -146,9 +146,12 @@ def ascend(folder, ceiling, *, site_id=None):
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         code,_=sender._keycode(sender.XK.string_to_keysym('space'))
         held=False;rows=[];started=time.time();last_height=None;stalled=0
+        observation_seconds=[]
         try:
             for index in range(40):
+                observation_started=time.monotonic()
                 row=observe(folder/f'ascent_{time.time_ns()}.png')
+                observation_seconds.append(time.monotonic()-observation_started)
                 m,a=row['movement'],row['archaeology'];pose=row.get('owned_pose')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                         or m['in_combat'] or m['on_taxi'] or m['health_percent']<90 or a['casting']
@@ -164,10 +167,18 @@ def ascend(folder, ceiling, *, site_id=None):
                 # measured velocity predicts the remaining telemetry delay.
                 if a['flying'] and gap<=.5:
                     return rows
-                if held and a['flying'] and seconds is not None and seconds<=pose['age_seconds']:
-                    sender._send(sender.X.KeyRelease,code);held=False
-                    time.sleep(.15)
-                    continue
+                if held and a['flying'] and seconds is not None:
+                    # A screenshot takes longer than the last few yards of a
+                    # climb. Release at the predicted arrival before starting
+                    # another expensive snapshot, then verify actual height.
+                    remaining=max(0,seconds-pose['age_seconds'])
+                    cycle=max(observation_seconds[-3:])+.1
+                    if remaining<=cycle:
+                        rows[-1]['calculated_final_hold_seconds']=remaining
+                        if remaining:time.sleep(remaining)
+                        sender._send(sender.X.KeyRelease,code);held=False
+                        time.sleep(.15)
+                        continue
                 if held and last_height is not None:
                     stalled=stalled+1 if pose['height_yards']<=last_height+.1 else 0
                     if stalled>=6:raise RuntimeError('calculated ascent made no height progress')

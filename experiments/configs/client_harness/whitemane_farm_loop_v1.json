@@ -1,0 +1,16 @@
+{
+  "schema": "whitemane_live_laya_farm_loop_v1",
+  "realm": "Whitemane live",
+  "character": "Runiir",
+  "goal_item": 67538,
+  "travel": ["Teleport: Tol Barad", "Portal to Orgrimmar", "addon route transport", "digsite"],
+  "solve_start_fragments": 150,
+  "continue_solving_while_affordable": true,
+  "use_maximum_accepted_keystones": true,
+  "inactivity_seconds": 1800,
+  "fixed_session_limit": null,
+  "survey_mouse_button": 8,
+  "guidance": ["visible GatherMate markers", "latched Survey telescope after failed markers"],
+  "gameplay_action_owner": "Laya",
+  "codex_manual_gameplay_fallback": false
+}
