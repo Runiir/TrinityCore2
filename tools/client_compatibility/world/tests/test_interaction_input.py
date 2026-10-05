@@ -157,8 +157,10 @@ def test_diagnostic_observes_complete_prefix_before_submission_from_any_mode(mon
 
 
 @pytest.mark.parametrize('expired,text',[(False,'/tcui state'),(True,'/tcui state'),(True,'/quit')])
-def test_diagnostic_waits_for_close_and_retries_only_exact_pending_text(monkeypatch,expired,text):
+@pytest.mark.parametrize('hold',[.4,1.2])
+def test_diagnostic_waits_for_close_and_retries_only_exact_pending_text(monkeypatch,expired,text,hold):
     trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};trial.persist=lambda:None
+    trial.chat_key_hold=hold
     events=[]
     from types import SimpleNamespace
     trial.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),

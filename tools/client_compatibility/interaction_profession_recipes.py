@@ -12,6 +12,9 @@ from .interaction_keybindings_native import suite as native_suite
 
 
 class RecipeTrial(Trial):
+    def __init__(self,out,controller='code'):
+        super().__init__(out,controller=controller,chat_key_hold=1.2)
+
     def execute(self,action):
         if action['kind']=='drag':
             self.io.drag(action['start'],action['end'],duration=action.get('duration',1.5));return

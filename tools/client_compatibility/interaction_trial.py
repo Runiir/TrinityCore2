@@ -91,8 +91,10 @@ def choose(goal,state,actions,seed):
 
 
 class Trial:
-    def __init__(self,out,controller='code'):
+    def __init__(self,out,controller='code',chat_key_hold=.4):
         if controller not in ['laya','code']:raise ValueError('unknown interaction controller')
+        if not .05<=chat_key_hold<=2:raise ValueError('ordinary chat key hold exceeds its bounded duration')
+        self.chat_key_hold=chat_key_hold
         self.controller=controller
         self.combat_observation_deadline=None
         self.out=out;out.mkdir(parents=True,exist_ok=False,mode=0o700)
@@ -102,6 +104,7 @@ class Trial:
             'observer_file_sha256':lab.sha256(lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness/ClientInteractions.lua'),
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
             'controller':'laya_candidate_selection' if controller=='laya' else 'code_diagnostic_ordinary_inputs',
+            'ordinary_chat_key_hold':chat_key_hold,
             'model':MODEL if controller=='laya' else None,'revision':REVISION if controller=='laya' else None,'fine_tuned':False,
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
             'cases':[],'cleanup':[],'completed':False,'failure':None}
@@ -176,6 +179,8 @@ class Trial:
 
     def submit_chat(self,value,*,any_mode=False):
         """Submit exact observed text; diagnostics may start on any public page."""
+        hold=getattr(self,'chat_key_hold',.4)
+        if not .05<=hold<=2:raise ValueError('ordinary chat key hold exceeds its bounded duration')
         def observe(label):
             return self.observe(label,mode=None) if any_mode else self.observe(label)
         with owned_input.lease():
@@ -186,7 +191,7 @@ class Trial:
                 self.persist()
                 if 'chat_edit_open' not in before or before['chat_edit_open']:
                     raise RuntimeError('diagnostic requires a closed observed chat edit before Return')
-            self.io.key('Return',hold=.4);time.sleep(.2)
+            self.io.key('Return',hold=hold);time.sleep(.2)
             deadline=time.monotonic()+12
             while True:
                 opened,opened_frame=observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
@@ -206,12 +211,13 @@ class Trial:
                     'selected_text':value,'observed_type':pending.get('chat_edit_type'),
                     'observed_focused':pending.get('chat_edit_focused'),
                     'matches':bool(matches),'submitted':False})
+                self.receipt['chat_submission_checks'][-1]['key_hold']=hold
                 self.persist()
                 if matches:break
                 if time.monotonic()>deadline:
                     raise RuntimeError('chat edit differs from the selected command; refusing submission')
                 time.sleep(.2)
-            self.io.key('Return',hold=.4)
+            self.io.key('Return',hold=hold)
             self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
             if any_mode:
                 deadline=time.monotonic()+12;retried=False
@@ -230,7 +236,7 @@ class Trial:
                         # Match ordinary gameplay chat's bounded completion
                         # recovery. Never repeat text or submit changed input.
                         row['recovery']='Return once for the same exact focused diagnostic'
-                        self.persist();self.io.key('Return',hold=.4)
+                        self.persist();self.io.key('Return',hold=hold)
                         retried=True;deadline=time.monotonic()+12
                     time.sleep(.2)
 
