@@ -1,0 +1,11 @@
+# Colorblind category defaults
+
+The owned primary passes one current-category Defaults application. The stock Enable UI Colorblind Mode checkbox changes the public CVar and Settings value from off to on. The exact Defaults confirmation's third button, visibly labelled These Settings, applies the Colorblind category's default immediately and restores off. No separate Apply click is needed.
+
+Read-only observer 120 verifies category ownership through the stock settings registry. The category contains exactly `colorblindMode`, `colorblindSimulator` and `colorblindWeaknessFactor`. Their typed defaults are false, 0 and 0.5. The filter and strength already equal these defaults, so the only changed value is the mode checkbox. The adapter refuses All Settings, unexpected category members, missing defaults, a different category, or defaults that would change another fixture value.
+
+All other observed CVars and Settings values remain unchanged, and the actual display remains fixed. Ten action checks, five value-restoration checks, five layout checks and all ten native checks pass. Four reviewed images show the checked mode, exact three-choice confirmation, restored unchecked mode with None filter and disabled 50% strength, and the final seated primary with Settings closed. Installed build 60895 CASC source pins establish the button mapping and immediate default behavior. All 168 focused and 1,526 full protocol checks pass; both Lua files pass syntax checks.
+
+This qualifies `settings.defaults_apply` only for Colorblind Mode's current-category defaults. All Settings, other categories, keybinding and graphics defaults, pending graphics Apply and persistence remain open. The scout stays at character selection. No new client, server, model job or native build starts, and both owned windows stay on HDMI-1. Scripts remain blocked; historical original `softTargetInteract=0` remains unrestored at stock-disabled `1`, as accepted by the user.
+
+Coverage is 404 of 916 scoped operations, with 512 open. The [UI97 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc) identifies the remotely verified 120,643,004-byte archive, SHA-256 `06c892bc58c0ace4e981174eb06e8706b443b6fd037a66d76fadc1f1cf93915b`. Archive review verifies 11 JSON receipts and 57 attributed image hashes.

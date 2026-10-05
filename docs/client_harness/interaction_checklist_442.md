@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 403 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 404 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -775,7 +775,7 @@ Fixture: `saved_local_settings`.
 - [x] `settings.apply` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
 - [x] `settings.cancel` (qualified variant; [evidence](#owned_settings_exit_cancel_discard))
 - [x] `settings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
-- [ ] `settings.defaults_apply`
+- [x] `settings.defaults_apply` (qualified variant; [evidence](#owned_colorblind_current_category_defaults))
 - [x] `settings.persistence` (qualified variant; [evidence](#owned_render_scale_ui_reload_persistence))
 - [x] `settings.restore_original` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 
@@ -2781,3 +2781,14 @@ Remaining limits: Pending selections and stock discard only. Applying display ch
   Checked cases: `settings.resolution.pending` (stock_pending_display_selection_pass), `settings.window_mode.pending` (stock_pending_display_selection_pass), `settings.monitor_selection.pending` (stock_pending_display_selection_pass).
 - [442_interactions_20261005_96.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc), member `evidence/client_interactions_20261005_ui96/display_whole_review.json`, SHA-256 `faa50bdb7d01947f9b20851723e1251ede230b224a9b291f482025210fc1ec4a`.
 - [442_interactions_20261005_96.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc), member `evidence/client_interactions_20261005_ui96/display_source_review.json`, SHA-256 `85452412f9340a4adb19132a180a6becdb01516d99ecad81b2c46d52492fa212`.
+
+### owned_colorblind_current_category_defaults
+
+Owned primary observer120: enable UI Colorblind Mode through the stock checkbox, then exact Defaults confirmation button3 These Settings(CURRENT_SETTINGS) applies the current-category default immediately, restoring public CVar0 and Setting false. Exact object ownership proves the category contains only mode, simulator and weakness. Simulator0 and weakness0.5 already equal their typed defaults and stay unchanged. All other observed CVars/settings and actual display remain fixed. Ten action checks, five value-restoration, five layout and ten native checks pass. Four reviewed images show checked mode, exact three-choice dialog, unchecked restored mode with None/50percent and final closed world HUD.
+
+Remaining limits: One Colorblind Mode current-category default only. All Settings, other categories, keybinding/graphics defaults, pending graphics Apply and persistence remain open. No allocation increase, native build, new client/server or model job. All168 focused and1526 full protocol checks pass. Scripts stay blocked; historical softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261005_97.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc), member `evidence/client_interactions_20261005_ui97/defaults_apply01/episode.json`, SHA-256 `65ab574f83e64d8154a7d670f7e4950efa7c9fbb315b53b7d32a2a202ed4d73d`.
+  Checked cases: `settings.defaults_apply.current_colorblind` (stock_current_category_defaults_pass).
+- [442_interactions_20261005_97.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc), member `evidence/client_interactions_20261005_ui97/defaults_whole_review.json`, SHA-256 `150a38aaaedc440aee5bd3e041aadf07fd62c367898a95f0459496a7c05462f0`.
+- [442_interactions_20261005_97.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc), member `evidence/client_interactions_20261005_ui97/defaults_source_review.json`, SHA-256 `9e013e9889cf2f64f24ce7d36cf71adc7dc5a13a88d68a4339ba6a2b644bc8be`.

@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791232950.4851441,
+  "reviewed_at": 1791233655.2097464,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -4838,6 +4838,34 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_96.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui96/display_source_review.json",
           "sha256": "85452412f9340a4adb19132a180a6becdb01516d99ecad81b2c46d52492fa212"
+        }
+      ]
+    },
+    {
+      "id": "owned_colorblind_current_category_defaults",
+      "operations": [
+        "settings.defaults_apply"
+      ],
+      "scope": "Owned primary observer120: enable UI Colorblind Mode through the stock checkbox, then exact Defaults confirmation button3 These Settings(CURRENT_SETTINGS) applies the current-category default immediately, restoring public CVar0 and Setting false. Exact object ownership proves the category contains only mode, simulator and weakness. Simulator0 and weakness0.5 already equal their typed defaults and stay unchanged. All other observed CVars/settings and actual display remain fixed. Ten action checks, five value-restoration, five layout and ten native checks pass. Four reviewed images show checked mode, exact three-choice dialog, unchecked restored mode with None/50percent and final closed world HUD.",
+      "limits": "One Colorblind Mode current-category default only. All Settings, other categories, keybinding/graphics defaults, pending graphics Apply and persistence remain open. No allocation increase, native build, new client/server or model job. All168 focused and1526 full protocol checks pass. Scripts stay blocked; historical softTargetInteract0 remains unrestored at stock-disabled1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui97/defaults_apply01/episode.json",
+          "sha256": "65ab574f83e64d8154a7d670f7e4950efa7c9fbb315b53b7d32a2a202ed4d73d",
+          "cases": {
+            "settings.defaults_apply.current_colorblind": "stock_current_category_defaults_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui97/defaults_whole_review.json",
+          "sha256": "150a38aaaedc440aee5bd3e041aadf07fd62c367898a95f0459496a7c05462f0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_97.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui97/defaults_source_review.json",
+          "sha256": "9e013e9889cf2f64f24ce7d36cf71adc7dc5a13a88d68a4339ba6a2b644bc8be"
         }
       ]
     }

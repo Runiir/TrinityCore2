@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "403/916 reviewed scoped operations, 513 open. UI96 display_pending01 whole pass qualifies one pending Resolution, Display Mode and Monitor selection with stock discard before Apply. Actual1280x720 window, all active CVars and other observed settings stay fixed; display4/layout5/native10 checks restore. Private display labels are distinct from physicalHDMI-1. Scripts remain blocked; historical original softTargetInteract0 remains unrestored at1. Next: source-backed current-category Defaults application limited to Colorblind Mode, with all other observed settings and native fixture preserved.",
+  "current": "404/916 reviewed scoped operations, 512 open. UI97 defaults_apply01 whole pass qualifies one exact These Settings current-category defaults application in Colorblind Mode. Mode0-to1-to0, simulator0 and weakness0.5 fixed; all other observed values/display and layout/native fixture restore. All Settings and other category/default variants remain open. Scripts stay blocked; original softTargetInteract0 remains unrestored at1. Next: stock quest-link insertion from the existing owned active quest28825 without submission or quest mutation.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -197,7 +197,8 @@
     "ui93: render_scale01 wholePASS qualifies one graphics/render_scale/apply variant; settings_discard03 wholePASS qualifies exact pending render-change Cancel/discard. Both whole failures and two source-bound recovery passes retained. Primary observers115/116/117 reload without native/server/session loss; scout untouched at character selection. Final101 focused/1411 full checks pass.",
     "ui94: fresh settings_persistence01 wholePASS, both lower/original values survive ordinary UI reload and all restoration checks pass. Initial constructor launch failure retained. Final109 focused tests pass; full1418 passed before launcher-only repair. No new client/server/native build/model job.",
     "ui95: primary observer118 deploy and pending-quality whole trial pass. Exact source identity and10-child preset map verified; no Apply and no native build/client/server/model start.138 focused/1448 full tests pass. Generic Copy Name mapping reuses the same old UI85 whole-pass proof with remote object presence checked, without archive download or new Copy input.",
-    "UI96 pending display whole pass: three7-check selections and three6-check discard restorations, final display4/layout5/native10. DVC96 verifies13 JSON receipts and161 attributed images; scope excludes Apply and active display changes.403/916,513open."
+    "UI96 pending display whole pass: three7-check selections and three6-check discard restorations, final display4/layout5/native10. DVC96 verifies13 JSON receipts and161 attributed images; scope excludes Apply and active display changes.403/916,513open.",
+    "UI97 Colorblind current-category Defaults whole pass: exact3-setting ownership/default guards, ten action/five value/five layout/ten native checks. DVC97 verifies11 JSON receipts and57 attributed images.404/916,512open."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [
