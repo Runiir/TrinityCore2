@@ -46,7 +46,7 @@ def checks(probe,native,learned):
     return valid
 
 
-def suite(t):
+def suite(t,after_tab=None):
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
     t.clean_panels();original=resources(oracle);persisted=known(t.fixture['guid']);native=skills(t.fixture['guid'])
     learned=wire_known(t,session);layout=None
@@ -66,6 +66,7 @@ def suite(t):
                 'oracle':{'checks':valid,'probe':probe}}
         require(click_case(t,'spellbook.professions_tab','Inspect the stock profession tab.',
             lambda c:c['name']=='SpellBookFrameTabButton2',outcome),'profession_tab_pass')
+        if after_tab is not None:after_tab(t)
     finally:
         try:
             if layout:
