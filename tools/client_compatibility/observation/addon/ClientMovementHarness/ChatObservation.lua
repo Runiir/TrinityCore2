@@ -20,5 +20,18 @@ function Client442ObserveChatWindows()
             scroll_offset=frame and read(frame.GetScrollOffset,frame)}
     end
     result.selected=SELECTED_CHAT_FRAME and read(SELECTED_CHAT_FRAME.GetID,SELECTED_CHAT_FRAME)
+    result.settings_visible=ChatConfigFrame and read(ChatConfigFrame.IsVisible,ChatConfigFrame) or false
+    result.config_window_id=result.settings_visible and tonumber(CURRENT_CHAT_FRAME_ID) or nil
+    local selected=_G['ChatFrame'..tostring(result.config_window_id or result.selected or 1)]
+    result.message_types={}
+    result.message_types_available=selected and type(selected.messageTypeList)=='table' or false
+    if result.message_types_available then
+        for _,value in pairs(selected.messageTypeList) do
+            if type(value)=='string' and #result.message_types<128 then
+                result.message_types[#result.message_types+1]=value
+            end
+        end
+        table.sort(result.message_types)
+    end
     return result
 end
