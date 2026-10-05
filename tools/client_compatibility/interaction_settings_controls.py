@@ -40,17 +40,17 @@ def restore_interact_fixture(t,layout,current,prefix):
     close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
     click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
     t.clean_panels()
-    require(t.step(prefix+'_console','Restore the exact saved None flag after the stock proxy disabled to Gamepad.',
-        {'restore':{'kind':'chat','value':'/console softTargetInteract 0'}},
-        lambda b,a,s:{'status':'fixture_console_submitted' if s=='restore' and
+    require(t.step(prefix+'_saved_cvar','Restore the exact saved None flag with a fixed ordinary chat fixture script.',
+        {'restore':{'kind':'chat','value':'/run SetCVar("softTargetInteract", 0)'}},
+        lambda b,a,s:{'status':'fixture_cvar_command_submitted' if s=='restore' and
             not a.get('chat_edit_open') and not a.get('lua_errors') and not a.get('blocked_actions') else
-            'client_or_protocol_failure'},diagnostic_action='restore'),'fixture_console_submitted')
+            'client_or_protocol_failure'},diagnostic_action='restore'),'fixture_cvar_command_submitted')
     t.settings_search=open_search(t)
-    after=detail(t,prefix+'_confirmed',lambda p:p['cvars'].get('softTargetInteract')=='0')
+    after=detail(t,prefix+'_confirmed')
     checks={'exact_cvar':after['cvars']==layout['cvars'],'public_values':after['values']==layout['values'],
         'interact_binding':after['interact_keys']==layout['interact_keys'],
         'move_pad':after['move_pad_visible']==layout['move_pad_visible'],'unapplied':after['unapplied']==layout['unapplied']}
-    t.receipt['interact_fixture_restoration']={'checks':checks,'method':'ordinary_console',
+    t.receipt['interact_fixture_restoration']={'checks':checks,'method':'fixed_ordinary_chat_SetCVar_fixture',
         'original':'0','stock_disabled':'1','restored':after['cvars']['softTargetInteract']};t.persist()
     if not all(checks.values()):raise RuntimeError('exact original Interact fixture did not restore')
     return after
@@ -90,7 +90,7 @@ def toggle(t,layout,variable,wanted,label):
 
 def suite(t,variables):
     layout=None;attempted=[]
-    t.receipt['qualified_scope']='Requested stock Move Pad/Interact Key enable checkboxes changed and reversed. Interact proxy enables Any=3 and disables Gamepad=1; an original None=0 fixture is restored with exact ordinary console input. Move Pad visibility/buttons, unchanged Interact Target binding, all observed settings/layout and native fixture are checked. Pad movement, NPC interaction, binding assignment and reconnect persistence remain open.';t.persist()
+    t.receipt['qualified_scope']='Requested stock Move Pad/Interact Key enable checkboxes changed and reversed. Interact proxy enables Any=3 and disables Gamepad=1; an original None=0 fixture is restored with a fixed ordinary chat SetCVar script, separate from stock checkbox actions. Move Pad visibility/buttons, unchanged Interact Target binding, all observed settings/layout and native fixture are checked. Pad movement, NPC interaction, binding assignment and reconnect persistence remain open.';t.persist()
     try:
         t.settings_search=open_search(t);layout=detail(t,'control_layout_baseline')
         t.receipt['control_layout_baseline']=layout;t.persist()
