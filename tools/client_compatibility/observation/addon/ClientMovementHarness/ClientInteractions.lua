@@ -525,6 +525,7 @@ local function snapshot(viewMode,viewPage)
         local f=_G[name];if f then scan(f,0) end
     end
     for index=1,10 do scan(_G['ChatFrame'..index..'ButtonFrame'],0) end
+    scan(CombatLogQuickButtonFrame_Custom,0)
     data.control_count=#data.controls
     -- Identify the complete current control list, before paging it. A panel can
     -- keep its name while changing layout; pages from those layouts cannot mix.

@@ -52,7 +52,8 @@ local function fingerprint(value)
 end
 function Client442ObserveCombatLog()
     local log=ChatFrame2;local count=log and read(log.GetNumMessages,log)
-    local selected=CHATCONFIG_SELECTED_FILTER or Blizzard_CombatLog_CurrentSettings
+    local settingsVisible=ChatConfigFrame and read(ChatConfigFrame.IsVisible,ChatConfigFrame) or false
+    local selected=settingsVisible and CHATCONFIG_SELECTED_FILTER or Blizzard_CombatLog_CurrentSettings
     local result={event_registered=registered and read(reader.IsEventRegistered,reader,'COMBAT_LOG_EVENT') or false,
         unfiltered_registered=unfiltered and read(reader.IsEventRegistered,reader,'COMBAT_LOG_EVENT_UNFILTERED') or false,
         event_sequence=sequence,events=events,
@@ -61,7 +62,10 @@ function Client442ObserveCombatLog()
         saved_settings=fingerprint(Blizzard_CombatLog_Filters),filter_name=selected and selected.name,
         current_filter=Blizzard_CombatLog_Filters and Blizzard_CombatLog_Filters.currentFilter,
         settings_filter=ChatConfigCombatSettingsFilters and ChatConfigCombatSettingsFilters.selectedFilter,
-        cast_success_enabled={}}
+        cast_success_enabled={},filters={},settings_visible=settingsVisible}
+    for index,filter in ipairs(Blizzard_CombatLog_Filters and Blizzard_CombatLog_Filters.filters or {}) do
+        result.filters[#result.filters+1]={id=index,name=filter.name,quick_button=filter.hasQuickButton}
+    end
     for index,filter in ipairs(selected and selected.filters or {}) do
         result.cast_success_enabled[index]=filter.eventList and filter.eventList.SPELL_CAST_SUCCESS or false
     end
