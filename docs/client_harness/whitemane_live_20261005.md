@@ -70,3 +70,11 @@ The complete Southmoon digsite and the recipe farm remain unaccepted until
 fresh live evidence confirms completion. Per-race 150-fragment batches with
 maximum bag keystones are specified in `dig_policy.py`; live solving and the
 cross-zone travel loop are not implemented by this dig controller.
+
+Batch 01 is checkpointed through DVCLive and
+`artifacts/client_harness/whitemane_live_20261005_batch01.tar.gz.dvc`. DVC push
+completed and cloud status confirmed synchronization. Closed screenshots and
+the rejected partial head were then pruned after checking their archived
+hashes. The local archive and its exact cache object were also removed to keep
+the batch remote-only. Local DVC status therefore reports this output deleted;
+restore it with `pixi run dvc pull` targeting that `.dvc` file.
