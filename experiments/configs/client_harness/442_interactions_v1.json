@@ -5764,7 +5764,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_move_pad_enable_roundtrip"
     },
     {
       "id": "settings.mouse_sensitivity",
@@ -5783,7 +5784,8 @@
       "fixture": "saved_local_settings",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_interact_key_enable_roundtrip"
     },
     {
       "id": "settings.accessibility",
@@ -13272,8 +13274,66 @@
           "sha256": "fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5"
         }
       ]
+    },
+    {
+      "id": "owned_move_pad_enable_roundtrip",
+      "operations": [
+        "settings.interface"
+      ],
+      "scope": "Owned primary observer110: stock Show Move Pad checkbox0-to1-to0. Public CVar/Settings and rendered checkbox agree; eight enabled Move Pad controls are present only when on. Five observed layout, two control and ten native fixture checks restore.",
+      "limits": "Enable/visibility only. Pad movement, dragging/position, lock, other interface controls and persistence remain open. Failed01 and capture-failed03 are excluded.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/move_pad_interact04/episode.json",
+          "sha256": "c3adf13b11206b1d176cdc76230d3bead2cb9568e5e284690ba732ed00179170",
+          "cases": {
+            "settings.interface.change": "stock_control_setting_pass",
+            "settings.interface.restore": "stock_control_setting_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/stock_controls_whole_review.json",
+          "sha256": "23665dbf1452410bf9822b7a93477265141b575c7fcbc62f8d618b0e01bee8ea"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/custom_script_boundary.json",
+          "sha256": "253571aa007d39691fae06c1c5acb9c87a793fb46e886eebb9c11ec272674d90"
+        }
+      ]
+    },
+    {
+      "id": "owned_interact_key_enable_roundtrip",
+      "operations": [
+        "settings.keyboard_controls"
+      ],
+      "scope": "Owned primary observer110: stock Enable Interact Key checkbox roundtrips canonical softTargetInteract1-to3-to1. Public proxy and rendered checkbox agree, both Interact Target bindings stay unassigned, and all observed layout/control/native checks restore the exact starting1.",
+      "limits": "Checkbox only. Original historical0 remains unrestored at1 by explicit user choice; custom scripts stay blocked. Original0-start trial02 and scripted recoveries remain excluded. Actual NPC/object interaction, key assignment, other flags and persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/move_pad_interact04/episode.json",
+          "sha256": "c3adf13b11206b1d176cdc76230d3bead2cb9568e5e284690ba732ed00179170",
+          "cases": {
+            "settings.keyboard_controls.change": "stock_control_setting_pass",
+            "settings.keyboard_controls.restore": "stock_control_setting_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/stock_controls_whole_review.json",
+          "sha256": "23665dbf1452410bf9822b7a93477265141b575c7fcbc62f8d618b0e01bee8ea"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui89/custom_script_boundary.json",
+          "sha256": "253571aa007d39691fae06c1c5acb9c87a793fb46e886eebb9c11ec272674d90"
+        }
+      ]
     }
   ],
-  "qualified_operations": 389,
+  "qualified_operations": 391,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

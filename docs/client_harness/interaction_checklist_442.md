@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 389 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 391 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -762,9 +762,9 @@ Fixture: `saved_local_settings`.
 - [ ] `settings.quality`
 - [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
 - [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
-- [ ] `settings.interface`
+- [x] `settings.interface` (qualified variant; [evidence](#owned_move_pad_enable_roundtrip))
 - [x] `settings.mouse_sensitivity` (qualified variant; [evidence](#owned_mouse_sensitivity_enable_roundtrip))
-- [ ] `settings.keyboard_controls`
+- [x] `settings.keyboard_controls` (qualified variant; [evidence](#owned_interact_key_enable_roundtrip))
 - [x] `settings.accessibility` (qualified variant; [evidence](#owned_ui_colorblind_checkbox_roundtrip))
 - [x] `settings.camera` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.nameplates` (qualified variant; [evidence](#stock_interface_boolean_settings))
@@ -2685,3 +2685,25 @@ Remaining limits: Enable flag only. Numeric mouseSpeed stays0.0 while the stock 
 - [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/colorblind_mouse_enable01/episode.json`, SHA-256 `dbee4252760a17396e1602d4190505801287615e133d7c267b90b1af5e05d2c7`.
   Checked cases: `settings.mouse_sensitivity.change` (stock_boolean_setting_pass), `settings.mouse_sensitivity.restore` (stock_boolean_setting_pass).
 - [442_interactions_20261005_88.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_88.tar.gz.dvc), member `evidence/client_interactions_20261005_ui88/checkboxes_whole_review.json`, SHA-256 `fb10c0bb316aef69e1e1b324a8fb1c4b76a402c2dfa8d81cd8f1386ca936a6e5`.
+
+### owned_move_pad_enable_roundtrip
+
+Owned primary observer110: stock Show Move Pad checkbox0-to1-to0. Public CVar/Settings and rendered checkbox agree; eight enabled Move Pad controls are present only when on. Five observed layout, two control and ten native fixture checks restore.
+
+Remaining limits: Enable/visibility only. Pad movement, dragging/position, lock, other interface controls and persistence remain open. Failed01 and capture-failed03 are excluded.
+
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/move_pad_interact04/episode.json`, SHA-256 `c3adf13b11206b1d176cdc76230d3bead2cb9568e5e284690ba732ed00179170`.
+  Checked cases: `settings.interface.change` (stock_control_setting_pass), `settings.interface.restore` (stock_control_setting_pass).
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/stock_controls_whole_review.json`, SHA-256 `23665dbf1452410bf9822b7a93477265141b575c7fcbc62f8d618b0e01bee8ea`.
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/custom_script_boundary.json`, SHA-256 `253571aa007d39691fae06c1c5acb9c87a793fb46e886eebb9c11ec272674d90`.
+
+### owned_interact_key_enable_roundtrip
+
+Owned primary observer110: stock Enable Interact Key checkbox roundtrips canonical softTargetInteract1-to3-to1. Public proxy and rendered checkbox agree, both Interact Target bindings stay unassigned, and all observed layout/control/native checks restore the exact starting1.
+
+Remaining limits: Checkbox only. Original historical0 remains unrestored at1 by explicit user choice; custom scripts stay blocked. Original0-start trial02 and scripted recoveries remain excluded. Actual NPC/object interaction, key assignment, other flags and persistence remain open.
+
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/move_pad_interact04/episode.json`, SHA-256 `c3adf13b11206b1d176cdc76230d3bead2cb9568e5e284690ba732ed00179170`.
+  Checked cases: `settings.keyboard_controls.change` (stock_control_setting_pass), `settings.keyboard_controls.restore` (stock_control_setting_pass).
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/stock_controls_whole_review.json`, SHA-256 `23665dbf1452410bf9822b7a93477265141b575c7fcbc62f8d618b0e01bee8ea`.
+- [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/custom_script_boundary.json`, SHA-256 `253571aa007d39691fae06c1c5acb9c87a793fb46e886eebb9c11ec272674d90`.
