@@ -115,10 +115,27 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
             any(c['text']=='Harnesstwo' for c in rows) and any(c['text']=='Whisper' for c in rows)
             else 'client_or_protocol_failure'}
     try:
-        require(t.step('fixture.player_chat_link_menu','Right-click the reviewed owned player chat link.',
-            {'menu':{'kind':'click','value':point,'button':3,'hold':1.2}},outcome,diagnostic_action='menu',
-            await_state=lambda s:any(p in s['panels'] for p in ['ContextMenu','DropDownList1'])),
-            'owned_player_menu_inspected')
+        for attempt in range(2):
+            if attempt:
+                current,current_frame=t.observe('owned_menu_retry_guard')
+                public=[r for r in current.get('chat_probes',[]) if r.get('event')=='CHAT_MSG_WHISPER' and
+                    r.get('text')==seed['token'] and r.get('sender')==seed['observed_sender']]
+                if current['panels'] or current.get('chat_edit_open') or len(public)!=1 or current.get('lua_errors') or current.get('blocked_actions'):
+                    raise RuntimeError('menu retry lacks the same clean owned seed; no retry sent')
+                t.receipt['owned_menu_retry_guard']={'frame':current_frame,'scope':'One reversible menu-open retry only; Copy and Report never replayed.'};t.persist()
+                for candidate in points:
+                    t.io.move(*candidate);time.sleep(1)
+                    retry,retry_frame=read_current_page(t,'owned_menu_retry_hover','controls')
+                    t.receipt.setdefault('owned_menu_retry_hovers',[]).append({'point':candidate,
+                        'pointer':retry.get('pointer'),'frame':retry_frame});t.persist()
+                    if owned_link_hover(retry,seed):point=candidate;break
+                else:raise RuntimeError('menu retry does not hover the owned link; no retry sent')
+            label='fixture.player_chat_link_menu'+('_retry' if attempt else '')
+            result=t.step(label,'Right-click the reviewed owned player chat link.',
+                {'menu':{'kind':'click','value':point,'button':3,'hold':.3 if attempt else 1.2}},outcome,diagnostic_action='menu',
+                await_state=lambda s:any(p in s['panels'] for p in ['ContextMenu','DropDownList1']))
+            if result['status']=='owned_player_menu_inspected':break
+        require(result,'owned_player_menu_inspected')
         if operation!='inspect':
             from . import interaction_chat_player_actions as actions
             if operation not in ('copy','report'):raise ValueError('unknown owned player operation')
