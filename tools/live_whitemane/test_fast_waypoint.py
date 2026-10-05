@@ -31,7 +31,8 @@ def setup_route(monkeypatch,tmp_path,north=6.398):
     return r,now,events,controllers,calls
 
 
-def test_stationary_near_arrival_retries_after_position_updates_with_a_measured_pulse(monkeypatch,tmp_path):
+@pytest.mark.parametrize('approved',[False,True])
+def test_stationary_near_arrival_retries_after_position_updates_with_a_measured_pulse(monkeypatch,tmp_path,approved):
     # The live failure stayed at 6.398 yards from a six-yard flight endpoint.
     # Its 33-ms pulses could disappear between client updates.
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path)
@@ -44,13 +45,14 @@ def test_stationary_near_arrival_retries_after_position_updates_with_a_measured_
         if index[0]==6:result['archaeology']['world']['north']=4
         return result
     monkeypatch.setattr(fast_waypoint,'observe',observe)
-    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
+        approved_intent=('cruise',{}, {},{}) if approved else None)
     assert rows[2]['calculated_pulse_seconds']==.1
     assert events.count(('press','Up'))==2
     assert rows[-1]['distance_yards']==4
     assert events.count(('button_press',3))==1 and events.count(('button_release',3))==1
     assert all(key not in ('Left','Right') for event,key in events if event=='press')
-    assert len(calls)==1
+    assert len(calls)==(0 if approved else 1)
 
 
 @pytest.mark.parametrize('interrupt,error',[
@@ -79,3 +81,25 @@ def test_changed_route_or_terrain_releases_forward_and_camera(monkeypatch,tmp_pa
     assert events.count(('button_release',3))==1
     assert len(calls)==1
     assert recovery.retryable(failed.value)
+
+
+def test_a_new_artifact_interrupts_the_retained_approach_for_a_model_choice(monkeypatch,tmp_path):
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,100)
+    index=[0]
+    def observe(_):
+        index[0]+=1;now[0]+=.1;controllers[0].tick()
+        row=copy.deepcopy(r)
+        row['movement'].update(sequence=index[0],client_uptime_ms=index[0]*100)
+        row['archaeology']['sequence']=index[0];row['observed_at']=now[0]
+        row['owned_pose']={'pitch_radians':0,'client_uptime_ms':index[0]*100}
+        if index[0]>=4:row['farm_ui']['soft_interact']={'name':next(iter(fast_waypoint.FIND_NAMES))}
+        return row
+    def decide(*_,**__):
+        calls.append(True);return 'loot',{}, {},{}
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    monkeypatch.setattr(fast_waypoint,'decision',decide)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
+        approved_intent=('cruise',{}, {},{}))
+    assert len(calls)==1 and rows[-1]['action']=='loot'
+    assert events.count(('press','Up'))==1 and events.count(('release','Up'))==1
+    assert events.count(('button_release',3))==1

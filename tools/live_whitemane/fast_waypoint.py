@@ -39,7 +39,7 @@ def decision(row,target,distance,error,flying,site_id,tolerance,*,approaching_fi
     return choose(state,'travel',physical_state=flags)
 
 
-def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False,guidance=None):
+def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False,guidance=None,approved_intent=None):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from .smooth_move import GroundContact
@@ -54,7 +54,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         from .camera_input import Input
         identity=inputs.focus('World of Warcraft');sender=Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
-        previous=None;deadline=None;index=0;decision_count=0;last_pulse=None
+        previous=None;deadline=None;index=0;decision_count=0;retained_decisions=0;last_pulse=None
         sample_periods=deque(maxlen=8);last_sample=None
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
@@ -100,16 +100,21 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                         'heading_error':error,'outcome':'waypoint_arrived','model_decision_reused':True})
                     return list(receipts)
                 new_decision=current_decision is None or changed_artifact
+                retained=False
                 if new_decision:
                     sticky.hold('Up',False)
-                    current_decision=decision(row,target,distance,error,flying,site_id,tolerance,
-                        approaching_find=approaching_find,guidance=guidance)
-                    decision_count+=1
+                    if current_decision is None and approved_intent:
+                        current_decision=approved_intent;retained=True;retained_decisions+=1
+                    else:
+                        current_decision=decision(row,target,distance,error,flying,site_id,tolerance,
+                            approaching_find=approaching_find,guidance=guidance)
+                        decision_count+=1
                 action,model,request,response=current_decision
                 receipt={'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,
                     'altitude_yards':a.get('altitude_yards'),'grounded':a['grounded'],
                     'model':model,'request':request,'response':response,'action':action,
-                    'channel_ages':row['channel_ages'],'model_decision_reused':not new_decision,
+                    'channel_ages':row['channel_ages'],'model_decision_reused':not new_decision or retained,
+                    'decision_source':'selected_movement_intent' if retained else 'waypoint_feedback',
                     'guidance_source':(guidance or {}).get('source','selected waypoint')}
                 receipts.append(receipt)
                 if new_decision:
@@ -167,6 +172,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
             sticky.close()
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
+                'retained_decisions':retained_decisions,
                 'transport':row['source'],'decision_period_seconds':.1,'input_lease_seconds':sticky.lease,
                 'steering':'right_button_relative_mouselook','yaw_samples':list(steering.samples),
                 'pitch_samples':list(pitch_steering.samples)})

@@ -246,12 +246,13 @@ def run(args):
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
                         approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else None,
-                        guidance=guide)
+                        guidance=guide,approved_intent=(action,model,request,result))
                     step['inputs']=[]
                 else:
                     step['travel_mode']='green_telescope_approach'
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
-                        tolerance=guide.get('arrival_tolerance_yards',.5),guidance=guide)
+                        tolerance=guide.get('arrival_tolerance_yards',.5),guidance=guide,
+                        approved_intent=(action,model,request,result))
                     step['inputs']=[]
                 session['walked_since_survey']=True
                 if guide['source']=='Survey telescope' and guide['color']=='green':
