@@ -30,12 +30,15 @@ def restore_failed(t,source):
             old['failure']!='RuntimeError: operation did not advance: fixture.leave_owned_channel client_or_protocol_failure'):
         raise RuntimeError('closed failed channel source differs')
     current=detail(t,'failed_channel_cleanup_guard')
-    if len(member(current,name))!=1:raise RuntimeError('exact failed channel entry is absent or ambiguous')
+    if len(member(current,name))>1:raise RuntimeError('exact failed channel entry is ambiguous')
     t.receipt['channel_cleanup_source']={'file':str(source),'sha256':lab.sha256(source),'name':name};t.persist()
-    require(t.step('fixture.leave_failed_owned_channel','Remove only the source-attributed disposable channel.',
-        {'leave':{'kind':'chat','value':'/leave '+name,'description':'Leave the exact prior owned channel.'}},
-        lambda b,a,s:{'status':'owned_channel_left' if not member(detail(t,'failed_owned_channel_left'),name)
-            else 'client_or_protocol_failure'},diagnostic_action='leave'),'owned_channel_left')
+    if member(current,name):
+        require(t.step('fixture.leave_failed_owned_channel','Remove only the source-attributed disposable channel.',
+            {'leave':{'kind':'chat','value':'/leave '+name,'description':'Leave the exact prior owned channel.'}},
+            lambda b,a,s:{'status':'owned_channel_left' if not member(detail(t,'failed_owned_channel_left'),name)
+                else 'client_or_protocol_failure'},diagnostic_action='leave'),'owned_channel_left')
+    else:
+        t.receipt['channel_cleanup_source']['already_absent_after_reentry']=True;t.persist()
     after=detail(t,'failed_channel_cleanup_restored')
     # Enabling the formerly dropped built-in joins is part of the bridge repair.
     original=old['channel_baseline']['channels']['rows']
