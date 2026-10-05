@@ -3,6 +3,27 @@ import pytest
 from tools.client_compatibility.interaction_settings_persistence import reload_checks
 
 
+def test_command_entry_reaches_suite_with_supported_settings_constructor(monkeypatch,tmp_path):
+    import inspect,sys
+    from contextlib import nullcontext
+    from tools.client_compatibility import interaction_settings_persistence as module
+    signature=inspect.signature(module.SettingsTrial);called=[]
+    class FakeTrial:
+        def __init__(self,*args,**kwargs):
+            signature.bind(*args,**kwargs)
+            self.receipt={'completed':False,'failure':None}
+        def persist(self):pass
+    def native(trial,operations,preserve_settings):
+        called.append((operations,preserve_settings))
+    monkeypatch.setattr(module,'SettingsTrial',FakeTrial)
+    monkeypatch.setattr(module,'native_suite',native)
+    monkeypatch.setattr(module,'actor',lambda name:nullcontext())
+    monkeypatch.setattr(module.lab,'ROOT',tmp_path)
+    monkeypatch.setattr(sys,'argv',['settings-persistence','--output',str(tmp_path/'evidence/run')])
+    module.main()
+    assert called==[(module.suite,False)]
+
+
 def fixture():
     return {'sequence':500,'guid':'owned'},{'sequence':10,'guid':'owned'},'same','same',[
         {'selected_text':'/reload','matches':True,'submitted':True}],'owned'

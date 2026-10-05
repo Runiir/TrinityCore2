@@ -85,7 +85,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
-        t=SettingsTrial(a.output,controller='code',chat_key_hold=1.2)
+        t=SettingsTrial(a.output,controller='code')
         try:native_suite(t,operations=suite,preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt[k] for k in ['completed','failure']}),flush=True)
