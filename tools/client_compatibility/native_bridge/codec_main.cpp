@@ -8,6 +8,7 @@
 #include "events.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
+#include "chat_probe.hpp"
 #include "lifecycle.hpp"
 #include "guild_packets.hpp"
 #include "merchants.hpp"
@@ -41,7 +42,9 @@ int main(int argc, char **argv)
                 auto op = str(get(request, "op"));
                 Value result;
                 auto data = [&](std::string_view key) { return unhex(str(get(request, key))); };
-                if (op == "actionbar_toggle_request")
+                if (op == "public_chat_probe")
+                    result = public_chat_probe(str(get(request, "name")), data("body"));
+                else if (op == "actionbar_toggle_request")
                 {
                     if (auto packet = actionbar_toggle_request(data("body"), truth(get(request, "in_world"))))
                         result = Array{packet->first, hex(packet->second)};
