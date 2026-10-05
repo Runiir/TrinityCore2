@@ -30,3 +30,17 @@ def test_confirming_a_hover_waits_for_the_object_tooltip_after_cursor_arrival(mo
     observed=interact.hover(SimpleNamespace(move=lambda *args:None),(600,520),before,tmp_path,
         expected='Night Elf Archaeology Find')
     assert observed['farm_ui']['sequence']==9
+
+
+def test_search_uses_the_actual_named_mouseover_without_claiming_cursor_arrival(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    before={'farm_ui':{'sequence':7}}
+    fresh={'farm_ui':{'sequence':8,'cursor':{'x':591/1280,'y':520/900},
+        'tooltip':'Night Elf Archaeology Find'}}
+    monkeypatch.setattr(interact,'observe',lambda _:fresh)
+    monkeypatch.setattr(interact,'stationary',lambda *_:None)
+    moves=[]
+    observed=interact.hover(SimpleNamespace(move=lambda *point:moves.append(point)),
+        (600,540),before,tmp_path,allow_found=True)
+    assert moves==[(600,540)]
+    assert observed['farm_ui']['cursor']=={'x':591/1280,'y':520/900}

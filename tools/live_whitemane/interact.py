@@ -3,6 +3,7 @@ import time
 from . import runtime, inputs, native_control
 from .observe import observe
 from .farm_actions import stationary
+from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
 def search_points(maximum):
@@ -17,13 +18,15 @@ def search_points(maximum):
     return list(dict.fromkeys(center+interleaved))[:maximum]
 
 
-def hover(sender,point,before,folder,expected=None):
+def hover(sender,point,before,folder,expected=None,allow_found=False):
     sender.move(*point);sequence=before['farm_ui']['sequence'];deadline=time.monotonic()+1.5
     matched=None
     while True:
         if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
         row=observe(folder/'hover.png');stationary(before,row)
         ui=row['farm_ui'];cursor=ui.get('cursor') or {}
+        if allow_found and ui['sequence']!=sequence and ui.get('tooltip') in FIND_NAMES:
+            return row
         if (ui['sequence']!=sequence and
                 abs(cursor.get('x',-1)*runtime.WIDTH-point[0])<2 and
                 abs(cursor.get('y',-1)*runtime.HEIGHT-point[1])<2):
@@ -35,7 +38,7 @@ def hover(sender,point,before,folder,expected=None):
         time.sleep(.02)
 
 
-def mouseover(folder,before,names):
+def mouseover(folder,before,names,*,sender=None,identity=None):
     """Press the user's Mouse Button 5 binding on a fresh named mouseover."""
     folder.mkdir(parents=True,exist_ok=False)
     ui=before['farm_ui'];name=ui.get('tooltip');cursor=ui.get('cursor') or {}
@@ -52,8 +55,23 @@ def mouseover(folder,before,names):
             abs(point['x']-cursor['x'])*runtime.WIDTH>2 or
             abs(point['y']-cursor['y'])*runtime.HEIGHT>2):
         raise RuntimeError('named artifact mouseover changed before interaction')
+    if sender is None:
+        receipt=inputs.execute('World of Warcraft','button',{'button':9})
+    else:
+        # The tooltip search already owns input.lock and this sender. Keep the
+        # actual mouseover in place and reuse that ownership for the click.
+        from .resources import append_action
+        receipt={'started_at':time.time(),'identity':identity,'action':'button',
+            'arguments':{'button':9},'input':sender.initialization,'completed':False}
+        try:
+            sender._send(sender.X.ButtonPress,9)
+            try:time.sleep(.15)
+            finally:sender._send(sender.X.ButtonRelease,9)
+            receipt['completed']=True
+        finally:
+            receipt['finished_at']=time.time();append_action(receipt)
     result={'source':'fresh public named mouseover','name':name,'cursor':point,
-        'binding':'Mouse Button 5','input':inputs.execute('World of Warcraft','button',{'button':9})}
+        'binding':'Mouse Button 5','input':receipt}
     runtime.write(folder/'interaction.json',result);return result
 
 
@@ -86,10 +104,25 @@ def use(folder,before,names,*,maximum=100):
         try:
             for x,y in points:
                 if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
-                row=hover(sender,(x,y),observed,folder);observed=row
+                row=hover(sender,(x,y),observed,folder,allow_found=True);observed=row
                 name=row['farm_ui'].get('tooltip');probes.append({'x':x,'y':y,'tooltip':name,
                     'cursor':row['farm_ui']['cursor'],'sequence':row['farm_ui']['sequence']})
                 if name not in names:continue
+                # The actual mouseover is useful even when it differs from a
+                # requested search point. Laya chooses its newly legal action
+                # using the observed name and cursor, without moving away.
+                from . import laya_ui
+                state={'artifact_name':name,'cursor':row['farm_ui']['cursor'],
+                    'combat':row['movement']['in_combat'],'casting':row['archaeology']['casting'],
+                    'mouseover_interact_binding':'Mouse Button 5'}
+                action,request,response=laya_ui.choose(state,
+                    'Interact with the currently named archaeology find using the user mouseover binding.',
+                    {'mouseover_interact':'Press Mouse Button 5 on the artifact under the cursor',
+                     'recheck':'Move away and recheck the tooltip before a right click'})
+                runtime.write(folder/'mouseover_choice.json',{'state':state,'choice':action,'request':request,'response':response})
+                if action=='mouseover_interact':
+                    result=mouseover(folder/'mouse5',row,names,sender=sender,identity=identity)
+                    runtime.write(folder/'interaction.json',result);return result
                 cleared=hover(sender,(1000,750),row,folder)
                 # Native tooltip fading can outlive a cursor move. Wait for
                 # its disappearance before confirming the object again.

@@ -1,5 +1,6 @@
 import copy
 import pytest
+from types import SimpleNamespace
 from . import interact,runtime,dig_decisions
 
 
@@ -38,3 +39,31 @@ def test_laya_is_offered_the_user_mouseover_binding(monkeypatch):
         return 'mouseover_interact',{},{}
     monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
     assert dig_decisions.choose(state)[0]=='mouseover_interact'
+
+
+def test_laya_can_use_a_discovered_mouseover_with_the_existing_input_lock(monkeypatch,tmp_path):
+    from tools.client_compatibility import native_input_adapter
+    from . import laya_ui
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    (tmp_path/'run').mkdir()
+    before=named_frame();before['farm_ui'].update(tooltip=None,soft_interact={},bindings={'INTERACTTARGET':[]})
+    fresh=named_frame(2);fresh.update(movement={'in_combat':False},archaeology={'casting':False})
+    frames=iter([fresh,named_frame(3)])
+    monkeypatch.setattr(interact,'observe',lambda _:next(frames))
+    monkeypatch.setattr(interact,'stationary',lambda *_:None)
+    monkeypatch.setattr(interact.inputs,'focus',lambda _:{'owned':True})
+    monkeypatch.setattr(interact.inputs,'execute',lambda *_:pytest.fail('input lock must not be reacquired'))
+    events=[]
+    sender=SimpleNamespace(X=SimpleNamespace(ButtonPress='down',ButtonRelease='up'),
+        initialization={'owned':True},move=lambda *p:events.append(('move',p)),
+        _send=lambda *p:events.append(p),close=lambda:events.append(('close',)))
+    monkeypatch.setattr(native_input_adapter,'Input',lambda:sender)
+    def choose(state,_,options):
+        assert state['artifact_name']=='Night Elf Archaeology Find'
+        assert state['combat'] is False and state['casting'] is False
+        assert 'mouseover_interact' in options
+        return 'mouseover_interact',{},{}
+    monkeypatch.setattr(laya_ui,'choose',choose)
+    result=interact.use(tmp_path/'search',before,{'Night Elf Archaeology Find'},maximum=1)
+    assert events==[('move',(640,260)),('down',9),('up',9),('close',)]
+    assert result['input']['completed']
