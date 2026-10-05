@@ -152,8 +152,9 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
 
 def owned_link_hover(state,seed):
     prefix='|Hplayer:'+seed['observed_sender']+':'
-    return any(r.get('kind')=='FontString' and r.get('text','').startswith(prefix)
-        for r in state.get('pointer',{}).get('foci',[]))
+    pointer=state.get('pointer',{});link=pointer.get('chat_link') or {}
+    return (link.get('frame')=='ChatFrame1' and link.get('data','').startswith(prefix[2:]) and
+        any(r.get('kind')=='FontString' and r.get('text','').startswith(prefix) for r in pointer.get('foci',[])))
 
 
 def reviewed_hover_points(review,point):

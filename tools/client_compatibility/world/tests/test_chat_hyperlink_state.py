@@ -29,8 +29,37 @@ assert(Client442ObserveChatWindows().windows[1].hyperlinks_enabled==nil)
     ('FontString','|Hplayer:Harnesstwo-Client442LabOther:123',False),
     ('FontString','|Hitem:49778:123',False)])
 def test_sender_menu_needs_an_observed_owned_player_hyperlink(kind,text,expected):
-    state={'pointer':{'foci':[{'kind':kind,'text':text}]}}
+    state={'pointer':{'foci':[{'kind':kind,'text':text}],
+        'chat_link':{'frame':'ChatFrame1','data':'player:Harnesstwo-Client442Lab:123:WHISPER'}}}
     assert owned_link_hover(state,{'observed_sender':'Harnesstwo-Client442Lab'})==expected
+
+
+@pytest.mark.parametrize('link',[None,{'frame':'ChatFrame1','data':'item:49778'},
+    {'frame':'ChatFrame2','data':'player:Harnesstwo-Client442Lab:123:WHISPER'},
+    {'frame':'ChatFrame1','data':'player:Other-Client442Lab:123:WHISPER'}])
+def test_font_string_focus_alone_does_not_prove_the_owned_hyperlink(link):
+    state={'pointer':{'foci':[{'kind':'FontString','text':'|Hplayer:Harnesstwo-Client442Lab:123:WHISPER'}],
+        'chat_link':link}}
+    assert not owned_link_hover(state,{'observed_sender':'Harnesstwo-Client442Lab'})
+
+
+def test_hover_events_observe_enter_leave_without_replacing_existing_scripts():
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/ChatObservation.lua'
+    script=r'''
+NUM_CHAT_WINDOWS=1
+local hooks={}
+ChatFrame1={GetName=function()return 'ChatFrame1' end,
+ HookScript=function(self,name,fn)assert(hooks[name]==nil);hooks[name]=fn end}
+dofile(SOURCE)
+assert(Client442ObservePointer().chat_link==nil)
+Client442ObservePointer()
+hooks.OnHyperlinkEnter(ChatFrame1,'player:Harnesstwo-Client442Lab:123:WHISPER','[Harnesstwo]')
+local d=Client442ObservePointer().chat_link
+assert(d.frame=='ChatFrame1' and d.data=='player:Harnesstwo-Client442Lab:123:WHISPER' and d.text=='[Harnesstwo]')
+hooks.OnHyperlinkLeave(ChatFrame1)
+assert(Client442ObservePointer().chat_link==nil)
+'''
+    subprocess.run(['lua','-'],input='SOURCE='+repr(str(source))+'\n'+script,text=True,capture_output=True,check=True)
 
 
 @pytest.mark.parametrize('points',[

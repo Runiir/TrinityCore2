@@ -4,6 +4,25 @@ local function read(fn,...)
     local ok,a,b,c,d,e,f,g,h,i,j=pcall(fn,...)
     if ok then return a,b,c,d,e,f,g,h,i,j end
 end
+local hoverHooks=setmetatable({},{__mode='k'})
+local hoveredLink
+local function observeHyperlinks()
+    for index=1,math.min(tonumber(NUM_CHAT_WINDOWS) or 10,10) do
+        local frame=_G['ChatFrame'..index]
+        if frame and type(frame.HookScript)=='function' and not hoverHooks[frame] then
+            local ok=pcall(frame.HookScript,frame,'OnHyperlinkEnter',function(self,data,text)
+                if type(data)=='string' then hoveredLink={frame=tostring(read(self.GetName,self) or ''),
+                    data=data:sub(1,240),text=tostring(text or ''):sub(1,120)} end
+            end)
+            if ok then
+                pcall(frame.HookScript,frame,'OnHyperlinkLeave',function(self)
+                    if hoveredLink and hoveredLink.frame==tostring(read(self.GetName,self) or '') then hoveredLink=nil end
+                end)
+                hoverHooks[frame]=true
+            end
+        end
+    end
+end
 function Client442ObserveChatEdit()
     local edit=ChatFrame1EditBox
     local open=edit and not not read(edit.IsVisible,edit) or false
@@ -12,7 +31,8 @@ function Client442ObserveChatEdit()
         chat_edit_type=open and read(edit.GetAttribute,edit,'chatType') or nil}
 end
 function Client442ObservePointer()
-    local result={foci={}}
+    observeHyperlinks()
+    local result={foci={},chat_link=hoveredLink}
     local x,y=read(GetCursorPosition)
     if type(x)=='number' and type(y)=='number' then result.x=x;result.y=y end
     local foci=read(GetMouseFoci) or {read(GetMouseFocus)}
