@@ -48,6 +48,20 @@ end
 function Client442ShouldObserveSettings(panel,tick)
     return panel and (panel:IsVisible() or tick%10==0) or false
 end
+function Client442ReadDisplayState(cvars)
+    local monitor=tonumber(cvars.gxMonitor)
+    local fullscreen=cvars.gxMaximize=='1'
+    local result={screen_width=call(GetScreenWidth),screen_height=call(GetScreenHeight),
+        monitor=monitor,fullscreen=fullscreen}
+    if monitor and (cvars.gxMaximize=='0' or cvars.gxMaximize=='1') then
+        local size=call(C_VideoOptions and C_VideoOptions.GetCurrentGameWindowSize,monitor,fullscreen)
+        local ok,x,y=pcall(function() return size.x,size.y end)
+        if ok and type(x)=='number' and type(y)=='number' and x>0 and x<=16384 and y>0 and y<=16384 then
+            result.window_size={width=x,height=y}
+        end
+    end
+    return result
+end
 function Client442ObserveSettings()
     local panel=SettingsPanel
     local category=panel and call(panel.GetCurrentCategory,panel)
@@ -99,5 +113,6 @@ function Client442ObserveSettings()
             end
         end
     end
+    result.display_state=Client442ReadDisplayState(result.cvars)
     return result
 end
