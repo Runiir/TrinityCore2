@@ -67,6 +67,7 @@ def test_delayed_report_open_and_close_wait_without_repeating_input(monkeypatch)
     menu={'text':'Report Player','kind':'MenuItem','enabled':True,'x':100,'y':300}
     monkeypatch.setattr(actions,'target',lambda t,label,predicate:menu if label.startswith('fixture.') else rows[0])
     monkeypatch.setattr(actions,'controls',lambda t:rows)
+    monkeypatch.setattr(actions,'owned_report_context',lambda t,seed:True)
     monkeypatch.setattr(actions.time,'sleep',lambda seconds:None)
     sent=[]
     def step(label,goal,choices,oracle,diagnostic_action=None,await_state=None):
@@ -82,3 +83,24 @@ def test_delayed_report_open_and_close_wait_without_repeating_input(monkeypatch)
     actions.report(t,{'observed_sender':'Harnesstwo-Client442Lab','expected_native_guid':2})
     assert sent==['fixture.open_owned_player_report','chat.report_ui_cancel']
     assert t.receipt['owned_report_ui']['submitted'] is False
+
+
+@pytest.mark.parametrize('guid,context,valid',[(None,False,False),(None,True,True),
+    ('Player-1-00000002',True,True),('Player-1-00000003',True,False),('',True,False)])
+def test_missing_form_guid_requires_attributed_context_and_never_accepts_foreign_guid(guid,context,valid):
+    assert actions.report_guid_matches({'report_player_guid':guid},context)==valid
+
+
+@pytest.mark.parametrize('change',[None,'foreign_link','wrong_frame','wrong_token','failed_native','missing_native','duplicate_event'])
+def test_report_chat_context_requires_exact_native_seed_hover_and_public_event(change):
+    seed={'expected_native_guid':2,'observed_sender':'Harnesstwo-Client442Lab','token':'TC442UI:reply_seed_12345678','checks':{'native':True}}
+    link={'frame':'ChatFrame1','data':'player:Harnesstwo-Client442Lab:440:WHISPER'}
+    event={'event':'CHAT_MSG_WHISPER','text':seed['token'],'sender':seed['observed_sender']};events=[event]
+    if change=='foreign_link':link['data']='player:Someoneelse:440:WHISPER'
+    if change=='wrong_frame':link['frame']='ChatFrame2'
+    if change=='wrong_token':event['text']='TC442UI:reply_seed_87654321'
+    if change=='failed_native':seed['checks']['native']=False
+    if change=='missing_native':seed['checks']={}
+    if change=='duplicate_event':events.append(dict(event))
+    t=SimpleNamespace(receipt={'player_link_pointer_settled':{'pointer':{'chat_link':link}},'player_menu':{'state':{'chat_probes':events}}})
+    assert actions.owned_report_context(t,seed)==(change is None)

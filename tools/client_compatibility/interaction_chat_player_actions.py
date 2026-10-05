@@ -49,11 +49,13 @@ def report(t,seed):
             not a.get('blocked_actions') else 'client_or_protocol_failure'},
         await_state=lambda a:'ReportFrame' in a['panels']),'owned_report_ui_open')
     rows=controls(t);state,frame=t.observe('owned_report_ui_rendered')
-    checks=report_identity(rows,expected)
-    t.receipt['owned_report_ui']={'checks':checks,'controls':rows,'state':state,'frame':frame,'submitted':False};t.persist()
+    context=owned_report_context(t,seed);checks=report_identity(rows,expected,context)
+    checks['attributed_owned_chat_source']=context
+    t.receipt['owned_report_ui']={'checks':checks,'controls':rows,'state':state,'frame':frame,'submitted':False,
+        'public_guid_available':any(c.get('report_player_guid') is not None for c in rows if c.get('report_action')=='close')};t.persist()
     if not all(checks.values()):raise RuntimeError('owned report form identity or close/submit controls differ')
     control=target(t,'chat.report_ui_cancel',lambda c:c.get('report_action')=='close' and
-        c.get('report_player_name') in expected and c.get('report_player_guid')=='Player-1-00000002')
+        c.get('report_player_name') in expected and report_guid_matches(c,context))
     if not control.get('enabled') or control['kind']!='Button':raise RuntimeError('observed report close is not enabled')
     t.io.move(*point(control));time.sleep(1)
     require(t.step('chat.report_ui_cancel','Close the owned report form with its observed Close button.',
@@ -64,10 +66,25 @@ def report(t,seed):
         diagnostic_action='close',await_state=lambda a:'ReportFrame' not in a['panels']),'owned_report_ui_cancel_pass')
 
 
-def report_identity(rows,expected):
+def report_guid_matches(row,owned_context=False):
+    guid=row.get('report_player_guid')
+    return guid=='Player-1-00000002' or (guid is None and owned_context)
+
+
+def owned_report_context(t,seed):
+    pointer=t.receipt.get('player_link_pointer_settled',{}).get('pointer',{})
+    link=pointer.get('chat_link') or {}
+    public=t.receipt.get('player_menu',{}).get('state',{}).get('chat_probes',[])
+    return (seed.get('expected_native_guid')==2 and bool(seed.get('checks')) and all(seed['checks'].values()) and
+        link.get('frame')=='ChatFrame1' and link.get('data','').startswith('player:'+seed['observed_sender']+':') and
+        len([r for r in public if r.get('event')=='CHAT_MSG_WHISPER' and r.get('text')==seed['token'] and
+            r.get('sender')==seed['observed_sender']])==1)
+
+
+def report_identity(rows,expected,owned_context=False):
     close=[c for c in rows if c.get('report_action')=='close']
     submit=[c for c in rows if c.get('report_action')=='submit']
     return {'one_close':len(close)==1,'one_submit':len(submit)==1,
         'owned_name':len(close)==1 and close[0].get('report_player_name') in expected,
-        'owned_guid':len(close)==1 and close[0].get('report_player_guid')=='Player-1-00000002',
+        'owned_guid_or_attributed_chat_source':len(close)==1 and report_guid_matches(close[0],owned_context),
         'submission_not_ready':len(submit)==1 and submit[0].get('enabled') is False}
