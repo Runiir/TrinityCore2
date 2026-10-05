@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 406 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 409 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -1109,9 +1109,9 @@ Fixture: `in_world`.
 - [x] `ui_misc.dressup_item` (qualified variant; [evidence](#stock_dressup_sword_preview))
 - [x] `ui_misc.dressup_rotate` (qualified variant; [evidence](#stock_dressup_sword_preview))
 - [x] `ui_misc.dressup_close` (qualified variant; [evidence](#stock_dressup_sword_preview))
-- [ ] `ui_misc.item_text_open`
-- [ ] `ui_misc.item_text_page`
-- [ ] `ui_misc.item_text_close`
+- [x] `ui_misc.item_text_open` (qualified variant; [evidence](#owned_native_letter_text))
+- [x] `ui_misc.item_text_page` (qualified variant; [evidence](#owned_native_letter_text))
+- [x] `ui_misc.item_text_close` (qualified variant; [evidence](#owned_native_letter_text))
 - [x] `ui_misc.tooltip_compare` (qualified variant; [evidence](#stock_owned_sword_comparison))
 - [x] `ui_misc.achievement_link` (qualified variant; [evidence](#owned_pending_achievement_link))
 - [x] `ui_misc.quest_link` (qualified variant; [evidence](#owned_existing_quest_link_cancel))
@@ -2817,3 +2817,16 @@ Remaining limits: Captured notification after one controlled bridge restart only
 - [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/primary_after/episode.json`, SHA-256 `933f1d5c659d3b42551ccf4d7d0db5a993b13c22b79a4856e8e8fc2d5724dc88`.
 - [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/scout_after/episode.json`, SHA-256 `2e0b17bfc4d1a94c3e771c8bc886cdfa607e0c3c0fc24b75efdcfced488474a8`.
 - [442_network_notification_review_20261006_01.tar.gz.dvc](../../artifacts/client_harness/442_network_notification_review_20261006_01.tar.gz.dvc), member `evidence/network_notification_review_20261006/notification_reconciliation.json`, SHA-256 `5bfc5b02dfb095171b53eb257cb154257bca9caaad573d01d679006fe2126edf`.
+
+### owned_native_letter_text
+
+UI99 item_text01 whole completed pass on owned Harnessone/build60895: ordinary bag Right Click to Read opens native item910 An Undelivered Letter; stock Next and Previous show the exact native pages18/19 and return to page1; stock Close removes the panel. Native owned GUID/position, READ_ITEM_OK, both PAGE_TEXT replies and the exact modern vector chain match the passive public title/page/text and actual rendered pages. All nine native and nine readable restoration checks pass, both narrow fixture permission grants are revoked, and the disposable letter is absent. Same primary session, native worldserver and both client lifetimes are preserved. Controller code, model None.
+
+Remaining limits: One owned native letter910 with default material and two public static pages only. Dynamic item text, other materials, long chains, denied reads and error UX remain open. Bag preparation is not an extra qualification. One failed offline deployment precheck and its source-bound ordinary reentry remain separate and excluded; the completed bridge deployment leaves the scout parked at character selection. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/item_text01/episode.json`, SHA-256 `96ec8be21e10cc88131e0cc93e383e7ee5143ff728c6a160adf5ccbed5bd13b3`.
+  Checked cases: `ui_misc.item_text_open` (stock_item_text_pass), `ui_misc.item_text_page.next` (stock_item_text_page_pass), `ui_misc.item_text_page.previous` (stock_item_text_page_pass), `ui_misc.item_text_close` (stock_item_text_close_pass).
+- [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/whole_trial_review.json`, SHA-256 `0520e90d7988abea49acf454c83b4a9c493648b7226e23782c08542f83dc6dd7`.
+- [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/bridge_item_text_deployment02/deployment.json`, SHA-256 `45d0fd934eef257861be365a1715c4b08f2661ff7b0c5c36a90ba9bcd8175319`.
+- [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/verification.json`, SHA-256 `17442668486162213345becf04e258e00a27fd2034c02eff818091ae02a0a57e`.
+- [442_interactions_20261006_99.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_99.tar.gz.dvc), member `evidence/client_interactions_20261006_ui99/runtime_closure.json`, SHA-256 `faa6ca5c791805ed23151a4efb50b1d7187f77e1a49754f0adb1224d0b0f836e`.
