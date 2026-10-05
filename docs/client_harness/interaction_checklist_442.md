@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 374 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 376 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -444,8 +444,8 @@ Fixture: `owned_second_actor`.
 - [x] `chat.raid_warning` (qualified variant; [evidence](#chat))
 - [x] `chat.guild` (qualified variant; [evidence](#guild_notes))
 - [x] `chat.officer` (qualified variant; [evidence](#guild_notes))
-- [ ] `chat.channel_join`
-- [ ] `chat.channel_leave`
+- [x] `chat.channel_join` (qualified variant; [evidence](#owned_native_stock_channel_membership))
+- [x] `chat.channel_leave` (qualified variant; [evidence](#owned_native_stock_channel_membership))
 - [ ] `chat.channel_list`
 - [ ] `chat.channel_password`
 - [ ] `chat.channel_owner`
@@ -2507,3 +2507,18 @@ Remaining limits: Own Common Say delivery of exact item49778 only. The message r
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_receiver_validation.json`, SHA-256 `8ec1e0b32f2b6e8cd95a9e532a996456f6d8207204dcc20c01243b6d4bdd62d1`.
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_bridge_deploy01/deployment.json`, SHA-256 `1c0fb463773203b928ab1bcc8382986d1837928e4f73f5aa34a573488b69f5f4`.
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_bridge_deploy02/deployment.json`, SHA-256 `6f0c3e38c1d39bfbee198a9aa3b7341de8d9d6617d6bbc990c9ba58b3e2f0ee7`.
+
+### owned_native_stock_channel_membership
+
+Fresh whole-pass channel_join_probe02 uses ordinary stock slash join and leave for one uniquely named primary-owned TC442UIChannel. Public membership becomes enabled. Captured modern/native requests and native/modern acknowledgements agree. Independent decoding proves native leave type3, channelID0, suspendedfalse and exact modern leave name. Reviewed General chat shows Changed Channel, owned moderator privileges and Left Channel. Original channel membership, chat settings and all ten native/public checks restore.
+
+Remaining limits: One primary-owned disposable channel, no password. Channel lists, owner query/reassignment, passwords, peer membership and persistence remain open. Initial unmapped join/leave and first absent-entry cleanup guard remain failed and excluded; source-bound absence verification after normal reentry passes. Initial test collection import error is corrected; 71 focused and 1044 full bridge tests pass.
+
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/channel_join_probe02/episode.json`, SHA-256 `a800d473817a0d843de7df41ab5426cb1153af716371556a95548fedee0af461`.
+  Checked cases: `chat.channel_join` (owned_channel_join_pass), `fixture.leave_owned_channel` (owned_channel_left).
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/channel_roundtrip_review.json`, SHA-256 `a3e24449cc75ef67ee61ab07b262fe44c20c978ddff68d2cde40f536c3446270`.
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/channel_validation.json`, SHA-256 `71c378bf2c5627a8a29e052db1b479532aea116e8706cfaa7173876c06d002a3`.
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/channel_join_failure_review.json`, SHA-256 `8993cc8ea8f2e41fc9b28672e89145ef099864cc32a18248a19e63b92c0e4a8c`.
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/failed_channel_cleanup02/episode.json`, SHA-256 `867ed1b0b005628e3dbbf238c3d62c683d7956604ebc0f49777bf958384e7413`.
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/channel_bridge_deploy01/deployment.json`, SHA-256 `368d73d91503467a1bd7a9116eafbb1d50e4571b19ca2b901e9c65193e157be2`.
+- [442_interactions_20261005_73.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc), member `evidence/client_interactions_20261005_ui73/observer93_deployment01/deployment.json`, SHA-256 `85e73a83e7d8d671feca93f226f5fd87e616568d8c19e2bb5c6b978723399436`.

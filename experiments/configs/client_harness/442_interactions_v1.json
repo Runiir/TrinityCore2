@@ -3307,7 +3307,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_native_stock_channel_membership"
     },
     {
       "id": "chat.channel_leave",
@@ -3316,7 +3317,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_native_stock_channel_membership"
     },
     {
       "id": "chat.channel_list",
@@ -12740,8 +12742,58 @@
           "sha256": "6f0c3e38c1d39bfbee198a9aa3b7341de8d9d6617d6bbc990c9ba58b3e2f0ee7"
         }
       ]
+    },
+    {
+      "id": "owned_native_stock_channel_membership",
+      "operations": [
+        "chat.channel_join",
+        "chat.channel_leave"
+      ],
+      "scope": "Fresh whole-pass channel_join_probe02 uses ordinary stock slash join and leave for one uniquely named primary-owned TC442UIChannel. Public membership becomes enabled. Captured modern/native requests and native/modern acknowledgements agree. Independent decoding proves native leave type3, channelID0, suspendedfalse and exact modern leave name. Reviewed General chat shows Changed Channel, owned moderator privileges and Left Channel. Original channel membership, chat settings and all ten native/public checks restore.",
+      "limits": "One primary-owned disposable channel, no password. Channel lists, owner query/reassignment, passwords, peer membership and persistence remain open. Initial unmapped join/leave and first absent-entry cleanup guard remain failed and excluded; source-bound absence verification after normal reentry passes. Initial test collection import error is corrected; 71 focused and 1044 full bridge tests pass.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/channel_join_probe02/episode.json",
+          "sha256": "a800d473817a0d843de7df41ab5426cb1153af716371556a95548fedee0af461",
+          "cases": {
+            "chat.channel_join": "owned_channel_join_pass",
+            "fixture.leave_owned_channel": "owned_channel_left"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/channel_roundtrip_review.json",
+          "sha256": "a3e24449cc75ef67ee61ab07b262fe44c20c978ddff68d2cde40f536c3446270"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/channel_validation.json",
+          "sha256": "71c378bf2c5627a8a29e052db1b479532aea116e8706cfaa7173876c06d002a3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/channel_join_failure_review.json",
+          "sha256": "8993cc8ea8f2e41fc9b28672e89145ef099864cc32a18248a19e63b92c0e4a8c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/failed_channel_cleanup02/episode.json",
+          "sha256": "867ed1b0b005628e3dbbf238c3d62c683d7956604ebc0f49777bf958384e7413"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/channel_bridge_deploy01/deployment.json",
+          "sha256": "368d73d91503467a1bd7a9116eafbb1d50e4571b19ca2b901e9c65193e157be2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_73.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui73/observer93_deployment01/deployment.json",
+          "sha256": "85e73a83e7d8d671feca93f226f5fd87e616568d8c19e2bb5c6b978723399436"
+        }
+      ]
     }
   ],
-  "qualified_operations": 374,
+  "qualified_operations": 376,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
