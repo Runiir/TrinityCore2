@@ -1,0 +1,21 @@
+{
+  "schema": "whitemane_live_supervised_archaeology_v1",
+  "server": "Whitemane live realm",
+  "realm_selection": "user-selected in the official launcher",
+  "launcher": "installed Whitemane.AppImage",
+  "monitor": "HDMI-1",
+  "display": "private Gamescope X display and EI socket",
+  "supervised": true,
+  "model_requested": "Laya",
+  "policy_scope": "this user-requested supervised experiment",
+  "observation_sources": ["owned game screenshots", "normal public addon APIs"],
+  "local_protocol_bridge": false,
+  "rewrite_databases": false,
+  "acceptance": {
+    "client_world_entry": false,
+    "live_archaeology_observation": false,
+    "canopic_jar_farming": false,
+    "laya_training": false
+  },
+  "stop_conditions": ["supervisor interruption", "death", "disconnect", "stale observation", "repeated actions without progress"]
+}
