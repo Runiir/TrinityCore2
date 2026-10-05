@@ -1,7 +1,7 @@
 -- Read-only public UI observations. This file never presses or invokes game controls.
-local capacity,columns,cell=6144,128,3
+local capacity,columns,cell=8192,128,3
 local frame=CreateFrame('Frame','ClientInteractionHarnessPanel',UIParent)
-frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,51)
+frame:SetScale(1/UIParent:GetEffectiveScale());frame:SetSize(columns*cell,math.ceil((capacity+12)/(3*columns))*cell)
 frame:SetPoint('TOPLEFT',UIParent,'TOPLEFT',300,-16);frame:SetFrameStrata('TOOLTIP');frame:EnableMouse(false)
 frame:SetFrameLevel(10000)
 local pixels,previous={},{}
@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=104,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=105,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end

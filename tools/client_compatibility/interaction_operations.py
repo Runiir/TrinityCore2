@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 from contextlib import redirect_stdout
@@ -25,9 +26,14 @@ def retain_control_pixels(path,target,state):
     # retain the complete game image for rendering and coordinate review.
     from PIL import Image
     from .observation.interactions import decode_image
-    box=(281,15,642,63)
     with Image.open(path) as full:
         if full.size!=(1280,720):raise RuntimeError('control capture viewport changed')
+        # Retain the encoded rows actually used, including expanded packets.
+        rgb=full.convert('RGB')
+        header=bytes(rgb.getpixel((282,16)))+bytes(rgb.getpixel((285,16)))
+        length=int.from_bytes(header[4:6],'big')
+        rows=math.ceil((length+12)/(3*128))
+        box=(281,15,642,15+math.ceil(rows*2.8125))
         pixels=full.crop(box)
         if decode_image(pixels,x=.25,y=0)!=state:
             raise RuntimeError('retained control pixels differ from the full capture')
