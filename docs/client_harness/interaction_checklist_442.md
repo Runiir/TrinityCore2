@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 371 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 374 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -451,14 +451,14 @@ Fixture: `owned_second_actor`.
 - [ ] `chat.channel_owner`
 - [x] `chat.emote` (qualified variant; [evidence](#chat))
 - [ ] `chat.language_switch`
-- [ ] `chat.combat_log`
+- [x] `chat.combat_log` (qualified variant; [evidence](#owned_native_stock_combat_log_timestamps))
 - [x] `chat.chat_settings` (qualified variant; [evidence](#stock_general_say_filter_roundtrip))
 - [x] `chat.chat_tab_create` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.chat_tab_rename` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.chat_tab_close` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.font_size` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
-- [ ] `chat.timestamps`
-- [ ] `chat.chat_links`
+- [x] `chat.timestamps` (qualified variant; [evidence](#owned_native_stock_combat_log_timestamps))
+- [x] `chat.chat_links` (qualified variant; [evidence](#owned_item_link_native_say_delivery))
 - [x] `chat.scroll_history` (qualified variant; [evidence](#owned_native_chat_history_scroll))
 - [ ] `chat.copy_if_available`
 - [ ] `chat.mute_voice`
@@ -2481,3 +2481,29 @@ Remaining limits: Observed General window geometry, stock up/down buttons and ex
 
 - [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_history01/episode.json`, SHA-256 `c4a3c183818bc376546fd68fa2bb25d734ce1cfd4dfbced6b9521f717e55017d`.
 - [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_settings_history_visual_review.json`, SHA-256 `0f532f3fb6a1ceafb60d29e5018b91d64a55dfd225b4472f2c4c0c6183ef8dd4`.
+
+### owned_native_stock_combat_log_timestamps
+
+Fresh whole-pass owned_native_combat_log03 copies stock My actions to TC442Log, enables the Spell Casting group and its Success child, and checks Show Timestamp through observed stock controls. Native-owned Battle Shout6673 counter5 completes, matching filtered and unfiltered own SPELL_CAST_SUCCESS events. Actual stock log shows new05:39:19 timestamped Harnessone casts Battle Shout line, different from prior05:31:03. Original combat preference fingerprint, filter metadata/current selection, chat settings, spellbook layout and all10 native/public checks restore after deleting only the disposable copy.
+
+Remaining limits: Exact private idle warrior and copied combat-log filter only. Other spells/combat payloads, General-chat timestamps, log history limits and reconnect persistence remain open. Stock refilter rebuilds history, so message_count1 is not a monotonic event oracle. Numeric child state2 is unchecked enabled; only booleantrue enables Success. Failed whole trials remain excluded.
+
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/owned_native_combat_log03/episode.json`, SHA-256 `77d3e13fd908f8c7dad4e277e9157f32c008cb01ae574550233ccf7b872f1853`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/native_combat_log_visual_review.json`, SHA-256 `2a25edfb2109299b96f7d1f747a0ed24b04cff88b3a868723132cfc387d308bc`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/native_combat_log_failure_review.json`, SHA-256 `f0855c149a7f68c7fc95669eff36079d782a86670162a0157df27748d0f17b46`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/owned_combat_filter_failure_review.json`, SHA-256 `b590134a37abad2f4c74f39bdfa4dc30a08df91d11f75a70920f3395a1118ea2`.
+
+### owned_item_link_native_say_delivery
+
+Fresh whole-pass item_chat_delivery03 Shift-clicks native-owned Worn Greatsword49778 bag0slot10 into focused Common Say, then submits exactly the stock-generated hyperlink. Both request directions, native response senderGUID1 and translated response match the full link. Actual General chat renders Harnessone says: [Worn Greatsword]. Item identity/slot, chat settings/geometry and all10 native/public checks restore. Exact fixture-only capture rejects surrounding text, foreign links/senders and malformed boundaries; native Say may retain owned receiverGUID1.
+
+Remaining limits: Own Common Say delivery of exact item49778 only. The message remains in ordinary history. Peer delivery, clicking sent links and other link types/items remain open. Failed01/02 trials remain excluded. One earlier full-suite stale-clock test fails before repair; final full1029 checks pass before the receiver amendment and all63 relevant checks pass afterward.
+
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/item_chat_delivery03/episode.json`, SHA-256 `5d403643d47cbf462fb8f398ccf3ebfa8287e86bae323eed0f31f930700b75ee`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/item_chat_delivery_visual_review.json`, SHA-256 `ff896ed6d1f77f25b572bbb50bde8f02cbed35cc270f4d2b2660aabfb03bcad1`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/item_chat_delivery_failure_review.json`, SHA-256 `e365d5750ac502329f11fc438b56117c66bab08f36091c5c9e87fa8a12bb76bb`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/item_chat_delivery_receiver_failure_review.json`, SHA-256 `0f516cda684d67da6d59ceb48bdab31b61bae5a02edbb95bc3dd27af03b82d4e`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_bridge_validation.json`, SHA-256 `5578a456c02d0408e6b97302ed52fe782a7163ed5e7023fce0932c571ee82e33`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_receiver_validation.json`, SHA-256 `8ec1e0b32f2b6e8cd95a9e532a996456f6d8207204dcc20c01243b6d4bdd62d1`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_bridge_deploy01/deployment.json`, SHA-256 `1c0fb463773203b928ab1bcc8382986d1837928e4f73f5aa34a573488b69f5f4`.
+- [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/chat_probe_bridge_deploy02/deployment.json`, SHA-256 `6f0c3e38c1d39bfbee198a9aa3b7341de8d9d6617d6bbc990c9ba58b3e2f0ee7`.
