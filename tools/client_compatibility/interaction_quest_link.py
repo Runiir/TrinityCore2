@@ -12,7 +12,6 @@ from .interaction_chat_links import insert
 from .interaction_observation import read_current_page
 from .observation.journal import entries
 from . import actors
-from .interaction_settings_persistence import reload_checks
 
 QUEST=28825
 TITLE='A Personal Summons'
@@ -81,7 +80,7 @@ def message_requests(session,since,until=None):
         row.get('name','').startswith('CMSG_CHAT_MESSAGE_')]
 
 
-def restore(t,original,native,key):
+def restore(t,original,native,key,selection_restore=None):
     t.clean_panels();open_log(t,'fixture.quest_link.reopen',key)
     header(t,True,'fixture.quest_link.collapse')
     require(t.step('fixture.quest_link.close','Close the restored stock quest header.',
@@ -91,14 +90,8 @@ def restore(t,original,native,key):
     state,current=detail(t,'quest_link_closed_before_selection_restore')
     if current.get('selection')!=original['selection']:
         if original['selection']!=0:raise RuntimeError('stock quest selection cannot restore the original header')
-        session=actors.session_entry(t.fixture)['session'];previous=len(t.receipt.get('chat_submission_checks',[]))
-        before,frame=t.observe('quest_link_selection_before_reload')
-        t.execute({'kind':'chat','value':'/reload'})
-        after,after_frame=t.observe('quest_link_selection_after_reload',seconds=240)
-        result=reload_checks(before,after,session,actors.session_entry(t.fixture)['session'],
-            t.receipt.get('chat_submission_checks',[])[previous:],t.guid)
-        t.receipt['quest_link_selection_reload']={'checks':result,'before_frame':frame,'after_frame':after_frame};t.persist()
-        if not all(result.values()):raise RuntimeError('ordinary quest-layout UI reload did not verify a new generation')
+        if selection_restore is None:raise RuntimeError('selection0 requires separately reviewed ordinary reentry')
+        selection_restore(t,original,native,state,current)
         state,current=detail(t,'quest_link_restored_hidden')
     result={k:current.get(k)==original.get(k) for k in ['visible','count','total_quests','selection','rows','watched_count','fixture']}
     result.update(native_quests=saved(1)==native,chat_closed=not state.get('chat_edit_open'),
@@ -129,7 +122,7 @@ def layout_source(t,path,original,native):
     t.receipt['quest_link_layout_source']={'file':str(path),'sha256':lab.sha256(path)};t.persist()
 
 
-def suite(t,inspect=False,calibrate=False,source=None):
+def suite(t,inspect=False,calibrate=False,source=None,selection_restore=None):
     state,original=detail(t,'quest_link_hidden_original')
     if state.get('observer_version',0)<121:raise RuntimeError('requires read-only quest-link observer121')
     t.receipt.update(custom_script_permission='blocked_by_user',quest_link_original=original,
@@ -137,6 +130,8 @@ def suite(t,inspect=False,calibrate=False,source=None):
     if inspect:
         t.receipt['qualified_scope']='Read-only hidden quest-log reconnaissance only; no gameplay qualification.';t.persist();return
     expected=fixture(original)
+    if original['selection']==0 and selection_restore is None:
+        raise RuntimeError('selection0 requires the staged ordinary-reentry adapter before log input')
     if t.fixture['guid']!=1:raise RuntimeError('requires the exact owned primary')
     native=saved(1);keys=state.get('quest_log_keys') or []
     if [(r['quest'],r['status']) for r in native['active']]!=[(QUEST,1)]:
@@ -145,7 +140,7 @@ def suite(t,inspect=False,calibrate=False,source=None):
     key=binding_key(keys[0]);t.receipt['quest_link_native_original']=native;t.persist()
     if calibrate:
         t.receipt.update(quest_link_layout_calibration=True,qualified_scope=
-            'Layout calibration only: stock quest-log open/close and original collapsed header/selection restoration, with one ordinary UI reload if selection0 needs a new UI generation. No quest-link input or gameplay qualification.');t.persist()
+            'Layout calibration only: stock quest-log open/close and original collapsed header/selection restoration through separately reviewed ordinary same-character reentry. No quest-link input or gameplay qualification.');t.persist()
     else:
         if source is None:raise RuntimeError('requires a passed source-bound layout calibration before quest-link input')
         layout_source(t,source,original,native)
@@ -172,8 +167,10 @@ def suite(t,inspect=False,calibrate=False,source=None):
             t.receipt['quest_link_pending_checks']={'checks':result,'message_submitted':False};t.persist()
             if not all(result.values()):raise RuntimeError('pending quest link differs from the owned public/native fixture')
         insert(t,'quest',QUEST,control,on_insert=guard)
+    except Exception as error:
+        t.receipt['quest_link_execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
-        restore(t,original,native,key)
+        restore(t,original,native,key,selection_restore)
 
 
 def main():
