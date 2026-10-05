@@ -87,3 +87,21 @@ def test_failed_pickup_measures_same_find_approach_instead_of_survey(owned_root,
     assert value['out_of_range'] and value['approach']['world']['north']==3
     session=json.loads((args.output/'session.json').read_text())
     assert session['steps'][-1]['outcome']=='out_of_range_approach_same_pending_find'
+
+
+def test_survey_cooldown_wait_keeps_character_available_and_sends_no_requests(owned_root,monkeypatch):
+    r=row();r['observed_at']=1;r['movement']['facing_radians']=0
+    r['archaeology'].update(site_id=331,can_survey=True,successful_surveys=0,last_survey_uptime_ms=0,
+        looted_finds=0,loot_open=False,visible_markers=[])
+    r['farm_ui'].update(uptime=10,survey={'ready':False,'cooldown_ends':11})
+    monkeypatch.setattr(dig_session,'observe',lambda _:copy.deepcopy(r))
+    monkeypatch.setattr(dig_session.resources,'check',lambda **_:None)
+    monkeypatch.setattr(dig_session,'choose',lambda _:pytest.fail('cooldown must not query Laya'))
+    monkeypatch.setattr(dig_session.inputs,'execute',lambda *_:pytest.fail('cooldown must not send input'))
+    monkeypatch.setattr(dig_session.time,'sleep',lambda _:None)
+    assert dig_session.routes.model_state(r,None,False)['available']
+    args=SimpleNamespace(output=owned_root/'dig',steps=1,loot_at=None,auto_loot=True)
+    assert dig_session.run(args)['failure'] is None
+    session=json.loads((args.output/'session.json').read_text())
+    assert session['steps']==[]
+    assert session['survey_cooldown_wait']['remaining_seconds']==1

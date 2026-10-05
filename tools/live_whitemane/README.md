@@ -68,6 +68,10 @@ age. Route emergency bounds derive from distance and travel speed.
 
 The existing marker-first rule, telescope fallback, digsite boundary margin,
 calculated flight clearance and 150-fragment solve batches remain active.
+Mounting and grounded dismounting use Runiir's Shift+Space toggle. Each toggle
+is sent once and its resulting mounted state is checked before continuing.
+Survey cooldowns are local readiness waits with no model request or gameplay
+input; a spell cooldown does not change character availability.
 Normal loot-window buttons are exposed and chosen by Laya if interaction
 does not auto-loot the find.
 

@@ -100,6 +100,4 @@ def model_state(row, guide, artifact_visible):
         'casting':a['casting'],'artifact_visible':bool(artifact_visible),'instrument_current':current,
         'telescope':{'color':guide['color'],'heading_relative_to_player':guide['heading_relative_to_player'],
                      'distance_yards':guide['distance_yards']} if current else None}
-    if not current and not artifact_visible and ((row.get('farm_ui') or {}).get('survey') or {}).get('ready') is False:
-        state['available']=False
     return state

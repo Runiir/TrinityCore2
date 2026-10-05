@@ -136,6 +136,19 @@ def run(args):
                 a,m=before['archaeology'],before['movement']
             guide,error=routes.select(before,session,tool) if not visible_find else (None,None)
             guide=constrain(before,guide,site_id=value['site_id'] if value else None) if guide else None
+            ui=before.get('farm_ui') or {}
+            cooldown=ui.get('survey') or {}
+            if (not args.loot_at and not visible_find and not value
+                    and (not guide or guide['arrived']) and cooldown.get('ready') is False):
+                # A local readiness wait sends neither a model request nor a
+                # gameplay input. Keep character availability in its trained
+                # meaning instead of turning a spell cooldown into absence.
+                remaining=max(0,cooldown.get('cooldown_ends',0)-ui.get('uptime',0))
+                session['survey_cooldown_wait']={'observed_at':before['observed_at'],
+                    'remaining_seconds':remaining,'gameplay_inputs':0,'model_requests':0}
+                runtime.write(path,session)
+                time.sleep(min(.5,remaining) if remaining>0 else .2)
+                continue
             if args.loot_at:
                 inputs.execute('World of Warcraft','hover',dict(zip(('x','y'),args.loot_at)))
                 hovered=observe(folder/'loot_hover.png')

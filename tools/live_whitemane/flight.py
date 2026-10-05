@@ -21,9 +21,6 @@ def fly(folder, row, arrow, step):
         import json
         current=json.loads(graph.read_text())['current']
         if current!='flight':farm_graph.transition(graph,'flight',row,pending=pending_find.load(row),target=target)
-    def click_mount():
-        from .archaeology_probe import command
-        return command('/cast Blue Wind Rider')
     def key(name,hold):
         return inputs.execute('World of Warcraft','key',{'key':name,'hold':hold})
     for index in range(32):
@@ -62,7 +59,8 @@ def fly(folder, row, arrow, step):
         if action=='arrived': return receipts
         if graph and action!='observe':phase['graph_transition']=farm_graph.transition(graph,action,row,pending=pending_find.load(row))
         if action=='mount':
-            phase['inputs'].extend(click_mount());time.sleep(2.5)
+            if a['mounted']:raise RuntimeError('mount toggle requires an unmounted character')
+            phase['inputs'].append(key('shift+space',.15));time.sleep(2.5)
         elif action=='takeoff':
             phase['smooth_ascent']=ascend(folder,height_plan['ceiling_yards'],site_id=arrow.get('site_id'))
             phase['height_basis']='calculated reference corridor clearance and authenticated owned climb feedback'
@@ -86,8 +84,8 @@ def fly(folder, row, arrow, step):
         elif action=='land':
             phase['smooth_descent']=descend(folder,target,site_id=arrow.get('site_id'))
         elif action=='dismount':
-            from .archaeology_probe import command
-            phase['inputs'].extend(command('/dismount'));time.sleep(.5)
+            if not a['mounted'] or a['flying']:raise RuntimeError('dismount toggle requires a grounded mounted character')
+            phase['inputs'].append(key('shift+space',.15));time.sleep(.5)
         elif action=='observe':
             time.sleep(.5)
         else: raise RuntimeError('unexpected travel action for a flight route')
@@ -98,6 +96,8 @@ def fly(folder, row, arrow, step):
         if graph and action!='observe':farm_graph.transition(graph,'flight',after,pending=pending_find.load(after))
         if action=='mount' and not after['archaeology']['mounted']:
             raise RuntimeError('mount input did not produce mounted state')
+        if action=='dismount' and after['archaeology']['mounted']:
+            raise RuntimeError('dismount input did not produce unmounted state')
         if action=='takeoff' and not after['archaeology']['flying']:
             raise RuntimeError('takeoff did not produce flying state')
         if action=='cruise' and abs(error)<=.18:

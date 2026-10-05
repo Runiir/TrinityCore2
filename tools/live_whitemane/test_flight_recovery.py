@@ -1,4 +1,5 @@
 import copy
+import pytest
 from tools.client_compatibility import travel_policy
 from tools.live_whitemane import flight
 from tools.live_whitemane.smooth_move import GroundContact
@@ -32,8 +33,6 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
         return travel_policy.label(physical_state),{},state,{}
     monkeypatch.setattr(flight,'choose',choose)
     monkeypatch.setattr(flight.inputs,'execute',lambda *args:{'arguments':args[-1]})
-    from tools.live_whitemane import archaeology_probe
-    monkeypatch.setattr(archaeology_probe,'command',lambda text:[{'command':text}])
     calls=[]
     def walk(*args,**kwargs):
         calls.append(kwargs)
@@ -58,3 +57,25 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
     assert len(calls)==2
     assert ascents==[100,100]
     assert not phases[2]['inputs']
+    assert phases[-2]['inputs']==[{'arguments':{'key':'shift+space','hold':.15}}]
+
+
+@pytest.mark.parametrize('mounted,action,error',[
+    (False,'mount','mount input did not produce mounted state'),
+    (True,'dismount','dismount input did not produce unmounted state')])
+def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action,error):
+    before=observation(0,mounted=mounted)
+    before['owned_pose']={'height_yards':100}
+    target={'instance':1,'north':100 if action=='mount' else 0,'west':0}
+    monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(flight,'observe',lambda _:copy.deepcopy(before))
+    monkeypatch.setattr(flight.time,'sleep',lambda _:None)
+    monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:{'ceiling_yards':100})
+    monkeypatch.setattr(flight,'choose',lambda *_,**__:(action,{}, {},{}))
+    inputs=[]
+    def execute(title,kind,args):
+        inputs.append((kind,args));return {'arguments':args}
+    monkeypatch.setattr(flight.inputs,'execute',execute)
+    with pytest.raises(RuntimeError,match=error):
+        flight.fly(tmp_path,before,{'endpoint':target},{})
+    assert inputs==[('key',{'key':'shift+space','hold':.15})]
