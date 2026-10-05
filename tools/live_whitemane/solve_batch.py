@@ -6,6 +6,21 @@ from .farm_actions import click_choice
 from .dig_policy import SolveBatches
 
 
+def settled_project(row,race_id,folder):
+    """Currency and the visible journal can update in different UI frames."""
+    deadline=time.monotonic()+3
+    while True:
+        current=next(r for r in row['archaeology']['races'] if r['index']==race_id)
+        journal=row['farm_ui']['journal']
+        if journal['race']!=race_id:
+            raise RuntimeError('journal selection disagrees with current race project')
+        if (journal['project']['spell']==current['project_spell']
+                and not row['archaeology']['casting']):return row
+        if time.monotonic()>=deadline:
+            raise RuntimeError('journal selection disagrees with current race project')
+        time.sleep(.1);row=observe(folder/'project_settle.png')
+
+
 def run(folder, batches=None, *, race_id=None):
     folder.mkdir(parents=True,exist_ok=False)
     batches=batches or SolveBatches()
@@ -27,6 +42,7 @@ def run(folder, batches=None, *, race_id=None):
         visible=next(r for r in row['farm_ui']['journal']['races'] if r['race']==race['index'])
         row=click(row,['journal','races'],f"Open the {visible['label']} current artifact",{'race':race['index']})
         for i in range(12):
+            row=settled_project(row,race['index'],folder)
             current=next(r for r in row['archaeology']['races'] if r['index']==race['index'])
             project=batches.next_project(current)
             if not project:break
