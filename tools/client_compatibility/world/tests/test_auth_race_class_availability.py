@@ -2,7 +2,7 @@
 import pytest
 from tools.client_compatibility.world import characters
 from tools.client_compatibility.world.buffer import Reader
-from .test_native_bridge_codec import codec,result
+from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 
 
 def read(body):
@@ -34,11 +34,11 @@ def test_auth_advertises_native_pairs_without_synthetic_combinations(codec):
 @pytest.mark.parametrize('row',[{'race':0,'class':1,'expansion':0},
     {'race':3,'class':256,'expansion':0},{'race':3,'class':1,'expansion':4}])
 def test_invalid_availability_fails_before_auth_response(codec,row):
-    assert 'error' in codec(op='auth_success',race_classes=[row])
+    assert codec(op='auth_success',race_classes=[row])['error']=='invalid native race/class availability'
     with pytest.raises(ValueError):characters.auth_success([row])
 
 
 def test_duplicate_availability_is_rejected(codec):
     rows=[{'race':3,'class':1,'expansion':0}]*2
-    assert 'error' in codec(op='auth_success',race_classes=rows)
+    assert codec(op='auth_success',race_classes=rows)['error']=='invalid native race/class availability'
     with pytest.raises(ValueError):characters.auth_success(rows)
