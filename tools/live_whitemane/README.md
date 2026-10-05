@@ -184,6 +184,13 @@ appearance and Survey generation; a new Survey interrupts the old telescope
 destination. A separate `camera_forward` action aligns the camera without
 pressing forward. Lease expiry releases both movement and mouselook.
 
+Fresh public facts determine activity transitions. Combat interrupts pickup;
+a discovered find keeps the pickup activity available after site replacement.
+New Survey, solve and onward travel choices resume after fragment gain or an
+increased pickup counter confirms collection. A tooltip scan miss returns to
+Laya with the uncollected find and recent failure intact. The graph records
+the current combat, artifact and readiness facts with each transition.
+
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay
 and relay installation. Large local screenshot copies are removed only

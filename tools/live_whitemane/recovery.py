@@ -42,6 +42,7 @@ RETRYABLE=(
     'camera view did not reach forward alignment',
     'minimap tooltip observation did not follow the cursor',
     'terrain falling interrupted the continuous approach',
+    'no matching public tooltip in bounded interaction search',
 )
 
 

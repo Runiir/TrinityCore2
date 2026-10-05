@@ -29,6 +29,16 @@ def test_out_of_range_latch_survives_reload_site_replacement_and_missing_blips(o
     assert pending_find.load(r) is None and pending_find.can_leave(r)
 
 
+def test_verified_pickup_counter_can_confirm_collection_after_currency_spending(owned_root):
+    r=row();r['archaeology'].update(looted_finds=3,loot_open=False,site_id=331)
+    r['archaeology']['races'][0]['fragments']=100
+    pending_find.latch(r)
+    r['archaeology']['races'][0]['fragments']=5
+    assert pending_find.load(r)
+    r['archaeology']['looted_finds']=4
+    assert pending_find.load(r) is None
+
+
 def test_saved_markers_do_not_become_live_finds_but_a_filled_blip_can_overlap_them():
     im=Image.new('RGB',(100,100));draw=ImageDraw.Draw(im)
     draw.ellipse((25,25,35,35),outline=(255,230,30),width=1)

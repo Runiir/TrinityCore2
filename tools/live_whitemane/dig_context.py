@@ -1,6 +1,7 @@
 """Measured navigation and pickup feedback for Laya, without action selection."""
 import math
 from . import guide as routes
+from . import pending_find
 
 
 def bearing_error(row, guide):
@@ -16,11 +17,12 @@ def bearing_error(row, guide):
 def model_state(row, guide, visible_find, pending, steps):
     state = routes.model_state(row, guide, visible_find)
     ui = row.get('farm_ui') or {}
-    state.update(can_survey=row['archaeology']['can_survey'],
+    state.update(combat=row['movement']['in_combat'],can_survey=row['archaeology']['can_survey'],
         survey_ready=bool((ui.get('survey') or {}).get('ready')),
         guide_source=guide['source'] if guide else None, pending_pickup=bool(pending),
         named_artifact=ui.get('soft_interact', {}).get('name'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
+    if pending:state['pickup']=pending_find.facts(row,pending)
     if guide:
         state['telescope'] = {key: guide[key] for key in ('color', 'heading_relative_to_player')}
         state['telescope'].update(distance_yards=round(guide['distance_yards'], 2),
@@ -40,6 +42,8 @@ def model_state(row, guide, visible_find, pending, steps):
                 'out_of_range_approach_same_pending_find': 'out_of_range',
                 'Survey_deferred_until_cooldown_ready': 'cooldown',
                 'waiting_for_public_survey_cooldown': 'cooldown'}.get(step['outcome'], step['outcome'])
+        if step.get('failure'):
+            result['outcome']='tooltip_search_missed' if 'no matching public tooltip' in step['failure'] else 'action_interrupted'
         recent.append(result)
     state['recent_outcomes'] = recent
     turns = 0
@@ -51,7 +55,7 @@ def model_state(row, guide, visible_find, pending, steps):
     state['consecutive_turns_without_approach'] = turns
     stalled = 0
     for step in reversed(steps):
-        if (not step.get('completed') or step.get('walked_yards', 0) > .25
+        if (not (step.get('completed') or step.get('failure')) or step.get('walked_yards', 0) > .25
                 or step.get('confirmed_looted_find')):
             break
         stalled += 1

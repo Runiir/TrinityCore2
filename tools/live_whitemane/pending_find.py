@@ -10,6 +10,21 @@ def fragments(row):
     return {str(r['index']):r['fragments'] for r in row['archaeology']['races']}
 
 
+def facts(row,value):
+    ui=row.get('farm_ui') or {};gathering=ui.get('gathering') or {}
+    named=(ui.get('soft_interact') or {}).get('name') in FIND_NAMES
+    cast_started=bool(value and gathering.get('starts',0)>value.get('gathering_starts',gathering.get('starts',0)))
+    discovered=bool(value or named or row['archaeology'].get('loot_open') or
+        (row.get('minimap_finds') or {}).get('confirmed'))
+    return {'state':'verify' if row['archaeology'].get('loot_open') else
+        'gather' if cast_started and row['archaeology']['casting'] else
+        'approach' if value and value.get('out_of_range') else 'locate' if discovered and not named else
+        'interact' if discovered else 'dig',
+        'uncollected':discovered,'named_target':named,'gather_cast_seen':cast_started,
+        'position_is_estimate':bool(value and value.get('approach')),
+        'travel_ready':not discovered,'exit_pickup_on':'fragment gain or pickup counter increase'}
+
+
 def gained(baseline,row):
     current=fragments(row)
     return any(current.get(race,0)>amount for race,amount in baseline.items())
@@ -22,8 +37,13 @@ def load(row):
     if value['runtime']!=row['runtime']:raise RuntimeError('pending find belongs to another owned client')
     if not row['archaeology']['world'] or value['origin']['instance']!=row['archaeology']['world']['instance']:
         return None
-    if gained(value['fragments'],row):
+    if gained(value['fragments'],row) or (value.get('looted_finds') is not None
+            and row['archaeology'].get('looted_finds',0)>value['looted_finds']):
         clear();return None
+    if 'gathering_starts' not in value:
+        value['gathering_starts']=((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)
+        value['looted_finds']=row['archaeology'].get('looted_finds',0)
+        runtime.write(path,value)
     return value
 
 
@@ -32,7 +52,9 @@ def latch(row,*,site_id=None,approach=None,source='successful Survey without tel
     if old:return old
     value={'runtime':row['runtime'],'observed_at':time.time(),'site_id':site_id or row['archaeology']['site_id'],
         'origin':row['archaeology']['world'],'fragments':fragments(row),'source':source,'approach':approach,
-        'out_of_range':False,'attempts':0}
+        'out_of_range':False,'attempts':0,
+        'looted_finds':row['archaeology'].get('looted_finds',0),
+        'gathering_starts':((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)}
     runtime.write(runtime.ROOT/'run/pending_find.json',value)
     return value
 

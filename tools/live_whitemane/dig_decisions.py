@@ -26,15 +26,16 @@ def choose(state):
     if state['available'] and not state['casting']:
         options['camera_forward']='Align the camera with the current forward direction'
         if state['artifact_visible']:options['loot']='Interact with named find; observe range or gathering cast'
-        if state.get('can_survey') and state.get('survey_ready'):
+        if (state.get('can_survey') and state.get('survey_ready')
+                and not (state.get('pickup') or {}).get('uncollected')):
             options['survey']='Survey using Mouse Button 4'
         if state.get('telescope'):
             options.update(forward_short='Approach the guide using forward movement and camera steering',
                 forward_long='Follow the telescope or marker continuously; fly if red or far')
     action,request,response=laya_ui.choose(state,
-        'Collect archaeology finds. Test pickup range by interacting with a named find. '
-        'Keep a productive approach active; steer with the camera using the guide bearing and distance. '
-        'An estimated endpoint does not prove pickup range. After pickup, Survey again. '
-        'Prefer GatherMate markers; red fly, green small steps.',options)
+        'Collect discovered finds before more Survey or travel. A missed tooltip means locate the same find again. '
+        'Estimated arrival is not pickup. A gathering cast confirms interaction range. '
+        'Retain useful movement; steer with the camera. Prefer markers, then telescope: red fly, green approach. '
+        'Resume digging after confirmed collection.',options)
     action=explore(action,response,options,state)
     return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response

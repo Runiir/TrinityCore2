@@ -2,7 +2,7 @@
 import math
 import json
 from pathlib import Path
-from . import laya_ui
+from . import laya_ui,pending_find
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
@@ -21,12 +21,15 @@ def legal_actions(row,batches,dig_guide=None):
     if m['in_combat']:return actions
     if not a['mounted'] and not a['flying']:
         if (a['can_survey'] or row.get('pending_find') or a.get('loot_open')
+                or (row.get('minimap_finds') or {}).get('confirmed')
                 or (ui.get('soft_interact') or {}).get('name') in FIND_NAMES):
             actions['dig']=('Choose Survey, marker/telescope movement or artifact pickup',None)
+        if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
         for r in a['races']:
             required=max(0,r['cost']-12*min(r['sockets'],r['keystones_in_bags']))
-            if r['cost']>0 and r['fragments']>=required:
+            if r['cost']>0 and r['fragments']>=required and (r['fragments']>=150 or r['index'] in batches.active_races):
                 actions[f"solve_{r['index']}"]=(f"Solve race {r['index']} using maximum accepted keystones",{'race':r['index']})
+    if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
     if any(b.get('label')=='Teleport' and b.get('enabled',True) for b in ui.get('actionbars',[])):
         actions['teleport']=('Open Teleport and choose Tol Barad',None)
     if ui.get('taxi') and route.get('exit'):
@@ -69,12 +72,15 @@ def choose(row,batches,session):
             if k in ('source','color','distance_yards','heading_relative_to_player','arrived')},
         'named_object':(ui.get('soft_interact') or {}).get('name'),
         'pending_pickup':bool(row.get('pending_find')),'minimap':signal.get('status'),
+        'pickup':pending_find.facts(row,row.get('pending_find')),
         'guide_error':guide_error,
         'route':route.get('kind'),'via_Tol_Barad_requested':session['via_tolbarad'],
         'fragments':[{k:r[k] for k in ('index','fragments','cost','sockets','keystones_in_bags')} for r in a['races'] if r['cost']],
         'last_failure':[{ 'failure':r['failure'][:120],'choice':r['choice']} for r in session.get('recoveries',[])[-1:]]}
     action,request,response=laya_ui.choose(state,
-        'Choose the next activity. Finish the current digsite by following its guide before traveling onward. '
+        'Choose the next activity. A discovered uncollected artifact means the current activity is pickup. '
+        'Remain in pickup until collection is confirmed, including after the digsite is replaced. '
+        'Finish the current digsite by following its guide before traveling onward. '
         'Prefer saved GatherMate markers; use telescope fallback. Collect discovered finds before leaving. '
         'Start solve batches around 150 fragments and continue while affordable with maximum keystones. '
         'Travel via Tol Barad and Orgrimmar to the next digsite. Learn from the last failure.',

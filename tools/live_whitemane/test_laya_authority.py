@@ -20,12 +20,13 @@ def test_retained_head_choice_is_accepted_without_an_expert_action_veto(monkeypa
     assert decisions.choose(state)[0]=='observe'
 
 
-def test_laya_can_choose_travel_instead_of_the_previous_fixed_dig_stage(monkeypatch):
+def test_laya_can_choose_travel_when_the_pickup_requirement_is_complete(monkeypatch):
     r=row();r['archaeology'].update(can_survey=True,falling=False)
     r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
-    r['pending_find']={'attempts':1};r['minimap_finds']={'clear':False}
+    r['pending_find']=None;r['minimap_finds']={'clear':True}
     def choose(state,instructions,options):
-        assert state['pending_pickup'] and 'dig' in options and 'teleport' in options
+        assert not state['pending_pickup'] and state['pickup']['travel_ready']
+        assert 'dig' in options and 'teleport' in options
         return 'teleport',{},{}
     monkeypatch.setattr(farm_policy.laya_ui,'choose',choose)
     assert farm_policy.choose(r,SolveBatches(),{'via_tolbarad':False})[0]=='teleport'
