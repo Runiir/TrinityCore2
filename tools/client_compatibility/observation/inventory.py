@@ -25,6 +25,7 @@ class Inventory:
                     continue
                 guid=record['guid']
                 if guid==self.guid or guid>>48==0x4000:
+                    if record['update_type'] in (1,2):self.objects[guid]={}
                     self.objects.setdefault(guid,{}).update(record.get('fields',{}))
         return self
 

@@ -14,6 +14,7 @@ from .interaction_sit_stand import pose,afk
 from .interaction_spellbook_recon import resources
 from .interaction_stance_bar import native_state,restored_native_state
 from .interaction_spellbook_actions import saved_actions
+from .interaction_fixture_permissions import permission_rows
 from .interaction_actionbar_pages import detail as bar_detail
 from .interaction_ground_movement import position
 from .observation.inventory import Inventory
@@ -118,13 +119,54 @@ def enter(t,path,offline_path,review_path):
     t.receipt['completed']=True
 
 
+def verify(t,path,entered_path):
+    old=source(path);entered=json.loads(entered_path.read_text())
+    failed={k for k,v in entered.get('reentry_checks',{}).items() if not v}
+    if (entered['completed'] or not entered.get('finished_at') or failed!={'native_skills'} or
+        entered['failure']!='RuntimeError: source-bound language recovery differs' or
+        entered['actor']!=t.fixture or entered['runtime']!=t.receipt['runtime']):
+        raise RuntimeError('exact stale-oracle reentry evidence differs')
+    offline_path=Path(entered['offline_cleanup']['path'])
+    if lab.sha256(offline_path)!=entered['offline_cleanup']['sha256']:
+        raise RuntimeError('offline baseline evidence changed')
+    offline=json.loads(offline_path.read_text())
+    session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,1).poll()
+    native=old['native_baseline'];original=old['language_fixture_baseline']
+    public=detail(t,'language_recovery_verified');state,frame=t.observe('language_recovery_verified_rendered')
+    checks={'resources':resources(oracle)==native['resources'],'stats':restored_native_state(native['stats'],native_state(oracle)),
+        'spells':known(1)==native['spells'],'actions':saved_actions(1)==native['actions'],
+        'pose':pose(oracle)==native['pose'],'afk':afk(oracle)==native['afk'],
+        'position':position(1)==native['position'],'group':state['group']==offline['baseline']['state']['group'],
+        'no_lua_errors':not state.get('lua_errors'),'no_blocked_actions':not state.get('blocked_actions'),
+        'skills':skills(1)==original['skills'],'native_skills':native_skills(oracle)==original['native_skills'],
+        'target':oracle.pair(1,'UNIT_FIELD_TARGET')==original['target'],
+        'languages':public['languages']==old['language_baseline']['languages'],
+        'chat_settings':signature(public)==signature(old['language_baseline']),
+        'channels':public['channels']==old['language_baseline']['channels'],
+        'permissions':all(permission_rows(t.fixture['account_id'],r['permission'])==tuple(r['baseline'])
+            for r in old['fixture_permissions']),
+        'native_world_unchanged':identity('worldserver')==offline['native_world'],
+        'same_completed_login':session==entered['session'] and all(entered['reentry_checks'][k]
+            for k in ['ordinary_login','native_login','native_world_unchanged'])}
+    t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},
+        entered_source={'path':str(entered_path),'sha256':lab.sha256(entered_path)},
+        verification_checks=checks,frame=frame,public=public,gameplay_input_replayed=False,
+        scope='Fresh source-bound restoration after correcting native oracle recreation semantics. Earlier failed episodes remain excluded.');t.persist()
+    if not all(checks.values()):raise RuntimeError('fresh language recovery verification differs')
+    t.receipt['completed']=True
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--offline-source',type=Path)
+    p.add_argument('--verify-entered-source',type=Path)
     p.add_argument('--reviewed-owned-selection',action='store_true');p.add_argument('--selection-review',type=Path);a=p.parse_args()
     if a.offline_source and (not a.reviewed_owned_selection or not a.selection_review):
         p.error('review the settled owned Harnessone selection frame first')
     t=Trial(a.output,controller='code')
-    try:enter(t,a.source,a.offline_source,a.selection_review) if a.offline_source else offline(t,a.source)
+    try:
+        if a.verify_entered_source:verify(t,a.source,a.verify_entered_source)
+        elif a.offline_source:enter(t,a.source,a.offline_source,a.selection_review)
+        else:offline(t,a.source)
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)
