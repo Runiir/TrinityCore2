@@ -53,7 +53,9 @@ end
 function Client442ObserveCombatLog()
     local log=ChatFrame2;local count=log and read(log.GetNumMessages,log)
     local selected=CHATCONFIG_SELECTED_FILTER or Blizzard_CombatLog_CurrentSettings
-    local result={event_registered=registered,unfiltered_registered=unfiltered,event_sequence=sequence,events=events,
+    local result={event_registered=registered and read(reader.IsEventRegistered,reader,'COMBAT_LOG_EVENT') or false,
+        unfiltered_registered=unfiltered and read(reader.IsEventRegistered,reader,'COMBAT_LOG_EVENT_UNFILTERED') or false,
+        event_sequence=sequence,events=events,
         selected=SELECTED_CHAT_FRAME and read(SELECTED_CHAT_FRAME.GetID,SELECTED_CHAT_FRAME),
         visible=log and read(log.IsVisible,log),message_count=count,recent_messages={},
         saved_settings=fingerprint(Blizzard_CombatLog_Filters),filter_name=selected and selected.name,
