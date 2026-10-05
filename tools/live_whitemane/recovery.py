@@ -36,6 +36,7 @@ RETRYABLE=(
     'unexpected action at a grounded flight master',
     'Laya interrupted continuous waypoint movement',
     'character unavailable for this walking trial',
+    'Survey is still on cooldown',
 )
 
 

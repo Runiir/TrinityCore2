@@ -172,6 +172,9 @@ def run(args):
             resources.trim_session(session,'dig')
             runtime.write(path,session)
             graph=getattr(args,'graph',None)
+            if action=='survey' and (ui.get('survey') or {}).get('ready') is False:
+                step.update(completed=True,inputs=[],outcome='Survey_deferred_until_cooldown_ready',finished_at=time.time())
+                runtime.write(path,session);time.sleep(.2);continue
             if graph and action!='observe':step['graph_transition']=farm_graph.transition(graph,action,before,pending=value)
             fresh=observe(folder/'precheck.png')
             if (not healthy(fresh) or fresh['runtime']!=before['runtime']
