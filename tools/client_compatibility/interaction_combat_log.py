@@ -4,14 +4,14 @@ from pathlib import Path
 from . import actors
 from .interaction_trial import Trial
 from .interaction_keybindings_native import suite as native_suite
-from .interaction_chat_window import detail as chat_detail
+from .interaction_chat_window import detail as chat_detail,menu,option
 from .interaction_chat_settings import signature
 from .interaction_spellbook_navigation import detail as book_detail,known
 from .interaction_spellbook_actions import cast
 from .interaction_chat_links import select_line
 from .interaction_control_target import click
 from .interaction_observation import read_page
-from .interaction_operations import command
+from .interaction_operations import command,controls
 from .interaction_macros import require
 
 
@@ -22,6 +22,31 @@ def probe(t,label):
         t.receipt.setdefault('combat_log_details',{})[label]={'public':result,'frame':frame};t.persist()
         return result
     finally:command(t,'/tcui state')
+
+
+def settings_recon(t):
+    original=chat_detail(t,'combat_settings_original_chat');before=probe(t,'combat_settings_original')
+    if original['selected']!=1 or not before['saved_settings']['available']:
+        raise RuntimeError('requires original General selection and public saved combat settings')
+    t.receipt['combat_settings_baseline']=before;t.persist()
+    try:
+        menu(t,2,'fixture.combat_settings_menu')
+        require(option(t,'fixture.open_combat_settings','Settings',lambda b,a,s:{'status':'combat_settings_open'
+            if s and 'ChatConfigFrame' in a['panels'] else 'client_or_protocol_failure'}),'combat_settings_open')
+        rows=controls(t);state,frame=t.observe('combat_settings_rendered');current=probe(t,'combat_settings_open')
+        t.receipt['combat_settings_recon']={'controls':rows,'frame':frame,'public':current};t.persist()
+    finally:
+        t.clean_panels();current=chat_detail(t,'combat_settings_cleanup_chat')
+        if current['selected']!=original['selected']:
+            require(click(t,'fixture.restore_general_after_combat_settings','Restore the original General tab.',lambda c:
+                c['name']=='ChatFrame1Tab' and c['text']=='General',lambda b,a,s:{'status':'chat_selection_restored'
+                if s and chat_detail(t,'combat_settings_restored_selection')['selected']==1 else
+                'client_or_protocol_failure'}),'chat_selection_restored')
+        after=probe(t,'combat_settings_restored');chat=chat_detail(t,'combat_settings_restored_chat')
+        checks={'saved_settings_fingerprint':after['saved_settings']==before['saved_settings'],
+            'original_chat_settings':signature(original)==signature(chat),'settings_closed':not chat['settings_visible']}
+        t.receipt['combat_settings_restoration']={'checks':checks,'public':after};t.persist()
+        if not all(checks.values()):raise RuntimeError('original combat preferences or chat settings differ')
 
 
 def run(t):
@@ -79,8 +104,9 @@ def run(t):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--settings-recon',action='store_true');a=p.parse_args()
     t=Trial(a.output,controller='code')
-    try:native_suite(t,operations=run,preserve_settings=False);t.receipt['completed']=True
+    try:native_suite(t,operations=settings_recon if a.settings_recon else run,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
