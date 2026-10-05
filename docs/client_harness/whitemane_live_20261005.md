@@ -97,6 +97,12 @@ terrain recovery, socket ownership and channel authentication failure cases.
 The running reader needs a restart before this height signal is available.
 Calculated ascent is not yet live-qualified.
 
+Batch 02 records the closed Bael Modan trial and its setup observations through
+DVCLive and `whitemane_live_20261005_batch02.tar.gz.dvc`. It contains seven
+completed Laya decisions, two turns aligned after one hold, and no confirmed
+pickup or complete site. It preserves the rejected fixed-ascent trial and its
+arrival-radius failure. The calculated-ascent completion count is zero.
+
 Batch 01 is checkpointed through DVCLive and
 `artifacts/client_harness/whitemane_live_20261005_batch01.tar.gz.dvc`. DVC push
 completed and cloud status confirmed synchronization. Closed screenshots and
