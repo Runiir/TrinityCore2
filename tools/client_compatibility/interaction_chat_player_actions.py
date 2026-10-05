@@ -1,4 +1,5 @@
 """Copy an owned player name or close its stock report form through observed controls."""
+import time
 from .interaction_control_target import target
 from .interaction_operations import controls,point
 from .interaction_macros import require
@@ -9,6 +10,7 @@ def menu_click(t,label,text,oracle):
     row=target(t,label,lambda c:c['text']==text)
     if not row.get('enabled') or row['kind'] not in ('MenuItem','Button'):
         raise RuntimeError('owned player menu item is not enabled')
+    t.io.move(*point(row));time.sleep(1)
     return t.step(label,'Use the observed '+text+' item for the owned player.',
         {'click':{'kind':'click','value':point(row),'hold':1.2}},
         lambda b,a,s:oracle(b,a,s=='click'),diagnostic_action='click')
@@ -44,6 +46,7 @@ def report(t,seed):
     control=target(t,'chat.report_ui_cancel',lambda c:c.get('report_action')=='close' and
         c.get('report_player_name') in expected and c.get('report_player_guid')=='Player-1-00000002')
     if not control.get('enabled') or control['kind']!='Button':raise RuntimeError('observed report close is not enabled')
+    t.io.move(*point(control));time.sleep(1)
     require(t.step('chat.report_ui_cancel','Close the owned report form with its observed Close button.',
         {'close':{'kind':'click','value':point(control),'hold':1.2}},lambda b,a,s:
         {'status':'owned_report_ui_cancel_pass' if s=='close' and 'ReportFrame' in b['panels'] and

@@ -1,7 +1,7 @@
 from pathlib import Path
 import subprocess
 import pytest
-from tools.client_compatibility.interaction_chat_player_menu import owned_link_hover
+from tools.client_compatibility.interaction_chat_player_menu import owned_link_hover,reviewed_hover_points
 
 
 def test_chat_hyperlink_diagnostics_preserve_runtime_and_saved_flags_without_setters():
@@ -31,3 +31,13 @@ assert(Client442ObserveChatWindows().windows[1].hyperlinks_enabled==nil)
 def test_sender_menu_needs_an_observed_owned_player_hyperlink(kind,text,expected):
     state={'pointer':{'foci':[{'kind':kind,'text':text}]}}
     assert owned_link_hover(state,{'observed_sender':'Harnesstwo-Client442Lab'})==expected
+
+
+@pytest.mark.parametrize('points',[
+    [[61,576],[61,579]],[[61,576],[61,600]],[[61,576],[100,576]],
+    [[61,579]],[[61,576]]*4,[[61,576],[61.5,577]],[]])
+def test_reviewed_hover_probes_stay_in_the_approved_text_neighborhood(points):
+    if points==[[61,576],[61,579]]:
+        assert reviewed_hover_points({'point_candidates':points},[61,576])==points
+    else:
+        with pytest.raises(RuntimeError):reviewed_hover_points({'point_candidates':points},[61,576])

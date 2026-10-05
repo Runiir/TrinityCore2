@@ -99,11 +99,15 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
         r.get('text')==seed['token'] and r.get('sender')==seed['observed_sender']]
     if len(matches)!=1:raise RuntimeError('fresh public owned chat seed differs')
     t.receipt['reviewed_link']={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame};t.persist()
-    t.io.move(*point);time.sleep(1)
-    hover,hover_frame=read_current_page(t,'player_link_pointer_settled','controls')
-    t.receipt['player_link_pointer_settled']={'point':point,'seconds':1,'pointer':hover.get('pointer'),
-        'frame':hover_frame};t.persist()
-    if not owned_link_hover(hover,seed):raise RuntimeError('reviewed point does not hover the owned player link; no click sent')
+    points=reviewed_hover_points(review,point)
+    for candidate in points:
+        t.io.move(*candidate);time.sleep(1)
+        hover,hover_frame=read_current_page(t,'player_link_pointer_settled','controls')
+        t.receipt.setdefault('player_link_hover_samples',[]).append({'point':candidate,'seconds':1,
+            'pointer':hover.get('pointer'),'frame':hover_frame,'click_sent':False});t.persist()
+        if owned_link_hover(hover,seed):point=candidate;break
+    else:raise RuntimeError('reviewed points do not hover the owned player link; no click sent')
+    t.receipt['player_link_pointer_settled']=t.receipt['player_link_hover_samples'][-1];t.persist()
     def outcome(b,a,s):
         rows=controls(t);state,frame=t.observe('owned_player_menu_rendered')
         t.receipt['player_menu']={'controls':rows,'state':state,'frame':frame};t.persist()
@@ -126,6 +130,15 @@ def owned_link_hover(state,seed):
     prefix='|Hplayer:'+seed['observed_sender']+':'
     return any(r.get('kind')=='FontString' and r.get('text','').startswith(prefix)
         for r in state.get('pointer',{}).get('foci',[]))
+
+
+def reviewed_hover_points(review,point):
+    points=review.get('point_candidates',[point])
+    if (not isinstance(points,list) or not 1<=len(points)<=3 or points[0]!=point or
+        any(not isinstance(p,list) or len(p)!=2 or any(type(v) is not int for v in p) or
+            not 0<=p[0]<1280 or not 0<=p[1]<720 or abs(p[0]-point[0])>8 or abs(p[1]-point[1])>8 for p in points)):
+        raise RuntimeError('reviewed sender hover points exceed the bounded text neighborhood')
+    return points
 
 
 def live_seed_valid(t,peer,seed):
