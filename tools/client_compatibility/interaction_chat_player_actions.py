@@ -6,14 +6,14 @@ from .interaction_macros import require
 from .interaction_private_clipboard import copied_name,marker
 
 
-def menu_click(t,label,text,oracle):
+def menu_click(t,label,text,oracle,*,await_state=None):
     row=target(t,label,lambda c:c['text']==text)
     if not row.get('enabled') or row['kind'] not in ('MenuItem','Button'):
         raise RuntimeError('owned player menu item is not enabled')
     t.io.move(*point(row));time.sleep(1)
     return t.step(label,'Use the observed '+text+' item for the owned player.',
         {'click':{'kind':'click','value':point(row),'hold':1.2}},
-        lambda b,a,s:oracle(b,a,s=='click'),diagnostic_action='click')
+        lambda b,a,s:oracle(b,a,s=='click'),diagnostic_action='click',await_state=await_state)
 
 
 def expected_names(seed):
@@ -46,7 +46,8 @@ def report(t,seed):
     expected=expected_names(seed)
     require(menu_click(t,'fixture.open_owned_player_report','Report Player',lambda b,a,s:
         {'status':'owned_report_ui_open' if s and 'ReportFrame' in a['panels'] and not a.get('lua_errors') and
-            not a.get('blocked_actions') else 'client_or_protocol_failure'}),'owned_report_ui_open')
+            not a.get('blocked_actions') else 'client_or_protocol_failure'},
+        await_state=lambda a:'ReportFrame' in a['panels']),'owned_report_ui_open')
     rows=controls(t);state,frame=t.observe('owned_report_ui_rendered')
     checks=report_identity(rows,expected)
     t.receipt['owned_report_ui']={'checks':checks,'controls':rows,'state':state,'frame':frame,'submitted':False};t.persist()
@@ -60,7 +61,7 @@ def report(t,seed):
         {'status':'owned_report_ui_cancel_pass' if s=='close' and 'ReportFrame' in b['panels'] and
             'ReportFrame' not in a['panels'] and not a.get('lua_errors') and not a.get('blocked_actions')
             else 'client_or_protocol_failure','oracle':{'submitted':False,'identity':checks}},
-        diagnostic_action='close'),'owned_report_ui_cancel_pass')
+        diagnostic_action='close',await_state=lambda a:'ReportFrame' not in a['panels']),'owned_report_ui_cancel_pass')
 
 
 def report_identity(rows,expected):

@@ -58,3 +58,27 @@ def test_copy_must_replace_its_guard_but_stock_menu_may_remain_open(monkeypatch,
     else:
         with pytest.raises(RuntimeError):actions.copy(t,seed)
         assert results[0]['status']=='client_or_protocol_failure'
+
+
+def test_delayed_report_open_and_close_wait_without_repeating_input(monkeypatch):
+    rows=[{'name':'ReportClose','report_action':'close','report_player_name':'Harnesstwo',
+        'report_player_guid':'Player-1-00000002','kind':'Button','enabled':True,'x':100,'y':200},
+        {'report_action':'submit','enabled':False}]
+    menu={'text':'Report Player','kind':'MenuItem','enabled':True,'x':100,'y':300}
+    monkeypatch.setattr(actions,'target',lambda t,label,predicate:menu if label.startswith('fixture.') else rows[0])
+    monkeypatch.setattr(actions,'controls',lambda t:rows)
+    monkeypatch.setattr(actions.time,'sleep',lambda seconds:None)
+    sent=[]
+    def step(label,goal,choices,oracle,diagnostic_action=None,await_state=None):
+        sent.append(label)
+        opening=label=='fixture.open_owned_player_report'
+        before={'panels':['ContextMenu'] if opening else ['ReportFrame']}
+        early={'panels':before['panels']}
+        settled={'panels':['ReportFrame'] if opening else []}
+        assert await_state is not None and not await_state(early) and await_state(settled)
+        return oracle(before,settled,diagnostic_action)
+    t=SimpleNamespace(receipt={},persist=lambda:None,step=step,
+        io=SimpleNamespace(move=lambda *args:None),observe=lambda label:({'panels':['ReportFrame']},{'file':'report.png'}))
+    actions.report(t,{'observed_sender':'Harnesstwo-Client442Lab','expected_native_guid':2})
+    assert sent==['fixture.open_owned_player_report','chat.report_ui_cancel']
+    assert t.receipt['owned_report_ui']['submitted'] is False
