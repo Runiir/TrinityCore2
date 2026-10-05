@@ -156,6 +156,7 @@ def run(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.error('UI80 quarantined this live fixture: skill-step learning does not round-trip through spell persistence or unlearn. Implement the source-bound skill lifecycle before another language trial.')
     t=Trial(a.output,controller='code')
     try:native_suite(t,operations=run,preserve_settings=False);t.receipt['completed']=True
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
