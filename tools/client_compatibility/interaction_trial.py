@@ -202,6 +202,26 @@ class Trial:
                 time.sleep(.2)
             self.io.key('Return',hold=.4)
             self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
+            if any_mode:
+                deadline=time.monotonic()+12;retried=False
+                while True:
+                    current,frame=observe(f'input_{len(self.receipt["cases"]):03}_diagnostic_settle')
+                    if 'chat_edit_open' not in current:
+                        raise RuntimeError('diagnostic settlement lacks a public chat-edit observation')
+                    if not current['chat_edit_open']:break
+                    exact=current.get('chat_edit_text','').rstrip(' ')==value and current.get('chat_edit_focused')
+                    row={'frame':frame,'observed_text':current.get('chat_edit_text'),
+                        'selected_text':value,'exact_focused_text':bool(exact),'input_replayed':False}
+                    self.receipt.setdefault('chat_diagnostic_settling',[]).append(row);self.persist()
+                    if time.monotonic()>deadline:
+                        if retried:raise RuntimeError('diagnostic Return retry did not settle')
+                        if not exact:raise RuntimeError('diagnostic text changed; refusing to submit it')
+                        # Match ordinary gameplay chat's bounded completion
+                        # recovery. Never repeat text or submit changed input.
+                        row['recovery']='Return once for the same exact focused diagnostic'
+                        self.persist();self.io.key('Return',hold=.4)
+                        retried=True;deadline=time.monotonic()+12
+                    time.sleep(.2)
 
     def execute(self,action):
         with owned_input.lease():

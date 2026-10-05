@@ -104,7 +104,8 @@ def test_diagnostic_observes_complete_prefix_before_submission_from_any_mode(mon
     trial.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
         type=lambda value:events.append(('type',value)))
     states=iter([{'chat_edit_open':False}, {'chat_edit_open':True,'chat_edit_focused':True},
-        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':text}])
+        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':text},
+        {'chat_edit_open':False}])
     def observe(label,**kwargs):
         assert kwargs=={'mode':None}
         return {'mode':mode,**next(states)},{'file':label}
@@ -121,3 +122,29 @@ def test_diagnostic_observes_complete_prefix_before_submission_from_any_mode(mon
             trial.submit_chat('/tcui chat',any_mode=True)
         assert events.count(('key','Return'))==1
         assert not trial.receipt['chat_submission_checks'][-1]['submitted']
+
+
+@pytest.mark.parametrize('expired,text',[(False,'/tcui state'),(True,'/tcui state'),(True,'/quit')])
+def test_diagnostic_waits_for_close_and_retries_only_exact_pending_text(monkeypatch,expired,text):
+    trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};trial.persist=lambda:None
+    events=[]
+    from types import SimpleNamespace
+    trial.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
+        type=lambda value:events.append(('type',value)))
+    states=iter([{'chat_edit_open':False},{'chat_edit_open':True,'chat_edit_focused':True},
+        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':'/tcui state'},
+        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':text},
+        {'chat_edit_open':False}])
+    trial.observe=lambda label,**kw:(next(states),{'file':label})
+    ticks=iter([0,0,0,13 if expired else 0,13])
+    monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    if text=='/quit':
+        with pytest.raises(RuntimeError,match='refusing to submit'):
+            trial.submit_chat('/tcui state',any_mode=True)
+        assert events.count(('key','Return'))==2
+    else:
+        trial.submit_chat('/tcui state',any_mode=True)
+        assert events.count(('key','Return'))==(3 if expired else 2)
+    assert events.count(('type','/tcui state'))==1
