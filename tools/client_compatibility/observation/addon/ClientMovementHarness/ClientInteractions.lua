@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=88,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=89,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
@@ -523,6 +523,7 @@ local function snapshot(viewMode,viewPage)
         'ChatFrame6Tab','ChatFrame7Tab','ChatFrame8Tab','ChatFrame9Tab','ChatFrame10Tab'}) do
         local f=_G[name];if f then scan(f,0) end
     end
+    for index=1,10 do scan(_G['ChatFrame'..index..'ButtonFrame'],0) end
     data.control_count=#data.controls
     -- Identify the complete current control list, before paging it. A panel can
     -- keep its name while changing layout; pages from those layouts cannot mix.

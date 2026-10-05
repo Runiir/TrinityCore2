@@ -23,6 +23,8 @@ function Client442ObserveChatWindows()
     result.settings_visible=ChatConfigFrame and read(ChatConfigFrame.IsVisible,ChatConfigFrame) or false
     result.config_window_id=result.settings_visible and tonumber(CURRENT_CHAT_FRAME_ID) or nil
     local selected=_G['ChatFrame'..tostring(result.config_window_id or result.selected or 1)]
+    result.selected_height=selected and read(selected.GetHeight,selected)
+    result.selected_width=selected and read(selected.GetWidth,selected)
     result.message_types={}
     result.message_types_available=selected and type(selected.messageTypeList)=='table' or false
     if result.message_types_available then
