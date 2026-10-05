@@ -57,6 +57,7 @@ def restore_layout(t,layout,prefix):
     if not all(checks.values()):raise RuntimeError('original volume settings layout differs')
     close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
     click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
+    return current
 
 
 def step_volume(t,layout,direction,label):

@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=108,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=109,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -227,6 +227,13 @@ local function snapshot(viewMode,viewPage)
                         x=control.x,y=control.y,focused=not not call(f.HasFocus,f)}
                 end
                 local parent=f:GetParent()
+                local padParent=parent
+                for level=1,4 do
+                    if padParent and padParent==MovePadFrame then
+                        data.controls[#data.controls].move_pad_control=true;break
+                    end
+                    padParent=padParent and call(padParent.GetParent,padParent)
+                end
                 if SettingsPanel and SettingsPanel:IsVisible() then
                     local row=parent
                     for level=1,3 do
@@ -532,7 +539,7 @@ local function snapshot(viewMode,viewPage)
         'QuestLogMicroButton','SocialsMicroButton','GuildMicroButton','EJMicroButton','CollectionsMicroButton',
         'PVPMicroButton','LFGMicroButton','MainMenuMicroButton','HelpMicroButton','GameTimeFrame','PlayerFrame','CompactRaidFrameManager',
         'ChatFrame1Tab','ChatFrame2Tab','ChatFrame3Tab','ChatFrame4Tab','ChatFrame5Tab',
-        'ChatFrame6Tab','ChatFrame7Tab','ChatFrame8Tab','ChatFrame9Tab','ChatFrame10Tab'}) do
+        'ChatFrame6Tab','ChatFrame7Tab','ChatFrame8Tab','ChatFrame9Tab','ChatFrame10Tab','MovePadFrame'}) do
         local f=_G[name];if f then scan(f,0) end
     end
     for index=1,10 do scan(_G['ChatFrame'..index..'ButtonFrame'],0) end

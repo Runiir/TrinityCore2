@@ -40,7 +40,7 @@ def toggle(t,layout,variable,wanted,label):
             'no_pending_changes':after['unapplied']==layout['unapplied'],
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
         if variable=='enableMovePad':
-            pad=[c for c in rows if c.get('name','').startswith('MovePad') and c['kind']=='Button']
+            pad=[c for c in rows if c.get('move_pad_control') and c['kind'] in ('Button','CheckButton')]
             checks.update(move_pad_visible=after['move_pad_visible']==wanted,
                 move_pad_buttons=len(pad)>=4 if wanted else not pad)
         return {'status':'stock_control_setting_pass' if all(checks.values()) else 'client_or_protocol_failure',
@@ -81,9 +81,8 @@ def suite(t,variables):
                 term,operation,_=SPECS[variable];search(t,term,operation+'.cleanup_search')
                 toggle(t,layout,variable,original,operation+'.cleanup_restore')
                 current=detail(t,operation+'_cleanup_confirmed')
-            restore_layout(t,layout,'fixture.restore_stock_controls')
+            after=restore_layout(t,layout,'fixture.restore_stock_controls')
             t.receipt['settings_layout_restoration']=t.receipt.pop('volume_layout_restoration')
-            after=detail(t,'control_final_settings')
             checks={'interact_binding':after['interact_keys']==layout['interact_keys'],
                 'move_pad':after['move_pad_visible']==layout['move_pad_visible']}
             t.receipt['control_restoration_checks']=checks;t.persist()
@@ -99,7 +98,7 @@ def main():
         t=SettingsTrial(a.output,controller='code')
         try:
             state,_=t.observe('stock_control_observer_guard')
-            if state.get('observer_version',0)<108:raise RuntimeError('requires read-only settings observer108')
+            if state.get('observer_version',0)<109:raise RuntimeError('requires read-only settings observer109')
             native_suite(t,operations=lambda t:suite(t,a.setting),preserve_settings=False)
             t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
