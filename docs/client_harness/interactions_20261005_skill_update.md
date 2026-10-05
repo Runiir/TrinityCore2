@@ -1,0 +1,17 @@
+# Owner skill updates and staged language cleanup
+
+UI81 closes with coverage unchanged at 379/916. Sparse native skill deltas previously produced no modern owner update. Four regressions fail before repair. The bridge now translates the six packed native skill arrays into the owner's modern SkillInfo, preserving paired slots, zero clearing, signed temporary bonuses and peer privacy. Six focused checks pass after the repair. Only one bridge translation unit is compiled, with one build job; the native worldserver is unchanged.
+
+The first deployment attempt fails during scout preflight because the existing client has idled to character selection. No server restart follows that failed preflight. Reviewed normal reentry restores the scout. The second deployment passes both preflights, restarts only the bridge and returns both existing clients through separately reviewed disconnect, realm and character screens. Both native restoration suites pass. Both windows remain on HDMI-1.
+
+`language_lifecycle01` is excluded from qualification. Teaching spell672 adds both the persisted spell and skill111 at rank1/max300. The staged controller incorrectly expects unchanged spells, and the public language list remains Common-only. It performs no language selection or marker send. The trace proves the learned spell and native skill changes reach the modern client, including SkillInfo slot10 step, rank, starting rank and maximum rank. The whole failure is preserved.
+
+The corrected recovery requires the exact extra spell and skill rows, restored permissions, and every unrelated native and chat check. Ordinary logout completes before a transaction deletes only owned spell672 and skill111. A fresh reviewed selection screen permits normal reentry. All 19 restoration checks pass, including native skill words, persisted rows, languages, target, chat settings, channels and login packets.
+
+Native `LearnDefaultSkill` and `_LoadSkills` define language skills as 300/300. The next trial will explicitly set that fixed range through temporary command permission526, alongside permission417 for the exact spell teach. The source-bound cleanup accepts only the recorded rank1 or rank300 fixture and rejects unrelated spells, skills, targets, permissions or incomplete native checks. This is a proposed fixture correction, not a language-switch acceptance result.
+
+Validation preserves the four expected skill regression failures and the first rank test invocation with 9 passed/2 skipped because the codec binding was omitted. The corrected invocation passes all 11 checks. The final codec-bound compatibility suite passes 1,106 checks in 45.41 seconds. The existing default-environment pynvml deprecation warning is unrelated.
+
+[DVC evidence](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc) is 785,300,746 bytes, SHA-256 `619b0ff5338bcab025a41759b43704cf9729a8bc05c2d0cfb17526760adabac7`. Remote review verifies 30 JSON receipts and 299 attributed screenshots. The batch includes the failed deployment preflight, failed language trial, complete cleanup, decoded skill packet diagnostic and actual scene reviews.
+
+The same two client lifetimes and native worldserver remain in use. Memory availability stays around 16 GiB with zero recent memory pressure. Continue the fixed-rank language trial, then copy capability, voice mute, report cancellation, remaining channel variants and the other interaction families.
