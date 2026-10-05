@@ -17,6 +17,7 @@ from .interaction_spellbook_actions import saved_actions
 from .interaction_actionbar_pages import detail as bar_detail
 from .interaction_ground_movement import position
 from .observation.inventory import Inventory
+from .observation.journal import Cursor
 
 
 def source(path):
@@ -64,16 +65,28 @@ def offline(t,path):
         offline_skill_rows_restored=True,completed=True);t.persist()
 
 
-def enter(t,path,offline_path):
+def enter(t,path,offline_path,review_path):
     old=source(path);done=json.loads(offline_path.read_text())
     if (not done['completed'] or done.get('phase')!='await_owned_selection_review' or
         done['actor']!=t.fixture or done['runtime']!=t.receipt['runtime'] or
         done['source']['sha256']!=lab.sha256(path) or identity('worldserver')!=done['native_world']):
         raise RuntimeError('reviewed owned cleanup identity differs')
+    review=json.loads(review_path.read_text());frame=review['frame']
+    image=review_path.parent/frame['file'];monitor=frame['monitor']
+    if (review['offline_episode_sha256']!=lab.sha256(offline_path) or lab.sha256(image)!=frame['sha256'] or
+        not monitor['second_monitor_verified'] or monitor['input_isolation']['actor']!='primary'):
+        raise RuntimeError('settled owned selection evidence differs')
+    with lab.connection() as con,con.cursor() as q:
+        q.execute('SELECT online FROM client442_characters.characters WHERE guid=1')
+        if q.fetchone()!=(0,) or skills(1)!=old['language_fixture_baseline']['skills']:
+            raise RuntimeError('owned offline baseline changed before reviewed reentry')
     t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},
         offline_cleanup={'path':str(offline_path),'sha256':lab.sha256(offline_path)},
-        reviewed_selection=done['selection_frame'],selection_before=shot(t.out/'selection_before.png'));t.persist()
-    packets=Packets(done['previous_session']);started=time.time()
+        reviewed_selection={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame},
+        selection_before=shot(t.out/'selection_before.png'));t.persist()
+    cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    for _ in cursor.poll():pass
+    started=time.time()
     t.io.key('Return',hold=1.2);time.sleep(8)
     after,frame=t.observe('owned_language_reentry',seconds=120)
     session=actors.session_entry(t.fixture)['session'];oracle=Inventory(lab.ROOT,session,1).poll()
@@ -84,6 +97,9 @@ def enter(t,path,offline_path):
         t.execute({'kind':'key','value':binding_key(bar['keys']['SITORSTAND'][0]),'hold':1.2});time.sleep(12)
     if afk(oracle)!=native['afk']:t.execute({'kind':'chat','value':'/afk'})
     public=detail(t,'language_recovery_restored');state,frame=t.observe('language_recovery_rendered')
+    login=[{k:r[k] for k in ['session','time','name','direction']} for r in cursor.poll()
+        if r.get('session')==session and r.get('time',0)>=started and
+        r.get('name') in ['CMSG_PLAYER_LOGIN','SMSG_LOGIN_VERIFY_WORLD']]
     checks={'resources':resources(oracle)==native['resources'],'stats':restored_native_state(native['stats'],native_state(oracle)),
         'spells':known(1)==native['spells'],'actions':saved_actions(1)==native['actions'],
         'pose':pose(oracle)==native['pose'],'afk':afk(oracle)==native['afk'],
@@ -95,9 +111,9 @@ def enter(t,path,offline_path):
         'chat_settings':signature(public)==signature(old['language_baseline']),
         'channels':public['channels']==old['language_baseline']['channels'],
         'native_world_unchanged':identity('worldserver')==done['native_world'],
-        'ordinary_login':packets.has(started,'CMSG_PLAYER_LOGIN','from_client'),
-        'native_login':packets.has(started,'SMSG_LOGIN_VERIFY_WORLD','from_native')}
-    t.receipt.update(reentry_checks=checks,session=session,public=public,frame=frame);t.persist()
+        'ordinary_login':any(r['name']=='CMSG_PLAYER_LOGIN' and r['direction']=='from_client' for r in login),
+        'native_login':any(r['name']=='SMSG_LOGIN_VERIFY_WORLD' and r['direction']=='from_native' for r in login)}
+    t.receipt.update(reentry_checks=checks,session=session,public=public,frame=frame,login_packets=login);t.persist()
     if not all(checks.values()):raise RuntimeError('source-bound language recovery differs')
     t.receipt['completed']=True
 
@@ -105,9 +121,10 @@ def enter(t,path,offline_path):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--offline-source',type=Path)
-    p.add_argument('--reviewed-owned-selection',action='store_true');a=p.parse_args()
-    if a.offline_source and not a.reviewed_owned_selection:p.error('review the owned Harnessone selection frame first')
+    p.add_argument('--reviewed-owned-selection',action='store_true');p.add_argument('--selection-review',type=Path);a=p.parse_args()
+    if a.offline_source and (not a.reviewed_owned_selection or not a.selection_review):
+        p.error('review the settled owned Harnessone selection frame first')
     t=Trial(a.output,controller='code')
-    try:enter(t,a.source,a.offline_source) if a.offline_source else offline(t,a.source)
+    try:enter(t,a.source,a.offline_source,a.selection_review) if a.offline_source else offline(t,a.source)
     except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)
