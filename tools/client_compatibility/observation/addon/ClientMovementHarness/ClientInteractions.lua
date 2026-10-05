@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=120,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=121,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -215,6 +215,14 @@ local function snapshot(viewMode,viewPage)
                     context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
+                if QuestLogFrame and QuestLogFrame:IsVisible() then
+                    local quest=Client442ObserveQuestLogControl(f)
+                    if quest then
+                        local control=data.controls[#data.controls]
+                        control.quest_log_index=quest.index;control.quest_log_header=quest.header
+                        control.quest_link_index=quest.link_index;control.quest_log_id=quest.quest_id
+                    end
+                end
                 if name:match('^AddonListEntry%d+') then
                     local control=data.controls[#data.controls]
                     control.addon_onclick=type(call(f.GetScript,f,'OnClick'))=='function'
@@ -636,7 +644,7 @@ local function snapshot(viewMode,viewPage)
         end
     end
     data.world_position={call(UnitPosition,'player')}
-    data.quests={};data.quest_headers={}
+    data.quests={};data.quest_headers={};data.quest_log_probe=Client442ObserveQuestLog()
     local questCount=call(GetNumQuestLogEntries)
     data.quest_entry_count=questCount
     data.quest_log_keys={call(GetBindingKey,'TOGGLEQUESTLOG')}

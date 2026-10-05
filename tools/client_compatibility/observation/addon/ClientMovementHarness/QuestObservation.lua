@@ -1,8 +1,35 @@
 -- Public reward and tracking diagnostics. This file only reads stock APIs.
 local function call(fn,...)
     if type(fn)~='function' then return nil end
-    local ok,a,b,c,d,e,f=pcall(fn,...)
-    if ok then return a,b,c,d,e,f end
+    local ok,a,b,c,d,e,f,g,h=pcall(fn,...)
+    if ok then return a,b,c,d,e,f,g,h end
+end
+function Client442ObserveQuestLogControl(frame)
+    local scroll=QuestLogListScrollFrame
+    local buttons=scroll and scroll.buttons
+    if type(buttons)~='table' then return nil end
+    for i=1,math.min(#buttons,22) do
+        if frame==buttons[i] then
+            local index=call(frame.GetID,frame)
+            local offset=call(FauxScrollFrame_GetOffset,scroll)
+            if type(index)~='number' or type(offset)~='number' then return nil end
+            return {index=index,header=not not frame.isHeader,link_index=index+offset,
+                quest_id=call(GetQuestIDFromLogIndex,index+offset)}
+        end
+    end
+end
+function Client442ObserveQuestLog()
+    local count,total=call(GetNumQuestLogEntries)
+    local result={count=count,total_quests=total,selection=call(GetQuestLogSelection),rows={},
+        visible=QuestLogFrame and QuestLogFrame:IsVisible() or false,
+        watched_count=call(GetNumQuestWatches),offset=call(HybridScrollFrame_GetOffset,QuestLogListScrollFrame),
+        fixture={id=28825,active=call(C_QuestLog and C_QuestLog.IsOnQuest,28825),link=call(GetQuestLink,28825)}}
+    for i=1,math.min(tonumber(count) or 0,8) do
+        local title,level,tag,header,collapsed,complete,frequency,id=call(GetQuestLogTitle,i)
+        result.rows[#result.rows+1]={index=i,title=title,level=level,header=not not header,
+            collapsed=not not collapsed,complete=complete,quest_id=id}
+    end
+    return result
 end
 local function items(kind,count)
     local rows={}
