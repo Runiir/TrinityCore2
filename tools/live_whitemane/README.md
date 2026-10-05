@@ -108,7 +108,9 @@ state. It covers Survey, marker/telescope approach, gathering, pickup
 verification, solve batches, Tol Barad teleport, Orgrimmar portal, taxi or
 Ramkahen travel, flight, landing and combat. Key-1 combat checks the current
 hostile target, action readiness and cooldown, then resumes the interrupted
-activity. No target switching or extra combat abilities are used.
+activity. If combat interrupts flight, Laya first lands at the observed current
+position and dismounts with Shift+Space. This recovery cannot ascend or travel
+horizontally. No target switching or extra combat abilities are used.
 
 Start a fresh supervised run that stops with an unopened Canopic Jar:
 

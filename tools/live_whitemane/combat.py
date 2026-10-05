@@ -11,7 +11,7 @@ def ready(row):
         and c.get('hostile') and not c.get('target_dead') and c.get('attack_usable')
         and c.get('attack_in_range') not in (False,0)
         and c.get('cooldown_ends',0)<=row['farm_ui']['uptime']
-        and not row['archaeology']['casting'])
+        and not any(row['archaeology'].get(k) for k in ('casting','mounted','flying','falling')))
 
 
 def run(folder):
@@ -25,6 +25,15 @@ def run(folder):
             raise RuntimeError('combat interrupted by supervisor or unavailable player')
         if not m['in_combat']:
             result.update(completed=True,finished_at=time.time());runtime.write(folder/'combat.json',result);return result
+        if any(row['archaeology'].get(k) for k in ('mounted','flying','falling')):
+            from .flight import fly
+            step={'purpose':'Land at the current position before current-target key-1 combat'}
+            result.setdefault('landings',[]).append(step)
+            try:
+                step['inputs']=fly(folder,row,{'endpoint':row['archaeology']['world']},step,combat_landing=True)
+            finally:runtime.write(folder/'combat.json',result)
+            last_progress=time.monotonic()
+            continue
         health=c.get('target_health')
         if health is not None and (last_health is None or health<last_health):last_progress=time.monotonic()
         last_health=health

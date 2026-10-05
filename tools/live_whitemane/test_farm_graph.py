@@ -18,6 +18,7 @@ def test_graph_remembers_combat_interruption_and_requires_jar_in_bags(tmp_path):
     path=tmp_path/'graph.json'
     farm_graph.transition(path,'flight',r)
     farm_graph.transition(path,'combat',r)
+    assert farm_graph.transition(path,'combat',r)['resumed_after_repair']
     resumed=farm_graph.transition(path,'observe',r)
     assert resumed['resume_state']=='flight'
     with pytest.raises(RuntimeError,match='item in bags'):farm_graph.transition(path,'jar_found',r)
@@ -31,6 +32,9 @@ def test_combat_never_issues_key_one_during_cooldown_or_to_a_dead_target():
     r['farm_ui']['combat']={'target_exists':True,'hostile':True,'target_dead':False,
         'attack_usable':True,'attack_in_range':1,'cooldown_ends':10}
     assert combat.ready(r)
+    r['archaeology']['mounted']=True
+    assert not combat.ready(r)
+    r['archaeology']['mounted']=False
     r['farm_ui']['combat']['cooldown_ends']=11
     assert not combat.ready(r)
     r['farm_ui']['combat'].update(cooldown_ends=0,target_dead=True)

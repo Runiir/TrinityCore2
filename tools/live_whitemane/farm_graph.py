@@ -32,7 +32,8 @@ def transition(path,action,row,*,pending=None,outcome=None,target=None):
         'config_sha256':hashlib.sha256(CONFIG.read_bytes()).hexdigest()}
     if state['runtime']!=row['runtime']:raise RuntimeError('farm graph belongs to another client')
     if state['config_sha256']!=hashlib.sha256(CONFIG.read_bytes()).hexdigest():raise RuntimeError('active graph configuration changed')
-    if node not in config['edges'][state['current']]:
+    resumed_combat=node==state['current']=='combat'
+    if not resumed_combat and node not in config['edges'][state['current']]:
         raise RuntimeError('unsupported farm transition '+state['current']+' -> '+node)
     guard(node,row,pending)
     if node=='combat':state.setdefault('interrupted_state',state['current'])
@@ -40,6 +41,7 @@ def transition(path,action,row,*,pending=None,outcome=None,target=None):
         state['interrupted_state']=state['current']
     if target is not None:state['travel_destination']=target
     event={'at':time.time(),'from':state['current'],'to':node,'pending_pickup':bool(pending),'outcome':outcome}
+    if resumed_combat:event['resumed_after_repair']=True
     if state['current']=='combat' and node=='observe':event['resume_state']=state.pop('interrupted_state',None)
     state['events']=(state['events']+[event])[-40:];state['current']=node
     runtime.write(path,state)

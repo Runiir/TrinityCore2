@@ -79,3 +79,24 @@ def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action
     with pytest.raises(RuntimeError,match=error):
         flight.fly(tmp_path,before,{'endpoint':target},{})
     assert inputs==[('key',{'key':'shift+space','hold':.15})]
+
+
+def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,tmp_path):
+    air=observation(0,flying=True);ground=observation(0);foot=observation(0,mounted=False)
+    for r in (air,ground,foot):r['movement']['in_combat']=True
+    observations=iter([air,ground,ground,foot,foot])
+    monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(flight,'observe',lambda _:copy.deepcopy(next(observations)))
+    monkeypatch.setattr(flight.time,'sleep',lambda _:None)
+    monkeypatch.setattr(flight,'choose',lambda state,which,physical_state:(travel_policy.label(physical_state),{},state,{}))
+    descents=[]
+    def descend(folder,target,**kwargs):descents.append((target,kwargs));return []
+    monkeypatch.setattr(flight,'descend',descend)
+    monkeypatch.setattr(flight.inputs,'execute',lambda *args:{'arguments':args[-1]})
+    step={};target=air['archaeology']['world']
+    flight.fly(tmp_path,air,{'endpoint':target},step,combat_landing=True)
+    assert [p['action'] for p in step['travel_decisions']]==['land','dismount','arrived']
+    assert descents==[(target,{'site_id':None,'allow_combat':True})]
+    assert step['travel_decisions'][1]['inputs'][0]['arguments']['key']=='shift+space'
+    with pytest.raises(RuntimeError,match='current position'):
+        flight.fly(tmp_path,air,{'endpoint':dict(target,north=10)},{},combat_landing=True)

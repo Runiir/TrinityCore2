@@ -90,7 +90,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         return receipts
 
 
-def descend(folder,target,*,site_id=None):
+def descend(folder,target,*,site_id=None,allow_combat=False):
     """Hold descent through fresh observations, releasing on confirmed ground.
 
     UnitPosition Z, when provided by the client, is altitude rather than height
@@ -109,7 +109,7 @@ def descend(folder,target,*,site_id=None):
             for index in range(60):
                 row=observe(folder/f'descent_{index:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
-                if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead'] or m['in_combat']
+                if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead'] or (m['in_combat'] and not allow_combat)
                         or m['on_taxi'] or a['casting'] or m['health_percent']<90 or not world
                         or world['instance']!=target['instance'] or a.get('swimming')):
                     raise RuntimeError('character unavailable during descent')

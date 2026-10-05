@@ -11,11 +11,14 @@ from pathlib import Path
 from tools.client_compatibility import travel_policy
 
 
-def fly(folder, row, arrow, step):
+def fly(folder, row, arrow, step, *, combat_landing=False):
     receipts=[]; phases=[]; at_height=False; previous_phase=None
     contacts=[]; height_plan=None
     step['travel_decisions']=phases
     target=arrow['endpoint']
+    if combat_landing and math.hypot(target['north']-row['archaeology']['world']['north'],
+                                    target['west']-row['archaeology']['world']['west'])>.15:
+        raise RuntimeError('combat landing must stay at the observed current position')
     graph=Path(step['graph_path']) if step.get('graph_path') else None
     if graph:
         import json
@@ -30,6 +33,7 @@ def fly(folder, row, arrow, step):
         if not world or world['instance']!=target['instance']:
             raise RuntimeError('flight observation or world instance changed')
         remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
+        if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
         maximum_distance=750 if arrow.get('site_id') else 1500
         if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
         if remaining>6 and not row.get('owned_pose'):
@@ -44,7 +48,7 @@ def fly(folder, row, arrow, step):
         if height_plan:
             pose=row.get('owned_pose')
             at_height=bool(a['flying'] and pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
-        flags={'mode':'flight','available':m['in_world'] and m['health_percent']>=90 and not (m['dead'] or m['in_combat']),
+        flags={'mode':'flight','available':m['in_world'] and m['health_percent']>=90 and not m['dead'] and (not m['in_combat'] or combat_landing),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,
                'near_destination':remaining<=6,'destination_reached':remaining<=6,'taxi_map_open':False}
@@ -52,6 +56,8 @@ def fly(folder, row, arrow, step):
         error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
         state=travel_policy.model_state(flags)
         action,model,request,response=choose(state,'travel',physical_state=flags)
+        if combat_landing and action not in ('land','dismount','arrived','observe'):
+            raise RuntimeError('combat landing cannot mount, ascend, or travel horizontally')
         phase={'observed_at':row['observed_at'],'flags':flags,'state':state,'model':model,
                'request':request,'response':response,'action':action,'remaining_yards':remaining,
                'heading_error_radians':error,'observed_public_state':row,'inputs':[]}
@@ -82,7 +88,9 @@ def fly(folder, row, arrow, step):
                 if graph:farm_graph.transition(graph,'flight',contact.observation,pending=pending_find.load(contact.observation))
                 continue
         elif action=='land':
-            phase['smooth_descent']=descend(folder,target,site_id=arrow.get('site_id'))
+            descent_options={'site_id':arrow.get('site_id')}
+            if combat_landing:descent_options['allow_combat']=True
+            phase['smooth_descent']=descend(folder,target,**descent_options)
         elif action=='dismount':
             if not a['mounted'] or a['flying']:raise RuntimeError('dismount toggle requires a grounded mounted character')
             phase['inputs'].append(key('shift+space',.15));time.sleep(.5)
