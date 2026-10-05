@@ -22,7 +22,12 @@ def wire_updates(rows,name,opcode,count):
         guid=r.unpack('Q')[0] if native else r.guid()
         role=r.unpack('B')[0] if opcode!='SMSG_USERLIST_REMOVE' else None
         flags,value=r.unpack('BI' if native else 'II')
-        channel=r.cstring().decode() if native else r.raw(r.bits(7)).decode();r.end()
+        if native:
+            raw=r.raw(len(r.data)-r.pos)
+            if not raw.endswith(b'\0') or b'\0' in raw[:-1]:raise ValueError('invalid native userlist channel terminator')
+            channel=raw[:-1].decode()
+        else:channel=r.raw(r.bits(7)).decode()
+        r.end()
         decoded.append({'direction':row['direction'],'guid':guid,'role':role,'flags':flags,
             'native_member_count':value if native else None,'modern_channel_id':None if native else value,'channel':channel})
     return {'decoded':decoded,'checks':{
