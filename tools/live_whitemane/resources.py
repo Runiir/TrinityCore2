@@ -59,8 +59,11 @@ def snapshot(values):
         path=runtime.ROOT/'run'/file
         if not path.exists():continue
         process=json.loads(path.read_text())
-        if runtime.proc_start(process['pid'])!=process['start_ticks']:
-            raise ResourceLimit(name+' process identity changed')
+        if name=='reader' and process.get('status')!='ready':continue
+        try:
+            if runtime.proc_start(process['pid'])!=process['start_ticks']:
+                raise ResourceLimit(name+' process identity changed')
+        except FileNotFoundError:raise ResourceLimit(name+' process is absent') from None
         result[name+'_rss_mib']=rss(process['pid'])
         if name=='model':
             query=subprocess.run(['nvidia-smi','--query-compute-apps=pid,used_memory',

@@ -4,12 +4,14 @@ import hashlib
 import importlib.util
 import json
 import os
+import queue
 from pathlib import Path
 import select
 import signal
 import struct
 import sys
 import time
+import threading
 from . import own_pose, owned_sockets, addon_relay
 from tools.client_compatibility.world import movement
 
@@ -90,6 +92,20 @@ def main():
         raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM, interrupt)
     buffer, flows, keys, header = bytearray(), {}, set(), None
+    # Drain the capture pipe during initial key discovery/authentication too.
+    # Otherwise immediate-mode capture can overflow its small kernel ring
+    # while the decoder is busy. This bounded queue stays entirely in RAM.
+    captured=queue.Queue(maxsize=128);capture_errors=[]
+    def capture_pipe():
+        try:
+            while True:
+                block=os.read(sys.stdin.fileno(),65536)
+                captured.put(block,timeout=1)
+                if not block:return
+        except queue.Full:capture_errors.append('8 MiB capture queue limit')
+        except OSError as error:capture_errors.append(str(error))
+    threading.Thread(target=capture_pipe,daemon=True).start()
+    session['capture_queue_limit_bytes']=128*65536
     ignored=set(); poses=[]; owned_ports=owned_sockets.ports(scope['game_pid'])
     if not owned_ports:raise RuntimeError('owned live world socket is absent')
     opcode_table=json.loads(Path(movement.__file__).with_name('opcodes.json').read_text())['modern']
@@ -182,10 +198,9 @@ def main():
                     'authenticated':f.authenticated,'alignment':f.alignment} for k,f in flows.items()]
                 write(ROOT / 'run/bearing_reader.json', session)
                 heartbeat = time.monotonic()
-            ready, _, _ = select.select([sys.stdin.buffer], [], [], .5)
-            if not ready:
-                continue
-            block = os.read(sys.stdin.fileno(), 65536)
+            if capture_errors:raise ValueError(capture_errors[0])
+            try:block=captured.get(timeout=.5)
+            except queue.Empty:continue
             if not block:
                 session['stop_reason'] = 'capture_pipe_closed'
                 break
@@ -232,6 +247,9 @@ def main():
         (ROOT / 'run/telescope.json').unlink(missing_ok=True)
         (ROOT / 'run/movement_pose.json').unlink(missing_ok=True)
         flows.clear(); keys.clear(); buffer.clear()
+        while not captured.empty():
+            try:captured.get_nowait()
+            except queue.Empty:break
         session.update(status='stopped', finished_at=time.time())
         write(ROOT / 'run/bearing_reader.json', session)
         print('Stopped. Raw buffers discarded and bearing mailbox cleared.', flush=True)
