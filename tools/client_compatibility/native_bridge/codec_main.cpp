@@ -22,6 +22,7 @@
 #include "auctions.hpp"
 #include "appearance.hpp"
 #include "character_list.hpp"
+#include "data.hpp"
 #include "player_ui_state.hpp"
 #include <iostream>
 #include <memory>
@@ -148,6 +149,8 @@ int main(int argc, char **argv)
                 {
                     Events events(str(get(request,"root")));events.marker_placed("fixture",get(request,"location"));result=true;
                 }
+                else if (op == "auth_success")
+                    result = hex(auth_success(get(request, "race_classes").as_array()));
                 else if (op == "character_list")
                 {
                     std::unordered_map<unsigned, Array> displays;

@@ -70,10 +70,22 @@ def item_displays():
     return {row[0]:(row[5],row[6],row[2]) for row in rows}
 
 
-def auth_success():
+def auth_success(race_classes=None):
+    if race_classes is None:
+        from .race_class_availability import native_rows
+        race_classes=native_rows()
+    supported={}
+    for row in race_classes:
+        race,klass,expansion=(row[k] for k in ['race','class','expansion'])
+        if (any(type(v)!=int for v in [race,klass,expansion]) or not 0<race<=255 or
+                not 0<klass<=255 or not 0<=expansion<=3 or klass in supported.get(race,{})):
+            raise ValueError('invalid native race/class availability')
+        supported.setdefault(race,{})[klass]=expansion
     w = Writer().pack("I", 0).bits(1, 1).bits(0, 1)
-    w.pack("IIIBBIIIIq", ADDRESS, 1, 0, 3, 3, 0, 1, 0, 0, int(time.time()))
-    w.pack("BI", 1, 1).pack("BBBB", 1, 0, 0, 0)
+    w.pack("IIIBBIIIIq", ADDRESS, 1, 0, 3, 3, 0, len(supported), 0, 0, int(time.time()))
+    for race,classes in sorted(supported.items()):
+        w.pack('BI',race,len(classes))
+        for klass,expansion in sorted(classes.items()):w.pack('BBBB',klass,expansion,expansion,expansion)
     w.bits(0, 6).pack("III", 0, 0, 0).bits(0, 3)
     name = b"Client442 Lab"
     normalized = b"Client442Lab"

@@ -1,6 +1,7 @@
 #include "data.hpp"
 #include "character_list.hpp"
 #include <ctime>
+#include <map>
 
 namespace bridge
 {
@@ -50,13 +51,25 @@ Bytes PublicData::enumeration(Array const &characters, Array const &equipment) c
 {
     return character_list(characters, equipment, item_displays);
 }
-Bytes auth_success()
+Bytes auth_success(Array const &race_classes)
 {
+    std::map<unsigned, std::map<unsigned, unsigned>> supported;
+    for (auto const &row : race_classes)
+    {
+        auto race = integer(get(row, "race")), cls = integer(get(row, "class")), expansion = integer(get(row, "expansion"));
+        if (!race || race > 255 || !cls || cls > 255 || expansion > 3 ||
+            !supported[race].emplace(cls, expansion).second)
+            throw std::runtime_error("invalid native race/class availability");
+    }
     Writer w;
     w.pack("I", {0}).bits(1, 1).bits(0, 1);
-    w.pack("IIIBBIIIIq", {0x01010001, 1, 0, 3, 3, 0, 1, 0, 0, std::time(nullptr)})
-        .pack("BI", {1, 1})
-        .pack("BBBB", {1, 0, 0, 0});
+    w.pack("IIIBBIIIIq", {0x01010001, 1, 0, 3, 3, 0, supported.size(), 0, 0, std::time(nullptr)});
+    for (auto const &[race, classes] : supported)
+    {
+        w.pack("BI", {race, classes.size()});
+        for (auto const &[cls, expansion] : classes)
+            w.pack("BBBB", {cls, expansion, expansion, expansion});
+    }
     w.bits(0, 6).pack("III", {0, 0, 0}).bits(0, 3);
     std::string name = "Client442 Lab", normalized = "Client442Lab";
     return w.pack("I", {0x01010001})

@@ -1,4 +1,5 @@
 #include "data.hpp"
+#include <algorithm>
 #include <ctime>
 #include <fstream>
 
@@ -68,6 +69,21 @@ PublicData::PublicData(std::filesystem::path const &root, std::filesystem::path 
         item_displays[integer(row[0])] = Array{row[5], row[6], row[2]};
     }
     Database db(root);
+    // Native creation rows define supported combinations. Expansion minima
+    // come from the same DBC fields used by native CharacterHandler.
+    std::unordered_map<unsigned, unsigned> races, classes;
+    for (auto const &row : dbc(directory / "ChrRaces.dbc", 24))
+        races[integer(row.as_array()[0])] = integer(row.as_array()[20]);
+    for (auto const &row : dbc(directory / "ChrClasses.dbc", 14))
+        classes[integer(row.as_array()[0])] = integer(row.as_array()[10]);
+    for (auto const &row : db.query("SELECT race,class FROM client442_world.playercreateinfo ORDER BY race,class"))
+    {
+        auto race = integer(get(row, "race")), cls = integer(get(row, "class"));
+        if (!races.contains(race) || !classes.contains(cls))
+            throw std::runtime_error("native race/class creation row lacks DBC identity");
+        race_classes.push_back(Object{{"race", race}, {"class", cls},
+                                      {"expansion", std::max(races.at(race), classes.at(cls))}});
+    }
     for (auto const &row :
          db.query("SELECT ID,DisplayInfoID,InventoryType,SubclassID FROM client442_hotfixes.item"))
         item_displays[integer(get(row, "ID"))] =

@@ -17,7 +17,7 @@ from .interaction_sit_stand import pose,afk
 from .interaction_ground_movement import position
 from .interaction_actionbar_pages import detail as bar_detail
 from .observation.inventory import Inventory
-from .observation.journal import Cursor
+from .observation.journal import Cursor,entries
 
 
 def baseline(t,oracle):
@@ -154,24 +154,57 @@ def return_origin(t,path,language_path):
     t.receipt.update(phase='await_owned_origin_selection',frame=shot(t.out/'origin_selection.png'),completed=True)
 
 
+def rejected_entry(t,path,entry_path):
+    """Restore actor registration only after a closed, never-entered fixture."""
+    old=prepared(t,path);entry_path=entry_path.resolve()
+    if entry_path.name!='episode.json' or not entry_path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a private rejected-entry receipt')
+    failed=json.loads(entry_path.read_text())
+    if (failed.get('completed') or not failed.get('finished_at') or not failed.get('failure') or
+        failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
+        failed.get('fixture_source',{}).get('sha256')!=lab.sha256(path)):
+        raise RuntimeError('closed rejected-entry source differs')
+    for row in entries(lab.ROOT/'logs/modern_world.jsonl'):
+        if (row.get('time',0)>=old['started_at'] and row.get('event')=='native_player_created' and
+                row.get('guid')==t.fixture['guid']):
+            raise RuntimeError('language fixture entered the world; normal logout is required')
+    with lab.connection() as con,con.cursor() as q:
+        q.execute('SELECT guid,online FROM client442_characters.characters WHERE account=%s AND guid IN (%s,%s) ORDER BY guid',
+            (t.fixture['account_id'],2,t.fixture['guid']))
+        if q.fetchall()!=((2,0),(t.fixture['guid'],0)):
+            raise RuntimeError('rejected fixture or original actor is online')
+    base=old['origin_baseline'];checks={
+        'origin_spells':known(2)==base['spells'],'origin_skills':skills(2)==base['skills'],
+        'origin_actions':saved_actions(2)==base['actions'],
+        'fixture_spells':known(t.fixture['guid'])==old['natural_rows']['spells'],
+        'fixture_skills':skills(t.fixture['guid'])==old['natural_rows']['skills']}
+    if not all(checks.values()):raise RuntimeError('offline actor state differs from preparation')
+    if actors.register(2)!=old['origin_actor']:raise RuntimeError('original actor registration differs')
+    t.receipt.update(rejected_entry={'path':str(entry_path),'sha256':lab.sha256(entry_path)},checks=checks,
+        phase='await_owned_origin_selection',frame=shot(t.out/'origin_selection.png'),completed=True)
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','lobby','enter','return'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','lobby','enter','return','rejected-entry'])
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--review',type=Path);p.add_argument('--reviewed-owned-lobby',action='store_true')
     p.add_argument('--stage',choices=['dismiss','reconnect','realm','character']);p.add_argument('--point',type=int,nargs=2)
     p.add_argument('--returning',action='store_true');p.add_argument('--return-source',type=Path);p.add_argument('--language-source',type=Path)
+    p.add_argument('--failed-entry',type=Path)
     a=p.parse_args()
     if a.action!='prepare' and not a.source:p.error('requires the owned preparation source')
     if a.action in ['lobby','enter'] and (not a.review or not a.reviewed_owned_lobby):p.error('requires actual owned lobby review')
     if a.action=='return' and not a.language_source:p.error('requires the closed natural language episode')
     if a.action=='enter' and a.returning and not a.return_source:p.error('requires the completed origin return receipt')
+    if a.action=='rejected-entry' and not a.failed_entry:p.error('requires the closed rejected entry')
     with actor('scout'):
         t=Trial(a.output,controller='code')
         try:
             if a.action=='prepare':prepare(t)
             elif a.action=='lobby':lobby(t,a.source,a.review,a.stage,a.point,a.returning)
             elif a.action=='enter':enter(t,a.source,a.review,a.returning,a.return_source)
-            else:return_origin(t,a.source,a.language_source)
+            elif a.action=='return':return_origin(t,a.source,a.language_source)
+            else:rejected_entry(t,a.source,a.failed_entry)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()

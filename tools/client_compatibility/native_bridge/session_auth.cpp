@@ -58,7 +58,7 @@ Task<> Session::handle(std::string const &name, Bytes body)
             service.events.event("instance_authenticated", {{"session", id}, {"account_id", login.account}});
             co_return;
         }
-        send("SMSG_AUTH_RESPONSE", auth_success());
+        send("SMSG_AUTH_RESPONSE", auth_success(service.data.race_classes));
         send("SMSG_TUTORIAL_FLAGS", Bytes(32));
         for (auto const &packet : bootstrap_packets(service.data))
             send(packet);
