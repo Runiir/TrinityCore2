@@ -149,6 +149,35 @@ bool public_channel_probe(std::string const &name,View body)
     try
     {
         Reader r(body);std::string channel,password;
+        if(name=="SMSG_USERLIST_ADD" || name=="SMSG_USERLIST_UPDATE" || name=="SMSG_USERLIST_REMOVE")
+        {
+            // Retain only exact disposable-channel updates for the two owned players.
+            for(bool native:{true,false})try
+            {
+                Reader u(body);std::uint64_t guid;
+                if(native)guid=u.take<std::uint64_t>();
+                else
+                {
+                    auto pair=u.guid();guid=integer(pair[0]);
+                    if(integer(pair[1])!=player_high())continue;
+                }
+                if(guid!=1 && guid!=2)continue;
+                if(name!="SMSG_USERLIST_REMOVE")u.take<std::uint8_t>();
+                if(native)
+                {
+                    u.take<std::uint8_t>();if(u.take<std::uint32_t>()>2)continue;
+                    channel=terminated(u);
+                }
+                else
+                {
+                    u.take<std::uint32_t>();if(u.take<std::uint32_t>()!=0)continue;
+                    channel=text(u,u.bits(7));
+                }
+                u.end();if(fixture(channel))return true;
+            }
+            catch(std::exception const &){}
+            return false;
+        }
         if(name=="CMSG_CHAT_JOIN_CHANNEL" || name=="CMSG_JOIN_CHANNEL")
         {
             if(r.take<std::uint32_t>()!=0)return false;

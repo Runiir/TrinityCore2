@@ -155,3 +155,21 @@ def test_logout_clears_native_channel_identity(codec):
     replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
         action('logout_complete','SMSG_LOGOUT_COMPLETE',b''),action('chat_response','SMSG_USERLIST_UPDATE',update)])
     assert replies[1:]==[None,None]
+
+
+@pytest.mark.parametrize('name',['SMSG_USERLIST_ADD','SMSG_USERLIST_UPDATE','SMSG_USERLIST_REMOVE'])
+def test_userlist_capture_is_limited_to_exact_owned_members_and_channel(codec,name):
+    channel=b'TC442UIChannel1234abcd'
+    joined=Writer().pack('B',2).raw(channel+b'\0').pack('BII',1,0,0).finish()
+    w=Writer().pack('Q',2)
+    if name!='SMSG_USERLIST_REMOVE':w.pack('B',3)
+    native=w.pack('BI',1,2).raw(channel+b'\0').finish()
+    replies=stateful(codec,{'guid':1,'map':0},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
+        action('chat_response',name,native)])
+    modern=bytes.fromhex(replies[-1][1])
+    for body in [native,modern]:
+        assert codec(op='public_channel_probe',name=name,body=body.hex())['result'] is True
+        assert codec(op='public_channel_probe',name=name,body=(body+b'x').hex())['result'] is False
+        assert codec(op='public_channel_probe',name=name,body=body.replace(channel,b'ForeignOwnedChannelABC').hex())['result'] is False
+    foreign=bytearray(native);foreign[0]=3
+    assert codec(op='public_channel_probe',name=name,body=foreign.hex())['result'] is False

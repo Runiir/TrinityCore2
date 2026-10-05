@@ -11,6 +11,23 @@ from .interaction_chat_settings import signature
 from .interaction_keybindings_native import suite as native_suite
 from .interaction_macros import require
 from .observation.journal import Cursor
+from .world.buffer import Reader,player_high
+
+
+def wire_updates(rows,name,opcode,count):
+    decoded=[]
+    for row in rows:
+        if row['name']!=opcode or row['direction'] not in ['from_native','to_client']:continue
+        r=Reader(bytes.fromhex(row['body']));native=row['direction']=='from_native'
+        guid=r.unpack('Q')[0] if native else r.guid()
+        role=r.unpack('B')[0] if opcode!='SMSG_USERLIST_REMOVE' else None
+        flags,value=r.unpack('BI' if native else 'II')
+        channel=r.cstring().decode() if native else r.raw(r.bits(7)).decode();r.end()
+        decoded.append({'direction':row['direction'],'guid':guid,'role':role,'flags':flags,
+            'native_member_count':value if native else None,'modern_channel_id':None if native else value,'channel':channel})
+    return {'decoded':decoded,'checks':{
+        'native_peer_update':any(r['direction']=='from_native' and r['guid']==2 and r['native_member_count']==count and r['channel']==name for r in decoded),
+        'modern_peer_channel_identity':any(r['direction']=='to_client' and r['guid']==(2,player_high()) and r['modern_channel_id']==0 and r['channel']==name for r in decoded)}}
 
 
 def roster(t,name,label,expected):
@@ -71,6 +88,8 @@ def suite(out):
                 with actor('primary'):
                     evidence=roster(primary,name,'peer_join_live_roster',{'Harnessone':1,'Harnesstwo':2})
                     evidence['packets']=packets(cursor,primary_session,name,started)
+                    evidence['wire_updates']=wire_updates(evidence['packets'],name,'SMSG_USERLIST_UPDATE',2)
+                    evidence['checks'].update(evidence['wire_updates']['checks'])
                     primary.receipt['peer_join_live_roster']=evidence;primary.persist()
                     if not all(evidence['checks'].values()):raise RuntimeError('selected roster did not reflect owned peer join')
             with actor('scout'):
@@ -82,6 +101,8 @@ def suite(out):
                 finally:scout.receipt['finished_at']=time.time();scout.persist()
             evidence=roster(primary,name,'peer_leave_live_roster',{'Harnessone':1})
             evidence['packets']=packets(cursor,primary_session,name,started)
+            evidence['wire_updates']=wire_updates(evidence['packets'],name,'SMSG_USERLIST_REMOVE',1)
+            evidence['checks'].update(evidence['wire_updates']['checks'])
             primary.receipt['peer_leave_live_roster']=evidence;primary.persist()
             if not all(evidence['checks'].values()):raise RuntimeError('selected roster did not reflect owned peer leave')
         try:
