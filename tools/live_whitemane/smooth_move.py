@@ -42,7 +42,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 row=observe(folder/f'approach_{index:02d}.png')
                 m,a=row['movement'],row['archaeology']; world=a['world']
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
-                        or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<90
+                        or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<=0
                         or not world or world['instance']!=target['instance']
                         or a['falling'] or a.get('swimming')):
                     raise RuntimeError('supervisor interruption or unavailable character during marker approach')
@@ -110,7 +110,7 @@ def descend(folder,target,*,site_id=None,allow_combat=False):
                 row=observe(folder/f'descent_{index:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead'] or (m['in_combat'] and not allow_combat)
-                        or m['on_taxi'] or a['casting'] or m['health_percent']<90 or not world
+                        or m['on_taxi'] or a['casting'] or m['health_percent']<=0 or not world
                         or world['instance']!=target['instance'] or a.get('swimming')):
                     raise RuntimeError('character unavailable during descent')
                 if site_id is not None:check_point(site_id,world)
@@ -161,7 +161,7 @@ def ascend(folder, ceiling, *, site_id=None):
                 observation_seconds.append(time.monotonic()-observation_started)
                 m,a=row['movement'],row['archaeology'];pose=row.get('owned_pose')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
-                        or m['in_combat'] or m['on_taxi'] or m['health_percent']<90 or a['casting']
+                        or m['in_combat'] or m['on_taxi'] or m['health_percent']<=0 or a['casting']
                         or not a['mounted'] or a['falling'] or a['swimming']):
                     raise RuntimeError('calculated ascent lost a healthy owned height observation')
                 if not pose:

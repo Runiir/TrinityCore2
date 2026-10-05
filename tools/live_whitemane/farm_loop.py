@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 from types import SimpleNamespace
 import time
-from . import runtime, dig_session, portal, taxi, solve_batch, resources,pending_find,minimap_finds,combat,farm_graph
+from . import runtime, dig_session, portal, taxi, solve_batch, resources,pending_find,minimap_finds,combat,farm_graph,recovery,farm_policy
 from .observe import observe
 from .farm_actions import click_choice, command_choice
 from .navigation import orient
@@ -19,6 +19,7 @@ def distance(world,target):
 
 
 def phase(row,batches,via_tolbarad=False,pending=None):
+    """Historical selector for replay comparison; live selection uses Laya."""
     m,a,ui=row['movement'],row['archaeology'],row.get('farm_ui')
     if ui and m['in_world'] and m['in_combat'] and not m['dead']:return 'combat',None
     if not ui or not m['in_world'] or m['dead'] or m['in_combat'] or m['health_percent']<90 or a['casting'] or m['on_taxi'] or m.get('speed',0)>0:
@@ -85,6 +86,7 @@ def run(output,stop_on='recipe'):
         # and waiting inside a running farm never renew gameplay inactivity.
         session['resumed_at']=time.time();session['last_progress_at']=session['resumed_at']
     session.update(status='running',failure=None,stop_on=stop_on)
+    session['selection_mode']='Laya current state and legal actions'
     graph=output/'graph.json'
     with (runtime.ROOT/'run/farm_loop.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -99,9 +101,10 @@ def run(output,stop_on='recipe'):
                 folder.mkdir(exist_ok=False)
                 row=observe(folder/'before.png')
                 pending=pending_find.load(row)
-                action,target=phase(row,batches,session['via_tolbarad'],pending)
+                row['pending_find']=pending
+                action,target,decision=farm_policy.choose(row,batches,session)
                 session['next_step_index']=index+1
-                step={'index':index,'phase':action,'target':target,'before':row,'started_at':time.time(),'completed':False}
+                step={'index':index,'phase':action,'target':target,'decision':decision,'before':row,'started_at':time.time(),'completed':False}
                 session['steps'].append(step);resources.trim_session(session,'loop');runtime.write(path,session)
                 node='jar_found' if action=='jar' and stop_on=='canopic_jar' else action
                 step['graph_transition']=farm_graph.transition(graph,node,row,pending=pending,target=target)
@@ -122,18 +125,21 @@ def run(output,stop_on='recipe'):
                         step['result']=command_choice(folder/'jar',row,'/use Canopic Jar','Open the collected Canopic Jar','Open a Canopic Jar from the bags')
                         if not step['result']['executed']:raise RuntimeError('Laya waited with an unopened jar')
                     elif action=='solve':
-                        step['result']=solve_batch.run(folder/'solve',batches)
+                        step['result']=solve_batch.run(folder/'solve',batches,race_id=target['race'])
                         if step['result'].get('failure'):raise RuntimeError(step['result']['failure'])
                     elif action=='teleport':
                         step['result']=teleport(folder,row);session['via_tolbarad']=False
                     elif action=='portal':step['result']=portal.run(folder/'portal',target)
                     elif action=='taxi':step['result']=taxi.run(folder/'taxi',*target)
-                    elif action=='flight':
+                    elif action in ('flight','land'):
                         length=distance(row['archaeology']['world'],target)
-                        if length>1500:raise RuntimeError('public route requires additional flight waypoints')
+                        if length>1500:
+                            step['final_target']=target
+                            origin=row['archaeology']['world'];fraction=1250/length
+                            target={**target,**{k:origin[k]+(target[k]-origin[k])*fraction for k in ('north','west')}}
                         step['orientation']=orient(folder/'orient',row,target)
                         step['graph_path']=str(graph)
-                        step['inputs']=fly(folder,step['orientation']['after'],{'endpoint':target,'source':'public Canopic travel route'},step)
+                        step['inputs']=fly(folder,step['orientation']['after'],{'endpoint':target,'source':'public Canopic travel route'},step) if step['orientation']['completed'] else []
                     elif action=='dig':
                         site=pending['site_id'] if pending else row['archaeology']['site_id']
                         if session['dig_output'] is None or (site is not None and site!=session['dig_site']):
@@ -146,12 +152,15 @@ def run(output,stop_on='recipe'):
                             step['combat_interruption']=True
                         if step['result'].get('finished'):
                             final=observe(folder/'final_pickup_check.png')
-                            if not pending_find.can_leave(final):raise RuntimeError('digsite travel awaits final pickup and minimap verification')
-                            session.update(via_tolbarad=True,dig_output=None,dig_site=None)
+                            if pending_find.can_leave(final):session.update(via_tolbarad=True,dig_output=None,dig_site=None)
                 except RuntimeError as error:
                     interrupted=observe(folder/'interrupted.png')
-                    if action=='combat' or not interrupted['movement']['in_combat']:raise
-                    step.update(combat_interruption=True,interrupted_error=str(error))
+                    if action!='combat' and interrupted['movement']['in_combat']:
+                        step.update(combat_interruption=True,interrupted_error=str(error))
+                    elif recovery.retryable(error):
+                        step.update(local_failure=str(error),outcome='returned_to_Laya_recovery')
+                        step['recovery']=recovery.run(folder/'recovery',interrupted,step,session,graph)
+                    else:raise
                 after=observe(folder/'after.png');step.update(after=after,completed=True,finished_at=time.time())
                 farm_graph.transition(graph,'observe',after,pending=pending_find.load(after))
                 before_a,after_a=row['archaeology'],after['archaeology']

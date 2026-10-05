@@ -23,7 +23,7 @@ COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 def healthy(row):
     m, a = row['movement'], row['archaeology']
-    return (m['in_world'] and m['position_available'] and m['health_percent'] >= 90
+    return (m['in_world'] and m['position_available'] and m['health_percent'] > 0
             and not any(m[k] for k in ('dead','in_combat','on_taxi'))
             and a['world'] is not None and not a['flying'] and not a['mounted'])
 
@@ -183,7 +183,6 @@ def run(args):
             if tool and guide and guide['source']=='Survey telescope' and time.time()-tool['observed_at']>10:
                 raise RuntimeError('telescope expired before input')
             if action=='survey':
-                if pending_find.load(fresh):raise RuntimeError('Survey blocked while a discovered find remains uncollected')
                 cooldown=(fresh.get('farm_ui') or {}).get('survey') or {}
                 if cooldown.get('ready') is False:
                     step.update(completed=True,outcome='waiting_for_public_survey_cooldown',finished_at=time.time())

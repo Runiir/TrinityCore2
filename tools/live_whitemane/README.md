@@ -79,7 +79,7 @@ An out-of-range interaction keeps the same find pending. Both "Out of range."
 and "You are too far away." enter recovery. Distance-derived forward probes
 shrink toward half a yard because this realm has a small gathering radius.
 Laya retries interaction until the gathering cast starts, then waits for a
-fragment gain. Survey and travel remain blocked until pickup is confirmed.
+fragment gain. Pending pickup is included in its activity-selection state.
 The latch survives addon reloads and site replacement. Minimap disappearance
 alone cannot clear it.
 
@@ -102,7 +102,7 @@ is discarded.
 
 ## Persisted farm graph
 
-`whitemane_farm_graph_v1.json` defines the recorded transitions and guards.
+`whitemane_farm_graph_v1.json` names the recorded states and completion events.
 Each run keeps `graph.json` with a bounded transition history and interrupted
 state. It covers Survey, marker/telescope approach, gathering, pickup
 verification, solve batches, Tol Barad teleport, Orgrimmar portal, taxi or
@@ -115,6 +115,12 @@ choose a half-turn timed from the owned turn calibration before retrying key 1.
 Two unsuccessful facing corrections stop the run. No target switching or extra
 combat abilities are used.
 
+Laya selects farm activities from the current public state and available
+actions. The graph records its choices rather than requiring the historical
+stage order. Retained-head actions are accepted without comparison to an
+expert label. The marker, pickup and solve rules are decision context; actual
+cooldowns, owned-client identity and complete telemetry are still checked.
+
 Start a fresh supervised run that stops with an unopened Canopic Jar:
 
 ```sh
@@ -126,6 +132,13 @@ pixi run --manifest-path tools/client_compatibility/auth/pixi.toml \
 
 The 30-minute inactivity rule and resource bounds remain active. `--stop-on
 recipe` retains the later jar-opening and recipe-search workflow.
+
+Local movement stalls, missed interactions and transport attempts return to
+fresh observations. Laya receives the failure and recent recovery history,
+then chooses a retry, wait, landing or fresh Survey when applicable. Recovery
+preserves pending finds and the travel destination. It does not reset the
+30-minute gameplay inactivity timer. Client identity, telemetry attribution,
+digsite boundaries and resource limits remain enforced.
 
 ## Validation boundary
 

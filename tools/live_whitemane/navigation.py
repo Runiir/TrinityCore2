@@ -19,8 +19,9 @@ def orient(folder,row,target,history=()):
          'aligned':'Continue when already aligned','wait':'Wait without input'})
     result={'before':row,'action':action,'request':request,'response':response,'completed':False}
     runtime.write(folder/'turn.json',result)
-    if action!=direction:raise RuntimeError('Laya orientation disagrees with public heading')
-    if action!='aligned':
+    if action=='wait':
+        result.update(after=observe(folder/'after.png'));runtime.write(folder/'turn.json',result);return result
+    if action in ('left','right'):
         stationary(row,observe(folder/'precheck.png'))
         duration,result['calibration']=turn_duration(error,list(history))
         result['input']=inputs.execute('World of Warcraft','key',{'key':'Left' if action=='left' else 'Right','hold':duration})

@@ -48,7 +48,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if height_plan:
             pose=row.get('owned_pose')
             at_height=bool(a['flying'] and pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
-        flags={'mode':'flight','available':m['in_world'] and m['health_percent']>=90 and not m['dead'] and (not m['in_combat'] or combat_landing),
+        flags={'mode':'flight','available':m['in_world'] and m['health_percent']>0 and not m['dead'] and (not m['in_combat'] or combat_landing),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,
                'near_destination':remaining<=6,'destination_reached':remaining<=6,'taxi_map_open':False}

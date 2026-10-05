@@ -6,7 +6,7 @@ from .farm_actions import click_choice
 from .dig_policy import SolveBatches
 
 
-def run(folder, batches=None):
+def run(folder, batches=None, *, race_id=None):
     folder.mkdir(parents=True,exist_ok=False)
     batches=batches or SolveBatches()
     receipt={'started_at':time.time(),'solves':[],'steps':[],'finished':False}
@@ -17,7 +17,8 @@ def run(folder, batches=None):
         if not result['executed']:raise RuntimeError('Laya waited during a ready solve batch')
         return result['after']
     row=observe(folder/'before.png')
-    race=next((r for r in row['archaeology']['races'] if batches.next_project(r)),None)
+    if race_id is not None:batches.active_races.add(race_id)
+    race=next((r for r in row['archaeology']['races'] if (race_id is None or r['index']==race_id) and batches.next_project(r)),None)
     if not race:return {'finished':True,'solves':[]}
     try:
         if row['farm_ui']['journal']['visible']:

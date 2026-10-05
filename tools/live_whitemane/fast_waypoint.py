@@ -2,6 +2,7 @@
 import fcntl
 import json
 import math
+import statistics
 import time
 from collections import deque
 from . import runtime, inputs, native_control, guide
@@ -47,12 +48,13 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
         previous=None;deadline=None;index=0;decision_count=0;last_pulse=None
+        sample_periods=deque(maxlen=8);last_sample=None
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
-                    or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<90
+                    or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<=0
                     or not world or world['instance']!=target['instance'] or a['falling'] or a.get('swimming')):
                     raise RuntimeError('character or owned feed unavailable during continuous approach')
                 if site_id is not None:check_point(site_id,world)
@@ -63,6 +65,10 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if m['sequence']==last_sequence:
                     time.sleep(.01);continue
                 last_sequence=m['sequence']
+                if last_sample is not None:
+                    elapsed=((m['client_uptime_ms']-last_sample)%2**32)/1000
+                    if 0<elapsed<=.5:sample_periods.append(elapsed)
+                last_sample=m['client_uptime_ms']
                 distance=math.hypot(target['north']-world['north'],target['west']-world['west'])
                 if distance>(1500 if flying and site_id is None else 750):
                     raise RuntimeError('waypoint exceeds its bounded route range')
@@ -99,14 +105,20 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     # next observation or model request.
                     age=row['channel_ages']['M']
                     remaining=(distance-tolerance-m['speed']*age)/speed
-                    if m['speed']==0:remaining=max(1/30,remaining)
-                    pulse=remaining if remaining<.5 else None
+                    # A pulse shorter than one observed client update can be
+                    # pressed and released without the game seeing movement.
+                    # Quantize close pulses to the measured sampling interval.
+                    interval=statistics.median(sample_periods) if sample_periods else age
+                    if m['speed']==0:remaining=max(interval,remaining)
+                    pulse=max(interval,remaining) if remaining<.5 else None
+                    receipt['calculated_pulse_seconds']=pulse
                     stale_position=bool(last_pulse and 'Up' not in sticky.held and
-                        math.hypot(last_pulse['north']-world['north'],last_pulse['west']-world['west'])<.15)
+                        math.hypot(last_pulse['world']['north']-world['north'],last_pulse['world']['west']-world['west'])<.15
+                        and a['sequence']<=last_pulse['sequence']+1)
                     if not stale_position:
                         newly_pressed='Up' not in sticky.held
                         sticky.hold('Up',remaining>0,pulse)
-                        if newly_pressed and pulse is not None:last_pulse=dict(world)
+                        if newly_pressed and pulse is not None:last_pulse={'world':dict(world),'sequence':a['sequence']}
                     receipt['calculated_forward_seconds']=max(0,remaining)
                 index+=1;time.sleep(max(0,.1-(time.monotonic()-cycle)))
         finally:

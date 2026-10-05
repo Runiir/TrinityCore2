@@ -19,7 +19,7 @@ def run(folder,origin,destination):
         arrived=world['instance']==end['instance'] and math.hypot(world['north']-end['north'],world['west']-end['west'])<30
         nearby=world['instance']==target['instance'] and math.hypot(world['north']-target['north'],world['west']-target['west'])<20
         if not arrived and not nearby and not m['on_taxi']:raise RuntimeError('taxi phase is not at flight master or destination')
-        flags={'mode':'taxi','available':m['in_world'] and m['health_percent']>=90 and not (m['dead'] or m['in_combat']),
+        flags={'mode':'taxi','available':m['in_world'] and m['health_percent']>0 and not (m['dead'] or m['in_combat']),
            'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],
            'falling':a['falling'],'at_route_height':False,'near_destination':nearby,
            'destination_reached':arrived,'taxi_map_open':bool(row['farm_ui']['taxi'])}

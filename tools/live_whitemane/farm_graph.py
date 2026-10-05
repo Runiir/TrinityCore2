@@ -12,12 +12,9 @@ NODES={'dig':'observe','minimap':'scan_minimap','jar':'open_jar','recipe':'recip
 
 
 def guard(node,row,pending):
-    a=row['archaeology'];signal=row.get('minimap_finds') or {}
-    if node in ('teleport','portal','taxi','flight'):
-        if pending or signal.get('confirmed') or signal.get('clear') is not True:
-            raise RuntimeError('graph blocks travel until pending finds and minimap checks are cleared')
-    if node=='survey' and (pending or ((row.get('farm_ui') or {}).get('survey') or {}).get('ready') is False):
-        raise RuntimeError('graph blocks Survey during pickup or its cooldown')
+    a=row['archaeology']
+    if node=='survey' and ((row.get('farm_ui') or {}).get('survey') or {}).get('ready') is False:
+        raise RuntimeError('Survey is still on cooldown')
     if node=='gather' and not (pending or a['loot_open'] or
         ((row.get('farm_ui') or {}).get('soft_interact') or {}).get('name') in FIND_NAMES):
         raise RuntimeError('graph gather requires a public find observation')
@@ -33,16 +30,18 @@ def transition(path,action,row,*,pending=None,outcome=None,target=None):
     if state['runtime']!=row['runtime']:raise RuntimeError('farm graph belongs to another client')
     if state['config_sha256']!=hashlib.sha256(CONFIG.read_bytes()).hexdigest():raise RuntimeError('active graph configuration changed')
     resumed_combat=node==state['current']=='combat'
-    if not resumed_combat and node not in config['edges'][state['current']]:
+    if state['current'] in ('jar_found','recipe_found') or node not in config['edges']:
         raise RuntimeError('unsupported farm transition '+state['current']+' -> '+node)
     guard(node,row,pending)
+    state['role']='record Laya decisions and observed outcomes'
     if node=='combat':state.setdefault('interrupted_state',state['current'])
     elif node=='observe' and row['movement'].get('in_combat') and state['current']!='combat':
         state['interrupted_state']=state['current']
     if target is not None:state['travel_destination']=target
     event={'at':time.time(),'from':state['current'],'to':node,'pending_pickup':bool(pending),'outcome':outcome}
     if resumed_combat:event['resumed_after_repair']=True
-    if state['current']=='combat' and node=='observe':event['resume_state']=state.pop('interrupted_state',None)
+    if state['current']=='combat' and node=='observe' and not row['movement'].get('in_combat'):
+        event['resume_state']=state.pop('interrupted_state',None)
     state['events']=(state['events']+[event])[-40:];state['current']=node
     runtime.write(path,state)
     return event

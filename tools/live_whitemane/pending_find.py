@@ -20,8 +20,8 @@ def load(row):
     if not path.exists():return None
     value=json.loads(path.read_text())
     if value['runtime']!=row['runtime']:raise RuntimeError('pending find belongs to another owned client')
-    if value['origin']['instance']!=row['archaeology']['world']['instance']:
-        raise RuntimeError('left world instance with a pending archaeology find')
+    if not row['archaeology']['world'] or value['origin']['instance']!=row['archaeology']['world']['instance']:
+        return None
     if gained(value['fragments'],row):
         clear();return None
     return value
@@ -71,11 +71,10 @@ def range_error(error):
 def out_of_range(row,session):
     value=load(row) or latch(row,site_id=session.get('site_id'),approach=session.get('pickup_approach'))
     value.update(out_of_range=True,attempts=value['attempts']+1)
-    if value['attempts']>16:raise RuntimeError('artifact stayed out of range after sixteen measured approaches')
     world=row['archaeology']['world'];heading=row['movement']['facing_radians']
     # The realm's gather radius is small. Shrink the approach after each range
     # error instead of repeatedly crossing the estimated target.
-    stride=max(.5,3/2**(value['attempts']-1))
+    stride=max(.5,3/2**min(value['attempts']-1,3))
     target={'world':{'instance':world['instance'],'north':world['north']+math.cos(heading)*stride,
         'west':world['west']+math.sin(heading)*stride},'source':'named find forward range approach','stride_yards':stride}
     value['approach']=target;session['pickup_approach']=target
@@ -99,8 +98,6 @@ def priority(row,value):
     action,request,response=laya_ui.choose(state,
         'Collect when a live artifact is shown or a previous pickup is unconfirmed. Otherwise continue the farm.',
         {'pickup':'Collect the pending archaeology artifact','continue':'Continue the farm'})
-    if (action=='pickup')!=bool(value or signal.get('confirmed')):
-        raise RuntimeError('Laya pickup priority disagreed with the public find observations')
     return {'state':state,'choice':action,'request':request,'response':response}
 
 

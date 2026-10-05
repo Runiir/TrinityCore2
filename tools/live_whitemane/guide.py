@@ -96,7 +96,7 @@ def model_state(row, guide, artifact_visible):
     m,a=row['movement'],row['archaeology']
     current=bool(guide and not guide['arrived'])
     state={'task':'recover an archaeology find',
-        'available':m['in_world'] and m['health_percent']>=90 and not any(m[k] for k in ('dead','in_combat','on_taxi')),
+        'available':m['in_world'] and m['health_percent']>0 and not any(m[k] for k in ('dead','in_combat','on_taxi')),
         'casting':a['casting'],'artifact_visible':bool(artifact_visible),'instrument_current':current,
         'telescope':{'color':guide['color'],'heading_relative_to_player':guide['heading_relative_to_player'],
                      'distance_yards':guide['distance_yards']} if current else None}

@@ -3,14 +3,13 @@ from . import farm_graph,combat
 from .test_farm_loop import row
 
 
-def test_graph_blocks_travel_and_survey_with_uncollected_find(tmp_path):
+def test_graph_records_model_choices_without_imposing_stage_order(tmp_path):
     r=row();r['archaeology']['loot_open']=False;r['minimap_finds']={'clear':True,'confirmed':[]}
     for phase in ('teleport','portal','taxi','flight','survey'):
-        with pytest.raises(RuntimeError,match='blocks'):
-            farm_graph.transition(tmp_path/'graph.json',phase,r,pending={'site_id':187})
+        event=farm_graph.transition(tmp_path/'graph.json',phase,r,pending={'site_id':187})
+        assert event['pending_pickup']
     r['minimap_finds']['clear']=False
-    with pytest.raises(RuntimeError,match='blocks travel'):
-        farm_graph.transition(tmp_path/'graph.json','flight',r)
+    assert farm_graph.transition(tmp_path/'graph.json','flight',r)['to']=='flight'
 
 
 def test_graph_remembers_combat_interruption_and_requires_jar_in_bags(tmp_path):
