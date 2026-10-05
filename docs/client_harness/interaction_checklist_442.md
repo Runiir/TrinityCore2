@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 378 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 379 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -447,7 +447,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.channel_join` (qualified variant; [evidence](#owned_native_stock_channel_membership))
 - [x] `chat.channel_leave` (qualified variant; [evidence](#owned_native_stock_channel_membership))
 - [x] `chat.channel_list` (qualified variant; [evidence](#owned_native_stock_channel_ui_roster))
-- [ ] `chat.channel_password`
+- [x] `chat.channel_password` (qualified variant; [evidence](#owned_native_channel_password_gate))
 - [x] `chat.channel_owner` (qualified variant; [evidence](#owned_native_stock_channel_owner_query))
 - [x] `chat.emote` (qualified variant; [evidence](#chat))
 - [ ] `chat.language_switch`
@@ -2560,3 +2560,16 @@ Remaining limits: Owned custom channels only; stock UI initial and live two-acto
 - [442_interactions_20261005_76.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc), member `evidence/client_interactions_20261005_ui76/channel_validation.json`, SHA-256 `482fd20f3120c93033f2f47f807ace83cd94828ac2e81dd829ec2413bc2c422d`.
 - [442_interactions_20261005_76.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc), member `evidence/client_interactions_20261005_ui76/channel_bridge_deploy01/deployment.json`, SHA-256 `04a58d2ae0cdd5fe6a668aadb59919a2a641a42224aaf6e62ee5b817c9a26a7b`.
 - [442_interactions_20261005_76.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_76.tar.gz.dvc), member `evidence/client_interactions_20261005_ui76/channel_bridge_deploy02/deployment.json`, SHA-256 `e445f79fe9bd525b4c30ae7e69edbb7f88b5ead9a6d55c9738b8393c0a2dd776`.
+
+### owned_native_channel_password_gate
+
+Fresh whole-pass UI79/password01 sets and clears the exact owned disposable channel password through ordinary slash input. Exact modern7/7 and native8/7 setter fields, native/modern password-changed notices, public membership and reviewed General lines agree. The owned scout is rejected without a password; the exact stock prompt is reviewed and its observed Cancel restores focus before absent enabled membership is checked. Fixed-password join and password-free rejoin after clear pass with independently decoded modern7/7/native8/8 join requests, native responses and reviewed two-player rosters. Exact leaves restore both original channel/chat settings and all ten native checks on each actor.
+
+Remaining limits: Two owned actors and the fixed public disposable fixture only. Other password strings, wrong nonempty passwords, stock Settings password controls, ownership reassignment, larger cohorts, built-in channels and persistence remain open. UI77/password01/02/03/04 and UI78/password01 remain whole failures and excluded. Diagnostic guards pass27 focused and1087 full checks; all current trials use code, with no decision model.
+
+- [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password01/primary/episode.json`, SHA-256 `a37bc6943efd4f3e080ee2a7e756ebbbed5dd36b3addcdc82967121e4930878b`.
+  Checked cases: `chat.channel_password` (owned_native_password_changed).
+- [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password01/scout/episode.json`, SHA-256 `427870b107f302b37ef1ece8a09f54319e56ab9a2ae23a86c956e55f6733b5d5`.
+- [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password01/cohort.json`, SHA-256 `99c3b5f725a3ff0832fec934740224c5bd6db4191ccabd4f200c25a1260d92c9`.
+- [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/channel_password_whole_review.json`, SHA-256 `01552358096f43f7e5aac5826705e266ae8ba9f0fdbea00ac8967834603083b8`.
+- [442_interactions_20261005_79.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_79.tar.gz.dvc), member `evidence/client_interactions_20261005_ui79/password_validation.json`, SHA-256 `742a09f0942bcc265bb619c168f781d1309ae4da9a9c09857fecc42414fe9b4c`.
