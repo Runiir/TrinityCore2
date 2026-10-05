@@ -45,5 +45,5 @@ def reduce(row,latch=None):
         'transition_conditions':{'onward_travel':not pickup['uncollected'],
             'survey':facts['can_survey'] is True and facts['survey_ready'] is True and not pickup['uncollected'],
             'combat':facts['combat'],
-            'use_portal':facts['portal_distance_yards'] is not None and facts['portal_distance_yards']<20},
+            'use_portal':facts['portal_distance_yards'] is not None and facts['portal_distance_yards']<30},
         'observed_at':row.get('observed_at'),'valid':True}

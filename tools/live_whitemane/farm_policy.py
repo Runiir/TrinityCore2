@@ -45,7 +45,7 @@ def legal_actions(row,batches,dig_guide=None):
     portals=list(route.get('known_portals') or [])
     if route.get('portal'):portals.append(route['portal'])
     for p in portals:
-        if distance(a['world'],p.get('from'))<20:actions['portal']=('Use the nearby route portal',p)
+        if distance(a['world'],p.get('from'))<30:actions['portal']=('Approach and use the nearby route portal',p)
         elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
             actions['flight']=('Fly to the route portal',p['from'])
     if route.get('origin') and route.get('exit'):

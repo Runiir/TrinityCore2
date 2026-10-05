@@ -4,8 +4,7 @@ import time
 from . import runtime, inputs, interact
 from .observe import observe
 from .decisions import choose
-from .smooth_move import walk
-from .motion import turn_duration
+from .fast_waypoint import walk
 from .farm_actions import stationary
 from tools.client_compatibility import travel_policy
 
@@ -25,19 +24,16 @@ def run(folder,portal):
     runtime.write(folder/'portal.json',result)
     if action!='portal':raise RuntimeError('portal approach needs Laya portal action')
     fresh=observe(folder/'precheck.png');stationary(before,fresh)
-    error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
-    if abs(error)>.18:
-        duration,result['turn_calibration']=turn_duration(error,[])
-        result['turn_input']=inputs.execute('World of Warcraft','key',{'key':'Left' if error>0 else 'Right','hold':duration})
-        time.sleep(.5)
-    result['approach']=walk(folder,target,tolerance=2)
+    result['approach']=walk(folder/'approach',target,tolerance=2,
+        guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
     row=observe(folder/'approached.png')
     result['interaction']=interact.use(folder/'interaction',row,{'Portal to '+portal['destination']})
     for index in range(25):
         time.sleep(.4)
         try:after=observe(folder/'arrival.png')
         except RuntimeError as error:
-            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
+            if str(error).startswith(('live public observer is unavailable','direct public addon feed unavailable',
+                    'local public tiles unavailable')):continue
             raise
         w=after['archaeology']['world'];destination=portal['to']
         if w and w['instance']==destination['instance'] and math.hypot(w['north']-destination['north'],w['west']-destination['west'])<100:
