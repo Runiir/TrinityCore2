@@ -22,10 +22,10 @@ local function base64(value)
 end
 local latest,jobs,lastPayload,lastSent={},{},{},{}
 local serial=math.floor(GetTime()*1000)%4294967296
-local function submit(kind,value)
-    serial=(serial+1)%4294967296
-    latest[kind]={id=serial,value=base64(value)}
-    return serial
+local function submit(kind,value,id)
+    if not id then serial=(serial+1)%4294967296;id=serial end
+    latest[kind]={id=id,value=base64(value)}
+    return id
 end
 function WhitemaneLiveRelayBytes(kind,bytes)
     local now=GetTime();local interval=kind=='M' and .09 or .35
@@ -35,9 +35,16 @@ function WhitemaneLiveRelayBytes(kind,bytes)
 end
 local uiVersion=0
 function WhitemaneLiveRelayUI(payload,fast,encode)
-    if payload~=lastPayload.U then uiVersion=submit('U',payload);lastPayload.U=payload end
+    local now=GetTime()
+    if payload~=lastPayload.U then
+        uiVersion=submit('U',payload);lastPayload.U=payload;lastSent.U=now
+    elseif now-(lastSent.U or 0)>math.max(5,#payload*4/3/1024) then
+        -- A restarted local reader may have missed the initial UI. Repeating
+        -- the same complete generation does not invalidate a current one.
+        submit('U',payload,uiVersion);lastSent.U=now
+    end
     fast.ui_version=uiVersion
-    local value=encode(fast);local now=GetTime()
+    local value=encode(fast)
     if value~=lastPayload.F or now-(lastSent.F or 0)>1 then
         submit('F',value);lastPayload.F=value;lastSent.F=now
     end

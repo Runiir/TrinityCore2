@@ -173,6 +173,7 @@ def main():
                 candidate_hash=hashlib.sha256(relay_file.read_bytes()).hexdigest()
                 if candidate_hash!=relay_hash:
                     importlib.reload(addon_relay);relay_hash=candidate_hash
+                    previous=relay;relay=addon_relay.Assembler();relay.channels=previous.channels
                     session['addon_decoder_sha256']=relay_hash
                 owned_ports=owned_sockets.ports(scope['game_pid'])
                 if not owned_ports:raise RuntimeError('owned world socket closed')
