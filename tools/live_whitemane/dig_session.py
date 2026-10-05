@@ -11,7 +11,7 @@ from .observe import observe
 from .archaeology_probe import sha256
 from .dig_policy import DigProgress
 from .flight import fly
-from .decisions import choose
+from .dig_decisions import choose
 from . import guide as routes
 from .smooth_move import walk
 from .motion import turn_duration
@@ -157,6 +157,11 @@ def run(args):
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
             state=routes.model_state(before,guide,bool(args.loot_at) or visible_find)
+            state.update(can_survey=a['can_survey'],survey_ready=bool((ui.get('survey') or {}).get('ready')),
+                guide_source=guide['source'] if guide else None,pending_pickup=bool(value),
+                recent_outcomes=[{'action':s['action'],'outcome':s.get('outcome'),
+                    'moved_yards':round(s.get('walked_yards',0),2),'pickup_confirmed':bool(s.get('confirmed_looted_find'))}
+                    for s in session['steps'][-3:]])
             if value and not visible_find and not guide:
                 action,model,request,result,state=pending_find.choose_inspection(before)
             else:
