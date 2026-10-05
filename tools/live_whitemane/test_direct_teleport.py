@@ -34,3 +34,14 @@ def test_no_visible_ui_input_remains_a_wait_without_calling_a_singleton_head(mon
     monkeypatch.setattr(farm_actions.inputs,'execute',lambda *_:pytest.fail('no visible button'))
     result=farm_actions.click_choice(tmp_path/'empty',r,['flyout'],'Teleport to Tol Barad')
     assert result['choice']=='wait' and result['executed'] is False
+
+
+def test_tol_barad_world_facts_offer_its_portal_before_cross_world_flight():
+    r=row();r['movement']['map_id']=245;r['archaeology'].update(falling=False,
+        world={'instance':732,'north':-601,'west':1382})
+    r['minimap_finds']={'clear':True}
+    r['farm_ui']['actionbars']=[{'kind':'spell','id':5000028,'label':'Tol Barad'}]
+    r['farm_ui']['route'].update(portal={'from':{'instance':732,'north':-599,'west':1378}},
+        site={'point':{'instance':1,'north':-9732,'west':-38}},
+        origin={'point':{'instance':1,'north':2040,'west':-4356}},exit={'id':79})
+    assert set(farm_policy.legal_actions(r,SolveBatches()))=={'wait','portal'}

@@ -51,9 +51,12 @@ def legal_actions(row,batches,dig_guide=None):
     if route.get('origin') and route.get('exit'):
         target=route['origin']['point']
         if distance(a['world'],target)<12:actions['taxi']=('Take the route taxi',(route['origin'],route['exit']))
-        else:actions['flight']=('Fly to the route flight master',target)
-    if route.get('site') and 'flight' not in actions:actions['flight']=('Fly to the next addon digsite',route['site']['point'])
-    if dig_guide and not dig_guide['arrived']:
+        elif a['world'] and a['world']['instance']==target['instance']:
+            actions['flight']=('Fly to the route flight master',target)
+    site=(route.get('site') or {}).get('point')
+    if site and a['world'] and a['world']['instance']==site['instance'] and 'flight' not in actions:
+        actions['flight']=('Fly to the next addon digsite',site)
+    if dig_guide and not dig_guide['arrived'] and a['world'] and a['world']['instance']==dig_guide['world']['instance']:
         actions['flight']=('Fly toward the current dig guide',dig_guide['world'])
     return actions
 

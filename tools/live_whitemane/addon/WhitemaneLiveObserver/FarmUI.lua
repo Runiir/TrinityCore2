@@ -44,9 +44,15 @@ local function actionbars()
             if kind=="flyout" then
                 local label=call(GetFlyoutInfo,id)
                 append(rows,control(frame,label,{kind=kind,id=id,slot=slot}))
-            elseif kind=="spell" and id==5000028 then
+            elseif kind=="spell" then
                 local label=call(C_Spell and C_Spell.GetSpellName or GetSpellInfo,id)
-                append(rows,control(frame,label,{kind=kind,id=id,slot=slot}))
+                if id==5000028 or id==88342 or id==88344 or
+                    (label and label:lower():find("tol barad",1,true)) or
+                    call(frame.GetName,frame)=="MultiBarLeftButton2" then
+                    append(rows,control(frame,label,{kind=kind,id=id,slot=slot}))
+                end
+            elseif kind and call(frame.GetName,frame)=="MultiBarLeftButton2" then
+                append(rows,control(frame,call(GetActionText,slot),{kind=kind,id=id,slot=slot}))
             end
         end
     end
