@@ -44,6 +44,49 @@ Bytes research_block(std::uint64_t guid, Value const &sites, Value const &projec
         .raw(data.data())
         .finish();
 }
+Bytes skill_block(Protocol const &protocol, Value const &snapshot, Value const &changed)
+{
+    // Pinned ActivePlayerData group0/member36 contains SkillInfo. Its seven
+    // arrays have256 slots; native Cata supplies128 packed uint16 slots.
+    struct Column {char const *native;unsigned column;unsigned bit;};
+    Column const columns[]={{"PLAYER_SKILL_LINEID_0",0,1},{"PLAYER_SKILL_STEP_0",1,257},
+        {"PLAYER_SKILL_RANK_0",2,513},{"PLAYER_SKILL_MAX_RANK_0",4,1025},
+        {"PLAYER_SKILL_MODIFIER_0",5,1281},{"PLAYER_SKILL_TALENT_0",6,1537}};
+    std::array<std::uint32_t,57> masks{};
+    std::array<std::array<std::uint16_t,128>,7> values{};
+    std::array<std::array<bool,128>,7> selected{};
+    bool any=false;
+    auto set=[&](unsigned column,unsigned slot,unsigned bit,std::uint16_t value)
+    {
+        masks[bit/32]|=1u<<(bit%32);values[column][slot]=value;selected[column][slot]=true;any=true;
+    };
+    for(auto const &column:columns)
+        for(unsigned word=0;word<64;++word)
+            if(changed.as_object().contains(std::to_string(protocol.field_index(column.native)+word)))
+                for(unsigned half=0;half<2;++half)
+                {
+                    auto slot=word*2+half;
+                    auto value=static_cast<std::uint16_t>(protocol.field(snapshot,column.native,word)>>(half*16));
+                    set(column.column,slot,column.bit+slot,value);
+                    // Match the existing native creation mapping: starting
+                    // rank has no independent native field and mirrors rank.
+                    if(column.column==2)set(3,slot,769+slot,value);
+                }
+    if(!any)return {};
+    masks[0]|=1u;
+    Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{3})
+        .bits(0,14).bits(1u,32).bits(1u<<4,32).flush();
+    std::uint64_t blocks=0;
+    for(unsigned i=0;i<masks.size();++i)if(masks[i])blocks|=1ull<<i;
+    data.put<std::uint32_t>(static_cast<std::uint32_t>(blocks)).bits(blocks>>32,25);
+    for(auto mask:masks)if(mask)data.bits(mask,32);
+    data.flush();
+    for(unsigned slot=0;slot<128;++slot)
+        for(unsigned column=0;column<7;++column)
+            if(selected[column][slot])data.put<std::uint16_t>(values[column][slot]);
+    return Writer().put<std::uint8_t>(0).guid(integer(get(snapshot,"guid")),player_high())
+        .put<std::uint32_t>(data.data().size()).raw(data.data()).finish();
+}
 } // namespace
 Reply Protocol::object_updates(State &owner, View body,Array const &players) const
 {
@@ -147,6 +190,8 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
             if(!glyphs.empty())blocks.push_back(glyphs);
             auto inventory=inventory_block(s,get(record,"fields"));
             if(!inventory.empty())blocks.push_back(inventory);
+            auto skills=skill_block(*this,s,get(record,"fields"));
+            if(!skills.empty())blocks.push_back(skills);
             bool sites_changed = false, projects_changed = false;
             for (unsigned i = 0; i < 8; ++i)
             {
