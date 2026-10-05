@@ -340,7 +340,8 @@ def run(args):
             if action.startswith('forward_'):
                 if walked<.25 and guide['arrived']:
                     step['outcome']='waypoint_already_arrived_no_movement'
-                elif walked<.25 or walked>(750 if step.get('travel_mode') in ('red_flight','held_waypoint_approach') else 15):
+                elif walked<.25 or walked>(750 if step.get('travel_mode') in
+                        ('red_flight','held_waypoint_approach','green_telescope_approach') else 15):
                     raise RuntimeError('walking outcome was blocked or exceeded its bound')
             if action.startswith('turn_') and walked>.15:
                 raise RuntimeError('turn unexpectedly moved the character')
