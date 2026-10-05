@@ -3,6 +3,31 @@
   "server": "Whitemane live realm",
   "actor": "Runiir",
   "goal": "Find Recipe: Vial of the Sands through Canopic Jars",
+  "travel_policy": {
+    "reset": ["cast the owned Tol Barad teleport", "cross the Orgrimmar portal"],
+    "from_orgrimmar": "use the flight master or Ramkahen portal according to the active digsite",
+    "site_priority": "prefer Uldum when assigned; otherwise clear a reachable Kalimdor site",
+    "within_site": "try visible GatherMate minimap markers first; use fresh telescope bearings when marker attempts repeat without a find",
+    "repeat": "reassess active digsites after the completed site's final find is looted"
+  },
+  "dig_policy": {
+    "primary_target": "visible GatherMate archaeology minimap marker",
+    "marker_attempt_limit_without_find": 2,
+    "repeated_action_limit_without_progress": 3,
+    "fallback": "follow fresh Survey telescope observations",
+    "fallback_lifetime": "until a confirmed find is looted or the digsite changes",
+    "new_marker_learning": "let GatherMate record the successfully looted find through its normal addon events",
+    "hidden_find_coordinates": false
+  },
+  "solve_policy": {
+    "trigger_fragments_per_race": 150,
+    "trigger_interpretation": "confirmed currency fragments per race",
+    "continue_while_affordable": true,
+    "keystones": "confirmed maximum accepted socket count from existing bags",
+    "races": "all races, to avoid wasting capped fragments",
+    "open_earned_canopic_jars": true,
+    "stop_on_recipe_item_or_known_recipe": true
+  },
   "realm_selection": "user-selected in the official launcher",
   "launcher": "installed Whitemane.AppImage",
   "monitor": "HDMI-1",
@@ -11,7 +36,7 @@
   "model_requested": "Laya",
   "model_endpoint": "http://127.0.0.1:8004/v1/systemone",
   "policy_scope": "this user-requested supervised experiment",
-  "observation_sources": ["owned game screenshots", "normal public addon APIs"],
+  "observation_sources": ["owned game screenshots", "normal public addon APIs", "optional passive authenticated visible Survey telescope observations"],
   "local_protocol_bridge": false,
   "rewrite_databases": false,
   "acceptance": {

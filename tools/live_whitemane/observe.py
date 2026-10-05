@@ -6,6 +6,7 @@ from pathlib import Path
 from PIL import Image
 from tools.client_compatibility.observation.telemetry import decode_image
 from . import runtime
+from .snapshot import decode_image as archaeology_image
 
 
 def observe(output):
@@ -21,10 +22,14 @@ def observe(output):
         runtime.screenshot(output)
         try:
             with Image.open(output) as frame:
-                state = decode_image(frame, **calibration)
+                state = decode_image(frame, **{k: calibration[k] for k in ('x','y','cell_size')})
+                archaeology = archaeology_image(frame, x=calibration.get('archaeology_x', calibration['x']),
+                    y=calibration.get('archaeology_y', 89.4),
+                    cell_size=calibration.get('archaeology_cell_size', calibration['cell_size'] * .75))
             row = {'observed_at': started, 'runtime': owner, 'movement': state,
                    'frame': str(output), 'server': 'Whitemane live realm',
-                   'source': 'normal_public_addon_api_rendered_pixels', 'calibration': calibration}
+                   'source': 'normal_public_addon_api_rendered_pixels', 'calibration': calibration,
+                   'archaeology': archaeology}
             runtime.write(output.with_suffix('.json'), row)
             return row
         except ValueError as error:

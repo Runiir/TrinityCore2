@@ -1,0 +1,9 @@
+[workspace]
+name = "whitemane-passive-bearing"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.13.*"
+cryptography = ">=45,<47"

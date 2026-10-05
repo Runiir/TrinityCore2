@@ -31,10 +31,12 @@ def focus(title):
 def execute(title, action, arguments):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
+    from . import native_control
     # These module bindings are private to this command process. The rewrite
     # lab modules, running controllers, and their runtime records are unchanged.
     ctl._launcher_env = runtime.client_environment
     native_input_adapter.lab = runtime
+    native_input_adapter.control = native_control
     with (runtime.ROOT / 'run/input.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         identity = focus(title)
@@ -73,7 +75,7 @@ def main():
     click = commands.add_parser('click')
     click.add_argument('x', type=int)
     click.add_argument('y', type=int)
-    click.add_argument('--button', type=int, choices=(1, 3), default=1)
+    click.add_argument('--button', type=int, choices=(1, 3, 8, 9), default=1)
     key = commands.add_parser('key')
     key.add_argument('key')
     key.add_argument('--hold', type=float, default=.15)

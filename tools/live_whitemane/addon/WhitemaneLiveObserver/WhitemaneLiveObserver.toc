@@ -1,5 +1,6 @@
 ## Interface: 40402
-## Title: Whitemane live movement observer
-## Notes: Read-only public movement state rendered into screenshot pixels.
-## Version: 1.0.0
+## Title: Whitemane live observer
+## Notes: Read-only public movement, archaeology and visible minimap state.
+## Version: 1.1.0
 WhitemaneLiveObserver.lua
+Snapshot.lua
