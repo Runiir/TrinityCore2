@@ -22,7 +22,7 @@ Bytes Protocol::player_names_response(Array const &requested, Array const &rows)
         auto pos = names.find(integer(guid.as_array()[0]));bool exists = pos != names.end();
         w.put<std::uint8_t>(exists ? 0 : 1).guid(guid).bits(exists, 1).bits(0, 1).flush();
         if (!exists) continue;
-        public_player_lookup(w,pos->second,guid);
+        public_player_lookup(w,pos->second,guid.as_array());
     }
     return w.finish();
 }

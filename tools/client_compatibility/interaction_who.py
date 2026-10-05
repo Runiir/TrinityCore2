@@ -11,6 +11,9 @@ from .interaction_control_target import target,edit,click
 from .interaction_macros import require
 from .interaction_lifecycle import Packets
 from .observation.journal import Cursor
+from .interaction_operations import controls
+from .interaction_observation import read_current_page
+from . import interaction_who_wire as wire
 
 QUERY='n-Harnessone'
 
@@ -66,11 +69,63 @@ def probe(t):
         cleanup(t);restored(t,t.receipt)
 
 
+def who_state(t,label):
+    state,frame=read_current_page(t,label,'who',lambda s:isinstance(s.get('who_probe'),dict))
+    t.receipt.setdefault('who_details',[]).append({'label':label,'state':state,'frame':frame});t.persist()
+    return state['who_probe']
+
+
+def suite(t):
+    baseline(t,observer_version=123);packets=Packets(t.receipt['session']);original=None
+    t.receipt.update(raw_who_capture_available=True,qualified_scope=
+        'One stock owned-primary name search and exact native-backed result. No race filters, cross-realm/addon queries, sorting, selection, invitations or whispers.');t.persist()
+    try:
+        open_friends(t,'fixture.who.open');who_open(t,packets)
+        field=target(t,'fixture.who.original',lambda c:c['name']=='WhoFrameEditBox' and c['kind']=='EditBox')
+        if field['text']!='':raise RuntimeError('Who suite requires the original empty query field')
+        original='';t.receipt['original_who_text']=original;t.persist()
+        before=who_state(t,'who_before_search')
+        require(edit(t,'fixture.who.query','Enter the exact owned primary-character name filter.',
+            lambda c:c['name']=='WhoFrameEditBox',QUERY),'ui_edit_pass')
+        started=time.time()
+        def reply(a):return packets.has(started,'SMSG_WHO','to_client')
+        def outcome(b,a,s):
+            rows=[r for r in packets.since(started) if r['name'] in ('CMSG_WHO','SMSG_WHO')]
+            checks,detail=wire.checks(rows);visible=who_state(t,'who_after_search')
+            entries=visible.get('rows') or []
+            def own_name(name):return name in ('Harnessone','Harnessone-Client442Lab')
+            checks.update(ordinary_refresh_click=s,public_api_ready=visible.get('ready') is True,
+                public_exact_count=visible.get('count')==visible.get('total')==1 and len(entries)==1 and
+                    visible.get('rows_truncated') is False,
+                public_owned_name_level=len(entries)==1 and own_name(entries[0].get('fullName')) and entries[0].get('level')==85,
+                public_owned_class_race_zone=len(entries)==1 and entries[0].get('filename')=='WARRIOR' and
+                    entries[0].get('raceStr')=='Human' and entries[0].get('classStr')=='Warrior' and entries[0].get('area')=='Badlands',
+                stock_owned_row=len(entries)==1 and own_name(entries[0].get('stock',{}).get('name')) and
+                    entries[0].get('stock',{}).get('level')=='85' and entries[0].get('stock',{}).get('class')=='Warrior',
+                one_result_event=visible.get('event_count')==before.get('event_count',-1)+1,
+                query_unchanged=visible.get('query')==QUERY,stock_window='FriendsFrame' in a['panels'],
+                original_social_unchanged=social()==t.receipt['original_social'],chat_closed=not a.get('chat_edit_open'),
+                clean=not a.get('lua_errors') and not a.get('blocked_actions'))
+            t.receipt['who_outcome']={'checks':checks,'wire':detail,'public':visible};t.persist()
+            return {'status':'owned_who_search_pass' if all(checks.values()) else 'client_or_protocol_failure',
+                'oracle':{'checks':checks,'wire':detail,'packets':rows,'public':visible}}
+        result=click(t,'friends.who_search','Submit one stock Refresh for the owned character name.',
+            lambda c:c['name']=='WhoFrameWhoButton' and c['text']=='Refresh',outcome,await_state=reply)
+        state,frame=t.observe('who_result');t.receipt['who_result']={'state':state,'frame':frame};t.persist()
+        require(result,'owned_who_search_pass')
+    finally:
+        if original is not None:
+            require(edit(t,'fixture.who.restore_text','Restore the original empty stock Who field.',
+                lambda c:c['name']=='WhoFrameEditBox',original),'ui_edit_pass')
+        cleanup(t);restored(t,t.receipt)
+
+
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--mode',choices=['probe','suite'],default='probe');a=p.parse_args()
     with actor('primary'):
         t=Trial(a.output,controller='code')
-        try:probe(t);t.receipt['completed']=True
+        try:(suite(t) if a.mode=='suite' else probe(t));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
