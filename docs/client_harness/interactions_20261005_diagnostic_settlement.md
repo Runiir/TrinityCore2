@@ -2,7 +2,7 @@
 
 UI78 completes observer97 deployment on both existing owned clients. Their sessions, native/bridge lifetimes and HDMI-1 placement are preserved. Read-only chat focus/text fields are now available on every diagnostic page.
 
-Whole password01 passes password set, absent-password rejection, observed stock Cancel, absent enabled peer membership, correct-password join, two-owner/peer roster, exact scout leave, empty-password clear, password-free rejoin, and final one-owner roster. Six actual scenes are reviewed. Native/modern notices and exact requests agree with the public outcomes.
+Whole password01 passes password set, absent-password rejection, observed stock Cancel, absent enabled peer membership, correct-password join, two-member roster, exact scout leave, empty-password clear, password-free rejoin, and final one-owner roster. Six actual scenes are reviewed. Native/modern notices and exact requests agree with the public outcomes.
 
 The whole trial still fails at final cleanup: an exact `/tcui state` remains in the focused chat edit, and the next diagnostic correctly refuses another Return. The scout restores all original channel/chat and ten native checks. The primary passes all ten native checks; its last successful public read after exact channel leave proves original channel/chat settings. Those source-bound facts are retained, but the failed whole episode is excluded. Coverage remains 378/916 and the parent objective is open.
 
