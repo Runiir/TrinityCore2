@@ -69,7 +69,7 @@ def delivered(t,session,since,token,event,label,expected_guid,request=False):
     return record
 
 
-def phase(primary,scout):
+def phase(primary,scout,seed_only=False):
     sessions={}
     for name,t in [('primary',primary),('scout',scout)]:
         with actor(name):
@@ -85,6 +85,10 @@ def phase(primary,scout):
         delivered(scout,sessions['scout'],started,seed,'CHAT_MSG_WHISPER_INFORM','seed_sent',expected_guid=1,request=True)
     with actor('primary'):
         received_seed=delivered(primary,sessions['primary'],started,seed,'CHAT_MSG_WHISPER','seed_received',expected_guid=2)
+        if seed_only:
+            primary.receipt['player_link_seed']=received_seed
+            primary.receipt['cases'].append({'id':'fixture.player_link_seed','status':'owned_peer_chat_seed_pass',
+                'time':time.time(),'oracle':{'received':received_seed}});primary.persist();return
         destination=received_seed['observed_sender']
         if not isinstance(destination,str) or destination.split('-',1)[0]!=scout.fixture['character_name']:
             raise RuntimeError('native-attributed incoming sender does not name the owned scout')
@@ -122,14 +126,14 @@ def phase(primary,scout):
         'oracle':{'sent':sent,'received':received,'exact_target_guard':guard}});primary.persist()
 
 
-def run(out):
+def run(out,seed_only=False):
     out.mkdir(mode=0o700,parents=True,exist_ok=False);trials={};report={'completed':False,'failure':None}
     try:
         for name in ['primary','scout']:
             with actor(name):trials[name]=WhisperTrial(out/name,controller='code')
         def primary_work(t):
             with actor('scout'):
-                native_suite(trials['scout'],operations=lambda peer:phase(t,peer),preserve_settings=False)
+                native_suite(trials['scout'],operations=lambda peer:phase(t,peer,seed_only),preserve_settings=False)
         with actor('primary'):native_suite(trials['primary'],operations=primary_work,preserve_settings=False)
         report['completed']=True
     except Exception as error:report['failure']=f'{type(error).__name__}: {error}'
@@ -142,4 +146,5 @@ def run(out):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    run(p.parse_args().output)
+    p.add_argument('--seed-only',action='store_true',help='Prepare one attributable owned player chat link without a reply action')
+    a=p.parse_args();run(a.output,a.seed_only)
