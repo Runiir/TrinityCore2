@@ -10,10 +10,16 @@ function Client442ObserveSettings()
     local result={visible=panel and panel:IsVisible() or false,
         category=category and {name=call(category.GetName,category),id=call(category.GetID,category)},
         search=search and call(search.GetText,search),
-        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},interact_keys={}}
+        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},
+        interact_keys={primary='',secondary='',known=false}}
     if type(GetBindingKey)=='function' then
         local ok,a,b=pcall(GetBindingKey,'INTERACTTARGET')
-        if ok then result.interact_keys={a,b} end
+        if ok then result.interact_keys.primary=a or '';result.interact_keys.secondary=b or '' end
+    end
+    if type(GetNumBindings)=='function' and type(GetBinding)=='function' then
+        for i=1,GetNumBindings() do
+            if call(GetBinding,i)=='INTERACTTARGET' then result.interact_keys.known=true;break end
+        end
     end
     result.move_pad_visible=MovePadFrame and MovePadFrame:IsVisible() or false
     for _,name in ipairs({'autoLootDefault','lockActionBars','Sound_EnableAllSound','Sound_MasterVolume',

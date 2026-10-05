@@ -57,7 +57,9 @@ def suite(t,variables):
     try:
         t.settings_search=open_search(t);layout=detail(t,'control_layout_baseline')
         t.receipt['control_layout_baseline']=layout;t.persist()
-        if layout.get('unapplied') or not isinstance(layout.get('interact_keys'),list):
+        keys=layout.get('interact_keys',{})
+        if (layout.get('unapplied') or not isinstance(keys,dict) or keys.get('known') is not True or
+            not all(isinstance(keys.get(k),str) for k in ('primary','secondary'))):
             raise RuntimeError('requires a clean settings layout and complete Interact Target key observation')
         for variable in variables:
             original=layout['values'].get(variable)
