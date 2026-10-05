@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 380 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 381 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -461,7 +461,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.chat_links` (qualified variant; [evidence](#owned_item_link_native_say_delivery))
 - [x] `chat.scroll_history` (qualified variant; [evidence](#owned_native_chat_history_scroll))
 - [ ] `chat.copy_if_available`
-- [ ] `chat.mute_voice`
+- [x] `chat.mute_voice` (qualified variant; [evidence](#owned_stock_local_voice_self_mute))
 - [ ] `chat.report_ui_cancel`
 
 ## party
@@ -2587,3 +2587,15 @@ Remaining limits: Only the owned native dwarf Dwarvish/Common Say variant. Other
 - [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/natural_fixture_origin_enter01/episode.json`, SHA-256 `5d7be8b2134e598816e9f34189bbeb4ce7f9bed9a35b80ed7398c0bd88ad0c75`.
 - [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/say_guard_failure_review.json`, SHA-256 `27576e1ea55e6bdb3d6ed4643cdd56f7d2497b3fb0eee09f0a2ff87bbb2e7a92`.
 - [442_interactions_20261005_83.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_83.tar.gz.dvc), member `evidence/client_interactions_20261005_ui83/live_race_unlock_review.json`, SHA-256 `dd0b3cc7e8547bd3f11308069606400dfe454d163e236a9c5796e997478840e0`.
+
+### owned_stock_local_voice_self_mute
+
+Whole-pass UI84/voice_mute01 finds the installed TOGGLE_VOICE_SELF_MUTE action in ordinary Keybindings search. Both initial slots are unbound and the owned CTRL-SHIFT-F12 chord is unused. Stock listener/assignment and reviewed row/tooltip bind the chord. Ordinary key inputs change public IsMuted false->true->false with every other voice field unchanged, including offline voice login. The stock right-click removes only that temporary binding; both reviewed slots return to Not Bound and the chord is clear. Public voice, saved settings and all ten native checks restore against the source baseline recovered from the earlier failed search.
+
+Remaining limits: Local self-mute through this installed binding only. Connected voice audio, channel activation, microphone transmission, voice services, peer mute/deafen and online microphone indicators remain open. The voice search cleanup failure and first caption-guard recovery failure remain excluded. Exact source recovery restores12 checks before the whole trial. Four initial test-mock KeyError failures are retained; corrected13 focused checks and1149 full tests pass. No decision model, extra game client, native world restart or voice API setter is invoked by the observer.
+
+- [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_mute01/episode.json`, SHA-256 `b551f832d8a846f73eaf1796635fb8ae9b52dc75f2aa6b2fdc1da506581c325d`.
+  Checked cases: `chat.mute_voice` (owned_local_voice_mute_pass).
+- [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_whole_review.json`, SHA-256 `8bfb75c4543909d240c71ceef3fcb5db2b5f0111679b6f645c0c36d7da06f18a`.
+- [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_search_failure_review.json`, SHA-256 `9e89f28b9daa5090b1d26475d6f03d7ee9c311eb514d1a2de136f9ae9fa53676`.
+- [442_interactions_20261005_84.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc), member `evidence/client_interactions_20261005_ui84/voice_search_recovery02/episode.json`, SHA-256 `d81c13d5eee5b724fc89251b51054d6d85613612b0fcc45d4e30d3dd4a182418`.

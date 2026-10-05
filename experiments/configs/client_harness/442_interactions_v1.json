@@ -3476,7 +3476,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_stock_local_voice_self_mute"
     },
     {
       "id": "chat.report_ui_cancel",
@@ -13011,8 +13012,41 @@
           "sha256": "dd0b3cc7e8547bd3f11308069606400dfe454d163e236a9c5796e997478840e0"
         }
       ]
+    },
+    {
+      "id": "owned_stock_local_voice_self_mute",
+      "operations": [
+        "chat.mute_voice"
+      ],
+      "scope": "Whole-pass UI84/voice_mute01 finds the installed TOGGLE_VOICE_SELF_MUTE action in ordinary Keybindings search. Both initial slots are unbound and the owned CTRL-SHIFT-F12 chord is unused. Stock listener/assignment and reviewed row/tooltip bind the chord. Ordinary key inputs change public IsMuted false->true->false with every other voice field unchanged, including offline voice login. The stock right-click removes only that temporary binding; both reviewed slots return to Not Bound and the chord is clear. Public voice, saved settings and all ten native checks restore against the source baseline recovered from the earlier failed search.",
+      "limits": "Local self-mute through this installed binding only. Connected voice audio, channel activation, microphone transmission, voice services, peer mute/deafen and online microphone indicators remain open. The voice search cleanup failure and first caption-guard recovery failure remain excluded. Exact source recovery restores12 checks before the whole trial. Four initial test-mock KeyError failures are retained; corrected13 focused checks and1149 full tests pass. No decision model, extra game client, native world restart or voice API setter is invoked by the observer.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui84/voice_mute01/episode.json",
+          "sha256": "b551f832d8a846f73eaf1796635fb8ae9b52dc75f2aa6b2fdc1da506581c325d",
+          "cases": {
+            "chat.mute_voice": "owned_local_voice_mute_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui84/voice_whole_review.json",
+          "sha256": "8bfb75c4543909d240c71ceef3fcb5db2b5f0111679b6f645c0c36d7da06f18a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui84/voice_search_failure_review.json",
+          "sha256": "9e89f28b9daa5090b1d26475d6f03d7ee9c311eb514d1a2de136f9ae9fa53676"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_84.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui84/voice_search_recovery02/episode.json",
+          "sha256": "d81c13d5eee5b724fc89251b51054d6d85613612b0fcc45d4e30d3dd4a182418"
+        }
+      ]
     }
   ],
-  "qualified_operations": 380,
+  "qualified_operations": 381,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
