@@ -70,3 +70,22 @@ def test_completed_waypoint_returns_to_locating_the_uncollected_object(monkeypat
         return 'loot',{},{}
     monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
     assert dig_decisions.choose(state)[0]=='loot'
+
+
+def test_current_clear_minimap_fact_removes_an_empty_inspection_action():
+    r=row();r['archaeology']['falling']=False
+    r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
+    r['minimap_finds']={'status':'no_visible_candidates','clear':True}
+    assert set(farm_policy.legal_actions(r,SolveBatches()))=={'wait','teleport'}
+    r['minimap_finds']={'status':'uninspected_candidates','clear':False}
+    assert 'minimap' in farm_policy.legal_actions(r,SolveBatches())
+
+
+def test_a_portal_in_another_instance_is_not_a_flight_destination():
+    r=row();r['archaeology']['falling']=False
+    r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
+    r['farm_ui']['route']['portal']={'from':{'instance':732,'north':100,'west':100}}
+    actions=farm_policy.legal_actions(r,SolveBatches())
+    assert 'teleport' in actions and 'flight' not in actions
+    r['archaeology']['world']['instance']=732
+    assert 'flight' in farm_policy.legal_actions(r,SolveBatches())

@@ -14,7 +14,9 @@ def legal_actions(row,batches,dig_guide=None):
     a,m=row['archaeology'],row['movement'];ui=row.get('farm_ui') or {};route=ui.get('route') or {}
     actions={'wait':('Wait and observe',None)}
     if not ui or not m['in_world'] or m['dead'] or m['on_taxi'] or a['casting']:return actions
-    actions['minimap']=('Inspect visible minimap blips',None)
+    signal=row.get('minimap_finds') or {}
+    if signal.get('clear') is not True and signal.get('status')!='unavailable':
+        actions['minimap']=('Inspect visible minimap blips',None)
     if m['in_combat']:actions['combat']=('Use Sinister Strike on the current target, landing and facing as needed',None)
     if a['mounted'] or a['flying'] or a['falling']:
         actions['land']=('Land here and toggle Shift+Space to dismount',a['world'])
@@ -39,7 +41,8 @@ def legal_actions(row,batches,dig_guide=None):
     if route.get('portal'):portals.append(route['portal'])
     for p in portals:
         if distance(a['world'],p.get('from'))<20:actions['portal']=('Use the nearby route portal',p)
-        elif route.get('portal')==p:actions['flight']=('Fly to the route portal',p['from'])
+        elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
+            actions['flight']=('Fly to the route portal',p['from'])
     if route.get('origin') and route.get('exit'):
         target=route['origin']['point']
         if distance(a['world'],target)<12:actions['taxi']=('Take the route taxi',(route['origin'],route['exit']))
@@ -73,6 +76,7 @@ def choose(row,batches,session):
             if k in ('source','color','distance_yards','heading_relative_to_player','arrived')},
         'named_object':(ui.get('soft_interact') or {}).get('name'),
         'pending_pickup':bool(row.get('pending_find')),'minimap':signal.get('status'),
+        'minimap_clear':signal.get('clear'),
         'pickup':pending_find.facts(row,row.get('pending_find')),
         'guide_error':guide_error,
         'route':route.get('kind'),'via_Tol_Barad_requested':session['via_tolbarad'],
