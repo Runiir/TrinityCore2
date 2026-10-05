@@ -1,4 +1,5 @@
 #include "chat.hpp"
+#include "chat_channels.hpp"
 
 namespace bridge
 {
@@ -43,6 +44,7 @@ std::string counted(Reader &r,unsigned maximum)
 }
 Reply chat_request(State const &,std::string const &name,View body)
 {
+    if(auto channel=chat_channel_request(name,body))return channel;
     static std::unordered_map<std::string,std::string> const names={
         {"CMSG_CHAT_MESSAGE_SAY","CMSG_MESSAGECHAT_SAY"},{"CMSG_CHAT_MESSAGE_YELL","CMSG_MESSAGECHAT_YELL"},
         {"CMSG_CHAT_MESSAGE_PARTY","CMSG_MESSAGECHAT_PARTY"},{"CMSG_CHAT_MESSAGE_RAID","CMSG_MESSAGECHAT_RAID"},
@@ -92,6 +94,7 @@ Reply chat_request(State const &,std::string const &name,View body)
 }
 Reply chat_response(State const &owner,std::string const &name,View body)
 {
+    if(auto channel=chat_channel_response(owner,name,body))return channel;
     if(name!="SMSG_MESSAGECHAT" && name!="SMSG_GM_MESSAGECHAT")return {};
     Reader r(body);Writer w;
     auto kind=r.take<std::uint8_t>();auto language=r.take<std::int32_t>();auto sender=r.take<std::uint64_t>();

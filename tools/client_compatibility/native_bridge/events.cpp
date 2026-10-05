@@ -1,4 +1,5 @@
 #include "events.hpp"
+#include "chat_channels.hpp"
 #include "chat_probe.hpp"
 #include <chrono>
 #include <fstream>
@@ -192,7 +193,7 @@ void Events::packet(std::string const &direction, std::string const &name, View 
 {
     bool movement_probe=name=="SMSG_MOVE_UPDATE" &&
         std::filesystem::is_regular_file(root_/"run/capture_public_movement");
-    if (!capture(name) && !public_chat_probe(name,body) && !movement_probe)
+    if (!capture(name) && !public_chat_probe(name,body) && !public_channel_probe(name,body) && !movement_probe)
         return;
     append(root_ / "evidence/world_packets.jsonl", Object{{"time", now()},
                                                           {"session", session},
