@@ -27,7 +27,8 @@ bool item_link_probe(std::string const &name, View body)
             if (r.take<std::uint8_t>() != 1 || r.take<std::int32_t>() != 7 ||
                 r.take<std::uint64_t>() != 1) return false;
             r.take<std::uint32_t>();
-            if (r.take<std::uint64_t>() != 0) return false;
+            auto target = r.take<std::uint64_t>();
+            if (target != 0 && target != 1) return false;
             auto count = r.take<std::uint32_t>();
             if (count != owned_item_link.size() + 1) return false;
             size = count - 1;

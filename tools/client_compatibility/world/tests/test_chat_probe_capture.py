@@ -9,8 +9,8 @@ def request(text=LINK,language=7):
     return Writer().pack('i',language).bits(len(text),11).bits(1,1).raw(text).finish()
 
 
-def response(text=LINK,sender=1,kind=1,language=7):
-    return Writer().pack('BiQIQI',kind,language,sender,0,0,len(text)+1).raw(text+b'\0').pack('B',0).finish()
+def response(text=LINK,sender=1,kind=1,language=7,target=0):
+    return Writer().pack('BiQIQI',kind,language,sender,0,target,len(text)+1).raw(text+b'\0').pack('B',0).finish()
 
 
 def captured(codec,name,body):
@@ -21,8 +21,9 @@ def translated(codec,fn,name,body):
     return stateful(codec,{'guid':1,'map':1418},[action(fn,name,body)])[0]
 
 
-def test_exact_stock_owned_say_link_is_captured_in_all_four_wire_directions(codec):
-    modern=request();native=response()
+@pytest.mark.parametrize('target',[0,1])
+def test_exact_stock_owned_say_link_is_captured_in_all_four_wire_directions(codec,target):
+    modern=request();native=response(target=target)
     assert captured(codec,'CMSG_CHAT_MESSAGE_SAY',modern)
     assert captured(codec,'SMSG_MESSAGECHAT',native)
     name,body=translated(codec,'chat_request','CMSG_CHAT_MESSAGE_SAY',modern)
@@ -44,7 +45,7 @@ def test_arbitrary_or_foreign_link_text_is_never_captured(codec,text):
 def test_foreign_sender_other_chat_type_language_or_trailing_data_is_excluded(codec):
     assert not captured(codec,'CMSG_CHAT_MESSAGE_WHISPER',request())
     assert not captured(codec,'CMSG_CHAT_MESSAGE_SAY',request(language=0))
-    for change in [{'sender':2},{'kind':3},{'language':0}]:
+    for change in [{'sender':2},{'kind':3},{'language':0},{'target':2}]:
         assert not captured(codec,'SMSG_MESSAGECHAT',response(**change))
     for name,body in [('CMSG_CHAT_MESSAGE_SAY',request()),('SMSG_MESSAGECHAT',response())]:
         assert not captured(codec,name,body+b'private')
