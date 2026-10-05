@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 393 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 397 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -754,11 +754,11 @@ Fixture: `saved_local_settings`.
 
 - [x] `settings.open` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.close` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
-- [ ] `settings.graphics`
+- [x] `settings.graphics` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
 - [ ] `settings.resolution`
 - [ ] `settings.window_mode`
 - [ ] `settings.monitor_selection`
-- [ ] `settings.render_scale`
+- [x] `settings.render_scale` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
 - [ ] `settings.quality`
 - [x] `settings.sound_volume` (qualified variant; [evidence](#owned_master_volume_stepper_roundtrip))
 - [x] `settings.mute` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
@@ -772,8 +772,8 @@ Fixture: `saved_local_settings`.
 - [x] `settings.auto_loot` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.tutorials` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.addons` (qualified variant; [evidence](#owned_addons_version_check_roundtrip))
-- [ ] `settings.apply`
-- [ ] `settings.cancel`
+- [x] `settings.apply` (qualified variant; [evidence](#owned_render_scale_apply_roundtrip))
+- [x] `settings.cancel` (qualified variant; [evidence](#owned_settings_exit_cancel_discard))
 - [x] `settings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
 - [ ] `settings.defaults_apply`
 - [ ] `settings.persistence`
@@ -2730,3 +2730,23 @@ Remaining limits: Stationary horizontal turning only. Camera orbit/pitch, moveme
 - [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn02/scout/episode.json`, SHA-256 `f1a357929c082fc608d89b9c4c569c1e88c3ba18fc2524d50c4b56b67277f45d`.
   Checked cases: `movement.mouse_turn.right` (native_mouse_turn_pass), `movement.mouse_turn.left` (native_mouse_turn_pass).
 - [442_interactions_20261005_92.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_92.tar.gz.dvc), member `evidence/client_interactions_20261005_ui92/mouse_turn_whole_review.json`, SHA-256 `d121f3494682629dd15eb1ba201c826cc7cccce11819dd8b2d940ea25b7c4b3f`.
+
+### owned_render_scale_apply_roundtrip
+
+Owned primary observer115: one stock render-scale decrement1 to0.98333334922791 stays pending with actual CVar1, ordinary Apply activates the lower value, inverse step and Apply restore1. Visible render label100-to98-to100percent, public CVar/proxy and unapplied flag agree. Resolution1280x720, display/monitor and all other observed settings/CVars stay fixed. Five graphics, five layout and ten native checks restore.
+
+Remaining limits: One render-scale variant only. Quality presets, resolution/window/monitor changes, performance and persistence remain open. No allocation above the original100percent is requested. Scripts stay blocked; historical softTargetInteract0 remains unrestored at1.
+
+- [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/render_scale01/episode.json`, SHA-256 `0f433abd2687eda5b6fdbc8f8267c337320e52a1df419c4c9106ca227bac240d`.
+  Checked cases: `settings.render_scale.lower_pending` (stock_render_scale_pending_pass), `settings.apply.render_scale_lower` (stock_render_scale_apply_pass), `settings.render_scale.original_pending` (stock_render_scale_pending_pass), `settings.apply.render_scale_original` (stock_render_scale_apply_pass).
+- [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/render_scale_whole_review.json`, SHA-256 `a3b65e781ff63530aedefbc511d5a899f1672a16582a0aee03982f8bdfe129f5`.
+
+### owned_settings_exit_cancel_discard
+
+Owned primary observer117: one lower pending render-scale step leaves actual CVar1; the exact stock GAME_SETTINGS_CONFIRM_DISCARD Cancel closes only its dialog and preserves the pending edit. A second ordinary Close and Exit discard the edit, restoring CVar/proxy1 and clearing unapplied state without Apply. Cleanup reopens Settings and restores five graphics, five layout and ten native checks.
+
+Remaining limits: Pending render-change exit Cancel and discard variant only. Other dialogs/settings, defaults and persistence remain open. Whole settings_discard01/02 failures remain excluded; their later source-bound cleanup passes add no qualification. Caption correction for settings_discard_whole_review.json visual_review[3]: reopened capture shows the original Controls category; encoded public probe confirms applied and pending RenderScale1 at1280x720. It does not visibly show the render-scale slider. Scripts stay blocked and historical softTargetInteract0 remains unrestored at1.
+
+- [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/settings_discard03/episode.json`, SHA-256 `b52ed722eb62b0ddb3d1b6d866935af881fe06dacc7bf9a7c1b51cdae05ea867`.
+  Checked cases: `settings.cancel.render_scale_pending` (stock_render_scale_pending_pass), `settings.cancel.keep_pending` (stock_settings_exit_choice_pass), `settings.cancel.discard_pending` (stock_settings_exit_choice_pass).
+- [442_interactions_20261005_93.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_93.tar.gz.dvc), member `evidence/client_interactions_20261005_ui93/settings_discard_whole_review.json`, SHA-256 `ba21bfdc0f909ebfd56e92c3b241596c1f5ab2e251cd00baff689d215f47e6ea`.
