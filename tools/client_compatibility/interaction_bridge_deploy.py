@@ -28,7 +28,7 @@ def shot(path):
     return {'file':path.name,'sha256':lab.sha256(path),'monitor':monitor}
 
 
-def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None,combat_source=None):
+def restart(out,version,unavailable_primary_source=None,unavailable_scout_source=None,unavailable_deployment_source=None,combat_source=None,parked_scout_review=None):
     from . import interaction_bridge_restoration as native_restoration
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=identity('worldserver'); before=identity('modern_world'); control.native_command()
@@ -37,7 +37,10 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
         with actor(name):
             t=Trial(out/(name+'_before'),controller='code')
             try:
-                if name=='primary' and combat_source:
+                if name=='scout' and parked_scout_review:
+                    from .interaction_parked_bridge import baseline
+                    baselines[name]=baseline(t,parked_scout_review)
+                elif name=='primary' and combat_source:
                     from .interaction_character_combat_recovery import unavailable
                     baselines[name]=unavailable(t,combat_source,native,before)
                 elif unavailable_deployment_source:
@@ -56,13 +59,15 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
                     native_baselines[name]=native_restoration.capture(t)
                     t.receipt['bridge_native_baseline']=native_baselines[name]
                     t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
-                shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
-                    lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
+                if not (name=='scout' and parked_scout_review):
+                    shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
+                        lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
             except Exception as error:
                 t.receipt['failure']=f'{type(error).__name__}: {error}';raise
             finally: t.receipt['finished_at']=time.time();t.persist()
     report={'schema':'client442_bridge_deployment_v1','started_at':time.time(),'native':native,'before':before,
             'observer_version':version,'baselines':baselines,'reconnected':{}}
+    if parked_scout_review:report['parked_scout']=True
     if unavailable_primary_source:report['primary_public_precheck_deferred']=True
     if combat_source:report.update(primary_public_precheck_deferred=True,combat_source=str(combat_source))
     if unavailable_scout_source:report['scout_public_precheck_deferred']=True
@@ -90,6 +95,8 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
     if identity('worldserver')!=report['native'] or identity('modern_world')!=report['after']:
         raise RuntimeError('deployment process identity changed')
     if name in report['reconnected']:raise RuntimeError('actor already reconnected in this deployment')
+    if name=='scout' and report.get('parked_scout'):
+        raise RuntimeError('parked scout must remain at reviewed selection; use the parked restoration')
     # These are the ordinary lobby controls from the separately captured and
     # visually reviewed 1280x720 client screens. Stop on any observation failure.
     inputs=[('okay',[640,380],.4),('reconnect',[640,418],3),('realm',[465,182],.4),
@@ -268,11 +275,12 @@ if __name__=='__main__':
     parser.add_argument('--realm-selection',action='store_true',help='Reviewed actor is already at realm selection; select the lab realm then enter')
     parser.add_argument('--client-restart-source',type=Path,help='Owned restart receipt binding a failed trial to the new client lifetime')
     parser.add_argument('--combat-source',type=Path,help='Closed failed combat episode with the exact pending native helmet relocation')
+    parser.add_argument('--parked-scout-review',type=Path,help='Fresh reviewed closed offline-scout preflight; restore selection without world entry')
     args=parser.parse_args()
     # Recovery reads the baseline from the already verified original deployment.
     if args.action=='restart':
         if args.version is None:parser.error('restart requires the expected observer version')
-        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source,args.combat_source)
+        restart(args.output,args.version,args.unavailable_primary_source,args.unavailable_scout_source,args.unavailable_deployment_source,args.combat_source,args.parked_scout_review)
     elif args.action=='recovery':
         if args.actor is None or args.source is None:parser.error('recovery requires an actor and source deployment')
         with actor(args.actor):recovery(args.source,args.output,args.actor,args.client_restart_source,args.version)

@@ -36,15 +36,15 @@ def decoded(packet):
 
 
 def test_owned_book_read_translates_position_and_correlated_success(codec):
-    assert run(codec,[action('item_text_request','CMSG_READ_ITEM',bytes([255,25])),read_result()])==[
+    assert run(codec,[action('item_text_request','CMSG_READ_ITEM',bytes([255,37])),read_result()])==[
         ['CMSG_READ_ITEM','ff19'],['SMSG_READ_ITEM_RESULT_OK',Writer().guid(50,ITEM_HIGH).finish().hex()]]
     assert run(codec,[action('item_text_request','CMSG_READ_ITEM',bytes([30,2])),read_result()],bag=19,slot=2)[0]==[
         'CMSG_READ_ITEM','1302']
     assert run(codec,[read_result(),read_result('SMSG_READ_ITEM_FAILED')])==[None,None]
 
 
-@pytest.mark.parametrize('body,kw',[(b'\xff\x19',{'owner':2}),(b'\xff\x18',{}),(b'\xff\x3b',{}),
-    (bytes([87,2]),{}),(bytes([30,17]),{'bag':19,'slot':2}),(b'\xff',{}),(b'\xff\x19x',{})])
+@pytest.mark.parametrize('body,kw',[(b'\xff\x25',{'owner':2}),(b'\xff\x24',{}),(b'\xff\x3b',{}),
+    (bytes([87,2]),{}),(bytes([30,17]),{'bag':19,'slot':2}),(b'\xff',{}),(b'\xff\x25x',{})])
 def test_reads_reject_unowned_empty_banked_and_malformed_slots(codec,body,kw):
     assert 'error' in run(codec,[action('item_text_request','CMSG_READ_ITEM',body)],**kw)[0]
 
@@ -65,12 +65,12 @@ def test_queued_duplicate_and_overlapping_public_cache_reads_stay_ordered(codec)
         (18,[(18,19,'A2'),(19,0,'B2')]),(19,[(19,0,'B3')])]
 
 
-@pytest.mark.parametrize('request',[query(0),query(0x80000001),query(low=51),query(high=ITEM_HIGH^(1<<42)),
+@pytest.mark.parametrize('query_action',[query(0),query(0x80000001),query(low=51),query(high=ITEM_HIGH^(1<<42)),
     query(low=0,high=ITEM_HIGH),query(low=0x100000000),
     action('item_text_request','CMSG_QUERY_PAGE_TEXT',b'\x12'),
     {**query(),'body':query()['body']+'00'}])
-def test_page_queries_reject_bad_ids_guids_and_bodies(codec,request):
-    assert 'error' in run(codec,[request])[0]
+def test_page_queries_reject_bad_ids_guids_and_bodies(codec,query_action):
+    assert 'error' in run(codec,[query_action])[0]
 
 
 @pytest.mark.parametrize('reply',[page(19),page(18,'x'*4096),page(18,next=18),page(18,next=0x80000001),
@@ -89,7 +89,7 @@ def test_cycle_clears_pending_chains_and_no_partial_chain_escapes(codec):
 
 def test_queue_bound_failure_and_logout_do_not_leak_authority(codec):
     assert 'error' in run(codec,[*[query(i) for i in range(1,18)]])[-1]
-    request=action('item_text_request','CMSG_READ_ITEM',bytes([255,25]))
+    request=action('item_text_request','CMSG_READ_ITEM',bytes([255,37]))
     out=run(codec,[request,read_result('SMSG_READ_ITEM_FAILED'),read_result(),query(),
         action('logout_complete','SMSG_LOGOUT_COMPLETE',b''),page(),read_result(),query(),request])
     assert out[1:3]==[None,None] and out[4:7]==[None,None,None]
@@ -99,5 +99,5 @@ def test_queue_bound_failure_and_logout_do_not_leak_authority(codec):
 
 
 def test_wrong_native_item_does_not_consume_the_owned_read(codec):
-    out=run(codec,[action('item_text_request','CMSG_READ_ITEM',b'\xff\x19'),read_result(guid=ITEM+1),read_result()])
+    out=run(codec,[action('item_text_request','CMSG_READ_ITEM',b'\xff\x25'),read_result(guid=ITEM+1),read_result()])
     assert out[1] is None and out[2][0]=='SMSG_READ_ITEM_RESULT_OK'
