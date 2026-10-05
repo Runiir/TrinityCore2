@@ -76,5 +76,5 @@ Batch 01 is checkpointed through DVCLive and
 completed and cloud status confirmed synchronization. Closed screenshots and
 the rejected partial head were then pruned after checking their archived
 hashes. The local archive and its exact cache object were also removed to keep
-the batch remote-only. Local DVC status therefore reports this output deleted;
+the batch remote-only. Local DVC status therefore reports this output not in cache;
 restore it with `pixi run dvc pull` targeting that `.dvc` file.
