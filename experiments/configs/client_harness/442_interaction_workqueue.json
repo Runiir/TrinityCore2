@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "405/916 reviewed scoped operations, 511 open. UI98 quest_link01 whole final pass qualifies stock Shift-click insertion of existing quest28825 into blank chat, cancelled without submission. Original collapsed header, watch0, selection0, observed settings and native fixture restore through separately reviewed ordinary same-character reentry. Both failed calibrations and their cleanup are retained. Scripts stay blocked; historical original softTargetInteract0 remains unrestored at1. Next: review existing disconnect-notification evidence and remaining camera/item-text prerequisites.",
+  "current": "406/916 reviewed scoped operations, 510 open. Existing UI81 controlled bridge-restart evidence qualifies the stock network disconnect notification on both owned build60895 clients after fresh image/hash review. Historical whole reentries pass all nine native checks per actor. This is evidence reconciliation; no new network fault, game input, client/server restart or build. UI98 remains closed with the restored quest-link variant. Scripts stay blocked; historical original softTargetInteract0 remains unrestored at1. Next: remaining camera reset and item-text prerequisites.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -199,7 +199,8 @@
     "ui95: primary observer118 deploy and pending-quality whole trial pass. Exact source identity and10-child preset map verified; no Apply and no native build/client/server/model start.138 focused/1448 full tests pass. Generic Copy Name mapping reuses the same old UI85 whole-pass proof with remote object presence checked, without archive download or new Copy input.",
     "UI96 pending display whole pass: three7-check selections and three6-check discard restorations, final display4/layout5/native10. DVC96 verifies13 JSON receipts and161 attributed images; scope excludes Apply and active display changes.403/916,513open.",
     "UI97 Colorblind current-category Defaults whole pass: exact3-setting ownership/default guards, ten action/five value/five layout/ten native checks. DVC97 verifies11 JSON receipts and57 attributed images.404/916,512open.",
-    "ui98/quest_link01: exact stock public link inserted into blank chat and cancelled without submission; whole final pass restores original selection0, quest/header/watch/settings/native fixture. Two failed calibrations and complete source-bound cleanup retained; coverage405/916."
+    "ui98/quest_link01: exact stock public link inserted into blank chat and cancelled without submission; whole final pass restores original selection0, quest/header/watch/settings/native fixture. Two failed calibrations and complete source-bound cleanup retained; coverage405/916.",
+    "network_notification_review_20261006: re-reviewed two exact UI81 WOW51900319 stock disconnect dialogs and complete actor reentries. Full original remote archive hash and selected members verified; new small review/DVCLive bundle remotely verified. No fresh game inputs; coverage406/916."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

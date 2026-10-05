@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 405 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 406 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -1130,7 +1130,7 @@ Fixture: `in_world`.
 - [x] `ui_misc.popup_cancel` (qualified variant; [evidence](#owned_macro_confirmation_controls))
 - [x] `ui_misc.latency_display` (qualified variant; [evidence](#stock_camera_zoom_latency))
 - [x] `ui_misc.fps_display` (qualified variant; [evidence](#stock_display_controls))
-- [ ] `ui_misc.network_disconnect_notification`
+- [x] `ui_misc.network_disconnect_notification` (qualified variant; [evidence](#owned_bridge_restart_disconnect_notification))
 
 ## account services
 
@@ -2805,3 +2805,15 @@ Remaining limits: One existing owned completed-unrewarded quest and one blank-ch
 - [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/quest_link_whole_review.json`, SHA-256 `8d23a52b10feeec2b6aabddae103e081208008a96feb7c1207a9c89ef8b10653`.
 - [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/layout_calibration03_whole_review.json`, SHA-256 `37ab95f6f03d7d979d6f73732a94ba9ab8664cad1b0d24d8fd6b6fee5dfb6b37`.
 - [442_interactions_20261006_98.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc), member `evidence/client_interactions_20261006_ui98/source_qa.json`, SHA-256 `01bb255cd164fe42b721ad1353824a792c94959ec0ccdd2b6769a9bc49618d25`.
+
+### owned_bridge_restart_disconnect_notification
+
+Historical UI81 controlled owned bridge restart: both owned build60895 clients display the stock server-disconnected modal with WOW51900319. Actual images, monitor/game PID identities, closed deployment and completed same-actor native restoration prove this notification variant. Both actual screens show the modal text and visible Okay/Reconnect controls. Original UI81 archive (785,300,746 bytes), SHA-256 619b0ff5338bcab025a41759b43704cf9729a8bc05c2d0cfb17526760adabac7 and MD5 6b41917f4bb79f44797151ffb4669c00 were streamed and verified without restoring an archive/cache copy. Both actor reentry episodes are whole completed with all nine native checks passing.
+
+Remaining limits: Captured notification after one controlled bridge restart only. Other disconnect causes, timers, network loss, transport variants, error codes, reconnect-button behavior and current bridge-build fault testing remain open. This is evidence reconciliation, with no new game input or client/server restart. Historical controllers remain code with model None. No new disconnect or reentry input was sent. Scripts stay blocked; historical softTargetInteract=0 remains unrestored at stock-disabled 1.
+
+- [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/deployment.json`, SHA-256 `8a3b8044956cfe0423cf4b90dec22712b11c77347a08b6134cd3e716d2e8ecf4`.
+- [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/deployment_visual_review.json`, SHA-256 `34af57cab33ec3d220fcf95310f7ec6ae3dccda4f715aa4444f78d03534c7a6e`.
+- [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/primary_after/episode.json`, SHA-256 `933f1d5c659d3b42551ccf4d7d0db5a993b13c22b79a4856e8e8fc2d5724dc88`.
+- [442_interactions_20261005_81.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc), member `evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/scout_after/episode.json`, SHA-256 `2e0b17bfc4d1a94c3e771c8bc886cdfa607e0c3c0fc24b75efdcfced488474a8`.
+- [442_network_notification_review_20261006_01.tar.gz.dvc](../../artifacts/client_harness/442_network_notification_review_20261006_01.tar.gz.dvc), member `evidence/network_notification_review_20261006/notification_reconciliation.json`, SHA-256 `5bfc5b02dfb095171b53eb257cb154257bca9caaad573d01d679006fe2126edf`.

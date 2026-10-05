@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791236638.8096197,
+  "reviewed_at": 1791237038.5181155,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -4904,6 +4904,41 @@
           "pointer": "artifacts/client_harness/442_interactions_20261006_98.tar.gz.dvc",
           "member": "evidence/client_interactions_20261006_ui98/source_qa.json",
           "sha256": "01bb255cd164fe42b721ad1353824a792c94959ec0ccdd2b6769a9bc49618d25"
+        }
+      ]
+    },
+    {
+      "id": "owned_bridge_restart_disconnect_notification",
+      "operations": [
+        "ui_misc.network_disconnect_notification"
+      ],
+      "scope": "Historical UI81 controlled owned bridge restart: both owned build60895 clients display the stock server-disconnected modal with WOW51900319. Actual images, monitor/game PID identities, closed deployment and completed same-actor native restoration prove this notification variant. Both actual screens show the modal text and visible Okay/Reconnect controls. Original UI81 archive (785,300,746 bytes), SHA-256 619b0ff5338bcab025a41759b43704cf9729a8bc05c2d0cfb17526760adabac7 and MD5 6b41917f4bb79f44797151ffb4669c00 were streamed and verified without restoring an archive/cache copy. Both actor reentry episodes are whole completed with all nine native checks passing.",
+      "limits": "Captured notification after one controlled bridge restart only. Other disconnect causes, timers, network loss, transport variants, error codes, reconnect-button behavior and current bridge-build fault testing remain open. This is evidence reconciliation, with no new game input or client/server restart. Historical controllers remain code with model None. No new disconnect or reentry input was sent. Scripts stay blocked; historical softTargetInteract=0 remains unrestored at stock-disabled 1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/deployment.json",
+          "sha256": "8a3b8044956cfe0423cf4b90dec22712b11c77347a08b6134cd3e716d2e8ecf4"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui81/deployment_visual_review.json",
+          "sha256": "34af57cab33ec3d220fcf95310f7ec6ae3dccda4f715aa4444f78d03534c7a6e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/primary_after/episode.json",
+          "sha256": "933f1d5c659d3b42551ccf4d7d0db5a993b13c22b79a4856e8e8fc2d5724dc88"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_81.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui81/skill_bridge_deploy02/scout_after/episode.json",
+          "sha256": "2e0b17bfc4d1a94c3e771c8bc886cdfa607e0c3c0fc24b75efdcfced488474a8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_network_notification_review_20261006_01.tar.gz.dvc",
+          "member": "evidence/network_notification_review_20261006/notification_reconciliation.json",
+          "sha256": "5bfc5b02dfb095171b53eb257cb154257bca9caaad573d01d679006fe2126edf"
         }
       ]
     }
