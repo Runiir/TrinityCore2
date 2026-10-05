@@ -110,7 +110,10 @@ Ramkahen travel, flight, landing and combat. Key-1 combat checks the current
 hostile target, action readiness and cooldown, then resumes the interrupted
 activity. If combat interrupts flight, Laya first lands at the observed current
 position and dismounts with Shift+Space. This recovery cannot ascend or travel
-horizontally. No target switching or extra combat abilities are used.
+horizontally. A fresh "Target needs to be in front of you" error lets Laya
+choose a half-turn timed from the owned turn calibration before retrying key 1.
+Two unsuccessful facing corrections stop the run. No target switching or extra
+combat abilities are used.
 
 Start a fresh supervised run that stops with an unopened Canopic Jar:
 

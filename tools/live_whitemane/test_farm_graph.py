@@ -39,3 +39,16 @@ def test_combat_never_issues_key_one_during_cooldown_or_to_a_dead_target():
     assert not combat.ready(r)
     r['farm_ui']['combat'].update(cooldown_ends=0,target_dead=True)
     assert not combat.ready(r)
+
+
+def test_facing_recovery_requires_a_new_error_from_our_current_attack():
+    r=row();r['movement']['in_combat']=True;r['farm_ui']['uptime']=10
+    r['farm_ui']['combat']={'target_exists':True,'hostile':True,'attack_usable':True,'attack_in_range':True}
+    r['farm_ui']['error']={'code':51,'at':9}
+    assert not combat.needs_facing(r,None,0)
+    assert not combat.needs_facing(r,10,0)
+    r['farm_ui']['error']['at']=10
+    assert combat.needs_facing(r,10,0)
+    assert not combat.needs_facing(r,10,10)
+    r['archaeology']['mounted']=True
+    assert not combat.needs_facing(r,10,0)

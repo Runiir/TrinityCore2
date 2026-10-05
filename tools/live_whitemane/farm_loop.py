@@ -109,7 +109,13 @@ def run(output,stop_on='recipe'):
                 if action=='jar' and stop_on=='canopic_jar':session['status']='canopic_jar_found';step['completed']=True;break
                 try:
                     if action=='wait':time.sleep(2)
-                    elif action=='combat':step['result']=combat.run(folder/'combat')
+                    elif action=='combat':
+                        history=[]
+                        if session['dig_output']:
+                            dig_path=Path(session['dig_output'])/'session.json'
+                            if dig_path.exists():
+                                dig=json.loads(dig_path.read_text());history=dig.get('turn_history',[])+dig['steps']
+                        step['result']=combat.run(folder/'combat',turn_history=history)
                     elif action=='minimap':
                         step['result']=minimap_finds.inspect(folder/'minimap',row)
                     elif action=='jar':
