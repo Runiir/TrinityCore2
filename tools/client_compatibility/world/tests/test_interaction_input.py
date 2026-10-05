@@ -93,3 +93,31 @@ def test_bounded_stock_rotation_hold_reaches_only_selected_control(monkeypatch):
     monkeypatch.setattr(module.time,'sleep',lambda _:None)
     assert trial.execute({'kind':'click','value':[10,20],'hold':.6})==[]
     assert events==[((10,20),{'button':1,'modifiers':(),'hold':.6})]
+
+
+@pytest.mark.parametrize('mode',['state','chat','controls'])
+@pytest.mark.parametrize('text',['/tcui chat','cui chat'])
+def test_diagnostic_observes_complete_prefix_before_submission_from_any_mode(monkeypatch,mode,text):
+    trial=module.Trial.__new__(module.Trial);trial.receipt={'cases':[]};trial.persist=lambda:None
+    events=[]
+    from types import SimpleNamespace
+    trial.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
+        type=lambda value:events.append(('type',value)))
+    states=iter([{'chat_edit_open':False}, {'chat_edit_open':True,'chat_edit_focused':True},
+        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':text}])
+    def observe(label,**kwargs):
+        assert kwargs=={'mode':None}
+        return {'mode':mode,**next(states)},{'file':label}
+    trial.observe=observe
+    ticks=iter([0,0,13]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    if text=='/tcui chat':
+        trial.submit_chat('/tcui chat',any_mode=True)
+        assert events.count(('key','Return'))==2
+        assert trial.receipt['chat_submission_checks'][-1]['submitted']
+    else:
+        with pytest.raises(RuntimeError,match='refusing submission'):
+            trial.submit_chat('/tcui chat',any_mode=True)
+        assert events.count(('key','Return'))==1
+        assert not trial.receipt['chat_submission_checks'][-1]['submitted']

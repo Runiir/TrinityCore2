@@ -111,7 +111,7 @@ class Trial:
             self.receipt['input_initialization']=self.io.initialization
         lab.private_write(self.out/'episode.json',json.dumps(self.receipt,indent=2)+'\n')
 
-    def observe(self,label,seconds=28):
+    def observe(self,label,seconds=28,*,mode='state'):
         if not 1<=seconds<=240:raise ValueError('observation timeout exceeds its bounded duration')
         from PIL import Image
         from tools.second_client import ctl
@@ -132,7 +132,7 @@ class Trial:
                 # strip. Retry the screenshot; never accept a missing identity.
                 if time.monotonic()>deadline:raise RuntimeError('UI observation did not become decodable') from error
                 time.sleep(.1);continue
-            if state['mode']=='state':break
+            if mode is None or state['mode']==mode:break
             if len(pending_modes)<32:pending_modes.append({'sequence':state.get('sequence'),'mode':state.get('mode')})
             if time.monotonic()>deadline:
                 self.receipt.setdefault('observation_timeouts',[]).append({'label':label,'seconds':seconds,
@@ -163,6 +163,46 @@ class Trial:
         try:yield
         finally:self.combat_observation_deadline=None
 
+    def submit_chat(self,value,*,any_mode=False):
+        """Submit exact observed text; diagnostics may start on any public page."""
+        def observe(label):
+            return self.observe(label,mode=None) if any_mode else self.observe(label)
+        with owned_input.lease():
+            if any_mode:
+                before,frame=observe(f'input_{len(self.receipt["cases"]):03}_diagnostic_guard')
+                self.receipt.setdefault('chat_diagnostic_guards',[]).append({'frame':frame,
+                    'observed_mode':before.get('mode'),'open':before.get('chat_edit_open'),'text':value})
+                self.persist()
+                if 'chat_edit_open' not in before or before['chat_edit_open']:
+                    raise RuntimeError('diagnostic requires a closed observed chat edit before Return')
+            self.io.key('Return',hold=.4);time.sleep(.2)
+            deadline=time.monotonic()+12
+            while True:
+                opened,opened_frame=observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
+                self.receipt.setdefault('chat_open_checks',[]).append({'frame':opened_frame,
+                    'open':bool(opened.get('chat_edit_open')),'input_replayed':False});self.persist()
+                if opened.get('chat_edit_open') and (not any_mode or opened.get('chat_edit_focused')):break
+                if time.monotonic()>deadline:
+                    raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
+                time.sleep(.2)
+            self.io.type(value);time.sleep(.2)
+            deadline=time.monotonic()+12
+            while True:
+                pending,pending_frame=observe(f'input_{len(self.receipt["cases"]):03}_chat_pre_submit')
+                matches=(pending.get('chat_edit_open') and
+                    pending.get('chat_edit_text','').rstrip(' ')==value and
+                    (not any_mode or pending.get('chat_edit_focused')))
+                self.receipt.setdefault('chat_submission_checks',[]).append({'frame':pending_frame,
+                    'open_frame':opened_frame,'observed_text':pending.get('chat_edit_text'),
+                    'selected_text':value,'matches':bool(matches),'submitted':False})
+                self.persist()
+                if matches:break
+                if time.monotonic()>deadline:
+                    raise RuntimeError('chat edit differs from the selected command; refusing submission')
+                time.sleep(.2)
+            self.io.key('Return',hold=.4)
+            self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
+
     def execute(self,action):
         with owned_input.lease():
             if action['kind']=='key':
@@ -170,32 +210,7 @@ class Trial:
                 if not .05<=hold<=2:raise ValueError('interaction key hold exceeds its bounded duration')
                 self.io.key(action['value'],hold=hold)
             elif action['kind']=='chat':
-                self.io.key('Return',hold=.4);time.sleep(.2)
-                deadline=time.monotonic()+12
-                while True:
-                    opened,opened_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
-                    self.receipt.setdefault('chat_open_checks',[]).append({'frame':opened_frame,
-                        'open':bool(opened.get('chat_edit_open')),'input_replayed':False});self.persist()
-                    if opened.get('chat_edit_open'):break
-                    if time.monotonic()>deadline:
-                        raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
-                    time.sleep(.2)
-                self.io.type(action['value']);time.sleep(.2)
-                deadline=time.monotonic()+12
-                while True:
-                    pending,pending_frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_pre_submit')
-                    matches=(pending.get('chat_edit_open') and
-                        pending.get('chat_edit_text','').rstrip(' ')==action['value'])
-                    self.receipt.setdefault('chat_submission_checks',[]).append({'frame':pending_frame,
-                        'open_frame':opened_frame,'observed_text':pending.get('chat_edit_text'),
-                        'selected_text':action['value'],'matches':bool(matches),'submitted':False})
-                    self.persist()
-                    if matches:break
-                    if time.monotonic()>deadline:
-                        raise RuntimeError('chat edit differs from the selected command; refusing submission')
-                    time.sleep(.2)
-                self.io.key('Return',hold=.4)
-                self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
+                self.submit_chat(action['value'])
             elif action['kind']=='click':
                 hold=action.get('hold',.15)
                 if not .05<=hold<=2:raise ValueError('interaction click hold exceeds its bounded duration')

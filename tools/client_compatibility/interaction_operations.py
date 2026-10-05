@@ -16,10 +16,8 @@ def point(control):
 
 def command(trial,text):
     # Observer plumbing only; never invokes a Blizzard gameplay API.
-    # Match the normal trial chat transport. Immediate typing after the shorter
-    # Return tap can lose the slash while the background chat box opens.
-    trial.io.key('Return',hold=.4);time.sleep(.2)
-    trial.io.type(text);time.sleep(.2);trial.io.key('Return',hold=.4);time.sleep(.65)
+    trial.submit_chat(text,any_mode=True)
+    time.sleep(.65)
 
 
 def retain_control_pixels(path,target,state):

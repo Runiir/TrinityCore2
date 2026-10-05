@@ -4,6 +4,12 @@ local function read(fn,...)
     local ok,a,b,c,d,e,f,g,h,i,j=pcall(fn,...)
     if ok then return a,b,c,d,e,f,g,h,i,j end
 end
+function Client442ObserveChatEdit()
+    local edit=ChatFrame1EditBox
+    local open=edit and not not read(edit.IsVisible,edit) or false
+    return {chat_edit_open=open,chat_edit_text=open and tostring(read(edit.GetText,edit) or ''):sub(1,255) or '',
+        chat_edit_focused=open and not not read(edit.HasFocus,edit) or false}
+end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
     if type(Client442ObserveChannelList)=='function' then result.channel_list=Client442ObserveChannelList() end

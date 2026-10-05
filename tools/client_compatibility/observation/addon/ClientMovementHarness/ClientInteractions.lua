@@ -147,9 +147,10 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=96,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=97,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
+    for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
     data.player_cast={active=cast~=nil,name=cast,started_ms=started,finished_ms=finished,
@@ -540,7 +541,8 @@ local function snapshot(viewMode,viewPage)
     if mode=='controls' then
         return {mode=mode,page=page,build=data.build,guid=data.guid,player=data.player,
             panels=data.panels,bags=data.bags,controls=controls,control_count=data.control_count,page_size=12,
-            control_snapshot=controlSnapshot}
+            control_snapshot=controlSnapshot,chat_edit_open=data.chat_edit_open,
+            chat_edit_text=data.chat_edit_text,chat_edit_focused=data.chat_edit_focused}
     end
     data.trade_skill={call(GetTradeSkillLine)};data.recipe_count=call(GetNumTradeSkills)
     data.recipe_selection=call(GetTradeSkillSelectionIndex)
@@ -668,11 +670,8 @@ local function snapshot(viewMode,viewPage)
     data.screenshot_keys={call(GetBindingKey,'SCREENSHOT')}
     data.keybind_listening=KeybindListener and KeybindListener.pending and
         {action=KeybindListener.pending.action,slot=KeybindListener.pending.slotIndex} or false
-    data.chat_edit_open=ChatFrame1EditBox and ChatFrame1EditBox:IsVisible() or false
-    data.chat_edit_text=data.chat_edit_open and trim(ChatFrame1EditBox:GetText(),255) or ''
     if data.chat_edit_open then
         data.chat_edit_type=call(ChatFrame1EditBox.GetAttribute,ChatFrame1EditBox,'chatType')
-        data.chat_edit_focused=not not call(ChatFrame1EditBox.HasFocus,ChatFrame1EditBox)
         if data.chat_edit_type=='WHISPER' then
             data.chat_edit_target=trim(call(ChatFrame1EditBox.GetAttribute,ChatFrame1EditBox,'tellTarget'),64)
         end
