@@ -37,7 +37,8 @@ def test_restoration_waits_past_old_profession_frame(monkeypatch,tmp_path):
 
 def test_tab_timeout_fails_without_qualifying_stale_page(monkeypatch,tmp_path):
     t,captures=fixture(monkeypatch,tmp_path,['spell'])
-    ticks=iter([0,13])
+    # Simulate a pause beyond the diagnostic reader's current 28-second budget.
+    ticks=iter([0,60])
     monkeypatch.setattr(observation.time,'monotonic',lambda:next(ticks))
     with pytest.raises(RuntimeError,match='spellbook diagnostic did not become visible'):
         navigation.detail(t,'profession',book_type='professions')
