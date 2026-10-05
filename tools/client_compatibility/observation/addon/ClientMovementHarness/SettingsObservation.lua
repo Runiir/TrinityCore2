@@ -10,8 +10,14 @@ function Client442ObserveSettings()
     local result={visible=panel and panel:IsVisible() or false,
         category=category and {name=call(category.GetName,category),id=call(category.GetID,category)},
         search=search and call(search.GetText,search),
-        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},
+        unapplied=panel and call(panel.HasUnappliedSettings,panel),cvars={},values={},discard_dialogs={},
         interact_keys={primary='',secondary='',known=false}}
+    for i=1,3 do
+        local popup=_G['StaticPopup'..i]
+        if popup and popup:IsVisible() and popup.which=='GAME_SETTINGS_CONFIRM_DISCARD' then
+            result.discard_dialogs[#result.discard_dialogs+1]={name=popup:GetName(),which=popup.which}
+        end
+    end
     if type(GetBindingKey)=='function' then
         local ok,a,b=pcall(GetBindingKey,'INTERACTTARGET')
         if ok then result.interact_keys.primary=a or '';result.interact_keys.secondary=b or '' end

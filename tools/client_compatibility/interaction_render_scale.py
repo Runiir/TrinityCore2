@@ -91,20 +91,25 @@ def suite(t):
         pending_step(t,1,'settings.render_scale.original_pending',expected=original)
         apply(t,original,'settings.apply.render_scale_original')
     finally:
-        current=detail(t,'render_cleanup_before');actual,requested=scale(current)
-        if abs(requested-original)>=1e-6:
-            search(t,'Render Scale','fixture.render_scale.cleanup_search')
-            pending_step(t,1,'fixture.render_scale.cleanup_pending',expected=original)
-            current=detail(t,'render_cleanup_pending');actual,requested=scale(current)
-        if current.get('unapplied') is True:apply(t,original,'fixture.render_scale.cleanup_apply')
-        current=detail(t,'render_restored');checks=value_checks(current,layout,original,original,False)
-        t.receipt['render_restoration']={'checks':checks};t.persist()
-        if not all(checks.values()):raise RuntimeError('original render scale and graphics fixture did not restore')
-        # Only proven-equal numeric serialization is normalized for the existing
-        # layout restorer; raw probes and restoration checks remain untouched.
-        normalized=copy.deepcopy(layout);normalized['cvars']['RenderScale']=current['cvars']['RenderScale']
-        restore_layout(t,normalized,'fixture.render_scale.layout')
-        t.receipt['render_layout_restoration']=t.receipt.pop('volume_layout_restoration');t.persist()
+        restore(t,layout)
+
+
+def restore(t,layout):
+    original,_=scale(layout)
+    current=detail(t,'render_cleanup_before');_,requested=scale(current)
+    if abs(requested-original)>=1e-6:
+        search(t,'Render Scale','fixture.render_scale.cleanup_search')
+        pending_step(t,1,'fixture.render_scale.cleanup_pending',expected=original)
+        current=detail(t,'render_cleanup_pending')
+    if current.get('unapplied') is True:apply(t,original,'fixture.render_scale.cleanup_apply')
+    current=detail(t,'render_restored');checks=value_checks(current,layout,original,original,False)
+    t.receipt['render_restoration']={'checks':checks};t.persist()
+    if not all(checks.values()):raise RuntimeError('original render scale and graphics fixture did not restore')
+    # Only proven-equal numeric serialization is normalized for the existing
+    # layout restorer; raw probes and restoration checks remain untouched.
+    normalized=copy.deepcopy(layout);normalized['cvars']['RenderScale']=current['cvars']['RenderScale']
+    restore_layout(t,normalized,'fixture.render_scale.layout')
+    t.receipt['render_layout_restoration']=t.receipt.pop('volume_layout_restoration');t.persist()
 
 
 def main():
