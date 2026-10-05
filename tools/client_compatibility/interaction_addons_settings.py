@@ -180,7 +180,7 @@ def main():
         t=SettingsTrial(a.output,controller='code')
         try:
             state,_=t.observe('addons_observer_guard')
-            if state.get('observer_version',0)<113:raise RuntimeError('requires read-only AddOns observer113')
+            if state.get('observer_version',0)<114:raise RuntimeError('requires read-only AddOns observer114')
             native_suite(t,operations=suite,preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)

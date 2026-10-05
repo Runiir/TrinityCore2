@@ -62,6 +62,8 @@ local reads=0
 UnitName=function(unit) assert(unit=='player');return 'Harnessone' end
 AddonList={IsVisible=function() return true end}
 C_AddOns=setmetatable({
+ EnableAddOn=function() error('observer called an enable setter') end,
+ DisableAddOn=function() error('observer called a disable setter') end,
  GetNumAddOns=function() return 2 end,
  IsAddonVersionCheckEnabled=function() return true end,
  GetAddOnInfo=function(name) assert(names[name]);return name,name end,
@@ -101,5 +103,30 @@ probe=Client442ObserveAddOnClicks();assert(#probe.events==8 and probe.events[1].
 assert(probe.events[8].serial==11 and probe.events[8].checked==false and probe.events[8].enable_all==2)
 assert(probe.events[8].button=='LeftButton' and probe.events[8].down_known and probe.events[8].down==false)
 assert(checked==false)
+'''
+    subprocess.run(['lua','-',str(source)],input=script,text=True,capture_output=True,check=True,timeout=3)
+
+
+def test_preference_posthooks_are_bounded_observations_and_do_not_invoke_setters():
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/AddOnsObservation.lua'
+    script=r'''
+local hooks={}
+UnitName=function() return 'Harnessone' end
+C_AddOns={
+ EnableAddOn=function() error('observer invoked EnableAddOn') end,
+ DisableAddOn=function() error('observer invoked DisableAddOn') end,
+ GetAddOnInfo=function(name) if name==2 or name=='Client442Compatibility' then return 'Client442Compatibility' end end,
+ GetAddOnEnableState=function(name,char) assert(name=='Client442Compatibility' and char=='0');return 2 end,
+}
+hooksecurefunc=function(api,method,fn) assert(api==C_AddOns and not hooks[method]);hooks[method]=fn end
+dofile(arg[1]);Client442ObserveAddOns();Client442ObserveAddOns()
+local probe=Client442ObserveAddOnClicks();assert(#probe.preference_calls==0)
+assert(hooks.EnableAddOn and hooks.DisableAddOn)
+hooks.EnableAddOn(2,'0') -- simulate the post-call observation, not the original setter
+probe=Client442ObserveAddOnClicks();local row=probe.preference_calls[1]
+assert(row.method=='C_AddOns.EnableAddOn' and row.requested==2 and row.owned_name=='Client442Compatibility' and row.enable_all==2)
+for i=1,10 do hooks.DisableAddOn('foreign-account-data','private-character') end
+probe=Client442ObserveAddOnClicks();assert(#probe.preference_calls==8)
+for _,row in ipairs(probe.preference_calls) do assert(row.requested==nil and row.character==nil and row.owned_name==nil) end
 '''
     subprocess.run(['lua','-',str(source)],input=script,text=True,capture_output=True,check=True,timeout=3)
