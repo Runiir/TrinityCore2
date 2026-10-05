@@ -82,7 +82,12 @@ function Client442ObserveChatWindows()
             frame_visible=frame and read(frame.IsVisible,frame),tab_visible=tab and read(tab.IsVisible,tab),
             actual_font=font,actual_font_size=fontSize,font_flags=flags,
             message_count=frame and read(frame.GetNumMessages,frame),
-            scroll_offset=frame and read(frame.GetScrollOffset,frame)}
+            scroll_offset=frame and read(frame.GetScrollOffset,frame),
+            runtime_uninteractable=frame and frame.isUninteractable,
+            override_hyperlinks=frame and frame.overrideHyperlinksEnabled,
+            hyperlinks_enabled=frame and read(frame.GetHyperlinksEnabled,frame),
+            mouse_click_enabled=frame and read(frame.IsMouseClickEnabled,frame),
+            mouse_motion_enabled=frame and read(frame.IsMouseMotionEnabled,frame)}
     end
     result.selected=SELECTED_CHAT_FRAME and read(SELECTED_CHAT_FRAME.GetID,SELECTED_CHAT_FRAME)
     result.settings_visible=ChatConfigFrame and read(ChatConfigFrame.IsVisible,ChatConfigFrame) or false

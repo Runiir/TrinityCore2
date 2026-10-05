@@ -10,6 +10,7 @@ from .interaction_keybindings_native import suite as native_suite
 from .interaction_chat_window import detail
 from .interaction_chat_settings import signature
 from .interaction_chat_history import scroll
+from .interaction_observation import read_current_page
 
 
 def inspect(t,source):
@@ -99,8 +100,10 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
     if len(matches)!=1:raise RuntimeError('fresh public owned chat seed differs')
     t.receipt['reviewed_link']={'path':str(review_path),'sha256':lab.sha256(review_path),'frame':frame};t.persist()
     t.io.move(*point);time.sleep(1)
-    hover,hover_frame=t.observe('player_link_pointer_settled')
-    t.receipt['player_link_pointer_settled']={'point':point,'seconds':1,'frame':hover_frame};t.persist()
+    hover,hover_frame=read_current_page(t,'player_link_pointer_settled','controls')
+    t.receipt['player_link_pointer_settled']={'point':point,'seconds':1,'pointer':hover.get('pointer'),
+        'frame':hover_frame};t.persist()
+    if not owned_link_hover(hover,seed):raise RuntimeError('reviewed point does not hover the owned player link; no click sent')
     def outcome(b,a,s):
         rows=controls(t);state,frame=t.observe('owned_player_menu_rendered')
         t.receipt['player_menu']={'controls':rows,'state':state,'frame':frame};t.persist()
@@ -117,6 +120,12 @@ def reviewed_menu(t,seed,review_path,point,source_sha256,operation='inspect'):
             if operation not in ('copy','report'):raise ValueError('unknown owned player operation')
             getattr(actions,operation)(t,seed)
     finally:t.clean_panels()
+
+
+def owned_link_hover(state,seed):
+    prefix='|Hplayer:'+seed['observed_sender']+':'
+    return any(r.get('kind')=='FontString' and r.get('text','').startswith(prefix)
+        for r in state.get('pointer',{}).get('foci',[]))
 
 
 def live_seed_valid(t,peer,seed):
