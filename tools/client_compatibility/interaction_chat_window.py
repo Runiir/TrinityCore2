@@ -96,7 +96,7 @@ def font(t,index,size,label):
             'still_owned':row['name'] in NAMES,'clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'stock_chat_font_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'public':after,'expected_size':size}}
-    require(option(t,label,str(size),outcome),'stock_chat_font_pass')
+    require(option(t,label,str(size)+' pt',outcome),'stock_chat_font_pass')
 
 
 def close_owned(t,index,label):
