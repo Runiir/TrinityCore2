@@ -1,0 +1,11 @@
+# Stock chat settings and history, UI71
+
+UI71 adds two scoped contracts, taking reviewed coverage to **371/916**. The parent objective remains open.
+
+Fresh whole-pass chat_settings_filter01 disables the observed stock Say checkbox. The public message-group list changes only by removing SAY. The setting survives closing and reopening General Config, then Say is restored and the panel closed. Actual unchecked and restored checked frames were reviewed. All original window settings, selection and message groups restore; all ten native/public checks pass.
+
+Fresh whole-pass chat_history01 creates thirteen exact owned SAY markers through focused stock chat. Every marker has an ordinary request, native sender GUID1 and matching public delivery. The stock up button changes offset 0 to 3; down restores 0. Both steps retain 14 messages. Actual frames show earlier markers01–09 followed by later markers04–12. Original settings, geometry, selection and offset restore; all ten native/public checks pass. Own fixture messages and ordinary AFK restoration text remain in history. No history-clearing setter or byte-identical cache rollback is claimed.
+
+Stock Combat Log selection renders its empty view and quick-filter headings, with local/native restoration passing. This remains preparation and does not qualify real logging. The next batch requires a real native Battle Shout completion, matching public combat event and rendered stock text. Other chat filters, colors/defaults, channel controls, reconnect persistence, wheel/copy/link history operations and large-buffer limits remain open. Pending-message guard and qualification checks pass 12/12; wrong header, focus, partial or unrelated text is rejected before submission. Settling reads do not replay input.
+
+DVC pointer `artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc` contains 390755136 bytes, SHA256 `be106818f4ed892e9287557cfb73ed4b2e0c31d4d0c137a78ddc918f18774f82`. Remote review verifies all 13 JSON receipts and 145 attributed images before local frame pruning and exact archive/cache eviction. Observer88/89 normal reloads preserve both existing HDMI-1 clients, native server identity and sessions. Memory stays around 20 GiB available with no current pressure stalls. Work remains sequential without a third client, decision model, native rebuild or server restart.

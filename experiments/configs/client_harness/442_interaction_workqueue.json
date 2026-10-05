@@ -3,7 +3,7 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "369/916 reviewed scoped operations. UI70 qualifies the fresh stock disposable chat-window create, rename,16/14 pt font round trip and close sequence; exact existing-window settings/selection and all10 native checks restore. Two failed submenu diagnostics remain explicit. Next UI71 inspects stock chat settings and public message filters, one input task at a time.",
+  "current": "371/916 reviewed scoped operations. UI71 qualifies a fresh stock Say-filter off/reopen/on round trip and native-attributed history up/down, with exact local restoration and all10 native checks each. Empty Combat Log view remains unqualified preparation. Next UI72 requires real native Battle Shout completion, a matching public event and rendered stock log text; one input task at a time.",
   "queued": [
     "spellbook stock general/class/professions tabs, page navigation, spell/passive tooltips, ordinary drag/cast and native known-spell attribution",
     "guild classic UI and offline account service boundary",
@@ -160,7 +160,8 @@
     "ui67: +1 scoped character macro cap contract (357->358),5 JSON receipts and696 attributed archive frames verified; all30 fixtures removed and zero banks survive reload.",
     "ui68: +6 scoped pending-link and backpack-tooltip contracts (358->364),26 JSON receipts and214 attributed archive frames verified; shifted-cast/taint/fixture/pinned-mode/preflight failures and source-bound recovery retained.",
     "ui69: +1 exact owned stock reply contract (364->365),21 JSON receipts and59 attributed archive frames verified; bare-name/GUID-role/text-settling failed diagnostics retained with all20 restoration checks.",
-    "ui70/chat_window_controls03: exact disposable stock create/rename/font16/14/close; original named windows and selection plus all10 native checks restored; two failed submenu trials excluded"
+    "ui70/chat_window_controls03: exact disposable stock create/rename/font16/14/close; original named windows and selection plus all10 native checks restored; two failed submenu trials excluded",
+    "ui71/chat_settings_filter01 and chat_history01: exact Say-only filter round trip and13 native/public owned messages with offsets0/3/0; original settings and all10 native checks each restored; empty Combat Log view not qualified"
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending.",
   "open_failures": [

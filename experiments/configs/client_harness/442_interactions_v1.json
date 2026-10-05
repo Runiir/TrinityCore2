@@ -3380,7 +3380,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "stock_general_say_filter_roundtrip"
     },
     {
       "id": "chat.chat_tab_create",
@@ -3447,7 +3448,8 @@
       "fixture": "owned_second_actor",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_native_chat_history_scroll"
     },
     {
       "id": "chat.copy_if_available",
@@ -12614,8 +12616,48 @@
           "sha256": "98e5c97d7b26eb0338c42a9a8773f016f96e72e5a9ac13d9d651b04621b4dec7"
         }
       ]
+    },
+    {
+      "id": "stock_general_say_filter_roundtrip",
+      "operations": [
+        "chat.chat_settings"
+      ],
+      "scope": "Fresh whole-pass stock General Config toggles the observed Say checkbox off, verifies exactly SAY removed from the public message-group list, closes and reopens the panel, restores Say and closes it. Actual off/on frames reviewed. All original window settings/selection/message groups and all 10 native/public checks restore.",
+      "limits": "General Say filter only, persisted across panel reopening. Other filters, class colors, defaults, channel controls, account chat disable and reconnect persistence remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui71/chat_settings_filter01/episode.json",
+          "sha256": "fbe46ef935ae6c7942ab0d692a624607a23fbcadb663386e4e09a459739a5740"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui71/chat_settings_history_visual_review.json",
+          "sha256": "0f532f3fb6a1ceafb60d29e5018b91d64a55dfd225b4472f2c4c0c6183ef8dd4"
+        }
+      ]
+    },
+    {
+      "id": "owned_native_chat_history_scroll",
+      "operations": [
+        "chat.scroll_history"
+      ],
+      "scope": "Fresh whole-pass chat_history01 seeds 13 exact owned SAY markers, each verified by ordinary request, native sender GUID1 and public event. Observed stock up/down buttons change General offset0 to 3 and back to0 with 14 messages unchanged during both steps. Actual earlier/later message frames reviewed. Original settings, geometry, selection and offset plus all 10 native/public checks restore.",
+      "limits": "Observed General window geometry, stock up/down buttons and exact own messages only. Fixture messages and normal AFK system text remain in history; no ClearMessages setter or byte-identical history rollback. Wheel, alternate layouts, copy, links and large-buffer limits remain open.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui71/chat_history01/episode.json",
+          "sha256": "c4a3c183818bc376546fd68fa2bb25d734ce1cfd4dfbced6b9521f717e55017d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261005_ui71/chat_settings_history_visual_review.json",
+          "sha256": "0f532f3fb6a1ceafb60d29e5018b91d64a55dfd225b4472f2c4c0c6183ef8dd4"
+        }
+      ]
     }
   ],
-  "qualified_operations": 369,
+  "qualified_operations": 371,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

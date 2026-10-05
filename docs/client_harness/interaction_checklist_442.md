@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 369 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 371 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -452,14 +452,14 @@ Fixture: `owned_second_actor`.
 - [x] `chat.emote` (qualified variant; [evidence](#chat))
 - [ ] `chat.language_switch`
 - [ ] `chat.combat_log`
-- [ ] `chat.chat_settings`
+- [x] `chat.chat_settings` (qualified variant; [evidence](#stock_general_say_filter_roundtrip))
 - [x] `chat.chat_tab_create` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.chat_tab_rename` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.chat_tab_close` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [x] `chat.font_size` (qualified variant; [evidence](#owned_stock_chat_window_lifecycle))
 - [ ] `chat.timestamps`
 - [ ] `chat.chat_links`
-- [ ] `chat.scroll_history`
+- [x] `chat.scroll_history` (qualified variant; [evidence](#owned_native_chat_history_scroll))
 - [ ] `chat.copy_if_available`
 - [ ] `chat.mute_voice`
 - [ ] `chat.report_ui_cancel`
@@ -2463,3 +2463,21 @@ Remaining limits: Exact disposable character slot4 only, idle private owned warr
 - [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_menu_failure_review.json`, SHA-256 `3fc48e6e778c7985c59b76c0a3d97541d198def8c0bb73dc34be219a4ec1e2dd`.
 - [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/chat_menu_unparented_failure_review.json`, SHA-256 `d6177f6459b60a1a8819451893446885a3b4f6b45473bb2d592bb7bcce107720`.
 - [442_interactions_20261005_70.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_70.tar.gz.dvc), member `evidence/client_interactions_20261005_ui70/font_submenu_recon02/episode.json`, SHA-256 `98e5c97d7b26eb0338c42a9a8773f016f96e72e5a9ac13d9d651b04621b4dec7`.
+
+### stock_general_say_filter_roundtrip
+
+Fresh whole-pass stock General Config toggles the observed Say checkbox off, verifies exactly SAY removed from the public message-group list, closes and reopens the panel, restores Say and closes it. Actual off/on frames reviewed. All original window settings/selection/message groups and all 10 native/public checks restore.
+
+Remaining limits: General Say filter only, persisted across panel reopening. Other filters, class colors, defaults, channel controls, account chat disable and reconnect persistence remain open.
+
+- [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_settings_filter01/episode.json`, SHA-256 `fbe46ef935ae6c7942ab0d692a624607a23fbcadb663386e4e09a459739a5740`.
+- [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_settings_history_visual_review.json`, SHA-256 `0f532f3fb6a1ceafb60d29e5018b91d64a55dfd225b4472f2c4c0c6183ef8dd4`.
+
+### owned_native_chat_history_scroll
+
+Fresh whole-pass chat_history01 seeds 13 exact owned SAY markers, each verified by ordinary request, native sender GUID1 and public event. Observed stock up/down buttons change General offset0 to 3 and back to0 with 14 messages unchanged during both steps. Actual earlier/later message frames reviewed. Original settings, geometry, selection and offset plus all 10 native/public checks restore.
+
+Remaining limits: Observed General window geometry, stock up/down buttons and exact own messages only. Fixture messages and normal AFK system text remain in history; no ClearMessages setter or byte-identical history rollback. Wheel, alternate layouts, copy, links and large-buffer limits remain open.
+
+- [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_history01/episode.json`, SHA-256 `c4a3c183818bc376546fd68fa2bb25d734ce1cfd4dfbced6b9521f717e55017d`.
+- [442_interactions_20261005_71.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_71.tar.gz.dvc), member `evidence/client_interactions_20261005_ui71/chat_settings_history_visual_review.json`, SHA-256 `0f532f3fb6a1ceafb60d29e5018b91d64a55dfd225b4472f2c4c0c6183ef8dd4`.
