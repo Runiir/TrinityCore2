@@ -3,7 +3,7 @@ import argparse,json,time
 from pathlib import Path
 from . import lab_runtime as lab
 from .interaction_social import actor
-from .interaction_settings_volume import SettingsTrial,restore_layout
+from .interaction_settings_volume import SettingsTrial,restore_layout,click_control
 from .interaction_settings_search import open_search
 from .interaction_settings_booleans import detail,search
 from .interaction_control_target import target
@@ -18,8 +18,41 @@ SPECS={'enableMovePad':('Move Pad','settings.interface',True),
 def agrees(probe,variable,wanted):
     if type(wanted) is not bool:raise ValueError('requires a boolean target')
     actual=probe.get('values',{}).get(variable)
+    cvars=probe.get('cvars',{})
     return type(actual) is bool and actual==wanted and (
-        not SPECS[variable][2] or probe.get('cvars',{}).get(variable)==str(int(wanted)))
+        cvars.get(variable)==str(int(wanted)) if SPECS[variable][2] else
+        cvars.get('softTargetInteract') in (('3',) if wanted else ('0','1')))
+
+
+def interact_fixture_restorable(current,layout):
+    """The stock false proxy writes Gamepad=1; it cannot restore None=0."""
+    return (layout.get('cvars',{}).get('softTargetInteract')=='0' and
+        current.get('cvars',{})=={**layout['cvars'],'softTargetInteract':'1'} and
+        current.get('values')==layout.get('values') and
+        all(current.get(k)==layout.get(k) for k in ('interact_keys','move_pad_visible','unapplied')) and
+        agrees(current,'PROXY_ENABLE_INTERACT',False))
+
+
+def restore_interact_fixture(t,layout,current,prefix):
+    if current['cvars']['softTargetInteract']==layout['cvars']['softTargetInteract']:return current
+    if not interact_fixture_restorable(current,layout):
+        raise RuntimeError('Interact fixture differs beyond the stock None-to-Gamepad proxy mapping')
+    close=target(t,prefix+'_close',lambda c:c['kind']=='Button' and c['text']=='Close')
+    click_control(t,prefix+'_close',close,lambda a:'SettingsPanel' not in a['panels'],'settings_panel_closed')
+    require(t.step(prefix+'_console','Restore the exact saved None flag after the stock proxy disabled to Gamepad.',
+        {'restore':{'kind':'chat','value':'/console softTargetInteract 0'}},
+        lambda b,a,s:{'status':'fixture_console_submitted' if s=='restore' and
+            not a.get('chat_edit_open') and not a.get('lua_errors') and not a.get('blocked_actions') else
+            'client_or_protocol_failure'},diagnostic_action='restore'),'fixture_console_submitted')
+    t.settings_search=open_search(t)
+    after=detail(t,prefix+'_confirmed',lambda p:p['cvars'].get('softTargetInteract')=='0')
+    checks={'exact_cvar':after['cvars']==layout['cvars'],'public_values':after['values']==layout['values'],
+        'interact_binding':after['interact_keys']==layout['interact_keys'],
+        'move_pad':after['move_pad_visible']==layout['move_pad_visible'],'unapplied':after['unapplied']==layout['unapplied']}
+    t.receipt['interact_fixture_restoration']={'checks':checks,'method':'ordinary_console',
+        'original':'0','stock_disabled':'1','restored':after['cvars']['softTargetInteract']};t.persist()
+    if not all(checks.values()):raise RuntimeError('exact original Interact fixture did not restore')
+    return after
 
 
 def toggle(t,layout,variable,wanted,label):
@@ -29,7 +62,8 @@ def toggle(t,layout,variable,wanted,label):
         raise RuntimeError('stock checkbox is not in the opposite original state')
     t.io.move(*point(control));time.sleep(1)
     def outcome(b,a,s):
-        after=detail(t,label+'_value',lambda p:agrees(p,variable,wanted))
+        after=detail(t,label+'_value',lambda p:agrees(p,variable,wanted) and
+            (variable!='PROXY_ENABLE_INTERACT' or p['cvars']['softTargetInteract']==('3' if wanted else '1')))
         rendered=target(t,label+'_checked',lambda c:c['kind']=='CheckButton' and
             c.get('setting_variable')==variable and c.get('checked')==wanted and c.get('setting_value')==wanted)
         rows=controls(t) if variable=='enableMovePad' else []
@@ -39,6 +73,8 @@ def toggle(t,layout,variable,wanted,label):
             'interact_binding_preserved':after['interact_keys']==layout['interact_keys'],
             'no_pending_changes':after['unapplied']==layout['unapplied'],
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+        if variable=='PROXY_ENABLE_INTERACT':
+            checks['stock_proxy_flag']=after['cvars']['softTargetInteract']==('3' if wanted else '1')
         if variable=='enableMovePad':
             pad=[c for c in rows if c.get('move_pad_control') and c['kind'] in ('Button','CheckButton')]
             checks.update(move_pad_visible=after['move_pad_visible']==wanted,
@@ -53,7 +89,7 @@ def toggle(t,layout,variable,wanted,label):
 
 def suite(t,variables):
     layout=None;attempted=[]
-    t.receipt['qualified_scope']='Requested stock Move Pad/Interact Key enable checkboxes changed and reversed. Move Pad visibility/buttons and Interact Target binding are checked; all observed settings/layout and the native fixture restore. Pad movement, NPC interaction, binding assignment and reconnect persistence remain open.';t.persist()
+    t.receipt['qualified_scope']='Requested stock Move Pad/Interact Key enable checkboxes changed and reversed. Interact proxy enables Any=3 and disables Gamepad=1; an original None=0 fixture is restored with exact ordinary console input. Move Pad visibility/buttons, unchanged Interact Target binding, all observed settings/layout and native fixture are checked. Pad movement, NPC interaction, binding assignment and reconnect persistence remain open.';t.persist()
     try:
         t.settings_search=open_search(t);layout=detail(t,'control_layout_baseline')
         t.receipt['control_layout_baseline']=layout;t.persist()
@@ -72,6 +108,8 @@ def suite(t,variables):
             attempted.append(variable);t.receipt['attempted_settings']=attempted.copy();t.persist()
             toggle(t,layout,variable,not layout['values'][variable],operation+'.change')
             toggle(t,layout,variable,layout['values'][variable],operation+'.restore')
+    except Exception as error:
+        t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
         if layout is not None:
             current=detail(t,'control_cleanup_guard')
@@ -81,6 +119,8 @@ def suite(t,variables):
                 term,operation,_=SPECS[variable];search(t,term,operation+'.cleanup_search')
                 toggle(t,layout,variable,original,operation+'.cleanup_restore')
                 current=detail(t,operation+'_cleanup_confirmed')
+            if 'PROXY_ENABLE_INTERACT' in attempted:
+                current=restore_interact_fixture(t,layout,current,'fixture.restore_interact_none')
             after=restore_layout(t,layout,'fixture.restore_stock_controls')
             t.receipt['settings_layout_restoration']=t.receipt.pop('volume_layout_restoration')
             checks={'interact_binding':after['interact_keys']==layout['interact_keys'],
