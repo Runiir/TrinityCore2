@@ -1,7 +1,7 @@
 """Read only the clipboard selection on the verified owned nested X display."""
 import hashlib,select,time,threading
 from contextlib import contextmanager
-from Xlib import X,display
+from Xlib import X,Xatom,display
 from Xlib.protocol import event as xevent
 from . import lab_runtime as lab,owned_input
 
@@ -30,16 +30,16 @@ def marker(t):
                     prop=request.property or request.target;accepted=request.selection==selection
                     receiver=connection.create_resource_object('window',request.requestor.id)
                     if accepted and request.target==targets:
-                        receiver.change_property(prop,X.ATOM,32,[targets,*formats])
+                        receiver.change_property(prop,Xatom.ATOM,32,[targets,*formats])
                     elif accepted and request.target in formats:
                         receiver.change_property(prop,request.target,8,raw)
                     else:prop=X.NONE
                     receiver.send_event(xevent.SelectionNotify(time=request.time,requestor=receiver,
                         selection=request.selection,target=request.target,property=prop),propagate=False)
                     connection.flush()
-            except Exception as error:errors.append(type(error).__name__)
+            except Exception as error:errors.append(f'{type(error).__name__}: {error}')
         worker=threading.Thread(target=serve,name='owned-clipboard-fixture',daemon=True);worker.start()
-        yield {'display':nested,'owner_window':window.id,'marker':raw.decode(),'sha256':hashlib.sha256(raw).hexdigest(),
+        yield {'display':nested,'owner_window':window.id,'marker':raw.decode(),'sha256':hashlib.sha256(raw).hexdigest(),'provider_errors':errors,
             'monitor':monitor,'scope':'Private nested selection only; original clipboard text is never read.'}
         if errors:raise RuntimeError('owned clipboard fixture provider failed: '+','.join(errors))
     finally:
@@ -47,6 +47,39 @@ def marker(t):
         if worker is not None:worker.join(timeout=1)
         if window is not None:window.destroy()
         connection.close()
+
+
+def self_check(out):
+    """Component-only selection roundtrip; sends no game keyboard/mouse input."""
+    import json,subprocess
+    from types import SimpleNamespace
+    from . import actors
+    from .interaction_social import actor
+    out=out.resolve()
+    if not out.is_relative_to(lab.ROOT/'evidence'):raise ValueError('requires a private evidence output')
+    out.mkdir(parents=True,exist_ok=False,mode=0o700)
+    result={'schema':'client442_private_clipboard_self_check_v1','completed':False,'failure':None,
+        'started_at':time.time(),'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
+        'gameplay_input_sent':False,'qualification':'Component check only; no game Copy qualification.'}
+    with actor('primary'):
+        t=SimpleNamespace(out=out,fixture=actors.load(),io=SimpleNamespace(initialization={'display':lab.client_environment()['DISPLAY']}))
+        try:
+            with marker(t) as fixture:
+                result['fixture']=fixture;probe=copied_name(t,{fixture['marker']});result['probe']=probe
+                if not probe['exact_owned_name'] or probe['owner_window']!=fixture['owner_window']:
+                    raise RuntimeError('owned marker roundtrip differs')
+            result['completed']=True
+        except Exception as error:result['failure']=f'{type(error).__name__}: {error}'
+        finally:
+            result['finished_at']=time.time();lab.private_write(out/'self_check.json',json.dumps(result,indent=2)+'\n')
+            print(json.dumps({k:result[k] for k in ['completed','failure']}),flush=True)
+
+
+if __name__=='__main__':
+    import argparse
+    from pathlib import Path
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--self-check',type=Path,required=True)
+    self_check(parser.parse_args().self_check)
 
 
 def copied_name(t,expected,previous_owner=None):
