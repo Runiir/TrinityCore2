@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 413 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 414 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -417,7 +417,7 @@ Fixture: `owned_second_actor`.
 - [x] `friends.add_friend` (qualified variant; [evidence](#party_invitation))
 - [ ] `friends.online_presence`
 - [ ] `friends.offline_presence`
-- [ ] `friends.note_edit`
+- [x] `friends.note_edit` (qualified variant; [evidence](#owned_offline_friend_note))
 - [ ] `friends.note_persist`
 - [x] `friends.remove_friend` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [ ] `friends.add_ignore`
@@ -2843,3 +2843,16 @@ Remaining limits: Four newly counted operations; friend addition was already qua
 - [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/source_cleanup_review.json`, SHA-256 `685bb6214fa97c5b6a274d35045b5901809ad9d77ebf9f51b8dd4472c1446556`.
 - [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/verification.json`, SHA-256 `76d83fab110981858c3e5b417d35cfc078a2b492476a52cf893d0cf052411584`.
 - [442_interactions_20261006_100.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_100.tar.gz.dvc), member `evidence/client_interactions_20261006_ui100/runtime_closure.json`, SHA-256 `6136bb76aa5e1fcd9946e73a7454554af84c6691eb2929723a4fadbd6acda0d7`.
+
+### owned_offline_friend_note
+
+UI101 note_edit01 whole completed pass on owned Harnessone/build60895. Exact Harnesstwo row menu Set Note opens the source-reviewed Set Notes for Harnesstwo dialog. Ordinary edit and Accept save the short ASCII marker Owned offline scout note UI101. One exact modern/native CMSG_SET_CONTACT_NOTES request agrees with the native SQL note and passive public friends; the actual stock hover tooltip displays the saved note. The same stock dialog restores the original empty note, and the reviewed tooltip loses note text/icon. Both note actions pass10 checks, all9 native and12 friend restoration checks pass, and both actors inventories/money, original social rows, quest layout, session, group, pose and AFK restore. Code controller, model None.
+
+Remaining limits: One short ASCII note on the original owned offline scout friend, then empty-note restoration. Reload/reentry persistence, longer and Unicode notes, online presence and other social variants remain open. Native note handler has no acknowledgement; qualification uses exact requests, SQL/public agreement and rendered tooltip. The completed dialog probe is setup only. All17 focused and1714 full protocol tests pass; no failures, native build, restart or extra client. Scripts stay blocked; historical original softTargetInteract=0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_101.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_101.tar.gz.dvc), member `evidence/client_interactions_20261006_ui101/note_edit01/episode.json`, SHA-256 `a4fdc2a4a3fa6949bc7738b7e33050834f554928aa517db54d097bffd83bdb93`.
+  Checked cases: `friends.note_edit` (friend_note_edit_pass), `fixture.friend_note.restore` (friend_note_edit_pass).
+- [442_interactions_20261006_101.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_101.tar.gz.dvc), member `evidence/client_interactions_20261006_ui101/whole_note_review.json`, SHA-256 `5c463200f995d83737ef6f42bc1cdf2ed34c79669816c681883ee9262504d02f`.
+- [442_interactions_20261006_101.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_101.tar.gz.dvc), member `evidence/client_interactions_20261006_ui101/note_probe_review.json`, SHA-256 `d3d7fbdd9780bcbadfe54bc79b75bb7f831e25e3ddfc0b4ec3105c18c50df132`.
+- [442_interactions_20261006_101.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_101.tar.gz.dvc), member `evidence/client_interactions_20261006_ui101/verification.json`, SHA-256 `ac9b48b60a7dd0e30a628c32faffe5ffd8ac081e67833fbbb4bcd7be3fcb9a11`.
+- [442_interactions_20261006_101.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_101.tar.gz.dvc), member `evidence/client_interactions_20261006_ui101/runtime_closure.json`, SHA-256 `f4c21d158f9bb6509e105aeccf0fdf93e359bc6ae88405c2625353ea49e1ea44`.
