@@ -5,11 +5,16 @@ import math
 def select(row, session, tool):
     a,m=row['archaeology'],row['movement']; world=a['world']
     find=row.get('visible_find')
-    if find and session.get('reapproach_find'):
-        endpoint=find['world'];distance=find['distance_yards']
+    approach=find or session.get('pickup_approach')
+    if approach and session.get('reapproach_find'):
+        endpoint=approach['world']
+        distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
+        if endpoint['instance']!=world['instance'] or distance>40:
+            raise RuntimeError('pickup approach is outside its observed local range')
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
         error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
-        return {'source':'visible owned archaeology find','world':endpoint,'color':'green',
+        return {'source':'visible owned archaeology find' if find else 'last green Survey endpoint',
+            'world':endpoint,'color':'green',
             'distance_yards':distance,'arrived':distance<=3,
             'heading_relative_to_player':'aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'},error
     visited=session.setdefault('visited_marker_ids',[])
@@ -77,6 +82,7 @@ def pickup(session):
     session.update(marker_target=None,marker_fallback=False,marker_failed_surveys=0)
     session.pop('telescope_target',None)
     session.pop('reapproach_find',None);session.pop('pickup_retries',None)
+    session.pop('pickup_approach',None);session.pop('last_green_endpoint',None)
 
 
 def model_state(row, guide, artifact_visible):

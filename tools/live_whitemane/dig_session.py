@@ -56,6 +56,10 @@ def run(args):
         'last_survey_at':0,'walked_since_survey':True,'finished':False}
     progress=DigProgress(**session['progress'])
     resources.trim_session(session,'dig')
+    if not session.get('last_green_endpoint'):
+        old=next((s['guide'] for s in reversed(session['steps']) if s.get('guide')
+            and s['guide']['source']=='Survey telescope' and s['guide']['color']=='green'),None)
+        if old:session['last_green_endpoint']={'world':old['world']}
     session.setdefault('runs',[]).append({'started_at':time.time(),
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=runtime.REPO,text=True).strip(),
         'source_sha256':{str(p.relative_to(runtime.REPO)):sha256(p)
@@ -99,6 +103,8 @@ def run(args):
             if session.get('reapproach_find'):
                 from .survey_find import in_range
                 visible_find=a['loot_open'] or in_range(before)
+                approach=session.get('pickup_approach')
+                if approach and distance(a['world'],approach['world'])<=3:visible_find=True
             session.setdefault('site_id',a['site_id'])
             if not args.loot_at and not visible_find and (not a['can_survey'] or a['site_id'] != session['site_id']):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
@@ -165,9 +171,11 @@ def run(args):
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
                     step['inputs']=fly(folder,before,arrow,step)
-                elif guide['source'] in ('GatherMate marker','visible owned archaeology find') or guide['color']=='yellow':
+                elif guide['source'] in ('GatherMate marker','visible owned archaeology find','last green Survey endpoint') or guide['color']=='yellow':
                     step['travel_mode']='held_waypoint_approach'
-                    step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'])
+                    finding=guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
+                    step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
+                        approaching_find=finding,tolerance=2 if finding else None)
                     step['inputs']=[]
                 else:
                     hold=.4 if action=='forward_short' else 1.25
@@ -175,6 +183,7 @@ def run(args):
                     step['inputs']=[inputs.execute('World of Warcraft','key',{'key':'Up','hold':hold})]
                 session['walked_since_survey']=True
                 if guide['source']=='Survey telescope' and guide['color']=='green':
+                    session['last_green_endpoint']={'world':guide['world']}
                     session.pop('telescope_target',None)
             elif action=='loot':
                 if auto_loot:
@@ -214,6 +223,13 @@ def run(args):
                 fresh_tool=telescope(after,session)
                 if not fresh_tool and not auto_loot:session['stop_reason']='survey_without_telescope_review_visible_find'
                 routes.marker_survey_outcome(session,guide,fresh_tool,not fresh_tool)
+                named=((after.get('farm_ui') or {}).get('soft_interact') or {}).get('name') in FIND_NAMES
+                if (session.get('reapproach_find') and not fresh_tool and named
+                    and not after.get('visible_find') and session.get('last_green_endpoint')):
+                    # Survey discovered a find instead of a telescope. Its
+                    # last green endpoint is a local estimate, not a hidden
+                    # artifact coordinate. Recheck range by interaction there.
+                    session['pickup_approach']=dict(session['last_green_endpoint'])
             if action=='loot':
                 if not found:
                     error=(after.get('farm_ui') or {}).get('error') or {}

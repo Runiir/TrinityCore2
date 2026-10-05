@@ -14,7 +14,7 @@ from tools.client_compatibility import travel_policy
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
-def decision(row,target,distance,error,flying,site_id,tolerance):
+def decision(row,target,distance,error,flying,site_id,tolerance,*,approaching_find=False):
     m,a=row['movement'],row['archaeology']
     direction='aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'
     if site_id is not None and not flying:
@@ -22,7 +22,8 @@ def decision(row,target,distance,error,flying,site_id,tolerance):
             'distance_yards':round(distance,2),'heading_relative_to_player':direction,'arrived':distance<=tolerance}
         from .survey_find import in_range
         named=(row.get('farm_ui') or {}).get('soft_interact',{}).get('name') in FIND_NAMES
-        state=guide.model_state(row,waypoint,in_range(row) if row.get('visible_find') else named)
+        artifact=in_range(row) if row.get('visible_find') else named and not approaching_find
+        state=guide.model_state(row,waypoint,artifact)
         return choose(state)
     flags={'mode':'flight' if flying else 'portal','available':True,'casting':a['casting'],
         'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],'falling':a['falling'],
@@ -31,7 +32,7 @@ def decision(row,target,distance,error,flying,site_id,tolerance):
     return choose(travel_policy.model_state(flags),'travel',physical_state=flags)
 
 
-def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
+def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from .smooth_move import GroundContact
@@ -69,7 +70,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
                 if deadline is None:deadline=cycle+10+3*distance/speed
                 if cycle>deadline:raise RuntimeError('continuous waypoint exceeded its calculated emergency bound')
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
-                action,model,request,response=decision(row,target,distance,error,flying,site_id,tolerance)
+                action,model,request,response=decision(row,target,distance,error,flying,site_id,tolerance,
+                    approaching_find=approaching_find)
                 receipt={'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,
                     'altitude_yards':a.get('altitude_yards'),'grounded':a['grounded'],
                     'model':model,'request':request,'response':response,'action':action,

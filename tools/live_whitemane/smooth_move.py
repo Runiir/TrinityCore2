@@ -14,13 +14,14 @@ class GroundContact(RuntimeError):
         self.observation = row
 
 
-def walk(folder,target,*,flying=False,site_id=None,tolerance=None):
+def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_find=False):
     mode=runtime.ROOT/'run/observation_mode.json'
     if mode.exists():
         import json
         if json.loads(mode.read_text()).get('transport')=='addon_relay':
             from .fast_waypoint import walk as continuous
-            return continuous(folder,target,flying=flying,site_id=site_id,tolerance=tolerance)
+            return continuous(folder,target,flying=flying,site_id=site_id,tolerance=tolerance,
+                approaching_find=approaching_find)
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     ctl._launcher_env=runtime.client_environment
