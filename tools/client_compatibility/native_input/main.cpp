@@ -88,7 +88,7 @@ struct Sender
             if(type==EI_EVENT_DISCONNECT)
             {ei_event_unref(event);throw std::runtime_error("owned input server disconnected");}
             if(type==EI_EVENT_SEAT_ADDED)
-                ei_seat_bind_capabilities(ei_event_get_seat(event),EI_DEVICE_CAP_POINTER_ABSOLUTE,
+                ei_seat_bind_capabilities(ei_event_get_seat(event),EI_DEVICE_CAP_POINTER,EI_DEVICE_CAP_POINTER_ABSOLUTE,
                     EI_DEVICE_CAP_KEYBOARD,EI_DEVICE_CAP_BUTTON,EI_DEVICE_CAP_SCROLL,nullptr);
             if(type==EI_EVENT_DEVICE_RESUMED)
             {
@@ -133,6 +133,16 @@ struct Sender
             if(x<0 || x>=1280 || y<0 || y>=720)throw std::runtime_error("pointer is outside the owned client");
             ei_device_pointer_motion_absolute(device,x,y);
         }
+        else if(kind=="relative")
+        {
+            auto x=input_integer(request,"x"),y=input_integer(request,"y");
+            if(x < -128 || x > 128 || y < -128 || y > 128)
+                throw std::runtime_error("relative pointer delta exceeds its bound");
+            if(!buttons.count(273))throw std::runtime_error("relative motion requires a held right button");
+            if(!ei_device_has_capability(device,EI_DEVICE_CAP_POINTER))
+                throw std::runtime_error("relative pointer capability is unavailable");
+            ei_device_pointer_motion(device,x,y);
+        }
         else if(kind=="key")
         {
             auto code=input_integer(request,"code");bool pressed=input_pressed(request);
@@ -172,7 +182,8 @@ int main(int argc,char **argv)
         if(argc!=4)throw std::runtime_error("require private socket, owned PID and start ticks");
         auto pid=std::stoll(argv[2]);if(pid<=1 || pid>INT32_MAX)throw std::runtime_error("invalid owned PID");
         Sender sender(argv[1],pid,argv[3]);sender.await_ready();
-        std::cout<<json::serialize(Object{{"ready",true},{"engine","cpp_libei"},{"peer_pid",pid}})<<std::endl;
+        std::cout<<json::serialize(Object{{"ready",true},{"engine","cpp_libei"},{"peer_pid",pid},
+            {"relative_pointer",ei_device_has_capability(sender.device,EI_DEVICE_CAP_POINTER)}})<<std::endl;
         while(true)
         {
             pollfd fds[]={{ei_get_fd(sender.context),POLLIN,0},{STDIN_FILENO,POLLIN,0}};

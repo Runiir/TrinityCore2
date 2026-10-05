@@ -1,5 +1,6 @@
 """Build only the independent C++ private-input sender."""
 import hashlib,json,subprocess
+from pathlib import Path
 from .. import lab_runtime as lab
 
 SOURCE=lab.REPO/'tools/client_compatibility/native_input'
@@ -17,13 +18,17 @@ def source_digest():
 
 
 def build():
+    with Path('/proc/meminfo').open() as stream:
+        available=next(int(line.split()[1]) for line in stream if line.startswith('MemAvailable:'))
+    if available<1024*1024:raise RuntimeError('input sender build requires at least 1 GiB available memory')
     include=lab.ROOT/'tools/libei-dev/usr/include/libei-1.0'
     subprocess.run(['cmake','-S',str(SOURCE),'-B',str(BUILD),'-DCMAKE_BUILD_TYPE=Release',
         '-DLIBEI_INCLUDE_DIR='+str(include)],check=True)
-    subprocess.run(['cmake','--build',str(BUILD),'-j','2'],check=True)
+    subprocess.run(['cmake','--build',str(BUILD),'-j','1'],check=True)
     receipt={'schema':'client442_native_input_build_v1','engine':'cpp_libei',
         'source_digest':source_digest(),'binary_sha256':lab.sha256(BINARY),
         'libei_header_sha256':lab.sha256(include/'libei.h'),
+        'build_jobs':1,'available_memory_kib_before':available,
         'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip()}
     lab.private_write(RECEIPT,json.dumps(receipt,indent=2)+'\n');print(json.dumps(receipt),flush=True)
 

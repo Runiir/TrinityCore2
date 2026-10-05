@@ -3,6 +3,7 @@ from contextlib import nullcontext
 from types import SimpleNamespace
 import pytest
 from tools.client_compatibility import interaction_trial as trial_module,owned_input
+from tools.client_compatibility.native_input_adapter import Input
 from tools.client_compatibility.interaction_mouse_turn import settled_checks
 
 
@@ -25,15 +26,40 @@ def test_invalid_drag_never_initializes_input(extra):
 
 def test_right_button_is_released_if_motion_fails(monkeypatch):
     io=owned_input.Inputs.__new__(owned_input.Inputs);events=[];moves=[]
-    def move(*point):
-        moves.append(point)
-        if len(moves)==2:raise RuntimeError('sender lost its device')
-    io.raw=SimpleNamespace(move=move,X=SimpleNamespace(ButtonPress=4,ButtonRelease=5),
+    def relative(*delta):raise RuntimeError('sender lost its device')
+    io.raw=SimpleNamespace(move=lambda *point:moves.append(point),move_relative=relative,relative_pointer=True,
+        X=SimpleNamespace(ButtonPress=4,ButtonRelease=5),
         _send=lambda kind,button:events.append((kind,button)))
     io.prepare=lambda:None
     monkeypatch.setattr(owned_input,'lease',nullcontext);monkeypatch.setattr(owned_input.time,'sleep',lambda _:None)
     with pytest.raises(RuntimeError,match='sender lost'):io.drag([900,420],[980,420],button=3,duration=1)
     assert events==[(4,3),(5,3)]
+    assert moves==[(900,420)]
+
+
+def test_right_drag_uses_only_relative_motion_while_held(monkeypatch):
+    io=owned_input.Inputs.__new__(owned_input.Inputs);events=[];moves=[];relative=[]
+    io.raw=SimpleNamespace(move=lambda *point:moves.append(point),relative_pointer=True,
+        move_relative=lambda *delta:relative.append(delta),X=SimpleNamespace(ButtonPress=4,ButtonRelease=5),
+        _send=lambda kind,button:events.append((kind,button)))
+    io.prepare=lambda:None
+    monkeypatch.setattr(owned_input,'lease',nullcontext);monkeypatch.setattr(owned_input.time,'sleep',lambda _:None)
+    io.drag([980,420],[900,420],button=3,duration=1)
+    assert moves==[(980,420)] and relative==[(-8,0)]*10 and events==[(4,3),(5,3)]
+
+
+def test_missing_relative_capability_rejects_before_pointer_or_button_input(monkeypatch):
+    io=owned_input.Inputs.__new__(owned_input.Inputs);io.raw=SimpleNamespace(relative_pointer=False)
+    io.prepare=lambda:pytest.fail('input was prepared despite unavailable relative motion')
+    monkeypatch.setattr(owned_input,'lease',nullcontext)
+    with pytest.raises(RuntimeError,match='relative pointer capability'):io.drag([900,420],[980,420],button=3)
+
+
+@pytest.mark.parametrize('delta',[(129,0),(0,-129),(True,0),(1.5,0)])
+def test_invalid_relative_delta_never_reaches_sender(delta):
+    raw=Input.__new__(Input);raw.relative_pointer=True
+    raw.sender=None;raw.request=lambda _:pytest.fail('invalid relative request was sent')
+    with pytest.raises(ValueError,match='relative pointer delta'):raw.move_relative(*delta)
 
 
 @pytest.mark.parametrize('broken',[None,'missing_native','stale_public','stale_peer_position','stale_broadcast','moving'])

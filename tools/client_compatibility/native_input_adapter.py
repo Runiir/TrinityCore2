@@ -23,9 +23,11 @@ class Input(ctl.Input):
             ready=self.reply(6)
             if ready.get('ready') is not True or ready.get('peer_pid')!=runtime['pid']:
                 raise RuntimeError('native input sender did not verify its owned peer and readiness')
+            self.relative_pointer=ready.get('relative_pointer') is True
             self.initialization={'time':time.time(),'engine':'cpp_libei','peer_pid':ready['peer_pid'],
                 'peer_start_ticks':runtime['start_ticks'],'display':environment['DISPLAY'],
-                'device_ready':True,'gameplay_input_replayed':False,'build':receipt}
+                'device_ready':True,'relative_pointer':self.relative_pointer,
+                'gameplay_input_replayed':False,'build':receipt}
         except BaseException:self.close();raise
 
     def reply(self,seconds=3):
@@ -45,8 +47,17 @@ class Input(ctl.Input):
         elif kind in [self.X.ButtonPress,self.X.ButtonRelease]:
             request={'kind':'button','code':detail,'pressed':kind==self.X.ButtonPress}
         else:raise ValueError('unsupported private native input event')
+        self.request(request)
+
+    def request(self,request):
         self.sender.stdin.write(json.dumps(request)+'\n');self.sender.stdin.flush()
         if self.reply().get('ok') is not True:raise RuntimeError('native private input was not acknowledged')
+
+    def move_relative(self,x,y):
+        if type(x) is not int or type(y) is not int or max(abs(x),abs(y))>128:
+            raise ValueError('relative pointer delta exceeds its bound')
+        if not self.relative_pointer:raise RuntimeError('relative pointer capability is unavailable')
+        self.request({'kind':'relative','x':x,'y':y})
 
     def type(self,text):
         # Background clients run at 15 FPS. Both the down interval and the gap

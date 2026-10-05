@@ -113,12 +113,20 @@ class Inputs:
             not 0<=x<1280 or not 0<=y<720 for x,y in [start,end]):
             raise ValueError('drag exceeds the owned client input bounds')
         with lease():
+            if button==3 and not getattr(self.raw,'relative_pointer',False):
+                raise RuntimeError('relative pointer capability is unavailable for right-button drag')
             self.prepare();self.raw.move(*start);time.sleep(.1)
             self.raw._send(self.raw.X.ButtonPress,button)
             try:
+                if button==3:time.sleep(.15)
+                previous=start
                 for i in range(1,11):
-                    self.raw.move(round(start[0]+(end[0]-start[0])*i/10),round(start[1]+(end[1]-start[1])*i/10))
+                    current=[round(start[0]+(end[0]-start[0])*i/10),round(start[1]+(end[1]-start[1])*i/10)]
+                    if button==3:self.raw.move_relative(current[0]-previous[0],current[1]-previous[1])
+                    else:self.raw.move(*current)
+                    previous=current
                     time.sleep(duration/10)
+                if button==3:time.sleep(.15)
             finally:self.raw._send(self.raw.X.ButtonRelease,button)
 
 
