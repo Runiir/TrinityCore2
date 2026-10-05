@@ -6,6 +6,20 @@ local function read(fn,...)
 end
 function Client442ObserveChatWindows()
     local result={available=type(GetChatWindowInfo)=='function',windows={}}
+    result.channels={available=false,rows={}}
+    if type(GetChannelList)=='function' then
+        local values={pcall(GetChannelList)}
+        if values[1] and (#values-1)%3==0 and #values<=25 then
+            result.channels.available=true
+            for index=2,#values,3 do
+                local id,name,disabled=values[index],values[index+1],values[index+2]
+                if type(id)~='number' or type(name)~='string' or type(disabled)~='boolean' then
+                    result.channels.available=false;result.channels.error='unsupported public channel tuple';break
+                end
+                result.channels.rows[#result.channels.rows+1]={id=id,name=name:sub(1,80),disabled=disabled}
+            end
+        else result.channels.error='public channel list failed or exceeds eight-channel observation bound' end
+    end
     for index=1,math.min(tonumber(NUM_CHAT_WINDOWS) or 10,10) do
         local name,size,r,g,b,alpha,shown,locked,docked,uninteractable=read(GetChatWindowInfo,index)
         local frame=_G['ChatFrame'..index]
