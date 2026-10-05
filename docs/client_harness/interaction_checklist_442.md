@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 377 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 378 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -446,7 +446,7 @@ Fixture: `owned_second_actor`.
 - [x] `chat.officer` (qualified variant; [evidence](#guild_notes))
 - [x] `chat.channel_join` (qualified variant; [evidence](#owned_native_stock_channel_membership))
 - [x] `chat.channel_leave` (qualified variant; [evidence](#owned_native_stock_channel_membership))
-- [ ] `chat.channel_list`
+- [x] `chat.channel_list` (qualified variant; [evidence](#owned_native_stock_channel_ui_roster))
 - [ ] `chat.channel_password`
 - [x] `chat.channel_owner` (qualified variant; [evidence](#owned_native_stock_channel_owner_query))
 - [x] `chat.emote` (qualified variant; [evidence](#chat))
@@ -2538,3 +2538,16 @@ Remaining limits: Ownership query only. Reassignment, passwords, peer membership
 - [442_interactions_20261005_74.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_74.tar.gz.dvc), member `evidence/client_interactions_20261005_ui74/channel_list_realm_failure_review.json`, SHA-256 `8f2ac5b5f3450c9ff4fd1d00021af44fae04381547664fddcf85e0907bdd50b0`.
 - [442_interactions_20261005_74.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_74.tar.gz.dvc), member `evidence/client_interactions_20261005_ui74/channel_bridge_deploy01/deployment.json`, SHA-256 `d5b96abe7f7745caca4939b3b4c51867b8cb7db7292af0196883f57910de287d`.
 - [442_interactions_20261005_74.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_74.tar.gz.dvc), member `evidence/client_interactions_20261005_ui74/channel_bridge_deploy02/deployment.json`, SHA-256 `39a9813c70f575c6768d3ede480937e072dd2fff0fc3b8552d5a302411b87c9a`.
+
+### owned_native_stock_channel_ui_roster
+
+Fresh whole-pass channel_ui_roster01 uses ordinary stock ChatFrameChannelButton and selects the exact owned disposable channel row. Native and modern list replies, a fresh stock roster request/event, public Harnessone player identity and the reviewed rendered channel title/member row agree. Exact ordinary leave restores original channels/chat settings and all ten native/public checks. Both existing HDMI-1 clients remain owned and observer96 deployments complete.
+
+Remaining limits: One primary-owned channel roster through stock Channels UI only. UI74 slash chatlist01/02/03 remain failed and excluded; no slash text/event success is inferred. Peer membership, ownership reassignment, passwords and persistence remain open. Source-backed native member-count/modern channel-ID mismatch in userlist updates awaits repair.
+
+- [442_interactions_20261005_75.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc), member `evidence/client_interactions_20261005_ui75/channel_ui_roster01/episode.json`, SHA-256 `09907d8b6a0c0140fe902e478943ad73516aecec33ec97c1be820ac2a4b0ca85`.
+  Checked cases: `chat.channel_list` (owned_stock_channel_roster_pass).
+- [442_interactions_20261005_75.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc), member `evidence/client_interactions_20261005_ui75/channel_roster_visual_review.json`, SHA-256 `bf587c4df1fe94924e8e70630362e348d6c5840d4b3f9837429741b64f8c532f`.
+- [442_interactions_20261005_75.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc), member `evidence/client_interactions_20261005_ui75/channel_roster_restoration_review.json`, SHA-256 `8ff46c325609237ccc8af1ad9c58eab65e162c96f0e152f6093cf4ba2ef36cb1`.
+- [442_interactions_20261005_75.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc), member `evidence/client_interactions_20261005_ui75/observer95_deployment01/deployment.json`, SHA-256 `157cfc19038093eb1041506d71e714cac70b7451bea311daa3bf45050a0c76c3`.
+- [442_interactions_20261005_75.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_75.tar.gz.dvc), member `evidence/client_interactions_20261005_ui75/observer96_deployment01/deployment.json`, SHA-256 `aef9fd722b4ee086712f10c31079676e518a44da15401d6244e4e7b835cfd021`.
