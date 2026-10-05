@@ -49,5 +49,19 @@ def test_facing_recovery_requires_a_new_error_from_our_current_attack():
     r['farm_ui']['error']['at']=10
     assert combat.needs_facing(r,10,0)
     assert not combat.needs_facing(r,10,10)
+
+
+def test_an_action_records_observed_facts_without_assuming_its_result(tmp_path):
+    import json
+    r=row();r['archaeology'].update(mounted=False,flying=False,falling=False,loot_open=False)
+    path=tmp_path/'graph.json'
+    farm_graph.transition(path,'mount',r)
+    state=json.loads(path.read_text())
+    assert state['facts']['mounted'] is False and state['facts']['flying'] is False
+    assert state['facts']['combat'] is False
+    assert 'activity' not in state['facts'] and 'onward_travel' not in state['facts']
+    r['archaeology']['mounted']=True
+    farm_graph.transition(path,'observe',r)
+    assert json.loads(path.read_text())['facts']['mounted'] is True
     r['archaeology']['mounted']=True
     assert not combat.needs_facing(r,10,0)

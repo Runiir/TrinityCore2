@@ -16,13 +16,19 @@ def facts(row,value):
     cast_started=bool(value and gathering.get('starts',0)>value.get('gathering_starts',gathering.get('starts',0)))
     discovered=bool(value or named or row['archaeology'].get('loot_open') or
         (row.get('minimap_finds') or {}).get('confirmed'))
-    return {'state':'verify' if row['archaeology'].get('loot_open') else
-        'gather' if cast_started and row['archaeology']['casting'] else
-        'approach' if value and value.get('out_of_range') else 'locate' if discovered and not named else
-        'interact' if discovered else 'dig',
-        'uncollected':discovered,'named_target':named,'gather_cast_seen':cast_started,
+    return {'uncollected':discovered,'named_target':named,'gather_cast_seen':cast_started,
         'position_is_estimate':bool(value and value.get('approach')),
-        'travel_ready':not discovered,'exit_pickup_on':'fragment gain or pickup counter increase'}
+        'interaction_in_range':True if cast_started else False if value and value.get('out_of_range') else None,
+        'loot_open':bool(row['archaeology'].get('loot_open'))}
+
+
+def stage(observed,casting=False):
+    """Derive an activity from facts; this function never changes the facts."""
+    if observed['loot_open']:return 'verify'
+    if observed['gather_cast_seen'] and casting:return 'gather'
+    if observed['interaction_in_range'] is False:return 'approach'
+    if observed['uncollected'] and not observed['named_target']:return 'locate'
+    return 'interact' if observed['uncollected'] else 'dig'
 
 
 def gained(baseline,row):

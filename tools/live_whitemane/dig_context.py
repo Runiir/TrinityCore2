@@ -22,7 +22,10 @@ def model_state(row, guide, visible_find, pending, steps):
         guide_source=guide['source'] if guide else None, pending_pickup=bool(pending),
         named_artifact=ui.get('soft_interact', {}).get('name') or ui.get('tooltip'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
-    if pending:state['pickup']=pending_find.facts(row,pending)
+    state.update({key:row['archaeology'].get(key) for key in ('mounted','flying','falling')})
+    if pending:
+        state['pickup']=pending_find.facts(row,pending)
+        state['pickup_activity']=pending_find.stage(state['pickup'],row['archaeology']['casting'])
     if ui.get('tooltip') in pending_find.FIND_NAMES:
         state['mouseover_artifact']=ui['tooltip']
         state['mouseover_interact_binding']='Mouse Button 5'

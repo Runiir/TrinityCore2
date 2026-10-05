@@ -10,8 +10,8 @@ def test_uncollected_find_retains_pickup_even_after_site_replacement():
     actions=farm_policy.legal_actions(r,SolveBatches())
     assert set(actions)=={'wait','minimap','dig'}
     facts=pending_find.facts(r,r['pending_find'])
-    assert facts['uncollected'] and not facts['travel_ready']
-    assert facts['exit_pickup_on']=='fragment gain or pickup counter increase'
+    assert facts['uncollected'] and facts['interaction_in_range'] is None
+    assert not {'state','travel_ready','exit_pickup_on'} & facts.keys()
 
 
 def test_solve_choices_start_at_150_and_continue_an_existing_batch():
@@ -36,7 +36,7 @@ def test_a_tooltip_search_miss_is_given_to_laya_as_an_unfinished_pickup():
     r['farm_ui']['gathering']={'starts':2}
     step={'action':'loot','completed':False,'failure':'no matching public tooltip in bounded interaction search'}
     state=dig_context.model_state(r,None,True,pending,[step]*4)
-    assert state['pickup']['state']=='locate' and not state['pickup']['gather_cast_seen']
+    assert state['pickup_activity']=='locate' and not state['pickup']['gather_cast_seen']
     assert state['recent_outcomes'][-1]['outcome']=='tooltip_search_missed'
     assert state['consecutive_actions_without_progress']==4
 

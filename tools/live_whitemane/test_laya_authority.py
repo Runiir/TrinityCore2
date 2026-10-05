@@ -25,7 +25,7 @@ def test_laya_can_choose_travel_when_the_pickup_requirement_is_complete(monkeypa
     r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
     r['pending_find']=None;r['minimap_finds']={'clear':True}
     def choose(state,instructions,options):
-        assert not state['pending_pickup'] and state['pickup']['travel_ready']
+        assert not state['pending_pickup'] and not state['pickup']['uncollected']
         assert 'dig' in options and 'teleport' in options
         return 'teleport',{},{}
     monkeypatch.setattr(farm_policy.laya_ui,'choose',choose)

@@ -37,17 +37,21 @@ def transition(path,action,row,*,pending=None,outcome=None,target=None):
     state['role']='record Laya decisions and observed outcomes'
     state['pickup_facts']=pending_find.facts(row,pending)
     state['activity']='combat' if row['movement']['in_combat'] else 'pickup' if state['pickup_facts']['uncollected'] else 'dig' if row['archaeology']['can_survey'] else 'travel'
-    state['transition_facts']={'combat':row['movement']['in_combat'],
-        'artifact_on_ground':state['pickup_facts']['uncollected'],
-        'pickup_complete':not state['pickup_facts']['uncollected'],
-        'survey_ready':not state['pickup_facts']['uncollected'] and
-            ((row.get('farm_ui') or {}).get('survey') or {}).get('ready') is True}
+    state.pop('transition_facts',None)
+    state['facts']={key:row['archaeology'].get(key) for key in ('mounted','flying','falling','casting','loot_open')}
+    state['facts'].update(combat=row['movement']['in_combat'],
+        artifact_uncollected=state['pickup_facts']['uncollected'],
+        artifact_named=state['pickup_facts']['named_target'],
+        survey_ready=((row.get('farm_ui') or {}).get('survey') or {}).get('ready'))
+    state['transition_conditions']={'onward_travel':not state['facts']['artifact_uncollected'],
+        'survey':state['facts']['survey_ready'] is True and not state['facts']['artifact_uncollected'],
+        'combat':state['facts']['combat']}
     if node=='combat':state.setdefault('interrupted_state',state['current'])
     elif node=='observe' and row['movement'].get('in_combat') and state['current']!='combat':
         state['interrupted_state']=state['current']
     if target is not None:state['travel_destination']=target
     event={'at':time.time(),'from':state['current'],'to':node,'pending_pickup':bool(pending),
-        'facts':state['transition_facts'],'outcome':outcome}
+        'facts':state['facts'],'condition_results':state['transition_conditions'],'outcome':outcome}
     if resumed_combat:event['resumed_after_repair']=True
     if state['current']=='combat' and node=='observe' and not row['movement'].get('in_combat'):
         event['resume_state']=state.pop('interrupted_state',None)

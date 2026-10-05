@@ -67,6 +67,7 @@ def choose(row,batches,session):
     route=ui.get('route') or {};signal=row.get('minimap_finds') or {}
     state={'goal':'Find a Canopic Jar; leave it unopened',
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
+        'casting':a['casting'],'falling':a['falling'],
         'at_digsite':a['can_survey'],'Survey_ready':(ui.get('survey') or {}).get('ready'),
         'guide':{k:v for k,v in (dig_guide or a.get('arrow') or {}).items()
             if k in ('source','color','distance_yards','heading_relative_to_player','arrived')},
