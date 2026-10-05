@@ -1,0 +1,13 @@
+# AddOns selection diagnosis
+
+AddOns mutation and cancellation remain unqualified after three whole failures. Coverage stays at 391 of 916 scoped operations, with 525 open. The earlier original `softTargetInteract=0` remains unrestored at stock-disabled `1`; custom-script permission stays blocked.
+
+The first trial clicks the observed compatibility checkbox once for 1.2 seconds. Fresh pages and the actual retained panel still show it checked. The second trial checks the row button before any row input. Its OnClick, OnMouseDown and OnMouseUp handlers are absent, so the guard refuses that path. The checkbox has an OnClick handler.
+
+The third trial proves mouse-click acceptance and actual pointer hover over that exact checkbox. A read-only post-click listener records one LeftButton-up callback. After the stock handler, the checkbox remains checked and the public all-character enable flag remains 2. Input delivery is proven; the remaining failure is the unchecked outcome. The cause inside the handler or preference path remains undetermined.
+
+All three trials restore both owned addon preference rows, all seven available settings observations and all ten native fixture checks. Both addons stay loaded. No disabled addon is reloaded, no client/server/model is started, and the scout stays at character selection. Both existing windows remain on HDMI-1. These cleanup passes do not qualify the failed mutations.
+
+Observer 111 adds the pinned build60895 addon getters. Observer 112 reads handler presence; observer 113 records post-click delivery without calling a game control. Primary-only reloads preserve the same session, pose and AFK state. The initial AddOns source passes 1,323 full protocol tests. The final UI90 handler/input/packet checks pass 77 tests and Lua syntax checks pass. The next committed observer 114 records native and legacy preference-call arguments through read-only posthooks. A separately committed 200 ms click requires a freshly measured rate of at least 10 FPS. Neither next change is deployed at this closure.
+
+Evidence is in the [UI90 DVC pointer](../../artifacts/client_harness/442_interactions_20261005_90.tar.gz.dvc), archive 390,180,505 bytes, SHA-256 `e15309d480d34904dec4347b617ff5b3b5672cbfc748383826eb529829fd731f`. Remote review verifies 22 JSON receipts and 148 attributed image hashes. The three `addons_cancel*/episode.json` files remain failed; `addons_checkbox_failed_review.json`, `addons_row_guard_review.json` and `addons_delivered_click_review.json` record the distinct findings. The original API documentation is pinned from local read-only CASC and archived under `stock_reference/`.
