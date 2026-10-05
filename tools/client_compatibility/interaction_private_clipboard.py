@@ -75,13 +75,6 @@ def self_check(out):
             print(json.dumps({k:result[k] for k in ['completed','failure']}),flush=True)
 
 
-if __name__=='__main__':
-    import argparse
-    from pathlib import Path
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--self-check',type=Path,required=True)
-    self_check(parser.parse_args().self_check)
-
-
 def copied_name(t,expected,previous_owner=None):
     monitor=owned_input.focus();nested=monitor['input_isolation']['display']
     if monitor['input_isolation']['actor']!=t.fixture['actor'] or nested!=t.io.initialization['display']:
@@ -119,3 +112,10 @@ def copied_name(t,expected,previous_owner=None):
     finally:
         if window is not None:window.destroy()
         connection.close()
+
+
+if __name__=='__main__':
+    import argparse
+    from pathlib import Path
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--self-check',type=Path,required=True)
+    self_check(parser.parse_args().self_check)
