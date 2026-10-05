@@ -3,7 +3,7 @@
 namespace bridge
 {
 Reply chat_request(State const &owner,std::string const &name,View body);
-Reply chat_response(State const &owner,std::string const &name,View body);
+Reply chat_response(State &owner,std::string const &name,View body);
 inline void require_chat_character(bool created,bool active_world)
 {
     // Chat is sent on the authenticated Realm channel. Both channel types share

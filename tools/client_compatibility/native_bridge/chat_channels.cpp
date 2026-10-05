@@ -27,6 +27,11 @@ void require_name(std::string const &value)
 {
     if(value.empty())throw std::runtime_error("empty channel name");
 }
+std::string identity(std::string value)
+{
+    for(char &c:value)c=std::tolower(static_cast<unsigned char>(c));
+    return value;
+}
 Array channel_guid(State const &owner,std::string const &name,unsigned id,unsigned flags)
 {
     // Native channels are identified by name. Give that identity a stable local
@@ -71,7 +76,7 @@ Reply chat_channel_request(std::string const &name,View body)
     r.end();require_name(channel);return Packet{native,w.finish()};
 }
 
-Reply chat_channel_response(State const &owner,std::string const &name,View body)
+Reply chat_channel_response(State &owner,std::string const &name,View body)
 {
     Reader r(body);Writer w;
     if(name=="SMSG_CHANNEL_NOTIFY")
@@ -81,6 +86,7 @@ Reply chat_channel_response(State const &owner,std::string const &name,View body
         {
             auto flags=r.take<std::uint8_t>();auto id=r.take<std::uint32_t>();
             auto instance=r.take<std::uint32_t>();r.end();
+            owner.joined_channel_ids[identity(channel)]=id;
             w.bits(channel.size(),7).bits(0,11).put<std::uint32_t>(flags).put<std::uint8_t>(0)
                 .put(id).put<std::uint64_t>(instance).guid(channel_guid(owner,channel,id,flags)).raw(channel);
             return Packet{"SMSG_CHANNEL_NOTIFY_JOINED",w.finish()};
@@ -89,6 +95,7 @@ Reply chat_channel_response(State const &owner,std::string const &name,View body
         {
             auto id=r.take<std::uint32_t>();auto suspended=r.take<std::uint8_t>();r.end();
             if(suspended>1)throw std::runtime_error("invalid native channel suspension");
+            owner.joined_channel_ids.erase(identity(channel));
             w.bits(channel.size(),7).bits(suspended,1).put(id).raw(channel);
             return Packet{"SMSG_CHANNEL_NOTIFY_LEFT",w.finish()};
         }
@@ -125,10 +132,13 @@ Reply chat_channel_response(State const &owner,std::string const &name,View body
     {
         auto guid=r.take<std::uint64_t>();unsigned role=0;
         if(name!="SMSG_USERLIST_REMOVE")role=r.take<std::uint8_t>();
-        auto flags=r.take<std::uint8_t>();auto count=r.take<std::uint32_t>();auto channel=terminated(r);r.end();require_name(channel);
+        auto flags=r.take<std::uint8_t>();r.take<std::uint32_t>(); // Native member count is not a channel ID.
+        auto channel=terminated(r);r.end();require_name(channel);
+        auto joined=owner.joined_channel_ids.find(identity(channel));
+        if(joined==owner.joined_channel_ids.end())return {}; // No native joined identity, including late updates after leave.
         w.guid(Protocol::modern_guid(guid,owner.map()));
         if(name!="SMSG_USERLIST_REMOVE")w.put<std::uint8_t>(role);
-        w.put<std::uint32_t>(flags).put(count).bits(channel.size(),7).raw(channel);
+        w.put<std::uint32_t>(flags).put(joined->second).bits(channel.size(),7).raw(channel);
         return Packet{name,w.finish()};
     }
     return {};

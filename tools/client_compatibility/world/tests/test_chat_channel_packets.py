@@ -110,11 +110,40 @@ def test_owner_change_notification_preserves_native_sender(codec):
 
 
 @pytest.mark.parametrize('name',['SMSG_USERLIST_ADD','SMSG_USERLIST_UPDATE','SMSG_USERLIST_REMOVE'])
-def test_native_userlist_identity_count_and_roles(codec,name):
+@pytest.mark.parametrize('channel_id',[0,7])
+def test_native_userlist_uses_joined_channel_id_not_member_count(codec,name,channel_id):
+    joined=Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,channel_id,0).finish()
     w=Writer().pack('Q',2)
     if name!='SMSG_USERLIST_REMOVE':w.pack('B',3)
     body=w.pack('BI',1,2).raw(b'TestLab\0').finish()
-    actual,encoded=call(codec,'chat_response',name,body);assert actual==name
+    replies=stateful(codec,{'guid':1,'map':0,'race':1},[
+        action('chat_response','SMSG_CHANNEL_NOTIFY',joined),action('chat_response',name,body)])
+    actual,encoded=replies[-1];assert actual==name
     r=Reader(bytes.fromhex(encoded));assert r.guid()==(2,player_high())
     if name!='SMSG_USERLIST_REMOVE':assert r.unpack('B')==(3,)
-    assert r.unpack('II')==(1,2) and r.bits(7)==7 and r.raw(7)==b'TestLab';r.end()
+    assert r.unpack('II')==(1,channel_id) and r.bits(7)==7 and r.raw(7)==b'TestLab';r.end()
+
+
+def test_userlist_requires_current_native_join_and_rebinds_after_leave(codec):
+    update=Writer().pack('QBBI',2,3,1,2).raw(b'testlab\0').finish()
+    joined=lambda channel_id:Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,channel_id,0).finish()
+    left=Writer().pack('B',3).raw(b'TestLab\0').pack('IB',7,0).finish()
+    assert stateful(codec,{'guid':1},[action('chat_response','SMSG_USERLIST_UPDATE',update)])==[]
+    replies=stateful(codec,{'guid':1},[
+        action('chat_response','SMSG_CHANNEL_NOTIFY',joined(7)),
+        action('chat_response','SMSG_CHANNEL_NOTIFY',left),
+        action('chat_response','SMSG_USERLIST_UPDATE',update),
+        action('chat_response','SMSG_CHANNEL_NOTIFY',joined(9)),
+        action('chat_response','SMSG_USERLIST_UPDATE',update)])
+    assert [r[0] for r in replies]==['SMSG_CHANNEL_NOTIFY_JOINED','SMSG_CHANNEL_NOTIFY_LEFT',
+        'SMSG_CHANNEL_NOTIFY_JOINED','SMSG_USERLIST_UPDATE']
+    r=Reader(bytes.fromhex(replies[-1][1]));r.guid();r.unpack('B')
+    assert r.unpack('II')==(1,9)
+
+
+def test_malformed_join_cannot_grant_userlist_identity(codec):
+    joined=Writer().pack('B',2).raw(b'TestLab\0').pack('BII',1,7,0).finish()+b'x'
+    update=Writer().pack('QBBI',2,3,1,2).raw(b'TestLab\0').finish()
+    replies=stateful(codec,{'guid':1},[action('chat_response','SMSG_CHANNEL_NOTIFY',joined),
+        action('chat_response','SMSG_USERLIST_UPDATE',update)])
+    assert len(replies)==1 and replies[0][0]=='error'

@@ -37,6 +37,8 @@ struct State
     std::array<std::uint32_t,17> account_times{};
     Array action_buttons;
     EquipmentSets equipment_sets;
+    // Native YouJoined owns this per-character identity; userlists carry counts.
+    std::unordered_map<std::string, std::uint32_t> joined_channel_ids;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;

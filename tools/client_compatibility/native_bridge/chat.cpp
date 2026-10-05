@@ -92,7 +92,7 @@ Reply chat_request(State const &,std::string const &name,View body)
     }
     r.end();return Packet{found->second,w.finish()};
 }
-Reply chat_response(State const &owner,std::string const &name,View body)
+Reply chat_response(State &owner,std::string const &name,View body)
 {
     if(auto channel=chat_channel_response(owner,name,body))return channel;
     if(name!="SMSG_MESSAGECHAT" && name!="SMSG_GM_MESSAGECHAT")return {};
