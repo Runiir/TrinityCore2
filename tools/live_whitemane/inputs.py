@@ -62,6 +62,12 @@ def execute(title, action, arguments):
                     raise ValueError('hover is outside the private viewport')
                 sender.move(x,y)
                 time.sleep(.5)
+            elif action == 'button':
+                button=arguments['button']
+                if button not in (1,3,8,9):raise ValueError('unsupported owned mouse button')
+                sender._send(sender.X.ButtonPress,button)
+                try:time.sleep(.15)
+                finally:sender._send(sender.X.ButtonRelease,button)
             elif action == 'key':
                 if not .05 <= arguments['hold'] <= 2:
                     raise ValueError('key hold is outside its bounded interval')

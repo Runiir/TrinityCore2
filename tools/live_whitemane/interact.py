@@ -35,6 +35,28 @@ def hover(sender,point,before,folder,expected=None):
         time.sleep(.02)
 
 
+def mouseover(folder,before,names):
+    """Press the user's Mouse Button 5 binding on a fresh named mouseover."""
+    folder.mkdir(parents=True,exist_ok=False)
+    ui=before['farm_ui'];name=ui.get('tooltip');cursor=ui.get('cursor') or {}
+    if name not in names or not cursor:raise RuntimeError('named artifact mouseover is unavailable')
+    deadline=time.monotonic()+1.5
+    while True:
+        if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
+        fresh=observe(folder/'mouseover_precheck.png');stationary(before,fresh)
+        if fresh['farm_ui']['sequence']!=ui['sequence']:break
+        if time.monotonic()>=deadline:raise RuntimeError('named artifact mouseover is unavailable')
+        time.sleep(.02)
+    now=fresh['farm_ui'];point=now.get('cursor') or {}
+    if (now.get('tooltip')!=name or not point or
+            abs(point['x']-cursor['x'])*runtime.WIDTH>2 or
+            abs(point['y']-cursor['y'])*runtime.HEIGHT>2):
+        raise RuntimeError('named artifact mouseover changed before interaction')
+    result={'source':'fresh public named mouseover','name':name,'cursor':point,
+        'binding':'Mouse Button 5','input':inputs.execute('World of Warcraft','button',{'button':9})}
+    runtime.write(folder/'interaction.json',result);return result
+
+
 def use(folder,before,names,*,maximum=100):
     folder.mkdir(parents=True,exist_ok=False)
     ui=before['farm_ui'];soft=ui['soft_interact'];keys=ui['bindings']['INTERACTTARGET']

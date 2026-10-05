@@ -44,6 +44,8 @@ RETRYABLE=(
     'terrain falling interrupted the continuous approach',
     'no matching public tooltip in bounded interaction search',
     'artifact tooltip observation did not follow the cursor',
+    'named artifact mouseover is unavailable',
+    'named artifact mouseover changed before interaction',
 )
 
 

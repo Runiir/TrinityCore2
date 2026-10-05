@@ -27,6 +27,8 @@ def choose(state):
         options['camera_forward']='Align the camera with the current forward direction'
         if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
             options['loot']='Locate and interact with the discovered find; check range or gathering cast'
+        if state.get('mouseover_artifact'):
+            options['mouseover_interact']='Press Mouse Button 5 on the artifact under the cursor'
         if (state.get('can_survey') and state.get('survey_ready')
                 and not (state.get('pickup') or {}).get('uncollected')):
             options['survey']='Survey using Mouse Button 4'

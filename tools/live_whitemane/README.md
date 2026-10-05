@@ -190,6 +190,9 @@ New Survey, solve and onward travel choices resume after fragment gain or an
 increased pickup counter confirms collection. A tooltip scan miss returns to
 Laya with the uncollected find and recent failure intact. The graph records
 the current combat, artifact and readiness facts with each transition.
+When a current public tooltip identifies an artifact under the cursor, Laya
+can choose `mouseover_interact`. This presses the user's Mouse Button 5 binding
+without repositioning, then checks the ordinary gathering and range feedback.
 
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay

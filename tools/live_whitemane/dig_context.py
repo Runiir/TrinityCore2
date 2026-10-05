@@ -23,6 +23,9 @@ def model_state(row, guide, visible_find, pending, steps):
         named_artifact=ui.get('soft_interact', {}).get('name') or ui.get('tooltip'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
     if pending:state['pickup']=pending_find.facts(row,pending)
+    if ui.get('tooltip') in pending_find.FIND_NAMES:
+        state['mouseover_artifact']=ui['tooltip']
+        state['mouseover_interact_binding']='Mouse Button 5'
     if guide:
         state['telescope'] = {key: guide[key] for key in ('color', 'heading_relative_to_player')}
         state['telescope'].update(distance_yards=round(guide['distance_yards'], 2),

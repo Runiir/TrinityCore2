@@ -81,7 +81,7 @@ def run(args):
     step=None
     try:
         pending=session['steps'][-1] if session['steps'] else None
-        if (pending and pending.get('action')=='loot' and not pending.get('confirmed_looted_find')
+        if (pending and pending.get('action') in ('loot','mouseover_interact') and not pending.get('confirmed_looted_find')
             and pending_find.range_error((pending.get('after',{}).get('farm_ui') or {}).get('error') or {})
             and not session.get('reapproach_find')):
             current=observe(output/'range_resume.png')
@@ -258,11 +258,12 @@ def run(args):
                 if guide['source']=='Survey telescope' and guide['color']=='green':
                     session['last_green_endpoint']={'world':guide['world']}
                     session.pop('telescope_target',None)
-            elif action=='loot':
+            elif action in ('loot','mouseover_interact'):
                 if auto_loot:
                     gathering=(fresh.get('farm_ui') or {}).get('gathering') or {}
                     if not fresh['archaeology']['loot_open']:
-                        step['interaction']=interact.use(folder/'interaction',fresh,set(FIND_NAMES))
+                        step['interaction']=(interact.mouseover if action=='mouseover_interact' else interact.use)(
+                            folder/'interaction',fresh,set(FIND_NAMES))
                     deadline=time.monotonic()+4
                     while time.monotonic()<deadline:
                         cast=observe(folder/'gather_cast.png')
@@ -323,7 +324,7 @@ def run(args):
                     # last green endpoint is a local estimate, not a hidden
                     # artifact coordinate. Recheck range by interaction there.
                     session['pickup_approach']=dict(session['last_green_endpoint'])
-            if action=='loot':
+            if action in ('loot','mouseover_interact'):
                 if graph:farm_graph.transition(graph,'verify_pickup',after,pending=pending_find.load(after),outcome='fragments_increased' if found else 'pickup_unconfirmed')
                 if not found:
                     error=(after.get('farm_ui') or {}).get('error') or {}
