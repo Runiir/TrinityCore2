@@ -17,6 +17,28 @@ from . import runtime
 ENDPOINT = 'http://127.0.0.1:8005'
 
 
+def validate_ui_request(payload, allowed_questions=('action',)):
+    """Reject invalid choices before Laya's two-option confidence calculation."""
+    if payload.get('model') != MODEL or not isinstance(payload.get('state'), dict):
+        raise ValueError('invalid UI model or state')
+    questions = payload.get('questions')
+    if (not isinstance(questions, dict) or 'action' not in questions
+            or set(questions) - set(allowed_questions)):
+        raise ValueError('invalid UI questions')
+    for name, definition in questions.items():
+        if (not isinstance(definition, dict) or definition.get('type') != 'choice'
+                or 'instructions' not in definition):
+            raise ValueError(f'{name} must be a choice question with instructions')
+        criteria = definition.get('criteria')
+        if (not isinstance(criteria, (dict, list))
+                or any(not isinstance(label, str) for label in criteria)):
+            raise ValueError(f'{name} must have named choice candidates')
+        # Laya converts list criteria to a dictionary, collapsing duplicate labels.
+        if len(dict.fromkeys(criteria)) < 2:
+            raise ValueError(f'{name} requires at least two distinct candidates')
+    return questions
+
+
 def token_budget(agent, state, questions):
     from laya.common import build_sequence, render_options, serialize_state
     receipts = {}
@@ -58,14 +80,16 @@ def serve():
 
     @app.post('/v1/systemone')
     def decide(payload: dict):
-        if payload.get('model') != MODEL or set(payload.get('questions', {})) != {'action'}:
-            raise HTTPException(422, 'unexpected model or question')
+        try:
+            questions = validate_ui_request(payload)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
         with lock:
-            budget = token_budget(agent, payload['state'], payload['questions'])
+            budget = token_budget(agent, payload['state'], questions)
             if any(value['truncated_fields'] for value in budget.values()):
                 raise HTTPException(422, {'error': 'truncation', 'token_budget': budget})
             started = time.perf_counter()
-            result = agent.predict(payload['state'], payload['questions'])
+            result = agent.predict(payload['state'], questions)
         result.update(**health(), token_budget=budget, elapsed_sec=time.perf_counter() - started)
         return result
 
@@ -88,6 +112,7 @@ def step(annotation, output):
                 'Choose the next visible UI action to reach the requested destination. Inspect an unidentified control before clicking. Wait if unavailable.'),
                 'criteria': {name: value['description'] for name, value in candidates.items()}}
     request = {'model': MODEL, 'state': data['state'], 'questions': {'action': question}}
+    validate_ui_request(request)
     req = urllib.request.Request(ENDPOINT + '/v1/systemone', data=json.dumps(request).encode(),
                                  headers={'Content-Type': 'application/json'})
     with urllib.request.urlopen(req, timeout=15) as response:

@@ -65,11 +65,11 @@ def serve(args):
                 'base_ui':{'model':archaeology_policy.MODEL,'revision':archaeology_policy.REVISION,'adapter':None}}
     @app.post('/v1/ui')
     def ui_decide(payload:dict):
-        from .ui_choice import token_budget
-        questions=payload.get('questions',{})
-        if (payload.get('model')!=archaeology_policy.MODEL or not isinstance(payload.get('state'),dict)
-                or 'action' not in questions or set(questions)-{'action','camera'}):
-            raise HTTPException(422,'invalid original-head UI request')
+        from .ui_choice import token_budget, validate_ui_request
+        try:
+            questions=validate_ui_request(payload,allowed_questions=('action','camera'))
+        except ValueError as error:
+            raise HTTPException(422,str(error)) from error
         started=time.perf_counter()
         with lock:
             activate('base_ui')
