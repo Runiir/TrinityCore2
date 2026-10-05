@@ -27,9 +27,14 @@ def source(path):
         raise ValueError('requires the private failed language receipt')
     d=json.loads(path.read_text())
     failed={k for k,v in d.get('language_restoration',{}).get('checks',{}).items() if not v}
+    legacy=(d['failure']=='RuntimeError: original language fixture restoration differs' and
+        failed=={'original_skills','original_native_skills'})
+    staged=(d.get('language_lifecycle_schema')=='client442_language_lifecycle_v1' and
+        d.get('phase')=='await_offline_language_cleanup' and
+        {'original_skills','original_native_skills'}<=failed<=
+        {'original_skills','original_native_skills','original_languages'})
     if (d['actor']['guid']!=1 or d['completed'] or not d.get('finished_at') or
-        d['failure']!='RuntimeError: original language fixture restoration differs' or
-        failed!={'original_skills','original_native_skills'} or
+        not (legacy or staged) or
         not all(d['native_restoration']['checks'].values()) or
         not all(r.get('restored') for r in d['fixture_permissions'])):
         raise RuntimeError('exact failed fixture or restoration evidence differs')
