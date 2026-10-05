@@ -204,6 +204,7 @@ local function sample()
         WhitemaneLiveRelayUI(json(result),fast,json)
         result.uptime=GetTime();result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
         result.camera_zoom=fast.camera_zoom;result.error=lastError
+        result.relay_status=call(WhitemaneLiveRelayStatus)
     end
     local payload=json(ok and result or {observer_error=tostring(result):sub(1,200)})
     if #payload>capacity then payload=json({observer_error="Farm UI packet capacity exceeded",bytes=#payload}) end

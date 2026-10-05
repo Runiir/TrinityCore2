@@ -1,5 +1,11 @@
 -- Normal public addon telemetry, self-addressed only. No gameplay actions.
 local prefix='WMLF1'
+local status={attempts=0,sent=0}
+if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+    local ok,result=pcall(C_ChatInfo.RegisterAddonMessagePrefix,prefix)
+    status.register_result=ok and tostring(result) or 'registration error'
+end
+function WhitemaneLiveRelayStatus()return status end
 local alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local function base64(value)
     local result={}
@@ -51,8 +57,11 @@ pump:SetScript('OnUpdate',function(_,delta)
         if job then
             local text=table.concat({kind,job.id,job.part,job.total},'|')..'|'..job.value:sub((job.part-1)*200+1,job.part*200)
             if #text+40<=budget then
+                status.attempts=status.attempts+1
                 local ok,result=pcall(C_ChatInfo.SendAddonMessage,prefix,text,'WHISPER',self)
+                status.last_result=ok and tostring(result) or tostring(result):sub(1,160)
                 if ok and (result==nil or result==0 or result==true) then
+                    status.sent=status.sent+1
                     budget=budget-#text-40;job.part=job.part+1
                     if job.part>job.total then jobs[kind]=nil end
                 end
