@@ -6,6 +6,7 @@ ENDPOINT='http://127.0.0.1:8004'
 
 
 def choose(state,instructions,candidates):
+    if len(candidates)<2:raise ValueError('Laya UI choices require at least two candidates')
     request={'model':MODEL,'state':state,'questions':{'action':{
         'type':'choice','instructions':instructions,'criteria':candidates}}}
     req=urllib.request.Request(ENDPOINT+'/v1/ui',data=json.dumps(request).encode(),

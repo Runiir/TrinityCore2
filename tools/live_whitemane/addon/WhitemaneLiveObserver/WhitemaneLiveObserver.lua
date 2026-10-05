@@ -2,12 +2,12 @@
 -- Uses the existing TCM1 screenshot packet; no rewrite bridge is required.
 local panel = CreateFrame("Frame", "WhitemaneLiveObserverPanel", UIParent)
 panel:SetScale(1 / UIParent:GetEffectiveScale())
-panel:SetSize(112, 32)
+panel:SetSize(112, 56)
 panel:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 16, -16)
 panel:SetFrameStrata("TOOLTIP")
 panel:EnableMouse(false)
 local pixels = {}
-for i = 1, 224 do
+for i = 1, 384 do
     local pixel = panel:CreateTexture(nil, "OVERLAY")
     pixel:SetSize(4, 4)
     pixel:SetPoint("TOPLEFT", panel, "TOPLEFT", ((i - 1) % 28) * 4,
@@ -15,7 +15,7 @@ for i = 1, 224 do
     pixels[i] = pixel
 end
 local status = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-status:SetPoint("TOPLEFT", panel, "BOTTOMLEFT", 0, -4)
+status:SetPoint("TOPLEFT", panel, "TOPRIGHT", 4, 0)
 status:SetText("Live observer: public movement only")
 
 local function call(fn, ...)
@@ -65,6 +65,7 @@ local function sample()
     append(bytes, integer(percent, 100), 1)
     append(bytes, flags, 1)
     append(bytes, checksum(bytes), 2)
+    local render=bytes
     if WhitemaneLiveRelayBytes then
         -- Fast public world/mode facts travel with heading. The journal and
         -- marker packet can then update less often without delaying steering.
@@ -89,9 +90,10 @@ local function sample()
         end
         append(relay,checksum(relay),2)
         WhitemaneLiveRelayBytes('M',relay)
+        render=relay
     end
-    for i = 1, #bytes * 8 do
-        local value = math.floor(bytes[math.floor((i - 1) / 8) + 1] / (2 ^ (7 - ((i - 1) % 8)))) % 2
+    for i = 1, #render * 8 do
+        local value = math.floor(render[math.floor((i - 1) / 8) + 1] / (2 ^ (7 - ((i - 1) % 8)))) % 2
         pixels[i]:SetColorTexture(value, value, value, 1)
     end
     status:SetText("Live observer: " .. (call(UnitName, "player") or "unavailable"))

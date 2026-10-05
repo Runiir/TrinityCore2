@@ -1,0 +1,28 @@
+-- Public action readiness and cast events. Never casts or selects a target.
+local function call(fn,...)
+    if type(fn)~='function' then return end
+    local ok,a,b,c,d,e,f,g,h,i=pcall(fn,...)
+    if ok then return a,b,c,d,e,f,g,h,i end
+end
+local gather={starts=0,successes=0}
+local event=CreateFrame('Frame')
+event:RegisterEvent('UNIT_SPELLCAST_START');event:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+event:SetScript('OnEvent',function(_,kind,unit,_,spell)
+    if unit~='player' or spell~=73979 then return end
+    if kind=='UNIT_SPELLCAST_START' then gather.starts=gather.starts+1;gather.last_start=GetTime()
+    elseif kind=='UNIT_SPELLCAST_SUCCEEDED' then gather.successes=gather.successes+1;gather.last_success=GetTime() end
+end)
+function WhitemaneLiveActivity()
+    local current,run,flight,swim=call(GetUnitSpeed,'player')
+    local action,id=call(GetActionInfo,1)
+    local label=action=='spell' and call(GetSpellInfo,id) or action=='macro' and call(GetMacroInfo,id)
+    local start,duration=call(GetActionCooldown,1)
+    local usable=call(IsUsableAction,1)
+    local health,maximum=call(UnitHealth,'target'),call(UnitHealthMax,'target')
+    return {move_speeds={current=current,run=run,flight=flight,swim=swim},gathering=gather,
+        combat={target_exists=not not call(UnitExists,'target'),hostile=not not call(UnitCanAttack,'player','target'),
+            target_dead=not not call(UnitIsDeadOrGhost,'target'),target_health=health,target_max_health=maximum,
+            attack_label=label,attack_usable=not not usable,attack_in_range=call(IsActionInRange,1),
+            cooldown_ends=(start or 0)+(duration or 0),energy=call(UnitPower,'player')},
+        casting={name=call(UnitCastingInfo,'player')}}
+end

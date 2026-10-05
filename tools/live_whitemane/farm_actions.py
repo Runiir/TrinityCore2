@@ -27,6 +27,9 @@ def click_choice(folder, before, collection, goal, expected=None):
     candidates['wait']='Wait without input'
     state={'goal':goal,'interface':'stationary, healthy, not casting',
            'buttons':{key:value for key,value in candidates.items() if key!='wait'}}
+    if before.get('minimap_finds'):
+        state['minimap_live_finds']=[f['name'] for f in before['minimap_finds'].get('confirmed') or []]
+        state['minimap_checked']=before['minimap_finds']['clear']
     choice,request,response=laya_ui.choose(state,'Select the visible button matching the goal. Otherwise wait.',candidates)
     record={'before':before,'choice':choice,'request':request,'response':response,'executed':False}
     runtime.write(folder/'decision.json',record)
@@ -64,6 +67,20 @@ def command_choice(folder, before, text, goal, description):
             fresh=observe(folder/'precheck.png');stationary(before,fresh)
         record['inputs']=command(text)
         record['executed']=True
+        runtime.write(folder/'decision.json',record)
         time.sleep(2)
+        if text=='/reload':
+            import json
+            mode=runtime.ROOT/'run/observation_mode.json'
+            setting=json.loads(mode.read_text()) if mode.exists() else {}
+            if setting.get('transport')=='local_tiles':
+                from .telemetry_tiles import calibrate
+                # GetTime excludes part of reload/loading time on this client.
+                # Re-anchor only after an explicit reload and fresh generations.
+                for attempt in range(16):
+                    try:record['tile_clock']=calibrate(setting.get('extension',True));break
+                    except ValueError:
+                        if attempt==15:raise
+                        time.sleep(.25)
     runtime.write(folder/'decision.json',record)
     return record

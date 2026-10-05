@@ -6,6 +6,8 @@ from .observe import observe
 from .decisions import choose
 from .smooth_move import walk, descend, ascend, GroundContact
 from . import clearance
+from . import farm_graph,pending_find
+from pathlib import Path
 from tools.client_compatibility import travel_policy
 
 
@@ -14,6 +16,11 @@ def fly(folder, row, arrow, step):
     contacts=[]; height_plan=None
     step['travel_decisions']=phases
     target=arrow['endpoint']
+    graph=Path(step['graph_path']) if step.get('graph_path') else None
+    if graph:
+        import json
+        current=json.loads(graph.read_text())['current']
+        if current!='flight':farm_graph.transition(graph,'flight',row,pending=pending_find.load(row),target=target)
     def click_mount():
         from .archaeology_probe import command
         return command('/cast Blue Wind Rider')
@@ -53,6 +60,7 @@ def fly(folder, row, arrow, step):
                'heading_error_radians':error,'observed_public_state':row,'inputs':[]}
         phases.append(phase)
         if action=='arrived': return receipts
+        if graph and action!='observe':phase['graph_transition']=farm_graph.transition(graph,action,row,pending=pending_find.load(row))
         if action=='mount':
             phase['inputs'].extend(click_mount());time.sleep(2.5)
         elif action=='takeoff':
@@ -73,6 +81,7 @@ def fly(folder, row, arrow, step):
                     raise RuntimeError('repeated terrain contact without route progress')
                 # The next model request sees mounted ground, remaining route
                 # distance and availability. Laya chooses takeoff or landing.
+                if graph:farm_graph.transition(graph,'flight',contact.observation,pending=pending_find.load(contact.observation))
                 continue
         elif action=='land':
             phase['smooth_descent']=descend(folder,target,site_id=arrow.get('site_id'))
@@ -86,6 +95,7 @@ def fly(folder, row, arrow, step):
         time.sleep(.3)
         after=observe(folder/f'travel_{index:02d}_after.png')
         phase['after']=after
+        if graph and action!='observe':farm_graph.transition(graph,'flight',after,pending=pending_find.load(after))
         if action=='mount' and not after['archaeology']['mounted']:
             raise RuntimeError('mount input did not produce mounted state')
         if action=='takeoff' and not after['archaeology']['flying']:

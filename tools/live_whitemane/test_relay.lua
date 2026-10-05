@@ -9,7 +9,13 @@ C_ChatInfo={SendAddonMessage=function(prefix,text,channel,target)
     assert(prefix=='WMLF1' and channel=='WHISPER' and target=='Runiir' and #text<255)
     sent[#sent+1]={at=now,text=text};return 0
 end}
-dofile('tools/live_whitemane/addon/WhitemaneLiveObserver/Relay.lua')
+local file=assert(io.open('tools/live_whitemane/addon/WhitemaneLiveObserver/Relay.lua'))
+local source=file:read('*a');file:close()
+assert((loadstring or load)(source))()
+WhitemaneLiveRelayBytes('M',{1,2,3});WhitemaneLiveRelayPump(1);assert(#sent==0,'default relay must not send server messages')
+-- Separately exercise the retained opt-in sender implementation.
+source=source:gsub('local enabled=false','local enabled=true',1)
+assert((loadstring or load)(source))()
 local bytes={0,1,2,253,254,255}
 WhitemaneLiveRelayBytes('M',bytes)
 player='Other';WhitemaneLiveRelayPump(.1);assert(#sent==0)

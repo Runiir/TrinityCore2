@@ -4,16 +4,19 @@ Runiir's Whitemane client is owned by its existing Gamescope supervisor on
 HDMI-1. Laya selects gameplay actions. Code verifies the observations and
 executes calculated physical inputs in that client's private input session.
 
-## Public observation without screenshots
+## Local public observation
 
-The observer reads normal addon APIs and sends prefix `WMLF1` addon messages
-addressed only to Runiir. The existing passive bearing reader reconstructs
-these authenticated outbound messages without saving raw captures or chat.
-The relay sends heading, world position and movement mode at approximately
-10 Hz; inventory/archaeology facts update more slowly. Journal, route, flight
-map and other visible UI controls update when they change. Fragmented UI
-updates are assembled atomically and cannot replace a complete generation
-with a partial one. Movement has a separate channel and a bounded queue.
+The observer encodes normal addon APIs in local telemetry tiles. The controller
+reads a small region of the exact owned Gamescope window on HDMI-1, decodes
+its checksums and passes structured facts to Laya. No image vision or per-frame
+PNG files are needed. The relay is disabled by default and sends zero server
+telemetry messages. Its historical opt-in implementation remains on disk.
+
+Freshness follows newly displayed M, A and UI generations using the host's
+monotonic clock. Startup requires every channel to advance. A frozen tile ages
+and stops input. Wine's GetTime can pause or catch up across loading screens,
+so it is not treated as the host clock. Movement targets stay in public world
+coordinates, with the original marker preference and inward boundary margin.
 
 After installing the observer and reloading through a recorded Laya choice,
 restart the reader once in the supervising terminal:
@@ -22,16 +25,15 @@ restart the reader once in the supervising terminal:
 bash tools/live_whitemane/start_bearing_feed.sh
 ```
 
-When the reader is ready and a complete UI generation has arrived, verify and
-activate the relay (read-only game inspection; this changes local transport):
+Activate local tiles after the recorded addon reload:
 
 ```sh
 pixi run --manifest-path tools/client_compatibility/auth/pixi.toml \
-  python -m tools.live_whitemane.addon_relay --activate
+  python -m tools.live_whitemane.telemetry_tiles --activate
 ```
 
-Relay mode does not take screenshots or silently fall back to pixels. Loss
-of current own-reader identity or fresh movement data releases input.
+The passive feed still provides authenticated owned height and telescope
+facts. Local tile mode does not silently fall back to another transport.
 The passive reader stops after 30 minutes of actual gameplay inactivity;
 telemetry messages do not reset that timer.
 
@@ -56,7 +58,7 @@ original UI head on localhost port 8004. Head identity and complete token
 budgets are checked on each request; all original action options remain
 available. CUDA warms before the service announces readiness.
 
-In relay mode, waypoint movement requests a new retained-head Laya decision
+In local tile mode, waypoint movement requests a new retained-head Laya decision
 on fresh movement samples at a target period of 100 ms. Accepted movement
 stays held until replaced, arrived, interrupted, or its decision lease
 expires. A separate input watchdog releases held keys after 350 ms without
@@ -69,14 +71,52 @@ calculated flight clearance and 150-fragment solve batches remain active.
 Normal loot-window buttons are exposed and chosen by Laya if interaction
 does not auto-loot the find.
 
-An out-of-range interaction enters a bounded approach recovery. The passive
+An out-of-range interaction keeps the same find pending. Both "Out of range."
+and "You are too far away." enter recovery. Distance-derived forward probes
+shrink toward half a yard because this realm has a small gathering radius.
+Laya retries interaction until the gathering cast starts, then waits for a
+fragment gain. Survey and travel remain blocked until pickup is confirmed.
+The latch survives addon reloads and site replacement. Minimap disappearance
+alone cannot clear it.
+
+Saved GatherMate rings remain history. Local minimap candidates become live
+finds only after normal native-tooltip confirmation. The current live find
+test was detected by its normal soft-interact name; minimap-only detection
+missed that find and is not qualified as a complete detector. A named find
+also blocks minimap clearance. Pointer/tooltip checks can fail in a background
+window; they never create a false confirmed artifact.
+
+The passive
 reader admits a visible find's CreateObject position only within eight seconds
 of Runiir's own Survey, with the exact owned character as creator and a known
 archaeology-find entry. Other objects and owners are ignored. The position
 expires after 20 seconds and must match the current reader, client and world.
 It is a rendered find position, not a server-side hidden dig destination.
 Laya receives its bearing through the existing waypoint schema; loot becomes
-available within three yards. After pickup, the find observation is discarded.
+available at a close measured approach. After pickup, the pending observation
+is discarded.
+
+## Persisted farm graph
+
+`whitemane_farm_graph_v1.json` defines the recorded transitions and guards.
+Each run keeps `graph.json` with a bounded transition history and interrupted
+state. It covers Survey, marker/telescope approach, gathering, pickup
+verification, solve batches, Tol Barad teleport, Orgrimmar portal, taxi or
+Ramkahen travel, flight, landing and combat. Key-1 combat checks the current
+hostile target, action readiness and cooldown, then resumes the interrupted
+activity. No target switching or extra combat abilities are used.
+
+Start a fresh supervised run that stops with an unopened Canopic Jar:
+
+```sh
+pixi run --manifest-path tools/client_compatibility/auth/pixi.toml \
+  python -m tools.live_whitemane.farm_loop \
+  --output /home/runiir/.local/share/trinity-whitemane-live/evidence/farm_graph_01 \
+  --stop-on canopic_jar
+```
+
+The 30-minute inactivity rule and resource bounds remain active. `--stop-on
+recipe` retains the later jar-opening and recipe-search workflow.
 
 ## Validation boundary
 
@@ -87,10 +127,11 @@ of retained-head waypoint states passed 27 of 27 cases. These are inference
 replays, not proof of the complete live farm loop. The broad original-head
 movement prompt failed 9 of 12 replay cases and is not used for control.
 
-The initial live travel and four Night Elf solves succeeded. The first find
-interaction did not confirm fragments, and no complete model-driven digsite
-or repeating farm loop has yet been established. The relay and continuous
-controller require live qualification after the reader restart.
+The initial live travel and four Night Elf solves succeeded. Later, Laya
+approached a supervisor-discovered Night Elf find and collected six fragments
+(20 to 26) after two range recoveries. The two earlier skipped finds were
+collected by the supervisor. No complete model-driven digsite or Canopic Jar
+has yet been established.
 
 The direct live observation replay subsequently completed 100 requests without
 screenshots or gameplay input. Observation plus inference took 30.9 ms median,
@@ -98,6 +139,12 @@ screenshots or gameplay input. Observation plus inference took 30.9 ms median,
 53.9 ms median and 144.6 ms maximum. At the owned client's 15 FPS idle rate,
 68 distinct movement generations were observed in those 100 request cycles.
 This does not claim a guaranteed new observation every 100 ms.
+
+The local-tile replay completed 100 requests with no input or server telemetry:
+32.4 ms median total, 43.2 ms at the 95th percentile, 151.8 ms maximum, with
+98 distinct movement generations. Extra minimap fields degraded the retained
+steering prompt in replay and were removed. The original-head pickup-priority
+question receives the signal separately, only for confirmed or pending finds.
 
 Closed public evidence is checkpointed with DVCLive and DVC. Batch 04 stores
 travel and solve evidence; batch 05 stores the stopped dig trial, GPU replay

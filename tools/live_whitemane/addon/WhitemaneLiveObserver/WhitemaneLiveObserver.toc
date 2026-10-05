@@ -4,5 +4,7 @@
 ## Version: 1.1.0
 WhitemaneLiveObserver.lua
 Snapshot.lua
+Minimap.lua
+Activity.lua
 FarmUI.lua
 Relay.lua

@@ -18,7 +18,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
     mode=runtime.ROOT/'run/observation_mode.json'
     if mode.exists():
         import json
-        if json.loads(mode.read_text()).get('transport')=='addon_relay':
+        if json.loads(mode.read_text()).get('transport') in ('addon_relay','local_tiles'):
             from .fast_waypoint import walk as continuous
             return continuous(folder,target,flying=flying,site_id=site_id,tolerance=tolerance,
                 approaching_find=approaching_find)

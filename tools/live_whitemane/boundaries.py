@@ -11,10 +11,11 @@ def sites():
     return json.loads((runtime.ROOT/'evidence/boundary_data/polygons.json').read_text())
 
 
-def constrain(row, guide):
+def constrain(row, guide,*,site_id=None):
     if not guide:return guide
     a=row['archaeology'];world=a['world']
-    site=sites().get(str(a['site_id']))
+    site_id=a['site_id'] if site_id is None else site_id
+    site=sites().get(str(site_id))
     start=[world['north'],world['west']]
     if not site or site['map']!=world['instance'] or not contains(site['polygon'],start):
         raise RuntimeError('current point does not match the active public digsite perimeter')
@@ -27,7 +28,7 @@ def constrain(row, guide):
                 'west':start[1]+math.sin(angle)*length}
         guide={**guide,'world':target,'unclipped_world':guide['world'],
                'distance_yards':round(length,2),'arrived':length<=5,'boundary_clipped':True}
-    return {**guide,'boundary_site_id':int(a['site_id'])}
+    return {**guide,'boundary_site_id':int(site_id)}
 
 
 def check_point(site_id, world):

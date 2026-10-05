@@ -160,13 +160,18 @@ local function snapshot()
     for _,name in ipairs({"INTERACTTARGET","MOVEFORWARD","TURNLEFT","TURNRIGHT","JUMP","DESCEND","PITCHUP","PITCHDOWN"}) do
         keys[name]={call(GetBindingKey,name)}
     end
+    local start,duration,enabled=call(GetSpellCooldown,80451)
+    local cooldown=call(C_Spell and C_Spell.GetSpellCooldown,80451)
+    if type(cooldown)=='table' then start,duration,enabled=cooldown.startTime,cooldown.duration,cooldown.isEnabled end
+    local ends=(start or 0)+(duration or 0)
     return {uptime=GetTime(),route=call(WhitemaneLiveCanopicRoute),actionbars=actionbars(),flyout=flyout(),
+        minimap=call(WhitemaneLiveMinimap),survey={ready=enabled~=0 and enabled~=false and ends<=GetTime(),cooldown_ends=ends},
         journal=journal(),taxi=taxi(),gossip=gossip(),loot=loot(),canopic=canopic(),tooltip=visible(GameTooltip) and tip or nil,
         cursor={x=x/(GetScreenWidth()*uiScale),y=1-y/(GetScreenHeight()*uiScale)},
         soft_interact={exists=not not call(UnitExists,"softinteract"),name=call(UnitName,"softinteract"),
                        enabled=call(GetCVar,"SoftTargetInteract")},bindings=keys,
         flyable=not not call(IsFlyableArea),indoors=not not call(IsIndoors),
-        recipe_known=not not call(IsPlayerSpell,93328)}
+        auto_loot=call(GetCVar,'autoLootDefault'),recipe_known=not not call(IsPlayerSpell,93328)}
 end
 local function quote(value)
     return '"'..value:gsub('[%z\1-\31\\"]',function(c)
@@ -197,14 +202,19 @@ panel:SetScript('OnEvent',function(_,_,code,message)lastError={code=code,message
 local function sample()
     sequence=(sequence+1)%4294967296
     local ok,result=pcall(snapshot)
+    if ok and WhitemaneLiveActivity then
+        local activity=call(WhitemaneLiveActivity)
+        for key,value in pairs(activity or {}) do result[key]=value end
+    end
     if ok and WhitemaneLiveRelayUI then
         local fast={soft_interact=result.soft_interact,tooltip=result.tooltip,
             camera_zoom=call(GetCameraZoom),error=lastError,auto_loot=call(GetCVar,'autoLootDefault'),
             frame_rate=math.floor((call(GetFramerate) or 0)+.5),
             max_fps=call(GetCVar,'maxFPS'),background_max_fps=call(GetCVar,'maxFPSBk')}
+        local cursor=result.cursor
         result.uptime=nil;result.cursor=nil;result.soft_interact=nil;result.tooltip=nil
         WhitemaneLiveRelayUI(json(result),fast,json)
-        result.uptime=GetTime();result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
+        result.uptime=GetTime();result.cursor=cursor;result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
         result.camera_zoom=fast.camera_zoom;result.error=lastError
         result.frame_rate=fast.frame_rate;result.max_fps=fast.max_fps;result.background_max_fps=fast.background_max_fps
         result.relay_status=call(WhitemaneLiveRelayStatus)

@@ -39,7 +39,17 @@ def observe(output):
     if not owner:
         raise RuntimeError('live client is absent')
     mode=runtime.ROOT/'run/observation_mode.json'
-    direct_required=mode.exists() and json.loads(mode.read_text()).get('transport')=='addon_relay'
+    setting=json.loads(mode.read_text()) if mode.exists() else {}
+    if setting.get('transport')=='local_tiles':
+        from .telemetry_tiles import observation
+        try:row=observation(extension=setting.get('extension',True))
+        except (ValueError,KeyError) as error:raise RuntimeError('local public tiles unavailable: '+str(error)) from error
+        attach_pose(row)
+        from .minimap_finds import signal
+        row['minimap_finds']=signal(row)
+        runtime.write(output.with_suffix('.json'),row)
+        return row
+    direct_required=setting.get('transport')=='addon_relay'
     if direct_required:
         # The loop never silently falls back to expensive or unavailable pixels.
         try:row=addon_relay.observation(owner,runtime.ROOT)

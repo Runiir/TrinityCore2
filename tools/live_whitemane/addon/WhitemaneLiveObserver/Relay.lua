@@ -1,5 +1,6 @@
 -- Normal public addon telemetry, self-addressed only. No gameplay actions.
 local prefix='WMLF1'
+local enabled=false -- Local telemetry tiles avoid server traffic entirely.
 local status={attempts=0,sent=0,pumps=0}
 if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
     local ok,result=pcall(C_ChatInfo.RegisterAddonMessagePrefix,prefix)
@@ -28,6 +29,7 @@ local function submit(kind,value,id)
     return id
 end
 function WhitemaneLiveRelayBytes(kind,bytes)
+    if not enabled then return end
     -- The movement panel already samples at 100 ms. A second 90 ms gate
     -- discards alternating frames when Gamescope is rendering at 15 FPS.
     local now=GetTime();local interval=kind=='M' and 0 or .35
@@ -37,6 +39,7 @@ function WhitemaneLiveRelayBytes(kind,bytes)
 end
 local uiVersion=0
 function WhitemaneLiveRelayUI(payload,fast,encode)
+    if not enabled then return end
     local now=GetTime()
     if payload~=lastPayload.U then
         uiVersion=submit('U',payload);lastPayload.U=payload;lastSent.U=now
@@ -55,6 +58,7 @@ local elapsed,budget,last=0,4096,GetTime()
 local cursor=0
 local channels={'M','A','F','U'}
 function WhitemaneLiveRelayPump(delta)
+    if not enabled then return end
     status.pumps=status.pumps+1
     elapsed=elapsed+delta;if elapsed<.05 then return end;elapsed=elapsed%.05
     local now=GetTime();budget=math.min(4096,budget+(now-last)*4096);last=now

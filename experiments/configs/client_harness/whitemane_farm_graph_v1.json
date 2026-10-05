@@ -1,0 +1,139 @@
+{
+  "schema": "whitemane_farm_graph_v1",
+  "default_stop_on": "canopic_jar",
+  "initial": "observe",
+  "edges": {
+    "observe": [
+      "observe",
+      "wait",
+      "scan_minimap",
+      "survey",
+      "approach",
+      "gather",
+      "solve",
+      "teleport",
+      "portal",
+      "taxi",
+      "flight",
+      "combat",
+      "open_jar",
+      "jar_found",
+      "recipe_found",
+      "stopped"
+    ],
+    "wait": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "scan_minimap": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "survey": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "approach": [
+      "observe",
+      "flight",
+      "combat",
+      "stopped"
+    ],
+    "gather": [
+      "verify_pickup",
+      "combat",
+      "stopped"
+    ],
+    "verify_pickup": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "solve": [
+      "observe",
+      "combat",
+      "jar_found",
+      "stopped"
+    ],
+    "teleport": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "portal": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "taxi": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "flight": [
+      "observe",
+      "dismount",
+      "land",
+      "cruise",
+      "takeoff",
+      "mount",
+      "combat",
+      "stopped"
+    ],
+    "combat": [
+      "observe",
+      "stopped"
+    ],
+    "open_jar": [
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "jar_found": [],
+    "recipe_found": [],
+    "stopped": [
+      "observe"
+    ],
+    "mount": [
+      "flight",
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "takeoff": [
+      "flight",
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "cruise": [
+      "flight",
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "land": [
+      "flight",
+      "observe",
+      "combat",
+      "stopped"
+    ],
+    "dismount": [
+      "flight",
+      "observe",
+      "combat",
+      "stopped"
+    ]
+  },
+  "guards": {
+    "travel": "No pending pickup, no confirmed minimap find, and the visible minimap check is clear.",
+    "survey": "No pending pickup and the normal Survey cooldown is ready.",
+    "gather": "A pending find, named public find, or open loot window exists.",
+    "pickup_complete": "Fragments increased after Laya's interaction.",
+    "combat": "Press only key 1 on the current hostile target when action 1 is ready; resume the interrupted state after combat.",
+    "jar_found": "A Canopic Jar is present in the bags; leave it unopened."
+  }
+}

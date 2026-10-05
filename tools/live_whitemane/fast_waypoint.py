@@ -46,7 +46,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
-        previous=None;deadline=None;index=0;decision_count=0
+        previous=None;deadline=None;index=0;decision_count=0;last_pulse=None
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
@@ -66,7 +66,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 distance=math.hypot(target['north']-world['north'],target['west']-world['west'])
                 if distance>(1500 if flying and site_id is None else 750):
                     raise RuntimeError('waypoint exceeds its bounded route range')
-                speed=m['speed'] if m['speed']>.5 else 32 if flying else 7
+                speeds=(row.get('farm_ui') or {}).get('move_speeds') or {}
+                speed=m['speed'] if m['speed']>.5 else (speeds.get('flight' if flying else 'run') or (32 if flying else 7))
                 if deadline is None:deadline=cycle+10+3*distance/speed
                 if cycle>deadline:raise RuntimeError('continuous waypoint exceeded its calculated emergency bound')
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
@@ -99,11 +100,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     age=row['channel_ages']['M']
                     remaining=(distance-tolerance-m['speed']*age)/speed
                     if m['speed']==0:remaining=max(1/30,remaining)
-                    sticky.hold('Up',remaining>0,remaining if remaining<.25 else None)
+                    pulse=remaining if remaining<.5 else None
+                    stale_position=bool(last_pulse and 'Up' not in sticky.held and
+                        math.hypot(last_pulse['north']-world['north'],last_pulse['west']-world['west'])<.15)
+                    if not stale_position:
+                        newly_pressed='Up' not in sticky.held
+                        sticky.hold('Up',remaining>0,pulse)
+                        if newly_pressed and pulse is not None:last_pulse=dict(world)
                     receipt['calculated_forward_seconds']=max(0,remaining)
                 index+=1;time.sleep(max(0,.1-(time.monotonic()-cycle)))
         finally:
             sticky.close()
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
-                'transport':'addon_relay','decision_period_seconds':.1,'input_lease_seconds':sticky.lease})
+                'transport':row['source'],'decision_period_seconds':.1,'input_lease_seconds':sticky.lease})
