@@ -1,7 +1,8 @@
 """The social oracle rejects mismatched requests, GUIDs and native outcomes."""
 import copy,struct
 import pytest
-from tools.client_compatibility.interaction_friends import wire_checks,HIGH,recovery_source_matches,FRIEND,REMOVE_NAME
+from tools.client_compatibility.interaction_friends import (wire_checks,HIGH,recovery_source_matches,
+    menu_recovery_source_matches,FRIEND,REMOVE_NAME)
 from tools.client_compatibility.world.buffer import Writer
 
 
@@ -72,3 +73,32 @@ def test_recovery_cannot_cancel_another_or_submitted_edit(field,value):
 def test_recovery_requires_every_prior_friend_outcome_to_pass():
     old,current=recovery_fixture();old['cases'][0]['oracle']['checks']['native']=False
     assert not recovery_source_matches(old,current)
+
+
+def menu_failure():
+    _,current=recovery_fixture()
+    checks={k:False for k in ['exact_modern_request','exact_native_request','exact_native_status',
+        'exact_modern_status','native_social','public_friends']}
+    checks.update({k:True for k in ['ordinary_input','friends_ready','stock_window','dialog_closed','chat_closed','clean']})
+    old={**copy.deepcopy(current),'completed':False,'finished_at':101,
+        'failure':'RuntimeError: operation did not advance: fixture.friends.recovery_remove client_or_protocol_failure',
+        'source_preflight':{'source':True},'cases':[{'id':'fixture.friends.close','status':'friend_window_closed'},
+            {'id':'fixture.friends.recovery_open','status':'friend_window_open'},
+            {'id':'fixture.friends.recovery_remove','status':'client_or_protocol_failure',
+             'input':{'kind':'chat','value':'/removefriend '+REMOVE_NAME},'oracle':{'checks':checks,'packets':[]}}]}
+    return old,current
+
+
+def test_closed_no_packet_owned_removal_failure_can_use_another_cleanup_path():
+    old,current=menu_failure();assert menu_recovery_source_matches(old,current)
+
+
+@pytest.mark.parametrize('change',['packet','another_input','changed_social','unclosed_chat','failed_preflight'])
+def test_another_removal_or_partial_native_mutation_is_not_the_same_recovery_source(change):
+    old,current=menu_failure();case=old['cases'][-1]
+    if change=='packet':case['oracle']['packets']=[{'name':'CMSG_DEL_FRIEND'}]
+    elif change=='another_input':case['input']['value']='/removefriend Harnesstwo'
+    elif change=='changed_social':case['oracle']['checks']['native_social']=True
+    elif change=='unclosed_chat':case['oracle']['checks']['chat_closed']=False
+    else:old['source_preflight']['source']=False
+    assert not menu_recovery_source_matches(old,current)

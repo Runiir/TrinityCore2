@@ -4,7 +4,9 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_social import actor
-from .interaction_control_target import click,edit
+from .interaction_control_target import click,edit,target
+from .interaction_operations import controls,point
+from .interaction_chat_player_actions import menu_click
 from .interaction_macros import require
 from .interaction_bridge_restoration import capture,restore
 from .interaction_quest_link import detail as quest_detail,saved as saved_quests
@@ -91,6 +93,24 @@ def add_dialog(t,name,label):
 
 def operation(t,packets,label,name,guid,result,expected_rows,expected_public,remove=False):
     if not remove:add_dialog(t,name,label)
+    else:
+        row=target(t,label+'.row',lambda c:c['kind']=='Button' and
+            c['name'].startswith('FriendsFrameFriendsScrollFrameButton') and c['text']==FRIEND)
+        def menu(b,a,s):
+            rows=controls(t);state,frame=t.observe('friends_remove_menu')
+            matches=[c for c in rows if c['text']=='Remove Friend' and c['enabled'] and
+                c['kind'] in ('Button','MenuItem')]
+            checks={'owned_row':row['text']==FRIEND,'ordinary_right_click':s=='menu',
+                'stock_menu':any(p in a['panels'] for p in ('ContextMenu','DropDownList1')),
+                'one_remove_control':len(matches)==1,'prepared_social_unchanged':social()==
+                    sorted(expected_rows+[[1,GUID,1,'']],key=lambda r:(r[0],r[1]))}
+            t.receipt['friend_remove_menu']={'checks':checks,'control':row,'controls':rows,'frame':frame,
+                'state':state};t.persist()
+            return {'status':'friend_remove_menu_pass' if all(checks.values()) else 'client_or_protocol_failure',
+                'oracle':{'checks':checks}}
+        require(t.step(label+'.menu','Open only the exact owned dwarf friend-row context menu.',
+            {'menu':{'kind':'click','value':point(row),'button':3,'hold':.4}},menu,diagnostic_action='menu'),
+            'friend_remove_menu_pass')
     started=time.time()
     def outcome(b,a,s):
         trace=[r for r in packets.since(started) if r['name'] in
@@ -105,9 +125,9 @@ def operation(t,packets,label,name,guid,result,expected_rows,expected_public,rem
             'oracle':{'checks':checks,'packets':trace,'expected_native_result':result,
                 'rendered_stock_message_requires_visual_review':True}}
     if remove:
-        require(t.step(label,'Remove only the disposable owned dwarf friend.',
-            {'remove':{'kind':'chat','value':'/removefriend '+REMOVE_NAME}},outcome,diagnostic_action='remove',
-            await_state=lambda s:not any(r['name']==FRIEND for r in s.get('friends') or [])),'friend_status_pass')
+        require(menu_click(t,label,'Remove Friend',outcome,
+            await_state=lambda s:not any(r['name']==FRIEND for r in s.get('friends') or [])),
+            'friend_status_pass')
     else:
         require(click(t,label,'Confirm the stock Add Friend dialog.',lambda c:c['name']=='StaticPopup1Button1' and
             c['text']=='Accept' and c.get('context')=='Enter name of friend to add:',outcome,
@@ -172,11 +192,36 @@ def recovery_source_matches(old,current):
         pending.get('observed_text')=='/removefriend '+REMOVE_NAME and pending.get('observed_focused') is True)
 
 
+def menu_recovery_source_matches(old,current):
+    cases=old.get('cases') or [];last=cases[-1] if cases else {}
+    checks=last.get('oracle',{}).get('checks',{})
+    bad={'exact_modern_request','exact_native_request','exact_native_status','exact_modern_status',
+        'native_social','public_friends'}
+    good={'ordinary_input','friends_ready','stock_window','dialog_closed','chat_closed','clean'}
+    return (old.get('completed') is False and bool(old.get('finished_at')) and
+        old.get('failure')=='RuntimeError: operation did not advance: fixture.friends.recovery_remove client_or_protocol_failure' and
+        old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
+        old.get('actor',{}).get('guid')==1 and old.get('source_preflight') and
+        all(old['source_preflight'].values()) and
+        [(r.get('id'),r.get('status')) for r in cases]==[('fixture.friends.close','friend_window_closed'),
+            ('fixture.friends.recovery_open','friend_window_open'),
+            ('fixture.friends.recovery_remove','client_or_protocol_failure')] and
+        last.get('input')=={'kind':'chat','value':'/removefriend '+REMOVE_NAME} and
+        last.get('oracle',{}).get('packets')==[] and set(checks)==bad|good and
+        all(checks[k] is False for k in bad) and all(checks[k] is True for k in good))
+
+
 def recover(t,path):
     path=path.resolve()
     if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires a closed owned friend removal failure')
-    old=json.loads(path.read_text())
+    old=json.loads(path.read_text());retry=menu_recovery_source_matches(old,t.receipt)
+    if retry:
+        parent=Path(old['source']['path']).resolve()
+        if (parent.name!='episode.json' or not parent.is_relative_to(lab.ROOT/'evidence') or
+                lab.sha256(parent)!=old['source']['sha256']):
+            raise RuntimeError('failed removal recovery parent changed')
+        old=json.loads(parent.read_text())
     if not recovery_source_matches(old,t.receipt):raise RuntimeError('friend cleanup source or owned lifetime differs')
     expected=sorted(old['original_social']+[[1,GUID,1,'']],key=lambda r:(r[0],r[1]))
     native=canonical(capture(t));base=old['native_baseline']
@@ -187,12 +232,14 @@ def recover(t,path):
         'quest_layout':quest==old['original_quest_log'],'native_quests':saved_quests(1)==old['original_native_quests'],
         'offline_owned_dwarf':offline_fixture()==old['offline_owned_dwarf'],
         'same_session':actors.session_entry(t.fixture)['session']==old['session'],
-        'exact_pending_edit':state.get('chat_edit_open') is True and state.get('chat_edit_focused') is True and
-            state.get('chat_edit_text')=='/removefriend '+REMOVE_NAME,
+        'exact_chat_layout':(not state.get('chat_edit_open') and 'FriendsFrame' in state['panels'] if retry else
+            state.get('chat_edit_open') is True and state.get('chat_edit_focused') is True and
+            state.get('chat_edit_text')=='/removefriend '+REMOVE_NAME),
         'group':state['group']==old['original_group'],'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
     t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},source_preflight=checks,
+        original_source={'path':str(parent) if retry else str(path),'sha256':lab.sha256(parent) if retry else lab.sha256(path)},
         qualified_scope='Cleanup only. Cancel the exact unsubmitted autocomplete edit and remove only the source-bound dwarf friend. No gameplay qualification.',
-        custom_script_permission='blocked_by_user');t.persist()
+        custom_script_permission='blocked_by_user',softTargetInteract=old['softTargetInteract']);t.persist()
     if not all(checks.values()):raise RuntimeError('source-bound friend cleanup fixture differs')
     close_friends(t);open_friends(t,'fixture.friends.recovery_open')
     operation(t,Packets(old['session']),'fixture.friends.recovery_remove',FRIEND,GUID,5,
