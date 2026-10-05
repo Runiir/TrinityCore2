@@ -15,7 +15,7 @@ from dvclive import Live
 from . import runtime
 
 
-def checkpoint_trial(label, trial):
+def checkpoint_trial(label, trial, include=()):
     """Archive one closed live trial using observed, rather than preset, metrics."""
     if not re.fullmatch(r'[a-zA-Z0-9_]+',label):raise ValueError('invalid batch label')
     if not (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('close the input trial before checkpointing')
@@ -53,8 +53,14 @@ def checkpoint_trial(label, trial):
         live.next_step()
     archive=runtime.REPO/'artifacts/client_harness'/f'whitemane_live_{label}.tar.gz'
     if archive.exists():raise RuntimeError('immutable checkpoint already exists')
-    files=sorted(p for root in (trial,output) for p in root.rglob('*')
-                 if p.is_file() and p.suffix in ('.json','.jsonl','.png','.tsv'))
+    files={p for root in (trial,output) for p in root.rglob('*')
+           if p.is_file() and p.suffix in ('.json','.jsonl','.png','.tsv')}
+    for root in include:
+        root=root.resolve()
+        if not root.is_relative_to(runtime.ROOT/'evidence'):raise ValueError('included file is outside public evidence')
+        paths=[root] if root.is_file() else root.rglob('*')
+        files.update(p for p in paths if p.is_file() and p.suffix in ('.json','.jsonl','.png','.tsv'))
+    files=sorted(files)
     with tarfile.open(archive,'w:gz') as handle:
         for path in files:handle.add(path,arcname=str(path.relative_to(runtime.ROOT)),recursive=False)
     return {'archive':str(archive),'public_evidence_files':len(files),'bytes':archive.stat().st_size,'metrics':metrics}
@@ -102,5 +108,6 @@ def checkpoint(label):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--label',required=True)
     parser.add_argument('--trial',type=Path)
+    parser.add_argument('--include',type=Path,action='append',default=[])
     args=parser.parse_args()
-    print(json.dumps(checkpoint_trial(args.label,args.trial) if args.trial else checkpoint(args.label)))
+    print(json.dumps(checkpoint_trial(args.label,args.trial,args.include) if args.trial else checkpoint(args.label)))
