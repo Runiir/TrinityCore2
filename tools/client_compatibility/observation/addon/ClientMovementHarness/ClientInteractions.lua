@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=116,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=117,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -768,7 +768,7 @@ local function update()
             if equipmentTick%2==0 then
                 if AddonList and AddonList:IsVisible() then autoPage=-10
                 elseif MacroFrame and MacroFrame:IsVisible() then autoPage=-9
-                elseif SettingsPanel and SettingsPanel:IsVisible() then autoPage=-8
+                elseif Client442ShouldObserveSettings(SettingsPanel,equipmentTick) then autoPage=-8
                 elseif DressUpFrame and DressUpFrame:IsVisible() then autoPage=-4
                 elseif AchievementFrame and AchievementFrame:IsVisible() then autoPage=-5
                 elseif PaperDollFrame and PaperDollFrame:IsVisible() then autoPage=-2

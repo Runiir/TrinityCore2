@@ -60,7 +60,7 @@ def select(t,index,label):
 
 def suite(t):
     state,_=t.observe('discard_fixture')
-    if state.get('observer_version',0)<116:raise RuntimeError('requires read-only settings observer116')
+    if state.get('observer_version',0)<117:raise RuntimeError('requires read-only settings observer117, including hidden-panel reads')
     t.receipt.update(custom_script_permission='blocked_by_user',qualified_scope='Owned primary: lower pending render-scale step without Apply, Close confirmation Cancel preserving the pending change, then Close and Discard and Exit restoring the original public CVar and proxy without applying the change. Original settings layout and native fixture restore. Other discard dialogs, defaults and persistence remain open.');t.persist()
     t.settings_search=open_search(t);layout=detail(t,'discard_layout_baseline');t.render_layout=layout
     t.original,pending=scale(layout)
@@ -86,12 +86,45 @@ def suite(t):
         restore(t,layout)
 
 
+def recovery_matches(old,current):
+    checks=old.get('native_restoration',{}).get('checks',{})
+    expected={'resources','stats','spells','actions','pose','afk','position','group','no_lua_errors','no_blocked_actions'}
+    return (old.get('finished_at') and old.get('completed') is False and
+        old.get('failure')=='RuntimeError: settings diagnostic did not become visible' and
+        old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
+        set(checks)==expected and all(checks.values()) and
+        isinstance(old.get('native_baseline'),dict) and
+        json.dumps(old.get('native_baseline'),sort_keys=True)==json.dumps(current.get('native_baseline'),sort_keys=True))
+
+
+def recover(t,source):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires an owned closed failed discard episode')
+    old=json.loads(source.read_text())
+    if not recovery_matches(old,t.receipt):raise RuntimeError('failed source native fixture or runtime differs')
+    state,_=t.observe('discard_recovery_fixture')
+    if state.get('observer_version',0)<117:raise RuntimeError('requires hidden-panel observer117')
+    layout=old['render_layout_baseline'];original,_=scale(layout)
+    t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},custom_script_permission='blocked_by_user',
+        qualified_scope='Cleanup only: reopen the stock Settings panel after the source-bound failed discard trial, verify original applied/proxy values and restore original layout. No new gameplay qualification.')
+    t.persist();t.settings_search=open_search(t);current=detail(t,'discard_recovery_open')
+    checks=value_checks(current,layout,original,original,False)
+    t.receipt['discard_recovery_value_checks']=checks;t.persist()
+    if not all(checks.values()) or current.get('discard_dialogs'):
+        raise RuntimeError('discard recovery requires the original values already restored')
+    t.render_layout=layout;restore(t,layout)
+
+
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--recover-source',type=Path);a=p.parse_args()
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
         t=SettingsTrial(a.output,controller='code')
-        try:native_suite(t,operations=suite,preserve_settings=False);t.receipt['completed']=True
+        try:
+            operations=(lambda t:recover(t,a.recover_source)) if a.recover_source else suite
+            native_suite(t,operations=operations,preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({k:t.receipt[k] for k in ['completed','failure']}),flush=True)
 

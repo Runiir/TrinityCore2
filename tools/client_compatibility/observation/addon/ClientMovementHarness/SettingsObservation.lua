@@ -3,6 +3,9 @@ local function call(fn,...)
     if type(fn)~='function' then return nil end
     local ok,a=pcall(fn,...);if ok then return a end
 end
+function Client442ShouldObserveSettings(panel,tick)
+    return panel and (panel:IsVisible() or tick%10==0) or false
+end
 function Client442ObserveSettings()
     local panel=SettingsPanel
     local category=panel and call(panel.GetCurrentCategory,panel)
