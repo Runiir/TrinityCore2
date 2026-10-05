@@ -28,7 +28,9 @@ local function submit(kind,value,id)
     return id
 end
 function WhitemaneLiveRelayBytes(kind,bytes)
-    local now=GetTime();local interval=kind=='M' and .09 or .35
+    -- The movement panel already samples at 100 ms. A second 90 ms gate
+    -- discards alternating frames when Gamescope is rendering at 15 FPS.
+    local now=GetTime();local interval=kind=='M' and 0 or .35
     if now-(lastSent[kind] or 0)<interval then return end
     local value={};for _,byte in ipairs(bytes) do value[#value+1]=string.char(byte) end
     submit(kind,table.concat(value));lastSent[kind]=now

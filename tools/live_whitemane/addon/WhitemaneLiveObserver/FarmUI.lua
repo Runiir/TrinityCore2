@@ -200,7 +200,8 @@ local function sample()
     if ok and WhitemaneLiveRelayUI then
         local fast={soft_interact=result.soft_interact,tooltip=result.tooltip,
             camera_zoom=call(GetCameraZoom),error=lastError,auto_loot=call(GetCVar,'autoLootDefault'),
-            frame_rate=call(GetFramerate),max_fps=call(GetCVar,'maxFPS'),background_max_fps=call(GetCVar,'maxFPSBk')}
+            frame_rate=math.floor((call(GetFramerate) or 0)+.5),
+            max_fps=call(GetCVar,'maxFPS'),background_max_fps=call(GetCVar,'maxFPSBk')}
         result.uptime=nil;result.cursor=nil;result.soft_interact=nil;result.tooltip=nil
         WhitemaneLiveRelayUI(json(result),fast,json)
         result.uptime=GetTime();result.soft_interact=fast.soft_interact;result.tooltip=fast.tooltip
