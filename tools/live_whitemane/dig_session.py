@@ -133,7 +133,7 @@ def run(args):
                     {'x':640,'y':350,'button':8})]
                 time.sleep(2)
             elif action in ('turn_left','turn_right'):
-                hold,step['turn_calibration']=turn_duration(error,session['steps'][:-1])
+                hold,step['turn_calibration']=turn_duration(error,session.get('turn_history',[])+session['steps'][:-1])
                 step['inputs']=[inputs.execute('World of Warcraft','key',
                     {'key':'Left' if action=='turn_left' else 'Right','hold':hold})]
             elif action in ('forward_short','forward_long'):
