@@ -36,7 +36,10 @@ def targeted(payload,player=None):
     try:channel=r.guid();recipient=r.guid();r.unpack('I')
     except ValueError as error:
         raise ValueError(f'own relay recipient GUID fields truncated: bytes={len(payload)} position={r.pos}') from error
-    name_size=r.bits(7);channel_size=r.bits(7)
+    # This owned 60895 client uses nine-bit dynamic target-name lengths.
+    # Seven-bit parsing reports name=1/channel=96 with only eight bytes left;
+    # nine-bit parsing restores the exact self name and packet boundary.
+    name_size=r.bits(9);channel_size=r.bits(9)
     try:
         name=r.raw(name_size).rstrip(b'\0') if name_size>1 else b''
         channel_name=r.raw(channel_size).rstrip(b'\0') if channel_size>1 else b''

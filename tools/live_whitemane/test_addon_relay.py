@@ -11,7 +11,7 @@ from . import addon_relay as relay, snapshot, observe, runtime
 def targeted(text, *, prefix=relay.PREFIX, name=b'Runiir\0', recipient=(0,0), logged=0):
     return (Writer().bits(len(prefix),5).bits(len(text),8).bits(logged,1).pack('i',7)
         .raw(prefix).raw(text).guid().guid(*recipient).pack('I',0)
-        .bits(len(name),7).bits(0,7).raw(name).finish())
+        .bits(len(name),9).bits(0,9).raw(name).finish())
 
 
 def movement(uptime=1000):
