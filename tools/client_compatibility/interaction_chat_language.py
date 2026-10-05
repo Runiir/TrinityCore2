@@ -94,7 +94,7 @@ def send(t,session,id,label):
             ('to_client','SMSG_CHAT',True,True)]:
             values=[response(r['body'],modern) if reply else request(r['body'],modern)
                 for r in packets if r.get('direction')==direction and r.get('name')==name]
-            expected=(1,id,1,token) if reply else (id,token)
+            expected=(1,id,t.fixture['guid'],token) if reply else (id,token)
             checks[direction+'.exact_language_text']=bool(values) and all(v==expected for v in values)
             decoded.append({'direction':direction,'name':name,'decoded':values,'expected':expected})
         return {'status':'owned_stock_language_pass' if all(checks.values()) else 'client_or_protocol_failure',

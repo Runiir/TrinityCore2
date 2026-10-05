@@ -79,6 +79,7 @@ def play(t):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.error('Nonracial language teaching remains Common-only at both1/300 and300/300. CLI quarantined; use the native racial fixture. Exact source-bound cleanup remains available.')
     t=Trial(a.output,controller='code')
     try:native_suite(t,operations=play,preserve_settings=False)
     except Exception as error:
