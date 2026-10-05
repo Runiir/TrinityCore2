@@ -103,6 +103,7 @@ def variants(t):
                 raise RuntimeError('failed recipe restoration source differs')
             t.receipt['recipe_fixture_restore_source']={'path':str(source),'sha256':lab.sha256(source)};t.persist()
             restore_selection(t,old['recipe_variant_contract']['baseline'])
+            t.receipt['recipe_fixture_recovered_layout']=t.receipt.pop('recipe_layout_restoration');t.persist()
         baseline,frame=t.observe('recipe_variant_baseline');t.recipe_before=baseline
         selected=baseline.get('selected_recipe',{});reagents=baseline.get('recipe_reagents') or []
         catalogs,digest=items([PRODUCT,*REAGENTS]);control=target(t,'recipe_original_filter',lambda c:c['name']==FILTER)
