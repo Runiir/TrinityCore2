@@ -66,9 +66,19 @@ def cycle(t,with_cast):
                 'cast_success_enabled':bool(result['cast_success_enabled'] and result['cast_success_enabled'][0] is True)}
             return {'status':'owned_cast_filter_enabled' if all(checks.values()) else 'client_or_protocol_failure',
                 'oracle':{'checks':checks,'public':result}}
-        require(click(t,'fixture.enable_owned_spell_casting','Enable Spell Casting only on the disposable copy.',lambda c:
+        def casting_group(b,a,s):
+            result=probe(t,'owned_combat_cast_group_enabled')
+            checks={'ordinary_checkbox':s,'owned_only':result['filter_name']==NAME and result['settings_filter']==original_count+1,
+                'success_child_enabled_unchecked':bool(result['cast_success_enabled'] and
+                    type(result['cast_success_enabled'][0]) is int and result['cast_success_enabled'][0]==2)}
+            return {'status':'owned_cast_group_enabled' if all(checks.values()) else 'client_or_protocol_failure',
+                'oracle':{'checks':checks,'public':result}}
+        require(click(t,'fixture.enable_owned_spell_casting','Enable the Spell Casting group on the disposable copy.',lambda c:
             c['name']=='CombatConfigMessageTypesRightCheckbox2' and c['text']=='Spell Casting' and
-            c.get('checked') is False,enabled),'owned_cast_filter_enabled')
+            c.get('checked') is False,casting_group),'owned_cast_group_enabled')
+        require(click(t,'fixture.enable_owned_cast_success','Select the enabled Success child on the disposable copy.',lambda c:
+            c['name']=='CombatConfigMessageTypesRightCheckbox2_2' and c['text']=='Success' and
+            c.get('enabled') is True and c.get('checked') is False,enabled),'owned_cast_filter_enabled')
         closed(t,'fixture.save_owned_combat_filter');log_tab(t,'fixture.show_owned_filter_log')
         def activated(b,a,s):
             result=probe(t,'owned_combat_filter_activated')
