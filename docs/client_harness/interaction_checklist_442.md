@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 391 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 392 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -771,7 +771,7 @@ Fixture: `saved_local_settings`.
 - [x] `settings.floating_combat_text` (qualified variant; [evidence](#stock_interface_boolean_settings))
 - [x] `settings.auto_loot` (qualified variant; [evidence](#stock_boolean_settings_roundtrip))
 - [x] `settings.tutorials` (qualified variant; [evidence](#stock_interface_boolean_settings))
-- [ ] `settings.addons`
+- [x] `settings.addons` (qualified variant; [evidence](#owned_addons_version_check_roundtrip))
 - [ ] `settings.apply`
 - [ ] `settings.cancel`
 - [x] `settings.defaults_cancel` (qualified variant; [evidence](#owned_defaults_cancel))
@@ -2707,3 +2707,13 @@ Remaining limits: Checkbox only. Original historical0 remains unrestored at1 by 
   Checked cases: `settings.keyboard_controls.change` (stock_control_setting_pass), `settings.keyboard_controls.restore` (stock_control_setting_pass).
 - [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/stock_controls_whole_review.json`, SHA-256 `23665dbf1452410bf9822b7a93477265141b575c7fcbc62f8d618b0e01bee8ea`.
 - [442_interactions_20261005_89.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_89.tar.gz.dvc), member `evidence/client_interactions_20261005_ui89/custom_script_boundary.json`, SHA-256 `253571aa007d39691fae06c1c5acb9c87a793fb46e886eebb9c11ec272674d90`.
+
+### owned_addons_version_check_roundtrip
+
+Owned primary observer114: stock Load out of date AddOns checkbox false-to-true-to-false, with public version-check flag true-to-false-to-true. Both owned addon enable rows stay loaded/all-character enabled. Four layout, seven settings and ten native fixture checks restore; ordinary Cancel closes the restored panel.
+
+Remaining limits: Version-check checkbox only. Effective out-of-date addon loading, reload/apply, addon enabling/disabling, character selection and preference persistence remain open. UI90 three failures and UI91 short-click disable failure remain whole failed/excluded; the stock DisableAddOn call leaves the requested row checked. Custom scripts stay blocked and historical softTargetInteract0 remains unrestored at1.
+
+- [442_interactions_20261005_91.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_91.tar.gz.dvc), member `evidence/client_interactions_20261005_ui91/addons_version_check01/episode.json`, SHA-256 `3ce52a00eb1ff587b8c91f3ecba72aac9f5b39b06e0f34100489e70735f520eb`.
+  Checked cases: `settings.addons.pending_version_check_change` (addons_version_check_pass), `settings.addons.pending_version_check_restore` (addons_version_check_pass).
+- [442_interactions_20261005_91.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_91.tar.gz.dvc), member `evidence/client_interactions_20261005_ui91/addons_version_check_whole_review.json`, SHA-256 `96d7c393d743d7d33451512b20fbcce5fe0bb080b579d8d1cb81a9eee98a75b2`.
