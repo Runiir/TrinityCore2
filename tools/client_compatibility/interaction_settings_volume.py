@@ -34,6 +34,14 @@ def value(probe):
     return actual
 
 
+def layout_checks(current,original):
+    checks={k:current.get(k)==original.get(k) for k in ('search','category','values','unapplied')}
+    checks['cvars']=(current['cvars'].keys()==original['cvars'].keys() and
+        all(current['cvars'][k]==v for k,v in original['cvars'].items() if k!='Sound_MasterVolume') and
+        abs(value(current)-value(original))<1e-6)
+    return checks
+
+
 def step_volume(t,layout,direction,label):
     if direction not in (-1,1):raise ValueError('Master Volume step direction must be -1 or 1')
     before=detail(t,label+'_before');original=value(layout);previous=value(before)
@@ -101,7 +109,7 @@ def inspect(t,exercise=False):
                 click_control(t,'fixture.restore_volume_category',control,lambda a:
                     detail(t,'volume_category_restored')['category']==layout['category'],'settings_category_restored')
             current=detail(t,'volume_layout_restored')
-            checks={k:current.get(k)==layout.get(k) for k in ('search','category','cvars','values','unapplied')}
+            checks=layout_checks(current,layout)
             t.receipt['volume_layout_restoration']={'checks':checks};t.persist()
             if not all(checks.values()):raise RuntimeError('original volume settings layout differs')
             close=target(t,'fixture.close_volume_recon',lambda c:c['kind']=='Button' and c['text']=='Close')
