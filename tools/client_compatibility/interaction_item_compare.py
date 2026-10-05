@@ -12,7 +12,6 @@ from .interaction_observation import read_page,read_current_page
 from .observation.inventory import Inventory
 from .interaction_control_target import target
 from .interaction_keybindings_native import suite as native_suite
-from .interaction_macros import require
 
 
 def identity(tip):
@@ -40,21 +39,22 @@ def suite(t,bag_contracts=False):
         state,frame=read_page(t,'comparison_page','tooltip','/tcui tooltip');selected=True
         if state['tooltip_probe']['shift_down']:raise RuntimeError('private Shift is already held')
         if bag_contracts:
-            def hover_outcome(b,a,s):
-                state,frame=read_current_page(t,'bag_item_tooltip','tooltip',lambda a:
-                    a['tooltip_probe']['visible'] and identity(a['tooltip_probe'])==stored['id'])
-                probe=state['tooltip_probe']
-                checks={'ordinary_hover':s=='hover','visible':probe['visible'],
-                    'backpack_identity':identity(probe)==stored['id'],
-                    'native_catalog_name':probe.get('item_name')==catalog[stored['id']]['name'],
-                    'owner':probe.get('owner')==control['name'],'without_shift':not probe['shift_down'],
-                    'complete_native_fixture':stable(baseline())==original,
-                    'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
-                return {'status':'stock_bag_tooltip_pass' if all(checks.values()) else 'client_or_protocol_failure',
-                    'oracle':{'checks':checks,'public':probe,'frame':frame}}
-            require(t.step('bags.item_tooltip','Inspect the owned backpack sword with an ordinary hover.',
-                {'hover':{'kind':'hover','value':point(control),'description':'Hover the observed backpack sword.'}},
-                hover_outcome,diagnostic_action='hover'),'stock_bag_tooltip_pass')
+            # Tooltip mode is pinned. Record the physical hover directly,
+            # as below for comparison, without waiting for an absent state page.
+            case={'id':'bags.item_tooltip','time':time.time(),'status':'started',
+                'selected':'hover','ordinary_input':{'hover':point(control)},'before_frame':frame}
+            t.receipt['cases'].append(case);t.persist();t.io.move(*point(control));time.sleep(.8)
+            state,frame=read_current_page(t,'bag_item_tooltip','tooltip',lambda a:
+                a['tooltip_probe']['visible'] and identity(a['tooltip_probe'])==stored['id'])
+            probe=state['tooltip_probe']
+            checks={'visible':probe['visible'],'backpack_identity':identity(probe)==stored['id'],
+                'native_catalog_name':probe.get('item_name')==catalog[stored['id']]['name'],
+                'owner':probe.get('owner')==control['name'],'without_shift':not probe['shift_down'],
+                'complete_native_fixture':stable(baseline())==original,
+                'clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+            case.update(status='stock_bag_tooltip_pass' if all(checks.values()) else 'client_or_protocol_failure',
+                oracle={'checks':checks,'public':probe},frame=frame);t.persist()
+            if not all(checks.values()):raise RuntimeError('bag tooltip identity or native fixture differs')
         case={'id':'bags.compare_tooltip' if bag_contracts else 'character.compare_items','time':time.time(),'status':'started',
             'goal':'Compare the owned backpack sword to the currently equipped sword.',
             'selected':'shift_hover','ordinary_input':{'modifier':'shift','hover':point(control)}}
