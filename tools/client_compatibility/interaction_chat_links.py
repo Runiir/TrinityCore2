@@ -9,6 +9,7 @@ from .interaction_operations import point
 from .interaction_macros import require
 from .interaction_spellbook_navigation import detail as book_detail,known
 from .interaction_stance_bar import restored_native_state
+from .interaction_spellbook_actions import cast as normal_cast
 from .observation.inventory import Inventory
 
 
@@ -48,7 +49,7 @@ def bag(t):
     if oracle.slot(0,10)!=item:raise RuntimeError('linking changed the native owned item')
 
 
-def spell(t):
+def spell(t,with_cast=False):
     learned={r[0] for r in known(t.fixture['guid']) if r[1:]==[1,0]}
     require(t.step('fixture.open_link_spellbook','Open the stock spellbook.',
         {'open':{'kind':'key','value':'p','description':'Open the installed stock spellbook.'}},
@@ -72,6 +73,9 @@ def spell(t):
         t.receipt['link_spell_fixture']=row;t.persist()
         control=target(t,'native_known_link_spell',lambda c:c['name']==row['button'])
         insert(t,'spell',row['id'],control)
+        if with_cast:
+            t.execute({'kind':'key','value':'p'})
+            normal_cast(t,learned,actors.session_entry(t.fixture)['session'])
     finally:
         state,_=t.observe('link_book_cleanup')
         if 'SpellBookFrame' not in state['panels']:t.execute({'kind':'key','value':'p'})
@@ -110,11 +114,14 @@ def recovered(t,source):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--kind',choices=['bag','spell'],required=True)
-    p.add_argument('--recover-source',type=Path);a=p.parse_args()
+    p.add_argument('--recover-source',type=Path)
+    p.add_argument('--normal-cast',action='store_true',help='Also verify the unchanged ordinary right-click cast and cancel its self-buff')
+    a=p.parse_args()
     if a.recover_source and a.kind!='spell':p.error('recovery applies only to the closed spell-link source')
+    if a.normal_cast and (a.kind!='spell' or a.recover_source):p.error('ordinary cast regression requires a fresh spell trial')
     t=Trial(a.output,controller='code')
     try:
-        operation=(lambda t:recovered(t,a.recover_source)) if a.recover_source else bag if a.kind=='bag' else spell
+        operation=(lambda t:recovered(t,a.recover_source)) if a.recover_source else bag if a.kind=='bag' else lambda t:spell(t,a.normal_cast)
         native_suite(t,operations=operation,preserve_settings=False);t.receipt['completed']=True
     except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
     finally:t.receipt['finished_at']=time.time();t.persist();print(json.dumps({'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
