@@ -12,8 +12,8 @@ end}
 dofile('tools/live_whitemane/addon/WhitemaneLiveObserver/Relay.lua')
 local bytes={0,1,2,253,254,255}
 WhitemaneLiveRelayBytes('M',bytes)
-player='Other';frame.update(nil,.1);assert(#sent==0)
-player='Runiir';now=now+.1;frame.update(nil,.1)
+player='Other';WhitemaneLiveRelayPump(.1);assert(#sent==0)
+player='Runiir';now=now+.1;WhitemaneLiveRelayPump(.1)
 assert(sent[1].text:match('AAEC/f7/'))
 WhitemaneLiveRelayUI(string.rep('x',12000),{},function(f)return '{"ui_version":'..f.ui_version..'}' end)
 local start=now;local latestM,completedU,messages=0,false,0
@@ -21,7 +21,7 @@ for i=1,600 do
     now=start+i/30
     if i%3==0 then WhitemaneLiveRelayBytes('M',bytes) end
     if i%12==0 then WhitemaneLiveRelayBytes('A',bytes) end
-    frame.update(nil,1/30)
+    WhitemaneLiveRelayPump(1/30)
 end
 for _,row in ipairs(sent) do
     if row.text:sub(1,1)=='M' then latestM=row.at end

@@ -1,6 +1,6 @@
 -- Normal public addon telemetry, self-addressed only. No gameplay actions.
 local prefix='WMLF1'
-local status={attempts=0,sent=0}
+local status={attempts=0,sent=0,pumps=0}
 if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
     local ok,result=pcall(C_ChatInfo.RegisterAddonMessagePrefix,prefix)
     status.register_result=ok and tostring(result) or 'registration error'
@@ -41,10 +41,11 @@ function WhitemaneLiveRelayUI(payload,fast,encode)
         submit('F',value);lastPayload.F=value;lastSent.F=now
     end
 end
-local pump=CreateFrame('Frame');local elapsed,budget,last=0,4096,GetTime()
+local elapsed,budget,last=0,4096,GetTime()
 local cursor=0
 local channels={'M','A','F','U'}
-pump:SetScript('OnUpdate',function(_,delta)
+function WhitemaneLiveRelayPump(delta)
+    status.pumps=status.pumps+1
     elapsed=elapsed+delta;if elapsed<.05 then return end;elapsed=elapsed%.05
     local now=GetTime();budget=math.min(4096,budget+(now-last)*4096);last=now
     local self=UnitName('player');if self~='Runiir' then return end
@@ -68,4 +69,4 @@ pump:SetScript('OnUpdate',function(_,delta)
             end
         end
     end
-end)
+end
