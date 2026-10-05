@@ -97,11 +97,13 @@ def observation(extension=True):
         if _clock is None:_clock=GenerationClock(generations)
         else:_clock.update(generations,now)
         ages=_clock.ages(now)
-        if ages is not None:break
-        if now>deadline:raise ValueError('local tiles did not produce fresh M, A and UI generations')
+        limits={'M':.75,'A':2,'F':2}
+        stale=next((key for key,limit in limits.items() if ages is not None and not 0<=ages[key]<=limit),None)
+        if ages is not None and stale is None:break
+        if now>deadline:
+            if stale:raise ValueError('stale local '+stale+' tile')
+            raise ValueError('local tiles did not produce fresh M, A and UI generations')
         time.sleep(.025)
-    for key,limit in [('M',.75),('A',2),('F',2)]:
-        if not 0<=ages[key]<=limit:raise ValueError('stale local '+key+' tile')
     if extension:a.update(m.pop('live_archaeology'))
     source='normal_public_addon_api_local_telemetry_tiles';m['source']=source
     return {'observed_at':started,'runtime':owner,'movement':m,'archaeology':a,'farm_ui':ui,
