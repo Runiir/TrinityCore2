@@ -29,7 +29,8 @@ def select(row, session, tool):
             endpoint=saved['world'];color=saved['color']
             distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
             heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
-            guide={**saved,'distance_yards':round(distance,2),'arrived':distance<=3}
+            tolerance=6 if saved['color']=='red' else 4 if saved['color']=='yellow' else 3
+            guide={**saved,'distance_yards':round(distance,2),'arrived':distance<=tolerance}
             error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
             guide['heading_relative_to_player']='aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'
             return guide,error

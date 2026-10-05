@@ -16,6 +16,7 @@ def observation(north, *, flying=False, mounted=True):
 def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeypatch, tmp_path):
     ground=observation(0)
     air=observation(0,flying=True)
+    air['owned_pose']={'height_yards':100}
     contact=observation(40)
     near_air=observation(100,flying=True)
     near_ground=observation(100)
@@ -40,6 +41,12 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
         return []
     monkeypatch.setattr(flight,'walk',walk)
     monkeypatch.setattr(flight,'descend',lambda *args,**kwargs:[])
+    monkeypatch.setattr(flight.clearance,'plan',lambda *args:{'ceiling_yards':100})
+    ascents=[]
+    def ascend(*args,**kwargs):
+        ascents.append(args[1])
+        return []
+    monkeypatch.setattr(flight,'ascend',ascend)
     step={}
     flight.fly(tmp_path,ground,{'endpoint':arrived['archaeology']['world'],'site_id':183},step)
     phases=step['travel_decisions']
@@ -49,4 +56,5 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
     assert requests[2]['mounted'] and not requests[2]['flying']
     assert not requests[2]['at_route_height']
     assert len(calls)==2
-    assert phases[2]['inputs'][0]['arguments']['hold']==2
+    assert ascents==[100,100]
+    assert not phases[2]['inputs']

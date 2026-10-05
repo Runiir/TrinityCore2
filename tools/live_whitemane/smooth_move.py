@@ -132,3 +132,53 @@ def descend(folder,target,*,site_id=None):
             runtime.write(folder/'smooth_descent.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':rows,
                 'ground_confirmed':ground_samples>=2})
+
+
+def ascend(folder, ceiling, *, site_id=None):
+    """Hold ascent until live height and measured climb rate predict clearance."""
+    from tools.second_client import ctl
+    from tools.client_compatibility import native_input_adapter
+    from .clearance import remaining_seconds
+    ctl._launcher_env=runtime.client_environment
+    native_input_adapter.lab=runtime;native_input_adapter.control=native_control
+    with (runtime.ROOT/'run/input.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
+        code,_=sender._keycode(sender.XK.string_to_keysym('space'))
+        held=False;rows=[];started=time.time();last_height=None;stalled=0
+        try:
+            for index in range(40):
+                row=observe(folder/f'ascent_{time.time_ns()}.png')
+                m,a=row['movement'],row['archaeology'];pose=row.get('owned_pose')
+                if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
+                        or m['in_combat'] or m['on_taxi'] or m['health_percent']<90 or a['casting']
+                        or not a['mounted'] or a['falling'] or a['swimming'] or not pose):
+                    raise RuntimeError('calculated ascent lost a healthy owned height observation')
+                if site_id is not None:check_point(site_id,a['world'])
+                if time.time()-started>15:raise RuntimeError('calculated ascent exceeded its emergency bound')
+                seconds=remaining_seconds(pose,ceiling)
+                gap=ceiling-pose['height_yards']
+                rows.append({'observed_at':row['observed_at'],'pose':pose,
+                             'height_gap_yards':gap,'calculated_seconds_remaining':seconds})
+                # Stop before the observed position reaches the target when
+                # measured velocity predicts the remaining telemetry delay.
+                if a['flying'] and gap<=.5:
+                    return rows
+                if held and a['flying'] and seconds is not None and seconds<=pose['age_seconds']:
+                    sender._send(sender.X.KeyRelease,code);held=False
+                    time.sleep(.15)
+                    continue
+                if held and last_height is not None:
+                    stalled=stalled+1 if pose['height_yards']<=last_height+.1 else 0
+                    if stalled>=6:raise RuntimeError('calculated ascent made no height progress')
+                last_height=pose['height_yards']
+                if not held:sender._send(sender.X.KeyPress,code);held=True
+                time.sleep(.1)
+            raise RuntimeError('calculated ascent did not reach route clearance')
+        finally:
+            if held:sender._send(sender.X.KeyRelease,code)
+            sender.close()
+            runtime.write(folder/f'smooth_ascent_{time.time_ns()}.json',{
+                'identity':identity,'sender':sender.initialization,'started_at':started,
+                'finished_at':time.time(),'ceiling_yards':ceiling,'observations':rows,
+                'fixed_ascent_duration':None})

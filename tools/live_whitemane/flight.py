@@ -4,13 +4,14 @@ import time
 from . import inputs, runtime
 from .observe import observe
 from .decisions import choose
-from .smooth_move import walk, descend, GroundContact
+from .smooth_move import walk, descend, ascend, GroundContact
+from . import clearance
 from tools.client_compatibility import travel_policy
 
 
 def fly(folder, row, arrow, step):
     receipts=[]; phases=[]; at_height=False; previous_phase=None
-    contacts=[]
+    contacts=[]; height_plan=None
     step['travel_decisions']=phases
     target=arrow['endpoint']
     def click_mount():
@@ -26,6 +27,12 @@ def fly(folder, row, arrow, step):
             raise RuntimeError('flight observation or world instance changed')
         remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
         if remaining>750: raise RuntimeError('addon line endpoint exceeds local digsite range')
+        if remaining>6 and height_plan is None:
+            height_plan=clearance.plan(row,target)
+            step['height_plan']=height_plan
+        if height_plan:
+            pose=row.get('owned_pose')
+            at_height=bool(pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
         flags={'mode':'flight','available':m['in_world'] and m['health_percent']>=90 and not (m['dead'] or m['in_combat']),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,
@@ -42,8 +49,8 @@ def fly(folder, row, arrow, step):
         if action=='mount':
             phase['inputs'].extend(click_mount());time.sleep(2.5)
         elif action=='takeoff':
-            phase['inputs'].append(key('space',2));at_height=True
-            phase['height_basis']='bounded ascent then public IsFlying confirmation; absolute altitude unavailable'
+            phase['smooth_ascent']=ascend(folder,height_plan['ceiling_yards'],site_id=arrow.get('site_id'))
+            phase['height_basis']='calculated reference corridor clearance and authenticated owned climb feedback'
         elif action=='cruise':
             try:
                 phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'))
@@ -53,6 +60,7 @@ def fly(folder, row, arrow, step):
                 phase.update(outcome='terrain_contact_reobserve',
                              after=contact.observation,inputs_released=True)
                 at_height=False
+                height_plan=None
                 if len(contacts)>=3 and all(math.hypot(p['north']-landed['north'],p['west']-landed['west'])<3
                                             for p in contacts[-3:]):
                     raise RuntimeError('repeated terrain contact without route progress')

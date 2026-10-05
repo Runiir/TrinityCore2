@@ -75,13 +75,27 @@ The resumed Bael Modan trial aligned to the first marker in one calculated
 turn and made a continuous flight along the authenticated, boundary-clipped
 telescope line. Its low ascent reached rising terrain before the endpoint.
 The movement controller released input and stopped; no pickup is attributed
-to that flight. Flight now treats safe mounted ground contact as an observation
-for Laya's next travel choice, resets its route-height estimate, and stops after
-three contacts without three yards of progress. Laya's takeoff action holds
-ascent for two seconds. This is a bounded clearance estimate, not a measured
-height above terrain. A synthetic recovery test verifies that ground contact
-requests a fresh Laya choice before any further input; nine Python tests pass.
-The live recovery remains to be qualified.
+to that flight. Flight treats safe mounted ground contact as an observation
+for Laya's next travel choice and stops after three contacts without three
+yards of progress. An intermediate two-second ascent reached the endpoint and
+confirmed landing, then encountered an inconsistent arrival radius. The user
+rejected fixed ascent timing; it has been removed. Red telescope arrival now
+uses the same six-yard radius as flight braking.
+
+Ascent now holds continuously toward a calculated route ceiling. Public legacy
+MAPS/VMAP corridor samples provide its height requirement, with an eight-yard
+body and sampling margin. The reference departure floor must agree with live
+height within 2.5 yards. These are older reference assets; their identity has
+not been matched to Whitemane's streamed terrain. Unknown or mismatched data
+stops ascent. The new passive feed exports only authenticated owned-player
+numeric movement heights and a bounded sixteen-sample window. Addon XY, flight
+state, process lifetime and freshness bind that signal to Runiir. Measured
+vertical velocity determines remaining climb time; release is followed by
+observed clearance confirmation. No fixed ascent duration is used. Nineteen
+Python tests pass, including continuous hold/release, lost-height release,
+terrain recovery, socket ownership and channel authentication failure cases.
+The running reader needs a restart before this height signal is available.
+Calculated ascent is not yet live-qualified.
 
 Batch 01 is checkpointed through DVCLive and
 `artifacts/client_harness/whitemane_live_20261005_batch01.tar.gz.dvc`. DVC push

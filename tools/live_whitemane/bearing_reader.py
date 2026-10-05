@@ -9,6 +9,8 @@ import signal
 import struct
 import sys
 import time
+from . import own_pose, owned_sockets
+from tools.client_compatibility.world import movement
 
 ROOT = Path.home() / '.local/share/trinity-whitemane-live'
 
@@ -47,6 +49,23 @@ def load(name, path):
     return module
 
 
+def segment_flow(flows, key, seq, body, stamp, ignored, session):
+    flow=flows[key]
+    try:
+        flow.segment(seq,body,stamp)
+    except ValueError as error:
+        diagnostic={'local_port':key[0],'direction':key[1],
+            'authenticated':flow.authenticated,'alignment':flow.alignment,
+            'buffer_bytes':len(flow.buffer),'initial_attempts':len(flow.checked),
+            'reason':str(error)}
+        session.setdefault('flow_failures',[]).append(diagnostic)
+        if flow.authenticated:raise
+        # No plaintext or observations were emitted on this unsuccessful
+        # channel. Quarantine it within the existing strict resource bounds.
+        ignored.add(key);del flows[key]
+        if len(ignored)>=8:raise ValueError('unauthenticated channel limit')
+
+
 def main():
     os.umask(0o077)
     scope = json.loads((ROOT / 'run/bearing_scope.json').read_text())
@@ -70,6 +89,11 @@ def main():
         raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM, interrupt)
     buffer, flows, keys, header = bytearray(), {}, set(), None
+    ignored=set(); poses=[]; owned_ports=owned_sockets.ports(scope['game_pid'])
+    if not owned_ports:raise RuntimeError('owned live world socket is absent')
+    opcode_table=json.loads(Path(movement.__file__).with_name('opcodes.json').read_text())['modern']
+    movement_opcodes={opcode_table[name] for name in movement.SUPPORTED}
+    movement_opcodes.add(opcode_table['CMSG_MOVE_SET_FACING_HEARTBEAT'])
     mailbox.clear()
     try:
         library = reader.crypto.load_native(runtime)
@@ -102,9 +126,18 @@ def main():
             activity = False
             try:
                 if direction == 'client_to_server':
-                    if opcode in reader.MOVEMENT:
+                    if opcode in movement_opcodes:
                         mover = reader.Reader(payload).guid()
-                        activity = window.player is not None and mover == window.player
+                        if mover[1]>>58==2 and (window.player is None or mover==window.player):
+                            window.player=mover
+                            activity=True
+                            position=own_pose.parse(payload,mover)
+                            position.update(observed_at=stamp,runtime=scope['runtime'],
+                                            reader_pid=os.getpid(),reader_start_ticks=session['start_ticks'])
+                            poses.append(position)
+                            del poses[:-16]
+                            write(ROOT/'run/movement_pose.json',{**position,'samples':poses})
+                            session['height_samples']=session.get('height_samples',0)+1
                     elif opcode == 0x340155:
                         activity = bool(reader.spell_request(payload))
             except (ValueError, struct.error, IndexError):
@@ -116,7 +149,11 @@ def main():
             validate(scope)
             window.expire(time.time())
             if time.monotonic() - heartbeat >= 2:
+                owned_ports=owned_sockets.ports(scope['game_pid'])
+                if not owned_ports:raise RuntimeError('owned world socket closed')
                 session['idle_seconds'] = round(time.monotonic() - last_activity, 1)
+                session['flows']=[{'local_port':k[0],'direction':k[1],
+                    'authenticated':f.authenticated,'alignment':f.alignment} for k,f in flows.items()]
                 write(ROOT / 'run/bearing_reader.json', session)
                 heartbeat = time.monotonic()
             ready, _, _ = select.select([sys.stdin.buffer], [], [], .5)
@@ -147,11 +184,12 @@ def main():
                 del buffer[:16+size]
                 if segment:
                     key, seq, body = segment
+                    if key[0] not in owned_ports or key in ignored:continue
                     if key not in flows:
                         if len(flows) >= 8:
                             raise ValueError('reconnect/flow limit; restart the helper')
                         flows[key] = reader.Flow(library, keys, key[1], packet)
-                    flows[key].segment(seq, body, sec+fraction/scale)
+                    segment_flow(flows,key,seq,body,sec+fraction/scale,ignored,session)
                 if len(buffer) > 2**20:
                     raise ValueError('live capture buffer limit')
             if any(f.gap_at and time.monotonic()-f.gap_at > 3 for f in flows.values()):
@@ -166,6 +204,7 @@ def main():
     finally:
         mailbox.clear()
         (ROOT / 'run/telescope.json').unlink(missing_ok=True)
+        (ROOT / 'run/movement_pose.json').unlink(missing_ok=True)
         flows.clear(); keys.clear(); buffer.clear()
         session.update(status='stopped', finished_at=time.time())
         write(ROOT / 'run/bearing_reader.json', session)

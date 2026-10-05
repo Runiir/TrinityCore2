@@ -7,6 +7,7 @@ from PIL import Image
 from tools.client_compatibility.observation.telemetry import decode_image
 from . import runtime
 from .snapshot import decode_image as archaeology_image
+from . import own_pose
 
 
 def observe(output):
@@ -30,6 +31,21 @@ def observe(output):
                    'frame': str(output), 'server': 'Whitemane live realm',
                    'source': 'normal_public_addon_api_rendered_pixels', 'calibration': calibration,
                    'archaeology': archaeology}
+            pose_file=runtime.ROOT/'run/movement_pose.json'
+            row['owned_pose']=None
+            if pose_file.exists():
+                try:
+                    pose=json.loads(pose_file.read_text())
+                    feed=json.loads((runtime.ROOT/'run/bearing_reader.json').read_text())
+                    if (feed['status']=='ready' and feed['pid']==pose['reader_pid']
+                            and feed['start_ticks']==pose['reader_start_ticks']
+                            and runtime.proc_start(feed['pid'])==feed['start_ticks']):
+                        row['owned_pose']=own_pose.match(row,pose,now=time.time())
+                except (ValueError,KeyError,FileNotFoundError,ProcessLookupError):
+                    pass
+            if row['owned_pose']:
+                archaeology['altitude_yards']=row['owned_pose']['height_yards']
+                archaeology['altitude_source']=row['owned_pose']['source']
             runtime.write(output.with_suffix('.json'), row)
             return row
         except ValueError as error:
