@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
 from .interaction_keybindings_native import suite as native_suite
-from .interaction_control_target import target
+from .interaction_control_target import target,click
 from .interaction_operations import point
 from .interaction_macros import require
 from .interaction_spellbook_navigation import detail as book_detail,known
@@ -55,16 +55,38 @@ def spell(t):
         diagnostic_action='open'),'link_spellbook_open')
     layout=book_detail(t,'link_spellbook_before')
     if layout['book_type']!=layout['book_types']['spell']:raise RuntimeError('requires an original ordinary spellbook tab')
-    row=next((r for r in layout['rows'] if r.get('kind')=='SPELL' and r.get('known') is True and
-        r.get('id') in learned and r.get('passive') is False),None)
-    if row is None:raise RuntimeError('requires a visible native-known active spell')
-    t.receipt['link_spell_fixture']=row;t.persist()
-    control=target(t,'native_known_link_spell',lambda c:c['name']==row['button'])
-    insert(t,'spell',row['id'],control)
-    t.execute({'kind':'key','value':'p'});after=book_detail(t,'link_spellbook_after')
-    checks={k:after.get(k)==layout.get(k) for k in ['book_type','skill_line','pages','page']}
-    t.receipt['link_spellbook_restoration']=checks;t.persist();t.clean_panels()
-    if not all(checks.values()):raise RuntimeError('linking changed the original spellbook layout')
+    current=layout
+    try:
+        row=next((r for r in current['rows'] if r.get('kind')=='SPELL' and r.get('known') is True and
+            r.get('id') in learned and r.get('passive') is False),None)
+        if row is None:
+            tab=next((r for r in layout['tabs'] if r['name']=='Fury' and not r.get('hidden') and
+                not r.get('guild')),None)
+            if tab is None:raise RuntimeError('requires an observed Fury tab for the owned warrior fixture')
+            select_line(t,'fixture.link_class_tab',tab['index'])
+            current=book_detail(t,'link_class_spells',line=tab['index'])
+            row=next((r for r in current['rows'] if r.get('kind')=='SPELL' and r.get('known') is True and
+                r.get('id') in learned and r.get('passive') is False),None)
+        if row is None:raise RuntimeError('requires a visible native-known active spell')
+        t.receipt['link_spell_fixture']=row;t.persist()
+        control=target(t,'native_known_link_spell',lambda c:c['name']==row['button'])
+        insert(t,'spell',row['id'],control)
+    finally:
+        state,_=t.observe('link_book_cleanup')
+        if 'SpellBookFrame' not in state['panels']:t.execute({'kind':'key','value':'p'})
+        current=book_detail(t,'link_book_cleanup_layout')
+        if current['skill_line']!=layout['skill_line']:select_line(t,'fixture.restore_link_book_tab',layout['skill_line'])
+        after=book_detail(t,'link_spellbook_after',line=layout['skill_line'])
+        checks={k:after.get(k)==layout.get(k) for k in ['book_type','skill_line','pages','page']}
+        t.receipt['link_spellbook_restoration']=checks;t.persist();t.clean_panels()
+        if not all(checks.values()):raise RuntimeError('linking changed the original spellbook layout')
+
+
+def select_line(t,label,index):
+    require(click(t,label,'Select the observed stock spellbook tab.',
+        lambda c:c['name']=='SpellBookSkillLineTab'+str(index),
+        lambda b,a,s:{'status':'link_book_tab_pass' if s and book_detail(t,label,line=index)['skill_line']==index
+            else 'client_or_protocol_failure'}),'link_book_tab_pass')
 
 
 if __name__=='__main__':
