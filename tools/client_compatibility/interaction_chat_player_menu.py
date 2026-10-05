@@ -7,6 +7,16 @@ from .interaction_social import actor
 from .interaction_operations import controls
 from .interaction_macros import require
 from .interaction_keybindings_native import suite as native_suite
+from .interaction_chat_window import detail
+
+
+def inspect(t,source):
+    old=json.loads(source.read_text())
+    if not old.get('completed') or old['actor']!=t.fixture or old['runtime']!=t.receipt['runtime']:
+        raise RuntimeError('completed owned chat seed differs')
+    probe=detail(t,'player_link_window_layout');rows=controls(t)
+    state,frame=t.observe('player_link_window_layout_rendered')
+    t.receipt['player_link_layout']={'public':probe,'controls':rows,'state':state,'frame':frame};t.persist()
 
 
 def play(t,source,review_path,point):
@@ -52,11 +62,15 @@ def play(t,source,review_path,point):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    for name in ['source','review','output']:p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--point',type=int,nargs=2,required=True);a=p.parse_args()
+    for name in ['source','output']:p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--review',type=Path);p.add_argument('--point',type=int,nargs=2)
+    p.add_argument('--inspect',action='store_true');a=p.parse_args()
+    if not a.inspect and (not a.review or not a.point):p.error('menu input requires the reviewed link point')
     with actor('primary'):
         t=Trial(a.output,controller='code')
-        try:native_suite(t,operations=lambda t:play(t,a.source,a.review,a.point),preserve_settings=False);t.receipt['completed']=True
+        try:
+            native_suite(t,operations=lambda t:inspect(t,a.source) if a.inspect else play(t,a.source,a.review,a.point),
+                preserve_settings=False);t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
