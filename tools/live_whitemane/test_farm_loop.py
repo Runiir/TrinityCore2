@@ -14,7 +14,7 @@ def packet(value):
 
 
 def row():
-    return {'runtime':{'pid':1},'movement':{'in_world':True,'position_available':True,'health_percent':100,
+    return {'observed_at':1,'runtime':{'pid':1},'movement':{'in_world':True,'position_available':True,'health_percent':100,
         'in_combat':False,'dead':False,'on_taxi':False,'map_id':1454,'speed':0},
         'archaeology':{'mounted':False,'flying':False,'casting':False,'recipe_items_in_bags':0,
         'canopic_jars_in_bags':0,'can_survey':False,'world':{'instance':1,'north':0,'west':0},

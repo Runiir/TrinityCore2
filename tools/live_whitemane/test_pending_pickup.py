@@ -177,3 +177,33 @@ def test_survey_cooldown_wait_keeps_character_available_and_sends_no_requests(ow
     session=json.loads((args.output/'session.json').read_text())
     assert session['steps']==[]
     assert session['survey_cooldown_wait']['remaining_seconds']==1
+
+
+def test_collected_tooltip_cannot_relatch_a_find_before_the_next_survey(owned_root):
+    r=row();r['observed_at']=10
+    r['archaeology'].update(site_id=315,successful_surveys=30,looted_finds=8,loot_open=False)
+    r['farm_ui']['tooltip']='Troll Archaeology Find'
+    pending_find.confirm_pickup(r)
+    assert not pending_find.named_uncollected(r)
+    assert pending_find.update(r,{}) is None
+    r['archaeology']['successful_surveys']=31
+    assert pending_find.named_uncollected(r) and pending_find.update(r,{})
+
+
+def test_new_located_find_overrides_a_lingering_collected_tooltip(owned_root):
+    r=row();r['observed_at']=10
+    r['archaeology'].update(site_id=315,successful_surveys=30,looted_finds=8,loot_open=False)
+    r['farm_ui']['tooltip']='Troll Archaeology Find'
+    pending_find.confirm_pickup(r)
+    r['minimap_finds']={'confirmed':[{'world':r['archaeology']['world'],'name':'Troll Archaeology Find'}]}
+    assert pending_find.named_uncollected(r) and pending_find.update(r,{})
+
+
+def test_confirmed_pickup_repairs_a_prior_tooltip_only_phantom_latch(owned_root):
+    r=row();r['observed_at']=10
+    r['archaeology'].update(site_id=315,successful_surveys=30,looted_finds=8,loot_open=False)
+    r['farm_ui']['tooltip']='Troll Archaeology Find'
+    value=pending_find.latch(r,source='public visible archaeology find')
+    assert value['discovery_confirmed']
+    pending_find.confirm_pickup(r)
+    assert pending_find.load(r) is None and pending_find.update(r,{}) is None

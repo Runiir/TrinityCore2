@@ -10,6 +10,44 @@ def fragments(row):
     return {str(r['index']):r['fragments'] for r in row['archaeology']['races']}
 
 
+def pickup_receipt(row):
+    path=runtime.ROOT/'run/last_pickup.json'
+    if not path.exists():return None
+    value=json.loads(path.read_text())
+    return value if value['runtime']==row['runtime'] else None
+
+
+def confirm_pickup(row,*,name=None):
+    """Call only after observed fragment or verified pickup-counter increase."""
+    previous=pickup_receipt(row)
+    if previous and previous['observed_at']>=row['observed_at']:return previous
+    ui=row.get('farm_ui') or {};names={name,ui.get('tooltip'),(ui.get('soft_interact') or {}).get('name')}
+    value={'runtime':row['runtime'],'observed_at':row['observed_at'],
+        'successful_surveys':row['archaeology'].get('successful_surveys'),
+        'looted_finds':row['archaeology'].get('looted_finds'),
+        'world':row['archaeology']['world'],'fragments':fragments(row),
+        'names':sorted(names & set(FIND_NAMES))}
+    runtime.write(runtime.ROOT/'run/last_pickup.json',value);return value
+
+
+def same_pickup_generation(row,receipt):
+    world=row['archaeology'].get('world');origin=receipt.get('world') if receipt else None
+    return bool(receipt and receipt['successful_surveys'] is not None and receipt['looted_finds'] is not None
+        and origin and world and origin['instance']==world['instance']
+        and math.hypot(origin['north']-world['north'],origin['west']-world['west'])<=.25
+        and row['archaeology'].get('successful_surveys')==receipt['successful_surveys']
+        and row['archaeology'].get('looted_finds')==receipt['looted_finds'])
+
+
+def named_uncollected(row):
+    ui=row.get('farm_ui') or {}
+    names={ui.get('tooltip'),(ui.get('soft_interact') or {}).get('name')} & set(FIND_NAMES)
+    receipt=pickup_receipt(row)
+    return bool(names and (not same_pickup_generation(row,receipt)
+        or names-set(receipt['names']) or row.get('visible_find')
+        or (row.get('minimap_finds') or {}).get('confirmed')))
+
+
 def local_approach(row,approach):
     if not approach:return None
     a,b=approach.get('world'),row['archaeology'].get('world')
@@ -19,7 +57,7 @@ def local_approach(row,approach):
 
 def facts(row,value):
     ui=row.get('farm_ui') or {};gathering=ui.get('gathering') or {}
-    named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
+    named=named_uncollected(row)
     cast_started=bool(value and gathering.get('starts',0)>value.get('gathering_starts',gathering.get('starts',0)))
     find=row.get('visible_find')
     approach=find or (value or {}).get('approach')
@@ -59,9 +97,18 @@ def load(row):
         return None
     if gained(value['fragments'],row) or (value.get('looted_finds') is not None
             and row['archaeology'].get('looted_finds',0)>value['looted_finds']):
+        confirm_pickup(row,name=value.get('name'))
         if value.get('captured_find_observed_at') is not None:
             runtime.write(runtime.ROOT/'run/collected_find.json',{
                 'runtime':value['runtime'],'observed_at':value['captured_find_observed_at']})
+        clear();return None
+    receipt=pickup_receipt(row)
+    if (same_pickup_generation(row,receipt) and value['fragments']==receipt['fragments']
+            and value.get('source')=='public visible archaeology find' and not value.get('approach')
+            and not row.get('visible_find') and not (row.get('minimap_finds') or {}).get('confirmed')
+            and not row['archaeology'].get('loot_open')):
+        # Repair a previously latched lingering tooltip using the already
+        # confirmed pickup. A fresh Survey or a located live find takes priority.
         clear();return None
     if 'gathering_starts' not in value:
         value['gathering_starts']=((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)
@@ -79,6 +126,9 @@ def latch(row,*,site_id=None,approach=None,source='successful Survey without tel
         'discovery_confirmed':source=='public visible archaeology find',
         'looted_finds':row['archaeology'].get('looted_finds',0),
         'gathering_starts':((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)}
+    ui=row.get('farm_ui') or {}
+    value['name']=next((name for name in ((ui.get('soft_interact') or {}).get('name'),ui.get('tooltip'))
+        if name in FIND_NAMES),None)
     if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
     runtime.write(runtime.ROOT/'run/pending_find.json',value)
     return value
@@ -94,7 +144,7 @@ def update(row,session):
     if row.get('visible_find') and collected(row['visible_find']):row['visible_find']=None
     confirmed=(row.get('minimap_finds') or {}).get('confirmed') or []
     ui=row.get('farm_ui') or {}
-    named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
+    named=named_uncollected(row)
     if not value and (confirmed or row.get('visible_find') or named or row['archaeology']['loot_open'] or
         ((row.get('farm_ui') or {}).get('route') or {}).get('kind')=='pending_loot'):
         approach=row.get('visible_find') or (confirmed[0] if confirmed else session.get('last_green_endpoint'))
@@ -105,6 +155,9 @@ def update(row,session):
                 and s.get('started_at',0)>=value['observed_at'] for s in session['steps'])
         if named or row.get('visible_find') or confirmed or row['archaeology']['loot_open']:
             value['discovery_confirmed']=True
+        if named:
+            value['name']=next(name for name in ((ui.get('soft_interact') or {}).get('name'),ui.get('tooltip'))
+                if name in FIND_NAMES)
         approach=local_approach(row,row.get('visible_find') or (confirmed[0] if confirmed else value.get('approach')))
         value['approach']=approach
         if approach:

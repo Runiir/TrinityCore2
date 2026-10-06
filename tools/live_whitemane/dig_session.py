@@ -76,6 +76,9 @@ def run(args):
         'last_survey_at':0,'walked_since_survey':True,'finished':False}
     progress=DigProgress(**session['progress'])
     resources.trim_session(session,'dig')
+    previous_pickup=next((s.get('after') for s in reversed(session['steps'])
+        if s.get('confirmed_looted_find') and s.get('after')),None)
+    if previous_pickup:pending_find.confirm_pickup(previous_pickup)
     if not session.get('last_green_endpoint'):
         since_pickup=[]
         for s in reversed(session['steps']):
@@ -141,7 +144,7 @@ def run(args):
             ui=before.get('farm_ui') or {}
             value=pending_find.update(before,session)
             before['pending_find']=value
-            visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES or
+            visible_find=(a['loot_open'] or pending_find.named_uncollected(before) or
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             if session.get('reapproach_find'):
                 from .survey_find import in_range
@@ -360,6 +363,7 @@ def run(args):
                 else:
                     args.loot_at=None
                     routes.pickup(session)
+                    pending_find.confirm_pickup(after,name=(value or {}).get('name'))
                     pending_find.clear();session.pop('pending_find',None)
                     session.pop('accepted_pickup_intent',None)
                     session['observed_find_count']=after['archaeology']['looted_finds']
