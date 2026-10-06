@@ -7,13 +7,14 @@ from .interaction_trial import Trial
 from .interaction_owned_class_fixture import prepared,saved,pets,SCRIPT_BOUNDARY
 from .interaction_hunter_fixture import protected
 from .interaction_hunter_training import prior
+from .interaction_hunter_control_continuity import retained_source
 from .interaction_spellbook_pet_recon import entry_source
 from .interaction_pet_dismiss import Presence
 from .interaction_pet_target import PetOracle
 from .interaction_pet_training_disconnect import catalog
 from .interaction_pet_spellbook_tab import modern_catalog,catalog_checks
 from .interaction_pet_command_probe import read as commands,expected_guid
-from .interaction_spellbook_navigation import detail
+from .interaction_spellbook_navigation import detail,wire_known
 from .interaction_actionbar_pages import detail as bar_detail
 from .interaction_spellbook_recon import resources
 from .interaction_operations import click_case,controls,point
@@ -90,13 +91,18 @@ def suite(t,preparation,entry,trained,menu):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     if (t.fixture['guid'],t.fixture['character_name'],t.fixture['class'],t.fixture['level'])!=(6,'Harnesshunt',3,10):
         raise RuntimeError('requires the normally trained exact Hunter')
-    e=entry_source(t,entry,session,preparation);learned=prior(t,trained,session,'control_pet_trained')
+    e=entry_source(t,entry,session,preparation)
+    source=json.loads(trained.read_text())
+    carried=source.get('runtime')!=t.receipt['runtime']
+    learned=(prior(t,trained,session,'control_pet_trained') if not carried else
+        retained_source(t,old,trained))
     if not all(learned.get('purchase_checks',{}).values()) or len(learned.get('purchase_checks',{}))!=9:
         raise RuntimeError('requires the whole normally paid Control Pet purchase')
     since=min(p['time'] for p in e['login_packets']);o=Presence(session,6,since).poll()
     retained=pets(6);inv=Inventory(lab.ROOT,session,6).poll()
     if (not starting_wolf(retained,6) or not o.present() or o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=4 or
-        resources(inv)!=learned['after'] or saved(6)['spells']!=[[1515,1,0],[79682,1,0]]):
+        resources(inv)!=learned['after'] or saved(6)['spells']!=[[1515,1,0],[79682,1,0]] or
+        (carried and not {1515,93321}<=wire_known(t,session))):
         raise RuntimeError('retained starting Wolf or normally purchased Hunter resources differ')
     initial,initial_frame=t.observe('hunter_pet_baseline');before=resources(inv);before_saved=saved(6)
     t.receipt.update(native_session=session,sources=[{'path':str(p.resolve()),'sha256':lab.sha256(p)} for p in
@@ -108,7 +114,7 @@ def suite(t,preparation,entry,trained,menu):
             lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'hunter_pet_book_pass' if s and
                 'SpellBookFrame' in a['panels'] else 'client_or_protocol_failure'}),'hunter_pet_book_pass')
         book=detail(t,'hunter_pet_public');t.clean_panels();bar=commands(t,'hunter_pet_commands')
-        o.poll();pair=catalog_pair(session,learned['purchase_started_at'],o.pet);guid=expected_guid(o.pet)
+        o.poll();pair=catalog_pair(session,since,o.pet);guid=expected_guid(o.pet)
         p=book['pet'];actions=bar['probe'].get('actions',[])
         checks={'owned_public_pet':p.get('exists') is True and p.get('guid')==guid and p.get('name')=='Wolf',
             'owned_public_commands':bar['probe'].get('pet_guid')==guid and bar['probe'].get('owner_guid')==t.guid,
