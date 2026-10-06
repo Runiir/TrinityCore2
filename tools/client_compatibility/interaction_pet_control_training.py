@@ -22,6 +22,18 @@ def protected(old):
     return checks
 
 
+def persisted_training(before,after,relation):
+    # LearnSpell marks the93375 child dependent; SaveSpells persists its80388
+    # parent. Requiring a saved child row would contradict native persistence.
+    return relation==[[80388,93375,1]] and after==sorted(before+[[80388,1,0]])
+
+
+def learn_relation():
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT entry,SpellID,Active FROM client442_world.spell_learn_spell WHERE entry=80388')
+        return [list(r) for r in q.fetchall()]
+
+
 def catalog(session,since):
     found=None
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
@@ -162,11 +174,14 @@ def learn(t,preparation,source):
         commands=[r for r in rows if r.get('direction')=='to_native' and r['name']=='CMSG_TRAINER_BUY_SPELL'
             and Reader(bytes.fromhex(r['body'])).unpack('QII')==(e['native_trainer_guid'],154,80388)]
         expected={**before,'money':before['money']-price}
+        relation=learn_relation()
         checks={'ordinary_train':bool(s),'one_native_purchase':len(commands)==1,'native_learned':len(native)==1,
-            'modern_learned':len(modern)==1,'saved_control_demon':[93375,1,0] in known(t.fixture['guid']),
+            'modern_learned':len(modern)==1,'saved_control_parent':persisted_training(
+                e['saved_spells'],known(t.fixture['guid']),relation),
             'exact_charge_inventory':after==expected,'protected_originals':all(protected(old).values()),
             'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
-        t.receipt.update(purchase_packets=rows,purchase_checks=checks,after=after,protected_checks=protected(old));t.persist()
+        t.receipt.update(purchase_packets=rows,purchase_checks=checks,after=after,native_learn_relation=relation,
+            protected_checks=protected(old));t.persist()
         return {'status':'control_training_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'price':price,'before':before['money'],'after':after['money']}}
     require(click_case(t,'control.train','Purchase the selected native Control Demon lesson once.',
