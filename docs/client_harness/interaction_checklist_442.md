@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 438 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 439 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -927,7 +927,7 @@ Fixture: `pet_class_variants`.
 - [ ] `pets.command_attack`
 - [x] `pets.command_follow` (qualified variant; [evidence](#owned_trained_imp_stay_follow))
 - [x] `pets.command_stay` (qualified variant; [evidence](#owned_trained_imp_stay_follow))
-- [ ] `pets.command_move_to`
+- [x] `pets.command_move_to` (qualified variant; [evidence](#owned_trained_imp_move_to))
 - [x] `pets.passive` (qualified variant; [evidence](#owned_trained_imp_passive_assist))
 - [x] `pets.defensive` (qualified variant; [evidence](#owned_trained_imp_defensive))
 - [x] `pets.assist` (qualified variant; [evidence](#owned_trained_imp_passive_assist))
@@ -3154,3 +3154,22 @@ Remaining limits: Idle owned Imp Blood Pact only; other spells, combat, pets/cla
 - [442_interactions_20261006_134.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_134.tar.gz.dvc), member `evidence/client_interactions_20261006_ui134/spell_recovery_whole_review01.json`, SHA-256 `eaa83fe16450c7b2adf8aa65aa3994fe2195fc73b96a85ada21b618b7524ebb2`.
 - [442_interactions_20261006_134.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_134.tar.gz.dvc), member `evidence/client_interactions_20261006_ui134/verification.json`, SHA-256 `44b6ab95cf9b60e9f47f2cd065d859640067716740351ca69f509833f28a766b`.
 - [442_interactions_20261006_134.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_134.tar.gz.dvc), member `evidence/client_interactions_20261006_ui134/build_checks.json`, SHA-256 `cee9977ea4ba295e7c2c2ea0e64864e8b89df0039316a4375c6b2d531182d063`.
+
+### owned_trained_imp_move_to
+
+One idle trained level10 warlock and retained Imp2. Separately reviewed stock Move To reticle and one ordinary ground click submit current owned Imp38 and actual destination.20 native/public checks prove one exact native command4 and supported656ms path moving5.246m to the submitted endpoint, delivered to the client. Ordinary reload yields native command4/Assist3 and public Move To readback9. Images show actual pet displacement and no remaining reticle. Follow7, Assist15, aura/vitals10, whole17/protected6 restore all original resources, saved rows, pose/AFK, position, money9354, purchased80388 and pet/bar. Original scout5, primary9 and runtime14 closure pass; complete saved Imp2 row differs only by savetime.
+
+Remaining limits: One owned Imp and destination only; public pet coordinates are unavailable, so native endpoint, visible movement and public range/speed remain separate. Pet Attack/combat, other pets/classes and remaining services stay open. UI135 failed spell-targeting trials remain excluded. Expected old-codec1 failure retained;177 codec/101 harness focused and3028 world-auth pass, one-job build.20 closed episodes all successful. DVC13636 JSON/126 attributed images verified;158 PNG249038877 bytes plus exact270343955-byte archive/cache copies offloaded. Scoped DVC status records intentional missing cache and push confirms the remote is current. Native world and both existing clients retain lifetimes through bridge-only deployment on HDMI-1. Scripts blocked; original softTargetInteract0 remains unrestored at1.
+
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/class_prepare01/episode.json`, SHA-256 `450642c8c4d47dafb4c6d6551cba43c3ce4d2f27fd7e1854e0364d77b8777bd3`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/class_enter01/episode.json`, SHA-256 `6c3d3a62c774be5ddcf2f95695f17cf3765cd16f999a1206fe6d277598b25fdb`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/moveto_begin01/episode.json`, SHA-256 `1e60d5eb3c38441106c2f44aeeec66a3cfba6c4596d405dec1244000d7f04571`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/moveto_begin01/ground_review01.json`, SHA-256 `7c1d301f51b0c9361b0a27d8777d98a32d5f1bd0f37bc2d496fd8bbf6a35fa9e`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/moveto01/episode.json`, SHA-256 `0465b0cba97395a27a9d671e69c9b18512c94e34bd148dba39d781afe3a3920c`.
+  Checked cases: `pets.command_move_to` (owned_native_pet_moveto_pass).
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/moveto_whole_review01.json`, SHA-256 `ade4ea340e122723232caf4af434cf3be9ba832bbf798e8b863d7bd67077e0d5`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/class_park01/episode.json`, SHA-256 `713468149cbadc3a84c78d7329d9dc49c2415eb698c41bec40431e14f67e3769`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/origin_finish01/episode.json`, SHA-256 `4bbca599d4b5e9a07d5a5001b6ee9f3fc55b95894a5b1c7f0f085e180b85800a`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/primary_native_close01/episode.json`, SHA-256 `488fcfae229db3bdf7bf4b7e858aeebccec8590fa8ac495d25d917113af07edd`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/verification.json`, SHA-256 `947376197c21bb1402403862b7a7d45d4c8c78336d75c514206a13e2435c1d40`.
+- [442_interactions_20261006_136.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_136.tar.gz.dvc), member `evidence/client_interactions_20261006_ui136/build_checks.json`, SHA-256 `4eded15dbd02c70c630f6a4cb8998f0e294c8f6dbf2cf54294fbc4911de9e99a`.
