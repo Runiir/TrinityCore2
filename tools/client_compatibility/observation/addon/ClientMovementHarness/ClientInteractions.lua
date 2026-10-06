@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=137,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=138,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -169,7 +169,9 @@ local function snapshot(viewMode,viewPage)
     if mode=='who' then data.who_probe=Client442ObserveWho();return data end
     if mode=='recipes' then data.recipe_probe=Client442ObserveTradeSkill();return data end
     if mode=='chat' then data.chat_window_probe=Client442ObserveChatWindows();return data end
-    if mode=='combat_log' then data.combat_log_probe=Client442ObserveCombatLog();return data end
+    if mode=='combat_log' then
+        data.combat_log_probe=Client442ObserveCombatLog();data.melee_probe=Client442ObserveMelee();return data
+    end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end
     if mode=='petcommands' then data.pet_commands=Client442ObservePetCommands();return data end

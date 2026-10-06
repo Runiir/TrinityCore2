@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "melee_results.hpp"
 #include <algorithm>
 
 namespace bridge
@@ -141,6 +142,7 @@ Reply Protocol::combat_request(State const &owner, std::string const &name, View
 }
 Reply Protocol::combat_response(State const &owner, std::string const &name, View body)
 {
+    if(name=="SMSG_ATTACKER_STATE_UPDATE")return owned_melee_result(owner,body);
     // Pinned60895 AttackSwingErr is a3-bit reason. Native sends these as
     // distinct empty opcodes; preserve the core's range/facing decision.
     std::optional<unsigned> swing_error;
