@@ -33,6 +33,14 @@ def test_missing_mouse_yaw_fails_without_unbounded_pointer_motion():
         camera.update(0,2100,.5,20,1)
 
 
+def test_slow_client_frame_waits_for_the_one_pending_yaw_probe():
+    camera=CameraSteering();assert camera.update(0,1000,.5,20,1,frame_period=1)[0]==-8
+    assert camera.update(0,2100,.5,20,1,frame_period=1)[0]==0
+    assert camera.update(.08,3000,.42,20,1,frame_period=1)[0]==0
+    pixels,_=camera.update(.08,4000,.42,20,1,frame_period=1)
+    assert pixels<0 and camera.samples[0]==pytest.approx(-.01)
+
+
 def test_calibrated_camera_aims_at_the_bearing_in_one_relative_delta():
     camera=CameraSteering()
     camera.update(0,1000,2.5,100,1)

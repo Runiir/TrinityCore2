@@ -69,7 +69,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
         previous=None;deadline=None;index=0;decision_count=0;retained_decisions=0;last_pulse=None
         sample_periods=deque(maxlen=8);last_sample=None;row=None
-        steering=CameraSteering();current_decision=None;look_sequence=None
+        steering=CameraSteering();current_decision=None;look_sequence=None;look_started=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
         survey_generation=None;artifact_before=None;forward_started=False;terrain_wait=False
         swimming_mode=None;ground_plan=None;planned=False
@@ -188,11 +188,19 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     raise RuntimeError('continuous waypoint movement is blocked')
                 previous=distance
                 if look_sequence is None:
-                    sender.move(640,150);sticky.button(3,True);look_sequence=m['sequence']
+                    sender.move(640,150);sticky.button(3,True);look_sequence=m['sequence'];look_started=cycle
                     index+=1;time.sleep(.1);continue
                 if m['sequence']<=look_sequence:continue
+                frame_period=1/max(1,(row.get('farm_ui') or {}).get('frame_rate') or 30)
+                camera=(row.get('farm_ui') or {}).get('camera_input')
+                if camera and not (camera.get('mouselooking') and camera.get('right_down')):
+                    sticky.hold('Up',False)
+                    receipt['outcome']='awaiting_camera_mouse_look'
+                    if cycle-look_started>max(2,2*frame_period+.2):
+                        raise RuntimeError('camera mouse-look did not activate')
+                    index+=1;time.sleep(.1);continue
                 pixels,receipt['camera_steering']=steering.update(m['facing_radians'],m['client_uptime_ms'],
-                    error,distance,tolerance)
+                    error,distance,tolerance,frame_period=frame_period)
                 vertical=0;pitch_ready=True;horizontal_fraction=1
                 if flying or swimming:
                     pose=row.get('owned_pose');pitch_ready=False
@@ -205,7 +213,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                                 max(row['channel_ages'].values()))
                             desired_pitch=receipt['flight_aim']['pitch_radians']
                         vertical,receipt['pitch_steering']=pitch_steering.update(pitch,m['client_uptime_ms'],
-                            desired_pitch-pitch,distance,4)
+                            desired_pitch-pitch,distance,4,frame_period=frame_period)
                         pitch_ready=abs(desired_pitch-pitch)<math.pi/2
                         horizontal_fraction=max(.01,math.cos(pitch))
                         speed*=horizontal_fraction

@@ -14,7 +14,7 @@ class CameraSteering:
         self.opposite_samples=0;self.previous_uptime=None
         self.minimum_deadband=minimum_deadband;self.maximum_deadband=maximum_deadband
 
-    def update(self, facing, uptime, error, distance, tolerance):
+    def update(self, facing, uptime, error, distance, tolerance,*,frame_period=0):
         period=.1 if self.previous_uptime is None else ((uptime-self.previous_uptime)%2**32)/1000
         self.previous_uptime=uptime
         period=max(.02,min(.2,period))
@@ -23,7 +23,7 @@ class CameraSteering:
             elapsed=((uptime-self.pending['uptime'])%2**32)/1000
             change=angle(facing-self.pending['facing'])
             if abs(change)<.002:
-                if elapsed>1:raise RuntimeError('camera steering did not produce observed yaw')
+                if elapsed>max(1,2*frame_period+.2):raise RuntimeError('camera steering did not produce observed yaw')
                 return 0,info
             # Movement packets may expose a partial delta or an older camera
             # update first. Calibrate only after two fresh, settled readings.

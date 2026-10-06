@@ -192,6 +192,33 @@ def test_retained_input_survives_slow_but_valid_public_frames(monkeypatch,tmp_pa
     assert len(calls)==1
 
 
+def test_camera_probe_waits_for_public_mouse_look_activation(monkeypatch,tmp_path):
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,20)
+    r['farm_ui']['frame_rate']=1
+    r['archaeology'].update(flying=False,mounted=False,grounded=True)
+    r['movement']['facing_radians']=0
+    count=[0];yaw=[0];sender=camera_input.Input()
+    def relative(x,y):
+        assert count[0]>=15
+        events.append(('relative',(x,y)));yaw[0]-=x*.006
+    sender.relative=relative
+    def observe(_):
+        count[0]+=1;now[0]+=.1;controllers[0].tick()
+        fresh=copy.deepcopy(r);fresh['observed_at']=now[0]
+        fresh['movement'].update(sequence=count[0],client_uptime_ms=count[0]*100,
+            facing_radians=yaw[0])
+        fresh['archaeology']['sequence']=count[0]
+        fresh['farm_ui']['camera_input']={'mouselooking':count[0]>=15,'right_down':count[0]>=15}
+        if count[0]>=23:fresh['archaeology']['world']['north']=0
+        return fresh
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},tolerance=.5,
+        approved_intent=('interact',{}, {},{}))
+    assert not calls and rows[-1]['outcome']=='waypoint_arrived'
+    assert sum(row.get('outcome')=='awaiting_camera_mouse_look' for row in rows)>=10
+    assert events.count(('button_press',3))==events.count(('button_release',3))==1
+
+
 def test_stationary_flight_pitch_feedback_does_not_deadlock_before_forward(monkeypatch,tmp_path):
     from . import flight_path
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,20)
