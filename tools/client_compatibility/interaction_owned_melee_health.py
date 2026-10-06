@@ -121,14 +121,19 @@ def stage(t,preparation,entry):
         mode(t,o,0,'fixture.health_pet_passive')
         staged=fixture.prepare();t.receipt['baseline']['position']=staged;t.persist()
         retained_presence(t,o,'fixture.health_transfer_pet')
-        mode(t,o,0,'fixture.health_transfer_passive')
+        catalogs=[c for c in o.catalogs if c['guid']==o.pet['guid']]
+        if not catalogs or catalogs[-1]['react']!=0:mode(t,o,0,'fixture.health_transfer_passive')
         # Honorless Target is a normal zone-transfer aura and expires naturally.
         deadline=time.monotonic()+45
         while any(r['spell']==2479 for r in o.poll().auras.values()):
             if time.monotonic()>deadline:raise RuntimeError('normal Honorless Target transfer aura did not expire')
             time.sleep(2)
-        passive=read(t,'health_passive_cleanup_bar')
-        restore_spell(t,o,original,expected_bar=public_bar(passive['probe']))
+        o.poll();transfer,_=t.observe('health_transfer_baseline')
+        from .pet_spell_evidence import buffs
+        if (o.auras!=original['auras'] or buffs(transfer)!=original['public_buffs'] or
+            vitals(o)!=baseline['vitals'] or pet_vitals(o)!=original['pet_vitals']):
+            passive=read(t,'health_passive_cleanup_bar')
+            restore_spell(t,o,original,expected_bar=public_bar(passive['probe']))
         t.execute({'kind':'chat','value':'/targetexact '+fixture.dummy[2]})
         state,_=t.observe('health_selected_target');o.poll();sample=read(t,'health_passive_control');o.poll()
         frozen=position(5);time.sleep(.5)
@@ -138,7 +143,9 @@ def stage(t,preparation,entry):
             'safe_target_health':bool(o.target and health(o)>=10 and any(r[0]==228 and r[1]==r[2] for r in baseline['saved']['skills'])),
             'public_health':bool(o.target and state['target'].get('health')==health(o)),
             'in_melee_range':bool(o.target and math.dist(frozen[:3],o.target['movement']['position'][:3])<4),
-            'stable_position':position(5)==frozen,'native_passive':o.catalogs[-1]['react']==0,
+            'stable_position':position(5)==frozen,'native_passive':o.present() and
+                o.pet['fields'][INDEX['UNIT_FIELD_PETNUMBER']]==baseline['pet']['id'] and
+                any(c['guid']==o.pet['guid'] and c['react']==0 for c in o.catalogs[-1:]),
             'public_passive':active_mode(sample['probe'],'PET_MODE_PASSIVE'),
             'idle_pet':not sample['probe']['pet_combat'] and not sample['probe']['pet_target_exists'],
             'original_vitals':vitals(o)==baseline['vitals'],'original_saved':saved(5)==baseline['saved'],
