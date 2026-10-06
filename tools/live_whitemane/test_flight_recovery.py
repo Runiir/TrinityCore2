@@ -137,7 +137,8 @@ def test_interrupted_digsite_landing_surveys_on_ground_instead_of_remounting(mon
     step={}
     flight.fly(tmp_path,ground,{'endpoint':{'instance':1,'north':0,'west':0},
         'site_id':315,'resume_to_survey_on_ground':True},step)
-    assert [p['action'] for p in step['travel_decisions']]==['dismount','arrived']
+    assert step['travel_decisions']==[]
+    assert step['grounded_Survey_auto_dismount_handoff']['mounted']
     assert step['grounded_digsite_reobserve']['old_endpoint_distance_yards']==12.24
     assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']
 
@@ -155,7 +156,7 @@ def test_digsite_landing_drift_does_not_start_another_takeoff(monkeypatch,tmp_pa
     step={}
     flight.fly(tmp_path,air,{'endpoint':{'instance':1,'north':0,'west':0},
         'site_id':315,'arrival_tolerance_yards':.5},step)
-    assert [p['action'] for p in step['travel_decisions']]==['land','dismount','arrived']
+    assert [p['action'] for p in step['travel_decisions']]==['land']
     assert step['grounded_digsite_reobserve']['old_endpoint_distance_yards']==1.2
 
 

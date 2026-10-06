@@ -9,8 +9,10 @@ from tools.client_compatibility.interaction_trial import binding_key
 
 def living(row):
     c=row['farm_ui'].get('combat') or {}
+    engaged=c.get('target_engaged')
+    if engaged is None:engaged=c.get('target_attacks_player')
     return bool(c.get('target_exists') and c.get('hostile') and not c.get('target_dead')
-        and (c.get('target_engaged') is True or c.get('target_attacks_player') is True))
+        and engaged is True)
 
 
 class TargetApproach:

@@ -28,8 +28,9 @@ end)
 local function engaged(unit)
     local guid=call(UnitGUID,unit)
     return guid and call(UnitCanAttack,'player',unit) and not call(UnitIsDeadOrGhost,unit) and
+        call(UnitAffectingCombat,unit) and
         (call(UnitIsUnit,unit..'target','player') or
-         (call(UnitAffectingCombat,unit) and recent[guid] and GetTime()-recent[guid]<=20)) or false
+         (recent[guid] and GetTime()-recent[guid]<=20)) or false
 end
 function WhitemaneLiveCombatFacts()
     local attackers={}
@@ -40,7 +41,7 @@ function WhitemaneLiveCombatFacts()
         if unit and plate:IsShown() and engaged(unit) then
             local x,y=plate:GetCenter()
             local scale=plate:GetEffectiveScale()
-            if x and y and width and height and width>0 and height>0 then
+            if x and y and scale and width and height and width>0 and height>0 then
                 x,y=x*scale/width,1-y*scale/height
                 if x>0 and x<1 and y>0 and y<1 then
                     attackers[#attackers+1]={unit=unit,guid=UnitGUID(unit),name=UnitName(unit),x=x,y=y}
@@ -50,5 +51,5 @@ function WhitemaneLiveCombatFacts()
     end
     table.sort(attackers,function(a,b)return a.guid<b.guid end)
     while #attackers>4 do table.remove(attackers) end
-    return {target_engaged=not not engaged('target'),attackers=attackers}
+    return {schema='observed_attackers_v1',target_engaged=not not engaged('target'),attackers=attackers}
 end

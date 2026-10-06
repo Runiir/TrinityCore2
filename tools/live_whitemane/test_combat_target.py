@@ -61,7 +61,7 @@ def test_laya_selects_a_visible_attacker_instead_of_tab_targeting_unrelated_mobs
 
 def test_an_unrelated_hostile_target_is_neither_approached_nor_attacked(monkeypatch,tmp_path):
     from . import combat
-    r=enemy();r['farm_ui']['combat'].update(target_attacks_player=False,target_engaged=False,
+    r=enemy();r['farm_ui']['combat'].update(target_attacks_player=True,target_engaged=False,
         attack_in_range=True,attack_usable=True)
     monkeypatch.setattr(combat_target.inputs,'execute',lambda *_:pytest.fail('unrelated mob'))
     monkeypatch.setattr(combat_target.laya_ui,'choose',lambda *_:pytest.fail('no observed attacker to select'))

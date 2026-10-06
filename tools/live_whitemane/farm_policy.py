@@ -109,10 +109,13 @@ def choose(row,batches,session):
             'mounted':a['mounted'],'flying':a['flying'],'falling':a.get('falling'),
             'target_attacks_player':c.get('target_engaged',c.get('target_attacks_player')),
             'target_in_melee_range':c.get('attack_in_range'),
-            'current_target':c.get('target_name'),'health':m['health_percent']}
+            'current_target':c.get('target_name'),'health':m['health_percent'],
+            'consecutive_actions_without_progress':sum(step.get('started_at',0)>=
+                session.get('last_progress_at',math.inf) for step in session.get('steps',[]))}
         action,request,response=laya_ui.choose(state,
             'Respond to the attacker now. Land if airborne, then approach and use Sinister Strike. Resume the interrupted dig afterwards.',
             {k:v[0] for k,v in options.items()})
+        action=dig_decisions.explore(action,response,options,state)
         decision={'state':state,'request':request,'response':response,'choice':action}
         IntentQueue(session).offer(action,options[action][1],decision,row)
         return action,options[action][1],decision

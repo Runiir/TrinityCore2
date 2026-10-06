@@ -42,6 +42,13 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             target=world;remaining=0;height_plan=None
             reobserve_ground=False
         if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
+        if (not combat_landing and a.get('can_survey') and a.get('mounted')
+                and not a['flying'] and not a['falling'] and not m['in_combat']
+                and remaining<=arrival_tolerance and not pending_find.load(row)):
+            step['grounded_Survey_auto_dismount_handoff']={
+                'observed_at':row['observed_at'],'world':world,'mounted':True,
+                'Survey_selected':False,'separate_dismount_input_sent':False}
+            return receipts
         maximum_distance=750 if arrow.get('site_id') else 1500
         if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
         if remaining>arrival_tolerance and not row.get('owned_pose'):
@@ -131,7 +138,6 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if queued:
             phase['command_queue']=queued;after=queued['after']
         else:
-            time.sleep(.3)
             after=observe(folder/f'travel_{index:02d}_after.png')
         phase['after']=after
         if graph and action!='observe':farm_graph.transition(graph,'flight',after,pending=pending_find.load(after))
