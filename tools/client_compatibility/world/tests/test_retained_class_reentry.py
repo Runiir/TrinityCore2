@@ -23,9 +23,11 @@ def test_exact_unchanged_chain_accepts_retained_fixture():
 
 
 @pytest.mark.parametrize('change',['none','name','race','class','level','account','guid'])
-def test_separate_eligible_fixture_requires_its_exact_owned_identity(change):
+@pytest.mark.parametrize('hunter',[False,True])
+def test_separate_eligible_fixture_requires_its_exact_owned_identity(change,hunter):
     t,old,park,finish=chain()
     fixture={'guid':5,'account_id':2,'character_name':'Harnessctrl','race':1,'class':9,'level':10}
+    if hunter:fixture.update(guid=6,character_name='Harnesshunt',**{'class':3})
     if change!='none':
         key={'name':'character_name','account':'account_id'}.get(change,change)
         fixture[key]='Harnessone' if key=='character_name' else 99
@@ -101,3 +103,30 @@ def test_offline_observer_installation_binds_every_committed_file(tmp_path,monke
     else:
         with pytest.raises(RuntimeError):module.install_observer(t,128 if change=='wrong_version' else 129)
         assert not t.receipt and (target/'ClientInteractions.lua').read_text()=='observer_version=128'
+
+
+@pytest.mark.parametrize('unchanged',[True,False])
+def test_hunter_reentry_preserves_all_prior_actor_checks_before_registration(tmp_path,monkeypatch,unchanged):
+    from tools.client_compatibility import interaction_hunter_fixture as hunter
+    t,old,park,finish=chain();t.persist=lambda:None;t.out=tmp_path
+    fixture={'guid':6,'account_id':2,'character_name':'Harnesshunt','race':1,'class':3,'level':10}
+    old.update(class_actor=fixture,origin_native={'guid':2},origin_saved={},origin_roster=[],protected_baseline={'1':{}})
+    park.update(actor=fixture,retained_class_fixture={'guid':6,'online':0},retained_class_saved={'spells':[1515]},
+        retained_class_pets=[{'id':4,'owner':6}])
+    paths=[tmp_path/n/'episode.json' for n in ('preparation','park','finish')]
+    monkeypatch.setattr(module,'closed',lambda p:dict(zip(paths,(old,park,finish)))[p])
+    monkeypatch.setattr(module.lab,'sha256',lambda _:'source')
+    monkeypatch.setattr(module,'origin_checks',lambda _: {'original':True})
+    monkeypatch.setattr(module,'character',lambda *a:park['retained_class_fixture'])
+    monkeypatch.setattr(module,'saved',lambda *a:park['retained_class_saved'])
+    monkeypatch.setattr(module,'pets',lambda *a:park['retained_class_pets'])
+    monkeypatch.setattr(module.actors,'load',lambda:t.fixture)
+    monkeypatch.setattr(hunter,'protected',lambda _: {'actor_1_unchanged':unchanged})
+    calls=[];monkeypatch.setattr(module.actors,'register',lambda g:calls.append(g) or fixture)
+    monkeypatch.setattr(module,'shot',lambda p: {'file':p.name})
+    if unchanged:
+        module.prepare(t,*paths)
+        assert calls==[6] and t.receipt['protected_baseline']==old['protected_baseline']
+    else:
+        with pytest.raises(RuntimeError):module.prepare(t,*paths)
+        assert calls==[]

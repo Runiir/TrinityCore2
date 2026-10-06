@@ -26,9 +26,11 @@ def test_only_verified_bridge_replacement_preserves_fixture_continuity():
 
 
 @pytest.mark.parametrize('change',['none','name','race','class','level','account','guid'])
-def test_eligible_fixture_crosses_only_with_its_exact_identity(change):
+@pytest.mark.parametrize('hunter',[False,True])
+def test_eligible_fixture_crosses_only_with_its_exact_identity(change,hunter):
     t,old,park,finish,d=data()
     fixture={'guid':5,'account_id':2,'character_name':'Harnessctrl','race':1,'class':9,'level':10}
+    if hunter:fixture.update(guid=6,character_name='Harnesshunt',**{'class':3})
     if change!='none':
         key={'name':'character_name','account':'account_id'}.get(change,change)
         fixture[key]='Harnessone' if key=='character_name' else 99

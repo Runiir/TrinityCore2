@@ -87,3 +87,13 @@ def test_four_skill_records_use_standard_hotfix_connect_and_bulk_lookup():
     for row in rows:
         body=r.raw(55);assert body==hotfixes.lookup(TABLE,row['record_id'])==bytes.fromhex(row['data'])
     r.end()
+
+
+@pytest.mark.parametrize('index',[2,3])
+@pytest.mark.parametrize('column',[1,2,3,4,7,8])
+def test_hunter_rows_cannot_borrow_warlock_skill_class_or_other_rank_semantics(codec,index,column):
+    native,spec=small();rows=[r['native_values'][:] for r in spec['records']]
+    rows[index][column]+=1;spec['records'][index]['native_values']=rows[index][:]
+    native,_=small(rows);spec['native_source_sha256']=hashlib.sha256(native).hexdigest()
+    with pytest.raises(ValueError):convert(native,spec)
+    assert 'error' in codec(op='control_skill_hotfixes',native=native.hex(),config=spec)

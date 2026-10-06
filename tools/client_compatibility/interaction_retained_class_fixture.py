@@ -38,8 +38,9 @@ def parking_restored(park):
 def continuity(t,old,park,finish,deployment,preparation_sha):
     previous=old.get('runtime',{});current=t.receipt['runtime']
     fixture=old.get('class_actor',{})
-    eligible=(fixture.get('guid')==5 and tuple(fixture.get(k) for k in
-        ['character_name','race','class','level','account_id'])==('Harnessctrl',1,9,10,2))
+    eligible=tuple(fixture.get(k) for k in
+        ['guid','character_name','race','class','level','account_id']) in (
+            (5,'Harnessctrl',1,9,10,2),(6,'Harnesshunt',1,3,10,2))
     if (old.get('phase')!='await_owned_class_lobby_review' or
         old.get('origin_actor',{}).get('guid')!=2 or (fixture.get('guid')!=4 and not eligible) or
         old.get('actor')!=t.fixture or old.get('origin_actor')!=t.fixture or
@@ -101,6 +102,9 @@ def prepare(t,preparation,parked,origin_finish,deployment_path,observer_version=
         retained=old['retained_level_one']
         checks.update(retained_level_one_character=character(4,2)==retained['character'],
             retained_level_one_saved=saved(4)==retained['saved'],retained_level_one_pets=pets(4)==retained['pets'])
+    if guid==6:
+        from .interaction_hunter_fixture import protected
+        checks.update(protected(old))
     if not all(checks.values()):raise RuntimeError('retained class or original saved state changed')
     sources=[preparation,parked,origin_finish,deployment_path]
     t.receipt.update(sources=[{'path':str(p),'sha256':lab.sha256(p)} for p in sources],
@@ -110,6 +114,7 @@ def prepare(t,preparation,parked,origin_finish,deployment_path,observer_version=
         checks=checks,qualified_scope='Retained native-account class fixture continuity only; no gameplay qualification.')
     t.persist()
     if guid==5:t.receipt['retained_level_one']=old['retained_level_one']
+    if guid==6:t.receipt['protected_baseline']=old['protected_baseline']
     if observer_version is not None:
         from .interaction_retained_class_reentry import install_observer
         install_observer(t,observer_version)
