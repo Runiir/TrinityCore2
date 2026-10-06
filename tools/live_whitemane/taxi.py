@@ -9,6 +9,17 @@ from .smooth_move import walk
 from tools.client_compatibility import travel_policy
 
 
+def origin_names(row,origin):
+    known='Doras' if origin['id']==23 else origin.get('master_name')
+    if known:return {known}
+    ui=row['farm_ui'];soft=ui.get('soft_interact') or {}
+    world=row['archaeology']['world'];target=origin['point']
+    if (soft.get('exists') and soft.get('name') and world['instance']==target['instance']
+            and math.hypot(world['north']-target['north'],world['west']-target['west'])<=2):
+        return {soft['name']}
+    raise RuntimeError('no named flight master candidate at the addon origin')
+
+
 def run(folder,origin,destination):
     folder.mkdir(parents=True,exist_ok=False)
     result={'origin':origin,'destination':destination,'phases':[],'completed':False}
@@ -34,9 +45,10 @@ def run(folder,origin,destination):
         elif action=='interact':
             # This route names Orgrimmar's Horde flight master; other origins
             # use the confirmed public soft target or tooltip name supplied later.
-            names={'Doras'} if origin['id']==23 else {origin.get('master_name','')}
-            phase['approach']=walk(folder,target,tolerance=2)
+            phase['approach']=walk(folder,target,tolerance=.5)
             approached=observe(folder/f'approached_{index:02d}.png')
+            names=origin_names(approached,origin)
+            phase['public_origin_candidate']=sorted(names)
             phase['interaction']=interact.use(folder/f'interaction_{index:02d}',approached,names)
             time.sleep(.5)
         elif action=='taxi':

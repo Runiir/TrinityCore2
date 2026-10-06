@@ -53,6 +53,7 @@ RETRYABLE=(
     'artifact tooltip observation did not follow the cursor',
     'named artifact mouseover is unavailable',
     'named artifact mouseover changed before interaction',
+    'no named flight master candidate at the addon origin',
 )
 
 
