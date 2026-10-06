@@ -40,7 +40,8 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
             if r['cost']>0 and r['fragments']>=required and (r['fragments']>=150 or r['index'] in batches.active_races):
                 actions[f"solve_{r['index']}"]=(f"Solve race {r['index']} using maximum accepted keystones",{'race':r['index']})
     if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
-    if m['map_id']!=245 and route.get('kind')=='shortcut' and teleport_button(ui):
+    if (m['map_id']!=245 and route.get('kind')=='shortcut' and teleport_button(ui)
+            and not any(a.get(k) for k in ('mounted','flying','falling'))):
         actions['teleport']=('Teleport to Tol Barad to begin the shortcut to Orgrimmar',None)
     if ui.get('taxi') and route.get('exit'):
         current=route.get('current_taxi');node=next((n for n in ui['taxi'] if n['id']==current),None)

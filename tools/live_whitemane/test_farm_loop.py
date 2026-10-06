@@ -83,6 +83,15 @@ def test_shortcut_keeps_a_future_flight_master_out_of_the_active_route_leg():
     assert 'flight' in actions and 'teleport' not in actions
 
 
+@pytest.mark.parametrize('flag',['mounted','flying','falling'])
+def test_server_teleport_rejects_mount_or_airborne_state_and_keeps_landing_available(flag):
+    from . import farm_policy
+    r=row();r['archaeology'].update({'falling':False,flag:True})
+    r['farm_ui']['actionbars']=[{'enabled':True,'kind':'spell','id':5000028,'label':'Teleport: Tol Barad'}]
+    actions=farm_policy.legal_actions(r,SolveBatches())
+    assert 'teleport' not in actions and 'land' in actions
+
+
 def test_named_game_object_soft_target_can_use_interact_without_unit_exists(monkeypatch,tmp_path):
     monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
     r=row();monkeypatch.setattr(interact,'observe',lambda _:copy.deepcopy(r))
