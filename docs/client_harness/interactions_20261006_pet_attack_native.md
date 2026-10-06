@@ -12,4 +12,6 @@ The batch closes21 episodes,19 successful and two excluded failures. The second 
 
 The user's four ordinary Attack Swing requests reach the native server, and native Attack Start responses reach the primary client. This unscripted capture does not establish a melee damage outcome or explain the reported failure. A nearby hostile's native spell is also filtered by the self-cast path. Player combat outcomes require a separate controlled diagnostic.
 
-Closed batch verification, remote DVC member review and exact local offload precede the ranged-caster repair. Native pet spell delivery and a fresh whole Attack trial remain open. Coverage stays439/916 qualified,477 open. Scripts remain blocked; original softTargetInteract0 remains unrestored at1.
+The388415751-byte DVC138 archive is pushed and cloud verified. Remote review verifies42 JSON receipts and163 referenced images. A sibling lobby-frame resolver correction passes22 checks and retains batch-boundary and exact-digest checks; the initial review refusal remains a diagnostic failure.209 PNG frames totaling369585720 bytes and the exact archive/cache object are offloaded. Scoped DVC status records the intentional absent local cache; DVC push reports everything up to date. The pointer is `artifacts/client_harness/442_interactions_20261006_138.tar.gz.dvc`.
+
+Native pet spell delivery and a fresh whole Attack trial remain open. Coverage stays439/916 qualified,477 open. Scripts remain blocked; original softTargetInteract0 remains unrestored at1.
