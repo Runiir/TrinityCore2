@@ -65,3 +65,13 @@ def test_an_action_records_observed_facts_without_assuming_its_result(tmp_path):
     assert json.loads(path.read_text())['facts']['mounted'] is True
     r['archaeology']['mounted']=True
     assert not combat.needs_facing(r,10,0)
+
+
+def test_ground_camera_choice_is_recorded_without_changing_physical_facts(tmp_path):
+    import json
+    r=row();r['archaeology'].update(falling=False,loot_open=False)
+    path=tmp_path/'graph.json'
+    event=farm_graph.transition(path,'camera_ground',r)
+    state=json.loads(path.read_text())
+    assert event['to']=='observe'
+    assert state['facts']['mounted'] is False and state['facts']['flying'] is False

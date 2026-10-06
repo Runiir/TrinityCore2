@@ -50,3 +50,13 @@ def test_out_of_range_context_uses_visible_find_bearing_then_allows_loot():
     assert not survey_find.in_range(row)
     row['visible_find']['distance_yards']=.4
     assert label(guide.model_state(row,waypoint,survey_find.in_range(row)))=='loot'
+
+
+def test_find_diagnostics_are_bounded_and_do_not_store_coordinates_or_owners():
+    reader=SimpleNamespace(Reader=Cursor);window=SimpleNamespace(active=True,player=(1,2),requested=100)
+    diagnostics={}
+    for count in range(30):
+        data=struct.pack('<HIB',1,count+2,192)
+        assert survey_find.owned(reader,window,'server_to_client',0x4B0000,data,101,diagnostics) is None
+    assert len(diagnostics)==16
+    assert all(key.startswith('update_header_') and isinstance(value,int) for key,value in diagnostics.items())
