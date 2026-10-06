@@ -10,4 +10,6 @@ Ordinary clear-selection2, Follow7, Assist15, aura/vitals10 and whole17/protecte
 
 The initial guards pass117, corrected runtime-GUID guards118, initial world/auth suite3059 and final suite3060 in51.86s. All actual failed staging receipts and request shapes are retained. Native worldserver, packet bridge and both existing clients retain their lifetimes on HDMI-1. Scripts remain blocked; original softTargetInteract0 remains unrestored at1.
 
-Closed batch verification, DVC checkpoint/member review and exact local offload precede native Attack translation. The captured selected-target Follow variant also remains an open repair prerequisite. Coverage stays439/916 qualified,477 open.
+Closed verification accounts for12 episodes:9 successful and3 failed. The primary's ordinary idle logout causes a failed read-only closure preflight before any chat input. A fresh, separately reviewed normal Return reentry passes6 checks and restores the original seated AFK state with9 native checks. All14 runtime/restoration checks pass; the saved Imp row differs from closed UI136 only in savetime1791308043→1791309458. No saved pet aura or temporary teleport rows remain. Protected actors and both client lifetimes remain unchanged.
+
+DVC checkpoint/member review and exact local offload precede native Attack translation. The captured selected-target Follow variant also remains an open repair prerequisite. Coverage stays439/916 qualified,477 open.
