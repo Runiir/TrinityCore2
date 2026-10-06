@@ -46,6 +46,10 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     tolerance=(6 if flying else 4) if tolerance is None else tolerance
+    route=list((guidance or {}).get('ground_route') or [])
+    if route and (flying or any(p['instance']!=target['instance'] for p in route)):
+        raise ValueError('ground route requires one grounded world instance')
+    if route:target=route[0]
     from .resources import DEFAULTS,limits,check
     check()
     receipts=deque(maxlen=(limits() or DEFAULTS)['movement_history']);started=time.time()
@@ -98,12 +102,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     if 0<elapsed<=.5:sample_periods.append(elapsed)
                 last_sample=m['client_uptime_ms']
                 distance=math.hypot(target['north']-world['north'],target['west']-world['west'])
+                while len(route)>1 and distance<=tolerance:
+                    route.pop(0);target=route[0];distance=math.hypot(target['north']-world['north'],target['west']-world['west'])
+                    previous=None;last_progress=cycle
                 if distance>(1500 if flying and site_id is None else 750):
                     raise RuntimeError('waypoint exceeds its bounded route range')
                 speeds=(row.get('farm_ui') or {}).get('move_speeds') or {}
                 swimming=bool(a.get('swimming'))
                 speed=m['speed'] if m['speed']>.5 else (speeds.get('swim' if swimming else 'flight' if flying else 'run') or (5 if swimming else 32 if flying else 7))
-                if deadline is None:deadline=cycle+10+3*distance/speed
+                if deadline is None:
+                    route_length=distance+sum(math.hypot(b['north']-a['north'],b['west']-a['west']) for a,b in zip(route,route[1:]))
+                    deadline=cycle+10+3*route_length/speed
                 if cycle>deadline:raise RuntimeError('continuous waypoint exceeded its calculated emergency bound')
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
                 if survey_generation is None:survey_generation=a.get('successful_surveys')
@@ -139,7 +148,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if new_decision:
                     with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
                 if action in ('survey','loot','arrived','land'):return list(receipts)
-                if action not in ('forward_short','forward_long','turn_left','turn_right','cruise','portal'):
+                if action not in ('forward_short','forward_long','turn_left','turn_right','cruise','portal',
+                        'follow_detour','step_left','step_right','step_back','step_forward'):
                     raise RuntimeError('Laya interrupted continuous waypoint movement with '+action)
                 sticky.renew()
                 if previous is None or distance<previous-.15:last_progress=cycle

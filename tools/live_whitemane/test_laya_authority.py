@@ -52,7 +52,8 @@ def test_recovery_keeps_unconfirmed_pickup_and_does_not_renew_inactivity(monkeyp
 def test_blocked_travel_moves_only_along_the_short_recovery_laya_selected(monkeypatch,tmp_path,phase):
     from . import fast_waypoint
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
-    r=row();r['archaeology'].update(site_id=315 if phase=='dig' else None,
+    r=row();r['movement']['facing_radians']=0
+    r['archaeology'].update(site_id=315 if phase=='dig' else None,
         can_survey=phase=='dig',falling=False,loot_open=False,grounded=True)
     target={'instance':1,'north':4,'west':0}
     graph=tmp_path/'graph.json';farm_graph.transition(graph,'flight',r,target=target)

@@ -92,7 +92,27 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if not flags['available']: raise RuntimeError('character became unavailable during flight')
         error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
         state=travel_policy.model_state(flags)
-        action,model,request,response=choose(state,'travel',physical_state=flags)
+        alternatives={};detour={}
+        if not combat_landing and height_plan and height_plan.get('reference_departure_column_clear') is False and not at_height:
+            from . import terrain_context,escape_route,laya_ui
+            alternatives=escape_route.candidates(row,target);detour=terrain_context.detour(row,target)
+            state={'task':'Reach the retained destination from beneath an obstruction',
+                'mounted':a['mounted'],'flying':a['flying'],
+                'terrain':terrain_context.facts(row,target),
+                'clear_directions':{k:v['reference_collision_clear'] for k,v in alternatives.items()},
+                'reference_ground_detour_available':detour.get('available',False)}
+            options={'observe':'Wait here',**{k:'Move '+k.removeprefix('step_')+' around the overhead obstruction' for k in alternatives}}
+            if a['mounted']:
+                options['takeoff']='Ascend toward the planned route height'
+                options['land' if a['flying'] else 'dismount']='Land here' if a['flying'] else 'Dismount here'
+            else:options['mount']='Mount here'
+            if a['flying']:options['cruise']='Fly directly toward the destination'
+            if detour.get('available'):options['follow_detour']='Walk around the obstruction on the connected reference route'
+            action,request,response=laya_ui.choose(state,
+                'Choose how to reach the destination. The reference ascent column is blocked by a ceiling. '
+                'Prefer a clear side or ground detour before ascending. Reference geometry can differ from the client.',options)
+            model={'model':laya_ui.MODEL,'revision':laya_ui.REVISION}
+        else:action,model,request,response=choose(state,'travel',physical_state=flags)
         if combat_landing and action not in ('land','dismount','arrived','observe'):
             raise RuntimeError('combat landing cannot mount, ascend, or travel horizontally')
         phase={'observed_at':row['observed_at'],'flags':flags,'state':state,'model':model,
@@ -102,7 +122,11 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if action=='arrived': return receipts
         if graph and action!='observe':phase['graph_transition']=farm_graph.transition(graph,action,row,pending=pending_find.load(row))
         queued=None
-        if action=='mount':
+        if action in alternatives or action=='follow_detour':
+            phase['reference_ground_detour']=detour
+            phase['obstacle_approach']=terrain_context.move(folder,row,action,request,response,alternatives,detour)
+            height_plan=None;at_height=False
+        elif action=='mount':
             if a['mounted']:raise RuntimeError('mount toggle requires an unmounted character')
             queued=action_queue.run(folder/f'command_{index:02d}',row,'mount',
                 lambda _:key('shift+space',.15),lambda r:r['archaeology']['mounted'],observe,

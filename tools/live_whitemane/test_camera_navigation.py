@@ -67,3 +67,31 @@ def test_ground_turn_does_not_require_or_steer_a_stale_body_pitch(monkeypatch,tm
     monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
     camera_navigation.align(tmp_path/'camera',row(),{'instance':1,'north':0,'west':10})
     assert abs(state['yaw']-math.pi/2)<.18 and all(y==0 for _,y in deltas)
+
+
+def test_interrupted_yaw_does_not_reset_the_same_submitted_camera_preset_again(monkeypatch,tmp_path):
+    import json
+    (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    before={'runtime':{'pid':1},'movement':{'facing_radians':0,'client_uptime_ms':100,'sequence':1},
+        'archaeology':{'flying':False,'falling':False}}
+    commands=[]
+    monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *a:commands.append(a[-1]['text']) or {'completed':True})
+    monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
+    class Sender:
+        initialization={}
+        def move(self,*_):pass
+    class Sticky:
+        def __init__(self,*_,**__):pass
+        def renew(self):pass
+        def button(self,*_):pass
+        def relative(self,*_):pass
+        def close(self):pass
+    monkeypatch.setattr(camera_input,'Input',Sender);monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
+    stopped={'movement':{'in_world':True,'dead':False,'in_combat':False,'on_taxi':False,'speed':7},
+        'archaeology':{'casting':False}}
+    monkeypatch.setattr(camera_navigation,'observe',lambda _:stopped)
+    for index in range(2):
+        with pytest.raises(RuntimeError,match='player state'):
+            camera_navigation.align(tmp_path/str(index),before)
+    assert commands==['/run ResetView(2)SetView(2)','/run SetView(2)']
+    assert json.loads((tmp_path/'run/camera_presets.json').read_text())['camera_pose_measured'] is False

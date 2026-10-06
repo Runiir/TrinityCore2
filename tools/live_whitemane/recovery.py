@@ -88,22 +88,30 @@ def run(folder,row,step,session,graph):
             and not a['mounted'] and not a['flying'] and not m['in_combat']):
         choices['resurvey']='Discard the failed route estimate and use a fresh Survey from this position'
     alternatives={}
-    if (step['phase'] in ('flight','dig') and not pending and not m['in_combat'] and not a['casting']
-            and not a['falling'] and m.get('speed',0)==0):
+    terrain={};route={}
+    if (step['phase'] in ('flight','dig') and not m['in_combat'] and not a['casting']
+            and m.get('facing_radians') is not None
+            and not a['falling'] and (m.get('speed',0)==0 or any(reason in step['local_failure']
+                for reason in ('blocked','no height progress','movement mode')))):
         target=step.get('target')
         if step['phase']=='dig' and session.get('dig_output'):
             dig=json.loads((Path(session['dig_output'])/'session.json').read_text())
             guide=(dig.get('steps') or [{}])[-1].get('guide') or {}
             target=guide.get('world') or target
         alternatives=escape_route.candidates(row,target)
+        from . import terrain_context
+        terrain=terrain_context.facts(row,target)
+        route=terrain_context.detour(row,target)
         choices.update({key:'Move 4 yards '+key.removeprefix('step_')+
             ' relative to the route using forward movement and camera steering to clear the obstruction'
             for key in alternatives})
+        if route.get('available'):choices['follow_detour']='Follow the connected reference ground route around the obstruction'
     state={'goal':'Find the Vial of the Sands recipe through archaeology',
         'failed_activity':step['phase'],'failure':step['local_failure'],
         'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'pending_pickup':bool(pending),'world':a['world'],'grounded':a.get('grounded'),
         'local_movement_alternatives':alternatives,
+        'terrain':terrain,'reference_ground_detour':route,
         'recent_recoveries':session.get('recoveries',[])[-3:]}
     context=state
     instructions=('Choose the next recovery. Preserve an uncollected find. Change approach '
@@ -121,13 +129,18 @@ def run(folder,row,step,session,graph):
         context={'task':'Escape an obstruction to resume '+('digging' if step['phase']=='dig' else 'flying'),
             'ascent_blocked':bool('ascent' in step['local_failure'] and dz is not None and abs(dz)<.25),
             'position_changed_after_retries':progressed,'flying':a['flying'],'grounded':a.get('grounded'),
-            'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()}}
+            'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()},
+            'terrain':terrain,'reference_detour_available':route.get('available',False),
+            'pending_pickup':bool(pending)}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
             'resurvey':'Survey again from this position',
             'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
-            'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination'}
+            'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination',
+            'follow_detour':'Follow the connected ground route around the wall'}
         choices={key:descriptions[key] for key in choices}
-        instructions='Choose how to clear the obstacle. Change direction when ascent is blocked. Prefer a clear direction.'
+        instructions=('Choose how to clear the obstacle. A blocked reference climb suggests a ceiling. '
+            'Use a clear side or connected ground detour instead of repeating a failed ascent. '
+            'Reference geometry can differ from the live client. Preserve a pending artifact.')
     action,request,response=laya_ui.choose(context,instructions,choices)
     result={'at':time.time(),'choice':action,'state':context,'observed_context':state,
         'request':request,'response':response,'inputs':[]}
@@ -135,16 +148,12 @@ def run(folder,row,step,session,graph):
     if action=='land':
         from .flight import fly
         result['inputs']=fly(folder,row,{'endpoint':a['world']},result,combat_landing=m['in_combat'])
-    elif action in alternatives:
-        from .fast_waypoint import walk
+    elif action in alternatives or action=='follow_detour':
+        from . import terrain_context
         from .smooth_move import GroundContact
-        result['target']=alternatives[action]['target']
+        result['target']=route['points'][-1] if action=='follow_detour' else alternatives[action]['target']
         try:
-            result['movement']=walk(folder,result['target'],flying=a['flying'],tolerance=.5,
-                site_id=a.get('site_id') if a.get('can_survey') else None,
-                guidance={'source':'Laya-selected short obstacle recovery'},
-                approved_intent=('cruise' if a['flying'] else 'forward_short',
-                    {'model':laya_ui.MODEL,'revision':laya_ui.REVISION},request,response))
+            result['movement']=terrain_context.move(folder,row,action,request,response,alternatives,route)
         except GroundContact as contact:
             result.update(outcome='short_recovery_reached_ground',ground_contact=contact.observation)
     elif action=='resurvey':

@@ -42,7 +42,11 @@ def plan(row, target, *, maximum_distance=750,near_ground=None,arrival_tolerance
         low_path=flight_path.envelope(columns,start,3,local_floor=True)
         low_route_clear=flight_path.checked(low_path,start,map_id,model_collision.clear_body_segment)
         if low_route_clear:path=low_path;margin=3;ceiling=max(p['height_yards'] for p in path)
+    try:departure_clear=model_collision.clear_body_segment(map_id,start,
+        [start[0],start[1],path[0]['height_yards']])
+    except (RuntimeError,OSError,ValueError):departure_clear=None
     return {'ceiling_yards':ceiling,'departure_height_yards':start[2],
+            'reference_departure_column_clear':departure_clear,
             'required_climb_yards':ceiling-start[2],'surface_margin_yards':margin,
             'near_ground_requested':near_ground,'near_ground_route_clear':low_route_clear,
             'planned_horizontal_yards':distance,'arrival_tolerance_yards':arrival_tolerance,

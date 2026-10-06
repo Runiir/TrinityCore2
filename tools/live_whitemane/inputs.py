@@ -28,6 +28,18 @@ def focus(title):
         screen.close()
 
 
+def type_command(sender,text,period):
+    """Pace normal key events at the observed client frame rate."""
+    from tools.second_client import ctl
+    for char in text:
+        mapped=ctl.key_for_char(char)
+        if mapped:
+            code,_=sender._keycode(sender.XK.string_to_keysym(mapped[0]));shifted=mapped[1]
+        else:code,shifted=sender._keycode(ord(char))
+        shift=[sender._keycode(sender.XK.string_to_keysym('Shift_L'))[0]] if shifted else []
+        sender._tap(shift+[code],period);time.sleep(period)
+
+
 def execute(title, action, arguments):
     from .resources import check,append_action
     check()
@@ -93,7 +105,7 @@ def execute(title, action, arguments):
                 # when the client renders a background frame late.
                 hold=max(.15,period)
                 sender.key('Return',hold=hold);time.sleep(period)
-                sender.type(text);time.sleep(period)
+                type_command(sender,text,period);time.sleep(period)
                 sender.key('Return',hold=hold);time.sleep(period)
             else:
                 raise ValueError('unknown input action')

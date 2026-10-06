@@ -1,5 +1,6 @@
 """Execute a Laya-selected forward camera view using measured owned yaw."""
 import fcntl
+import json
 import math
 import time
 from . import inputs,runtime,native_control
@@ -17,9 +18,19 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
     view=None
     if grounded and (ground_view or target is None or reset_view):
         preset=4 if ground_view else 2
+        path=runtime.ROOT/'run/camera_presets.json'
+        previous=json.loads(path.read_text()) if path.exists() else {}
+        identity=before.get('runtime')
+        initialized=previous.get('runtime')==identity and preset in previous.get('initialized',[])
+        text=('/run SetView(%d)'%preset if initialized else '/run ResetView(%d)SetView(%d)'%(preset,preset))
         view=inputs.execute('World of Warcraft','command',{
-            'text':'/run ResetView(%d)SetView(%d)'%(preset,preset),
+            'text':text,
             'frame_period_seconds':1/max(1,(before.get('farm_ui') or {}).get('frame_rate') or 1)})
+        if view.get('completed'):
+            presets=previous.get('initialized',[]) if previous.get('runtime')==identity else []
+            runtime.write(path,{'runtime':identity,'initialized':sorted(set(presets+[preset])),
+                'last_preset':preset,'submitted_at':time.time(),
+                'camera_pose_measured':False})
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     desired=before['movement']['facing_radians']

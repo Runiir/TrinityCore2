@@ -23,7 +23,8 @@ def candidates(row,target):
         if pose:
             start=[world['north'],world['west'],pose['height_yards']]
             end=[point['north'],point['west'],pose['height_yards']]
-            clear=model_collision.clear_body_segment(world['instance'],start,end)
+            try:clear=model_collision.clear_body_segment(world['instance'],start,end)
+            except (RuntimeError,OSError,ValueError):pass
         result[name]={'target':point,'distance_yards':math.hypot(point['north']-world['north'],point['west']-world['west']),
             'reference_collision_clear':clear,
             'reference_matches_live_assets':False}

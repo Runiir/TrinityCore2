@@ -98,6 +98,15 @@ def choose(state):
             'forward_short':'Walk closer to the artifact','forward_long':'Move toward the destination'}
         descriptions.update(swim_up='Swim upward toward the artifact depth',swim_down='Swim downward toward the artifact depth')
         options={key:descriptions[key] for key in options}
+    if state.get('swimming') and vertical is not None and abs(vertical)>.5:
+        direction='down' if vertical<0 else 'up'
+        context={**context,'direction_to_artifact':direction,
+            'artifact_location_relative_to_player':'below' if vertical<0 else 'above',
+            'vertical_distance_yards':abs(vertical)}
+        for move in ('up','down'):
+            key='swim_'+move
+            if key in options:options[key]='Swim '+move+(' toward' if move==direction else ' away from')+' the observed artifact depth'
+        instructions+=' The artifact is vertically '+direction+' from the current position. Choose movement toward its depth.'
     action,request,response=laya_ui.choose(context,instructions,options)
     action=explore(action,response,options,state)
     return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response
