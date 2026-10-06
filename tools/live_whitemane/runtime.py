@@ -30,7 +30,10 @@ def write(path, data):
                                          delete=False) as handle:
             temporary = Path(handle.name)
             os.chmod(temporary, 0o600)
-            json.dump(data, handle, indent=2)
+            # Encode once instead of issuing a write for every JSON token.
+            # These machine receipts can be several MiB; pretty printing on
+            # every feedback tick delays the next selected client action.
+            handle.write(json.dumps(data, separators=(',', ':')))
             handle.write('\n')
         temporary.replace(path)
     finally:
