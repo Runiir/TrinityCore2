@@ -26,7 +26,7 @@ from .interaction_operations import command
 from .interaction_pet_attack_capture import restore
 from .melee_health_fixture import MeleeHealthFixture,native_target
 from .pet_attack_capture_evidence import target_guid
-from .melee_result_evidence import pairs as hit_pairs,public_events,health_checks
+from .melee_result_evidence import pairs as hit_pairs,public_events,health_checks,stop_request_contract
 from .pet_attack_evidence import combat_pairs
 from .observation.inventory import Inventory
 from .observation.journal import entries
@@ -240,6 +240,12 @@ def run(t,preparation,entry,stage_path,review_path):
                 {'attack':{'kind':'chat','value':'/startattack'}},started,diagnostic_action='attack',before_input=admit),
                 'owned_melee_health_started_pass')
             stop_since=time.time();t.execute({'kind':'chat','value':'/stopattack'});stopped=True
+            submission=next(c for c in reversed(t.receipt['chat_submission_checks'])
+                if c.get('selected_text')=='/stopattack' and c.get('matches') and c.get('submitted'))
+            stop_image=t.out/submission['frame']['file'];pre_submit_at=stop_image.stat().st_mtime
+            if lab.sha256(stop_image)!=submission['frame']['sha256'] or not stop_since<=pre_submit_at<=time.time():
+                raise RuntimeError('ordinary Stop submission frame differs')
+            t.receipt['ordinary_stop_submission']={'check':submission,'pre_submit_at':pre_submit_at};t.persist()
             public,frame=read_page(t,'health_public_swings','combat_log','/tcui combat_log')
             command(t,'/tcui state');state,health_frame=t.observe('health_stopped_outcome');o.poll();until=time.time()
             packets=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if p.get('session')==session and since<=p.get('time',0)<=until]
@@ -269,8 +275,7 @@ def run(t,preparation,entry,stage_path,review_path):
             native_stops=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='to_native' and p['time']>=stop_since and p['body']=='' for p in packets)
             checks.update(one_owned_modern_attack=len(modern)==1 and identity==modern_guid(target['guid'],0),
                 one_exact_native_attack=len(native)==1 and native[0]['body']==struct.pack('<Q',target['guid']).hex(),
-                ordinary_stop_request_contract=modern_stops==native_stops and (modern_stops==1 or
-                    modern_stops==0 and first_health==0 and first['public_autoattack']['active'] is False),
+                ordinary_stop_request_contract=stop_request_contract(modern_stops,native_stops,stops,pre_submit_at),
                 attack_start_delivered=bool(starts) and all(p['client'] for p in starts),
                 attack_stop_delivered=bool(stops) and all(p['client'] for p in stops),
                 final_public_target=state['target'].get('guid')==target_guid(target) or health(o)==0 and not state['target'].get('exists'),

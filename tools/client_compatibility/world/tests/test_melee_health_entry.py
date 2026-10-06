@@ -36,3 +36,21 @@ def test_saved_stage_record_recovers_numeric_health_fields_without_changing_the_
 
 def test_saved_target_refuses_two_strings_for_one_native_field_number():
     with pytest.raises(ValueError):run.load_target({'fields':{'26':14,'026':0}})
+
+
+def test_living_critter_native_stop_delivered_before_typed_stop_needs_no_duplicate_request():
+    stops=[{'native':{'time':2.},'client':{'time':2.01}}]
+    assert run.stop_request_contract(0,0,stops,3.)
+    assert run.stop_request_contract(1,1,stops,3.)
+
+
+@pytest.mark.parametrize('fault',['undelivered','too_late','reverse_time','missing','request_mismatch','duplicate'])
+def test_zero_stop_request_requires_actual_delivery_before_stock_command_submission(fault):
+    stops=[{'native':{'time':2.},'client':{'time':2.01}}];modern=native=0
+    if fault=='undelivered':stops[0]['client']=None
+    elif fault=='too_late':stops[0]['client']['time']=3.
+    elif fault=='reverse_time':stops[0]['native']['time']=2.02
+    elif fault=='missing':stops=[]
+    elif fault=='request_mismatch':modern=1
+    elif fault=='duplicate':modern=native=2
+    assert not run.stop_request_contract(modern,native,stops,3.)

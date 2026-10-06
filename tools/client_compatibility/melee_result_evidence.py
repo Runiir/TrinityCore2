@@ -65,3 +65,9 @@ def health_checks(before,after,matched,public_health,foreign_hits,*,allow_death=
         'exact_native_health_loss':before-after==damage,
         'exact_public_health':public_health==after or allow_death and after==0 and public_death,
         'no_foreign_target_hits':not foreign_hits}
+
+
+def stop_request_contract(modern_count,native_count,stops,pre_submit_at):
+    if modern_count==native_count==1:return True
+    if modern_count or native_count:return False
+    return any(p.get('client') and p['native']['time']<=p['client']['time']<pre_submit_at for p in stops)
