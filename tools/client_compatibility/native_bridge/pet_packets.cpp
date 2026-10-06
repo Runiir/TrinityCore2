@@ -1,5 +1,6 @@
 #include "pet_packets.hpp"
 #include <algorithm>
+#include <unordered_set>
 
 namespace bridge
 {
@@ -11,6 +12,8 @@ struct PetState
     std::uint64_t pending_guid=0;
     std::uint64_t controlled_guid=0; // Granted by a released native control catalog.
     Bytes pending_spells;
+    std::array<std::uint32_t,10> pending_buttons{},controlled_buttons{};
+    std::unordered_set<unsigned> pending_autocast,controlled_autocast;
 };
 namespace
 {
@@ -40,7 +43,7 @@ std::uint32_t modern_pet_action(std::uint32_t native)
     }
     return (type<<23)|action;
 }
-Bytes spell_message(View body, unsigned map, std::uint64_t &guid)
+Bytes spell_message(View body, unsigned map, std::uint64_t &guid, PetState &state)
 {
     Reader r(body);guid=r.take<std::uint64_t>();
     Writer w;w.guid(Protocol::modern_guid(guid,map));
@@ -55,6 +58,12 @@ Bytes spell_message(View body, unsigned map, std::uint64_t &guid)
     if(react>3 || command>4 || flags>255)throw std::runtime_error("unsupported native pet mode");
     auto buttons=r.unpack("10I");
     auto count=r.take<std::uint8_t>();auto actions=r.unpack(std::string(count,'I'));
+    for(unsigned i=0;i<buttons.size();++i)state.pending_buttons[i]=static_cast<std::uint32_t>(integer(buttons[i]));
+    for(auto const &action:actions)
+    {
+        auto word=static_cast<std::uint32_t>(integer(action));auto type=word>>24;
+        if(type==0x81 || type==0xc1)state.pending_autocast.insert(word&0x00ffffffu);
+    }
     for(auto &button:buttons)button=modern_pet_action(static_cast<std::uint32_t>(integer(button)));
     for(auto &action:actions)action=modern_pet_action(static_cast<std::uint32_t>(integer(action)));
     auto cooldown_count=r.take<std::uint8_t>();
@@ -82,11 +91,13 @@ Reply pet_ready(Protocol const &p, State &owner)
        !p.field(unit,"UNIT_FIELD_PETNUMBER") || owner.self_snapshot.is_null() ||
        field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=s.pending_guid)return {};
     Bytes message;message.swap(s.pending_spells);s.controlled_guid=s.pending_guid;s.pending_guid=0;
+    s.controlled_buttons=s.pending_buttons;s.controlled_autocast.swap(s.pending_autocast);
     return Packet{"SMSG_PET_SPELLS_MESSAGE",std::move(message)};
 }
 Reply pet_request(Protocol const &p, State &owner, std::string const &name, View body)
 {
-    if(name!="CMSG_REQUEST_PET_INFO" && name!="CMSG_QUERY_PET_NAME" && name!="CMSG_PET_ACTION")return {};
+    if(name!="CMSG_REQUEST_PET_INFO" && name!="CMSG_QUERY_PET_NAME" && name!="CMSG_PET_ACTION" &&
+       name!="CMSG_PET_SET_ACTION")return {};
     if(!owner.created || owner.character.is_null())throw std::runtime_error("pet read without owned character");
     if(name=="CMSG_REQUEST_PET_INFO")
     {
@@ -95,6 +106,27 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     Reader r(body);auto guid=owned_unit(owner,r.guid());
     auto const &unit=owner.visible_units.at(guid);
     auto number=p.field(unit,"UNIT_FIELD_PETNUMBER");
+    if(name=="CMSG_PET_SET_ACTION")
+    {
+        auto slot=r.take<std::uint32_t>(),word=r.take<std::uint32_t>();
+        auto tail=r.take<std::uint8_t>();r.end();auto spell=word&0x007fffffu,type=word>>23;
+        // Only the four remotely reviewed UI130 autocast forms. The final
+        // byte is held to captured zero; bar drag/removal is not admitted.
+        if(tail || (type!=0x101 && type!=0x181) ||
+           !((slot==3 && spell==3110) || (slot==4 && spell==6307)))
+            throw std::runtime_error("unsupported pet autocast shape");
+        if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
+           integer(get(unit,"kind"))!=3 || guid>>52!=0xf14 || !number ||
+           field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() || owner.self_snapshot.is_null() ||
+           field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid)
+            throw std::runtime_error("pet autocast without current native control authority");
+        auto const &s=*owner.pet_state;auto native=s.controlled_buttons[slot],native_type=native>>24;
+        if((native&0x00ffffffu)!=spell || (native_type!=0x81 && native_type!=0xc1) ||
+           !s.controlled_autocast.contains(spell))
+            throw std::runtime_error("pet autocast without current native spell and slot authority");
+        auto native_word=((type==0x181?0xc1u:0x81u)<<24)|spell;
+        return Packet{name,Writer().pack("QII",{guid,slot,native_word}).finish()};
+    }
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
@@ -130,12 +162,19 @@ PetActionTranslation translate_pet_action(Protocol const &p, State &owner, View 
     try {return {pet_request(p,owner,"CMSG_PET_ACTION",body),{}};}
     catch(std::exception const &e) {return {{},e.what()};}
 }
+PetActionTranslation translate_pet_set_action(Protocol const &p, State &owner, View body)
+{
+    try {return {pet_request(p,owner,"CMSG_PET_SET_ACTION",body),{}};}
+    catch(std::exception const &e) {return {{},e.what()};}
+}
 Reply pet_response(Protocol const &p, State &owner, std::string const &name, View body)
 {
     if(name=="SMSG_PET_SPELLS")
     {
         auto &s=pet_state(owner);s.pending_spells.clear();s.pending_guid=0;s.controlled_guid=0;
-        std::uint64_t guid=0;auto message=spell_message(body,owner.map(),guid);
+        s.pending_buttons.fill(0);s.controlled_buttons.fill(0);
+        s.pending_autocast.clear();s.controlled_autocast.clear();
+        std::uint64_t guid=0;auto message=spell_message(body,owner.map(),guid,s);
         if(!guid)return Packet{"SMSG_PET_SPELLS_MESSAGE",std::move(message)};
         s.pending_guid=guid;s.pending_spells=std::move(message);
         return pet_ready(p,owner);
@@ -172,8 +211,10 @@ void pet_removed(State &owner, std::uint64_t guid)
 {
     if(!owner.pet_state)return;
     auto &s=*owner.pet_state;
-    if(s.controlled_guid==guid)s.controlled_guid=0;
-    if(s.pending_guid==guid){s.pending_guid=0;s.pending_spells.clear();}
+    if(s.controlled_guid==guid)
+    {s.controlled_guid=0;s.controlled_buttons.fill(0);s.controlled_autocast.clear();}
+    if(s.pending_guid==guid)
+    {s.pending_guid=0;s.pending_spells.clear();s.pending_buttons.fill(0);s.pending_autocast.clear();}
     for(auto it=s.names.begin();it!=s.names.end();)
     {
         s.name_count-=std::erase_if(it->second,[guid](auto const &query){return query.guid==guid;});

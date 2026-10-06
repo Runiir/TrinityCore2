@@ -77,12 +77,14 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         native_send(*who_request(state,name,body));return;
     }
     if(Protocol::bank_close(state,name,body))return;
-    if(name=="CMSG_PET_ACTION")
+    if(name=="CMSG_PET_ACTION" || name=="CMSG_PET_SET_ACTION")
     {
         if(!state.created || !active_world)throw std::runtime_error("pet action without active owned world");
-        auto translation=translate_pet_action(protocol,state,body);
+        auto translation=name=="CMSG_PET_ACTION" ? translate_pet_action(protocol,state,body) :
+            translate_pet_set_action(protocol,state,body);
         if(!translation.rejection.empty())
-            service.events.event("pet_action_translation_rejected",{{"session",owner.id},{"error",translation.rejection}});
+            service.events.event(name=="CMSG_PET_ACTION" ? "pet_action_translation_rejected" :
+                "pet_autocast_translation_rejected",{{"session",owner.id},{"error",translation.rejection}});
         else if(translation.packet)native_send(*translation.packet);
         return;
     }
