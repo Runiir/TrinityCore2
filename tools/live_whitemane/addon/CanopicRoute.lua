@@ -12,6 +12,8 @@ function WhitemaneLiveCanopicRoute()
     local kind = route.pendingLoot and "pending_loot" or route.digging and "dig" or
         route.shortcut and "shortcut" or route.portal and "portal" or route.origin and "taxi" or "site"
     local result = {available=true,kind=kind,text=route.text,instruction=route.instruction,
+        fare_copper=route.fareCopper,fare_source=route.fareSource,fare_policy=route.farePolicy,
+        route_facts_schema='instant_fare_routes_v1',
         target=point(route.target),taxi_open=not not A.nav.taxiOpen,current_taxi=A.nav.currentTaxi,
         site=route.site and {id=route.site.id,name=route.site.name,point=point(route.site)},
         session_finds=A.session and A.session.finds,session_sites=A.session and A.session.sites,
@@ -28,7 +30,10 @@ function WhitemaneLiveCanopicRoute()
         result.portal={key=route.portal.key,destination=route.portal.destination,
                        from=point(route.portal.from),to=point(route.portal.to)}
     end
-    if route.origin then result.origin={id=route.origin.id,name=route.origin.name,point=point(route.origin)} end
+    if route.origin then
+        local book=A.db.liveTaxiFares and A.db.liveTaxiFares[tostring(route.origin.id)]
+        result.origin={id=route.origin.id,name=route.origin.name,master_name=book and book.master_name,point=point(route.origin)}
+    end
     if route.exit then result.exit={id=route.exit.id,name=route.exit.name,point=point(route.exit)} end
     return result
 end

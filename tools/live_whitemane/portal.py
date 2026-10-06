@@ -28,13 +28,21 @@ def run(folder,portal,*,approved_intent=None):
     runtime.write(folder/'portal.json',result)
     if action!='portal':raise RuntimeError('portal approach needs Laya portal action')
     fresh=observe(folder/'precheck.png');stationary(before,fresh)
-    result['approach']=walk(folder/'approach',target,tolerance=.4,
-        guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
-    row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
-    result['camera_view']=align(folder/'view',row,target,reset_view=True)
-    row=observe(folder/'view_ready.png')
     names={'Portal to '+portal['destination']}
     if portal.get('key')=='org-uldum':names.add('Portal to Uldum')
+    soft=fresh.get('farm_ui',{}).get('soft_interact') or {}
+    named=(soft.get('name') in names and soft.get('enabled')=='3'
+        and fresh.get('farm_ui',{}).get('bindings',{}).get('INTERACTTARGET'))
+    if named:
+        row=action_queue.wait_stopped(folder,fresh,observe)
+        result['approach']={'source':'confirmed public named portal interaction',
+            'exact_coordinate_required':False}
+    else:
+        result['approach']=walk(folder/'approach',target,tolerance=.4,
+            guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
+        row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
+        result['camera_view']=align(folder/'view',row,target,reset_view=True)
+        row=observe(folder/'view_ready.png')
     result['interaction']=interact.use(folder/'interaction',row,names)
     for index in range(25):
         time.sleep(.4)

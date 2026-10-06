@@ -66,6 +66,7 @@ RETRYABLE=(
     'named artifact mouseover is unavailable',
     'named artifact mouseover changed before interaction',
     'no named flight master candidate at the addon origin',
+    'grounded jump',
 )
 
 
@@ -89,11 +90,13 @@ def run(folder,row,step,session,graph):
         choices['resurvey']='Discard the failed route estimate and use a fresh Survey from this position'
     alternatives={}
     terrain={};route={}
-    if (step['phase'] in ('flight','dig') and not m['in_combat'] and not a['casting']
+    if (step['phase'] in ('flight','dig','portal','taxi') and not m['in_combat'] and not a['casting']
             and m.get('facing_radians') is not None
             and not a['falling'] and (m.get('speed',0)==0 or any(reason in step['local_failure']
                 for reason in ('blocked','no height progress','movement mode')))):
         target=step.get('target')
+        if step['phase']=='portal':target=(target or {}).get('from')
+        if step['phase']=='taxi':target=target[0]['point'] if target else None
         if step['phase']=='dig' and session.get('dig_output'):
             dig=json.loads((Path(session['dig_output'])/'session.json').read_text())
             guide=(dig.get('steps') or [{}])[-1].get('guide') or {}
@@ -106,6 +109,9 @@ def run(folder,row,step,session,graph):
             ' relative to the route using forward movement and camera steering to clear the obstruction'
             for key in alternatives})
         if route.get('available'):choices['follow_detour']='Follow the connected reference ground route around the obstruction'
+        from . import ground_jump
+        if ground_jump.legal(row) and alternatives.get('step_forward',{}).get('distance_yards',0)>.5:
+            choices['jump_forward']='Jump forward over a small obstacle, then observe landing and progress'
     state={'goal':'Find the Vial of the Sands recipe through archaeology',
         'failed_activity':step['phase'],'failure':step['local_failure'],
         'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
@@ -131,12 +137,15 @@ def run(folder,row,step,session,graph):
             'position_changed_after_retries':progressed,'flying':a['flying'],'grounded':a.get('grounded'),
             'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()},
             'terrain':terrain,'reference_detour_available':route.get('available',False),
+            'jump_forward_legal':'jump_forward' in choices,
+            'jump_height':'measure from owned altitude telemetry; no assumed clearance',
             'pending_pickup':bool(pending)}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
             'resurvey':'Survey again from this position',
             'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
             'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination',
-            'follow_detour':'Follow the connected ground route around the wall'}
+            'follow_detour':'Follow the connected ground route around the wall',
+            'jump_forward':'Jump forward over a small step and check whether it cleared the obstacle'}
         choices={key:descriptions[key] for key in choices}
         instructions=('Choose how to clear the obstacle. A blocked reference climb suggests a ceiling. '
             'Use a clear side or connected ground detour instead of repeating a failed ascent. '
@@ -148,6 +157,9 @@ def run(folder,row,step,session,graph):
     if action=='land':
         from .flight import fly
         result['inputs']=fly(folder,row,{'endpoint':a['world']},result,combat_landing=m['in_combat'])
+    elif action=='jump_forward':
+        from . import ground_jump
+        result['movement']=ground_jump.move(folder,row,alternatives['step_forward']['target'])
     elif action in alternatives or action=='follow_detour':
         from . import terrain_context
         from .smooth_move import GroundContact

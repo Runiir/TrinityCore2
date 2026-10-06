@@ -7,7 +7,8 @@ from . import boundaries
 def facts(row,target=None,*,climb_yards=8):
     pose=row.get('owned_pose') or {};world=row['archaeology'].get('world')
     result={'source':'extracted reference MAPS/VMAP geometry',
-        'live_asset_match_verified':False,'available':False}
+        'live_asset_match_verified':False,'available':False,
+        'public_environment':(row.get('farm_ui') or {}).get('terrain_environment')}
     if not world or pose.get('height_yards') is None:return result
     point=[world['north'],world['west'],pose['height_yards']];map_id=world['instance']
     try:

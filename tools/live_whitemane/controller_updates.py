@@ -10,7 +10,7 @@ from . import runtime,action_queue,pending_find
 COMPONENTS=('guide','camera_steering','camera_navigation','fast_waypoint','smooth_move',
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
-    'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal')
+    'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump')
 
 
 class SourceUpdates:
@@ -72,12 +72,20 @@ class SourceUpdates:
         return order
 
 
+def matches_expected(actual,expected):
+    return isinstance(actual,dict) and all(
+        matches_expected(actual.get(key),value) if isinstance(value,dict)
+        else key in actual and actual[key]==value
+        for key,value in expected.items())
+
+
 def apply_addon_request(folder,row):
     path=runtime.ROOT/'run/addon_reload_request.json'
     if not path.exists():return False
     import json
     request=json.loads(path.read_text());ui=row.get('farm_ui') or {}
-    if ui.get('combat_facts_schema')=='observed_attackers_v1':
+    expected=request.get('expected',{'combat_facts_schema':'observed_attackers_v1'})
+    if matches_expected(ui,expected):
         request.update(completed=True,confirmed_at=time.time())
         runtime.write(Path(request['receipt']),request);path.unlink();return False
     a,m=row['archaeology'],row['movement']
@@ -88,8 +96,8 @@ def apply_addon_request(folder,row):
     from .farm_actions import command_choice
     try:
         request['selection']=command_choice(folder/'addon_update',row,'/reload',
-            'Load installed facts identifying mobs attacking this player',
-            'Reload the installed attacker observation telemetry')
+            request.get('goal','Load installed facts identifying mobs attacking this player'),
+            request.get('label','Reload the installed attacker observation telemetry'))
     except RuntimeError as error:
         request['retry_reason']=str(error)
         runtime.write(Path(request['receipt']),request);return False

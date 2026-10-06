@@ -39,6 +39,8 @@ function WhitemaneLiveActivity()
     local enemies=call(WhitemaneLiveCombatFacts) or {}
     return {activity_schema='whitemane_public_activity_v2',
         combat_facts_schema=enemies.schema,
+        terrain_environment={schema='public_environment_v1',indoors=call(IsIndoors),
+            outdoors=call(IsOutdoors),submerged=call(IsSubmerged)},
         move_speeds={current=current,run=run,flight=flight,swim=swim},gathering=gather,
         combat={target_exists=not not call(UnitExists,'target'),hostile=not not call(UnitCanAttack,'player','target'),
             target_engaged=enemies.target_engaged,attackers=enemies.attackers or {},

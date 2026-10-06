@@ -20,6 +20,17 @@ def origin_names(row,origin):
     raise RuntimeError('no named flight master candidate at the addon origin')
 
 
+def wait_menu(folder,before):
+    """Return as soon as fresh public gossip/taxi feedback confirms interaction."""
+    deadline=time.monotonic()+2
+    while time.monotonic()<deadline:
+        row=observe(folder/'menu_feedback.png')
+        if (row['movement']['in_combat'] or row['archaeology']['casting']
+                or row['farm_ui'].get('gossip') or row['farm_ui'].get('taxi')):return row
+        time.sleep(.05)
+    return row
+
+
 def run(folder,origin,destination):
     folder.mkdir(parents=True,exist_ok=False)
     result={'origin':origin,'destination':destination,'phases':[],'completed':False}
@@ -33,7 +44,7 @@ def run(folder,origin,destination):
         flags={'mode':'taxi','available':m['in_world'] and m['health_percent']>0 and not (m['dead'] or m['in_combat']),
            'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],
            'falling':a['falling'],'at_route_height':False,'near_destination':nearby,
-           'destination_reached':arrived,'taxi_map_open':bool(row['farm_ui']['taxi'])}
+           'destination_reached':arrived,'taxi_map_open':bool(row['farm_ui'].get('taxi'))}
         action,model,request,response=choose(travel_policy.model_state(flags),'travel',physical_state=flags)
         phase={'action':action,'before':row,'model':model,'request':request,'response':response}
         result['phases'].append(phase);runtime.write(folder/'taxi.json',result)
@@ -45,12 +56,21 @@ def run(folder,origin,destination):
         elif action=='interact':
             # This route names Orgrimmar's Horde flight master; other origins
             # use the confirmed public soft target or tooltip name supplied later.
-            phase['approach']=walk(folder,target,tolerance=.5)
-            approached=observe(folder/f'approached_{index:02d}.png')
+            known='Doras' if origin['id']==23 else origin.get('master_name')
+            soft=row['farm_ui'].get('soft_interact') or {}
+            if known and soft.get('name')==known and soft.get('enabled')=='3':
+                approached=row
+                phase['approach']={'source':'confirmed public named flight master',
+                    'exact_coordinate_required':False}
+            else:
+                phase['approach']=walk(folder,target,tolerance=.5,
+                    guidance={'source':'public flight-master approach'},
+                    approved_intent=(action,model,request,response))
+                approached=observe(folder/f'approached_{index:02d}.png')
             names=origin_names(approached,origin)
             phase['public_origin_candidate']=sorted(names)
             phase['interaction']=interact.use(folder/f'interaction_{index:02d}',approached,names)
-            time.sleep(.5)
+            phase['menu_feedback']=wait_menu(folder,approached)
         elif action=='taxi':
             nodes=row['farm_ui']['taxi'];button=next((n for n in nodes if n['id']==destination['id']),None)
             if not button or not button['enabled'] or button['state']!=1:
@@ -63,7 +83,8 @@ def run(folder,origin,destination):
                 time.sleep(.4)
                 try:after=observe(folder/'transit.png')
                 except RuntimeError as e:
-                    if str(e).startswith(('live public observer is unavailable','direct public addon feed unavailable')):continue
+                    if str(e).startswith(('live public observer is unavailable','direct public addon feed unavailable',
+                            'local public tiles unavailable')):continue
                     raise
                 w=after['archaeology']['world']
                 if not after['movement']['on_taxi'] and w and w['instance']==end['instance'] and math.hypot(w['north']-end['north'],w['west']-end['west'])<30:

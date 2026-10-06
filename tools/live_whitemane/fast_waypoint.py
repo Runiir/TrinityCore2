@@ -149,7 +149,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
                 if action in ('survey','loot','arrived','land'):return list(receipts)
                 if action not in ('forward_short','forward_long','turn_left','turn_right','cruise','portal',
-                        'follow_detour','step_left','step_right','step_back','step_forward'):
+                        'follow_detour','step_left','step_right','step_back','step_forward','interact'):
                     raise RuntimeError('Laya interrupted continuous waypoint movement with '+action)
                 sticky.renew()
                 if previous is None or distance<previous-.15:last_progress=cycle

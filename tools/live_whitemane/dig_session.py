@@ -20,10 +20,14 @@ from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 # Upgrade the catalog once when an older running controller loads this module
 # at an action boundary. Its SourceUpdates instance resolves the new globals.
 from . import controller_updates
-if {'swim_vertical','inputs','portal'}-set(controller_updates.COMPONENTS):
+if {'swim_vertical','inputs','portal','taxi','ground_jump'}-set(controller_updates.COMPONENTS):
     import importlib
     from . import world_facts
+    old_callback=controller_updates.apply_addon_request
     importlib.reload(controller_updates)
+    # farm_loop already bound this callback when it started. Preserve that
+    # binding while admitting the new expected-schema reload request.
+    old_callback.__code__=controller_updates.apply_addon_request.__code__
     importlib.reload(world_facts)
     importlib.reload(farm_graph)
     importlib.reload(inputs)

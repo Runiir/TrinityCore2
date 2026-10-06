@@ -67,3 +67,21 @@ def test_uldum_route_label_uses_the_observed_portal_name(monkeypatch,tmp_path):
     result=portal.run(tmp_path/'portal',{'key':'org-uldum','from':{'instance':1,'north':21,'west':0},
         'to':destination,'destination':'Ramkahen (Uldum)'},approved_intent=('portal','Laya',{},{}))
     assert result['completed']
+
+
+def test_named_portal_can_interact_before_reaching_an_obstructed_exact_coordinate(monkeypatch,tmp_path):
+    before=row();before['archaeology']['falling']=False
+    destination={'instance':1,'north':-9444,'west':-959}
+    before['farm_ui']['soft_interact']['name']='Portal to Uldum'
+    after=copy.deepcopy(before);after['archaeology']['world']=destination
+    frames=iter([before,before,after])
+    monkeypatch.setattr(portal,'observe',lambda _:next(frames))
+    monkeypatch.setattr(portal,'stationary',lambda *_:None)
+    monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
+    monkeypatch.setattr(portal,'walk',lambda *_,**__:pytest.fail('named portal is already interactable'))
+    monkeypatch.setattr(portal,'align',lambda *_,**__:pytest.fail('normal named interaction needs no camera reset'))
+    monkeypatch.setattr(portal.interact,'use',lambda *_:{'completed':True})
+    monkeypatch.setattr(portal.time,'sleep',lambda _:None)
+    result=portal.run(tmp_path/'portal',{'key':'org-uldum','from':{'instance':1,'north':5,'west':0},
+        'to':destination,'destination':'Ramkahen (Uldum)'},approved_intent=('portal','Laya',{},{}))
+    assert result['completed'] and result['approach']['exact_coordinate_required'] is False

@@ -114,12 +114,15 @@ def use(folder,before,names,*,maximum=100):
                 # requested search point. Laya chooses its newly legal action
                 # using the observed name and cursor, without moving away.
                 from . import laya_ui
-                state={'artifact_name':name,'cursor':row['farm_ui']['cursor'],
+                artifact=name in FIND_NAMES
+                state={'object_name':name,'object_kind':'archaeology find' if artifact else 'named route interaction',
+                    'cursor':row['farm_ui']['cursor'],
                     'combat':row['movement']['in_combat'],'casting':row['archaeology']['casting'],
                     'mouseover_interact_binding':'Mouse Button 5'}
+                if artifact:state['artifact_name']=name
                 action,request,response=laya_ui.choose(state,
-                    'Interact with the currently named archaeology find using the user mouseover binding.',
-                    {'mouseover_interact':'Press Mouse Button 5 on the artifact under the cursor',
+                    'Interact with the currently named '+('archaeology find' if artifact else 'route object')+' using the user mouseover binding.',
+                    {'mouseover_interact':'Press Mouse Button 5 on the named object under the cursor',
                      'recheck':'Move away and recheck the tooltip before a right click'})
                 runtime.write(folder/'mouseover_choice.json',{'state':state,'choice':action,'request':request,'response':response})
                 if action=='mouseover_interact':

@@ -107,6 +107,19 @@ def test_shortcut_keeps_a_future_flight_master_out_of_the_active_route_leg():
     assert 'flight' in actions and 'teleport' not in actions
 
 
+def test_portal_route_keeps_future_taxi_and_other_nearby_portals_from_overwriting_next_leg():
+    from . import farm_policy
+    r=row();r['archaeology']['falling']=False;r['farm_ui']['flyable']=True
+    portal={'key':'selected','destination':'Selected','from':{'instance':1,'north':5,'west':0}}
+    other={'key':'other','destination':'Other','from':{'instance':1,'north':10,'west':0}}
+    r['farm_ui']['route'].update(kind='portal',portal=portal,known_portals=[portal,other],
+        origin={'point':{'instance':1,'north':500,'west':0}},exit={'id':531})
+    actions=farm_policy.legal_actions(r,SolveBatches())
+    assert actions['portal'][1]==portal and actions['flight'][1]['north']==5
+    assert actions['portal_other'][1]==other and actions['flight_portal_other'][1]['north']==10
+    assert 'taxi' not in actions
+
+
 @pytest.mark.parametrize('flag',['mounted','flying','falling'])
 def test_server_teleport_rejects_mount_or_airborne_state_and_keeps_landing_available(flag):
     from . import farm_policy

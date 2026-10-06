@@ -51,17 +51,22 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
     portals=list(route.get('known_portals') or [])
     if route.get('portal'):portals.append(route['portal'])
     for p in portals:
+        selected=route.get('portal')==p and (route.get('kind')=='portal'
+            or m['map_id']==245 or not p.get('key'))
         if distance(a['world'],p.get('from'))<30:
             if not a['flying'] and not a['falling']:
-                actions['portal']=('Approach and use the nearby route portal',p)
+                key='portal' if selected else 'portal_'+p['key']
+                actions[key]=(('Use the next portal in the addon route' if selected else
+                    'Use nearby portal to '+p['destination']+', which differs from the addon next leg'),p)
             if ui.get('flyable'):
-                actions['flight']=('Fly precisely to the nearby portal entrance, then land',
+                key='flight' if selected else 'flight_portal_'+p['key']
+                actions[key]=('Fly to portal to '+p.get('destination','the route destination')+', then land',
                     {**p['from'],'arrival_tolerance_yards':.4})
         elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
             actions['flight']=('Fly to the route portal',p['from'])
     # The addon includes later legs in its route description. Its flight
     # master becomes the active destination only after the shortcut arrives.
-    if route.get('origin') and route.get('exit') and route.get('kind')!='shortcut':
+    if route.get('origin') and route.get('exit') and route.get('kind')=='taxi':
         target=route['origin']['point']
         if distance(a['world'],target)<12:actions['taxi']=('Take the route taxi',(route['origin'],route['exit']))
         elif a['world'] and a['world']['instance']==target['instance']:
@@ -143,6 +148,10 @@ def choose(row,batches,session):
         'guide_error':guide_error,
         'ground_approach_blocked':ground_blocked,
         'route':route.get('kind'),'route_instruction':route.get('instruction'),
+        'addon_next_destination':route.get('target'),
+        'addon_digsite_name':(route.get('site') or {}).get('name'),
+        'instant_flight_paths':True,'route_fare_copper':route.get('fare_copper'),
+        'route_fare_source':route.get('fare_source'),'route_fare_policy':route.get('fare_policy'),
         'via_Tol_Barad_requested':session['via_tolbarad'],
         'route_distances_yards':{name:round(distance(a['world'],point)) for name,point in (
             ('flight_master',(route.get('origin') or {}).get('point')),
@@ -161,10 +170,12 @@ def choose(row,batches,session):
         'Follow the current route instruction through Tol Barad and Orgrimmar to the next digsite. '
         'When the teleport shortcut is pending, use Tol Barad and its Orgrimmar portal before approaching the distant flight master. '
         'Land first for a stationary teleport. Check remaining minimap blips before leaving a completed site. '
-        'Use a nearby portal; if its ground approach is blocked, fly to that entrance and land. Learn from the last failure.',
+        'Follow the addon next leg and lower known taxi fare for instant flights. Another nearby portal can lead to a more expensive route. '
+        'If the selected portal approach is blocked, fly to that entrance and land. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)
-    phase='solve' if action.startswith('solve_') else action
+    phase=('solve' if action.startswith('solve_') else 'portal' if action.startswith('portal_')
+        else 'flight' if action.startswith('flight_portal_') else action)
     decision={'state':state,'request':request,'response':response,'choice':action}
     IntentQueue(session).offer(phase,options[action][1],decision,row)
     return phase,options[action][1],decision

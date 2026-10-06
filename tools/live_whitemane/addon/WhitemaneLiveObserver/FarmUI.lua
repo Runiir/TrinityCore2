@@ -111,7 +111,8 @@ local function taxi()
         local map=call(GetTaxiMapID)
         for _,node in ipairs(call(C_TaxiMap and C_TaxiMap.GetAllTaxiNodes,map or 0) or {}) do
             append(rows,control(_G["TaxiButton"..node.slotIndex],node.name or call(TaxiNodeName,node.slotIndex),
-                {id=node.nodeID,slot=node.slotIndex,state=node.state}))
+                {id=node.nodeID,slot=node.slotIndex,state=node.state,
+                    fare_copper=node.state==1 and call(TaxiNodeCost,node.slotIndex)}))
         end
     end
     return rows

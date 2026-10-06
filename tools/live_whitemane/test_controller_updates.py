@@ -38,3 +38,13 @@ def test_addon_reload_waits_for_combat_to_end_and_does_not_interrupt_a_pending_f
     assert not controller_updates.apply_addon_request(tmp_path,r) and path.exists()
     r['farm_ui']['combat_facts_schema']='observed_attackers_v1'
     assert not controller_updates.apply_addon_request(tmp_path,r) and not path.exists()
+
+
+def test_reload_expected_facts_support_mixed_nested_and_flat_fields():
+    expected={'combat_facts_schema':'observed_attackers_v1',
+        'route':{'route_facts_schema':'instant_fare_routes_v1'},
+        'terrain_environment':{'schema':'public_environment_v1','indoors':False}}
+    assert controller_updates.matches_expected(expected,expected)
+    assert not controller_updates.matches_expected({'combat_facts_schema':'observed_attackers_v1'},expected)
+    incomplete={**expected,'terrain_environment':{'schema':'public_environment_v1'}}
+    assert not controller_updates.matches_expected(incomplete,expected)
