@@ -116,7 +116,8 @@ def descend(folder,target,*,site_id=None,allow_combat=False):
                 if site_id is not None:check_point(site_id,world)
                 remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
                 grounded=not a['flying'] and not a['falling']
-                if remaining>12 and not grounded:
+                digging_here=(site_id is not None and a.get('site_id')==site_id and a.get('can_survey'))
+                if remaining>12 and not grounded and not digging_here:
                     raise RuntimeError('character drifted away from landing destination')
                 altitude=a.get('altitude_yards');vertical=None
                 if rows and altitude is not None and rows[-1]['altitude_yards'] is not None:

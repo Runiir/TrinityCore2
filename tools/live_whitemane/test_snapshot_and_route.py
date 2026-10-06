@@ -4,6 +4,17 @@ from . import guide, snapshot
 from .motion import turn_duration
 
 
+def test_pickup_visits_the_new_marker_at_the_collected_spot_but_not_nearby_uncollected_spots():
+    session={'marker_target':None,'marker_fallback':True}
+    row={'archaeology':{'visible_markers':[
+        {'marker_id':'nearby','distance_yards':2},
+        {'marker_id':'just_collected','distance_yards':.08}]}}
+    guide.pickup(session,row)
+    assert session['visited_marker_ids']==['just_collected']
+    guide.pickup(session,row)
+    assert session['visited_marker_ids']==['just_collected']
+
+
 def test_arrow_timestamp_does_not_replace_survey_uptime_and_altitude_is_not_terrain_height():
     flags=32|128|256|1024
     length=snapshot.HEADER.size+snapshot.ARROW.size+4+2+2

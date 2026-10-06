@@ -158,7 +158,7 @@ def run(args):
                 break
             tool=telescope(before,session)
             if session.get('observed_find_count',a['looted_finds']) < a['looted_finds']:
-                routes.pickup(session)
+                routes.pickup(session,before)
             session['observed_find_count']=a['looted_finds']
             if tool and session.get('marker_fallback') and not session.get('telescope_target'):
                 for attempt in range(60):
@@ -362,7 +362,7 @@ def run(args):
                     step['outcome']='out_of_range_approach_same_pending_find'
                 else:
                     args.loot_at=None
-                    routes.pickup(session)
+                    routes.pickup(session,after)
                     pending_find.confirm_pickup(after,name=(value or {}).get('name'))
                     pending_find.clear();session.pop('pending_find',None)
                     session.pop('accepted_pickup_intent',None)

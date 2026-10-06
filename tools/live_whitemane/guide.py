@@ -92,9 +92,17 @@ def marker_survey_outcome(session, guide, fresh_tool, artifact_discovered):
             session['marker_fallback']=True
 
 
-def pickup(session):
+def pickup(session,row=None):
     target=session.get('marker_target')
-    if target: session['visited_marker_ids'].append(target['marker_id'])
+    visited=session.setdefault('visited_marker_ids',[])
+    if target and target['marker_id'] not in visited:visited.append(target['marker_id'])
+    if row:
+        # A find discovered by telescope can add its saved GatherMate marker
+        # only after gathering. Do not immediately Survey twice at that spot.
+        closest=min(row['archaeology'].get('visible_markers') or [],
+            key=lambda marker:marker['distance_yards'],default=None)
+        if closest and closest['distance_yards']<=.5 and closest['marker_id'] not in visited:
+            visited.append(closest['marker_id'])
     session.update(marker_target=None,marker_fallback=False,marker_failed_surveys=0)
     session.pop('telescope_target',None)
     session.pop('reapproach_find',None);session.pop('pickup_retries',None)

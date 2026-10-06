@@ -142,7 +142,8 @@ def test_interrupted_digsite_landing_surveys_on_ground_instead_of_remounting(mon
     assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']
 
 
-def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkeypatch,tmp_path):
+@pytest.mark.parametrize('digsite_descent',[False,True])
+def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkeypatch,tmp_path,digsite_descent):
     from . import smooth_move
     from tools.client_compatibility import native_input_adapter
     from types import SimpleNamespace
@@ -158,10 +159,14 @@ def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkey
         def close(self):pass
     monkeypatch.setattr(native_input_adapter,'Input',Sender)
     def observe(_):
-        sequence[0]+=1;r=observation(12.24)
+        sequence[0]+=1;r=observation(12.24,flying=digsite_descent and sequence[0]==1)
         r['movement']['sequence']=r['archaeology']['sequence']=sequence[0]
+        r['archaeology'].update(can_survey=True,site_id=315)
         return r
     monkeypatch.setattr(smooth_move,'observe',observe)
     monkeypatch.setattr(smooth_move.time,'sleep',lambda _:None)
-    rows=smooth_move.descend(tmp_path,{'instance':1,'north':0,'west':0})
-    assert len(rows)==2 and all(r['grounded'] for r in rows) and events==[]
+    monkeypatch.setattr(smooth_move,'check_point',lambda *_:None)
+    rows=smooth_move.descend(tmp_path,{'instance':1,'north':0,'west':0},
+        site_id=315 if digsite_descent else None)
+    assert len(rows)==(3 if digsite_descent else 2) and all(r['grounded'] for r in rows[-2:])
+    assert events==([('press','x'),('release','x')] if digsite_descent else [])
