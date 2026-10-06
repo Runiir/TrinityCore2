@@ -9,7 +9,7 @@ from .interaction_owned_class_fixture import prepared,origin_checks,saved,SCRIPT
 from .observation.journal import entries
 from .world.native_objects import records
 from .world.objects import INDEX
-from .interaction_operations import click_case
+from .interaction_operations import click_case,controls
 from .interaction_macros import require
 from .observation.inventory import Inventory
 from .interaction_spellbook_recon import resources
@@ -85,6 +85,7 @@ def suite(t,preparation,source,from_entry=False):
                     'SpellBookFrame' in a['panels'] and not a.get('lua_errors') and not a.get('blocked_actions') else
                     'client_or_protocol_failure'}),'spellbook_open_pass')
             probe=detail(t,'public_pet_after_entry')
+            t.receipt['spellbook_controls']=controls(t);t.persist()
         finally:
             t.clean_panels()
             t.receipt['native_resources_preserved']=resources(oracle)==e['resources'] and saved(t.fixture['guid'])==e['entered_saved']
