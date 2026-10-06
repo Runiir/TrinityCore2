@@ -80,5 +80,16 @@ before bridge-only deployment. The native worldserver stays running and both ori
 actors remain offline. Both stock reconnections and complete deployment restorations
 pass. The closed prerequisite boundary passes16 checks, including all five prior
 actors and exact retained Hunter native/saved/pet rows. Live Control Pet purchase and
-pet-service qualification are the next batch. DVC checkpoint and actual remote
-verification are required before raw evidence is pruned.
+pet-service qualification continue in UI142.
+
+The closed UI141 checkpoint is
+`artifacts/client_harness/442_interactions_20261007_141.tar.gz.dvc`,208193437 bytes,
+MD5 `2b58bcddcece675131b11920ce631f9c`, SHA
+`b84bcff58e287f681fcb151f117d77b04dad353353b776eca44bc58f58141cc0`.
+Direct actual remote streaming verifies all73 JSON receipts,153 images and the
+three exact accepted Tame Beast purchase/native-learn/client-delivery packets.
+No local download copy is created. Only after that proof,153 raw PNG files
+(185302638 bytes) and the exact workspace archive/cache object are offloaded.
+`dvc status` intentionally reports the offloaded object not in cache; `dvc push`
+reports up to date. Post-checkpoint verification/pruning/eviction reports are copied
+into UI142 for retention. No interaction qualification is added by this batch.
