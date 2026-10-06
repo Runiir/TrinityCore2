@@ -2,7 +2,7 @@
 import gzip
 import hashlib
 import pytest
-from tools.client_compatibility.checkpoint_interactions import archive_digest,unchanged_archive
+from tools.client_compatibility.archive_integrity import archive_digest,unchanged_archive
 
 
 def test_complete_gzip_integrity_and_stable_workspace(tmp_path):

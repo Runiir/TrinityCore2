@@ -1,6 +1,5 @@
 """Archive closed player-interaction evidence with DVCLive and push it to DVC."""
 import argparse
-import gzip
 import hashlib
 from collections import Counter
 import json
@@ -16,6 +15,7 @@ from . import lab_runtime as lab
 from .observation.journal import entries
 from .interaction_metrics import choice_counts
 from .native_input.control import verified as verified_input
+from .archive_integrity import archive_digest,unchanged_archive
 
 SAFE_BODY_NAMES={
     'SMSG_ON_MONSTER_MOVE',
@@ -118,18 +118,6 @@ SAFE_BODY_NAMES={
     'CMSG_SET_ACTION_BAR_TOGGLES','CMSG_SET_ACTIONBAR_TOGGLES',
     'CMSG_STAND_STATE_CHANGE','CMSG_STANDSTATECHANGE','SMSG_STAND_STATE_UPDATE','CMSG_SET_SHEATHED',
     'SMSG_ALL_ACHIEVEMENT_DATA','SMSG_CRITERIA_UPDATE','SMSG_ACHIEVEMENT_EARNED'}
-
-
-def archive_digest(path):
-    # Reading through gzip EOF validates the compressed stream's CRC and size.
-    with gzip.open(path,'rb') as stream:
-        while stream.read(1024*1024):pass
-    return lab.sha256(path)
-
-
-def unchanged_archive(path,expected):
-    if lab.sha256(path)!=expected:
-        raise RuntimeError('workspace checkpoint archive changed after source integrity verification')
 
 
 def initialize(directory):
