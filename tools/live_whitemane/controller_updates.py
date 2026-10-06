@@ -10,7 +10,7 @@ from . import runtime,action_queue,pending_find
 COMPONENTS=('guide','camera_steering','camera_navigation','fast_waypoint','smooth_move',
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
-    'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump')
+    'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump','controller_updates')
 
 
 class SourceUpdates:
@@ -84,7 +84,8 @@ def upgrade_bound_callbacks():
     updated=0
     for frame in sys._current_frames().values():
         while frame:
-            if frame.f_globals.get('__name__')==__package__+'.farm_loop' and frame.f_code.co_name=='run':
+            if (frame.f_code.co_name=='run' and
+                    Path(frame.f_code.co_filename).resolve()==runtime.REPO/'tools/live_whitemane/farm_loop.py'):
                 callback=frame.f_locals.get('apply_addon_request')
                 if callback and callback is not apply_addon_request and callback.__module__==__name__:
                     callback.__code__=apply_addon_request.__code__;updated+=1

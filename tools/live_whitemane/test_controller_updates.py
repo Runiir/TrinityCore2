@@ -53,8 +53,9 @@ def test_reload_expected_facts_support_mixed_nested_and_flat_fields():
 def test_startup_reload_callback_is_updated_even_after_multiple_module_reloads(monkeypatch):
     old=types.FunctionType((lambda folder,row:False).__code__,controller_updates.__dict__)
     old.__module__=controller_updates.__name__
-    frame=types.SimpleNamespace(f_globals={'__name__':controller_updates.__package__+'.farm_loop'},
-        f_code=types.SimpleNamespace(co_name='run'),f_locals={'apply_addon_request':old},f_back=None)
+    frame=types.SimpleNamespace(f_globals={'__name__':'__main__'},
+        f_code=types.SimpleNamespace(co_name='run',co_filename=str(controller_updates.runtime.REPO/'tools/live_whitemane/farm_loop.py')),
+        f_locals={'apply_addon_request':old},f_back=None)
     monkeypatch.setattr(controller_updates.sys,'_current_frames',lambda:{1:frame})
     assert controller_updates.upgrade_bound_callbacks()==1
     assert old.__code__ is controller_updates.apply_addon_request.__code__

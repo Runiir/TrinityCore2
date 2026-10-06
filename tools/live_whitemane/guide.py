@@ -1,6 +1,8 @@
 """Keep an explicit visible-marker waypoint; telescope search follows failed attempts."""
 import math
 
+GREEN_ADVANCE_YARDS=10
+
 
 def fresh_guidance(row, tool):
     """The arrow and candidate facts must describe this Survey, not the last."""
@@ -123,16 +125,16 @@ def select(row, session, tool):
             heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
         else:
             if color!='green':raise RuntimeError('waiting for a boundary-verified public addon arrow')
-            heading=tool['facing_radians'];distance=3
+            heading=tool['facing_radians'];distance=GREEN_ADVANCE_YARDS
             endpoint={'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
                       'west':world['west']+math.sin(heading)*distance}
         candidate=(public.get('candidate_matches') is True and
             abs(public.get('at',0)-tool['observed_at'])<=2)
         if color=='green' and not candidate:
             # The addon's default 40-yard line is an uncertain color range,
-            # not a measured artifact distance. Follow the user's short-step
+            # not a measured artifact distance. Follow the user's ten-yard
             # rule, then Survey again instead of crossing that whole range.
-            distance=min(distance,3)
+            distance=min(distance,GREEN_ADVANCE_YARDS)
             endpoint={'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
                       'west':world['west']+math.sin(heading)*distance}
         guide={'source':'Survey telescope','color':color,'distance_yards':round(distance,2),

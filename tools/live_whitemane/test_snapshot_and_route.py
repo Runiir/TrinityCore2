@@ -74,7 +74,7 @@ def test_delayed_matching_marker_replaces_cached_green_short_step():
         'farm_ui':{'survey_guidance':{'at':94.4,'candidate_matches':True,'candidate_along_yards':29.2}}}
     tool={'entry':204272,'observed_at':100,'facing_radians':0}
     session={'marker_fallback':True}
-    assert guide.select(row,session,tool)[0]['distance_yards']==3
+    assert guide.select(row,session,tool)[0]['distance_yards']==10
     row['archaeology']['arrow']['endpoint']['north']=26.49
     row['farm_ui']['survey_guidance'].update(at=100,candidate_along_yards=26.49)
     route,_=guide.select(row,session,tool)
@@ -90,7 +90,7 @@ def test_delayed_candidate_outside_displayed_markers_upgrades_the_addon_endpoint
         'arrow':{'observed_at':100,'boundary_verified':True,
             'endpoint':{'instance':1,'north':26.49,'west':0}}},'farm_ui':{}}
     tool={'entry':204272,'observed_at':100,'facing_radians':0};session={'marker_fallback':True}
-    assert guide.select(row,session,tool)[0]['distance_yards']==3
+    assert guide.select(row,session,tool)[0]['distance_yards']==10
     row['farm_ui']['survey_guidance']={'at':100,'candidate_matches':True}
     route,_=guide.select(row,session,tool)
     assert route['distance_yards']==26.49 and route['recorded_marker_matches']

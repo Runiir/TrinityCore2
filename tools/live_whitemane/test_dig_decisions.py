@@ -104,8 +104,8 @@ def test_pickup_guide_exposes_its_actual_arrival_tolerance():
     assert not target['arrived'] and target['arrival_tolerance_yards']==.5
 
 
-@pytest.mark.parametrize('candidate,length',[(False,3),(True,17)])
-def test_green_fallback_is_a_short_step_and_is_not_arrived_before_moving(candidate,length):
+@pytest.mark.parametrize('candidate,length',[(False,10),(True,17)])
+def test_green_fallback_advances_ten_yards_and_preserves_a_known_marker(candidate,length):
     r=row();r['movement']['facing_radians']=0
     r['archaeology']['world']={'instance':1,'north':0,'west':0}
     r['archaeology'].update(visible_markers=[],arrow={'boundary_verified':True,'observed_at':100,

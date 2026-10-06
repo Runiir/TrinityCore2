@@ -20,7 +20,7 @@ from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 # Upgrade the catalog once when an older running controller loads this module
 # at an action boundary. Its SourceUpdates instance resolves the new globals.
 from . import controller_updates
-if ({'swim_vertical','inputs','portal','taxi','ground_jump'}-set(controller_updates.COMPONENTS)
+if ({'swim_vertical','inputs','portal','taxi','ground_jump','controller_updates'}-set(controller_updates.COMPONENTS)
         or not hasattr(controller_updates,'upgrade_bound_callbacks')):
     import importlib
     from . import world_facts
@@ -28,7 +28,9 @@ if ({'swim_vertical','inputs','portal','taxi','ground_jump'}-set(controller_upda
     importlib.reload(world_facts)
     importlib.reload(farm_graph)
     importlib.reload(inputs)
-controller_updates.upgrade_bound_callbacks()
+updated_callbacks=controller_updates.upgrade_bound_callbacks()
+if updated_callbacks:runtime.write(runtime.ROOT/'run/controller_callback_update.json',{
+    'at':time.time(),'updated_callbacks':updated_callbacks,'required_schema_matching':True})
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 
