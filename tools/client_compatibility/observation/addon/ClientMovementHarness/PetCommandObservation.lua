@@ -13,6 +13,13 @@ local function position(unit)
     if not available then return {available=false} end
     return {available=true,x=x,y=y,z=z,map=map}
 end
+local function casting(unit)
+    if type(UnitCastingInfo)~='function' then return {available=false} end
+    local ok,name,_,_,started,finished,trade,identity,uninterruptible,spell=pcall(UnitCastingInfo,unit)
+    if not ok then return {available=false} end
+    return {available=true,active=name~=nil,name=name,started_ms=started,finished_ms=finished,
+        trade_skill=trade,cast_id=identity,uninterruptible=uninterruptible,spell=spell}
+end
 local function frame(slot,width,height)
     local button=_G['PetActionButton'..slot]
     local row={button='PetActionButton'..slot,available=false,visible=false,enabled=false,checked=false}
@@ -70,7 +77,7 @@ function Client442ObservePetCommands()
         actions=rows,viewport={width=width,height=height,basis='scaled_game_ui_screen'},
         player_position=player,pet_position=pet,distance=distance,
         interaction_ranges=ranges,distance_squared=squared,pet_visible=call(UnitIsVisible,'pet'),
-        pet_combat=call(UnitAffectingCombat,'pet'),pet_target_exists=call(UnitExists,'pettarget'),
+        pet_combat=call(UnitAffectingCombat,'pet'),pet_cast=casting('pet'),pet_target_exists=call(UnitExists,'pettarget'),
         pet_target_guid=call(UnitGUID,'pettarget'),pet_target_name=call(UnitName,'pettarget'),
         player_can_attack_target=call(UnitCanAttack,'player','target'),
         player_speed=call(GetUnitSpeed,'player'),pet_speed=call(GetUnitSpeed,'pet')}

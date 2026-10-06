@@ -34,6 +34,9 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     UnitExists=function(unit) assert(unit=='pettarget');return true end
     UnitAffectingCombat=function(unit) assert(unit=='pet');return false end
     UnitCanAttack=function(unit,target) assert(unit=='player' and target=='target');return true end
+    UnitCastingInfo=function(unit)
+        assert(unit=='pet');return 'Firebolt',nil,123,1000,3236,false,'owned-cast',false,3110
+    end
     GetUnitSpeed=function(unit) return unit=='player' and 0 or 1 end
     CheckInteractDistance=function(unit,index) assert(unit=='pet' and index>=1 and index<=4);return index~=3 end
     UnitDistanceSquared=function(unit) assert(unit=='pet');return 25,true end
@@ -50,6 +53,9 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     assert(p.modified_click==false)
     assert(p.pet_combat==false and p.pet_target_exists==true and p.pet_target_guid=='Creature-victim'
         and p.pet_target_name=='Training Dummy' and p.player_can_attack_target==true)
+    assert(p.pet_cast.available and p.pet_cast.active and p.pet_cast.name=='Firebolt'
+        and p.pet_cast.started_ms==1000 and p.pet_cast.finished_ms==3236
+        and p.pet_cast.cast_id=='owned-cast' and p.pet_cast.spell==3110 and p.pet_cast.uninterruptible==false)
     assert(p.distance_squared.available and p.distance_squared.value==25 and p.pet_visible)
     for index,row in ipairs(p.interaction_ranges) do
         assert(row.index==index and row.available and row.in_range==(index~=3))
@@ -69,6 +75,11 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     GetPetActionInfo=nil;GetPetActionSlotUsable=nil;IsModifiedClick=nil
     UnitPosition=nil;CheckInteractDistance=nil;UnitDistanceSquared=nil;GetScreenWidth=nil
     UnitAffectingCombat=nil;UnitExists=nil;UnitName=nil;UnitCanAttack=nil
+    UnitCastingInfo=function(unit) assert(unit=='pet');return nil end
+    p=Client442ObservePetCommands();assert(p.pet_cast.available and p.pet_cast.active==false)
+    UnitCastingInfo=function() error('unavailable API') end
+    p=Client442ObservePetCommands();assert(p.pet_cast.available==false and p.pet_cast.active==nil)
+    UnitCastingInfo=nil
     p=Client442ObservePetCommands()
     for _,row in ipairs(p.actions) do
         assert(not row.available and not row.active and not row.frame.available and row.usable==nil)
@@ -76,6 +87,7 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     assert(p.modified_click==nil)
     assert(p.pet_combat==nil and p.pet_target_exists==nil and p.pet_target_name==nil
         and p.player_can_attack_target==nil)
+    assert(p.pet_cast.available==false and p.pet_cast.active==nil)
     assert(not p.pet_position.available and p.distance==nil)
     assert(not p.distance_squared.available)
     for _,row in ipairs(p.interaction_ranges) do assert(not row.available and row.in_range==nil) end
