@@ -37,206 +37,6 @@
           "nll": 2.0806246936321258
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9935138821601868,
-          "count": 2,
-          "nll": 2.6688395738601685
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8079821467399597,
-          "count": 2,
-          "nll": 1.8180878162384033
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9095025360584259,
-          "count": 2,
-          "nll": 2.2009271383285522
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 1.0079349875450134,
-          "count": 2,
-          "nll": 2.7879937887191772
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.831825464963913,
-          "count": 2,
-          "nll": 1.894469678401947
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9977713227272034,
-          "count": 2,
-          "nll": 2.6974655389785767
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.7183829545974731,
-          "count": 2,
-          "nll": 1.5793317556381226
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.9618940949440002,
-          "count": 2,
-          "nll": 2.460183620452881
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9427593350410461,
-          "count": 2,
-          "nll": 2.3543533086776733
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.9083406031131744,
-          "count": 2,
-          "nll": 2.1185916662216187
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9067319631576538,
-          "count": 2,
-          "nll": 2.111756205558777
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7696698009967804,
-          "count": 2,
-          "nll": 1.661483108997345
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8041277527809143,
-          "count": 2,
-          "nll": 1.7552123069763184
-        },
-        "archaeology/survey": {
-          "accuracy": 0,
-          "brier": 0.8109247088432312,
-          "count": 2,
-          "nll": 1.7777003645896912
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9542534947395325,
-          "count": 2,
-          "nll": 2.3225375413894653
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8919367492198944,
-          "count": 2,
-          "nll": 2.0481996536254883
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0293371081352234,
-          "count": 2,
-          "nll": 2.706231117248535
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 1.0008746981620789,
-          "count": 2,
-          "nll": 2.526826500892639
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.7799387872219086,
-          "count": 2,
-          "nll": 1.6529136896133423
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8914071321487427,
-          "count": 2,
-          "nll": 2.0029863119125366
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7238602936267853,
-          "count": 2,
-          "nll": 1.5184431076049805
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7766391932964325,
-          "count": 2,
-          "nll": 1.6414359211921692
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8644214868545532,
-          "count": 2,
-          "nll": 1.911275863647461
-        },
-        "travel/arrived": {
-          "accuracy": 0,
-          "brier": 0.9462369382381439,
-          "count": 2,
-          "nll": 2.514808773994446
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.8716584742069244,
-          "count": 2,
-          "nll": 2.0378228425979614
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 1.0030454993247986,
-          "count": 2,
-          "nll": 2.8116250038146973
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9880969226360321,
-          "count": 2,
-          "nll": 2.7093275785446167
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.586896687746048,
-          "count": 2,
-          "nll": 1.2692837715148926
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.7171354591846466,
-          "count": 2,
-          "nll": 1.5890564918518066
-        },
-        "travel/observe": {
-          "accuracy": 0,
-          "brier": 0.8909646570682526,
-          "count": 2,
-          "nll": 2.125562906265259
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.9411231577396393,
-          "count": 2,
-          "nll": 2.4358545541763306
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.7374931275844574,
-          "count": 2,
-          "nll": 1.6406313180923462
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.7395340502262115,
-          "count": 2,
-          "nll": 1.6722736954689026
-        }
-      },
       "count": 66,
       "ece": 0.009332602222760509,
       "macro_task_accuracy": 0.19920634920634922,
@@ -271,206 +71,6 @@
           "nll": 2.0314875692129135
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9941381067037582,
-          "count": 8,
-          "nll": 2.6636733412742615
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8131030350923538,
-          "count": 8,
-          "nll": 1.8297743648290634
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9132169932126999,
-          "count": 8,
-          "nll": 2.2161988019943237
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 1.0083333998918533,
-          "count": 8,
-          "nll": 2.778743952512741
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.8411079794168472,
-          "count": 8,
-          "nll": 1.9211223274469376
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9996765777468681,
-          "count": 8,
-          "nll": 2.7016371190547943
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.702146053314209,
-          "count": 8,
-          "nll": 1.5369878113269806
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.965588703751564,
-          "count": 8,
-          "nll": 2.47309210896492
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9451255053281784,
-          "count": 8,
-          "nll": 2.358107805252075
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.9074359089136124,
-          "count": 8,
-          "nll": 2.1170438826084137
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9038372188806534,
-          "count": 8,
-          "nll": 2.10095751285553
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7805436104536057,
-          "count": 8,
-          "nll": 1.691861167550087
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8117354512214661,
-          "count": 8,
-          "nll": 1.7807286530733109
-        },
-        "archaeology/survey": {
-          "accuracy": 0,
-          "brier": 0.8055489286780357,
-          "count": 8,
-          "nll": 1.762438178062439
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9504130333662033,
-          "count": 8,
-          "nll": 2.3065635561943054
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8862510919570923,
-          "count": 8,
-          "nll": 2.0296792089939117
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0262994021177292,
-          "count": 8,
-          "nll": 2.68817600607872
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 1.002963975071907,
-          "count": 8,
-          "nll": 2.538814753293991
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.8095183745026588,
-          "count": 8,
-          "nll": 1.7312792390584946
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8654975593090057,
-          "count": 8,
-          "nll": 1.904675006866455
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7158335372805595,
-          "count": 8,
-          "nll": 1.5005790889263153
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7901600226759911,
-          "count": 8,
-          "nll": 1.677788332104683
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8643216267228127,
-          "count": 8,
-          "nll": 1.90357106924057
-        },
-        "travel/arrived": {
-          "accuracy": 0.25,
-          "brier": 0.8813721016049385,
-          "count": 8,
-          "nll": 2.2197751700878143
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.8724357411265373,
-          "count": 8,
-          "nll": 2.0415432155132294
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.9983509257435799,
-          "count": 8,
-          "nll": 2.7842201590538025
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9848520681262016,
-          "count": 8,
-          "nll": 2.683722585439682
-        },
-        "travel/land": {
-          "accuracy": 0.75,
-          "brier": 0.6477239802479744,
-          "count": 8,
-          "nll": 1.4212678372859955
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.6845176294445992,
-          "count": 8,
-          "nll": 1.5088570266962051
-        },
-        "travel/observe": {
-          "accuracy": 0.375,
-          "brier": 0.8409597277641296,
-          "count": 8,
-          "nll": 1.986879751086235
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.936446525156498,
-          "count": 8,
-          "nll": 2.4258414804935455
-        },
-        "travel/takeoff": {
-          "accuracy": 0.875,
-          "brier": 0.7233589589595795,
-          "count": 8,
-          "nll": 1.598213568329811
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.729706272482872,
-          "count": 8,
-          "nll": 1.6445548981428146
-        }
-      },
       "count": 264,
       "ece": 0.035748128130128905,
       "macro_task_accuracy": 0.2054563492063492,
@@ -503,206 +103,6 @@
           "brier": 0.8249144196510315,
           "count": 20,
           "nll": 2.0214395344257357
-        }
-      },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9938121438026428,
-          "count": 2,
-          "nll": 2.663299322128296
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8133750557899475,
-          "count": 2,
-          "nll": 1.8315409421920776
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9152433276176453,
-          "count": 2,
-          "nll": 2.22404944896698
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 1.0078653693199158,
-          "count": 2,
-          "nll": 2.7778067588806152
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.8371467292308807,
-          "count": 2,
-          "nll": 1.9087624549865723
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9988328814506531,
-          "count": 2,
-          "nll": 2.6977978944778442
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.7054701149463654,
-          "count": 2,
-          "nll": 1.5455758571624756
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.9643342792987823,
-          "count": 2,
-          "nll": 2.469155192375183
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.941258430480957,
-          "count": 2,
-          "nll": 2.341168761253357
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.9086876213550568,
-          "count": 2,
-          "nll": 2.121326208114624
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.904498279094696,
-          "count": 2,
-          "nll": 2.1022592782974243
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7783486247062683,
-          "count": 2,
-          "nll": 1.6846590042114258
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.811500608921051,
-          "count": 2,
-          "nll": 1.7779540419578552
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 0.7985330522060394,
-          "count": 2,
-          "nll": 1.7419536113739014
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9492071866989136,
-          "count": 2,
-          "nll": 2.300166606903076
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8871058225631714,
-          "count": 2,
-          "nll": 2.032212972640991
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0242146253585815,
-          "count": 2,
-          "nll": 2.6755493879318237
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 1.0074564218521118,
-          "count": 2,
-          "nll": 2.5625420808792114
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.8014488518238068,
-          "count": 2,
-          "nll": 1.7116203904151917
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8557518422603607,
-          "count": 2,
-          "nll": 1.8751710057258606
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7170564830303192,
-          "count": 2,
-          "nll": 1.4981938600540161
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7968436777591705,
-          "count": 2,
-          "nll": 1.6988465189933777
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8652396500110626,
-          "count": 2,
-          "nll": 1.9056166410446167
-        },
-        "travel/arrived": {
-          "accuracy": 0.5,
-          "brier": 0.90622878074646,
-          "count": 2,
-          "nll": 2.3706247806549072
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.8697342872619629,
-          "count": 2,
-          "nll": 2.0365843772888184
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.9945079386234283,
-          "count": 2,
-          "nll": 2.7513890266418457
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9814042747020721,
-          "count": 2,
-          "nll": 2.664925456047058
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.6171383857727051,
-          "count": 2,
-          "nll": 1.335584044456482
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.6929296851158142,
-          "count": 2,
-          "nll": 1.5303156971931458
-        },
-        "travel/observe": {
-          "accuracy": 0.5,
-          "brier": 0.8142603635787964,
-          "count": 2,
-          "nll": 1.9056937098503113
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.9343058466911316,
-          "count": 2,
-          "nll": 2.4175223112106323
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.7077423334121704,
-          "count": 2,
-          "nll": 1.5533397793769836
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.7308923006057739,
-          "count": 2,
-          "nll": 1.6484161615371704
         }
       },
       "count": 66,
@@ -746,206 +146,6 @@
           "nll": 2.0977327704429625
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9768742322921753,
-          "count": 2,
-          "nll": 2.592550754547119
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8155558407306671,
-          "count": 2,
-          "nll": 1.8600982427597046
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9019719660282135,
-          "count": 2,
-          "nll": 2.1901040077209473
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.990702897310257,
-          "count": 2,
-          "nll": 2.695633888244629
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.83534175157547,
-          "count": 2,
-          "nll": 1.9258649945259094
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9807333052158356,
-          "count": 2,
-          "nll": 2.6170473098754883
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.7434137761592865,
-          "count": 2,
-          "nll": 1.6555930376052856
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.9478298425674438,
-          "count": 2,
-          "nll": 2.4125990867614746
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9306993782520294,
-          "count": 2,
-          "nll": 2.321550726890564
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.9003648161888123,
-          "count": 2,
-          "nll": 2.092073917388916
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.8989364206790924,
-          "count": 2,
-          "nll": 2.0861682891845703
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7817383408546448,
-          "count": 2,
-          "nll": 1.6983846426010132
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8103973567485809,
-          "count": 2,
-          "nll": 1.7788513898849487
-        },
-        "archaeology/survey": {
-          "accuracy": 0,
-          "brier": 0.8163018524646759,
-          "count": 2,
-          "nll": 1.798480212688446
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9411447048187256,
-          "count": 2,
-          "nll": 2.2669365406036377
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8856622278690338,
-          "count": 2,
-          "nll": 2.0310176610946655
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0085434913635254,
-          "count": 2,
-          "nll": 2.5910369157791138
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9818702638149261,
-          "count": 2,
-          "nll": 2.4376808404922485
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.7873457968235016,
-          "count": 2,
-          "nll": 1.6844173669815063
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8827016949653625,
-          "count": 2,
-          "nll": 1.9865013360977173
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7412721216678619,
-          "count": 2,
-          "nll": 1.5690231919288635
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7843521535396576,
-          "count": 2,
-          "nll": 1.674055814743042
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8595364987850189,
-          "count": 2,
-          "nll": 1.9081770181655884
-        },
-        "travel/arrived": {
-          "accuracy": 0,
-          "brier": 0.9377119243144989,
-          "count": 2,
-          "nll": 2.475577473640442
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.867979884147644,
-          "count": 2,
-          "nll": 2.0571656227111816
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.9860866665840149,
-          "count": 2,
-          "nll": 2.7284252643585205
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9730692207813263,
-          "count": 2,
-          "nll": 2.64054012298584
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.6362030804157257,
-          "count": 2,
-          "nll": 1.3897810578346252
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.7437801659107208,
-          "count": 2,
-          "nll": 1.674227237701416
-        },
-        "travel/observe": {
-          "accuracy": 0,
-          "brier": 0.8847418427467346,
-          "count": 2,
-          "nll": 2.1336787939071655
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.9318889379501343,
-          "count": 2,
-          "nll": 2.408168077468872
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.7600044906139374,
-          "count": 2,
-          "nll": 1.7185519337654114
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.7641114890575409,
-          "count": 2,
-          "nll": 1.7512121200561523
-        }
-      },
       "count": 66,
       "ece": 0.020732474823792778,
       "macro_task_accuracy": 0.19920634920634922,
@@ -980,206 +180,6 @@
           "nll": 2.056661678850651
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9770160391926765,
-          "count": 8,
-          "nll": 2.587636798620224
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8194019049406052,
-          "count": 8,
-          "nll": 1.8696743547916412
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9050392657518387,
-          "count": 8,
-          "nll": 2.2032922506332397
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.9905738681554794,
-          "count": 8,
-          "nll": 2.6871014833450317
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.8427105769515038,
-          "count": 8,
-          "nll": 1.9483303427696228
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9820640757679939,
-          "count": 8,
-          "nll": 2.6201817989349365
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.7300655543804169,
-          "count": 8,
-          "nll": 1.6185442507266998
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.950691930949688,
-          "count": 8,
-          "nll": 2.4231937527656555
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9323149919509888,
-          "count": 8,
-          "nll": 2.3241753578186035
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.8996974304318428,
-          "count": 8,
-          "nll": 2.0909534990787506
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.896448627114296,
-          "count": 8,
-          "nll": 2.076980084180832
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7908888533711433,
-          "count": 8,
-          "nll": 1.724686399102211
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8170569539070129,
-          "count": 8,
-          "nll": 1.8012298196554184
-        },
-        "archaeology/survey": {
-          "accuracy": 0,
-          "brier": 0.8118392005562782,
-          "count": 8,
-          "nll": 1.7854744493961334
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9378252997994423,
-          "count": 8,
-          "nll": 2.253459244966507
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8809032142162323,
-          "count": 8,
-          "nll": 2.0154257714748383
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0057313442230225,
-          "count": 8,
-          "nll": 2.575840413570404
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9837890639901161,
-          "count": 8,
-          "nll": 2.4480382800102234
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.8119736686348915,
-          "count": 8,
-          "nll": 1.7515083402395248
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8597884625196457,
-          "count": 8,
-          "nll": 1.9009967595338821
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7346985042095184,
-          "count": 8,
-          "nll": 1.5538575053215027
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7956846281886101,
-          "count": 8,
-          "nll": 1.705528348684311
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8589462414383888,
-          "count": 8,
-          "nll": 1.9005890041589737
-        },
-        "travel/arrived": {
-          "accuracy": 0.25,
-          "brier": 0.8827126324176788,
-          "count": 8,
-          "nll": 2.223550394177437
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.8686686381697655,
-          "count": 8,
-          "nll": 2.0604388415813446
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.9820937365293503,
-          "count": 8,
-          "nll": 2.7054669857025146
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9699001610279083,
-          "count": 8,
-          "nll": 2.6187017261981964
-        },
-        "travel/land": {
-          "accuracy": 0.75,
-          "brier": 0.686193622648716,
-          "count": 8,
-          "nll": 1.5244455486536026
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.7176541462540627,
-          "count": 8,
-          "nll": 1.6051383316516876
-        },
-        "travel/observe": {
-          "accuracy": 0.375,
-          "brier": 0.8461413979530334,
-          "count": 8,
-          "nll": 2.0203257501125336
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.9285844340920448,
-          "count": 8,
-          "nll": 2.4008125364780426
-        },
-        "travel/takeoff": {
-          "accuracy": 0.875,
-          "brier": 0.7479874491691589,
-          "count": 8,
-          "nll": 1.6806915700435638
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.756083257496357,
-          "count": 8,
-          "nll": 1.7270451039075851
-        }
-      },
       "count": 264,
       "ece": 0.04770994113024437,
       "macro_task_accuracy": 0.2054563492063492,
@@ -1212,206 +212,6 @@
           "brier": 0.8346634536981583,
           "count": 20,
           "nll": 2.0482289791107178
-        }
-      },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 0.9768038094043732,
-          "count": 2,
-          "nll": 2.587409496307373
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.8197145164012909,
-          "count": 2,
-          "nll": 1.8713226914405823
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9067436456680298,
-          "count": 2,
-          "nll": 2.2098642587661743
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.9902476668357849,
-          "count": 2,
-          "nll": 2.686427593231201
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.8394860923290253,
-          "count": 2,
-          "nll": 1.9378144145011902
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.9813819527626038,
-          "count": 2,
-          "nll": 2.6169981956481934
-        },
-        "action/survey": {
-          "accuracy": 1,
-          "brier": 0.7328019738197327,
-          "count": 2,
-          "nll": 1.6260688304901123
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.9497362673282623,
-          "count": 2,
-          "nll": 2.420038104057312
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9290570616722107,
-          "count": 2,
-          "nll": 2.3098472356796265
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.9007495939731598,
-          "count": 2,
-          "nll": 2.0945494174957275
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.896948367357254,
-          "count": 2,
-          "nll": 2.077959179878235
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7889515459537506,
-          "count": 2,
-          "nll": 1.718302071094513
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8167015910148621,
-          "count": 2,
-          "nll": 1.7985562086105347
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 0.8059300184249878,
-          "count": 2,
-          "nll": 1.7678245306015015
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.936711460351944,
-          "count": 2,
-          "nll": 2.24793541431427
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8816045224666595,
-          "count": 2,
-          "nll": 2.0175262689590454
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0037861466407776,
-          "count": 2,
-          "nll": 2.565178871154785
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9878418445587158,
-          "count": 2,
-          "nll": 2.468131422996521
-        },
-        "guidance/loot": {
-          "accuracy": 0,
-          "brier": 0.8054249882698059,
-          "count": 2,
-          "nll": 1.7350918054580688
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.8515467941761017,
-          "count": 2,
-          "nll": 1.876136064529419
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.7352011203765869,
-          "count": 2,
-          "nll": 1.5506950616836548
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.8015310168266296,
-          "count": 2,
-          "nll": 1.7241881489753723
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.8596882224082947,
-          "count": 2,
-          "nll": 1.902182698249817
-        },
-        "travel/arrived": {
-          "accuracy": 0.5,
-          "brier": 0.9047843515872955,
-          "count": 2,
-          "nll": 2.3525988459587097
-        },
-        "travel/cruise": {
-          "accuracy": 0,
-          "brier": 0.8667581379413605,
-          "count": 2,
-          "nll": 2.0569018125534058
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.978454977273941,
-          "count": 2,
-          "nll": 2.6770182847976685
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9669620990753174,
-          "count": 2,
-          "nll": 2.6030054092407227
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.6610004603862762,
-          "count": 2,
-          "nll": 1.4491504430770874
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.724507749080658,
-          "count": 2,
-          "nll": 1.6240683197975159
-        },
-        "travel/observe": {
-          "accuracy": 0.5,
-          "brier": 0.8252575695514679,
-          "count": 2,
-          "nll": 1.9538747668266296
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.9268646836280823,
-          "count": 2,
-          "nll": 2.3940309286117554
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.7349293231964111,
-          "count": 2,
-          "nll": 1.6410030722618103
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.7571151852607727,
-          "count": 2,
-          "nll": 1.7306379079818726
         }
       },
       "count": 66,
@@ -1450,206 +250,6 @@
           "nll": 0.7223140254267492
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 1,
-          "brier": 0.7656926512718201,
-          "count": 2,
-          "nll": 1.7402272820472717
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.954755038022995,
-          "count": 2,
-          "nll": 2.490357518196106
-        },
-        "action/forward_short": {
-          "accuracy": 1,
-          "brier": 0.6793342232704163,
-          "count": 2,
-          "nll": 1.478675901889801
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.8887088596820831,
-          "count": 2,
-          "nll": 2.1518903970718384
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.9773302376270294,
-          "count": 2,
-          "nll": 2.6377429962158203
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.8367763757705688,
-          "count": 2,
-          "nll": 1.9533371925354004
-        },
-        "action/survey": {
-          "accuracy": 0,
-          "brier": 0.9152497351169586,
-          "count": 2,
-          "nll": 2.2985938787460327
-        },
-        "action/swim_down": {
-          "accuracy": 1,
-          "brier": 0.7765851616859436,
-          "count": 2,
-          "nll": 1.7564585208892822
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.8805651962757111,
-          "count": 2,
-          "nll": 2.1197794675827026
-        },
-        "archaeology/forward_long": {
-          "accuracy": 1,
-          "brier": 0.6375852227210999,
-          "count": 2,
-          "nll": 1.2919453978538513
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.686942994594574,
-          "count": 2,
-          "nll": 1.39621901512146
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.22604775428771973,
-          "count": 2,
-          "nll": 0.5173269212245941
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 1.0674395859241486,
-          "count": 2,
-          "nll": 2.2935538291931152
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 1.04628124833107,
-          "count": 2,
-          "nll": 2.3402158617973328
-        },
-        "archaeology/turn_left": {
-          "accuracy": 1,
-          "brier": 0.09085234999656677,
-          "count": 2,
-          "nll": 0.31919850409030914
-        },
-        "archaeology/turn_right": {
-          "accuracy": 1,
-          "brier": 0.6857290863990784,
-          "count": 2,
-          "nll": 1.3861565589904785
-        },
-        "guidance/forward_long": {
-          "accuracy": 1,
-          "brier": 0.44904789328575134,
-          "count": 2,
-          "nll": 0.9388723075389862
-        },
-        "guidance/forward_short": {
-          "accuracy": 1,
-          "brier": 0.27278246730566025,
-          "count": 2,
-          "nll": 0.6128451526165009
-        },
-        "guidance/loot": {
-          "accuracy": 0.5,
-          "brier": 0.8234783038496971,
-          "count": 2,
-          "nll": 1.2912221550941467
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 1.5133322477340698,
-          "count": 2,
-          "nll": 3.3407868146896362
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.005795640870928764,
-          "count": 2,
-          "nll": 0.07265674322843552
-        },
-        "guidance/turn_left": {
-          "accuracy": 1,
-          "brier": 0.006673399358987808,
-          "count": 2,
-          "nll": 0.06928634084761143
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.9411246180534363,
-          "count": 2,
-          "nll": 1.5682337284088135
-        },
-        "travel/arrived": {
-          "accuracy": 0.5,
-          "brier": 0.4913525078445673,
-          "count": 2,
-          "nll": 1.3448688983917236
-        },
-        "travel/cruise": {
-          "accuracy": 1,
-          "brier": 4.002116293122526e-05,
-          "count": 2,
-          "nll": 0.005719311302527785
-        },
-        "travel/dismount": {
-          "accuracy": 1,
-          "brier": 0.040248485282063484,
-          "count": 2,
-          "nll": 0.20975735038518906
-        },
-        "travel/interact": {
-          "accuracy": 1,
-          "brier": 0.6778223514556885,
-          "count": 2,
-          "nll": 1.515481412410736
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.005649334983900189,
-          "count": 2,
-          "nll": 0.05524007976055145
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.5236715376377106,
-          "count": 2,
-          "nll": 1.1552348136901855
-        },
-        "travel/observe": {
-          "accuracy": 0.5,
-          "brier": 0.7125485688447952,
-          "count": 2,
-          "nll": 1.1485158801078796
-        },
-        "travel/portal": {
-          "accuracy": 1,
-          "brier": 0.4528781622648239,
-          "count": 2,
-          "nll": 1.0064582228660583
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.4143787622451782,
-          "count": 2,
-          "nll": 0.7808293700218201
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 1.1976905511801306e-06,
-          "count": 2,
-          "nll": 0.0010349153308197856
-        }
-      },
       "count": 66,
       "ece": 0.24339292853167566,
       "macro_task_accuracy": 0.6297619047619047,
@@ -1682,206 +282,6 @@
           "brier": 0.33662825433784604,
           "count": 80,
           "nll": 0.7877513877072488
-        }
-      },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 1,
-          "brier": 0.7782052606344223,
-          "count": 8,
-          "nll": 1.779558226466179
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.95114566385746,
-          "count": 8,
-          "nll": 2.4740126729011536
-        },
-        "action/forward_short": {
-          "accuracy": 1,
-          "brier": 0.6961672976613045,
-          "count": 8,
-          "nll": 1.5257499068975449
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.8695072531700134,
-          "count": 8,
-          "nll": 2.0752801597118378
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.9716427996754646,
-          "count": 8,
-          "nll": 2.6045994460582733
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.8399460762739182,
-          "count": 8,
-          "nll": 1.967848464846611
-        },
-        "action/survey": {
-          "accuracy": 0,
-          "brier": 0.9100086614489555,
-          "count": 8,
-          "nll": 2.2786535024642944
-        },
-        "action/swim_down": {
-          "accuracy": 1,
-          "brier": 0.7806534692645073,
-          "count": 8,
-          "nll": 1.772345095872879
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.883402407169342,
-          "count": 8,
-          "nll": 2.1360987424850464
-        },
-        "archaeology/forward_long": {
-          "accuracy": 1,
-          "brier": 0.6335571110248566,
-          "count": 8,
-          "nll": 1.2901340425014496
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.7006547451019287,
-          "count": 8,
-          "nll": 1.4292248338460922
-        },
-        "archaeology/loot": {
-          "accuracy": 0.875,
-          "brier": 0.4511234052479267,
-          "count": 8,
-          "nll": 0.8707692995667458
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 1.0451690182089806,
-          "count": 8,
-          "nll": 2.263583019375801
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 0.8856698200106621,
-          "count": 8,
-          "nll": 1.9705162942409515
-        },
-        "archaeology/turn_left": {
-          "accuracy": 1,
-          "brier": 0.12116819340735674,
-          "count": 8,
-          "nll": 0.3793811537325382
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0.25,
-          "brier": 0.7378208711743355,
-          "count": 8,
-          "nll": 1.5142768770456314
-        },
-        "guidance/forward_long": {
-          "accuracy": 1,
-          "brier": 0.26061143772676587,
-          "count": 8,
-          "nll": 0.605559378862381
-        },
-        "guidance/forward_short": {
-          "accuracy": 1,
-          "brier": 0.21741526015102863,
-          "count": 8,
-          "nll": 0.5115428417921066
-        },
-        "guidance/loot": {
-          "accuracy": 0.25,
-          "brier": 1.0047076046466827,
-          "count": 8,
-          "nll": 1.5690088868141174
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 1.350477695465088,
-          "count": 8,
-          "nll": 2.8685474544763565
-        },
-        "guidance/survey": {
-          "accuracy": 0.875,
-          "brier": 0.17284773199935444,
-          "count": 8,
-          "nll": 0.5756440060213208
-        },
-        "guidance/turn_left": {
-          "accuracy": 1,
-          "brier": 0.037570463286101585,
-          "count": 8,
-          "nll": 0.13919913372956216
-        },
-        "guidance/turn_right": {
-          "accuracy": 0.75,
-          "brier": 0.2958681397140026,
-          "count": 8,
-          "nll": 0.5643405485898256
-        },
-        "travel/arrived": {
-          "accuracy": 0.75,
-          "brier": 0.2533020522514704,
-          "count": 8,
-          "nll": 0.6785620677910629
-        },
-        "travel/cruise": {
-          "accuracy": 1,
-          "brier": 0.0001285780379021162,
-          "count": 8,
-          "nll": 0.007790560775902122
-        },
-        "travel/dismount": {
-          "accuracy": 1,
-          "brier": 0.07302504871040583,
-          "count": 8,
-          "nll": 0.27810848876833916
-        },
-        "travel/interact": {
-          "accuracy": 1,
-          "brier": 0.6862901300191879,
-          "count": 8,
-          "nll": 1.5388910919427872
-        },
-        "travel/land": {
-          "accuracy": 0.75,
-          "brier": 0.21128763954266105,
-          "count": 8,
-          "nll": 0.5101124147768132
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.39830367267131805,
-          "count": 8,
-          "nll": 0.9122792929410934
-        },
-        "travel/observe": {
-          "accuracy": 0.5,
-          "brier": 0.8889867691323161,
-          "count": 8,
-          "nll": 2.152581639587879
-        },
-        "travel/portal": {
-          "accuracy": 1,
-          "brier": 0.5461637228727341,
-          "count": 8,
-          "nll": 1.195920169353485
-        },
-        "travel/takeoff": {
-          "accuracy": 0.625,
-          "brier": 0.3087928080931306,
-          "count": 8,
-          "nll": 0.6019283309578896
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 2.1220473342964397e-06,
-          "count": 8,
-          "nll": 0.0013398201772361062
         }
       },
       "count": 264,
@@ -1918,206 +318,6 @@
           "nll": 0.9045317013224121
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 1,
-          "brier": 0.7766010165214539,
-          "count": 2,
-          "nll": 1.7742198705673218
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 0.9478292763233185,
-          "count": 2,
-          "nll": 2.456550359725952
-        },
-        "action/forward_short": {
-          "accuracy": 1,
-          "brier": 0.6707370281219482,
-          "count": 2,
-          "nll": 1.4608115553855896
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.8682202696800232,
-          "count": 2,
-          "nll": 2.071527123451233
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.9709170460700989,
-          "count": 2,
-          "nll": 2.6020716428756714
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.8408163487911224,
-          "count": 2,
-          "nll": 1.9721856713294983
-        },
-        "action/survey": {
-          "accuracy": 0,
-          "brier": 0.9093343019485474,
-          "count": 2,
-          "nll": 2.2744741439819336
-        },
-        "action/swim_down": {
-          "accuracy": 1,
-          "brier": 0.7811663150787354,
-          "count": 2,
-          "nll": 1.7748095393180847
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.885104775428772,
-          "count": 2,
-          "nll": 2.145151734352112
-        },
-        "archaeology/forward_long": {
-          "accuracy": 1,
-          "brier": 0.632127970457077,
-          "count": 2,
-          "nll": 1.2870147228240967
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.7096036374568939,
-          "count": 2,
-          "nll": 1.4475551843643188
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.3247021585702896,
-          "count": 2,
-          "nll": 0.6529988348484039
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 1.0242944955825806,
-          "count": 2,
-          "nll": 2.2049238681793213
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 0.7853052318096161,
-          "count": 2,
-          "nll": 1.7539626955986023
-        },
-        "archaeology/turn_left": {
-          "accuracy": 1,
-          "brier": 0.09242748469114304,
-          "count": 2,
-          "nll": 0.32289788126945496
-        },
-        "archaeology/turn_right": {
-          "accuracy": 1,
-          "brier": 0.6738357543945312,
-          "count": 2,
-          "nll": 1.3655776977539062
-        },
-        "guidance/forward_long": {
-          "accuracy": 1,
-          "brier": 0.2920379750430584,
-          "count": 2,
-          "nll": 0.6567875146865845
-        },
-        "guidance/forward_short": {
-          "accuracy": 1,
-          "brier": 0.47407977283000946,
-          "count": 2,
-          "nll": 0.9664915204048157
-        },
-        "guidance/loot": {
-          "accuracy": 0.5,
-          "brier": 0.7848217934370041,
-          "count": 2,
-          "nll": 1.254580795764923
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 1.1848859190940857,
-          "count": 2,
-          "nll": 2.815612554550171
-        },
-        "guidance/survey": {
-          "accuracy": 0,
-          "brier": 1.8854687809944153,
-          "count": 2,
-          "nll": 6.31799840927124
-        },
-        "guidance/turn_left": {
-          "accuracy": 1,
-          "brier": 0.03167285065865144,
-          "count": 2,
-          "nll": 0.12738566100597382
-        },
-        "guidance/turn_right": {
-          "accuracy": 1,
-          "brier": 0.04270844720304012,
-          "count": 2,
-          "nll": 0.1995757892727852
-        },
-        "travel/arrived": {
-          "accuracy": 0.5,
-          "brier": 0.4689448714359514,
-          "count": 2,
-          "nll": 1.2117904589977115
-        },
-        "travel/cruise": {
-          "accuracy": 1,
-          "brier": 3.30047596435179e-05,
-          "count": 2,
-          "nll": 0.005310608306899667
-        },
-        "travel/dismount": {
-          "accuracy": 1,
-          "brier": 0.1760505512356758,
-          "count": 2,
-          "nll": 0.5055690109729767
-        },
-        "travel/interact": {
-          "accuracy": 1,
-          "brier": 0.6874302625656128,
-          "count": 2,
-          "nll": 1.5413236618041992
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.01161151978885755,
-          "count": 2,
-          "nll": 0.06613973900675774
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.47945812344551086,
-          "count": 2,
-          "nll": 1.0669649243354797
-        },
-        "travel/observe": {
-          "accuracy": 0,
-          "brier": 1.3183009624481201,
-          "count": 2,
-          "nll": 3.1161542534828186
-        },
-        "travel/portal": {
-          "accuracy": 1,
-          "brier": 0.5666699111461639,
-          "count": 2,
-          "nll": 1.239314317703247
-        },
-        "travel/takeoff": {
-          "accuracy": 1,
-          "brier": 0.07318806275725365,
-          "count": 2,
-          "nll": 0.29140669107437134
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 2.0118582142458763e-06,
-          "count": 2,
-          "nll": 0.0013433475396595895
-        }
-      },
       "count": 66,
       "ece": 0.2617897709662264,
       "macro_task_accuracy": 0.6172619047619048,
@@ -2127,6 +327,7 @@
   "candidate_temperature": 1.6487212707001282,
   "cloud_status_before_offload": {},
   "code_commit": "5a45609b9c5324b68a47b9d1a3a691653245379c",
+  "complete_metrics_member": "model/receipt.json",
   "completion_code_commit": "8a95fe23a867fb5c97de63918a0d23f9c8fabf8e",
   "config_sha256": "aa38e1330efd5bd7af46516767d67d9585e07d11a3160b7b707f66dbcee71ac3",
   "dataset_audit": {
@@ -2148,113 +349,6 @@
         "archaeology": 14,
         "guidance": 14,
         "travel": 20
-      }
-    },
-    "by_task_action": {
-      "test": {
-        "action/camera_ground": 2,
-        "action/dismount": 2,
-        "action/forward_short": 2,
-        "action/inspect": 2,
-        "action/loot": 2,
-        "action/observe": 2,
-        "action/survey": 2,
-        "action/swim_down": 2,
-        "action/swim_up": 2,
-        "archaeology/forward_long": 2,
-        "archaeology/forward_short": 2,
-        "archaeology/loot": 2,
-        "archaeology/observe": 2,
-        "archaeology/survey": 2,
-        "archaeology/turn_left": 2,
-        "archaeology/turn_right": 2,
-        "guidance/forward_long": 2,
-        "guidance/forward_short": 2,
-        "guidance/loot": 2,
-        "guidance/observe": 2,
-        "guidance/survey": 2,
-        "guidance/turn_left": 2,
-        "guidance/turn_right": 2,
-        "travel/arrived": 2,
-        "travel/cruise": 2,
-        "travel/dismount": 2,
-        "travel/interact": 2,
-        "travel/land": 2,
-        "travel/mount": 2,
-        "travel/observe": 2,
-        "travel/portal": 2,
-        "travel/takeoff": 2,
-        "travel/taxi": 2
-      },
-      "train": {
-        "action/camera_ground": 8,
-        "action/dismount": 8,
-        "action/forward_short": 8,
-        "action/inspect": 8,
-        "action/loot": 8,
-        "action/observe": 8,
-        "action/survey": 8,
-        "action/swim_down": 8,
-        "action/swim_up": 8,
-        "archaeology/forward_long": 8,
-        "archaeology/forward_short": 8,
-        "archaeology/loot": 8,
-        "archaeology/observe": 8,
-        "archaeology/survey": 8,
-        "archaeology/turn_left": 8,
-        "archaeology/turn_right": 8,
-        "guidance/forward_long": 8,
-        "guidance/forward_short": 8,
-        "guidance/loot": 8,
-        "guidance/observe": 8,
-        "guidance/survey": 8,
-        "guidance/turn_left": 8,
-        "guidance/turn_right": 8,
-        "travel/arrived": 8,
-        "travel/cruise": 8,
-        "travel/dismount": 8,
-        "travel/interact": 8,
-        "travel/land": 8,
-        "travel/mount": 8,
-        "travel/observe": 8,
-        "travel/portal": 8,
-        "travel/takeoff": 8,
-        "travel/taxi": 8
-      },
-      "validation": {
-        "action/camera_ground": 2,
-        "action/dismount": 2,
-        "action/forward_short": 2,
-        "action/inspect": 2,
-        "action/loot": 2,
-        "action/observe": 2,
-        "action/survey": 2,
-        "action/swim_down": 2,
-        "action/swim_up": 2,
-        "archaeology/forward_long": 2,
-        "archaeology/forward_short": 2,
-        "archaeology/loot": 2,
-        "archaeology/observe": 2,
-        "archaeology/survey": 2,
-        "archaeology/turn_left": 2,
-        "archaeology/turn_right": 2,
-        "guidance/forward_long": 2,
-        "guidance/forward_short": 2,
-        "guidance/loot": 2,
-        "guidance/observe": 2,
-        "guidance/survey": 2,
-        "guidance/turn_left": 2,
-        "guidance/turn_right": 2,
-        "travel/arrived": 2,
-        "travel/cruise": 2,
-        "travel/dismount": 2,
-        "travel/interact": 2,
-        "travel/land": 2,
-        "travel/mount": 2,
-        "travel/observe": 2,
-        "travel/portal": 2,
-        "travel/takeoff": 2,
-        "travel/taxi": 2
       }
     },
     "contract_core_overlap_test_rows": 45,
@@ -2302,6 +396,8 @@
     "median": 0.2623627324937843,
     "p95": 0.3952178249601275
   },
+  "global_dvc_status_entries_after_experiment": 1342,
+  "global_dvc_status_interpretation": "Global status includes intentionally offloaded and unrelated experiments. Only this new pointer was pushed; its exact remote object and adapter stream were independently verified.",
   "history": [
     {
       "epoch": 0,
@@ -2410,6 +506,13 @@
     "Only two test examples per class;21 novel-core rows cover13/33 classes.",
     "Candidate test ECE worsened despite validation-only temperature fitting."
   ],
+  "remote_adapter_stream_verification": {
+    "bytes": 33854016,
+    "matches_receipt": true,
+    "member": "model/adapter.safetensors",
+    "restored_local_copy": false,
+    "sha256": "06585ea2ac1877241b2fd6f5019e9f4d7d82ac0c1064025421130e78c4604297"
+  },
   "remote_md5": "c22b54f87b430b34f7391141bb73a206",
   "remote_object_verified": {
     "bytes": 31464419,
@@ -2455,206 +558,6 @@
           "nll": 2.040555727481842
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 0,
-          "brier": 1.0041614174842834,
-          "count": 2,
-          "nll": 2.7164783477783203
-        },
-        "action/dismount": {
-          "accuracy": 1,
-          "brier": 0.6712323725223541,
-          "count": 2,
-          "nll": 1.457263708114624
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.8275862038135529,
-          "count": 2,
-          "nll": 1.8717492818832397
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.9840943515300751,
-          "count": 2,
-          "nll": 2.5824575424194336
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.8532472848892212,
-          "count": 2,
-          "nll": 1.9533386826515198
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 1.008653700351715,
-          "count": 2,
-          "nll": 2.7475558519363403
-        },
-        "action/survey": {
-          "accuracy": 0,
-          "brier": 0.850433886051178,
-          "count": 2,
-          "nll": 1.951641321182251
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.9931536018848419,
-          "count": 2,
-          "nll": 2.6308318376541138
-        },
-        "action/swim_up": {
-          "accuracy": 0,
-          "brier": 0.9942894279956818,
-          "count": 2,
-          "nll": 2.637025237083435
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 0.8575007617473602,
-          "count": 2,
-          "nll": 1.9294596314430237
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 0.8439196646213531,
-          "count": 2,
-          "nll": 1.8846900463104248
-        },
-        "archaeology/loot": {
-          "accuracy": 1,
-          "brier": 0.7653813064098358,
-          "count": 2,
-          "nll": 1.6517680287361145
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 0.8260222673416138,
-          "count": 2,
-          "nll": 1.8215110898017883
-        },
-        "archaeology/survey": {
-          "accuracy": 0,
-          "brier": 0.8702746629714966,
-          "count": 2,
-          "nll": 1.971837043762207
-        },
-        "archaeology/turn_left": {
-          "accuracy": 0,
-          "brier": 0.9238393008708954,
-          "count": 2,
-          "nll": 2.185585856437683
-        },
-        "archaeology/turn_right": {
-          "accuracy": 0,
-          "brier": 0.9438621699810028,
-          "count": 2,
-          "nll": 2.2814685106277466
-        },
-        "guidance/forward_long": {
-          "accuracy": 0,
-          "brier": 1.0033581852912903,
-          "count": 2,
-          "nll": 2.532300353050232
-        },
-        "guidance/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9133621454238892,
-          "count": 2,
-          "nll": 2.109373152256012
-        },
-        "guidance/loot": {
-          "accuracy": 1,
-          "brier": 0.6810997128486633,
-          "count": 2,
-          "nll": 1.4260312914848328
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 0.9123513996601105,
-          "count": 2,
-          "nll": 2.097639799118042
-        },
-        "guidance/survey": {
-          "accuracy": 0,
-          "brier": 0.7647828757762909,
-          "count": 2,
-          "nll": 1.6137508749961853
-        },
-        "guidance/turn_left": {
-          "accuracy": 0,
-          "brier": 0.7831185460090637,
-          "count": 2,
-          "nll": 1.6657695770263672
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 0.9049467444419861,
-          "count": 2,
-          "nll": 2.0682884454727173
-        },
-        "travel/arrived": {
-          "accuracy": 0,
-          "brier": 0.9375884532928467,
-          "count": 2,
-          "nll": 2.455844283103943
-        },
-        "travel/cruise": {
-          "accuracy": 1,
-          "brier": 0.7160629630088806,
-          "count": 2,
-          "nll": 1.5756371021270752
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 0.9778569042682648,
-          "count": 2,
-          "nll": 2.692707896232605
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9311971664428711,
-          "count": 2,
-          "nll": 2.3981800079345703
-        },
-        "travel/land": {
-          "accuracy": 1,
-          "brier": 0.6705674231052399,
-          "count": 2,
-          "nll": 1.44898521900177
-        },
-        "travel/mount": {
-          "accuracy": 1,
-          "brier": 0.7593024969100952,
-          "count": 2,
-          "nll": 1.716258466243744
-        },
-        "travel/observe": {
-          "accuracy": 0,
-          "brier": 0.9191368222236633,
-          "count": 2,
-          "nll": 2.2829103469848633
-        },
-        "travel/portal": {
-          "accuracy": 0,
-          "brier": 0.8803395926952362,
-          "count": 2,
-          "nll": 2.164129376411438
-        },
-        "travel/takeoff": {
-          "accuracy": 0,
-          "brier": 0.8584516942501068,
-          "count": 2,
-          "nll": 2.04753041267395
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 0.719855397939682,
-          "count": 2,
-          "nll": 1.6233741641044617
-        }
-      },
       "count": 66,
       "ece": 0.02605074982751499,
       "macro_task_accuracy": 0.19920634920634922,
@@ -2689,206 +592,6 @@
           "nll": 1.5649529305221221
         }
       },
-      "by_task_action": {
-        "action/camera_ground": {
-          "accuracy": 1,
-          "brier": 0.8282798528671265,
-          "count": 2,
-          "nll": 1.9457377195358276
-        },
-        "action/dismount": {
-          "accuracy": 0,
-          "brier": 1.0027164220809937,
-          "count": 2,
-          "nll": 2.819925308227539
-        },
-        "action/forward_short": {
-          "accuracy": 0,
-          "brier": 0.9115292727947235,
-          "count": 2,
-          "nll": 2.2603516578674316
-        },
-        "action/inspect": {
-          "accuracy": 0,
-          "brier": 0.8900621235370636,
-          "count": 2,
-          "nll": 2.149622321128845
-        },
-        "action/loot": {
-          "accuracy": 0,
-          "brier": 0.951176792383194,
-          "count": 2,
-          "nll": 2.460805654525757
-        },
-        "action/observe": {
-          "accuracy": 0,
-          "brier": 0.8156707286834717,
-          "count": 2,
-          "nll": 1.8766433596611023
-        },
-        "action/survey": {
-          "accuracy": 0,
-          "brier": 0.8547857999801636,
-          "count": 2,
-          "nll": 2.042900562286377
-        },
-        "action/swim_down": {
-          "accuracy": 0,
-          "brier": 0.8300466239452362,
-          "count": 2,
-          "nll": 1.9211650490760803
-        },
-        "action/swim_up": {
-          "accuracy": 1,
-          "brier": 0.7968135178089142,
-          "count": 2,
-          "nll": 1.8157281875610352
-        },
-        "archaeology/forward_long": {
-          "accuracy": 0,
-          "brier": 1.2340954542160034,
-          "count": 2,
-          "nll": 3.1442946195602417
-        },
-        "archaeology/forward_short": {
-          "accuracy": 0,
-          "brier": 1.0960318446159363,
-          "count": 2,
-          "nll": 2.228274941444397
-        },
-        "archaeology/loot": {
-          "accuracy": 0.5,
-          "brier": 0.43052343279123306,
-          "count": 2,
-          "nll": 0.8444614559412003
-        },
-        "archaeology/observe": {
-          "accuracy": 0,
-          "brier": 1.3591540455818176,
-          "count": 2,
-          "nll": 3.1065248250961304
-        },
-        "archaeology/survey": {
-          "accuracy": 0.5,
-          "brier": 1.2062468826770782,
-          "count": 2,
-          "nll": 3.0566654801368713
-        },
-        "archaeology/turn_left": {
-          "accuracy": 1,
-          "brier": 0.025012843310832977,
-          "count": 2,
-          "nll": 0.13791265338659286
-        },
-        "archaeology/turn_right": {
-          "accuracy": 1,
-          "brier": 0.19165492802858353,
-          "count": 2,
-          "nll": 0.4885312020778656
-        },
-        "guidance/forward_long": {
-          "accuracy": 1,
-          "brier": 0.4921451658010483,
-          "count": 2,
-          "nll": 1.0322991609573364
-        },
-        "guidance/forward_short": {
-          "accuracy": 1,
-          "brier": 0.26404806785285473,
-          "count": 2,
-          "nll": 0.5910469926893711
-        },
-        "guidance/loot": {
-          "accuracy": 1,
-          "brier": 0.13285433407872915,
-          "count": 2,
-          "nll": 0.32040081173181534
-        },
-        "guidance/observe": {
-          "accuracy": 0,
-          "brier": 1.4215269088745117,
-          "count": 2,
-          "nll": 4.135438919067383
-        },
-        "guidance/survey": {
-          "accuracy": 1,
-          "brier": 0.0005342418153304607,
-          "count": 2,
-          "nll": 0.021403169259428978
-        },
-        "guidance/turn_left": {
-          "accuracy": 1,
-          "brier": 0.13079823553562164,
-          "count": 2,
-          "nll": 0.38341233134269714
-        },
-        "guidance/turn_right": {
-          "accuracy": 0,
-          "brier": 1.287501037120819,
-          "count": 2,
-          "nll": 2.468165338039398
-        },
-        "travel/arrived": {
-          "accuracy": 0,
-          "brier": 0.8808764517307281,
-          "count": 2,
-          "nll": 2.2275049686431885
-        },
-        "travel/cruise": {
-          "accuracy": 1,
-          "brier": 7.663263090762484e-07,
-          "count": 2,
-          "nll": 0.0008147697080858052
-        },
-        "travel/dismount": {
-          "accuracy": 0,
-          "brier": 1.0449082851409912,
-          "count": 2,
-          "nll": 2.4394747018814087
-        },
-        "travel/interact": {
-          "accuracy": 0,
-          "brier": 0.9165914952754974,
-          "count": 2,
-          "nll": 2.2189435958862305
-        },
-        "travel/land": {
-          "accuracy": 0,
-          "brier": 1.6587913036346436,
-          "count": 2,
-          "nll": 2.47804856300354
-        },
-        "travel/mount": {
-          "accuracy": 0,
-          "brier": 0.8916418254375458,
-          "count": 2,
-          "nll": 2.0250725746154785
-        },
-        "travel/observe": {
-          "accuracy": 0.5,
-          "brier": 0.7923174202442169,
-          "count": 2,
-          "nll": 1.8354620933532715
-        },
-        "travel/portal": {
-          "accuracy": 1,
-          "brier": 0.0028022275073453784,
-          "count": 2,
-          "nll": 0.04989420436322689
-        },
-        "travel/takeoff": {
-          "accuracy": 0,
-          "brier": 0.9697243869304657,
-          "count": 2,
-          "nll": 2.374243974685669
-        },
-        "travel/taxi": {
-          "accuracy": 1,
-          "brier": 5.4666888793519774e-09,
-          "count": 2,
-          "nll": 6.985908112255856e-05
-        }
-      },
       "count": 66,
       "ece": 0.14395443282344125,
       "macro_task_accuracy": 0.42876984126984125,
@@ -2912,6 +615,206 @@
       "remote_md5": "e91b88e2bbfe37fcb7f9cfa1052f730e"
     }
   ],
+  "test_action_accuracy": {
+    "action/camera_ground": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "action/dismount": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/forward_short": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/inspect": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/loot": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/observe": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/survey": {
+      "baseline": 1,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/swim_down": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "action/swim_up": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "archaeology/forward_long": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "archaeology/forward_short": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "archaeology/loot": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0.5
+    },
+    "archaeology/observe": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "archaeology/survey": {
+      "baseline": 0,
+      "candidate": 0.5,
+      "count": 2,
+      "reversed_candidate": 0.5
+    },
+    "archaeology/turn_left": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "archaeology/turn_right": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/forward_long": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/forward_short": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/loot": {
+      "baseline": 0,
+      "candidate": 0.5,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/observe": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "guidance/survey": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/turn_left": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "guidance/turn_right": {
+      "baseline": 0,
+      "candidate": 0,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/arrived": {
+      "baseline": 0,
+      "candidate": 0.5,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/cruise": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "travel/dismount": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/interact": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/land": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/mount": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/observe": {
+      "baseline": 0,
+      "candidate": 0.5,
+      "count": 2,
+      "reversed_candidate": 0.5
+    },
+    "travel/portal": {
+      "baseline": 0,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    },
+    "travel/takeoff": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 0
+    },
+    "travel/taxi": {
+      "baseline": 1,
+      "candidate": 1,
+      "count": 2,
+      "reversed_candidate": 1
+    }
+  },
   "test_core_subsets": {
     "novel_core": {
       "baseline": {
@@ -2937,86 +840,6 @@
             "nll": 2.027347748929804
           },
           "travel": {
-            "accuracy": 0,
-            "brier": 0.9241085052490234,
-            "count": 1,
-            "nll": 2.2348926067352295
-          }
-        },
-        "by_task_action": {
-          "action/forward_short": {
-            "accuracy": 0,
-            "brier": 0.9095025360584259,
-            "count": 2,
-            "nll": 2.2009271383285522
-          },
-          "action/swim_down": {
-            "accuracy": 0,
-            "brier": 0.9618940949440002,
-            "count": 2,
-            "nll": 2.460183620452881
-          },
-          "action/swim_up": {
-            "accuracy": 0,
-            "brier": 0.9427593350410461,
-            "count": 2,
-            "nll": 2.3543533086776733
-          },
-          "archaeology/loot": {
-            "accuracy": 1,
-            "brier": 0.7676292061805725,
-            "count": 1,
-            "nll": 1.6557457447052002
-          },
-          "archaeology/observe": {
-            "accuracy": 0,
-            "brier": 0.8051680326461792,
-            "count": 1,
-            "nll": 1.7573318481445312
-          },
-          "archaeology/survey": {
-            "accuracy": 0,
-            "brier": 0.7986574769020081,
-            "count": 1,
-            "nll": 1.7408391237258911
-          },
-          "guidance/forward_long": {
-            "accuracy": 0,
-            "brier": 1.0293371081352234,
-            "count": 2,
-            "nll": 2.706231117248535
-          },
-          "guidance/forward_short": {
-            "accuracy": 0,
-            "brier": 0.9909749031066895,
-            "count": 1,
-            "nll": 2.471139430999756
-          },
-          "guidance/loot": {
-            "accuracy": 0,
-            "brier": 0.7799387872219086,
-            "count": 2,
-            "nll": 1.6529136896133423
-          },
-          "guidance/observe": {
-            "accuracy": 0,
-            "brier": 0.8914071321487427,
-            "count": 2,
-            "nll": 2.0029863119125366
-          },
-          "guidance/turn_left": {
-            "accuracy": 0,
-            "brier": 0.7766391932964325,
-            "count": 2,
-            "nll": 1.6414359211921692
-          },
-          "guidance/turn_right": {
-            "accuracy": 0,
-            "brier": 0.8644214868545532,
-            "count": 2,
-            "nll": 1.911275863647461
-          },
-          "travel/observe": {
             "accuracy": 0,
             "brier": 0.9241085052490234,
             "count": 1,
@@ -3051,86 +874,6 @@
             "nll": 1.34464909712022
           },
           "travel": {
-            "accuracy": 0,
-            "brier": 1.2861114740371704,
-            "count": 1,
-            "nll": 1.8618388175964355
-          }
-        },
-        "by_task_action": {
-          "action/forward_short": {
-            "accuracy": 1,
-            "brier": 0.6793342232704163,
-            "count": 2,
-            "nll": 1.478675901889801
-          },
-          "action/swim_down": {
-            "accuracy": 1,
-            "brier": 0.7765851616859436,
-            "count": 2,
-            "nll": 1.7564585208892822
-          },
-          "action/swim_up": {
-            "accuracy": 0,
-            "brier": 0.8805651962757111,
-            "count": 2,
-            "nll": 2.1197794675827026
-          },
-          "archaeology/loot": {
-            "accuracy": 1,
-            "brier": 0.19380497932434082,
-            "count": 1,
-            "nll": 0.5003827214241028
-          },
-          "archaeology/observe": {
-            "accuracy": 0,
-            "brier": 0.9962888360023499,
-            "count": 1,
-            "nll": 2.159414052963257
-          },
-          "archaeology/survey": {
-            "accuracy": 0,
-            "brier": 1.4668797254562378,
-            "count": 1,
-            "nll": 3.3841211795806885
-          },
-          "guidance/forward_long": {
-            "accuracy": 1,
-            "brier": 0.44904789328575134,
-            "count": 2,
-            "nll": 0.9388723075389862
-          },
-          "guidance/forward_short": {
-            "accuracy": 1,
-            "brier": 0.1421613246202469,
-            "count": 1,
-            "nll": 0.374337375164032
-          },
-          "guidance/loot": {
-            "accuracy": 0.5,
-            "brier": 0.8234783038496971,
-            "count": 2,
-            "nll": 1.2912221550941467
-          },
-          "guidance/observe": {
-            "accuracy": 0,
-            "brier": 1.5133322477340698,
-            "count": 2,
-            "nll": 3.3407868146896362
-          },
-          "guidance/turn_left": {
-            "accuracy": 1,
-            "brier": 0.006673399358987808,
-            "count": 2,
-            "nll": 0.06928634084761143
-          },
-          "guidance/turn_right": {
-            "accuracy": 0,
-            "brier": 0.9411246180534363,
-            "count": 2,
-            "nll": 1.5682337284088135
-          },
-          "travel/observe": {
             "accuracy": 0,
             "brier": 1.2861114740371704,
             "count": 1,
@@ -3195,158 +938,6 @@
             "nll": 2.072505329784594
           }
         },
-        "by_task_action": {
-          "action/camera_ground": {
-            "accuracy": 0,
-            "brier": 0.9935138821601868,
-            "count": 2,
-            "nll": 2.6688395738601685
-          },
-          "action/dismount": {
-            "accuracy": 0,
-            "brier": 0.8079821467399597,
-            "count": 2,
-            "nll": 1.8180878162384033
-          },
-          "action/inspect": {
-            "accuracy": 0,
-            "brier": 1.0079349875450134,
-            "count": 2,
-            "nll": 2.7879937887191772
-          },
-          "action/loot": {
-            "accuracy": 0,
-            "brier": 0.831825464963913,
-            "count": 2,
-            "nll": 1.894469678401947
-          },
-          "action/observe": {
-            "accuracy": 0,
-            "brier": 0.9977713227272034,
-            "count": 2,
-            "nll": 2.6974655389785767
-          },
-          "action/survey": {
-            "accuracy": 1,
-            "brier": 0.7183829545974731,
-            "count": 2,
-            "nll": 1.5793317556381226
-          },
-          "archaeology/forward_long": {
-            "accuracy": 0,
-            "brier": 0.9083406031131744,
-            "count": 2,
-            "nll": 2.1185916662216187
-          },
-          "archaeology/forward_short": {
-            "accuracy": 0,
-            "brier": 0.9067319631576538,
-            "count": 2,
-            "nll": 2.111756205558777
-          },
-          "archaeology/loot": {
-            "accuracy": 1,
-            "brier": 0.7717103958129883,
-            "count": 1,
-            "nll": 1.6672204732894897
-          },
-          "archaeology/observe": {
-            "accuracy": 0,
-            "brier": 0.8030874729156494,
-            "count": 1,
-            "nll": 1.7530927658081055
-          },
-          "archaeology/survey": {
-            "accuracy": 0,
-            "brier": 0.8231919407844543,
-            "count": 1,
-            "nll": 1.8145616054534912
-          },
-          "archaeology/turn_left": {
-            "accuracy": 0,
-            "brier": 0.9542534947395325,
-            "count": 2,
-            "nll": 2.3225375413894653
-          },
-          "archaeology/turn_right": {
-            "accuracy": 0,
-            "brier": 0.8919367492198944,
-            "count": 2,
-            "nll": 2.0481996536254883
-          },
-          "guidance/forward_short": {
-            "accuracy": 0,
-            "brier": 1.0107744932174683,
-            "count": 1,
-            "nll": 2.5825135707855225
-          },
-          "guidance/survey": {
-            "accuracy": 1,
-            "brier": 0.7238602936267853,
-            "count": 2,
-            "nll": 1.5184431076049805
-          },
-          "travel/arrived": {
-            "accuracy": 0,
-            "brier": 0.9462369382381439,
-            "count": 2,
-            "nll": 2.514808773994446
-          },
-          "travel/cruise": {
-            "accuracy": 0,
-            "brier": 0.8716584742069244,
-            "count": 2,
-            "nll": 2.0378228425979614
-          },
-          "travel/dismount": {
-            "accuracy": 0,
-            "brier": 1.0030454993247986,
-            "count": 2,
-            "nll": 2.8116250038146973
-          },
-          "travel/interact": {
-            "accuracy": 0,
-            "brier": 0.9880969226360321,
-            "count": 2,
-            "nll": 2.7093275785446167
-          },
-          "travel/land": {
-            "accuracy": 1,
-            "brier": 0.586896687746048,
-            "count": 2,
-            "nll": 1.2692837715148926
-          },
-          "travel/mount": {
-            "accuracy": 1,
-            "brier": 0.7171354591846466,
-            "count": 2,
-            "nll": 1.5890564918518066
-          },
-          "travel/observe": {
-            "accuracy": 0,
-            "brier": 0.8578208088874817,
-            "count": 1,
-            "nll": 2.016233205795288
-          },
-          "travel/portal": {
-            "accuracy": 0,
-            "brier": 0.9411231577396393,
-            "count": 2,
-            "nll": 2.4358545541763306
-          },
-          "travel/takeoff": {
-            "accuracy": 1,
-            "brier": 0.7374931275844574,
-            "count": 2,
-            "nll": 1.6406313180923462
-          },
-          "travel/taxi": {
-            "accuracy": 1,
-            "brier": 0.7395340502262115,
-            "count": 2,
-            "nll": 1.6722736954689026
-          }
-        },
         "count": 45,
         "ece": 0.08758634097046322,
         "macro_task_accuracy": 0.3363237639553429,
@@ -3379,158 +970,6 @@
             "brier": 0.2816352834098552,
             "count": 19,
             "nll": 0.6623390363651867
-          }
-        },
-        "by_task_action": {
-          "action/camera_ground": {
-            "accuracy": 1,
-            "brier": 0.7656926512718201,
-            "count": 2,
-            "nll": 1.7402272820472717
-          },
-          "action/dismount": {
-            "accuracy": 0,
-            "brier": 0.954755038022995,
-            "count": 2,
-            "nll": 2.490357518196106
-          },
-          "action/inspect": {
-            "accuracy": 0,
-            "brier": 0.8887088596820831,
-            "count": 2,
-            "nll": 2.1518903970718384
-          },
-          "action/loot": {
-            "accuracy": 0,
-            "brier": 0.9773302376270294,
-            "count": 2,
-            "nll": 2.6377429962158203
-          },
-          "action/observe": {
-            "accuracy": 0,
-            "brier": 0.8367763757705688,
-            "count": 2,
-            "nll": 1.9533371925354004
-          },
-          "action/survey": {
-            "accuracy": 0,
-            "brier": 0.9152497351169586,
-            "count": 2,
-            "nll": 2.2985938787460327
-          },
-          "archaeology/forward_long": {
-            "accuracy": 1,
-            "brier": 0.6375852227210999,
-            "count": 2,
-            "nll": 1.2919453978538513
-          },
-          "archaeology/forward_short": {
-            "accuracy": 0,
-            "brier": 0.686942994594574,
-            "count": 2,
-            "nll": 1.39621901512146
-          },
-          "archaeology/loot": {
-            "accuracy": 1,
-            "brier": 0.25829052925109863,
-            "count": 1,
-            "nll": 0.5342711210250854
-          },
-          "archaeology/observe": {
-            "accuracy": 0,
-            "brier": 1.1385903358459473,
-            "count": 1,
-            "nll": 2.4276936054229736
-          },
-          "archaeology/survey": {
-            "accuracy": 1,
-            "brier": 0.6256827712059021,
-            "count": 1,
-            "nll": 1.296310544013977
-          },
-          "archaeology/turn_left": {
-            "accuracy": 1,
-            "brier": 0.09085234999656677,
-            "count": 2,
-            "nll": 0.31919850409030914
-          },
-          "archaeology/turn_right": {
-            "accuracy": 1,
-            "brier": 0.6857290863990784,
-            "count": 2,
-            "nll": 1.3861565589904785
-          },
-          "guidance/forward_short": {
-            "accuracy": 1,
-            "brier": 0.4034036099910736,
-            "count": 1,
-            "nll": 0.8513529300689697
-          },
-          "guidance/survey": {
-            "accuracy": 1,
-            "brier": 0.005795640870928764,
-            "count": 2,
-            "nll": 0.07265674322843552
-          },
-          "travel/arrived": {
-            "accuracy": 0.5,
-            "brier": 0.4913525078445673,
-            "count": 2,
-            "nll": 1.3448688983917236
-          },
-          "travel/cruise": {
-            "accuracy": 1,
-            "brier": 4.002116293122526e-05,
-            "count": 2,
-            "nll": 0.005719311302527785
-          },
-          "travel/dismount": {
-            "accuracy": 1,
-            "brier": 0.040248485282063484,
-            "count": 2,
-            "nll": 0.20975735038518906
-          },
-          "travel/interact": {
-            "accuracy": 1,
-            "brier": 0.6778223514556885,
-            "count": 2,
-            "nll": 1.515481412410736
-          },
-          "travel/land": {
-            "accuracy": 1,
-            "brier": 0.005649334983900189,
-            "count": 2,
-            "nll": 0.05524007976055145
-          },
-          "travel/mount": {
-            "accuracy": 1,
-            "brier": 0.5236715376377106,
-            "count": 2,
-            "nll": 1.1552348136901855
-          },
-          "travel/observe": {
-            "accuracy": 1,
-            "brier": 0.13898566365242004,
-            "count": 1,
-            "nll": 0.43519294261932373
-          },
-          "travel/portal": {
-            "accuracy": 1,
-            "brier": 0.4528781622648239,
-            "count": 2,
-            "nll": 1.0064582228660583
-          },
-          "travel/takeoff": {
-            "accuracy": 1,
-            "brier": 0.4143787622451782,
-            "count": 2,
-            "nll": 0.7808293700218201
-          },
-          "travel/taxi": {
-            "accuracy": 1,
-            "brier": 1.1976905511801306e-06,
-            "count": 2,
-            "nll": 0.0010349153308197856
           }
         },
         "count": 45,

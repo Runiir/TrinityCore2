@@ -15,6 +15,24 @@ def command(*args):
     return subprocess.check_output(list(args), text=True).strip()
 
 
+def compact_receipt(receipt):
+    """Keep the complete per-class metrics in DVC and a small visible receipt."""
+    def compact(value):
+        if isinstance(value, dict):
+            return {key: compact(item) for key, item in value.items() if key != 'by_task_action'}
+        if isinstance(value, list):
+            return [compact(item) for item in value]
+        return value
+    summary = compact(receipt)
+    summary['test_action_accuracy'] = {
+        key: {'count': row['count'], 'baseline': receipt['baseline']['test']['by_task_action'][key]['accuracy'],
+              'candidate': row['accuracy'],
+              'reversed_candidate': receipt['reversed_order_test']['candidate']['by_task_action'][key]['accuracy']}
+        for key, row in receipt['candidate']['test']['by_task_action'].items()}
+    summary['complete_metrics_member'] = 'model/receipt.json'
+    return summary
+
+
 def main():
     from dvclive import Live
     import yaml
@@ -60,7 +78,7 @@ def main():
         raise RuntimeError('DVC checkpoint not synchronized; retain local evidence')
     remote = verify_remote_object(pointer)
     metadata = yaml.safe_load(pointer.read_text())['outs'][0]
-    summary = {**receipt, 'dvc_pointer': str(pointer), 'archive_sha256': archive_sha,
+    summary = {**compact_receipt(receipt), 'dvc_pointer': str(pointer), 'archive_sha256': archive_sha,
         'archive_bytes': metadata['size'], 'remote_md5': metadata['md5'],
         'cloud_status_before_offload': cloud, 'local_status_before_offload': local,
         'remote_object_verified': remote, 'model_member': 'model/adapter.safetensors',
