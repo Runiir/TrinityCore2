@@ -1,0 +1,48 @@
+{
+  "schema": "client442_summon_cast_fixture_v1",
+  "source": {
+    "pointer": "artifacts/client_harness/442_interactions_20261006_121.tar.gz.dvc",
+    "archive_sha256": "2d47b753f4f3f581b898a0f0511f3b4e3313467c31a963b12963c18d3d1ecd49",
+    "receipt": "evidence/client_interactions_20261006_ui121/dismiss02/episode.json",
+    "receipt_sha256": "daca1ba2ad3cbb44d6f222449f9de9023d0f19f59378dcba6d96079168016064",
+    "packets": "tracking/packets.jsonl",
+    "scope": "Normal Summon Imp cleanup after Dismiss; protocol parser evidence only, not pets.summon qualification."
+  },
+  "packets": [
+    {
+      "time": 1791280931.1143754,
+      "session": "c03d6414",
+      "direction": "from_client",
+      "name": "CMSG_CAST_SPELL",
+      "body": "01830302acbc0000000000000000b00200006d9c030000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "time": 1791280931.1144986,
+      "session": "c03d6414",
+      "direction": "to_native",
+      "name": "CMSG_CAST_SPELL",
+      "body": "01b0020000000000000000000000"
+    },
+    {
+      "time": 1791280937.1164992,
+      "session": "c03d6414",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_GO",
+      "body": "0105010501b002000000090000000000008b5abf0900004000000000f90014c6df1113c1a42d47420101000000"
+    },
+    {
+      "time": 1791280937.116602,
+      "session": "c03d6414",
+      "direction": "to_client",
+      "name": "SMSG_SPELL_GO",
+      "body": "01a005040801a005040801a30103ac04bc0000b00200006d9c030000090400000000008b5abf09000000000000000000000000000000000000000000000000000000008000000000040400000000000000f90014c6df1113c1a42d4742010101000000"
+    },
+    {
+      "time": 1791280937.1166792,
+      "session": "c03d6414",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_GO",
+      "body": "0105010500b002000000010000000000008c5abf09"
+    }
+  ]
+}

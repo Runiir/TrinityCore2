@@ -24,9 +24,13 @@ class Presence:
         self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
         self.player={};self.pet=None;self.removed=set();self.requests=[]
 
+    def inspect_packet(self,packet):
+        """Allow a lifecycle oracle to retain packets from this same cursor."""
+
     def poll(self):
         for p in self.cursor.poll():
             if p.get('session')!=self.session or p.get('time',0)<self.started:continue
+            self.inspect_packet(p)
             if p.get('name') in ('CMSG_PET_ACTION','CMSG_PET_ABANDON'):self.requests.append(p)
             if p.get('direction')!='from_native':continue
             if p.get('name')=='SMSG_DESTROY_OBJECT':
