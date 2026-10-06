@@ -29,8 +29,13 @@ def deploy(out,version,with_compatibility=False,names=('primary','scout')):
                     t.receipt['native_pose_before']={'pose':native_pose,'afk':native_afk};t.persist()
                     baseline={k:before.get(k) for k in ['guid','money','equipment','group','raid_profile']}
                     t.receipt['baseline']={'state':before,'frame':frame,'session':entry['session']};t.persist()
-                    shutil.copytree(lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness',
-                        lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness',dirs_exist_ok=True)
+                    source=lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness'
+                    target=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness'
+                    expected={p.name:lab.sha256(p) for p in source.iterdir() if p.is_file()}
+                    shutil.copytree(source,target,dirs_exist_ok=True)
+                    installed={name:lab.sha256(target/name) for name in expected}
+                    if installed!=expected:raise RuntimeError('installed observer files differ from committed source')
+                    t.receipt['observer_files']={'source':expected,'installed':installed};t.persist()
                     if with_compatibility:
                         source=lab.REPO/'tools/client_compatibility/client_addon/Client442Compatibility'
                         target=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/Client442Compatibility'

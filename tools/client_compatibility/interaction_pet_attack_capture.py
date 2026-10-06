@@ -72,6 +72,8 @@ def stage(t,preparation,entry):
     old,e,base,inventory,identity=eligibility(t,preparation,entry);t.clean_panels()
     o=AttackPresence(base.session,5,base.started).poll();sample=read(t,'attack_original_bar')
     state,frame=t.observe('attack_original_scene');catalogs=[c for c in o.catalogs if c['guid']==o.pet['guid']]
+    if state.get('observer_version')!=137 or sample['probe'].get('pet_cast',{}).get('available') is not True:
+        raise RuntimeError('requires the loaded observer137 and passive pet casting API before pose staging')
     follow=follow_row(sample['probe'])
     if (not catalogs or catalogs[-1]['command']!=1 or catalogs[-1]['react']!=3 or
         not follow or not follow.get('active') or not sample['ui_clean'] or state.get('spell_targeting') is not False):
@@ -167,7 +169,7 @@ if __name__=='__main__':
     p.add_argument('--stage',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action=='run' and (a.stage is None or a.review is None):p.error('run requires closed staging and a fresh review')
     with actor('scout'):
-        t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        t=Trial(a.output,controller='code',chat_key_hold=1.2);t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='stage':stage(t,a.preparation,a.entry)
             else:run(t,a.preparation,a.entry,a.stage,a.review)

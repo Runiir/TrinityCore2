@@ -48,7 +48,7 @@ def continuity(t,old,park,finish,deployment,preparation_sha):
         raise RuntimeError('completed bridge-only lifetime continuity differs')
 
 
-def prepare(t,preparation,parked,origin_finish,deployment_path):
+def prepare(t,preparation,parked,origin_finish,deployment_path,observer_version=None):
     preparation,parked,origin_finish=[p.resolve() for p in (preparation,parked,origin_finish)]
     old,park,finish=[closed(p) for p in (preparation,parked,origin_finish)]
     deployment_path=deployment_path.resolve()
@@ -85,6 +85,9 @@ def prepare(t,preparation,parked,origin_finish,deployment_path):
         checks=checks,qualified_scope='Retained native-account class fixture continuity only; no gameplay qualification.')
     t.persist()
     if guid==5:t.receipt['retained_level_one']=old['retained_level_one']
+    if observer_version is not None:
+        from .interaction_retained_class_reentry import install_observer
+        install_observer(t,observer_version)
     if actors.register(guid)!=fixture:raise RuntimeError('retained class registration differs')
     t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
 
@@ -92,10 +95,11 @@ def prepare(t,preparation,parked,origin_finish,deployment_path):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['preparation','park','origin-finish','deployment','output']:p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--observer-version',type=int,help='Install the committed scout observer while original and class fixtures are offline')
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:prepare(t,a.preparation,a.park,a.origin_finish,a.deployment)
+        try:prepare(t,a.preparation,a.park,a.origin_finish,a.deployment,a.observer_version)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)
