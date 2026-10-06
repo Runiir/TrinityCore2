@@ -1,0 +1,13 @@
+{
+  "schema": "client442_pet_dismiss_contract_v1",
+  "actor": {"guid": 4, "account_id": 2, "class": 9, "level": 1},
+  "source": "Closed UI114 owned-Imp menu reconnaissance and same ordinary class entry, each hash-bound.",
+  "input": "One fresh ordinary Dismiss button click for the current native/public owned Imp. Never Abandon.",
+  "required_outcomes": ["One owned modern pet-action request translated to native command3/type7", "Native summoned Imp removed and owner summon pointer cleared", "Public target and pet absent", "Normal known Summon Imp cleanup retains saved pet id1/entry416/owner4/nameVolrot", "Native resources, saved spells/skills/actions/quests, position and original actor state preserved"],
+  "cleanup": "Ordinary clear-target, panel cleanup, and only if dismissed ordinary known /cast Summon Imp with bounded recovery. Summon is cleanup and adds no qualification.",
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "No Abandon, rename, other pet command, level/spell/aura grant, extra client, model job or native-server restart. Failed whole attempts remain excluded. No pet-tab or summon qualification from this probe."
+}
