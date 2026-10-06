@@ -120,6 +120,8 @@ def run(output,stop_on='recipe'):
     def sample(output):return observation_wait.sample(output,session,reader=observe)
     from .observed_state import ensure
     ensure(graph)
+    from .controller_updates import SourceUpdates,apply_addon_request
+    source_updates=SourceUpdates()
     with (runtime.ROOT/'run/farm_loop.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         try:
@@ -127,11 +129,16 @@ def run(output,stop_on='recipe'):
                 if (runtime.ROOT/'run/stop_dig').exists():session['status']='supervisor_stopped';break
                 if time.time()-session['last_progress_at']>=1800:session['status']='inactive_30_minutes';break
                 resources.check()
+                refreshed=source_updates.refresh()
+                if 'flight' in refreshed:
+                    from . import flight
+                    globals()['fly']=flight.fly
                 index=session['next_step_index']
                 folder=output/f'step_{index:05d}'
                 while folder.exists():index+=1;folder=output/f'step_{index:05d}'
                 folder.mkdir(exist_ok=False)
                 row=sample(folder/'before.png')
+                if apply_addon_request(folder,row):continue
                 pending=pending_find.update(row,{})
                 row['pending_find']=pending
                 resume_grounded_flight(session,row)
