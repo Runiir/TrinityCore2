@@ -14,6 +14,7 @@ from .interaction_pet_training_disconnect import catalog
 from .interaction_pet_spellbook_tab import modern_catalog,catalog_checks
 from .interaction_pet_command_probe import read as commands,expected_guid
 from .interaction_spellbook_navigation import detail
+from .interaction_actionbar_pages import detail as bar_detail
 from .interaction_spellbook_recon import resources
 from .interaction_operations import click_case,controls,point
 from .interaction_macros import require
@@ -39,10 +40,12 @@ def saved_pet_unchanged(before,after,now):
 
 def pet_frame_menu(t,oracle,expected):
     """Inspect the owned pet frame's menu, whose actions differ from TargetFrame."""
-    rows=[c for c in controls(t) if c.get('name')=='PetFrame' and c.get('enabled') is True]
-    if len(rows)!=1:raise RuntimeError('requires one observed enabled stock PetFrame')
-    control=rows[0];xy=point(control)
-    if any(type(control.get(k)) is not int or not 0<control[k]<65535 for k in ('x','y')):
+    bar=bar_detail(t,'hunter_pet_hit_rectangle',lambda p:bool(p.get('targeting',{}).get('pet_frame')))
+    control=bar['targeting']['pet_frame'];xy=point(control)
+    if (control.get('name')!='PetFrame' or control.get('unit')!='pet' or control.get('guid')!=expected or
+        control.get('visible') is not True or control.get('enabled') is not True or
+        control.get('point_basis')!='hit_rectangle_center' or
+        any(type(control.get(k)) is not int or not 0<control[k]<65535 for k in ('x','y'))):
         raise RuntimeError('observed pet frame point differs')
     def outcome(before,after,selected):
         oracle.poll()
@@ -57,8 +60,13 @@ def pet_frame_menu(t,oracle,expected):
         {'open':{'kind':'click','value':xy,'button':3,'hold':.4,
             'description':'Right-click the observed owned PetFrame once.'}},outcome,diagnostic_action='open',
         await_state=lambda a:'ContextMenu' in a.get('panels',[])),'hunter_pet_frame_menu_pass')
-    state,frame=t.observe('hunter_pet_frame_menu')
-    t.receipt.update(pet_menu={'state':state,'frame':frame,'controls':controls(t),'source_control':control});t.persist()
+    state,frame=t.observe('hunter_pet_frame_menu');rows=controls(t)
+    menu_checks={'owned_menu_title':any(c.get('kind')=='MenuItem' and c.get('text')=='Wolf' for c in rows),
+        'player_menu_absent':not any(c.get('text')=='Harnesshunt' for c in rows),
+        'stock_rename_visible':any(c.get('text')=='Rename' and c.get('enabled') is True for c in rows)}
+    t.receipt.update(pet_menu={'state':state,'frame':frame,'controls':rows,'source_control':control,
+        'checks':menu_checks});t.persist()
+    if not all(menu_checks.values()):raise RuntimeError('owned Hunter pet rename menu differs')
 
 
 def catalog_pair(session,since,pet):
