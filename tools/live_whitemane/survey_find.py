@@ -100,6 +100,6 @@ def in_range(row):
     find=row.get('visible_find')
     if not find or find['distance_yards']>.5:return False
     height=find.get('height_yards');pose=row.get('owned_pose') or {}
-    if row['archaeology'].get('swimming') and height is not None and pose.get('height_yards') is not None:
+    if height is not None and pose.get('height_yards') is not None:
         return abs(height-pose['height_yards'])<=.5
     return True

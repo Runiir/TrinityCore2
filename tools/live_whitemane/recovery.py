@@ -146,7 +146,13 @@ def run(folder,row,step,session,graph):
             'jump_forward_legal':'jump_forward' in choices,
             'forward_movement_blocked':movement_blocked,
             'jump_height':'measure from owned altitude telemetry; no assumed clearance',
-            'pending_pickup':bool(pending)}
+            'pending_pickup':bool(pending),
+            'recent_recovery_outcomes':[{'action':previous['choice'],
+                'moved_yards':round(math.hypot(previous['world']['north']-previous['after_world']['north'],
+                    previous['world']['west']-previous['after_world']['west']),2)}
+                for previous in session.get('recoveries',[])[-3:]
+                if previous.get('world') and previous.get('after_world') and
+                    previous['world']['instance']==previous['after_world']['instance']]}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
             'resurvey':'Survey again from this position',
             'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
@@ -156,6 +162,7 @@ def run(folder,row,step,session,graph):
         choices={key:descriptions[key] for key in choices}
         instructions=('Choose how to clear the obstacle. A blocked reference climb suggests a ceiling. '
             'Use a clear side or connected ground detour instead of repeating a failed ascent. '
+            'Use recent_recovery_outcomes to avoid repeating jumps or directions with no measured displacement. '
             'Reference geometry can differ from the live client. Preserve a pending artifact.')
     action,request,response=laya_ui.choose(context,instructions,choices)
     result={'at':time.time(),'choice':action,'state':context,'observed_context':state,

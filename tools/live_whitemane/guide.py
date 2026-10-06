@@ -77,8 +77,8 @@ def select(row, session, tool):
         error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
         tolerance=.1 if approach.get('source')=='named find forward range approach' else .5
         pose=row.get('owned_pose') or {}
-        vertical=(height-pose['height_yards'] if row['archaeology'].get('swimming') and
-            height is not None and pose.get('height_yards') is not None else None)
+        vertical=(height-pose['height_yards'] if height is not None and
+            pose.get('height_yards') is not None else None)
         return {'source':'visible owned archaeology find' if find else approach.get('source','last green Survey endpoint'),
             'world':endpoint,'color':'green',
             'distance_yards':distance,'height_error_yards':vertical,
@@ -177,7 +177,8 @@ def pickup(session,row=None):
     if target and target['marker_id'] not in visited:visited.append(target['marker_id'])
     if row:
         # A find discovered by telescope can add its saved GatherMate marker
-        # only after gathering. Do not immediately Survey twice at that spot.
+        # only after gathering. Retire it as a navigation destination; the
+        # confirmed pickup receipt separately exposes an untried Survey here.
         closest=min(row['archaeology'].get('visible_markers') or [],
             key=lambda marker:marker['distance_yards'],default=None)
         if closest and closest['distance_yards']<=.5 and closest['marker_id'] not in visited:

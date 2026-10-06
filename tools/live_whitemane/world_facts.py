@@ -30,6 +30,7 @@ def reduce(row,latch=None):
         minimap_clear=(row.get('minimap_finds') or {}).get('clear'),
         canopic_jars_in_bags=a.get('canopic_jars_in_bags',0),
         recipe_known=bool(ui.get('recipe_known') or a.get('recipe_items_in_bags',0)))
+    facts.update(pending_find.pickup_position_facts(row))
     portal=(ui.get('route') or {}).get('portal');world=a.get('world')
     target=portal.get('from') if portal else None
     facts['portal_distance_yards']=(math.hypot(world['north']-target['north'],world['west']-target['west'])

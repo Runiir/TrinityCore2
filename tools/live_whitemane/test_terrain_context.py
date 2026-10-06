@@ -17,6 +17,8 @@ def test_outdoor_WMO_can_still_have_a_roof_and_blocked_ascent(monkeypatch):
     monkeypatch.setattr(terrain_context.model_collision,'clear_body_segment',clear)
     facts=terrain_context.facts(r,{'instance':1,'north':100,'west':0})
     assert facts['departure_floor_agrees'] and not facts['reference_WMO_indoors']
+    assert facts['reference_support_is_raised']
+    assert facts['observed_height_above_reference_raw_terrain_yards']==pytest.approx(25.3194)
     assert not facts['reference_climb_clear'] and facts['reference_forward_clear']
     assert facts['live_asset_match_verified'] is False
     assert checks[-1][1][0]==8
@@ -69,6 +71,18 @@ def test_approach_requires_measured_departure_floor_agreement(monkeypatch):
     monkeypatch.setattr(terrain_context,'facts',lambda *_:{'departure_floor_agrees':False})
     monkeypatch.setattr(terrain_context,'detour',lambda *_ ,**__:pytest.fail('other floor must not route'))
     assert not terrain_context.approach(r,target)['available']
+
+
+def test_known_artifact_height_routes_to_that_floor_and_rejects_a_roof_projection(monkeypatch):
+    r,target=path_setup(monkeypatch);target['height_yards']=0
+    calls=[]
+    def route(_,start,goal):
+        calls.append(goal)
+        return {'complete':True,'ground_only':True,'points':[start,[40,5,10]]}
+    monkeypatch.setattr(terrain_context.ground_navigation,'route',route)
+    result=terrain_context.detour(r,target)
+    assert calls==[[40,5,0]] and not result['available']
+    assert 'artifact to a different floor' in result['reference_error']
 
 
 @pytest.mark.parametrize('bad',['other_floor','wall','outside_site'])

@@ -16,6 +16,9 @@ def facts(row,target=None,*,climb_yards=8):
         floors=[h for h in (terrain,column.get('support_height')) if h is not None and h<=point[2]+2.5]
         floor=max(floors) if floors else None
         result.update(available=True,origin=world,height_yards=point[2],
+            reference_raw_terrain_height_yards=terrain,
+            observed_height_above_reference_raw_terrain_yards=point[2]-terrain if terrain is not None else None,
+            reference_support_is_raised=bool(floor is not None and terrain is not None and floor-terrain>2.5),
             reference_floor_height_yards=floor,
             observed_height_above_reference_floor_yards=point[2]-floor if floor is not None else None,
             departure_floor_agrees=bool(floor is not None and abs(point[2]-floor)<=2.5),
@@ -46,12 +49,15 @@ def detour(row,target,*,maximum_yards=24,allow_clear_prefix=False):
     if math.hypot(target['north']-start[0],target['west']-start[1])>150:return result
     accepted=[start];length=0
     try:
-        route=ground_navigation.route(world['instance'],start,[target['north'],target['west'],start[2]])
+        destination_height=target.get('height_yards',start[2])
+        route=ground_navigation.route(world['instance'],start,[target['north'],target['west'],destination_height])
         points=route.get('points') or []
         if not route.get('complete') or not route.get('ground_only') or not points:
             raise RuntimeError('reference ground path is incomplete')
         if math.dist(start[:2],points[0][:2])>2 or abs(start[2]-points[0][2])>2.5:
             raise RuntimeError('reference path projects the player to a different floor')
+        if target.get('height_yards') is not None and abs(points[-1][2]-destination_height)>1:
+            raise RuntimeError('reference path projects the observed artifact to a different floor')
         site=boundaries.sites().get(str(a.get('site_id'))) if a.get('can_survey') else None
         if a.get('can_survey') and (not site or site['map']!=world['instance']):
             raise RuntimeError('reference detour has no active site perimeter')

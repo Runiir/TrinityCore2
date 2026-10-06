@@ -33,7 +33,9 @@ def choose(state):
     adjust_depth=state.get('swimming') and pickup.get('uncollected') and (
         vertical is not None and abs(vertical)>.5 or
         pickup.get('interaction_in_range') is False and state.get('guide_arrived'))
-    if not adjust_depth and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
+    measured_vertical_gap=vertical is not None and abs(vertical)>.5 and pickup.get('uncollected')
+    repeat_here=state.get('survey_at_pickup_position_untried') is True
+    if not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
             and not state['artifact_visible'] and not pickup.get('uncollected'))):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
@@ -62,6 +64,8 @@ def choose(state):
             options['survey']='Cast Survey if Survey is ready, no artifact is pending, and the guide has been reached'
             if provisional:
                 options['survey']='Repeat Survey here if a provisional discovery has no named find and tooltip searches failed'
+            elif repeat_here:
+                options['survey']='Survey again at the confirmed pickup position; another artifact may be here'
         if state.get('telescope') and not state.get('guide_arrived'):
             options.update(forward_short='Approach if the current marker, telescope or artifact has not been reached',
                 forward_long='Fly toward the current guide if it is red or far; otherwise approach it on foot')
@@ -76,7 +80,20 @@ def choose(state):
         'Retain useful movement; steer with the camera. Prefer markers, then telescope: red fly, green approach. '
         'When guide_arrived is true and no artifact is pending, Survey here. '
         'Camera alignment without travel cannot discover an artifact. '
-        'Resume digging after confirmed collection.')
+        'After confirmed collection, Survey again in place before moving to another marker when '
+        'survey_at_pickup_position_untried is true. Another artifact may be at the same spot. '
+        'A successful Survey clears that fact; choosing Survey without success does not. '
+        'A measured vertical gap means horizontal arrival alone is insufficient for pickup.')
+    if repeat_here and not pickup.get('uncollected') and not state['artifact_visible']:
+        # Keep the whole movement context and every legal alternative. Explain
+        # the immediate goal and action effects instead of overriding a vote.
+        context={**state,'task':'Check this collection position for another archaeology find before leaving',
+            'current_position':{'confirmed_artifact_collected':True,'survey_since_collection':False}}
+        descriptions={'survey':'Check the current collection position for another archaeology find',
+            'forward_short':'Leave the collection position and walk to the next marker',
+            'forward_long':'Leave the collection position and fly to the next marker'}
+        options={key:descriptions.get(key,label) for key,label in options.items()}
+        instructions+=' Survey can be cast here when ready. Moving first skips this untried pickup spot.'
     if pickup.get('interaction_in_range') is False and state.get('telescope'):
         # Keep the action vocabulary; provide the immediate range correction
         # without unrelated Survey history or a second pickup-priority vote.
@@ -91,6 +108,9 @@ def choose(state):
             'If close enough, interact. When swimming, a negative artifact_height_error_yards means swim down; '
             'positive means swim up. If horizontal distance is already small but depth is unknown, '
             'test a small depth change and recheck interaction. Camera movement alone cannot collect it.')
+        if measured_vertical_gap and not state.get('swimming'):
+            instructions+=(' The observed artifact is on a different elevation. Approach it by a connected '
+                'route; walking at the same horizontal position or changing the camera does not close this height gap.')
         descriptions={'observe':'Wait while casting or unavailable',
             'inspect':'Locate an artifact whose position is unknown',
             'camera_forward':'Align the camera with the character','camera_ground':'Look down at the ground',

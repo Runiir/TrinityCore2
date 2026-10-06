@@ -170,6 +170,7 @@ def run(args):
                 break
             tool=telescope(before,session)
             if session.get('observed_find_count',a['looted_finds']) < a['looted_finds']:
+                pending_find.confirm_pickup(before)
                 routes.pickup(session,before)
             session['observed_find_count']=a['looted_finds']
             if tool and not visible_find and not routes.fresh_guidance(before,tool):

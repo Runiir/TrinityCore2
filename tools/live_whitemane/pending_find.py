@@ -23,11 +23,39 @@ def confirm_pickup(row,*,name=None):
     if previous and previous['observed_at']>=row['observed_at']:return previous
     ui=row.get('farm_ui') or {};names={name,ui.get('tooltip'),(ui.get('soft_interact') or {}).get('name')}
     value={'runtime':row['runtime'],'observed_at':row['observed_at'],
+        'site_id':row['archaeology'].get('site_id'),
+        'height_yards':(row.get('owned_pose') or {}).get('height_yards'),
         'successful_surveys':row['archaeology'].get('successful_surveys'),
         'looted_finds':row['archaeology'].get('looted_finds'),
         'world':row['archaeology']['world'],'fragments':fragments(row),
         'names':sorted(names & set(FIND_NAMES))}
     runtime.write(runtime.ROOT/'run/last_pickup.json',value);return value
+
+
+def pickup_position_facts(row):
+    """Observed collection and Survey generations, independent of chosen actions."""
+    receipt=pickup_receipt(row);a=row['archaeology'];world=a.get('world')
+    facts={'artifact_collected_at_current_position':False,
+        'successful_survey_since_pickup':None,'survey_at_pickup_position_untried':False}
+    if not receipt:return facts
+    origin=receipt.get('world')
+    if not world or not origin or origin['instance']!=world['instance']:return facts
+    surveys=a.get('successful_surveys');baseline=receipt.get('successful_surveys')
+    finds=a.get('looted_finds');collected=receipt.get('looted_finds')
+    if surveys is None or baseline is None or finds is None or collected is None:return facts
+    # An addon reset is not evidence of a new Survey or a recent collection.
+    if surveys<baseline or finds!=collected:return facts
+    distance=math.hypot(world['north']-origin['north'],world['west']-origin['west'])
+    height=(row.get('owned_pose') or {}).get('height_yards');old_height=receipt.get('height_yards')
+    dz=height-old_height if height is not None and old_height is not None else None
+    same_site=receipt.get('site_id') is not None and a.get('site_id')==receipt['site_id']
+    here=same_site and distance<=1 and (dz is None or abs(dz)<=1)
+    facts.update(artifact_collected_at_current_position=here,
+        successful_survey_since_pickup=surveys>baseline,
+        survey_at_pickup_position_untried=bool(here and a.get('can_survey') and surveys==baseline),
+        distance_from_pickup_yards=round(distance,2),height_change_since_pickup_yards=dz,
+        pickup_observed_at=receipt['observed_at'])
+    return facts
 
 
 def same_pickup_generation(row,receipt):

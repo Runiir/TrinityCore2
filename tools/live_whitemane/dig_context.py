@@ -24,6 +24,7 @@ def model_state(row, guide, visible_find, pending, steps):
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
     state.update({key:row['archaeology'].get(key) for key in ('mounted','flying','falling','swimming')})
     state['height_yards']=(row.get('owned_pose') or {}).get('height_yards')
+    state.update(pending_find.pickup_position_facts(row))
     state['Survey_dismounts_on_ground']=bool(row['archaeology']['mounted'] and
         not row['archaeology'].get('flying') and not row['archaeology'].get('falling'))
     if pending:
