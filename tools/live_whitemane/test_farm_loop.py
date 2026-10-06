@@ -61,9 +61,11 @@ def test_active_digsite_navigation_is_not_replaced_with_a_flight_to_its_center()
     from . import farm_policy
     r=row();r['archaeology'].update(can_survey=True,falling=False)
     r['farm_ui']['route'].update(kind='dig',site={'point':{'instance':1,'north':30,'west':0}})
-    guide={'arrived':False,'world':{'instance':1,'north':5,'west':0}}
+    guide={'arrived':False,'color':'green','world':{'instance':1,'north':5,'west':0}}
     actions=farm_policy.legal_actions(r,SolveBatches(),guide)
     assert 'dig' in actions and 'flight' not in actions
+    flight=farm_policy.legal_actions(r,SolveBatches(),guide,ground_approach_blocked=True)['flight'][1]
+    assert flight['north']==5 and flight['arrival_tolerance_yards']==.5
     r['archaeology']['can_survey']=False
     assert 'flight' in farm_policy.legal_actions(r,SolveBatches())
 

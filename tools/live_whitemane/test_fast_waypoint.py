@@ -103,3 +103,22 @@ def test_a_new_artifact_interrupts_the_retained_approach_for_a_model_choice(monk
     assert len(calls)==1 and rows[-1]['action']=='loot'
     assert events.count(('press','Up'))==1 and events.count(('release','Up'))==1
     assert events.count(('button_release',3))==1
+
+
+def test_short_on_foot_fall_releases_forward_then_resumes_the_same_intent(monkeypatch,tmp_path):
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,20)
+    r['archaeology'].update(flying=False,mounted=False,grounded=True)
+    index=[0]
+    def observe(_):
+        index[0]+=1;now[0]+=.1;controllers[0].tick()
+        row=copy.deepcopy(r);row['observed_at']=now[0]
+        row['movement'].update(sequence=index[0],client_uptime_ms=index[0]*100)
+        row['archaeology'].update(sequence=index[0],falling=index[0] in (4,5))
+        if index[0]>=7:row['archaeology']['world']['north']=0
+        return row
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},tolerance=.5,
+        approved_intent=('forward_long',{}, {},{}))
+    assert sum(r.get('outcome')=='awaiting_ground' for r in rows)==2
+    assert events.count(('press','Up'))==2 and events.count(('release','Up'))==2
+    assert not calls and rows[-1]['outcome']=='waypoint_arrived'

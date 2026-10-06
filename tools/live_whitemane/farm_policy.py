@@ -15,7 +15,7 @@ def teleport_button(ui):
         (b.get('kind')=='spell' and b.get('id')==5000028 or b.get('label')=='Teleport')),None)
 
 
-def legal_actions(row,batches,dig_guide=None):
+def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
     a,m=row['archaeology'],row['movement'];ui=row.get('farm_ui') or {};route=ui.get('route') or {}
     actions={'wait':('Wait and observe',None)}
     if not ui or not m['in_world'] or m['dead'] or m['on_taxi'] or a['casting']:return actions
@@ -63,9 +63,12 @@ def legal_actions(row,batches,dig_guide=None):
             and a['world']['instance']==site['instance'] and 'flight' not in actions
             and not a['can_survey']):
         actions['flight']=('Fly to the next addon digsite',site)
-    if (dig_guide and not dig_guide['arrived'] and (a['mounted'] or a['flying'])
+    if (dig_guide and not dig_guide['arrived'] and (a['mounted'] or a['flying'] or ground_approach_blocked)
             and a['world'] and a['world']['instance']==dig_guide['world']['instance']):
-        actions['flight']=('Fly toward the current dig guide',dig_guide['world'])
+        tolerance=dig_guide.get('arrival_tolerance_yards',
+            6 if dig_guide['color']=='red' else 4 if dig_guide['color']=='yellow' else .5)
+        actions['flight']=('Fly to the current dig guide if its ground approach is blocked',
+            {**dig_guide['world'],'arrival_tolerance_yards':tolerance})
     return actions
 
 
@@ -73,15 +76,18 @@ def choose(row,batches,session):
     a,m=row['archaeology'],row['movement'];ui=row.get('farm_ui') or {}
     if a['recipe_items_in_bags'] or ui.get('recipe_known'):return 'recipe',None,{'completion':'recipe observed'}
     if a['canopic_jars_in_bags']:return 'jar',None,{'completion':'jar observed'}
-    dig_guide=None;guide_error=None
+    dig_guide=None;guide_error=None;ground_blocked=False
     if session.get('dig_output'):
         from . import dig_session,guide
         path=Path(session['dig_output'])/'session.json'
         if path.exists():
             dig=json.loads(path.read_text())
+            ground_blocked=any(any(reason in (s.get('failure') or '') for reason in
+                ('terrain falling','movement is blocked','calculated emergency bound'))
+                for s in dig.get('steps',[])[-4:])
             try:dig_guide,_=guide.select(row,dig,dig_session.telescope(row,dig))
             except RuntimeError as error:guide_error=str(error)
-    options=legal_actions(row,batches,dig_guide)
+    options=legal_actions(row,batches,dig_guide,ground_approach_blocked=ground_blocked)
     if len(options)==1:return 'wait',None,{'only_legal_action':'wait'}
     route=ui.get('route') or {};signal=row.get('minimap_finds') or {}
     previous=session.get('steps',[])
@@ -104,6 +110,7 @@ def choose(row,batches,session):
         'consecutive_actions_without_progress':stalled,
         'pickup':pending_find.facts(row,row.get('pending_find')),
         'guide_error':guide_error,
+        'ground_approach_blocked':ground_blocked,
         'route':route.get('kind'),'route_instruction':route.get('instruction'),
         'via_Tol_Barad_requested':session['via_tolbarad'],
         'fragments':[{k:r[k] for k in ('index','fragments','cost','sockets','keystones_in_bags')} for r in a['races'] if r['cost']],

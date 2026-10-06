@@ -58,12 +58,12 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         sample_periods=deque(maxlen=8);last_sample=None
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
-        survey_generation=None;artifact_before=None;forward_started=False
+        survey_generation=None;artifact_before=None;forward_started=False;terrain_wait=False
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
                 m,a=row['movement'],row['archaeology'];world=a['world']
-                if a['falling']:
+                if a['falling'] and flying:
                     raise RuntimeError('terrain falling interrupted the continuous approach')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                     or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<=0
@@ -77,6 +77,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if m['sequence']==last_sequence:
                     time.sleep(.01);continue
                 last_sequence=m['sequence']
+                if a['falling']:
+                    # Normal on-foot terrain steps can briefly fall. Retain
+                    # the selected destination, release forward, and resume
+                    # from fresh grounded facts instead of restarting Laya.
+                    sticky.hold('Up',False);sticky.renew();terrain_wait=True
+                    receipts.append({'observed_at':row['observed_at'],'outcome':'awaiting_ground',
+                        'model_decision_reused':True,'altitude_yards':a.get('altitude_yards')})
+                    if deadline is not None and cycle>deadline:
+                        raise RuntimeError('terrain falling interrupted the continuous approach')
+                    index+=1;time.sleep(.1);continue
+                if terrain_wait:last_progress=cycle;terrain_wait=False
                 if last_sample is not None:
                     elapsed=((m['client_uptime_ms']-last_sample)%2**32)/1000
                     if 0<elapsed<=.5:sample_periods.append(elapsed)
