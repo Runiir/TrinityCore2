@@ -22,6 +22,8 @@ RETRYABLE=(
     'dismount input did not produce unmounted state',
     'takeoff did not produce flying state',
     'descent did not confirm landing',
+    'character drifted away from landing destination',
+    'Survey result did not receive fresh public facts',
     'artifact interaction did not confirm fragment pickup',
     'key-1 combat has made no target-health progress',
     'current-target facing remained blocked',

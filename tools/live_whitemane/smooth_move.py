@@ -104,7 +104,7 @@ def descend(folder,target,*,site_id=None,allow_combat=False):
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         code,_=sender._keycode(sender.XK.string_to_keysym('x'))
-        held=False;rows=[];ground_samples=0;started=time.time()
+        held=False;rows=[];ground_samples=0;ground_row=None;started=time.time()
         try:
             for index in range(60):
                 row=observe(folder/f'descent_{index:02d}.png')
@@ -115,8 +115,9 @@ def descend(folder,target,*,site_id=None,allow_combat=False):
                     raise RuntimeError('character unavailable during descent')
                 if site_id is not None:check_point(site_id,world)
                 remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
-                if remaining>12: raise RuntimeError('character drifted away from landing destination')
                 grounded=not a['flying'] and not a['falling']
+                if remaining>12 and not grounded:
+                    raise RuntimeError('character drifted away from landing destination')
                 altitude=a.get('altitude_yards');vertical=None
                 if rows and altitude is not None and rows[-1]['altitude_yards'] is not None:
                     delta=row['observed_at']-rows[-1]['observed_at']
@@ -126,10 +127,12 @@ def descend(folder,target,*,site_id=None,allow_combat=False):
                              'height_above_ground_yards':None,'remaining_yards':remaining})
                 if grounded:
                     if held:sender._send(sender.X.KeyRelease,code);held=False
-                    ground_samples+=1
+                    from .action_queue import newer
+                    if ground_row is None or newer(row,ground_row):
+                        ground_samples+=1;ground_row=row
                     if ground_samples>=2:return rows
                 else:
-                    ground_samples=0
+                    ground_samples=0;ground_row=None
                     if a['flying'] and not held:sender._send(sender.X.KeyPress,code);held=True
                 time.sleep(.15)
             raise RuntimeError('descent did not confirm landing')

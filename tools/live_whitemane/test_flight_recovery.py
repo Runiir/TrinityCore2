@@ -123,3 +123,45 @@ def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,
     assert step['travel_decisions'][1]['inputs'][0]['arguments']['key']=='shift+space'
     with pytest.raises(RuntimeError,match='current position'):
         flight.fly(tmp_path,air,{'endpoint':dict(target,north=10)},{},combat_landing=True)
+
+
+def test_interrupted_digsite_landing_surveys_on_ground_instead_of_remounting(monkeypatch,tmp_path):
+    ground=observation(12.24);foot=observation(12.24,mounted=False)
+    for r in (ground,foot):r['archaeology'].update(site_id=315,can_survey=True)
+    monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    fresh_observer(monkeypatch,iter([ground,ground,ground,foot,foot]))
+    monkeypatch.setattr(flight,'choose',lambda state,which,physical_state:
+        (travel_policy.label(physical_state),{},state,{}))
+    monkeypatch.setattr(flight.inputs,'execute',lambda *args:{'arguments':args[-1]})
+    monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:pytest.fail('ground facts do not need height'))
+    step={}
+    flight.fly(tmp_path,ground,{'endpoint':{'instance':1,'north':0,'west':0},
+        'site_id':315,'resume_to_survey_on_ground':True},step)
+    assert [p['action'] for p in step['travel_decisions']]==['dismount','arrived']
+    assert step['grounded_digsite_reobserve']['old_endpoint_distance_yards']==12.24
+    assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']
+
+
+def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkeypatch,tmp_path):
+    from . import smooth_move
+    from tools.client_compatibility import native_input_adapter
+    from types import SimpleNamespace
+    (tmp_path/'run').mkdir();monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(smooth_move.inputs,'focus',lambda _: {})
+    events=[];sequence=[0]
+    class Sender:
+        initialization={}
+        X=SimpleNamespace(KeyPress='press',KeyRelease='release')
+        XK=SimpleNamespace(string_to_keysym=lambda key:key)
+        def _keycode(self,key):return key,0
+        def _send(self,*args):events.append(args)
+        def close(self):pass
+    monkeypatch.setattr(native_input_adapter,'Input',Sender)
+    def observe(_):
+        sequence[0]+=1;r=observation(12.24)
+        r['movement']['sequence']=r['archaeology']['sequence']=sequence[0]
+        return r
+    monkeypatch.setattr(smooth_move,'observe',observe)
+    monkeypatch.setattr(smooth_move.time,'sleep',lambda _:None)
+    rows=smooth_move.descend(tmp_path,{'instance':1,'north':0,'west':0})
+    assert len(rows)==2 and all(r['grounded'] for r in rows) and events==[]

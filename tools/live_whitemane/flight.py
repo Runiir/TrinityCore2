@@ -16,6 +16,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
     contacts=[]; height_plan=None
     step['travel_decisions']=phases
     target=arrow['endpoint']
+    reobserve_ground=bool(arrow.get('resume_to_survey_on_ground'))
     arrival_tolerance=arrow.get('arrival_tolerance_yards',6)
     if combat_landing and math.hypot(target['north']-row['archaeology']['world']['north'],
                                     target['west']-row['archaeology']['world']['west'])>.15:
@@ -34,6 +35,12 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if not world or world['instance']!=target['instance']:
             raise RuntimeError('flight observation or world instance changed')
         remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
+        if (reobserve_ground and arrow.get('site_id')==a.get('site_id') and a.get('can_survey')
+                and not a['flying'] and not a['falling'] and not pending_find.load(row)):
+            step['grounded_digsite_reobserve']={'world':world,'old_endpoint':target,
+                'old_endpoint_distance_yards':remaining,'destination_arrival_confirmed':False}
+            target=world;remaining=0;height_plan=None
+            reobserve_ground=False
         if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
         maximum_distance=750 if arrow.get('site_id') else 1500
         if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
@@ -96,6 +103,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
                              after=contact.observation,inputs_released=True)
                 at_height=False
                 height_plan=None
+                reobserve_ground=True
                 if len(contacts)>=3 and all(math.hypot(p['north']-landed['north'],p['west']-landed['west'])<3
                                             for p in contacts[-3:]):
                     raise RuntimeError('repeated terrain contact without route progress')
@@ -107,6 +115,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             descent_options={'site_id':arrow.get('site_id')}
             if combat_landing:descent_options['allow_combat']=True
             phase['smooth_descent']=descend(folder,target,**descent_options)
+            reobserve_ground=True
         elif action=='dismount':
             if not a['mounted'] or a['flying']:raise RuntimeError('dismount toggle requires a grounded mounted character')
             queued=action_queue.run(folder/f'command_{index:02d}',row,'dismount',

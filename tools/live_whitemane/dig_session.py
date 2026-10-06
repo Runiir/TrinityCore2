@@ -15,7 +15,7 @@ from .dig_decisions import choose
 from . import guide as routes
 from .smooth_move import walk
 from .boundaries import constrain
-from . import interact,pending_find,minimap_finds,farm_graph,dig_context
+from . import interact,pending_find,minimap_finds,farm_graph,dig_context,dig_feedback
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
@@ -105,11 +105,15 @@ def run(args):
             current=observe(output/'resume_precheck.png')
             if current['archaeology']['mounted'] or current['archaeology']['flying']:
                 folder=output/f"step_{pending['index']:04d}"
+                pending['arrow']['resume_to_survey_on_ground']=True
                 pending['inputs']=fly(folder,current,pending['arrow'],pending)
                 pending['after']=observe(folder/'after.png')
                 pending['walked_yards']=distance(pending['before']['archaeology']['world'],pending['after']['archaeology']['world'])
                 pending.update(completed=True,finished_at=time.time())
                 session['walked_since_survey']=True
+                if pending.get('grounded_digsite_reobserve'):
+                    session.update(marker_fallback=True,marker_target=None)
+                    session.pop('telescope_target',None)
                 runtime.write(path,session)
                 print('Laya resumed the observed flight to the addon endpoint',flush=True)
         for _ in range(args.steps):
@@ -127,7 +131,6 @@ def run(args):
             ui=before.get('farm_ui') or {}
             value=pending_find.update(before,session)
             before['pending_find']=value
-            pickup_priority=pending_find.priority(before,value) if value else None
             visible_find=(a['loot_open'] or ui.get('soft_interact',{}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES or
                           ui.get('route',{}).get('kind')=='pending_loot') if auto_loot else False
             if session.get('reapproach_find'):
@@ -145,10 +148,10 @@ def run(args):
                 routes.pickup(session)
             session['observed_find_count']=a['looted_finds']
             if tool and session.get('marker_fallback') and not session.get('telescope_target'):
-                for attempt in range(6):
+                for attempt in range(60):
                     arrow=before['archaeology'].get('arrow')
                     if arrow and arrow.get('boundary_verified'):break
-                    time.sleep(.5)
+                    time.sleep(.05)
                     before=observe(folder/f'arrow_wait_{attempt:02d}.png')
                 a,m=before['archaeology'],before['movement']
             guide,error=routes.select(before,session,tool) if not visible_find or session.get('reapproach_find') else (None,None)
@@ -181,7 +184,6 @@ def run(args):
                 'telescope':tool,'guidance_source':guidance,'guide':guide,
                 'direction_slot_encoding':'selected addon guide in retained telescope schema',
                 'completed':False,'Laya_received_screenshot_pixels':False}
-            if pickup_priority:step['pickup_priority']=pickup_priority
             session['steps'].append(step)
             resources.trim_session(session,'dig')
             runtime.write(path,session)
@@ -210,9 +212,10 @@ def run(args):
                 session['walked_since_survey']=False
                 session.pop('telescope_target',None)
                 # WoW Mouse Button 4 is X button 8 / Linux BTN_SIDE (275).
-                step['inputs']=[inputs.execute('World of Warcraft','click',
-                    {'x':640,'y':350,'button':8})]
-                time.sleep(2)
+                step['command_queue']=dig_feedback.survey(folder/'survey_command',fresh,
+                    lambda _:inputs.execute('World of Warcraft','button',{'button':8}),
+                    observe,lambda row:telescope(row,session))
+                step['inputs']=step['command_queue']['inputs']
             elif action in ('turn_left','turn_right'):
                 from .camera_navigation import align
                 step['camera_alignment']=align(folder/'camera',before,guide['world'])
@@ -247,6 +250,9 @@ def run(args):
                     step['arrow']=arrow
                     if graph:step['graph_path']=str(graph)
                     step['inputs']=fly(folder,before,arrow,step)
+                    if step.get('grounded_digsite_reobserve'):
+                        session.update(marker_fallback=True,marker_target=None)
+                        session.pop('telescope_target',None)
                 elif value or guide['source'] in ('GatherMate marker','visible owned archaeology find','last green Survey endpoint') or guide['color']=='yellow':
                     step['travel_mode']='held_waypoint_approach'
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
@@ -266,21 +272,11 @@ def run(args):
                     session.pop('telescope_target',None)
             elif action in ('loot','mouseover_interact'):
                 if auto_loot:
-                    gathering=(fresh.get('farm_ui') or {}).get('gathering') or {}
                     if not fresh['archaeology']['loot_open']:
                         step['interaction']=(interact.mouseover if action=='mouseover_interact' else interact.use)(
                             folder/'interaction',fresh,set(FIND_NAMES))
-                    deadline=time.monotonic()+4
-                    while time.monotonic()<deadline:
-                        cast=observe(folder/'gather_cast.png')
-                        now=(cast.get('farm_ui') or {}).get('gathering') or {}
-                        if now.get('starts',0)>gathering.get('starts',0):
-                            step['gathering_cast_started']=True;break
-                        if pending_find.gained(pending_find.fragments(fresh),cast):
-                            step['gathering_cast_started']=now.get('successes',0)>gathering.get('successes',0);break
-                        error=(cast.get('farm_ui') or {}).get('error') or {}
-                        if pending_find.range_error(error) and error.get('at',0)>=fresh['farm_ui'].get('uptime',0):break
-                        time.sleep(.1)
+                    step['pickup_feedback']=dig_feedback.pickup(folder,fresh,observe)
+                    step['gathering_cast_started']=step['pickup_feedback']['cast_observed']
                     # An interact can open the normal loot window while auto
                     # loot is disabled. Laya chooses each visible loot button.
                     from .farm_actions import click_choice
@@ -293,11 +289,13 @@ def run(args):
                             'Collect the archaeology fragments or items in the open loot window')
                         step.setdefault('loot_choices',[]).append(selected)
                         if not selected['executed']:break
+                    if step['pickup_feedback']['outcome']=='loot_open':
+                        step['pickup_feedback']=dig_feedback.pickup(folder,fresh,observe)
                     step['inputs']=[]
                 else:
                     x,y=args.loot_at
                     step['inputs']=[inputs.execute('World of Warcraft','click',{'x':x,'y':y,'button':3})]
-                time.sleep(3)
+                    step['pickup_feedback']=dig_feedback.pickup(folder,fresh,observe)
                 session['walked_since_survey']=True
             elif action=='inspect':
                 step['minimap_scan']=minimap_finds.inspect(folder/'pending_minimap',fresh)
@@ -305,7 +303,6 @@ def run(args):
             else:
                 step['inputs']=[]
                 time.sleep(.5)
-            time.sleep(.5)
             after=observe(folder/'after.png')
             walked=distance(a['world'],after['archaeology']['world'])
             found=pending_find.gained(pending_find.fragments(before),after)
