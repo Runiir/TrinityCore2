@@ -1,0 +1,13 @@
+{
+  "schema": "client442_pet_menu_recon_contract_v1",
+  "actor": {"guid": 4, "account_id": 2, "class": 9, "level": 1},
+  "fixture": "Retained owned Imp id1/entry416/owner4/nameVolrot; current GUID comes from a fresh ordinary class entry.",
+  "inputs": ["Reviewed normal retained class entry on the existing scout", "Stock exact-name target command using the observed owned pet name", "One right click on the observed visible TargetFrame whose unit and GUID match", "Stock clear-target and panel cleanup"],
+  "outcomes": ["Current native owned pet, player summon pointer, selection and public target agree", "Stock target context menu is visible with a retained actual control catalog", "Native resources, saved rows, position and original scout are preserved"],
+  "observer": {"version": 130, "installation": "Committed passive addon only on the offline scout; next normal entry loads it"},
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "Reconnaissance only, with no qualification added. No dismiss, abandon, rename, pet command, cast, level/spell/aura grant, extra client, build or server restart. Repeated targeting and health do not add coverage."
+}

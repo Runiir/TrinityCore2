@@ -1,4 +1,4 @@
-"""Target the observed owned Imp and compare its health and optional mana."""
+"""Target the owned Imp, read its resources, or inspect its stock unit menu."""
 import argparse,json,re,struct,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
@@ -15,8 +15,9 @@ from .world.native_objects import records
 from .world.objects import INDEX
 from .world.gameobjects import modern_guid
 from .world.buffer import Reader
-from .interaction_operations import click_case
+from .interaction_operations import click_case,controls,point
 from .interaction_spellbook_navigation import detail
+from .interaction_actionbar_pages import detail as bar_detail
 
 
 def pair(fields,name):
@@ -96,7 +97,36 @@ def read_power(t,oracle,expected):
     t.receipt['cases'].append(row);t.persist();require(row,'native_owned_pet_power_pass')
 
 
-def suite(t,preparation,entry,probe,power=False):
+def menu_target(control,expected):
+    if (control.get('name')!='TargetFrame' or control.get('unit')!='target' or control.get('guid')!=expected or
+        control.get('visible') is not True or control.get('enabled') is not True or
+        any(type(control.get(k)) is not int or not 0<control[k]<65535 for k in ('x','y'))):
+        raise RuntimeError('observed owned pet target frame differs')
+    return point(control)
+
+
+def read_menu(t,oracle,expected):
+    bar=bar_detail(t,'owned_pet_target_frame',lambda p:bool(p.get('targeting',{}).get('target_frame')))
+    control=bar['targeting']['target_frame'];xy=menu_target(control,expected)
+    t.receipt.update(owned_pet_menu_target=control,menu_recon_only=True,menu_qualification_added=False);t.persist()
+    def outcome(before,after,selected):
+        oracle.poll()
+        checks={'ordinary_right_click':selected=='open','stock_context_menu':'ContextMenu' in after.get('panels',[]),
+            'public_target':after.get('target',{}).get('guid')==expected,
+            'native_target':oracle.selected()==oracle.pet['guid'],
+            'position':before['world_position']==after['world_position'],
+            'ui_clean':not after.get('lua_errors') and not after.get('blocked_actions')}
+        return {'status':'owned_pet_menu_recon_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'target_frame':control,'qualification_added':False}}
+    require(t.step('fixture.pet_menu.open','Inspect the selected owned pet stock context menu.',
+        {'open':{'kind':'click','value':xy,'button':3,'hold':.4,'description':'Right-click the observed owned pet target frame once.'}},
+        outcome,diagnostic_action='open',await_state=lambda a:'ContextMenu' in a.get('panels',[])),
+        'owned_pet_menu_recon_pass')
+    state,frame=t.observe('owned_pet_menu')
+    t.receipt.update(pet_menu={'state':state,'frame':frame,'controls':controls(t)});t.persist()
+
+
+def suite(t,preparation,entry,probe,power=False,menu=False):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);p=source(t,probe,session,entry)
     oracle=PetOracle(session,t.fixture['guid'],e['started_at']).poll()
@@ -110,7 +140,8 @@ def suite(t,preparation,entry,probe,power=False):
     t.receipt.update(sources=[{'path':str(q.resolve()),'sha256':lab.sha256(q)} for q in (entry,probe)],
         native_session=session,native_pet=pet,public_pet=p['public_pet'],
         qualified_scope='Ordinary exact-name targeting and selected owned Imp health'+(' and mana' if power else '')+
-            ' only; no pet command or pet-tab qualification.')
+            ' only; '+('stock menu inspection is diagnostic only; ' if menu else '')+
+            'no pet command or pet-tab qualification.')
     t.persist();before,_=t.observe('pet_target_baseline')
     if before['target']['exists']:raise RuntimeError('public original selection is not empty')
     try:
@@ -146,6 +177,7 @@ def suite(t,preparation,entry,probe,power=False):
             'after':state,'after_frame':frame,'oracle':{'checks':checks,'native':native}}
         t.receipt['cases'].append(row);t.persist();require(row,'native_owned_pet_health_pass')
         if power:read_power(t,oracle,expected)
+        if menu:read_menu(t,oracle,expected)
     finally:
         state,_=t.observe('pet_cleanup_before')
         if state['target'].get('exists'):t.execute({'kind':'chat','value':'/cleartarget'})
@@ -157,17 +189,20 @@ def suite(t,preparation,entry,probe,power=False):
             ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
         t.receipt.update(restoration_checks=checks,restored_frame=frame);t.persist()
         if not all(checks.values()):raise RuntimeError('owned pet targeting restoration differs')
-    t.receipt.update(completed=True,phase='owned_pet_target_health_power_complete' if power else 'owned_pet_target_health_complete')
+    t.receipt.update(completed=True,phase='owned_pet_target_menu_recon_complete' if menu else
+        'owned_pet_target_health_power_complete' if power else 'owned_pet_target_health_complete')
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','entry','probe','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--power',action='store_true',help='Read owned Imp mana with passive observer129')
+    modes=p.add_mutually_exclusive_group()
+    modes.add_argument('--power',action='store_true',help='Read owned Imp mana with passive observer129')
+    modes.add_argument('--menu',action='store_true',help='Inspect only the stock selected-pet context menu with observer130')
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:suite(t,a.preparation,a.entry,a.probe,a.power)
+        try:suite(t,a.preparation,a.entry,a.probe,a.power,a.menu)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('phase','completed','failure','restoration_checks')}),flush=True)

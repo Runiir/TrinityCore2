@@ -19,6 +19,7 @@ ProfessionObservation.lua
 DressUpObservation.lua
 AchievementObservation.lua
 ActionBarObservation.lua
+TargetFrameObservation.lua
 SettingsObservation.lua
 AddOnsObservation.lua
 MacroObservation.lua

@@ -124,7 +124,7 @@ local function groupFrames(units)
     return rows
 end
 local function targetingProbe()
-    local data={units={},party_frames={}}
+    local data={units={},party_frames={},target_frame=Client442ObserveTargetFrame()}
     for _,unit in ipairs({'player','target','focus','targettarget','party1','mouseover'}) do
         data.units[unit]=call(UnitGUID,unit) or ''
     end
@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=129,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=130,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
