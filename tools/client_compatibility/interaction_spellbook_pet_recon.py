@@ -11,13 +11,24 @@ from .world.native_objects import records
 from .world.objects import INDEX
 
 
-def suite(t,preparation,source):
-    old=prepared(t,preparation);source=source.resolve();e=json.loads(source.read_text())
+def summon_source(t,source,session):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires an owned summon receipt')
+    e=json.loads(source.read_text())
+    outcomes=e.get('native_summon_outcomes',[])
     if (not e.get('completed') or e.get('failure') or not e.get('finished_at') or
-            len(e.get('native_summon_outcomes',[]))!=1 or
-            e['fixture']!=t.fixture or e['runtime']!=t.receipt['runtime'] or
-            e.get('native_session')!=actors.session_entry(t.fixture)['session']):
+            not e.get('summon_input_sent') or len(outcomes)!=1 or
+            outcomes[0].get('spell')!=688 or outcomes[0].get('caster')!=t.fixture['guid'] or
+            e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
+            e.get('native_session')!=session):
         raise RuntimeError('pet recon requires the closed same-runtime owned summon')
+    return e
+
+
+def suite(t,preparation,source):
+    old=prepared(t,preparation);source=source.resolve()
+    e=summon_source(t,source,actors.session_entry(t.fixture)['session'])
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},
         input_sent=False,qualification_added=False)
     captured=[]
