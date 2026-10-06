@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=123,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=124,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -217,6 +217,10 @@ local function snapshot(viewMode,viewPage)
                     context=f:GetParent() and caption(f:GetParent()) or '',
                     x=math.floor(x*scale/width*65535),y=math.floor((1-y*scale/height)*65535),
                     enabled=not f.IsEnabled or f:IsEnabled(),checked=call(f.GetChecked,f)}
+                if name:match('^SpellFlyoutButton%d+$') and f:GetParent()==SpellFlyout then
+                    data.controls[#data.controls].spell_flyout=true
+                    data.controls[#data.controls].spell_id=f.spellID
+                end
                 if QuestLogFrame and QuestLogFrame:IsVisible() then
                     local quest=Client442ObserveQuestLogControl(f)
                     if quest then
@@ -576,6 +580,7 @@ local function snapshot(viewMode,viewPage)
     end
     for index=1,10 do scan(_G['ChatFrame'..index..'ButtonFrame'],0) end
     scan(CombatLogQuickButtonFrame_Custom,0)
+    scan(SpellFlyout,0)
     data.control_count=#data.controls
     -- Identify the complete current control list, before paging it. A panel can
     -- keep its name while changing layout; pages from those layouts cannot mix.
