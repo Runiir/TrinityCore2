@@ -59,3 +59,20 @@ def test_verified_prune_never_deletes_new_or_changed_evidence(monkeypatch,tmp_pa
     assert not old.exists() and not archive.exists() and not obj.exists()
     assert changed.read_bytes()==b'new data' and new.read_bytes()==b'new'
     assert result['changed_files_preserved']==['evidence/changed.png']
+
+
+def test_checkpoint_commit_preserves_foreign_ignore_entry_and_untracked_pointer(monkeypatch,tmp_path):
+    def git(*args):return subprocess.check_output(['git',*args],cwd=tmp_path,text=True)
+    git('init','-q');git('config','user.name','Checkpoint test');git('config','user.email','checkpoint@example.invalid')
+    directory=tmp_path/'artifacts/client_harness';directory.mkdir(parents=True)
+    ignore=directory/'.gitignore';ignore.write_text('/old.tar.gz\n')
+    git('add','.');git('commit','-qm','Initial')
+    ignore.write_text('/old.tar.gz\n/foreign.tar.gz\n/ours.tar.gz\n')
+    pointer='artifacts/client_harness/ours.tar.gz.dvc'
+    (tmp_path/pointer).write_text('outs: []\n')
+    foreign=directory/'foreign.tar.gz.dvc';foreign.write_text('other thread\n')
+    monkeypatch.setattr(runtime,'REPO',tmp_path)
+    resources.commit_checkpoint(directory/'ours.tar.gz',pointer,'test')
+    assert git('show','HEAD:artifacts/client_harness/.gitignore')=='/old.tar.gz\n/ours.tar.gz\n'
+    assert '/foreign.tar.gz' in git('diff','--','artifacts/client_harness/.gitignore')
+    assert foreign.read_text()=='other thread\n' and not git('diff','--cached','--name-only').strip()

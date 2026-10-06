@@ -35,7 +35,8 @@ def choose(state):
         pickup.get('interaction_in_range') is False and state.get('guide_arrived'))
     measured_vertical_gap=vertical is not None and abs(vertical)>.5 and pickup.get('uncollected')
     repeat_here=state.get('survey_at_pickup_position_untried') is True
-    if not decision_backend.vision_enabled() and not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
+    camera_issue=state.get('camera_recovery_macro_available') and state.get('camera_recovery_relevant')
+    if not camera_issue and not decision_backend.vision_enabled() and not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
             and not state['artifact_visible'] and not pickup.get('uncollected'))):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
@@ -53,6 +54,8 @@ def choose(state):
     if state['available'] and not state['casting']:
         options['camera_forward']='Restore the camera if it has not been aligned recently'
         options['camera_ground']='Look down toward the nearby ground if artifact tooltip searches missed the pending find'
+        if state.get('camera_recovery_macro_available'):
+            options['camera_macro']='Click ArchaeologyView to stop mouse-look, reset a poor camera angle and widen the view'
         if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
             options['loot']='Interact if a discovered artifact is uncollected and nearby; verify gathering cast or fragments'
         if state.get('mouseover_artifact'):
@@ -129,6 +132,7 @@ def choose(state):
         descriptions={'observe':'Wait while casting or unavailable',
             'inspect':'Locate an artifact whose position is unknown',
             'camera_forward':'Align the camera with the character','camera_ground':'Look down at the ground',
+            'camera_macro':'Reset a poor camera view using ArchaeologyView',
             'loot':'Interact with the named artifact','mouseover_interact':'Interact with the artifact under the mouse',
             'forward_short':'Walk closer to the artifact','forward_long':'Move toward the destination'}
         descriptions.update(swim_up='Swim upward toward the artifact depth',swim_down='Swim downward toward the artifact depth')

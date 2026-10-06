@@ -115,6 +115,24 @@ def execute(title, action, arguments):
                     if index:sender.key('Return',hold=hold);time.sleep(period)
                     type_command(sender,line,period)
                 time.sleep(period)
+            elif action == 'drag':
+                origin,destination=arguments['from'],arguments['to']
+                period=arguments.get('frame_period_seconds',1/30)
+                if (len(origin)!=2 or len(destination)!=2 or not 0<period<=2
+                        or any(type(p[0]) is not int or type(p[1]) is not int
+                            or not 0<=p[0]<runtime.WIDTH or not 0<=p[1]<runtime.HEIGHT
+                            for p in (origin,destination))):
+                    raise ValueError('macro drag is outside the owned viewport')
+                sender.move(*origin);time.sleep(period)
+                sender._send(sender.X.ButtonPress,1)
+                try:
+                    time.sleep(max(.15,period))
+                    for step in range(1,7):
+                        fraction=step/6
+                        sender.move(*(round(a+(b-a)*fraction) for a,b in zip(origin,destination)))
+                        time.sleep(period)
+                finally:sender._send(sender.X.ButtonRelease,1)
+                time.sleep(max(.15,period))
             elif action == 'command':
                 text=arguments['text'];period=arguments.get('frame_period_seconds',.1)
                 if not text.startswith('/') or len(text)>500 or not 0<period<=2:

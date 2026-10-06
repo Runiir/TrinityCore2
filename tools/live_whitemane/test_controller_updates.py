@@ -79,3 +79,20 @@ def test_startup_reload_callback_is_updated_even_after_multiple_module_reloads(m
     monkeypatch.setattr(controller_updates.sys,'_current_frames',lambda:{1:frame})
     assert controller_updates.upgrade_bound_callbacks()==1
     assert old.__code__ is controller_updates.apply_addon_request.__code__
+
+
+def test_ui_setup_advances_live_index_and_runs_evidence_cleanup_without_restart(monkeypatch,tmp_path):
+    from . import camera_recovery,resources
+    from .test_farm_loop import row
+    session={'next_step_index':4,'dig_output':'active dig','steps':[]}
+    frame=types.SimpleNamespace(f_code=types.SimpleNamespace(co_name='run',
+        co_filename=str(controller_updates.runtime.REPO/'tools/live_whitemane/farm_loop.py')),
+        f_locals={'session':session},f_back=None)
+    wrapper=types.SimpleNamespace(f_code=types.SimpleNamespace(co_name='apply_addon_request',
+        co_filename=controller_updates.__file__),f_back=frame)
+    monkeypatch.setattr(controller_updates.sys,'_getframe',lambda _:wrapper)
+    monkeypatch.setattr(camera_recovery,'apply_request',lambda *_:True)
+    calls=[];monkeypatch.setattr(resources,'phase_boundary',lambda output,state:calls.append((output,state.copy())))
+    assert controller_updates.apply_camera_request(tmp_path/'step_00009',row())
+    assert session['next_step_index']==10 and session['steps']==[]
+    assert calls[0][0]==tmp_path and calls[0][1]['dig_output']=='active dig'

@@ -159,6 +159,9 @@ def run(output,stop_on='recipe'):
                 if action=='jar' and stop_on=='canopic_jar':session['status']='canopic_jar_found';step['completed']=True;break
                 try:
                     if action=='wait':time.sleep(2)
+                    elif action=='camera_macro':
+                        from . import camera_recovery
+                        step['result']=camera_recovery.use(folder/'camera_macro',row)
                     elif action=='combat':
                         history=[]
                         if session['dig_output']:

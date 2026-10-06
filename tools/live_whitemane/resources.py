@@ -1,5 +1,6 @@
 """Bound this farm's hot data and memory; offload only closed public evidence."""
 import hashlib
+import difflib
 import json
 import os
 from pathlib import Path
@@ -169,13 +170,31 @@ def offload_worker(roots,*,label=None,keep_json=False):
     status=json.loads(run('dvc','status','--cloud','--json',pointer).stdout)
     if status:raise ResourceLimit('closed evidence remote did not confirm sync')
     metadata=yaml.safe_load((runtime.REPO/pointer).read_text())['outs'][0]
-    run('git','add','--',pointer,str(archive.parent.relative_to(runtime.REPO)/'.gitignore'))
-    run('git','commit','-m',f'Checkpoint closed Whitemane evidence {label}','--',pointer,
-        str(archive.parent.relative_to(runtime.REPO)/'.gitignore'))
+    commit_checkpoint(archive,pointer,label)
     result=prune_verified(receipt,metadata,keep_json=keep_json)
     result.update(label=label,pointer=pointer,closed_roots=len(roots))
     runtime.write(runtime.ROOT/'run/last_offload.json',result)
     return result
+
+
+def commit_checkpoint(archive,pointer,label):
+    """Stage this archive's ignore entry without collecting another thread's."""
+    def run(*args,**kwargs):
+        return subprocess.run(args,cwd=runtime.REPO,capture_output=True,text=True,
+            timeout=60,check=True,**kwargs).stdout
+    if run('git','diff','--cached','--name-only').strip():
+        raise ResourceLimit('preserve another thread staged work before evidence commit')
+    ignore=str(archive.parent.relative_to(runtime.REPO)/'.gitignore')
+    base=run('git','show',':'+ignore);line='/'+archive.name+'\n'
+    ours=base if line in base.splitlines(keepends=True) else base+('' if not base or base.endswith('\n') else '\n')+line
+    patch=''.join(difflib.unified_diff(base.splitlines(keepends=True),ours.splitlines(keepends=True),
+        fromfile='a/'+ignore,tofile='b/'+ignore))
+    if patch:run('git','apply','--cached','-',input=patch)
+    run('git','add','--',pointer)
+    expected={pointer}|({ignore} if patch else set())
+    if set(run('git','diff','--cached','--name-only').splitlines())!=expected:
+        raise ResourceLimit('another thread staged work during evidence commit; preserve it')
+    run('git','commit','-m',f'Checkpoint closed Whitemane evidence {label}')
 
 
 def phase_boundary(output,session):

@@ -29,6 +29,8 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
         if route.get('kind')=='shortcut':
             actions['land']=('Land and dismount here to prepare the teleport shortcut',a['world'])
     if m['in_combat']:return actions
+    if ui.get('camera_macros') and not a['flying'] and not a.get('falling'):
+        actions['camera_macro']=('Click ArchaeologyView to reset a poor camera angle and widen the view',None)
     if not a['flying'] and not a.get('falling'):
         if (a['can_survey'] or row.get('pending_find') or row.get('visible_find') or a.get('loot_open')
                 or (row.get('minimap_finds') or {}).get('confirmed')
@@ -138,6 +140,8 @@ def choose(row,batches,session):
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'swimming':a.get('swimming'),'grounded':a.get('grounded'),
         'casting':a['casting'],'falling':a['falling'],
+        'camera':{'zoom':ui.get('camera_zoom'),'input':ui.get('camera_input'),
+            'reset_macro_available':bool(ui.get('camera_macros'))},
         'Survey_dismounts_on_ground':bool(a['mounted'] and not a['flying'] and not a.get('falling')),
         'at_digsite':a['can_survey'],'Survey_ready':(ui.get('survey') or {}).get('ready'),
         'guide':{k:v for k,v in (dig_guide or a.get('arrow') or {}).items()

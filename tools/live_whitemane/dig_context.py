@@ -17,6 +17,9 @@ def bearing_error(row, guide):
 def model_state(row, guide, visible_find, pending, steps):
     state = routes.model_state(row, guide, visible_find)
     ui = row.get('farm_ui') or {}
+    state['camera_recovery_macro_available']=bool(ui.get('camera_macros'))
+    state['camera_zoom']=ui.get('camera_zoom')
+    state['camera_input']=ui.get('camera_input')
     state.update(combat=row['movement']['in_combat'],can_survey=row['archaeology']['can_survey'],
         survey_ready=bool((ui.get('survey') or {}).get('ready')),
         guide_source=guide['source'] if guide else None, pending_pickup=bool(pending),
@@ -59,7 +62,7 @@ def model_state(row, guide, visible_find, pending, steps):
             result['outcome']='tooltip_search_missed' if 'no matching public tooltip' in step['failure'] else 'action_interrupted'
         recent.append(result)
     state['recent_outcomes'] = recent
-    state['camera_recently_aligned'] = any(step['action']=='camera_forward' and step.get('completed')
+    state['camera_recently_aligned'] = any(step['action'] in ('camera_forward','camera_macro') and step.get('completed')
         for step in steps[-3:])
     state['ground_view_recently_adjusted'] = any(step['action']=='camera_ground' and step.get('completed')
         for step in steps[-3:])
@@ -77,4 +80,8 @@ def model_state(row, guide, visible_find, pending, steps):
             break
         stalled += 1
     state['consecutive_actions_without_progress'] = stalled
+    camera=ui.get('camera_input') or {}
+    state['camera_recovery_relevant']=bool(camera.get('mouselooking') or camera.get('right_down')
+        or ui.get('camera_zoom') is not None and ui['camera_zoom']<5
+        or pending and pending.get('tooltip_search_misses',0)>=2)
     return state

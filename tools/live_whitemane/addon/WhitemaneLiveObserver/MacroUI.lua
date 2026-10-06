@@ -8,12 +8,14 @@ function WhitemaneLiveMacroUI(control,append,visible,text)
     local index=call(GetMacroIndexByName,'ArchaeologyView') or 0
     local name,icon,body
     if index>0 then name,icon,body=call(GetMacroInfo,index) end
-    local result={schema='stock_macro_ui_v1',visible=not not visible(frame),
+    local result={schema='stock_macro_ui_v2',visible=not not visible(frame),
         popup_visible=not not visible(popup),controls={},
         installed={index=index,name=name,body=body,character=index>(MAX_ACCOUNT_MACROS or 120)}}
     if not result.visible then return result end
     result.character_tab=frame.macroBase and frame.macroBase>0 or frame.selectedTab==2
     result.selected_name=text(MacroFrameSelectedMacroName)
+    result.selected_icon=control(frame.SelectedMacroButton or MacroFrameSelectedMacroButton,
+        'Selected macro icon',{kind='macro_icon'})
     local edit=MacroFrameText
     result.body=control(edit,'Macro commands',{kind='body',
         value=call(edit and edit.GetText,edit),focused=not not call(edit and edit.HasFocus,edit)})

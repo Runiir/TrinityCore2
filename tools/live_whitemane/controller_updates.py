@@ -11,7 +11,7 @@ COMPONENTS=('action_queue','guide','camera_steering','camera_navigation','fast_w
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
     'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump','controller_updates','interaction_search',
-    'laya_ui','decisions','decision_backend','portal_view','sticky_input','boundaries','route_facts','camera_zoom','camera_recovery')
+    'laya_ui','decisions','decision_backend','portal_view','sticky_input','boundaries','route_facts','camera_zoom','camera_recovery','farm_actions','resources')
 
 
 class SourceUpdates:
@@ -122,7 +122,21 @@ def apply_addon_request(folder,row):
 
 def apply_camera_request(folder,row):
     from . import camera_recovery
-    if camera_recovery.apply_request(folder,row):return True
+    if camera_recovery.apply_request(folder,row):
+        # Setup owns focus but still needs an evidence cleanup boundary.
+        # Retain the active frame's monotonic index without a farm restart.
+        frame=sys._getframe(1)
+        while frame and not (frame.f_code.co_name=='run' and
+                Path(frame.f_code.co_filename).resolve()==runtime.REPO/'tools/live_whitemane/farm_loop.py'):
+            frame=frame.f_back
+        session=frame.f_locals.get('session') if frame else None
+        if isinstance(session,dict):
+            session['next_step_index']=max(session.get('next_step_index',0),
+                int(folder.name.split('_')[-1])+1)
+            from . import resources
+            runtime.write(folder.parent/'loop.json',session)
+            resources.phase_boundary(folder.parent,session)
+        return True
     path=runtime.ROOT/'run/camera_zoom_request.json'
     if not path.exists():return False
     import json

@@ -18,7 +18,7 @@ def stationary(before, fresh):
         raise RuntimeError('supervisor moved before selected UI input')
 
 
-def click_choice(folder, before, collection, goal, expected=None):
+def click_choice(folder, before, collection, goal, expected=None,*,matching_only=False):
     """Collection path names only visible controls; every control remains a choice."""
     folder.mkdir(parents=True,exist_ok=False)
     def rows(row):
@@ -26,7 +26,8 @@ def click_choice(folder, before, collection, goal, expected=None):
         for part in collection:value=value.get(part,{})
         return (value if isinstance(value,list) else [value] if value.get('x') is not None else [])
     controls=rows(before)
-    candidates={f'button_{i}':f"Click {c['label']}" for i,c in enumerate(controls) if c['enabled']}
+    candidates={f'button_{i}':f"Click {c['label']}" for i,c in enumerate(controls) if c['enabled']
+        and (not matching_only or not expected or all(c.get(k)==v for k,v in expected.items()))}
     candidates['wait']='Wait without input'
     state={'goal':goal,'interface':'stationary, healthy, not casting',
            'buttons':{key:value for key,value in candidates.items() if key!='wait'}}

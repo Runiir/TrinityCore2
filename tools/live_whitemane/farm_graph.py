@@ -12,7 +12,7 @@ CONFIG=runtime.REPO/'experiments/configs/client_harness/whitemane_farm_graph_v1.
 NODES={'dig':'observe','minimap':'scan_minimap','jar':'open_jar','recipe':'recipe_found',
     'turn_left':'approach','turn_right':'approach','forward_short':'approach','forward_long':'approach',
     'loot':'gather','mouseover_interact':'gather','inspect':'scan_minimap',
-    'camera_forward':'observe','camera_ground':'observe',
+    'camera_forward':'observe','camera_ground':'observe','camera_macro':'observe',
     'swim_up':'approach','swim_down':'approach','follow_detour':'approach',
     'step_left':'approach','step_right':'approach','step_back':'approach','step_forward':'approach'}
 

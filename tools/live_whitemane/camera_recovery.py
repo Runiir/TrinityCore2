@@ -12,6 +12,11 @@ ZOOM=20
 BODY='/run MouselookStop();ResetView(3);SetView(3)\n/run CameraZoomOut(20)'
 
 
+def use(folder,row):
+    return click_choice(folder,row,('camera_macros',),
+        'Click ArchaeologyView to recover a poor camera angle and restore a wide view')
+
+
 def edit_choice(folder,row,field,value):
     folder.mkdir(parents=True,exist_ok=False)
     current=row['farm_ui']['macro'][field]
@@ -34,6 +39,32 @@ def edit_choice(folder,row,field,value):
     runtime.write(folder/'decision.json',result);return result
 
 
+def place_choice(folder,row):
+    folder.mkdir(parents=True,exist_ok=False)
+    slots=row['farm_ui'].get('empty_actionbars') or []
+    options={f'slot_{i}':'Place ArchaeologyView in empty action slot '+str(s['slot'])
+        for i,s in enumerate(slots) if s['enabled']}
+    options['wait']='Wait without replacing any existing action'
+    if len(options)==1:return {'executed':False,'reason':'no empty visible action slot'}
+    choice,request,response=laya_ui.choose({'goal':'Put the camera recovery macro on an empty action-bar slot',
+        'macro':NAME,'empty_slots':{key:label for key,label in options.items() if key!='wait'}},
+        'Select an empty slot for the user-requested camera macro, or wait.',options)
+    result={'choice':choice,'request':request,'response':response,'executed':False}
+    if choice!='wait':
+        destination=slots[int(choice.split('_')[1])]
+        source=row['farm_ui']['macro'].get('selected_icon')
+        fresh=observe(folder/'precheck.png');stationary(row,fresh)
+        ui=fresh['farm_ui'].get('macro') or {}
+        if (not source or ui.get('selected_icon')!=source or ui.get('selected_name')!=NAME
+                or destination not in fresh['farm_ui'].get('empty_actionbars',[])):
+            raise RuntimeError('selected client action invalidated: macro drag source or empty slot changed')
+        point=lambda c:[round(c['x']*runtime.WIDTH),round(c['y']*runtime.HEIGHT)]
+        result['input']=inputs.execute('World of Warcraft','drag',{'from':point(source),'to':point(destination),
+            'frame_period_seconds':1/max(1,fresh['farm_ui'].get('frame_rate') or 30)})
+        result.update(executed=True,slot=destination['slot'])
+    runtime.write(folder/'decision.json',result);return result
+
+
 def apply_request(folder,row):
     path=runtime.ROOT/'run/camera_macro_request.json'
     if not path.exists():return False
@@ -42,8 +73,10 @@ def apply_request(folder,row):
     ui=row['farm_ui'].get('macro') or {}
     if (not m['in_world'] or m['dead'] or m['in_combat'] or m.get('speed',0)>0
             or any(a.get(k) for k in ('casting','flying','falling'))):return False
-    if ui.get('schema')!='stock_macro_ui_v1':return False
-    if time.time()-request.get('last_attempt',0)<.5:return bool(ui.get('visible'))
+    if ui.get('schema')!='stock_macro_ui_v2':return False
+    if time.time()-request.get('last_attempt',0)<.5:
+        time.sleep(.25)
+        return bool(ui.get('visible'))
     request['last_attempt']=time.time()
     installed=ui.get('installed') or {}
     character_tab=installed.get('character',True) if installed.get('name')==NAME else True
@@ -52,13 +85,14 @@ def apply_request(folder,row):
             {'character':'Choose character-specific macros','general':'Choose general macros',
              'new':'Create a new camera recovery macro','select':'Select ArchaeologyView',
              'accept':'Confirm the new macro named ArchaeologyView','close':'Close and save the camera macro',
-             'save':'Save the camera macro commands'}[kind],expected={'kind':kind})
+             'save':'Save the camera macro commands'}[kind],expected={'kind':kind},matching_only=True)
     try:
-        if installed.get('name')==NAME and installed.get('body')==BODY and not ui.get('visible'):
+        bars=row['farm_ui'].get('camera_macros') or []
+        if installed.get('name')==NAME and installed.get('body')==BODY and bars and not ui.get('visible'):
             request['macro_confirmed']=installed
-            selection=command_choice(folder/'camera_macro_reset',row,BODY.split('\n')[0],
-                'Restore the camera angle after creating its recovery macro',
-                'Stop mouse-look and restore the archaeology view')
+            request['bar_confirmed']=bars
+            selection=click_choice(folder/'camera_macro_reset',row,('camera_macros',),
+                'Click ArchaeologyView to restore the camera angle and wider view')
             if selection['executed']:
                 fresh=observe(folder/'camera_macro_feedback.png')
                 request['zoom_feedback']=camera_zoom.restore(folder/'camera_macro_zoom',fresh,ZOOM)
@@ -82,6 +116,8 @@ def apply_request(folder,row):
                 selection=click_choice(folder/'macro_body_focus',row,('macro','body'),
                     'Focus ArchaeologyView macro commands')
             else:selection=edit_choice(folder/'macro_body_text',row,'body',BODY)
+        elif not bars and (ui.get('body') or {}).get('value')==BODY:
+            selection=place_choice(folder/'macro_place',row)
         else:
             has_save=any(c.get('kind')=='save' and c['enabled'] for c in ui.get('controls') or [])
             selection=click('save' if has_save and installed.get('body')!=BODY else 'close')

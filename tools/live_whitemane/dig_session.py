@@ -252,6 +252,10 @@ def run(args):
                 from .camera_navigation import align
                 step['camera_alignment']=align(folder/'camera',before,ground_view=action=='camera_ground')
                 step['inputs']=[]
+            elif action=='camera_macro':
+                from . import camera_recovery
+                step['camera_macro']=camera_recovery.use(folder/'camera_macro',fresh)
+                step['inputs']=[]
             elif action in ('forward_short','forward_long'):
                 if not guide: raise RuntimeError('movement requires a selected addon guide')
                 if guide['source']=='named find forward range approach':

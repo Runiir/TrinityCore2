@@ -71,6 +71,23 @@ local function flyout()
     end
     return rows
 end
+local function camera_macro_bars()
+    local macros,empty={},{}
+    for _,prefix in ipairs({'ActionButton','MultiBarBottomLeftButton','MultiBarBottomRightButton','MultiBarLeftButton','MultiBarRightButton'}) do
+        for index=1,12 do
+            local frame=_G[prefix..index]
+            local slot=frame and (frame.action or call(frame.GetAttribute,frame,'action'))
+            if slot and visible(frame) then
+                local kind,id=call(GetActionInfo,slot)
+                if not kind then append(empty,control(frame,'Empty action slot '..slot,{slot=slot}))
+                elseif kind=='macro' and call(GetMacroInfo,id)=='ArchaeologyView' then
+                    append(macros,control(frame,'ArchaeologyView',{kind=kind,id=id,slot=slot}))
+                end
+            end
+        end
+    end
+    return macros,empty
+end
 local function journal()
     local frame=ArchaeologyFrame
     local artifact=frame and frame.artifactPage
@@ -174,10 +191,12 @@ local function snapshot()
     local cooldown=call(C_Spell and C_Spell.GetSpellCooldown,80451)
     if type(cooldown)=='table' then start,duration,enabled=cooldown.startTime,cooldown.duration,cooldown.isEnabled end
     local ends=(start or 0)+(duration or 0)
+    local macros,empty=camera_macro_bars()
     return {uptime=GetTime(),route=call(WhitemaneLiveCanopicRoute),actionbars=actionbars(),flyout=flyout(),
         minimap=call(WhitemaneLiveMinimap),survey={ready=enabled~=0 and enabled~=false and ends<=GetTime(),cooldown_ends=ends},
         journal=journal(),taxi=taxi(),gossip=gossip(),loot=loot(),canopic=canopic(),
-        macro=call(WhitemaneLiveMacroUI,control,append,visible,text),tooltip=visible(GameTooltip) and tip or nil,
+        macro=call(WhitemaneLiveMacroUI,control,append,visible,text),camera_macros=macros,
+        empty_actionbars=empty,tooltip=visible(GameTooltip) and tip or nil,
         cursor={x=x/(GetScreenWidth()*uiScale),y=1-y/(GetScreenHeight()*uiScale)},
         soft_interact={exists=not not call(UnitExists,"softinteract"),name=call(UnitName,"softinteract"),
                        enabled=call(GetCVar,"SoftTargetInteract")},bindings=keys,

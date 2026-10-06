@@ -88,6 +88,9 @@ def run(folder,row,step,session,graph):
              'wait':'Wait for conditions to change without gameplay input'}
     if a['mounted'] or a['flying'] or a['falling']:
         choices['land']='Land at the current position and dismount before trying again'
+    if ((row.get('farm_ui') or {}).get('camera_macros') and not m['in_combat']
+            and not a['casting'] and not a['flying'] and not a['falling']):
+        choices['camera_macro']='Reset a poor camera view using the ArchaeologyView action-bar macro'
     if (step['phase']=='dig' and session.get('dig_output') and not pending and a['can_survey']
             and not a['mounted'] and not a['flying'] and not m['in_combat']):
         choices['resurvey']='Discard the failed route estimate and use a fresh Survey from this position'
@@ -124,6 +127,7 @@ def run(folder,row,step,session,graph):
         'failed_activity':step['phase'],'failure':step['local_failure'],
         'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'pending_pickup':bool(pending),'world':a['world'],'grounded':a.get('grounded'),
+        'camera_reset_available':'camera_macro' in choices,
         'local_movement_alternatives':alternatives,
         'terrain':terrain,'reference_ground_detour':route,
         'recent_recoveries':session.get('recoveries',[])[-3:]}
@@ -156,7 +160,7 @@ def run(folder,row,step,session,graph):
                 if previous.get('world') and previous.get('after_world') and
                     previous['world']['instance']==previous['after_world']['instance']]}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
-            'resurvey':'Survey again from this position',
+            'resurvey':'Survey again from this position','camera_macro':'Reset a poor camera view with ArchaeologyView',
             'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
             'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination',
             'follow_detour':'Follow the connected ground route around the wall',
@@ -173,6 +177,9 @@ def run(folder,row,step,session,graph):
     if action=='land':
         from .flight import fly
         result['inputs']=fly(folder,row,{'endpoint':a['world']},result,combat_landing=m['in_combat'])
+    elif action=='camera_macro':
+        from . import camera_recovery
+        result['camera_macro']=camera_recovery.use(folder/'camera_macro',row)
     elif action=='jump_forward':
         from . import ground_jump
         result['movement']=ground_jump.move(folder,row,alternatives['step_forward']['target'])
