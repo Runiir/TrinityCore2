@@ -38,7 +38,7 @@ def boundaries():
         'checks':{str(i):True for i in range(4)},'retained_class_fixture':before['5']['native'],
         'retained_class_saved':before['5']['saved'],'retained_class_pets':before['5']['pets']}
     primary={'actor':{'guid':1},'runtime':{**runtime,'client':4},'parked_snapshot':before['1']}
-    return copy.deepcopy((origin,runtime,park,primary,before))
+    return tuple(copy.deepcopy(row) for row in (origin,runtime,park,primary,before))
 
 
 def test_frozen_original_retained_and_primary_boundaries_admit_only_offline_preparation():
