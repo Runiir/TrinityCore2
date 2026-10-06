@@ -49,6 +49,7 @@ RETRYABLE=(
     'character unavailable for this walking trial',
     'character or owned feed unavailable during continuous approach',
     'character became unavailable during flight',
+    'character unavailable during descent',
     'character became unavailable after input',
     'local public tiles unavailable:',
     'Survey is still on cooldown',
