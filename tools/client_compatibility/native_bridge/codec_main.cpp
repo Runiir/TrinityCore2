@@ -27,6 +27,7 @@
 #include "item_text.hpp"
 #include "who.hpp"
 #include "pet_packets.hpp"
+#include "pet_casts.hpp"
 #include "control_skill_metadata.hpp"
 #include <iostream>
 #include <memory>
@@ -360,6 +361,14 @@ int main(int argc, char **argv)
                         try
                         {
                             if(fn=="pet_request")reply=pet_request(protocol,state,name,body);
+                            else if(fn=="translate_pet_cast")
+                            {
+                                auto translation=translate_pet_cast(protocol,state,name,body);
+                                replies.push_back(Object{{"packet",translation.packet ?
+                                    Value(Array{translation.packet->first,hex(translation.packet->second)}) : Value(nullptr)},
+                                    {"rejection",translation.rejection}});
+                                continue;
+                            }
                             else if(fn=="translate_pet_action" || fn=="translate_pet_set_action")
                             {
                                 auto translation=fn=="translate_pet_action" ? translate_pet_action(protocol,state,body) :

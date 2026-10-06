@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "cast_packets.hpp"
 #include "spell_failures.hpp"
 #include "archaeology.hpp"
 #include <unordered_set>
@@ -218,39 +219,15 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
     auto dest_index = !dest.is_null() && name == "SMSG_SPELL_GO" ? r.take<std::uint8_t>() : 0;
     auto immunity = flags & 0x4000000 ? r.unpack("ii") : Array{0, 0};
     r.end();
-    Writer w;
-    w.guid(inventory_guid(caster)).guid(unit, player_high()).guid(get(cast, "server_guid")).guid();
-    w.pack("iIIII", {spell, get(cast, "visual"), flags | 0x40000, extra, duration})
-        .pack("IfBii", {0, 0, dest_index, immunity[0], immunity[1]});
-    w.pack("iB", {0, 0})
-        .guid()
-        .bits(hits.size(), 16)
-        .bits(0, 16)
-        .bits(0, 16)
-        .bits(!remaining.is_null(), 9)
-        .bits(0, 1)
-        .bits(0, 16)
-        .bits(0, 2)
-        .flush();
-    auto modern_targets=(target_flags&~0x20000u) | ((target_flags&0x20000u) ? 0x08000000u : 0u);
-    w.bits(modern_targets, 28)
-        .bits(!source.is_null(), 1)
-        .bits(!dest.is_null(), 1)
-        .bits(0, 2)
-        .bits(0, 7)
-        .guid(modern_guid(target, owner.map()))
-        .guid();
-    if (!source.is_null())
-        w.guid().pack("3f", source.as_array());
-    if (!dest.is_null())
-        w.guid().pack("3f", dest.as_array());
-    for (auto hit : hits)
-        w.guid(modern_guid(hit, owner.map()));
-    if (!remaining.is_null())
-        w.pack("bi", {1, remaining});
-    if (name == "SMSG_SPELL_GO")
-        w.bits(0, 1).flush();
-    return Packet{name, w.finish()};
+    CastPacket packet;
+    packet.caster=inventory_guid(caster);packet.unit={unit,player_high()};
+    packet.cast=get(cast,"server_guid").as_array();packet.spell=spell;
+    packet.visual=integer(get(cast,"visual"));packet.flags=flags | 0x40000;
+    packet.extra=extra;packet.duration=duration;packet.dest_index=dest_index;
+    packet.immunity=immunity;packet.hits=std::move(hits);packet.remaining=remaining;
+    packet.source=source;packet.dest=dest;packet.target_flags=target_flags;
+    packet.target=target;packet.map=owner.map();
+    return Packet{name,cast_packet(packet,name=="SMSG_SPELL_GO")};
 }
 Bytes Protocol::cast_rejected(View body)
 {

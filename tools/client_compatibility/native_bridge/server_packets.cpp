@@ -13,6 +13,7 @@
 #include "player_ui_state.hpp"
 #include "item_text.hpp"
 #include "pet_packets.hpp"
+#include "pet_casts.hpp"
 #include <ctime>
 
 namespace bridge
@@ -144,6 +145,12 @@ Task<> Session::gameplay(std::string name, Bytes body)
         if(auto pet=pet_response(protocol,state,name,body))send(*pet);
         co_return;
     }
+    if(auto pet=translate_pet_cast(protocol,state,name,body);pet.packet || !pet.rejection.empty())
+    {
+        if(pet.packet)send(*pet.packet);
+        else service.events.event("pet_cast_translation_rejected",{{"session",id},{"name",name},{"reason",pet.rejection}});
+        co_return;
+    }
     if(research_complete(name,body))
     {
         // The completion packet reports count 1 even on repeats. Fetch native
@@ -216,7 +223,8 @@ Task<> Session::gameplay(std::string name, Bytes body)
     }
     if ((reply = Protocol::combat_response(state, name, body)))
     {
-        send(*reply);
+        if(reply->first=="SMSG_ATTACK_SWING_ERROR")this->send(*reply);
+        else send(*reply);
         co_return;
     }
     if (name == "SMSG_NPC_TEXT_UPDATE")

@@ -141,6 +141,18 @@ Reply Protocol::combat_request(State const &owner, std::string const &name, View
 }
 Reply Protocol::combat_response(State const &owner, std::string const &name, View body)
 {
+    // Pinned60895 AttackSwingErr is a3-bit reason. Native sends these as
+    // distinct empty opcodes; preserve the core's range/facing decision.
+    std::optional<unsigned> swing_error;
+    if(name=="SMSG_ATTACKSWING_NOTINRANGE")swing_error=0;
+    else if(name=="SMSG_ATTACKSWING_BADFACING")swing_error=1;
+    else if(name=="SMSG_ATTACKSWING_CANT_ATTACK")swing_error=2;
+    else if(name=="SMSG_ATTACKSWING_DEADTARGET")swing_error=3;
+    if(swing_error)
+    {
+        Reader(body).end();
+        return Packet{"SMSG_ATTACK_SWING_ERROR",Writer().bits(*swing_error,3).finish()};
+    }
     if (name != "SMSG_ATTACK_START" && name != "SMSG_ATTACK_STOP")
         return {};
     Reader r(body);

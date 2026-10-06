@@ -1,0 +1,740 @@
+{
+  "schema": "client442_reviewed_native_owned_pet_cast_fixture_ui138_v1",
+  "character": {
+    "guid": 5,
+    "map": 0,
+    "name": "Harnessctrl",
+    "class": 9,
+    "level": 10
+  },
+  "native_owner_snapshot": {
+    "guid": 5,
+    "map": 0,
+    "update_type": 1,
+    "kind": 4,
+    "movement": {
+      "flags": 0,
+      "flags2": 0,
+      "position": [
+        -9470.5703125,
+        -7.334000110626221,
+        49.7943000793457,
+        2.408560037612915
+      ],
+      "pitch": 0,
+      "time": 193168968,
+      "speeds": [
+        2.5,
+        7.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 1,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 5,
+      "4": 25,
+      "6": 1065353216,
+      "25": 2305,
+      "26": 188,
+      "27": 383,
+      "32": 188,
+      "33": 383,
+      "34": 3,
+      "38": 1082432344,
+      "43": 1066024305,
+      "48": 10,
+      "49": 1,
+      "53": 8,
+      "54": 2048,
+      "56": 2900,
+      "57": 2000,
+      "58": 2000,
+      "59": 1053240066,
+      "60": 1069547520,
+      "61": 49,
+      "62": 49,
+      "64": 1084323660,
+      "65": 1087777763,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "77": 0,
+      "79": 23,
+      "80": 23,
+      "81": 26,
+      "82": 31,
+      "83": 32,
+      "88": 0,
+      "94": 33,
+      "115": 198,
+      "116": 108,
+      "118": 13,
+      "126": 1065353216,
+      "127": 1073741824,
+      "143": 1065353216,
+      "148": 0,
+      "153": 16777216,
+      "415": 57,
+      "419": 1396,
+      "421": 59,
+      "437": 35,
+      "456": 82,
+      "457": 1073741824,
+      "460": 84,
+      "461": 1073741824,
+      "462": 88,
+      "463": 1073741824,
+      "478": 86,
+      "479": 1073741824,
+      "494": 90,
+      "495": 1073741824,
+      "631": 7600,
+      "632": 6225963,
+      "633": 7143522,
+      "634": 7405679,
+      "635": 8454259,
+      "636": 8978568,
+      "637": 9109642,
+      "638": 9240716,
+      "639": 9699470,
+      "640": 9830549,
+      "641": 10616984,
+      "642": 10813604,
+      "643": 11337899,
+      "644": 11993270,
+      "645": 12189881,
+      "646": 13238469,
+      "647": 20512996,
+      "648": 21823803,
+      "649": 23265634,
+      "650": 25756004,
+      "651": 34931103,
+      "652": 38863402,
+      "653": 46727841,
+      "654": 49480434,
+      "655": 49939191,
+      "656": 50660097,
+      "657": 50987785,
+      "658": 51905303,
+      "659": 52560666,
+      "660": 53805866,
+      "760": 65537,
+      "761": 300,
+      "764": 1,
+      "769": 65536,
+      "771": 65536,
+      "772": 3276800,
+      "775": 50,
+      "777": 3276850,
+      "779": 1,
+      "780": 3276800,
+      "782": 50,
+      "785": 1,
+      "787": 65536,
+      "788": 1,
+      "824": 3276850,
+      "825": 300,
+      "828": 50,
+      "833": 3276800,
+      "835": 3276800,
+      "836": 3276800,
+      "839": 50,
+      "841": 3276850,
+      "843": 1,
+      "844": 3276800,
+      "846": 50,
+      "849": 50,
+      "851": 3276800,
+      "852": 50,
+      "1016": 2,
+      "1022": 1080371741,
+      "1024": 1084227569,
+      "1025": 1084227569,
+      "1026": 1084227569,
+      "1028": 1084227609,
+      "1029": 1084227609,
+      "1030": 1084227609,
+      "1031": 1084227609,
+      "1032": 1084227609,
+      "1033": 1084227609,
+      "1034": 30,
+      "1040": 536870912,
+      "1172": 1073741824,
+      "1193": 531,
+      "1194": 9354,
+      "1197": 21,
+      "1198": 21,
+      "1199": 21,
+      "1200": 21,
+      "1201": 21,
+      "1202": 21,
+      "1210": 1065353216,
+      "1211": 1065353216,
+      "1212": 1065353216,
+      "1213": 1065353216,
+      "1214": 1065353216,
+      "1215": 1065353216,
+      "1216": 1065353216,
+      "1217": 21,
+      "1218": 1065353216,
+      "1219": 1065353216,
+      "1220": 1065353216,
+      "1223": 1065353216,
+      "1257": 4294967295,
+      "1306": 85,
+      "1339": 21,
+      "1340": 22,
+      "1341": 23,
+      "1342": 24,
+      "1343": 25,
+      "1344": 26,
+      "1345": 41,
+      "1346": 42,
+      "1347": 43,
+      "1380": 1065353216,
+      "1381": 1065353216,
+      "1383": 1065353216,
+      "10": 47,
+      "11": 4047503776,
+      "55": 4194304,
+      "1358": 10,
+      "20": 172445,
+      "21": 4046499332
+    }
+  },
+  "native_pet": {
+    "guid": 17383896348356509743,
+    "map": 0,
+    "update_type": 2,
+    "kind": 3,
+    "movement": {
+      "flags": 0,
+      "flags2": 0,
+      "position": [
+        -8959.0498046875,
+        -160.16000366210938,
+        81.50308990478516,
+        3.141590118408203
+      ],
+      "pitch": 0,
+      "time": 193219208,
+      "speeds": [
+        2.5,
+        8.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 0,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 47,
+      "1": 4047503776,
+      "4": 9,
+      "5": 416,
+      "6": 1065353216,
+      "16": 5,
+      "18": 5,
+      "25": 133120,
+      "26": 364,
+      "27": 298,
+      "32": 364,
+      "33": 298,
+      "48": 10,
+      "49": 1,
+      "53": 8,
+      "54": 2048,
+      "56": 2000,
+      "57": 2000,
+      "59": 1065353216,
+      "60": 1069547520,
+      "61": 4449,
+      "62": 4449,
+      "64": 1096361106,
+      "65": 1099731529,
+      "69": 2,
+      "70": 1791310620,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "76": 688,
+      "77": 0,
+      "79": 29,
+      "80": 10,
+      "81": 24,
+      "82": 33,
+      "83": 31,
+      "94": 191,
+      "115": 147,
+      "116": 223,
+      "117": 1,
+      "118": 18,
+      "143": 1065353216,
+      "38": 1085344247,
+      "43": 1075713147,
+      "55": 4194304,
+      "101": 11,
+      "119": 21
+    }
+  },
+  "native_target": {
+    "guid": 17379582294226018717,
+    "map": 0,
+    "update_type": 1,
+    "kind": 3,
+    "movement": {
+      "flags": 1024,
+      "flags2": 0,
+      "position": [
+        -8962.0498046875,
+        -157.16000366210938,
+        81.58560180664062,
+        2.548180103302002
+      ],
+      "pitch": 0,
+      "time": 193219389,
+      "speeds": [
+        2.5,
+        7.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 0,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 172445,
+      "1": 4046499332,
+      "4": 9,
+      "5": 44548,
+      "6": 1065353216,
+      "25": 16908544,
+      "26": 142,
+      "32": 142,
+      "48": 3,
+      "49": 7,
+      "54": 32,
+      "55": 4194304,
+      "56": 2000,
+      "57": 2000,
+      "59": 1050253722,
+      "60": 1065353216,
+      "61": 3019,
+      "62": 3019,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "77": 0,
+      "117": 1,
+      "143": 1065353216
+    }
+  },
+  "native_catalog_packet": {
+    "time": 1791310620.8267844,
+    "session": "2e36df35",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "2f000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "casts": [
+    {
+      "packet": {
+        "time": 1791310724.3751411,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_START",
+        "body": "f12fa00140f1f12fa00140f100a3180000020800000000000000000000000000002a010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 6307,
+        "flags": 2050,
+        "extra": 0,
+        "duration": 0,
+        "hits": [],
+        "target_flags": 0,
+        "target": 0,
+        "remaining": 298,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310724.375217,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_GO",
+        "body": "f12fa00140f1f12fa00140f100a3180000000904000000000005df850b012f000000a00140f10002000000002a010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 6307,
+        "flags": 264448,
+        "extra": 0,
+        "duration": 193322757,
+        "hits": [
+          17383896348356509743
+        ],
+        "target_flags": 2,
+        "target": 0,
+        "remaining": 298,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310724.6770184,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_START",
+        "body": "f12fa00140f1f12fa00140f100260c00000208000000000000bc08000002000000f79da10204ae30f12a010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2050,
+        "extra": 0,
+        "duration": 2236,
+        "hits": [],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 298,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310726.9168863,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_GO",
+        "body": "f12fa00140f1f12fa00140f100260c00000009000000000000f4e8850b019da1020004ae30f10002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2304,
+        "extra": 0,
+        "duration": 193325300,
+        "hits": [
+          17379582294226018717
+        ],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310726.9171288,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_START",
+        "body": "f12fa00140f1f12fa00140f100260c00000208000000000000bc08000002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2050,
+        "extra": 0,
+        "duration": 2236,
+        "hits": [],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310729.1594708,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_GO",
+        "body": "f12fa00140f1f12fa00140f100260c00000009000000000000b6f1850b019da1020004ae30f10002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2304,
+        "extra": 0,
+        "duration": 193327542,
+        "hits": [
+          17379582294226018717
+        ],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310729.1597052,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_START",
+        "body": "f12fa00140f1f12fa00140f100260c00000208000000000000bc08000002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2050,
+        "extra": 0,
+        "duration": 2236,
+        "hits": [],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310731.4009974,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_GO",
+        "body": "f12fa00140f1f12fa00140f100260c0000000900000000000077fa850b019da1020004ae30f10002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2304,
+        "extra": 0,
+        "duration": 193329783,
+        "hits": [
+          17379582294226018717
+        ],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "packet": {
+        "time": 1791310731.4011693,
+        "session": "2e36df35",
+        "direction": "from_native",
+        "name": "SMSG_SPELL_START",
+        "body": "f12fa00140f1f12fa00140f100260c00000208000000000000bc08000002000000f79da10204ae30f128010000"
+      },
+      "decoded": {
+        "caster": 17383896348356509743,
+        "unit": 17383896348356509743,
+        "counter": 0,
+        "spell": 3110,
+        "flags": 2050,
+        "extra": 0,
+        "duration": 2236,
+        "hits": [],
+        "target_flags": 2,
+        "target": 17379582294226018717,
+        "remaining": 296,
+        "immunity": [
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "interruptions": [
+    {
+      "time": 1791310757.498438,
+      "session": "2e36df35",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_FAILURE",
+      "body": "f12fa00140f100260c000000"
+    },
+    {
+      "time": 1791310757.4985244,
+      "session": "2e36df35",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_FAILED_OTHER",
+      "body": "f12fa00140f100260c000000"
+    }
+  ],
+  "dvc_proof": {
+    "pointer": "artifacts/client_harness/442_interactions_20261006_138.tar.gz.dvc",
+    "archive_sha256": "236d4097f30e7018981bfc60f10fd2634f8f974a7f3d78dd3d11cf9f2d4eaa73",
+    "receipts": [
+      {
+        "member": "evidence/client_interactions_20261006_ui138/class_enter01/episode.json",
+        "sha256": "9024de6d74d410f7b48f57748edb157b6c2a89cd8abdd7a62ef323ccabd39387",
+        "verified": true
+      },
+      {
+        "member": "evidence/client_interactions_20261006_ui138/attack_stage01/episode.json",
+        "sha256": "285c489f89bd968fcee09edce6a4e3fa33165490b524c8d12d5933ef1f56c2bd",
+        "verified": true
+      },
+      {
+        "member": "evidence/client_interactions_20261006_ui138/attack01/episode.json",
+        "sha256": "494539c7ca4b79a63d31570f528735b81392bad5206d290fa1b7f558a656f7e6",
+        "verified": true
+      },
+      {
+        "member": "evidence/client_interactions_20261006_ui138/pet_native_cast_capture01.json",
+        "sha256": "bd64d8d76255e7dbe4a90375b189202bad66785bd5976a73792df6c4c1cdca63",
+        "verified": true
+      },
+      {
+        "member": "evidence/client_interactions_20261006_ui138/verification.json",
+        "sha256": "6ba8c9a303b87e60959bf59db3e78207f669099189fd2f7f8aa1c0c5cf2da793",
+        "verified": true
+      }
+    ],
+    "tracking_review_sha256": "a0dbea15782c79c6edc59b7dfee4b6d16d08f0b9e42ba3e033e263942856402b",
+    "tracking_member": "tracking/packets.jsonl",
+    "tracking_sha256": "0dfdda0f267f097c9100f2d1105ef879f76d6d8e53b70a4421c4ed22b1f40687"
+  },
+  "installed_visuals": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261006_ui139/pet_spell_visual_records01.json",
+    "sha256": "f5c0b719f990d9ab176ded04ca1a7d2864bd98fdf692ed3ed4966630fa1f56df",
+    "prefix_sha256": "aee3a8e0070addbc73037e23eebdbbc41e68a9c881791864a86bcfef9f83f022",
+    "rows": [
+      {
+        "ID": 238900,
+        "SpellID": 3110,
+        "section": 0,
+        "DifficultyID": 0,
+        "SpellVisualID": 67,
+        "ProbabilityBits": 1065353216,
+        "Flags": 0,
+        "Priority": 1,
+        "SpellIconFileID": 0,
+        "ActiveIconFileID": 0,
+        "ViewerUnitConditionID": 0,
+        "ViewerPlayerConditionID": 0,
+        "CasterUnitConditionID": 0,
+        "CasterPlayerConditionID": 0,
+        "Probability": 1.0
+      },
+      {
+        "ID": 240306,
+        "SpellID": 6307,
+        "section": 0,
+        "DifficultyID": 0,
+        "SpellVisualID": 799,
+        "ProbabilityBits": 1065353216,
+        "Flags": 0,
+        "Priority": 1,
+        "SpellIconFileID": 0,
+        "ActiveIconFileID": 0,
+        "ViewerUnitConditionID": 0,
+        "ViewerPlayerConditionID": 0,
+        "CasterUnitConditionID": 0,
+        "CasterPlayerConditionID": 0,
+        "Probability": 1.0
+      }
+    ],
+    "limits": "Positive records in verified public sections only; unread encrypted sections prevent global absence claims. Base tables do not include hotfix replay."
+  },
+  "interruption_proof": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261006_ui139/pet_interruption_capture01.json",
+    "sha256": "fcecf562b462f07e9428a9d0dfe1e92a87e3c282b27de420e4bfdd415432680b",
+    "remote_reviewed": false
+  },
+  "limits": "Native start/completion capture is remote reviewed. Positive installed visual rows and actual interruptions are retained for UI139 checkpoint. No gameplay qualification or global table-absence claim."
+}

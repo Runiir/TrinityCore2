@@ -237,10 +237,12 @@ Reply pet_response(Protocol const &p, State &owner, std::string const &name, Vie
 {
     if(name=="SMSG_PET_SPELLS")
     {
-        auto &s=pet_state(owner);s.pending_spells.clear();s.pending_guid=0;s.controlled_guid=0;
+        auto &s=pet_state(owner);auto previous=s.controlled_guid;
+        s.pending_spells.clear();s.pending_guid=0;s.controlled_guid=0;
         s.pending_buttons.fill(0);s.controlled_buttons.fill(0);
         s.pending_autocast.clear();s.controlled_autocast.clear();
         std::uint64_t guid=0;auto message=spell_message(body,owner.map(),guid,s);
+        if(!guid || guid!=previous)owner.pet_cast_state.reset();
         if(!guid)return Packet{"SMSG_PET_SPELLS_MESSAGE",std::move(message)};
         s.pending_guid=guid;s.pending_spells=std::move(message);
         return pet_ready(p,owner);
@@ -278,7 +280,7 @@ void pet_removed(State &owner, std::uint64_t guid)
     if(!owner.pet_state)return;
     auto &s=*owner.pet_state;
     if(s.controlled_guid==guid)
-    {s.controlled_guid=0;s.controlled_buttons.fill(0);s.controlled_autocast.clear();}
+    {s.controlled_guid=0;s.controlled_buttons.fill(0);s.controlled_autocast.clear();owner.pet_cast_state.reset();}
     if(s.pending_guid==guid)
     {s.pending_guid=0;s.pending_spells.clear();s.pending_buttons.fill(0);s.pending_autocast.clear();}
     for(auto it=s.names.begin();it!=s.names.end();)
@@ -286,5 +288,22 @@ void pet_removed(State &owner, std::uint64_t guid)
         s.name_count-=std::erase_if(it->second,[guid](auto const &query){return query.guid==guid;});
         if(it->second.empty())it=s.names.erase(it);else ++it;
     }
+}
+bool pet_cast_authority(Protocol const &p,State const &owner,std::uint64_t guid,unsigned spell)
+{
+    if(!owner.created || owner.character.is_null() || owner.self_snapshot.is_null() ||
+       !owner.pet_state || owner.pet_state->controlled_guid!=guid || guid>>52!=0xf14 ||
+       (spell!=3110 && spell!=6307))return false;
+    auto found=owner.visible_units.find(guid);
+    if(found==owner.visible_units.end())return false;
+    auto const &unit=found->second;auto slot=spell==3110 ? 3 : 4;
+    auto button=owner.pet_state->controlled_buttons[slot];auto type=button>>24;
+    return integer(get(unit,"kind"))==3 && integer(get(unit,"map"))==owner.map() &&
+        p.field(unit,"UNIT_FIELD_PETNUMBER") && p.field(unit,"UNIT_FIELD_HEALTH") &&
+        p.field(owner.self_snapshot,"UNIT_FIELD_HEALTH") &&
+        field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")==owner.guid() &&
+        field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")==guid &&
+        (button&0x00ffffffu)==spell && (type==0x81 || type==0xc1) &&
+        owner.pet_state->controlled_autocast.contains(spell);
 }
 }
