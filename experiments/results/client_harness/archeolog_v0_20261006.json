@@ -230,11 +230,13 @@
   "model": "archeolog-v0",
   "post_offload_status_interpretation": "DVC reports a local/remote difference after intentional workspace/cache pruning. The exact remote object remains present and verified; cloud status was empty before pruning.",
   "promoted": false,
+  "remote_adapter_content_sha256_verified": true,
   "remote_cloud_status": {},
   "remote_cloud_status_after_offload": {
     "artifacts/client_harness/archeolog_v0_20261006.tar.gz": "deleted"
   },
   "remote_md5": "6d30e2a802b13cac6686e136cffc9f41",
+  "remote_model_receipt_verified": true,
   "remote_object_verification_after_offload": {
     "bytes": 48827615,
     "etag_matches_md5": true,
