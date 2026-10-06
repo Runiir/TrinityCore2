@@ -75,9 +75,17 @@ def run(t,preparation,entry,stage_path,review_path):
             raise RuntimeError('reviewed current owned Attack authority or passive combat reads differ')
         pet=copy.deepcopy(o.pet);target=copy.deepcopy(o.target)
         image=review_path.parent/checked['frame']['file']
-        if not 0<=time.time()-image.stat().st_mtime<120:
-            raise RuntimeError('reviewed Attack image aged during passive preflight; no Attack submitted')
-        since=time.time();t.receipt.update(native_pet=pet,native_target=target,attack_started_at=since);t.persist()
+        def fresh_input():
+            nonlocal since
+            age=time.time()-image.stat().st_mtime
+            admission={'accepted':0<=age<110 and lab.sha256(image)==checked['frame']['sha256'],
+                'source':str(review_path),'source_sha256':lab.sha256(review_path),
+                'frame':checked['frame'],'age_seconds':age,'maximum_seconds':110,
+                'checked_at':time.time(),'reason':'Fresh reviewed Attack image immediately before physical input'}
+            if admission['accepted']:
+                since=time.time()
+                t.receipt.update(native_pet=pet,native_target=target,attack_started_at=since);t.persist()
+            return admission
         def outcome(b,a,s):
             sample=read(t,'attack_native_combat');public_samples=[sample]
             deadline=time.monotonic()+12
@@ -115,7 +123,8 @@ def run(t,preparation,entry,stage_path,review_path):
                     'native_auras':copy.deepcopy(o.auras),'public':sample,'state':state,'frame':frame}}
         with t.bounded_combat_observation(60):
             require(t.step('pets.command_attack','Click the reviewed stock Attack once and prove delivered native Firebolt casts against the passive dummy.',
-                {'attack':{'kind':'click','value':point,'hold':.4}},outcome,diagnostic_action='attack'),'owned_native_pet_attack_pass')
+                {'attack':{'kind':'click','value':point,'hold':.4}},outcome,diagnostic_action='attack',
+                before_input=fresh_input),'owned_native_pet_attack_pass')
     finally:
         with t.bounded_combat_observation(60):
             capture.restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'],after_follow=stopped if since else None)

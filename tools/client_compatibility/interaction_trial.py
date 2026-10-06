@@ -309,7 +309,7 @@ class Trial:
                 if state.get('chat_edit_open'):raise RuntimeError('bounded chat submission retry did not settle')
         return transport
 
-    def step(self,case_id,goal,actions,oracle,diagnostic_action=None,await_state=None):
+    def step(self,case_id,goal,actions,oracle,diagnostic_action=None,await_state=None,before_input=None):
         index=len(self.receipt['cases']);row={'id':case_id,'goal':goal,'time':time.time(),'status':'started'}
         self.receipt['cases'].append(row);self.persist()
         try:
@@ -320,6 +320,10 @@ class Trial:
                 request,response,selected=None,None,diagnostic_action
             row.update(before=before,before_frame=bframe,request=request,response=response,selected=selected,
                 selection_source=self.controller,input=actions[selected]);self.persist()
+            if before_input is not None:
+                admission=before_input();row['input_admission']=admission;self.persist()
+                if not isinstance(admission,dict) or admission.get('accepted') is not True:
+                    raise RuntimeError('interaction input admission refused')
             row['input_transport']=self.execute(actions[selected]);after,aframe=self.observe(f'{index:03}_after')
             if await_state is not None:
                 deadline=time.monotonic()+12;samples=[]
