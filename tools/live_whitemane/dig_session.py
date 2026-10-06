@@ -407,13 +407,24 @@ def run(args):
             if session.get('stop_reason')=='survey_without_telescope_review_visible_find': break
         session['failure']=None
     except Exception as error:
-        if 'no matching public tooltip' in str(error):
-            pending_find.search_missed(observe(output/'search_missed.png'))
-        session['failure']=f'{type(error).__name__}: {error}'
-        session['stop_reason']='guard_stopped_input'
-        if step is not None:
-            step['failure']=session['failure']
+        if str(error)=='named interaction search yielded for fresh facts' and step is not None:
+            # No interact was sent and the scan is incomplete. Preserve both
+            # the find and cursor progress, then resume from fresh facts.
+            after=observe(folder/'after.png')
+            step.update(after=after,completed=True,finished_at=time.time(),inputs=[],
+                outcome='interaction_search_incomplete',confirmed_looted_find=False)
+            session['failure']=None
+            if getattr(args,'graph',None):
+                farm_graph.transition(args.graph,'observe',after,pending=pending_find.load(after))
             write_decision(folder,step,session)
+        else:
+            if 'no matching public tooltip' in str(error):
+                pending_find.search_missed(observe(output/'search_missed.png'))
+            session['failure']=f'{type(error).__name__}: {error}'
+            session['stop_reason']='guard_stopped_input'
+            if step is not None:
+                step['failure']=session['failure']
+                write_decision(folder,step,session)
     session.update(updated_at=time.time(),progress=asdict(progress))
     runtime.write(path,session)
     return {k:session.get(k) for k in ('finished','stop_reason','failure','site_id')}

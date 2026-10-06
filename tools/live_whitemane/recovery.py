@@ -92,6 +92,7 @@ def run(folder,row,step,session,graph):
     alternatives={}
     terrain={};route={}
     if (step['phase'] in ('flight','dig','portal','taxi') and not m['in_combat'] and not a['casting']
+            and 'named interaction search yielded for fresh facts' not in step['local_failure']
             and m.get('facing_radians') is not None
             and not a['falling'] and (m.get('speed',0)==0 or any(reason in step['local_failure']
                 for reason in ('blocked','no height progress','movement mode')))):

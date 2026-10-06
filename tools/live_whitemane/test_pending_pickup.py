@@ -179,6 +179,29 @@ def test_survey_cooldown_wait_keeps_character_available_and_sends_no_requests(ow
     assert session['survey_cooldown_wait']['remaining_seconds']==1
 
 
+def test_partial_tooltip_search_preserves_pending_find_without_obstacle_recovery(owned_root,monkeypatch):
+    r=row();r['movement']['facing_radians']=0;r['source']='test_public_observation'
+    r['archaeology'].update(site_id=331,successful_surveys=0,last_survey_uptime_ms=0,
+        looted_finds=0,loot_open=False,visible_markers=[])
+    r['farm_ui']['soft_interact']['name']='Fossil Archaeology Find'
+    pending_find.latch(r)
+    monkeypatch.setattr(dig_session,'observe',lambda _:copy.deepcopy(r))
+    monkeypatch.setattr(dig_session.resources,'check',lambda **_:None)
+    monkeypatch.setattr(dig_session,'choose',lambda _:('loot',{}, {},{}))
+    monkeypatch.setattr(pending_find,'priority',lambda *_:{'choice':'pickup'})
+    def partial(*_):raise RuntimeError('named interaction search yielded for fresh facts')
+    monkeypatch.setattr(dig_session.interact,'use',partial)
+    monkeypatch.setattr(dig_session.inputs,'execute',lambda *_:pytest.fail('no extra input'))
+    args=SimpleNamespace(output=owned_root/'dig',steps=1,loot_at=None,auto_loot=True)
+    result=dig_session.run(args)
+    assert result['failure'] is None and result['stop_reason'] is None
+    session=json.loads((args.output/'session.json').read_text())
+    step=session['steps'][-1]
+    assert step['completed'] and step['outcome']=='interaction_search_incomplete'
+    assert not step['confirmed_looted_find']
+    assert pending_find.load(r) and not pending_find.load(r).get('tooltip_search_misses')
+
+
 def test_collected_tooltip_cannot_relatch_a_find_before_the_next_survey(owned_root):
     r=row();r['observed_at']=10
     r['archaeology'].update(site_id=315,successful_surveys=30,looted_finds=8,loot_open=False)
