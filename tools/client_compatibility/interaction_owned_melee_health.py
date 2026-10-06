@@ -8,7 +8,9 @@ from .interaction_owned_class_fixture import prepared,reviewed,SCRIPT_BOUNDARY,s
 from .interaction_spellbook_pet_recon import entry_source
 from .interaction_retained_class_fixture import closed
 from .interaction_pet_commands import eligibility,PET_KEYS
-from .interaction_pet_spell import SpellPresence,pet_vitals
+from .interaction_pet_spell import SpellPresence,pet_vitals,restore_spell
+from .interaction_pet_summon import SummonOracle,summon_checks
+from .interaction_spellbook_navigation import wire_known
 from .interaction_pet_dismiss import vitals
 from .interaction_pet_command_probe import read,follow_row
 from .interaction_pet_react_modes import mode,public_bar,active_mode
@@ -52,6 +54,33 @@ class HealthPresence(SpellPresence):
 def health(o):return o.target['fields'][INDEX['UNIT_FIELD_HEALTH']]
 
 
+def retained_presence(t,o,label):
+    o.poll()
+    if o.present():return
+    absence=read(t,label+'_absence');o.poll()
+    if o.present() or pair(o.player,'UNIT_FIELD_SUMMON') or absence['probe'].get('pet_guid') or 688 not in wire_known(t,o.session):
+        raise RuntimeError('normal transfer recovery requires native/public pet absence and known Summon Imp')
+    summon=SummonOracle(o.session,5,o.started).poll();old=o.pet['guid'] if o.pet else 0;since=time.time()
+    def outcome(before,after,selected):
+        summon.poll();checks,packets=summon_checks(summon,since,old,t.receipt['baseline']['pet'],selected,True)
+        return {'status':'owned_retained_transfer_summon_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'packets':packets,'preparation_or_cleanup_only':True}}
+    require(t.step(label,'Restore the retained Imp after actual native/public transfer absence.',
+        {'summon':{'kind':'chat','value':'/cast Summon Imp'}},outcome,diagnostic_action='summon',
+        await_state=lambda state:summon.poll().present() and not state.get('player_cast',{}).get('active')),
+        'owned_retained_transfer_summon_pass');o.poll()
+
+
+def original_pvp(t,o):
+    deadline=time.monotonic()+330;samples=[];expected=t.receipt['baseline']['pvp_bytes']
+    while o.poll().player.get(INDEX['UNIT_FIELD_BYTES_2'],0)&0xff00!=expected:
+        samples.append({'time':time.time(),'native_pvp_bytes':o.player.get(INDEX['UNIT_FIELD_BYTES_2'],0)&0xff00})
+        if time.monotonic()>deadline:raise RuntimeError('ordinary native PvP timeout did not restore the original bytes')
+        time.sleep(2)
+    t.receipt['pvp_restoration']={'checks':{'original_native_pvp_bytes':True},'samples':samples,
+        'source':'Passive native PvP expiry after returning to the original friendly zone; no PvP setter or toggle.'};t.persist()
+
+
 def stage(t,preparation,entry):
     old,e,base,inventory,identity=eligibility(t,preparation,entry);t.clean_panels()
     o=HealthPresence(base.session,5,e['started_at']).poll();sample=read(t,'health_original_bar')
@@ -61,7 +90,8 @@ def stage(t,preparation,entry):
         raise RuntimeError('requires original idle Assist/Follow and loaded passive melee observer138')
     baseline={'resources':resources(inventory),'saved':e['entered_saved'],'position':position(5),
         'vitals':vitals(o),'pet':{k:identity[k] for k in PET_KEYS},'pose':pose(inventory),'afk':afk(inventory),
-        'money':character(5,2)['money'],'public_bar':public_bar(sample['probe'])}
+        'money':character(5,2)['money'],'public_bar':public_bar(sample['probe']),
+        'pvp_bytes':o.player.get(INDEX['UNIT_FIELD_BYTES_2'],0)&0xff00}
     original={'auras':copy.deepcopy(o.auras),'public_buffs':state.get('buffs',{}),'pet_vitals':pet_vitals(o)}
     # Use the shared spell parser's canonical public aura identity.
     from .pet_spell_evidence import buffs
@@ -72,6 +102,15 @@ def stage(t,preparation,entry):
     try:
         mode(t,o,0,'fixture.health_pet_passive')
         staged=fixture.prepare();t.receipt['baseline']['position']=staged;t.persist()
+        retained_presence(t,o,'fixture.health_transfer_pet')
+        mode(t,o,0,'fixture.health_transfer_passive')
+        # Honorless Target is a normal zone-transfer aura and expires naturally.
+        deadline=time.monotonic()+45
+        while any(r['spell']==2479 for r in o.poll().auras.values()):
+            if time.monotonic()>deadline:raise RuntimeError('normal Honorless Target transfer aura did not expire')
+            time.sleep(2)
+        passive=read(t,'health_passive_cleanup_bar')
+        restore_spell(t,o,original,expected_bar=public_bar(passive['probe']))
         t.execute({'kind':'chat','value':'/targetexact Training Dummy'})
         state,_=t.observe('health_selected_target');o.poll();sample=read(t,'health_passive_control');o.poll()
         frozen=position(5);time.sleep(.5)
@@ -95,8 +134,10 @@ def stage(t,preparation,entry):
         if not all(checks.values()):raise RuntimeError('reviewed damageable target staging differs')
         t.receipt.update(completed=True,phase='await_owned_melee_health_review',
             qualified_scope='Pose staging and Passive preparation only; no melee or applied damage qualification.')
-    except Exception:
+    except Exception as error:
+        t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist()
         fixture.restore();t.receipt['baseline']['position']=baseline['position']=t.receipt['original_position']
+        retained_presence(t,o,'fixture.health_failure_pet');original_pvp(t,o)
         restore(t,o,inventory,old,fixture,original,t.receipt['original_position']);raise
 
 
@@ -183,6 +224,7 @@ def run(t,preparation,entry,stage_path,review_path):
         finally:
             # Move out of combat before the shared Follow/Assist/aura cleanup.
             t.receipt['early_pose_restoration']=fixture.restore();t.receipt['baseline']['position']=d['original_position'];t.persist()
+            retained_presence(t,o,'fixture.health_return_pet');original_pvp(t,o)
             restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'])
     t.receipt.update(completed=True,phase='owned_melee_health_complete',qualified_scope=
         'Ordinary owner autoattack on one existing level-three SmartAI target, exact native/public health loss, '

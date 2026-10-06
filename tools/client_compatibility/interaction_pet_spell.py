@@ -98,7 +98,7 @@ def reset_pet(t,o,*,enabled=True):
         t.clean_panels()
 
 
-def restore_spell(t,o,original):
+def restore_spell(t,o,original,*,expected_bar=None):
     t.clean_panels();state,frame=t.observe('spell_cleanup_inspection');o.poll()
     changed=(o.auras!=original['auras'] or buffs(state)!=original['public_buffs']
         or vitals(o)!=t.receipt['baseline']['vitals'] or pet_vitals(o)!=original['pet_vitals'])
@@ -153,7 +153,7 @@ def restore_spell(t,o,original):
         'owned_retained_pet':o.present() and pair(o.pet['fields'],'UNIT_FIELD_SUMMONEDBY')==5
             and o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])==2,
         'public_owned_pet':sample['probe'].get('pet_guid')==expected_guid(o.pet),
-        'public_bar':public_bar(sample['probe'])==baseline['public_bar'],
+        'public_bar':public_bar(sample['probe'])==(baseline['public_bar'] if expected_bar is None else expected_bar),
         'saved':saved(5)==baseline['saved'] and {k:identity[k] for k in PET_KEYS}==baseline['pet'],
         'position':position(5)==baseline['position'],'money':character(5,2)['money']==baseline['money']}
     t.receipt['spell_cleanup']={'checks':checks,'frame':frame,'public':sample,'native_auras':copy.deepcopy(o.auras),

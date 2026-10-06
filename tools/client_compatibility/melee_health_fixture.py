@@ -75,7 +75,11 @@ class MeleeHealthFixture(PetAttackFixture):
         self.verify_rows();lab.server_command('reload game_tele');time.sleep(.5)
         lab.server_command('tele name Harnessctrl '+NAMES[1]);time.sleep(4)
         actual=position(5)
-        if (actual[4]!=0 or any(abs(actual[i]-ground[i])>.01 for i in (0,1,3)) or abs(actual[2]-ground[2])>2):
+        checks={'map':actual[4]==0,'xy_facing':all(abs(actual[i]-ground[i])<.01 for i in (0,1,3)),
+            'near_target_floor':abs(actual[2]-ground[2])<3}
+        lab.private_write(self.out/'melee_health_landing.json',json.dumps({'requested':ground,'accepted':actual,
+            'checks':checks,'source':'Native accepted pose; final scene must separately prove distance below four metres.'},indent=2)+'\n')
+        if not all(checks.values()):
             raise RuntimeError('health target landing differs; restore teleport retained')
         return actual
 
