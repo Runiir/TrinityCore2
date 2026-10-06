@@ -1,5 +1,5 @@
 """Resume a parked owned class without restarting its unchanged bridge."""
-import argparse,json,time
+import argparse,json,re,shutil,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
@@ -25,7 +25,24 @@ def continuity(t,old,park,finish,preparation_sha):
         raise RuntimeError('closed unchanged-runtime class restoration chain differs')
 
 
-def prepare(t,preparation,parked,origin_finish):
+def install_observer(t,version):
+    source=lab.REPO/'tools/client_compatibility/observation/addon/ClientMovementHarness'
+    target=lab.client_root()/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness'
+    match=re.search(r'observer_version=(\d+)',(source/'ClientInteractions.lua').read_text())
+    if not match or int(match[1])!=version:
+        raise RuntimeError('requested committed observer version differs')
+    hashes=lambda directory:{p.name:lab.sha256(p) for p in directory.iterdir() if p.is_file()}
+    before=hashes(target);expected=hashes(source)
+    shutil.copytree(source,target,dirs_exist_ok=True)
+    after=hashes(target)
+    if any(after.get(name)!=digest for name,digest in expected.items()):
+        raise RuntimeError('parked observer installation differs from committed files')
+    t.receipt['parked_observer_installation']={'version':version,'before':before,'after':after,
+        'source':expected,'input_sent':False,'load_on':'next ordinary owned class entry'}
+    t.persist()
+
+
+def prepare(t,preparation,parked,origin_finish,observer_version=None):
     sources=[p.resolve() for p in (preparation,parked,origin_finish)]
     old,park,finish=[closed(p) for p in sources]
     continuity(t,old,park,finish,lab.sha256(sources[0]))
@@ -42,6 +59,7 @@ def prepare(t,preparation,parked,origin_finish):
         natural_saved=park['retained_class_saved'],retained_class_pets=park['retained_class_pets'],
         checks=checks,qualified_scope='Unchanged-runtime retained fixture continuity only; no gameplay qualification.')
     t.persist()
+    if observer_version is not None:install_observer(t,observer_version)
     if actors.register(guid)!=fixture:raise RuntimeError('retained class registration differs')
     t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
 
@@ -49,10 +67,11 @@ def prepare(t,preparation,parked,origin_finish):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','park','origin-finish','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--observer-version',type=int,help='Install the committed passive observer while the scout is offline')
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:prepare(t,a.preparation,a.park,a.origin_finish)
+        try:prepare(t,a.preparation,a.park,a.origin_finish,a.observer_version)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('phase','completed','failure')}),flush=True)

@@ -55,3 +55,30 @@ def test_later_sparse_update_or_visibility_change_is_preserved(tmp_path,monkeypa
     if change=='sparse_health':assert o.poll().pet['fields'][INDEX['UNIT_FIELD_HEALTH']]==120
     else:
         with pytest.raises(RuntimeError):o.poll()
+
+
+@pytest.mark.parametrize('change',('none','public_power','public_type','missing_type','foreign_pet','foreign_owner',
+    'summon_pointer','empty_target','hidden','lua_error','blocked','missing_native_type','sparse_power'))
+def test_owned_mana_requires_exact_current_native_and_public_identity(tmp_path,monkeypatch,change):
+    o,_,_=oracle(tmp_path,monkeypatch);o.poll();pet=o.pet;fields=pet['fields']
+    o.player[INDEX['UNIT_FIELD_TARGET']]=pet['guid']&0xffffffff
+    o.player[INDEX['UNIT_FIELD_TARGET']+1]=pet['guid']>>32
+    native_power=fields[INDEX['UNIT_FIELD_POWER1']];maximum=fields[INDEX['UNIT_FIELD_MAXPOWER1']]
+    assert native_power==maximum==155
+    state={'target':{'guid':'current-owned-imp','visible':True}}
+    public={'exists':True,'guid':'current-owned-imp','power':native_power,'max_power':maximum,'power_type':0}
+    if change=='public_power':public['power']-=1
+    elif change=='public_type':public['power_type']=2
+    elif change=='missing_type':public.pop('power_type')
+    elif change=='foreign_pet':public['guid']='other-pet'
+    elif change=='foreign_owner':fields[INDEX['UNIT_FIELD_SUMMONEDBY']]=5
+    elif change=='summon_pointer':o.player[INDEX['UNIT_FIELD_SUMMON']]+=1
+    elif change=='empty_target':o.player[INDEX['UNIT_FIELD_TARGET']]=0;o.player[INDEX['UNIT_FIELD_TARGET']+1]=0
+    elif change=='hidden':state['target']['visible']=False
+    elif change=='lua_error':state['lua_errors']=['error']
+    elif change=='blocked':state['blocked_actions']=['blocked']
+    elif change=='missing_native_type':fields.pop(INDEX['UNIT_FIELD_BYTES_0'])
+    elif change=='sparse_power':fields[INDEX['UNIT_FIELD_POWER1']]=120;public['power']=120
+    checks,native=module.power_checks(o,state,public,'current-owned-imp')
+    assert all(checks.values())==(change in ('none','sparse_power'))
+    assert native['power']==(120 if change=='sparse_power' else 155)

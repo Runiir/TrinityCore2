@@ -67,3 +67,24 @@ def test_exact_current_rows_are_checked_before_registration(tmp_path,monkeypatch
     else:
         with pytest.raises(RuntimeError):module.prepare(t,*sources)
         assert calls==[]
+
+
+@pytest.mark.parametrize('change',('none','wrong_version','copy_mismatch'))
+def test_offline_observer_installation_binds_every_committed_file(tmp_path,monkeypatch,change):
+    source=tmp_path/'tools/client_compatibility/observation/addon/ClientMovementHarness'
+    target=tmp_path/'client/_whitemane-60895_/Interface/AddOns/ClientMovementHarness'
+    source.mkdir(parents=True);target.mkdir(parents=True)
+    (source/'ClientInteractions.lua').write_text('observer_version=129')
+    (source/'SpellBookObservation.lua').write_text('passive pet power reading')
+    (target/'ClientInteractions.lua').write_text('observer_version=128')
+    monkeypatch.setattr(module.lab,'REPO',tmp_path)
+    monkeypatch.setattr(module.lab,'client_root',lambda:tmp_path)
+    if change=='copy_mismatch':monkeypatch.setattr(module.shutil,'copytree',lambda *a,**kw:None)
+    t=SimpleNamespace(receipt={},persist=lambda:None)
+    if change=='none':
+        module.install_observer(t,129);record=t.receipt['parked_observer_installation']
+        assert record['source']==record['after'] and record['before']!=record['after']
+        assert record['input_sent'] is False and record['version']==129
+    else:
+        with pytest.raises(RuntimeError):module.install_observer(t,128 if change=='wrong_version' else 129)
+        assert not t.receipt and (target/'ClientInteractions.lua').read_text()=='observer_version=128'

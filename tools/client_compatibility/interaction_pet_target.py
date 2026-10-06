@@ -1,4 +1,4 @@
-"""Target the observed owned Imp and compare its visible health to native fields."""
+"""Target the observed owned Imp and compare its health and optional mana."""
 import argparse,json,re,struct,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
@@ -15,6 +15,8 @@ from .world.native_objects import records
 from .world.objects import INDEX
 from .world.gameobjects import modern_guid
 from .world.buffer import Reader
+from .interaction_operations import click_case
+from .interaction_spellbook_navigation import detail
 
 
 def pair(fields,name):
@@ -58,7 +60,41 @@ def source(t,probe,session,entry):
     return p
 
 
-def suite(t,preparation,entry,probe):
+def power_checks(oracle,state,public,expected):
+    pet=oracle.pet;fields=pet['fields'] if pet else {}
+    native={'power':fields.get(INDEX['UNIT_FIELD_POWER1'],0),
+        'max_power':fields.get(INDEX['UNIT_FIELD_MAXPOWER1'],0),
+        'power_type':fields.get(INDEX['UNIT_FIELD_BYTES_0'],0)>>24&255}
+    checks={'native_target':bool(pet and oracle.selected()==pet['guid']),
+        'owned_pet':bool(pet and pair(fields,'UNIT_FIELD_SUMMONEDBY')==oracle.owner and
+            pair(oracle.player,'UNIT_FIELD_SUMMON')==pet['guid']),
+        'public_target':state['target'].get('guid')==expected,
+        'public_pet':public.get('exists') is True and public.get('guid')==expected,
+        'mana_type':INDEX['UNIT_FIELD_BYTES_0'] in fields and native['power_type']==0 and public.get('power_type')==0,
+        'power':0<native['power']<=native['max_power'] and
+            all(type(public.get(k)) is int and public[k]==v for k,v in native.items()),
+        'visible_target':state['target'].get('visible') is True,
+        'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+    return checks,native
+
+
+def read_power(t,oracle,expected):
+    require(click_case(t,'fixture.pet_power.book_open','Open the observed stock spellbook for passive mana readings.',
+        lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
+            'SpellBookFrame' in a['panels'] and not a.get('lua_errors') and not a.get('blocked_actions') else
+            'client_or_protocol_failure'}),'spellbook_open_pass')
+    probe=detail(t,'owned_pet_power');snapshot=t.receipt['spellbook_details']['owned_pet_power']
+    if snapshot['state'].get('observer_version')!=129:
+        raise RuntimeError('requires passive pet-power observer129')
+    oracle.poll();checks,native=power_checks(oracle,snapshot['state'],probe['pet'],expected)
+    row={'id':'pets.pet_power','time':time.time(),'status':'native_owned_pet_power_pass' if all(checks.values()) else
+        'client_or_protocol_failure','input_sent':False,'scope':'Read mana of the selected owned Imp.',
+        'after':snapshot['state'],'after_frame':snapshot['frame'],
+        'oracle':{'checks':checks,'native':native,'public':probe['pet']}}
+    t.receipt['cases'].append(row);t.persist();require(row,'native_owned_pet_power_pass')
+
+
+def suite(t,preparation,entry,probe,power=False):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);p=source(t,probe,session,entry)
     oracle=PetOracle(session,t.fixture['guid'],e['started_at']).poll()
@@ -71,7 +107,8 @@ def suite(t,preparation,entry,probe):
     if p['public_pet']['guid']!=expected:raise RuntimeError('native and public pet GUIDs differ')
     t.receipt.update(sources=[{'path':str(q.resolve()),'sha256':lab.sha256(q)} for q in (entry,probe)],
         native_session=session,native_pet=pet,public_pet=p['public_pet'],
-        qualified_scope='Ordinary exact-name targeting and visible health of the selected owned Imp only; no pet command or pet-tab qualification.')
+        qualified_scope='Ordinary exact-name targeting and selected owned Imp health'+(' and mana' if power else '')+
+            ' only; no pet command or pet-tab qualification.')
     t.persist();before,_=t.observe('pet_target_baseline')
     if before['target']['exists']:raise RuntimeError('public original selection is not empty')
     try:
@@ -106,6 +143,7 @@ def suite(t,preparation,entry,probe):
             'client_or_protocol_failure','input_sent':False,'scope':'Read health of the selected owned pet.',
             'after':state,'after_frame':frame,'oracle':{'checks':checks,'native':native}}
         t.receipt['cases'].append(row);t.persist();require(row,'native_owned_pet_health_pass')
+        if power:read_power(t,oracle,expected)
     finally:
         state,_=t.observe('pet_cleanup_before')
         if state['target'].get('exists'):t.execute({'kind':'chat','value':'/cleartarget'})
@@ -117,16 +155,17 @@ def suite(t,preparation,entry,probe):
             ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
         t.receipt.update(restoration_checks=checks,restored_frame=frame);t.persist()
         if not all(checks.values()):raise RuntimeError('owned pet targeting restoration differs')
-    t.receipt.update(completed=True,phase='owned_pet_target_health_complete')
+    t.receipt.update(completed=True,phase='owned_pet_target_health_power_complete' if power else 'owned_pet_target_health_complete')
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','entry','probe','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--power',action='store_true',help='Read owned Imp mana with passive observer129')
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:suite(t,a.preparation,a.entry,a.probe)
+        try:suite(t,a.preparation,a.entry,a.probe,a.power)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('phase','completed','failure','restoration_checks')}),flush=True)

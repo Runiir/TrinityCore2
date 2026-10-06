@@ -75,6 +75,7 @@ function Client442ObserveSpellBook()
         tabs=tabs,rows=rows,pages=pages,page=current,max_pages=maximum,
         page_text=text(SpellBookPageText),tooltip=tooltip,
         pet={exists=not not read(UnitExists,'pet'),guid=read(UnitGUID,'pet'),name=read(UnitName,'pet'),
-            spells=read(GetNumPetSpells)},
+            spells=read(GetNumPetSpells),power=read(UnitPower,'pet'),max_power=read(UnitPowerMax,'pet'),
+            power_type=read(UnitPowerType,'pet')},
         professions=book and book.bookType==BOOKTYPE_PROFESSION and Client442ObserveProfessions() or nil}
 end

@@ -24,3 +24,24 @@ def test_pet_and_player_spellbook_knowledge_are_distinct(book):
     assert(probe.rows[1].id==3110 and probe.rows[1].known==(kind=='pet'))
     '''
     subprocess.run([lua,'-'],input=program,text=True,check=True,capture_output=True)
+
+
+def test_pet_power_reads_owned_pet_namespace_without_gameplay_calls():
+    lua=shutil.which('lua')
+    if not lua:pytest.skip('Lua interpreter unavailable')
+    source=Path(__file__).resolve().parents[2]/'observation/addon/ClientMovementHarness/SpellBookObservation.lua'
+    program='dofile('+json.dumps(str(source))+')\n'+'''
+    local function forbidden() error('observer called a gameplay setter') end
+    CastSpell=forbidden;CastSpellByID=forbidden;CreateFrame=forbidden;SetCVar=forbidden
+    UnitExists=function(unit) assert(unit=='pet');return true end
+    UnitGUID=function(unit) assert(unit=='pet');return 'owned-imp' end
+    UnitName=function(unit) assert(unit=='pet');return 'Volrot' end
+    UnitPower=function(unit) assert(unit=='pet');return 120 end
+    UnitPowerMax=function(unit) assert(unit=='pet');return 155 end
+    UnitPowerType=function(unit) assert(unit=='pet');return 0,'MANA' end
+    Client442ObserveTooltip=function() return {lines={}} end
+    local pet=Client442ObserveSpellBook().pet
+    assert(pet.exists and pet.guid=='owned-imp' and pet.name=='Volrot')
+    assert(pet.power==120 and pet.max_power==155 and pet.power_type==0)
+    '''
+    subprocess.run([lua,'-'],input=program,text=True,check=True,capture_output=True)

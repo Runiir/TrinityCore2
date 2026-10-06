@@ -1,0 +1,14 @@
+{
+  "schema": "client442_pet_power_contract_v1",
+  "actor": {"guid": 4, "account_id": 2, "class": 9, "level": 1},
+  "fixture": "Retained normally created Harnesslock and owned native Imp entry416, pet number1; current GUID comes from the new owned entry.",
+  "inputs": ["Normal reviewed class entry on the existing scout", "Stock exact-name target command using the observed pet name", "Stock spellbook microbutton for passive readings", "Stock clear-target and panel cleanup"],
+  "outcomes": ["Same-entry owner, player summon pointer, native target and public target identify the same pet", "Native sparse mana and maximum mana agree with UnitPower and UnitPowerMax for pet", "Native display-power type and UnitPowerType both identify mana", "Reviewed target frame displays the owned pet and its mana bar"],
+  "restoration": ["Empty native/public selection", "Inventory and money", "Saved spells, skills, actions and quests", "Player position", "Closed panels and clean UI", "Original Harnesstwo full row and saved rows", "Retained offline class and pet", "Original scout selected", "Native, bridge and two existing client lifetimes on HDMI-1"],
+  "observer": {"version": 129, "installation": "Committed passive addon copied only to the offline scout; loads on its next normal entry"},
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "Only stationary mana reading on the selected owned Imp. Repeated target and health checks add no coverage. Pet commands, pet tab, combat, training and other variants remain open. No level/spell/aura grant, new client or server/bridge restart."
+}
