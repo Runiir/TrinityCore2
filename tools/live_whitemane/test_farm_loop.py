@@ -125,7 +125,12 @@ def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tm
         if observations[0]==3:(tmp_path/'run/stop_dig').touch()
         return copy.deepcopy(r)
     monkeypatch.setattr(farm_loop,'observe',observe)
-    result=farm_loop.run(tmp_path/'farm')
+    output=tmp_path/'farm';output.mkdir()
+    (output/'loop.json').write_text(json.dumps({'status':'repair_required','failure':'old failure',
+        'active_races':[],'steps':[],'last_progress_at':0,'completed_sites':0,'looted_finds':0,
+        'dig_output':None,'dig_site':None,'via_tolbarad':False}))
+    result=farm_loop.run(output)
     assert result['status']=='supervisor_stopped' and result['failure'] is None
     session=json.loads((tmp_path/'farm/loop.json').read_text())
+    assert session['resumed_at']>0
     assert session['steps'][-1]['recovery']['outcome']=='reobserve_with_Laya_on_next_loop'

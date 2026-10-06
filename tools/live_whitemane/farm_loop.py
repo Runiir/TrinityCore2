@@ -87,7 +87,7 @@ def run(output,stop_on='recipe'):
         'via_tolbarad':False,'dig_output':None,'dig_site':None}
     batches=SolveBatches(set(session['active_races']))
     resources.trim_session(session,'loop')
-    if session.get('status')=='inactive_30_minutes':
+    if session.get('status') in ('inactive_30_minutes','repair_required','supervisor_stopped'):
         # An explicit new run resumes a stopped supervised session. Telemetry
         # and waiting inside a running farm never renew gameplay inactivity.
         session['resumed_at']=time.time();session['last_progress_at']=session['resumed_at']
