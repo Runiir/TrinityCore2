@@ -16,6 +16,7 @@ from .interaction_spellbook_actions import saved_actions
 from .interaction_ground_movement import position
 from .observation.character_selection import characters
 from .world.buffer import Reader
+from .auth.realms import ADDRESS
 
 NOTE='Owned offline scout note UI105'
 PHASE='await_owned_friend_note_selection_review'
@@ -52,6 +53,24 @@ def prepared_matches(old,current):
         old.get('original_quest_log',{}).get('selection')==0 and
         old.get('custom_script_permission')=='blocked_by_user' and
         old.get('softTargetInteract')=={'original':'0','current_stock_disabled':'1','original_restored':False})
+
+
+def failed_prepare_matches(old,current):
+    expected=[('fixture.friend_note.open','friend_window_open'),
+        ('fixture.friend_note.persist_marker.menu','friend_note_menu_pass'),
+        ('fixture.friend_note.persist_marker.dialog','friend_note_dialog_open'),
+        ('fixture.friend_note.persist_marker.text','ui_edit_pass'),
+        ('fixture.friend_note.persist_marker','friend_note_edit_pass'),
+        ('fixture.friends.close','friend_window_closed')]
+    return (old.get('completed') is False and bool(old.get('finished_at')) and
+        old.get('failure')=='ValueError: unexpected trailing bytes' and
+        old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
+        old.get('marker_note')==NOTE and old.get('cleanup_requires_reviewed_reentry') is True and
+        bool(old.get('logout_started_at')) and not old.get('phase') and not old.get('logout_checks') and
+        all(k in old for k in ORIGINAL_FIELDS) and
+        old.get('original_social')==[[1,2,1,''],[2,1,1,'']] and
+        old.get('original_quest_log',{}).get('selection')==0 and
+        [(c.get('id'),c.get('status')) for c in old.get('cases',[])]==expected)
 
 
 def contact_checks(rows):
@@ -108,7 +127,7 @@ def prepare(t,path):
     if t.receipt['original_quest_log']['selection']!=0:raise RuntimeError('original hidden quest selection differs')
     t.receipt.update(source_probe={'path':str(path),'sha256':lab.sha256(path)},marker_note=NOTE,
         expected_selection=[{'guid':[1,HIGH],'name':'Harnessone','flags':0,'equipment':state['equipment'],
-            'level':85,'slot':0,'realm':1}],qualified_scope=
+            'level':85,'slot':0,'realm':ADDRESS}],qualified_scope=
         'Setup only: temporary owned offline friend note and ordinary logout. No persistence qualification.');t.persist()
     packets=Packets(t.receipt['session']);logout_started=False
     try:
@@ -153,9 +172,10 @@ def selection_review(t,path,source):
     return review
 
 
-def finish(t,path,review_path):
+def finish(t,path,review_path,recovery=False):
     path,old=closed(path)
-    if not prepared_matches(old,t.receipt):raise RuntimeError('closed owned note/logout preparation differs')
+    if not (failed_prepare_matches(old,t.receipt) if recovery else prepared_matches(old,t.receipt)):
+        raise RuntimeError('closed owned note/logout preparation differs')
     review=selection_review(t,review_path,path);native=old['native_baseline']
     if (online(t)!=0 or social()!=[[1,2,1,NOTE],[2,1,1,'']] or
         known(1)!=native['spells'] or saved_actions(1)!=native['actions'] or position(1)!=native['position']):
@@ -164,10 +184,28 @@ def finish(t,path,review_path):
     if lab.sha256(probe_path)!=old['source_probe']['sha256'] or not source_matches(probe,t.receipt):
         raise RuntimeError('source dialog probe changed')
     original={k:canonical(old[k]) for k in ORIGINAL_FIELDS}
+    if recovery:
+        from .observation.journal import latest
+        start=old['logout_started_at'];session=old['session']
+        def packet(name,direction):
+            return latest(lab.ROOT/'evidence/world_packets.jsonl',lambda r:r.get('time',0)>=start and
+                r.get('session')==session and r.get('name')==name and r.get('direction')==direction)
+        enum=packet('SMSG_ENUM_CHARACTERS_RESULT','to_client')
+        expected=canonical(old['expected_selection']);expected[0]['realm']=ADDRESS
+        checks={'ordinary_request':bool(packet('CMSG_LOGOUT_REQUEST','from_client')),
+            'native_complete':bool(packet('SMSG_LOGOUT_COMPLETE','from_native')),
+            'native_enumeration':bool(packet('SMSG_ENUM_CHARACTERS_RESULT','from_native')),
+            'modern_owned_enumeration':bool(enum) and characters(bytes.fromhex(enum['body']))==expected}
+        t.receipt.update(recovery_logout_checks=checks,recovered_enumeration=enum,
+            recovery_expected_realm={'failed_adapter_expectation':old['expected_selection'][0]['realm'],
+                'pinned_packed_local_address':ADDRESS});t.persist()
+        if not all(checks.values()):raise RuntimeError('failed preparation lacks exact completed owned logout')
     t.receipt.update(original,source={'path':str(path),'sha256':lab.sha256(path)},
         reviewed_selection={'path':str(review_path.resolve()),'sha256':lab.sha256(review_path),'frame':review['frame']},
         previous_session=old['session'],marker_note=NOTE,qualified_scope=
         'One short ASCII owned offline friend note across ordinary same-character logout/reentry, followed by exact empty-note and original fixture restoration.');t.persist()
+    if recovery:
+        t.receipt['qualified_scope']='Cleanup only: restore the original empty friend note and native fixture after the failed character-enumeration reader. No persistence qualification.';t.persist()
     packets=Packets(old['session']);started=time.time();entered=False
     try:
         t.receipt['entry_input']={'kind':'key','value':'Return','hold':1.2};t.persist()
@@ -191,7 +229,7 @@ def finish(t,path,review_path):
             c['name'].startswith('FriendsFrameFriendsScrollFrameButton') and c['text']==FRIEND)
         t.execute({'kind':'hover','value':point(row)});time.sleep(1)
         rendered,rendered_frame=t.observe('friend_note_persisted_rendered');t.execute({'kind':'hover','value':[1000,360]})
-        t.receipt['cases'].append({'id':'friends.note_persist','selected':'ordinary_reentry',
+        t.receipt['cases'].append({'id':'fixture.friend_note.recovery_reloaded_marker' if recovery else 'friends.note_persist','selected':'ordinary_reentry',
             'status':'friend_note_persistence_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'error':None,'oracle':{'checks':checks,'packets':rows},'after':state,'after_frame':frame,
             'rendered':rendered,'rendered_frame':rendered_frame});t.persist()
@@ -202,15 +240,15 @@ def finish(t,path,review_path):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--phase',choices=['prepare','finish'],required=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--phase',choices=['prepare','finish','recover'],required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--review',type=Path);a=p.parse_args()
-    if (a.phase=='finish')!=bool(a.review):p.error('only finish requires an actual fresh selection review')
+    if (a.phase!='prepare')!=bool(a.review):p.error('reentry requires an actual fresh selection review')
     if not a.output.resolve().is_relative_to(lab.ROOT/'evidence'):p.error('requires private evidence output')
     with actor('primary'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2)
         try:
-            (prepare(t,a.source) if a.phase=='prepare' else finish(t,a.source,a.review));t.receipt['completed']=True
+            (prepare(t,a.source) if a.phase=='prepare' else finish(t,a.source,a.review,a.phase=='recover'));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()

@@ -2,7 +2,7 @@
 import copy,struct
 import pytest
 from tools.client_compatibility.interaction_friend_note_persistence import (
-    prepared_matches,contact_checks,NOTE,PHASE,ORIGINAL_FIELDS,LOGOUT_CHECKS,GUID,HIGH,FRIEND)
+    prepared_matches,failed_prepare_matches,contact_checks,NOTE,PHASE,ORIGINAL_FIELDS,LOGOUT_CHECKS,GUID,HIGH,FRIEND)
 from tools.client_compatibility.world.buffer import Writer
 
 
@@ -78,3 +78,40 @@ def test_trailing_or_truncated_contact_bytes_are_rejected(side):
     with pytest.raises(ValueError):contact_checks(rows)
     rows=trace();rows[side]['body']=rows[side]['body'][:-2]
     with pytest.raises(ValueError):contact_checks(rows)
+
+
+def failed_preparation():
+    d=preparation();d.update(completed=False,failure='ValueError: unexpected trailing bytes',
+        phase=None,logout_checks=None,logout_started_at=90,cleanup_requires_reviewed_reentry=True,
+        cases=[{'id':name,'status':status} for name,status in [
+            ('fixture.friend_note.open','friend_window_open'),
+            ('fixture.friend_note.persist_marker.menu','friend_note_menu_pass'),
+            ('fixture.friend_note.persist_marker.dialog','friend_note_dialog_open'),
+            ('fixture.friend_note.persist_marker.text','ui_edit_pass'),
+            ('fixture.friend_note.persist_marker','friend_note_edit_pass'),
+            ('fixture.friends.close','friend_window_closed')]])
+    return d
+
+
+def test_exact_closed_reader_failure_can_authorize_cleanup_only():
+    old=failed_preparation();assert failed_prepare_matches(old,old)
+    assert not prepared_matches(old,old)
+
+
+@pytest.mark.parametrize('change',['completed','open','another_error','gameplay_error','logout_absent',
+    'cleanup_absent','phase','checks','actor','runtime','original_note','quest_selection'])
+def test_other_failures_cannot_use_reader_cleanup(change):
+    old=failed_preparation();current=copy.deepcopy(old)
+    if change=='completed':old['completed']=True
+    elif change=='open':old['finished_at']=None
+    elif change=='another_error':old['failure']='another failure'
+    elif change=='gameplay_error':old['cases'][4]['status']='client_or_protocol_failure'
+    elif change=='logout_absent':old['logout_started_at']=None
+    elif change=='cleanup_absent':old['cleanup_requires_reviewed_reentry']=False
+    elif change=='phase':old['phase']=PHASE
+    elif change=='checks':old['logout_checks']={'ordinary_request':True}
+    elif change=='actor':current['actor']['guid']=2
+    elif change=='runtime':current['runtime']['client']['start_ticks']='35'
+    elif change=='original_note':old['original_social'][0][-1]=NOTE
+    else:old['original_quest_log']['selection']=2
+    assert not failed_prepare_matches(old,current)
