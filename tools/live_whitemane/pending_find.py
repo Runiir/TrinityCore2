@@ -19,6 +19,9 @@ def facts(row,value):
     discovered=bool(value or find or named or row['archaeology'].get('loot_open') or
         (row.get('minimap_finds') or {}).get('confirmed'))
     return {'uncollected':discovered,'named_target':named,'gather_cast_seen':cast_started,
+        'discovery_confirmed':bool(named or find or row['archaeology'].get('loot_open')
+            or (row.get('minimap_finds') or {}).get('confirmed') or (value or {}).get('discovery_confirmed')),
+        'tooltip_search_misses':(value or {}).get('tooltip_search_misses',0),
         'position_is_estimate':bool(approach and approach.get('estimated_position',
             approach.get('source')!='owned_authenticated_visible_find_create_after_own_survey')),
         'artifact_world':approach.get('world') if approach else None,
@@ -66,6 +69,7 @@ def latch(row,*,site_id=None,approach=None,source='successful Survey without tel
     value={'runtime':row['runtime'],'observed_at':time.time(),'site_id':site_id or row['archaeology']['site_id'],
         'origin':row['archaeology']['world'],'fragments':fragments(row),'source':source,'approach':approach,
         'out_of_range':False,'attempts':0,
+        'discovery_confirmed':source=='public visible archaeology find',
         'looted_finds':row['archaeology'].get('looted_finds',0),
         'gathering_starts':((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)}
     if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
@@ -89,11 +93,17 @@ def update(row,session):
         approach=row.get('visible_find') or (confirmed[0] if confirmed else session.get('last_green_endpoint'))
         value=latch(row,site_id=session.get('site_id'),approach=approach,source='public visible archaeology find')
     if value:
+        if 'tooltip_search_misses' not in value and any('action' in s for s in session.get('steps',[])):
+            value['tooltip_search_misses']=sum('no matching public tooltip' in s.get('failure','')
+                and s.get('started_at',0)>=value['observed_at'] for s in session['steps'])
+        if named or row.get('visible_find') or confirmed or row['archaeology']['loot_open']:
+            value['discovery_confirmed']=True
         approach=row.get('visible_find') or (confirmed[0] if confirmed else value.get('approach'))
         if approach:
             value['approach']=approach
             if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
             runtime.write(runtime.ROOT/'run/pending_find.json',value)
+        else:runtime.write(runtime.ROOT/'run/pending_find.json',value)
         session['pending_find']=value
         if approach:session['pickup_approach']=approach
         session['reapproach_find']=value['out_of_range'] or bool(approach)
@@ -102,6 +112,13 @@ def update(row,session):
         session.pop('reapproach_find',None)
         session.pop('pickup_approach',None)
     return value
+
+
+def search_missed(row):
+    value=load(row)
+    if value:
+        value['tooltip_search_misses']=value.get('tooltip_search_misses',0)+1
+        runtime.write(runtime.ROOT/'run/pending_find.json',value)
 
 
 def range_error(error):

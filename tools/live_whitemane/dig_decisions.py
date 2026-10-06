@@ -42,9 +42,14 @@ def choose(state):
             options['loot']='Interact if a discovered artifact is uncollected and nearby; verify gathering cast or fragments'
         if state.get('mouseover_artifact'):
             options['mouseover_interact']='Press Mouse Button 5 on the artifact under the cursor'
+        pickup=state.get('pickup') or {}
+        provisional=(pickup.get('uncollected') and not pickup.get('discovery_confirmed')
+            and pickup.get('tooltip_search_misses',0)>0)
         if (state.get('can_survey') and state.get('survey_ready')
-                and not (state.get('pickup') or {}).get('uncollected')):
+                and (not pickup.get('uncollected') or provisional)):
             options['survey']='Cast Survey if Survey is ready, no artifact is pending, and the guide has been reached'
+            if provisional:
+                options['survey']='Repeat Survey here if a provisional discovery has no named find and tooltip searches failed'
         if state.get('telescope') and not state.get('guide_arrived'):
             options.update(forward_short='Approach if the current marker, telescope or artifact has not been reached',
                 forward_long='Fly toward the current guide if it is red or far; otherwise approach it on foot')

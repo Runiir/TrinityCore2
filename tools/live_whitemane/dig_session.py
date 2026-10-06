@@ -128,7 +128,6 @@ def run(args):
                     or ui.get('soft_interact',{}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
                 approach=session.get('pickup_approach')
                 tolerance=.1 if approach and approach.get('source')=='named find forward range approach' else .5
-                if approach and distance(a['world'],approach['world'])<=tolerance:visible_find=True
             session.setdefault('site_id',a['site_id'])
             if not args.loot_at and not visible_find and not value and (not a['can_survey'] or a['site_id'] != session['site_id']):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
@@ -310,6 +309,14 @@ def run(args):
                 raise RuntimeError('Mouse Button 4 did not produce a successful Survey')
             if action=='survey':
                 fresh_tool=telescope(after,session)
+                if fresh_tool and value and not pending_find.facts(after,value)['discovery_confirmed']:
+                    # Absence of a decoded telescope was only a provisional
+                    # discovery. A fresh telescope at the same search position
+                    # corrects that inference; it never counts as a pickup.
+                    step['outcome']='fresh_telescope_replaced_unconfirmed_discovery'
+                    pending_find.clear();value=None
+                    for key in ('pending_find','reapproach_find','pickup_approach','last_green_endpoint'):
+                        session.pop(key,None)
                 if not fresh_tool:
                     approach=after.get('visible_find') or session.get('last_green_endpoint')
                     if not approach and guide and guide['arrived']:approach={'world':guide['world'],'source':'arrival at saved GatherMate marker'}
@@ -358,6 +365,8 @@ def run(args):
             if session.get('stop_reason')=='survey_without_telescope_review_visible_find': break
         session['failure']=None
     except Exception as error:
+        if 'no matching public tooltip' in str(error):
+            pending_find.search_missed(observe(output/'search_missed.png'))
         session['failure']=f'{type(error).__name__}: {error}'
         session['stop_reason']='guard_stopped_input'
         if step is not None:

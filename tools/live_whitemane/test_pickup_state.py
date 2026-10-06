@@ -72,6 +72,23 @@ def test_completed_waypoint_returns_to_locating_the_uncollected_object(monkeypat
     assert dig_decisions.choose(state)[0]=='loot'
 
 
+def test_failed_provisional_discovery_can_refresh_survey_but_a_confirmed_find_cannot(monkeypatch):
+    state={'available':True,'casting':False,'artifact_visible':False,'can_survey':True,
+        'survey_ready':True,'telescope':None,'pickup':{'uncollected':True,
+            'discovery_confirmed':False,'tooltip_search_misses':2}}
+    def choose(_,instructions,options):
+        assert 'survey' in options and 'camera_ground' in options
+        return 'survey',{},{}
+    monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
+    assert dig_decisions.choose(state)[0]=='survey'
+    state['pickup']['discovery_confirmed']=True
+    def confirmed(_,instructions,options):
+        assert 'survey' not in options
+        return 'loot',{},{}
+    monkeypatch.setattr(dig_decisions.laya_ui,'choose',confirmed)
+    assert dig_decisions.choose(state)[0]=='loot'
+
+
 def test_current_clear_minimap_fact_removes_an_empty_inspection_action():
     r=row();r['archaeology']['falling']=False
     r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
