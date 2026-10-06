@@ -42,6 +42,9 @@ def seed_height(folder,row):
     if action=='refresh':
         stationary(row,observe(folder/'precheck.png'))
         duration,result['calibration']=turn_duration(.15,[])
+        fps=(row.get('farm_ui') or {}).get('frame_rate')
+        if fps and fps>0:duration=max(duration,1/fps)
+        result['calculated_hold_seconds']=duration
         for key in ('Left','Right'):
             result['inputs'].append(inputs.execute('World of Warcraft','key',{'key':key,'hold':duration}))
         for i in range(8):

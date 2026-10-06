@@ -2,6 +2,7 @@
 import math
 import statistics
 from tools.client_compatibility import terrain_geometry, model_collision
+from . import flight_path
 
 
 def plan(row, target, *, maximum_distance=750,near_ground=None,arrival_tolerance=0):
@@ -36,23 +37,18 @@ def plan(row, target, *, maximum_distance=750,near_ground=None,arrival_tolerance
     # measured velocity; this margin is in yards, not a fixed key-hold time.
     ceiling=max(start[2],max(c['highest_surface'] for c in columns)+8)
     margin=8;low_route_clear=None
+    path=flight_path.envelope(columns,start,8)
     if near_ground:
-        floors=[max(z for z in (c.get('terrain_height'),c.get('support_height')) if z is not None)
-            for c in columns if c.get('terrain_height') is not None or c.get('support_height') is not None]
-        if len(floors)==len(columns):
-            low=max(start[2],max(floors)+3)
-            points=[[start[0],start[1],low]]
-            for index in range(1,math.ceil(distance/40)+1):
-                fraction=min(1,index*40/max(distance,.01))
-                points.append([start[0]+(end[0]-start[0])*fraction,start[1]+(end[1]-start[1])*fraction,low])
-            low_route_clear=(model_collision.clear_body_segment(map_id,start,points[0]) and
-                all(model_collision.clear_body_segment(map_id,a,b) for a,b in zip(points,points[1:])))
-            if low_route_clear:ceiling=low;margin=3
+        low_path=flight_path.envelope(columns,start,3,local_floor=True)
+        low_route_clear=flight_path.checked(low_path,start,map_id,model_collision.clear_body_segment)
+        if low_route_clear:path=low_path;margin=3;ceiling=max(p['height_yards'] for p in path)
     return {'ceiling_yards':ceiling,'departure_height_yards':start[2],
             'required_climb_yards':ceiling-start[2],'surface_margin_yards':margin,
             'near_ground_requested':near_ground,'near_ground_route_clear':low_route_clear,
             'planned_horizontal_yards':distance,'arrival_tolerance_yards':arrival_tolerance,
             'flight_profile':'above_local_floor' if near_ground and low_route_clear else 'above_corridor_obstacles',
+            'path':path,'takeoff_height_yards':path[0]['height_yards'],
+            'path_basis':'shortest upper envelope in the direct route vertical plane',
             'columns':columns,'source':'legacy public MAPS/VMAP corridor, departure checked against live height',
             'live_client_terrain_asset_match_verified':False}
 

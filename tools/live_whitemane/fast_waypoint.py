@@ -55,7 +55,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         identity=inputs.focus('World of Warcraft');sender=Input()
         sticky=StickyInput(sender);last_sequence=None;last_progress=time.monotonic()
         previous=None;deadline=None;index=0;decision_count=0;retained_decisions=0;last_pulse=None
-        sample_periods=deque(maxlen=8);last_sample=None
+        sample_periods=deque(maxlen=8);last_sample=None;row=None
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
         survey_generation=None;artifact_before=None;forward_started=False;terrain_wait=False
@@ -150,9 +150,16 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     pose=row.get('owned_pose');pitch_ready=False
                     if pose and pose.get('pitch_radians') is not None:
                         pitch=pose['pitch_radians']
+                        desired_pitch=0
+                        if (guidance or {}).get('flight_path'):
+                            from .flight_path import aim
+                            receipt['flight_aim']=aim(guidance['flight_path'],world,pose['height_yards'],speed,
+                                max(row['channel_ages'].values()))
+                            desired_pitch=receipt['flight_aim']['pitch_radians']
                         vertical,receipt['pitch_steering']=pitch_steering.update(pitch,pose['client_uptime_ms'],
-                            -pitch,distance,4)
-                        pitch_ready=abs(pitch)<=.03
+                            desired_pitch-pitch,distance,4)
+                        pitch_ready=abs(desired_pitch-pitch)<math.pi/2
+                        speed*=max(.01,math.cos(pitch))
                 if pixels or vertical:sticky.relative(pixels,vertical)
                 # Forward motion remains productive throughout a correcting
                 # arc while facing into the destination's half-plane.
@@ -191,6 +198,6 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
                 'retained_decisions':retained_decisions,
-                'transport':row['source'],'decision_period_seconds':.1,'input_lease_seconds':sticky.lease,
+                'transport':row['source'] if row else None,'decision_period_seconds':.1,'input_lease_seconds':sticky.lease,
                 'steering':'right_button_relative_mouselook','yaw_samples':list(steering.samples),
                 'pitch_samples':list(pitch_steering.samples)})

@@ -25,7 +25,8 @@ def observation(north, *, flying=False, mounted=True):
             'falling':False, 'grounded':not flying}}
 
 
-def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeypatch, tmp_path):
+@pytest.mark.parametrize('mode_transition',[False,True])
+def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeypatch, tmp_path,mode_transition):
     ground=observation(0);ground['owned_pose']={'height_yards':100}
     air=observation(0,flying=True)
     air['owned_pose']={'height_yards':100}
@@ -33,8 +34,13 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
     near_air=observation(100,flying=True)
     near_ground=observation(100)
     arrived=observation(100,mounted=False)
-    observations=iter([ground,air,air,contact,air,air,near_air,
-                       near_air,near_ground,near_ground,near_ground,arrived,arrived])
+    rows=[ground,air,air,contact,air,air,near_air,
+          near_air,near_ground,near_ground,near_ground,arrived,arrived]
+    if mode_transition:
+        transitional=copy.deepcopy(ground)
+        transitional['owned_pose'].update(height_yards=110,movement_mode_transition=True)
+        rows.insert(0,transitional)
+    observations=iter(rows)
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
     fresh_observer(monkeypatch,observations)
     requests=[]
@@ -50,7 +56,10 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
         return []
     monkeypatch.setattr(flight,'walk',walk)
     monkeypatch.setattr(flight,'descend',lambda *args,**kwargs:[])
-    monkeypatch.setattr(flight.clearance,'plan',lambda *args,**kwargs:{'ceiling_yards':100})
+    monkeypatch.setattr(flight.clearance,'plan',lambda *args,**kwargs:{
+        'ceiling_yards':100,'takeoff_height_yards':100,
+        'path':[{'north':0,'west':0,'height_yards':100,'along_yards':0},
+                {'north':100,'west':0,'height_yards':100,'along_yards':100}]})
     ascents=[]
     def ascend(*args,**kwargs):
         ascents.append(args[1])
@@ -59,6 +68,10 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
     step={}
     flight.fly(tmp_path,ground,{'endpoint':arrived['archaeology']['world'],'site_id':183},step)
     phases=step['travel_decisions']
+    if mode_transition:
+        assert phases[0]['outcome']=='awaiting_synchronized_flight_facts'
+        assert not phases[0]['inputs']
+        phases=phases[1:]
     assert [p['action'] for p in phases]==['takeoff','cruise','takeoff','cruise','land','dismount','arrived']
     assert phases[1]['outcome']=='terrain_contact_reobserve'
     assert phases[1]['inputs_released']
@@ -80,7 +93,8 @@ def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
     import itertools
     fresh_observer(monkeypatch,itertools.repeat(before))
-    monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:{'ceiling_yards':100})
+    monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:{
+        'ceiling_yards':100,'takeoff_height_yards':100,'path':[]})
     monkeypatch.setattr(flight,'choose',lambda *_,**__:(action,{}, {},{}))
     inputs=[]
     def execute(title,kind,args):

@@ -43,12 +43,19 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             refresh=seed_height(phase_folder,row)
             step.setdefault('height_refreshes',[]).append(refresh)
             row=refresh['after'];m,a=row['movement'],row['archaeology'];world=a['world']
+        if remaining>arrival_tolerance and (row.get('owned_pose') or {}).get('movement_mode_transition'):
+            # Packet height and public flight flags can arrive on different
+            # frames. A newly airborne height is not a departure-floor sample.
+            phases.append({'action':'observe','outcome':'awaiting_synchronized_flight_facts',
+                'observed_at':row['observed_at'],'inputs':[]})
+            time.sleep(.1)
+            continue
         if remaining>arrival_tolerance and height_plan is None:
             height_plan=clearance.plan(row,target,maximum_distance=maximum_distance,arrival_tolerance=arrival_tolerance)
             step['height_plan']=height_plan
         if height_plan:
             pose=row.get('owned_pose')
-            at_height=bool(a['flying'] and pose and pose['height_yards']>=height_plan['ceiling_yards']-.5)
+            at_height=bool(a['flying'] and pose and pose['height_yards']>=height_plan['takeoff_height_yards']-.5)
         flags={'mode':'flight','available':m['in_world'] and m['health_percent']>0 and not m['dead'] and (not m['in_combat'] or combat_landing),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,
@@ -75,11 +82,11 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
                 failure='mount input did not produce mounted state')
             phase['inputs'].extend(queued['inputs'])
         elif action=='takeoff':
-            phase['smooth_ascent']=ascend(folder,height_plan['ceiling_yards'],site_id=arrow.get('site_id'))
+            phase['smooth_ascent']=ascend(folder,height_plan['takeoff_height_yards'],site_id=arrow.get('site_id'))
             phase['height_basis']='calculated reference corridor clearance and authenticated owned climb feedback'
         elif action=='cruise':
             try:
-                phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'),guidance=arrow,
+                phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'),guidance={**arrow,'flight_path':height_plan['path']},
                     tolerance=arrival_tolerance,
                     approved_intent=(action,model,request,response))
             except GroundContact as contact:
