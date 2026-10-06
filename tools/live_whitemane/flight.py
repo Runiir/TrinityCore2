@@ -1,7 +1,7 @@
 """Laya chooses each phase of a flight to the public addon line endpoint."""
 import math
 import time
-from . import inputs, runtime
+from . import inputs, runtime, action_queue
 from .observe import observe
 from .decisions import choose
 from .smooth_move import walk, descend, ascend, GroundContact
@@ -64,9 +64,15 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         phases.append(phase)
         if action=='arrived': return receipts
         if graph and action!='observe':phase['graph_transition']=farm_graph.transition(graph,action,row,pending=pending_find.load(row))
+        queued=None
         if action=='mount':
             if a['mounted']:raise RuntimeError('mount toggle requires an unmounted character')
-            phase['inputs'].append(key('shift+space',.15));time.sleep(2.5)
+            queued=action_queue.run(folder/f'command_{index:02d}',row,'mount',
+                lambda _:key('shift+space',.15),lambda r:r['archaeology']['mounted'],observe,
+                allowed=lambda r:not r['movement']['in_combat'] and r['movement'].get('speed',0)==0
+                    and not any(r['archaeology'].get(k) for k in ('mounted','flying','falling')),
+                failure='mount input did not produce mounted state')
+            phase['inputs'].extend(queued['inputs'])
         elif action=='takeoff':
             phase['smooth_ascent']=ascend(folder,height_plan['ceiling_yards'],site_id=arrow.get('site_id'))
             phase['height_basis']='calculated reference corridor clearance and authenticated owned climb feedback'
@@ -94,13 +100,21 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             phase['smooth_descent']=descend(folder,target,**descent_options)
         elif action=='dismount':
             if not a['mounted'] or a['flying']:raise RuntimeError('dismount toggle requires a grounded mounted character')
-            phase['inputs'].append(key('shift+space',.15));time.sleep(.5)
+            queued=action_queue.run(folder/f'command_{index:02d}',row,'dismount',
+                lambda _:key('shift+space',.15),lambda r:not r['archaeology']['mounted'],observe,
+                allowed=lambda r:r['archaeology']['mounted'] and not any(
+                    r['archaeology'].get(k) for k in ('flying','falling')),uses_gcd=False,
+                failure='dismount input did not produce unmounted state')
+            phase['inputs'].extend(queued['inputs'])
         elif action=='observe':
             time.sleep(.5)
         else: raise RuntimeError('unexpected travel action for a flight route')
         receipts.extend(phase['inputs'])
-        time.sleep(.3)
-        after=observe(folder/f'travel_{index:02d}_after.png')
+        if queued:
+            phase['command_queue']=queued;after=queued['after']
+        else:
+            time.sleep(.3)
+            after=observe(folder/f'travel_{index:02d}_after.png')
         phase['after']=after
         if graph and action!='observe':farm_graph.transition(graph,'flight',after,pending=pending_find.load(after))
         if action=='mount' and not after['archaeology']['mounted']:

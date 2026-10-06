@@ -102,3 +102,30 @@ def test_large_rgb_packet_requires_checksum_valid_scale_calibration():
     value,calibration=farm_ui.recalibrate(image,{'x':398.245,'y':17.245,'cell':3.51})
     assert value['text']=='abcdefghijklm'*850
     assert farm_ui.decode_image(image,**calibration)['text']==value['text']
+
+
+def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tmp_path):
+    from . import observed_state
+    monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
+    (tmp_path/'run').mkdir();r=row()
+    r['archaeology'].update(site_id=None,loot_open=False,falling=False)
+    monkeypatch.setattr(farm_loop.resources,'enable',lambda:None)
+    monkeypatch.setattr(farm_loop.resources,'check',lambda **_:None)
+    monkeypatch.setattr(farm_loop.resources,'phase_boundary',lambda *_:None)
+    monkeypatch.setattr(observed_state,'ensure',lambda _:None)
+    monkeypatch.setattr(farm_loop.farm_graph,'transition',lambda *_,**__:None)
+    monkeypatch.setattr(farm_loop.farm_policy,'choose',lambda *_:('land',r['archaeology']['world'],{}))
+    monkeypatch.setattr(farm_loop,'orient',lambda *_,**__:{'completed':True,'after':r})
+    def failed(*_,**__):raise RuntimeError('dismount input did not produce unmounted state')
+    monkeypatch.setattr(farm_loop,'fly',failed)
+    monkeypatch.setattr(farm_loop.recovery,'run',failed)
+    observations=[0]
+    def observe(_):
+        observations[0]+=1
+        if observations[0]==3:(tmp_path/'run/stop_dig').touch()
+        return copy.deepcopy(r)
+    monkeypatch.setattr(farm_loop,'observe',observe)
+    result=farm_loop.run(tmp_path/'farm')
+    assert result['status']=='supervisor_stopped' and result['failure'] is None
+    session=json.loads((tmp_path/'farm/loop.json').read_text())
+    assert session['steps'][-1]['recovery']['outcome']=='reobserve_with_Laya_on_next_loop'

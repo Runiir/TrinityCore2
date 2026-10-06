@@ -1,7 +1,7 @@
 """Recorded Laya UI choices with fresh public control and ownership checks."""
 import math
 import time
-from . import runtime, inputs, laya_ui
+from . import runtime, inputs, laya_ui, action_queue
 from .observe import observe
 from .archaeology_probe import command, ready
 
@@ -40,7 +40,8 @@ def click_choice(folder, before, collection, goal, expected=None):
     selected=controls[int(choice.split('_')[1])]
     if expected and any(selected.get(k)!=v for k,v in expected.items()):
         raise RuntimeError('Laya selected a control inconsistent with the requested goal')
-    fresh=observe(folder/'precheck.png');stationary(before,fresh)
+    fresh=action_queue.wait_ready(folder,observe(folder/'precheck.png'),observe)
+    stationary(before,fresh)
     if selected not in rows(fresh):raise RuntimeError('visible selected control changed before click')
     record['input']=inputs.execute('World of Warcraft','click',
         {'x':round(selected['x']*runtime.WIDTH),'y':round(selected['y']*runtime.HEIGHT),'button':1})
@@ -67,7 +68,8 @@ def command_choice(folder, before, text, goal, description):
                     (runtime.ROOT/'run/stop_dig').exists()):
                 raise RuntimeError('owned stationary player changed before observer repair reload')
         else:
-            fresh=observe(folder/'precheck.png');stationary(before,fresh)
+            fresh=action_queue.wait_ready(folder,observe(folder/'precheck.png'),observe)
+            stationary(before,fresh)
         record['inputs']=command(text)
         record['executed']=True
         runtime.write(folder/'decision.json',record)

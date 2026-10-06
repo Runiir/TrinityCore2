@@ -5,7 +5,9 @@ from . import interact,runtime,dig_decisions
 
 
 def named_frame(sequence=1):
-    return {'farm_ui':{'sequence':sequence,'tooltip':'Night Elf Archaeology Find',
+    return {'runtime':{'pid':1},'movement':{'in_world':True,'dead':False,'on_taxi':False},
+        'archaeology':{'casting':False},
+        'farm_ui':{'sequence':sequence,'tooltip':'Night Elf Archaeology Find',
         'cursor':{'x':.5,'y':.55}}}
 
 

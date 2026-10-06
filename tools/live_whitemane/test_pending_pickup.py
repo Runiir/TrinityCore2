@@ -58,6 +58,28 @@ def test_minimap_world_vector_respects_zoom_and_rotation():
     assert abs(p['north'])<1e-10 and p['west']==100
 
 
+def test_captured_find_coordinates_prevent_travel_after_the_final_survey(owned_root):
+    from . import world_facts,farm_policy
+    from .survey_find import collected
+    r=row();r['archaeology'].update(can_survey=False,site_id=None,loot_open=False,falling=False)
+    find={'world':{'instance':1,'north':8,'west':0},'observed_at':50,'runtime':r['runtime'],
+        'source':'owned_authenticated_visible_find_create_after_own_survey','estimated_position':False}
+    r['visible_find']=find
+    assert world_facts.reduce(r)['activity']=='pickup'
+    assert not pending_find.facts(r,None)['position_is_estimate']
+    pending=pending_find.update(r,{})
+    r['pending_find']=pending
+    assert pending['approach']['world']==find['world']
+    assert 'dig' in farm_policy.legal_actions(r,SolveBatches())
+    assert 'teleport' not in farm_policy.legal_actions(r,SolveBatches())
+    session={};pending_find.out_of_range(r,session)
+    assert session['pickup_approach']['world']==find['world']
+    r['archaeology']['races'][0]['fragments']+=5
+    assert pending_find.update(r,{}) is None and r['visible_find'] is None
+    assert world_facts.reduce(r)['activity']=='travel'
+    assert collected(find)
+
+
 def test_uninspected_blip_blocks_travel_and_confirmed_find_takes_priority():
     r=row();r['minimap_finds']={'status':'uninspected_candidates','confirmed':[],'clear':False}
     assert farm_loop.phase(r,SolveBatches(),True)[0]=='minimap'

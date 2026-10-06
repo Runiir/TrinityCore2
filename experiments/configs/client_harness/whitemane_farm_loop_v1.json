@@ -19,6 +19,13 @@
   "guidance": ["visible GatherMate markers", "latched Survey telescope after failed markers"],
   "gameplay_action_owner": "Laya",
   "codex_manual_gameplay_fallback": false,
+  "client_command_queue": {
+    "active_commands": 1,
+    "mount_completion": "fresh mounted state after cast completion",
+    "readiness": ["casting", "channel end time", "global cooldown"],
+    "repeat_pending_input": false,
+    "retain_selected_portal_intent": true
+  },
   "resource_limits": {
     "soft_disk_mib": 64,
     "hard_disk_mib": 256,

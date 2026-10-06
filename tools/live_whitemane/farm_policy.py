@@ -27,7 +27,7 @@ def legal_actions(row,batches,dig_guide=None):
         actions['land']=('Land here and toggle Shift+Space to dismount',a['world'])
     if m['in_combat']:return actions
     if not a['mounted'] and not a['flying']:
-        if (a['can_survey'] or row.get('pending_find') or a.get('loot_open')
+        if (a['can_survey'] or row.get('pending_find') or row.get('visible_find') or a.get('loot_open')
                 or (row.get('minimap_finds') or {}).get('confirmed')
                 or (ui.get('soft_interact') or {}).get('name') in FIND_NAMES):
             actions['dig']=('Choose Survey, marker/telescope movement or artifact pickup',None)
@@ -45,7 +45,9 @@ def legal_actions(row,batches,dig_guide=None):
     portals=list(route.get('known_portals') or [])
     if route.get('portal'):portals.append(route['portal'])
     for p in portals:
-        if distance(a['world'],p.get('from'))<30:actions['portal']=('Approach and use the nearby route portal',p)
+        if distance(a['world'],p.get('from'))<30:
+            if not a['flying'] and not a['falling']:
+                actions['portal']=('Approach and use the nearby route portal',p)
         elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
             actions['flight']=('Fly to the route portal',p['from'])
     if route.get('origin') and route.get('exit'):
@@ -80,7 +82,7 @@ def choose(row,batches,session):
     stalled=sum(step.get('started_at',0)>=session.get('last_progress_at',math.inf)
         for step in previous)
     observed=world_facts.reduce(row,row.get('pending_find'))
-    state={'goal':'Find a Canopic Jar; leave it unopened',
+    state={'goal':'Find the Vial of the Sands recipe' if session.get('stop_on')=='recipe' else 'Find a Canopic Jar; leave it unopened',
         'activity':observed['activity'],'map_id':m['map_id'],
         'portal_distance_yards':observed['facts']['portal_distance_yards'],
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],

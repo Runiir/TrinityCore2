@@ -108,7 +108,7 @@ def run(output,stop_on='recipe'):
                 while folder.exists():index+=1;folder=output/f'step_{index:05d}'
                 folder.mkdir(exist_ok=False)
                 row=observe(folder/'before.png')
-                pending=pending_find.load(row)
+                pending=pending_find.update(row,{})
                 row['pending_find']=pending
                 action,target,decision=farm_policy.choose(row,batches,session)
                 session['next_step_index']=index+1
@@ -137,7 +137,9 @@ def run(output,stop_on='recipe'):
                         if step['result'].get('failure'):raise RuntimeError(step['result']['failure'])
                     elif action=='teleport':
                         step['result']=teleport(folder,row);session['via_tolbarad']=False
-                    elif action=='portal':step['result']=portal.run(folder/'portal',target)
+                    elif action=='portal':
+                        step['result']=portal.run(folder/'portal',target,approved_intent=(
+                            action,decision['response'].get('model'),decision['request'],decision['response']))
                     elif action=='taxi':step['result']=taxi.run(folder/'taxi',*target)
                     elif action in ('flight','land'):
                         length=distance(row['archaeology']['world'],target)
@@ -167,7 +169,15 @@ def run(output,stop_on='recipe'):
                         step.update(combat_interruption=True,interrupted_error=str(error))
                     elif recovery.retryable(error):
                         step.update(local_failure=str(error),outcome='returned_to_Laya_recovery')
-                        step['recovery']=recovery.run(folder/'recovery',interrupted,step,session,graph)
+                        try:
+                            step['recovery']=recovery.run(folder/'recovery',interrupted,step,session,graph)
+                        except RuntimeError as recovery_error:
+                            if not recovery.retryable(recovery_error):raise
+                            step['recovery']={'completed':False,'failure':str(recovery_error),
+                                'outcome':'reobserve_with_Laya_on_next_loop'}
+                            session['recoveries']=(session.get('recoveries',[])+[{
+                                'at':time.time(),'failure':str(recovery_error),'choice':'reobserve',
+                                'world':interrupted['archaeology']['world']}])[-8:]
                     else:raise
                 after=observe(folder/'after.png');step.update(after=after,completed=True,finished_at=time.time())
                 farm_graph.transition(graph,'observe',after,pending=pending_find.load(after))

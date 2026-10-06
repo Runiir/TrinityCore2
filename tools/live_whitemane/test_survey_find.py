@@ -47,4 +47,6 @@ def test_out_of_range_context_uses_visible_find_bearing_then_allows_loot():
     waypoint,error=guide.select(row,{'reapproach_find':True},None)
     assert error==0 and label(guide.model_state(row,waypoint,survey_find.in_range(row)))=='forward_short'
     row['visible_find']['distance_yards']=2
+    assert not survey_find.in_range(row)
+    row['visible_find']['distance_yards']=.4
     assert label(guide.model_state(row,waypoint,survey_find.in_range(row)))=='loot'

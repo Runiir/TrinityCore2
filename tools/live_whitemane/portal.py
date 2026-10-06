@@ -9,17 +9,20 @@ from .farm_actions import stationary
 from tools.client_compatibility import travel_policy
 
 
-def run(folder,portal):
+def run(folder,portal,*,approved_intent=None):
     folder.mkdir(parents=True,exist_ok=False)
     before=observe(folder/'before.png');m,a=before['movement'],before['archaeology']
     world=a['world'];target=portal['from'];remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
     if world['instance']!=target['instance'] or remaining>30:
         raise RuntimeError('portal use requires arrival near the public entrance')
+    if a['flying'] or a['falling'] or a['casting'] or m['in_combat']:
+        raise RuntimeError('selected client action invalidated: portal approach requires ground and idle cast state')
     flags={'mode':'portal','available':m['in_world'] and m['health_percent']>0 and not (m['dead'] or m['in_combat']),
            'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],'flying':a['flying'],
            'falling':a['falling'],'at_route_height':False,'near_destination':True,
            'destination_reached':False,'taxi_map_open':False}
-    action,model,request,response=choose(travel_policy.model_state(flags),'travel',physical_state=flags)
+    action,model,request,response=(approved_intent if approved_intent is not None else
+        choose(travel_policy.model_state(flags),'travel',physical_state=flags))
     result={'before':before,'portal':portal,'action':action,'model':model,'request':request,'response':response,'completed':False}
     runtime.write(folder/'portal.json',result)
     if action!='portal':raise RuntimeError('portal approach needs Laya portal action')

@@ -14,10 +14,14 @@ def facts(row,value):
     ui=row.get('farm_ui') or {};gathering=ui.get('gathering') or {}
     named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
     cast_started=bool(value and gathering.get('starts',0)>value.get('gathering_starts',gathering.get('starts',0)))
-    discovered=bool(value or named or row['archaeology'].get('loot_open') or
+    find=row.get('visible_find')
+    approach=find or (value or {}).get('approach')
+    discovered=bool(value or find or named or row['archaeology'].get('loot_open') or
         (row.get('minimap_finds') or {}).get('confirmed'))
     return {'uncollected':discovered,'named_target':named,'gather_cast_seen':cast_started,
-        'position_is_estimate':bool(value and value.get('approach')),
+        'position_is_estimate':bool(approach and approach.get('estimated_position',
+            approach.get('source')!='owned_authenticated_visible_find_create_after_own_survey')),
+        'artifact_world':approach.get('world') if approach else None,
         'interaction_in_range':True if cast_started else False if value and value.get('out_of_range') else None,
         'loot_open':bool(row['archaeology'].get('loot_open'))}
 
@@ -45,6 +49,9 @@ def load(row):
         return None
     if gained(value['fragments'],row) or (value.get('looted_finds') is not None
             and row['archaeology'].get('looted_finds',0)>value['looted_finds']):
+        if value.get('captured_find_observed_at') is not None:
+            runtime.write(runtime.ROOT/'run/collected_find.json',{
+                'runtime':value['runtime'],'observed_at':value['captured_find_observed_at']})
         clear();return None
     if 'gathering_starts' not in value:
         value['gathering_starts']=((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)
@@ -61,6 +68,7 @@ def latch(row,*,site_id=None,approach=None,source='successful Survey without tel
         'out_of_range':False,'attempts':0,
         'looted_finds':row['archaeology'].get('looted_finds',0),
         'gathering_starts':((row.get('farm_ui') or {}).get('gathering') or {}).get('starts',0)}
+    if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
     runtime.write(runtime.ROOT/'run/pending_find.json',value)
     return value
 
@@ -71,6 +79,8 @@ def clear():
 
 def update(row,session):
     value=load(row)
+    from .survey_find import collected
+    if row.get('visible_find') and collected(row['visible_find']):row['visible_find']=None
     confirmed=(row.get('minimap_finds') or {}).get('confirmed') or []
     ui=row.get('farm_ui') or {}
     named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
@@ -82,6 +92,7 @@ def update(row,session):
         approach=row.get('visible_find') or (confirmed[0] if confirmed else value.get('approach'))
         if approach:
             value['approach']=approach
+            if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
             runtime.write(runtime.ROOT/'run/pending_find.json',value)
         session['pending_find']=value
         if approach:session['pickup_approach']=approach
@@ -100,7 +111,15 @@ def range_error(error):
 def out_of_range(row,session):
     value=load(row) or latch(row,site_id=session.get('site_id'),approach=session.get('pickup_approach'))
     value.update(out_of_range=True,attempts=value['attempts']+1)
-    world=row['archaeology']['world'];heading=row['movement']['facing_radians']
+    world=row['archaeology']['world']
+    approach=row.get('visible_find') or value.get('approach')
+    if (approach and approach.get('source')=='owned_authenticated_visible_find_create_after_own_survey'
+            and math.hypot(approach['world']['north']-world['north'],approach['world']['west']-world['west'])>.2):
+        value['approach']=approach;session['pickup_approach']=approach
+        runtime.write(runtime.ROOT/'run/pending_find.json',value)
+        session.update(pending_find=value,reapproach_find=True,walked_since_survey=True)
+        return
+    heading=row['movement']['facing_radians']
     # The realm's gather radius is small. Shrink the approach after each range
     # error instead of repeatedly crossing the estimated target.
     stride=max(.5,3/2**min(value['attempts']-1,3))

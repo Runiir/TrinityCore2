@@ -89,3 +89,12 @@ def test_a_portal_in_another_instance_is_not_a_flight_destination():
     assert 'teleport' in actions and 'flight' not in actions
     r['archaeology']['world']['instance']=732
     assert 'flight' in farm_policy.legal_actions(r,SolveBatches())
+
+
+def test_nearby_portal_waits_for_grounded_facts_before_it_is_legal():
+    r=row();r['archaeology'].update(falling=False,flying=True,mounted=True)
+    r['farm_ui']['route']['portal']={'from':{'instance':1,'north':20,'west':0}}
+    assert 'portal' not in farm_policy.legal_actions(r,SolveBatches())
+    assert 'land' in farm_policy.legal_actions(r,SolveBatches())
+    r['archaeology']['flying']=False
+    assert 'portal' in farm_policy.legal_actions(r,SolveBatches())

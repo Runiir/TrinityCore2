@@ -19,10 +19,21 @@ function WhitemaneLiveActivity()
     local start,duration=call(GetActionCooldown,1)
     local usable=call(IsUsableAction,1)
     local health,maximum=call(UnitHealth,'target'),call(UnitHealthMax,'target')
+    local name,_,_,castStart,castEnd,_,_,_,spell=call(UnitCastingInfo,'player')
+    local channel=false
+    if not name then
+        name,_,_,castStart,castEnd=call(UnitChannelInfo,'player');channel=not not name
+    end
+    local gcdStart,gcdDuration=call(GetSpellCooldown,61304)
+    local gcd=call(C_Spell and C_Spell.GetSpellCooldown,61304)
+    if type(gcd)=='table' then gcdStart,gcdDuration=gcd.startTime,gcd.duration end
     return {move_speeds={current=current,run=run,flight=flight,swim=swim},gathering=gather,
         combat={target_exists=not not call(UnitExists,'target'),hostile=not not call(UnitCanAttack,'player','target'),
             target_dead=not not call(UnitIsDeadOrGhost,'target'),target_health=health,target_max_health=maximum,
             attack_label=label,attack_usable=not not usable,attack_in_range=call(IsActionInRange,1),
             cooldown_ends=(start or 0)+(duration or 0),energy=call(UnitPower,'player')},
-        casting={name=call(UnitCastingInfo,'player')}}
+        casting={name=name,starts=castStart and castStart/1000,ends=castEnd and castEnd/1000,
+            channel=channel,spell=spell},
+        gcd={starts=gcdStart or 0,duration=gcdDuration or 0,ends=(gcdStart or 0)+(gcdDuration or 0)},
+        mount_binding={key='SHIFT-SPACE',action=call(GetBindingAction,'SHIFT-SPACE')}}
 end

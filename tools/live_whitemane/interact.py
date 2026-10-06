@@ -1,6 +1,6 @@
 """Use an ordinary interact binding or a rechecked named game tooltip."""
 import time
-from . import runtime, inputs, native_control
+from . import runtime, inputs, native_control, action_queue
 from .observe import observe
 from .farm_actions import stationary
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
@@ -77,6 +77,7 @@ def mouseover(folder,before,names,*,sender=None,identity=None):
 
 def use(folder,before,names,*,maximum=100):
     folder.mkdir(parents=True,exist_ok=False)
+    before=action_queue.wait_ready(folder,before,observe)
     ui=before['farm_ui'];soft=ui['soft_interact'];keys=ui['bindings']['INTERACTTARGET']
     # Game objects have a valid public softinteract name but UnitExists is false.
     if soft.get('name') in names and soft.get('enabled')=='3' and keys:

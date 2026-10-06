@@ -9,6 +9,14 @@ FINDS={203071:'Night Elf Archaeology Find',203078:'Nerubian Archaeology Find',
     207190:"Tol'vir Archaeology Find"}
 
 
+def collected(find):
+    import json
+    path=runtime.ROOT/'run/collected_find.json'
+    if not path.exists():return False
+    receipt=json.loads(path.read_text())
+    return receipt['runtime']==find.get('runtime') and find['observed_at']<=receipt['observed_at']
+
+
 def created(reader,payload):
     # Same supported 60895 stationary CreateObject layout as the telescope
     # reader. Values updates and every other object type are ignored.
@@ -52,13 +60,14 @@ def attach(row,now):
     try:
         find=json.loads(path.read_text());feed=json.loads((runtime.ROOT/'run/bearing_reader.json').read_text())
         world=row['archaeology']['world']
-        if (find['runtime']!=row['runtime'] or feed['status']!='ready'
+        if (find['runtime']!=row['runtime'] or collected(find) or feed['status']!='ready'
             or find['reader_pid']!=feed['pid'] or find['reader_start_ticks']!=feed['start_ticks']
             or runtime.proc_start(feed['pid'])!=feed['start_ticks'] or not 0<=now-find['observed_at']<=20
             or not world or world['instance']!=find['instance']):return row
         distance=math.hypot(world['north']-find['north'],world['west']-find['west'])
         if distance>40:return row
         row['visible_find']={**find,'distance_yards':distance,
+            'estimated_position':False,
             'world':{'instance':find['instance'],'north':find['north'],'west':find['west']}}
     except (ValueError,KeyError,OSError):pass
     return row
@@ -66,4 +75,4 @@ def attach(row,now):
 
 def in_range(row):
     find=row.get('visible_find')
-    return bool(find and find['distance_yards']<=3)
+    return bool(find and find['distance_yards']<=.5)

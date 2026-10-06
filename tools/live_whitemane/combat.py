@@ -2,7 +2,7 @@
 import json
 import math
 import time
-from . import runtime,inputs,laya_ui
+from . import runtime,inputs,laya_ui,action_queue
 from .observe import observe
 from .motion import turn_duration
 
@@ -13,6 +13,7 @@ def ready(row):
         and c.get('hostile') and not c.get('target_dead') and c.get('attack_usable')
         and c.get('attack_in_range') not in (False,0)
         and c.get('cooldown_ends',0)<=row['farm_ui']['uptime']
+        and not action_queue.busy(row)
         and not any(row['archaeology'].get(k) for k in ('casting','mounted','flying','falling')))
 
 

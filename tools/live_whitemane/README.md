@@ -69,7 +69,15 @@ age. Route emergency bounds derive from distance and travel speed.
 The existing marker-first rule, telescope fallback, digsite boundary margin,
 calculated flight clearance and 150-fragment solve batches remain active.
 Mounting and grounded dismounting use Runiir's Shift+Space toggle. Each toggle
-is sent once and its resulting mounted state is checked before continuing.
+is retained in a one-command queue and sent once. Fresh M/A/UI generations must
+confirm the requested mounted state with no active cast before continuing.
+The queue polls cast/GCD facts; it does not assume a cast finishes after a fixed
+sleep. The addon exports cast/channel end times, the global cooldown and the
+actual Shift+Space binding. UI commands and interactions wait for cast/GCD
+readiness, and Sinister Strike checks the observed GCD. A retryable recovery
+failure returns to fresh Laya selection rather than terminating the farm.
+Portal execution retains the main loop's selected intent instead of asking a
+second policy to replace it; portal approach requires grounded facts.
 Survey cooldowns are local readiness waits with no model request or gameplay
 input; a spell cooldown does not change character availability.
 Normal loot-window buttons are exposed and chosen by Laya if interaction
@@ -97,8 +105,13 @@ archaeology-find entry. Other objects and owners are ignored. The position
 expires after 20 seconds and must match the current reader, client and world.
 It is a rendered find position, not a server-side hidden dig destination.
 Laya receives its bearing through the existing waypoint schema; loot becomes
-available at a close measured approach. After pickup, the pending observation
-is discarded.
+available within half a yard, with actual gathering cast/fragment feedback
+confirming interaction. The captured position is also a high-level pickup fact,
+including after the final Survey replaces the digsite. An out-of-range result
+keeps that measured position instead of replacing it with an unrelated forward
+probe. A confirmed pickup records the consumed spawn timestamp so the still
+fresh capture cannot relatch the same artifact. This is the visible object's
+location received by the client, independent of native minimap enumeration.
 
 ## Persisted farm graph
 

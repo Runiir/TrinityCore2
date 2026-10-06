@@ -5,6 +5,17 @@ from tools.live_whitemane import flight
 from tools.live_whitemane.smooth_move import GroundContact
 
 
+def fresh_observer(monkeypatch,rows):
+    clock=[0];sequence=[0]
+    monkeypatch.setattr(flight.time,'monotonic',lambda:clock[0])
+    monkeypatch.setattr(flight.time,'sleep',lambda seconds:clock.__setitem__(0,clock[0]+seconds))
+    def observe(_):
+        row=copy.deepcopy(next(rows));sequence[0]+=1
+        for section in ('movement','archaeology'):row[section]['sequence']=sequence[0]
+        return row
+    monkeypatch.setattr(flight,'observe',observe)
+
+
 def observation(north, *, flying=False, mounted=True):
     return {'observed_at':1, 'movement':{
         'in_world':True, 'health_percent':100, 'dead':False,
@@ -23,10 +34,9 @@ def test_terrain_contact_releases_input_then_requests_a_new_model_choice(monkeyp
     near_ground=observation(100)
     arrived=observation(100,mounted=False)
     observations=iter([ground,air,air,contact,air,air,near_air,
-                       near_air,near_ground,near_ground,arrived,arrived])
+                       near_air,near_ground,near_ground,near_ground,arrived,arrived])
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
-    monkeypatch.setattr(flight,'observe',lambda _:copy.deepcopy(next(observations)))
-    monkeypatch.setattr(flight.time,'sleep',lambda _:None)
+    fresh_observer(monkeypatch,observations)
     requests=[]
     def choose(state, which, physical_state):
         requests.append(copy.deepcopy(physical_state))
@@ -68,8 +78,8 @@ def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action
     before['owned_pose']={'height_yards':100}
     target={'instance':1,'north':100 if action=='mount' else 0,'west':0}
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
-    monkeypatch.setattr(flight,'observe',lambda _:copy.deepcopy(before))
-    monkeypatch.setattr(flight.time,'sleep',lambda _:None)
+    import itertools
+    fresh_observer(monkeypatch,itertools.repeat(before))
     monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:{'ceiling_yards':100})
     monkeypatch.setattr(flight,'choose',lambda *_,**__:(action,{}, {},{}))
     inputs=[]
@@ -84,10 +94,9 @@ def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action
 def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,tmp_path):
     air=observation(0,flying=True);ground=observation(0);foot=observation(0,mounted=False)
     for r in (air,ground,foot):r['movement']['in_combat']=True
-    observations=iter([air,ground,ground,foot,foot])
+    observations=iter([air,ground,ground,ground,foot,foot])
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
-    monkeypatch.setattr(flight,'observe',lambda _:copy.deepcopy(next(observations)))
-    monkeypatch.setattr(flight.time,'sleep',lambda _:None)
+    fresh_observer(monkeypatch,observations)
     monkeypatch.setattr(flight,'choose',lambda state,which,physical_state:(travel_policy.label(physical_state),{},state,{}))
     descents=[]
     def descend(folder,target,**kwargs):descents.append((target,kwargs));return []
