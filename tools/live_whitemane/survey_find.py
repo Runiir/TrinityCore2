@@ -65,7 +65,12 @@ def owned(reader,window,direction,opcode,payload,stamp,diagnostics=None):
             reason='parse_rejected_'+str(error)[:80]
             if reason in diagnostics or len(diagnostics)<16:diagnostics[reason]=diagnostics.get(reason,0)+1
         return None
-    if not record or record.pop('owner')!=window.player:return None
+    if not record:return None
+    if record.pop('owner')!=window.player:
+        if diagnostics is not None:
+            reason='known_find_owner_mismatch'
+            if reason in diagnostics or len(diagnostics)<16:diagnostics[reason]=diagnostics.get(reason,0)+1
+        return None
     return {**record,'observed_at':stamp,'source':'owned_authenticated_visible_find_create_after_own_survey'}
 
 

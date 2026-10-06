@@ -115,7 +115,10 @@ def inspect(folder,row):
         fresh=observe(folder/'precheck.png');stationary(row,fresh)
         inputs.execute('World of Warcraft','hover',{'x':point['x'],'y':point['y']})
         # A normal UI generation must reflect this cursor, not a fading tooltip.
-        deadline=time.monotonic()+.7
+        fps=max(1,(fresh.get('farm_ui') or {}).get('frame_rate') or 1)
+        # Background rendering may produce only one frame per second. Give
+        # the cursor and tooltip two rendered frames to reach the observer.
+        deadline=time.monotonic()+max(.7,min(3,2/fps))
         while True:
             hovered=observe(folder/'hover.png');stationary(row,hovered)
             cursor=hovered['farm_ui'].get('cursor') or {}
