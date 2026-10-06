@@ -112,6 +112,8 @@ def phase(primary,scout,packets,source):
                 r['direction']=='to_client' and bytes.fromhex(r.get('body',''))[:1]==b'\x19']}
     except Exception as failure:error=f'{type(failure).__name__}: {failure}'
     finally:
+        primary.receipt['ignored_chat_partial_outcomes']={'tokens':tokens,'outcomes':outcomes,'phase_failure':error}
+        primary.persist()
         with actor('primary'):restore_ignore(primary,packets['primary'],probe)
     if outcomes.get('before'):
         try:outcomes['after']=send_peer(primary,scout,packets,tokens['after'],'ignored_chat_positive_after')

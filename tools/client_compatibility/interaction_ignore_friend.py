@@ -19,11 +19,27 @@ def current_matches(rows,remove):
     return rows==(IGNORED if remove else ORIGINAL)
 
 
-def mutation(t,packets,label,probe,remove=False):
+def selected_ignore_contract(rows):
+    tabs=[c for c in rows if c['name']=='FriendsTabHeaderTab2' and c['text']=='Ignore']
+    return (len(tabs)==1 and tabs[0].get('enabled') is False and
+        any(c['name']=='FriendsFrameIgnorePlayerButton' and c.get('enabled') is True for c in rows) and
+        any(c['name']=='FriendsFrameUnsquelchButton' for c in rows))
+
+
+def ensure_ignore_tab(t,label):
+    rows=controls(t)
+    if selected_ignore_contract(rows):
+        t.receipt.setdefault('selected_ignore_tab_reads',[]).append({'label':label,'controls':rows,
+            'ordinary_input_sent':False,'reason':'Stock selected Ignore tab is disabled; visible Ignore controls prove the current tab.'})
+        t.persist();return
+    ignore_tab(t,label)
+
+
+def mutation(t,packets,label,probe,remove=False,*,connected=True):
     if not source_matches(probe,t.receipt) or t.receipt['original_social']!=ORIGINAL:
         raise RuntimeError('current owned empty Ignore probe differs')
     state,_=t.observe(label.replace('.','_')+'_guard')
-    if not current_matches(social(),remove) or not public_presence_matches(state.get('friends'),True):
+    if not current_matches(social(),remove) or not public_presence_matches(state.get('friends'),connected):
         raise RuntimeError('owned online friend or exact social flags differ')
     if not remove:
         contract=add_dialog(t,label+'.dialog')
@@ -46,7 +62,7 @@ def mutation(t,packets,label,probe,remove=False):
             ('CMSG_ADD_IGNORE','CMSG_DEL_IGNORE','SMSG_FRIEND_STATUS')]
         rows=ignore_rows(controls(t));checks=wire_checks(trace,remove,guid=GUID,name=NAME)
         checks.update(ordinary_input=bool(selected),native_social=current_matches(social(),not remove),
-            public_friends_preserved=public_presence_matches(a.get('friends'),True),
+            public_friends_preserved=public_presence_matches(a.get('friends'),connected),
             stock_ignore_rows=(not rows if remove else len(rows)==1 and
                 rows[0]['text'] in (NAME,NAME+'-Client442Lab')),
             dialog_closed='StaticPopup1' not in a['panels'],chat_closed=not a.get('chat_edit_open'),
@@ -68,10 +84,10 @@ def restore_ignore(t,packets,probe):
                 'client_or_protocol_failure'}),'ignore_dialog_cancelled')
     if social()==IGNORED:
         if 'FriendsFrame' not in state['panels']:open_friends(t,'fixture.ignored_chat.cleanup_open')
-        ignore_tab(t,'fixture.ignored_chat.cleanup_tab')
+        ensure_ignore_tab(t,'fixture.ignored_chat.cleanup_tab')
         mutation(t,packets,'fixture.ignored_chat.restore',probe,remove=True)
     elif social()!=ORIGINAL:raise RuntimeError('ignore cleanup refuses unrelated social changes')
-    ignore_tab(t,'fixture.ignored_chat.empty_tab');rows=controls(t)
+    ensure_ignore_tab(t,'fixture.ignored_chat.empty_tab');rows=controls(t)
     state,frame=t.observe('ignored_chat_restored')
     checks={'native_social':social()==ORIGINAL,'public_friends_preserved':public_presence_matches(state.get('friends'),True),
         'stock_ignore_empty':not ignore_rows(rows) and any(c['name']=='FriendsFrameIgnorePlayerButton' for c in rows)}
