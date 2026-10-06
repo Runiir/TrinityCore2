@@ -62,8 +62,10 @@ def mode(t,o,wanted,label):
         {'mode':action},outcome,diagnostic_action='mode'),'owned_native_react_mode_pass')
 
 
-def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist'))):
-    if sequence not in (((0,'pets.passive'),(3,'pets.assist')),((1,'pets.defensive'),(3,'fixture.pet_assist_restore'))):
+def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist')),capture=None):
+    diagnostic=sequence==((3,'fixture.pet_assist_restore'),) and callable(capture)
+    if not diagnostic and (capture is not None or sequence not in (
+            ((0,'pets.passive'),(3,'pets.assist')),((1,'pets.defensive'),(3,'fixture.pet_assist_restore')))):
         raise ValueError('requires an exact captured mode lifecycle ending in original Assist')
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session'];e=entry_source(t,entry,session,preparation)
     o=FollowPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll();identity=retained_imp(t.fixture,pets(5))
@@ -80,6 +82,7 @@ def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist')))
         sources=[{'path':str(p.resolve()),'sha256':lab.sha256(p)} for p in (preparation,entry)],qualification_added=False)
     t.persist();assist_complete=False
     try:
+        if diagnostic:capture(t,o)
         for wanted,label in sequence:mode(t,o,wanted,label)
         assist_complete=True
     except Exception as error:t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
@@ -114,6 +117,9 @@ def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist')))
         'captured stock modes '+', '.join(label for _,label in sequence)+', exact owned native commands, actual requested-mode catalogs '
         'on ordinary reload, native persisted Reactstate and public selection, followed by original resources, saved rows, '
         'position, money, pose, pet/bar and protected actors restoration. Combat reaction behavior and other pets/classes remain open.')
+    if diagnostic:t.receipt.update(phase='owned_pet_diagnostic_capture_complete',qualified_scope=
+        'Diagnostic capture only, followed by supported native Assist readback and whole original-state restoration. '
+        'No captured-operation gameplay qualification.')
 
 
 if __name__=='__main__':
