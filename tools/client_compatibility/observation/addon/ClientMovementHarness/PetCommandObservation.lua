@@ -13,8 +13,29 @@ local function position(unit)
     if not available then return {available=false} end
     return {available=true,x=x,y=y,z=z,map=map}
 end
+local function frame(slot,width,height)
+    local button=_G['PetActionButton'..slot]
+    local row={button='PetActionButton'..slot,available=false,visible=false,enabled=false,checked=false}
+    if not button then return row end
+    row.visible=not not call(button.IsVisible,button)
+    row.enabled=not not call(button.IsEnabled,button)
+    row.checked=not not call(button.GetChecked,button)
+    local scale=call(button.GetEffectiveScale,button)
+    if type(button.GetCenter)~='function' or type(scale)~='number' or scale<=0 or not width or not height then return row end
+    local ok,x,y=pcall(button.GetCenter,button)
+    if not ok or type(x)~='number' or type(y)~='number' or x~=x or y~=y then return row end
+    x,y=x*scale/width,1-y*scale/height
+    if x<0 or x>1 or y<0 or y>1 then return row end
+    row.available=true;row.x=math.floor(x*65535);row.y=math.floor(y*65535)
+    return row
+end
 function Client442ObservePetCommands()
     local rows={}
+    local scale=UIParent and call(UIParent.GetEffectiveScale,UIParent)
+    local width,height=call(GetScreenWidth),call(GetScreenHeight)
+    if type(scale)=='number' and scale>0 and type(width)=='number' and width>0 and type(height)=='number' and height>0 then
+        width,height=scale*width,scale*height
+    else width,height=nil,nil end
     for slot=1,10 do
         local ok,name,texture,token,active,autoAllowed,autoEnabled,spell
         if type(GetPetActionInfo)=='function' then
@@ -23,7 +44,8 @@ function Client442ObservePetCommands()
         rows[#rows+1]={slot=slot,available=not not ok,name=ok and name or nil,
             texture=ok and texture or nil,is_token=ok and not not token or false,
             active=ok and not not active or false,autocast_allowed=ok and not not autoAllowed or false,
-            autocast_enabled=ok and not not autoEnabled or false,spell_id=ok and spell or nil}
+            autocast_enabled=ok and not not autoEnabled or false,spell_id=ok and spell or nil,
+            frame=frame(slot,width,height)}
     end
     local player,pet=position('player'),position('pet')
     local ranges={}
@@ -43,7 +65,8 @@ function Client442ObservePetCommands()
         distance=math.sqrt((player.x-pet.x)^2+(player.y-pet.y)^2+(player.z-pet.z)^2)
     end
     return {owner_guid=call(UnitGUID,'player'),pet_guid=call(UnitGUID,'pet'),
-        actions=rows,player_position=player,pet_position=pet,distance=distance,
+        actions=rows,viewport={width=width,height=height,basis='scaled_game_ui_screen'},
+        player_position=player,pet_position=pet,distance=distance,
         interaction_ranges=ranges,distance_squared=squared,pet_visible=call(UnitIsVisible,'pet'),
         player_speed=call(GetUnitSpeed,'player'),pet_speed=call(GetUnitSpeed,'pet')}
 end

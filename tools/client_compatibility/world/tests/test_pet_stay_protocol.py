@@ -33,7 +33,7 @@ def test_actual_trained_imp_stay_preserves_submitted_guid_and_native_idle_comman
 
 
 @pytest.mark.parametrize('body',[request(word=0x03800002),request(word=0x03800004),
-    request(word=0x03000000),request(word=0x01800000),request(target=(5,1)),
+    request(word=0x03000002),request(word=0x01800000),request(target=(5,1)),
     request(position=(1,0,0)),request(position=(0,float('nan'),0)),
     request(position=(0,0,float('inf'))),request(identity=(0,0)),
     request(identity=(IDENTITY[0]+1,IDENTITY[1])),CAPTURED[:-1],CAPTURED+b'x',b''])

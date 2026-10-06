@@ -13,6 +13,14 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     local function forbidden() error('passive observer submitted a command') end
     PetFollow=forbidden;PetWait=forbidden;CastSpell=forbidden;SetCVar=forbidden
     local reads={}
+    UIParent={GetEffectiveScale=function() return 1 end}
+    GetScreenWidth=function() return 1280 end;GetScreenHeight=function() return 720 end
+    for i=1,10 do
+        local slot=i
+        _G['PetActionButton'..i]={IsVisible=function() return true end,IsEnabled=function() return true end,
+            GetChecked=function() return slot==2 end,GetEffectiveScale=function() return 2 end,
+            GetCenter=function() return 50*slot,100 end}
+    end
     GetPetActionInfo=function(slot)
         assert(slot>=1 and slot<=10);reads[slot]=(reads[slot] or 0)+1
         return slot==1 and 'PET_ACTION_FOLLOW' or slot==2 and 'PET_ACTION_WAIT' or 'other',
@@ -39,14 +47,17 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     for i,row in ipairs(p.actions) do
         assert(reads[i]==1 and row.slot==i and row.available and row.is_token)
         assert(row.active==(i==2) and not row.autocast_allowed and not row.autocast_enabled)
+        assert(row.frame.available and row.frame.visible and row.frame.enabled and row.frame.checked==(i==2))
+        assert(row.frame.button=='PetActionButton'..i and row.frame.x==math.floor(100*i/1280*65535)
+            and row.frame.y==math.floor((1-200/720)*65535))
     end
     assert(p.actions[1].name=='PET_ACTION_FOLLOW' and p.actions[2].name=='PET_ACTION_WAIT')
     if mode=='available' then
         assert(p.player_position.available and p.pet_position.available and p.distance==5)
     else assert(not p.player_position.available and not p.pet_position.available and p.distance==nil) end
-    GetPetActionInfo=nil;UnitPosition=nil;CheckInteractDistance=nil;UnitDistanceSquared=nil
+    GetPetActionInfo=nil;UnitPosition=nil;CheckInteractDistance=nil;UnitDistanceSquared=nil;GetScreenWidth=nil
     p=Client442ObservePetCommands()
-    for _,row in ipairs(p.actions) do assert(not row.available and not row.active) end
+    for _,row in ipairs(p.actions) do assert(not row.available and not row.active and not row.frame.available) end
     assert(not p.pet_position.available and p.distance==nil)
     assert(not p.distance_squared.available)
     for _,row in ipairs(p.interaction_ranges) do assert(not row.available and row.in_range==nil) end

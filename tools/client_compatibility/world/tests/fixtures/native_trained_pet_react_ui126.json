@@ -1,0 +1,196 @@
+{
+  "schema": "client442_actual_trained_pet_react_capture_v1",
+  "source_checkpoint": "artifacts/client_harness/442_interactions_20261006_126.tar.gz.dvc",
+  "source_checkpoint_sha256": "de37bbf1fab52bb912aa748b20483fc23aa32693a5015047c194ddf01f974cab",
+  "source_receipts": [
+    {
+      "member": "evidence/client_interactions_20261006_ui126/class_prepare01/episode.json",
+      "sha256": "8238174efe4bd79f7c3b27f5803d2e194f68610205b4ddf129f0dc6b3857412f"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui126/class_enter01/episode.json",
+      "sha256": "47b0e083c6d32a15cff758f2d3a534fd5eb13b7671eae2a0fdd50804943485c6"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui126/react_capture01/episode.json",
+      "sha256": "23290dbdbc53d653d51bda66f5d64da8a1a8997d5d9554acace80583d2fdb6e6"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui126/assist_button_restore01/episode.json",
+      "sha256": "33a11680c8bd43d5652bb03ac453435349de1dac2a4957a7eebaf9640ad21989"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui126/react_whole_capture_review01.json",
+      "sha256": "1954762f51e7ea413b0cd6c5a418fb2395eaf7c374cd9f286c56ef58f4404d79"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui126/verification.json",
+      "sha256": "83aa6e126beef5fc6ba591e1102ffa8543823c506cc34794fa6d6b1add025c28"
+    }
+  ],
+  "source_scope": "Actual Passive request inside an excluded failed slash-restoration trial, plus actual stock Assist button request from its closed successful source-bound recovery. Both have healthy rejection and zero native commands; shape evidence only. Original state restores across the recovery chain.",
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509722,
+  "native_pet_number": 2,
+  "native_pet_create": {
+    "guid": 17383896348356509722,
+    "map": 0,
+    "update_type": 2,
+    "kind": 3,
+    "movement": {
+      "flags": 0,
+      "flags2": 0,
+      "position": [
+        -9472.578125,
+        -9.563446044921875,
+        49.79469299316406,
+        2.408560037612915
+      ],
+      "pitch": 0,
+      "time": 173312310,
+      "speeds": [
+        2.5,
+        8.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 0,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 26,
+      "1": 4047503776,
+      "4": 9,
+      "5": 416,
+      "6": 1065353216,
+      "16": 5,
+      "18": 5,
+      "25": 133120,
+      "26": 364,
+      "27": 298,
+      "32": 364,
+      "33": 298,
+      "48": 10,
+      "49": 1,
+      "53": 8,
+      "54": 2048,
+      "56": 2000,
+      "57": 2000,
+      "59": 1065353216,
+      "60": 1069547520,
+      "61": 4449,
+      "62": 4449,
+      "64": 1096361106,
+      "65": 1099731529,
+      "69": 2,
+      "70": 1791290713,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "76": 688,
+      "77": 0,
+      "79": 29,
+      "80": 10,
+      "81": 24,
+      "82": 33,
+      "83": 31,
+      "94": 191,
+      "115": 147,
+      "116": 223,
+      "117": 1,
+      "118": 18,
+      "143": 1065353216,
+      "38": 1085344247,
+      "43": 1075713147,
+      "55": 4194304,
+      "101": 11,
+      "119": 21
+    }
+  },
+  "native_catalog_packet": {
+    "time": 1791290713.9450407,
+    "session": "fdfcd653",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "1a000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "native_react_baseline": 3,
+  "native_command_baseline": 1,
+  "modern_requests": {
+    "passive": {
+      "time": 1791290757.3986099,
+      "session": "fdfcd653",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a21a680428000000030000000000000000000000000000"
+    },
+    "assist": {
+      "time": 1791291074.5043406,
+      "session": "fdfcd653",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a21a680428030000030000000000000000000000000000"
+    }
+  },
+  "modern_decoded": {
+    "passive": {
+      "guid": [
+        26,
+        2882308159563655168
+      ],
+      "word": 50331648,
+      "action_type": 6,
+      "action_value": 0,
+      "target": [
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "assist": {
+      "guid": [
+        26,
+        2882308159563655168
+      ],
+      "word": 50331651,
+      "action_type": 6,
+      "action_value": 3,
+      "target": [
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "qualification_added": false
+}
