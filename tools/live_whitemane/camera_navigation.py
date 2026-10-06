@@ -6,7 +6,7 @@ import time
 from . import inputs,runtime,native_control
 from .observe import observe
 from .camera_steering import CameraSteering,angle
-from .sticky_input import StickyInput
+from .sticky_input import StickyInput,observation_lease
 
 
 def align(folder,before,target=None,*,ground_view=False):
@@ -23,7 +23,7 @@ def align(folder,before,target=None,*,ground_view=False):
     rows=[];steering=CameraSteering();started=time.monotonic();ground_pixels=None
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        identity=inputs.focus('World of Warcraft');sender=Input();sticky=StickyInput(sender)
+        identity=inputs.focus('World of Warcraft');sender=Input();sticky=StickyInput(sender,lease=observation_lease(before))
         try:
             sticky.renew();sender.move(640,150);sticky.button(3,True)
             if ground_view:

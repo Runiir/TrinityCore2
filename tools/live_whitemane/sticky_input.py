@@ -3,6 +3,11 @@ import threading
 import time
 
 
+def observation_lease(row):
+    fps=(row.get('farm_ui') or {}).get('frame_rate')
+    return max(.35,min(2.2,2/max(1,fps)+.2)) if fps else .35
+
+
 class StickyInput:
     def __init__(self,sender,*,lease=.35,clock=time.monotonic,threaded=True):
         self.sender=sender;self.lease=lease;self.clock=clock;self.held={};self.buttons=set()
@@ -47,7 +52,7 @@ class StickyInput:
     def tick(self):
         with self.lock:
             now=self.clock()
-            if now>=self.deadline:
+            if now>=self.deadline and (self.held or self.buttons):
                 self.interrupted='movement decision lease expired'
                 for name in list(self.held):self.hold(name,False)
                 for button in list(self.buttons):self.button(button,False)

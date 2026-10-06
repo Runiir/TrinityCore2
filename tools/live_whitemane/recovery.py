@@ -13,6 +13,7 @@ RETRYABLE=(
     'continuous waypoint exceeded its calculated emergency bound',
     'continuous waypoint movement is blocked',
     'calculated ascent made no height progress',
+    'calculated ascent lost a healthy owned height observation',
     'calculated ascent exceeded its emergency bound',
     'repeated terrain contact without route progress',
     'flight cruise was blocked',

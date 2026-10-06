@@ -46,3 +46,12 @@ def test_a_continuous_command_accepts_an_earlier_stop_without_resending_keydown(
     now[0]=.21;sticky.tick()
     assert events==[('press','Up'),('release','Up')]
     assert not sticky.interrupted
+
+
+def test_waiting_for_the_first_observation_has_no_active_input_to_expire():
+    sticky,events,now=controller()
+    now[0]=1;sticky.tick()
+    assert sticky.interrupted is None and not events
+    sticky.renew();sticky.hold('Up',True)
+    now[0]=1.36;sticky.tick()
+    assert sticky.interrupted and events==[('press','Up'),('release','Up')]

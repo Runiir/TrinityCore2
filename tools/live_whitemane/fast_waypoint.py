@@ -10,7 +10,7 @@ from .observe import observe
 from .decisions import choose
 from .camera_steering import CameraSteering
 from .boundaries import check_point
-from .sticky_input import StickyInput
+from .sticky_input import StickyInput,observation_lease
 from tools.client_compatibility import travel_policy
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
@@ -77,6 +77,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 # Rendering can be slower than the local control tick. An
                 # unchanged but still-valid public frame retains the accepted
                 # command; observe() rejects frames after their freshness bound.
+                sticky.lease=observation_lease(row)
                 sticky.renew()
                 if m['sequence']==last_sequence:
                     time.sleep(.01);continue
