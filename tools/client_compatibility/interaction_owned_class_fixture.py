@@ -139,11 +139,16 @@ def lobby(t,path,review_path,stage,returning):
     t.receipt['completed']=True
 
 
+def entry_identity(fixture):
+    if (fixture.get('actor'),fixture.get('race'),fixture.get('account_id'))!=('scout',1,2):return False
+    return (fixture.get('character_name'),fixture.get('level'),fixture.get('class'),fixture.get('guid')) in (
+        ('Harnesslock',1,9,4),('Harnessctrl',10,9,5),('Harnesshunt',10,3,6))
+
+
 def enter(t,path,review_path):
     old=prepared(t,path);d=reviewed(t,review_path,'Enter World')
     name,level=t.fixture['character_name'],t.fixture['level']
-    if ((name,level) not in [('Harnesslock',1),('Harnessctrl',10)] or
-        (t.fixture['race'],t.fixture['class'],t.fixture['account_id'])!=(1,9,2) or
+    if (not entry_identity(t.fixture) or
         (d.get('selected_character'),d.get('selected_level'))!=(name,level)):
         raise RuntimeError('class entry requires its reviewed selected character')
     before=character(t.fixture['guid'],t.fixture['account_id'])
