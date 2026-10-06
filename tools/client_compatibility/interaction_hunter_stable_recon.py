@@ -32,7 +32,7 @@ def turn_delta(position,facing,goal):
     return (wanted-facing+math.pi)%(2*math.pi)-math.pi
 
 
-def suite(t,preparation,entry):
+def suite(t,preparation,entry,waypoints=None,navigation_source=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     if tuple(t.fixture.get(k) for k in ('guid','account_id','character_name','class','level'))!=(6,2,'Harnesshunt',3,10):
         raise RuntimeError('requires the retained owned Hunter')
@@ -44,6 +44,22 @@ def suite(t,preparation,entry):
     before=resources(inv);t.clean_panels();initial,initial_frame=t.observe('stable_navigation_before')
     if before!=entered['resources'] or baseline_saved!=entered['entered_saved']:
         raise RuntimeError('owned Hunter entry resources changed')
+    route=waypoints or []
+    if route:
+        if not navigation_source:raise RuntimeError('a detour requires its closed stalled navigation source')
+        e=json.loads(navigation_source.read_text());previous=e.get('navigation',[])
+        if (e.get('completed') is not False or not e.get('finished_at') or
+            e.get('failure')!='RuntimeError: stable navigation stalled; inputs stopped' or
+            e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or not previous or
+            e.get('fixture_source',{}).get('sha256')!=lab.sha256(preparation) or
+            math.dist(initial['world_position'][:2],previous[-1]['state']['world_position'][:2])>.3 or
+            before!=e['baseline_resources'] or baseline_saved!=e['baseline_saved'] or
+            not saved_pet_unchanged(e['baseline_pets'],retained,time.time())):
+            raise RuntimeError('stalled navigation detour source differs')
+        if len(route)>4 or any(len(p)!=2 or any(not math.isfinite(v) for v in p) or math.dist(p,goal)>100 for p in route):
+            raise RuntimeError('stable detour leaves its bounded fixture')
+        t.receipt['navigation_source']={'path':str(navigation_source.resolve()),'sha256':lab.sha256(navigation_source)}
+    route=[*route,goal];leg=0
     bar=detail(t,'stable_navigation_bindings');keys={}
     for command in ('MOVEFORWARD','TURNLEFT','TURNRIGHT'):
         row=bar['keys'].get(command,[])
@@ -52,28 +68,30 @@ def suite(t,preparation,entry):
     t.receipt.update(native_session=session,entry_source={'path':str(entry.resolve()),'sha256':lab.sha256(entry)},
         native_master=npc,baseline_resources=before,baseline_saved=baseline_saved,baseline_pets=retained,
         navigation_origin={'state':initial,'frame':initial_frame},navigation=[],observed_bindings=keys,
-        qualification_added=False);t.persist()
+        navigation_route=route,qualification_added=False);t.persist()
     state,frame=initial,initial_frame;stalled=0
-    for index in range(24):
+    for index in range(40):
         pose=frame['movement'];position=state.get('world_position',[])
         if (len(position)!=4 or position[3]!=0 or pose.get('dead') or pose.get('in_combat') or
             pose.get('speed')!=0 or state.get('lua_errors') or state.get('blocked_actions') or
             not all(protected(old).values())):
             raise RuntimeError('owned stable navigation state is unsuitable')
-        distance=math.dist(position[:2],goal)
-        if distance<=3:break
+        current_goal=route[leg];distance=math.dist(position[:2],current_goal)
+        if distance<=(3 if leg==len(route)-1 else .75):
+            if leg==len(route)-1:break
+            leg+=1;stalled=0;continue
         if distance>100:raise RuntimeError('stable navigation left its bounded fixture')
-        delta=turn_delta(position,pose['facing_radians'],goal)
+        delta=turn_delta(position,pose['facing_radians'],current_goal)
         if abs(delta)>.12:
             command='TURNLEFT' if delta>0 else 'TURNRIGHT';hold=max(.05,min(.6,abs(delta)/math.pi))
-        else:command='MOVEFORWARD';hold=max(.05,min(2,(distance-2.5)/7))
+        else:command='MOVEFORWARD';hold=max(.05,min(2,(distance-(2.5 if leg==len(route)-1 else .5))/7))
         started=time.time();t.execute({'kind':'key','value':keys[command],'hold':hold})
         after,after_frame=t.observe(f'stable_navigation_{index:02d}')
-        remaining=math.dist(after['world_position'][:2],goal)
+        remaining=math.dist(after['world_position'][:2],current_goal)
         if command=='MOVEFORWARD':stalled=stalled+1 if distance-remaining<.2 else 0
         t.receipt['navigation'].append({'started_at':started,'binding':command,'key':keys[command],'hold':hold,
             'distance_before':distance,'distance_after':remaining,'state':after,'frame':after_frame,
-            'consecutive_no_progress':stalled});t.persist()
+            'route_leg':leg,'goal':current_goal,'consecutive_no_progress':stalled});t.persist()
         if stalled>=3:raise RuntimeError('stable navigation stalled; inputs stopped')
         state,frame=after,after_frame
     else:raise RuntimeError('stable navigation exhausted its bounded decisions')
@@ -103,11 +121,12 @@ def suite(t,preparation,entry):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--waypoints',type=json.loads);p.add_argument('--navigation-source',type=Path)
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:suite(t,a.preparation,a.entry)
+        try:suite(t,a.preparation,a.entry,a.waypoints,a.navigation_source)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure')}),flush=True)
