@@ -7,7 +7,6 @@ would instead fetch a different pretrained encoder and is deliberately avoided.
 """
 import argparse
 from collections import defaultdict
-import copy
 import hashlib
 import importlib.metadata
 import json
@@ -220,6 +219,15 @@ def load_adapter(agent, path):
     expected = {key for key in agent.model.state_dict() if not key.startswith('encoder.')}
     if set(weights) != expected:
         raise ValueError('Adapter must contain all and only the pinned decision-head tensors')
+    settings = receipt['inference_config']
+    if (settings['readout'] != agent.model.readout
+            or settings['option_attention'] != agent.model.option_attention
+            or settings['preprocess'] != agent.prep.to_config()):
+        raise ValueError('Adapter prompt/image preprocessing differs from its pinned parent')
+    if settings['max_len'] > agent.model.encoder.config.text_config.max_position_embeddings:
+        raise ValueError('Adapter context exceeds backbone capacity')
+    agent.cfg.update({key: settings[key] for key in ('max_len', 'head_max_len')})
+    agent.processor.laya_max_len = settings['max_len']
     result = agent.model.load_state_dict(weights, strict=False)
     if result.unexpected_keys or any(not key.startswith('encoder.') for key in result.missing_keys):
         raise ValueError('Incomplete or incompatible adapter')
@@ -235,6 +243,7 @@ def main():
     parser.add_argument('--dataset', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    start_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     config = json.loads(args.config.read_text())
     data = json.loads(args.dataset.read_text())
     validate_splits(data['splits'])
@@ -357,7 +366,11 @@ def main():
         'training_kind': config['training_kind'], 'true_rlvr': False, 'visual_training': False,
         'encoder_frozen': True, 'trained_modules': ['head', 'type_emb', 'scorer'],
         'encoder_weights_identical_to_parent': True,
-        'code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'code_commit': start_commit,
+        'completion_code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'inference_config': {'max_len': agent.cfg['max_len'], 'head_max_len': agent.cfg['head_max_len'],
+            'readout': agent.model.readout, 'option_attention': agent.model.option_attention,
+            'preprocess': agent.prep.to_config()},
         'config_sha256': sha256(args.config), 'dataset_sha256': sha256(args.dataset),
         'baseline': baseline, 'candidate': candidate, 'baseline_validation_recalibrated': calibrated_baseline,
         'baseline_temperature': baseline_temperature, 'candidate_temperature': candidate_temperature,
