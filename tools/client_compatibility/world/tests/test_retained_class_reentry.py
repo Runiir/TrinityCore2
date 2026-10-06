@@ -22,6 +22,19 @@ def test_exact_unchanged_chain_accepts_retained_fixture():
     module.continuity(*chain(),'source')
 
 
+@pytest.mark.parametrize('change',['none','name','race','class','level','account','guid'])
+def test_separate_eligible_fixture_requires_its_exact_owned_identity(change):
+    t,old,park,finish=chain()
+    fixture={'guid':5,'account_id':2,'character_name':'Harnessctrl','race':1,'class':9,'level':10}
+    if change!='none':
+        key={'name':'character_name','account':'account_id'}.get(change,change)
+        fixture[key]='Harnessone' if key=='character_name' else 99
+    old['class_actor']=fixture;park['actor']=fixture
+    if change=='none':module.continuity(t,old,park,finish,'source')
+    else:
+        with pytest.raises(RuntimeError):module.continuity(t,old,park,finish,'source')
+
+
 @pytest.mark.parametrize('change',('class','origin','actor','park_actor','finish_actor','bridge','server','client',
     'park_source','finish_source','park_phase','park_false','finish_missing','renamed_check','overlap','unfinished_order'))
 def test_changed_actor_lifetime_source_or_restoration_refuses_reentry(change):
