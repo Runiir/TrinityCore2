@@ -64,6 +64,13 @@ def mode(t,o,wanted,label):
 
 def whole_restore(t,o,inventory,old,baseline):
     t.clean_panels();layout=detail(t,'react_cleanup_pose_binding')
+    if pose(inventory)['sheath']!=baseline['pose']['sheath']:
+        from .interaction_sheath import cycle
+        for wanted in cycle(pose(inventory)['sheath'],bool(inventory.equipment(18)['id'])):
+            t.execute({'kind':'key','value':binding_key(layout['keys']['TOGGLESHEATH'][0]),'hold':.4})
+            detail(t,'react_cleanup_sheath_'+str(wanted),lambda p:pose(inventory)['sheath']==wanted and
+                p['pose'].get('sheath')==wanted+1)
+            if wanted==baseline['pose']['sheath']:break
     if pose(inventory)['stand']!=baseline['pose']['stand']:
         t.execute({'kind':'key','value':binding_key(layout['keys']['SITORSTAND'][0]),'hold':.4})
     if afk(inventory)!=baseline['afk']:t.execute({'kind':'chat','value':'/afk'})
