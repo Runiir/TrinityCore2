@@ -136,7 +136,7 @@ struct Sender
         else if(kind=="relative")
         {
             auto x=input_integer(request,"dx"),y=input_integer(request,"dy");
-            if(x<-256 || x>256 || y<-256 || y>256)throw std::runtime_error("relative pointer delta exceeds bound");
+            if(x<-1024 || x>1024 || y<-1024 || y>1024)throw std::runtime_error("relative pointer delta exceeds bound");
             if(!ei_device_has_capability(device,EI_DEVICE_CAP_POINTER))throw std::runtime_error("relative pointer capability is unavailable");
             ei_device_pointer_motion(device,x,y);
         }

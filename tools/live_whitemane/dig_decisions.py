@@ -22,7 +22,7 @@ def explore(action, response, options, state):
 
 
 def choose(state):
-    if (state.get('survey_ready') and not state['artifact_visible']
+    if ((state.get('survey_ready') or state.get('instrument_current')) and not state['artifact_visible']
             and not (state.get('pickup') or {}).get('uncollected')):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
