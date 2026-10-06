@@ -1,5 +1,6 @@
 """Offline admission, leakage, token preservation, and frozen-head correctness."""
 import copy
+import importlib.util
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -70,6 +71,8 @@ class AdmissionTests(unittest.TestCase):
 
 
 class HeadTests(unittest.TestCase):
+    @unittest.skipUnless(all(importlib.util.find_spec(name) is not None
+        for name in ('torch', 'transformers')), 'requires the isolated vision Pixi SDK environment')
     def test_sdk_head_gradients_and_encoder_freeze(self):
         import torch
         from laya.vlm import VLMDecisionModel
@@ -99,6 +102,8 @@ class HeadTests(unittest.TestCase):
         self.assertTrue(all(p.grad is None for p in model.encoder.parameters()))
         self.assertTrue(all(p.grad is None for p in model.act_head.parameters()))
 
+    @unittest.skipUnless(all(importlib.util.find_spec(name) is not None
+        for name in ('torch', 'transformers')), 'requires the isolated vision Pixi SDK environment')
     def test_pinned_processor_preserves_full_state_and_option_permutation(self):
         from transformers import AutoProcessor
         from laya.preprocess import ImagePrep
